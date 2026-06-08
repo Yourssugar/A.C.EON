@@ -694,7 +694,7 @@
     setTimeout(function(){
       if(!v){resp.className='pwr e';resp.textContent='> NULL';}
       else if(v==='NODE'){goLayer2();}
-      else if(v==='HELLO'){window.location.href='chat/';}
+      else if(v==='HELLO'){sessionStorage.setItem('aceon_access','granted');window.location.href='chat/';}
       else{var e=['> INVALID CODE','> NODE LOGGED ATTEMPT '+Math.floor(Math.random()*9),'> SIGNAL MISMATCH','> ACCESS DENIED'];resp.className='pwr e';resp.textContent=e[Math.random()*e.length|0];glitch(ttl,TORIG,14);nodeWhisper();}
       btn.textContent='OK';btn.disabled=false;
     },280+Math.random()*250|0);

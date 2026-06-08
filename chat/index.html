@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A.C.EON NODE — COMMUNICATION</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap');
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'JetBrains Mono','Courier New',monospace; }
+
+    #hd {
+      position:fixed; top:0; left:0; right:0; z-index:10;
+      padding:14px 24px 12px; border-bottom:1px solid #003a4a; background:#000;
+    }
+    #hd-top { display:flex; justify-content:space-between; align-items:center; }
+    #hd-title { font-size:10px; color:#0099aa; letter-spacing:4px; }
+    #hd-status { font-size:9px; color:#005566; letter-spacing:3px; display:flex; gap:20px; }
+    .hd-dot { color:#00aabb; animation:blink 2s step-end infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    #hd-div { font-size:9px; color:#002a38; margin-top:8px; overflow:hidden; white-space:nowrap; }
+
+    #chat {
+      position:fixed; top:64px; bottom:90px; left:0; right:0;
+      overflow-y:auto; padding:20px 24px; scrollbar-width:none;
+    }
+    #chat::-webkit-scrollbar { display:none; }
+
+    .msg { margin:10px 0; max-width:78%; animation:fadein .3s ease; }
+    @keyframes fadein { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    .msg.bot  { margin-right:auto; }
+    .msg.user { margin-left:auto; text-align:right; }
+
+    .msg-sender { font-size:8px; letter-spacing:3px; margin-bottom:4px; }
+    .msg.bot  .msg-sender { color:#004a5a; }
+    .msg.user .msg-sender { color:#003322; }
+
+    .msg-body {
+      font-size:11px; letter-spacing:1px; line-height:1.9;
+      padding:12px 14px; border:1px solid; white-space:pre-wrap;
+    }
+    .msg.bot .msg-body {
+      color:#008899; border-color:#003a4a; background:rgba(0,40,55,0.4);
+      border-left:2px solid #007799;
+    }
+    .msg.user .msg-body {
+      color:#004a3a; border-color:#002a22; background:rgba(0,20,16,0.4); font-size:10px;
+    }
+
+    /* invalid — amber */
+    .msg.bot.invalid .msg-body {
+      color:#886600; border-color:#3a2800; border-left-color:#664400; background:rgba(20,10,0,0.5);
+    }
+    .msg.bot.invalid .msg-sender { color:#443300; }
+
+    /* valid — bright cyan */
+    .msg.bot.valid .msg-body {
+      color:#00ccdd; border-color:#005566; border-left-color:#00aabb; background:rgba(0,35,44,0.6);
+    }
+    .msg.bot.valid .msg-sender { color:#006677; }
+
+    /* already claimed — dim grey-blue */
+    .msg.bot.claimed .msg-body {
+      color:#445566; border-color:#223344; border-left-color:#334455; background:rgba(8,14,22,0.5);
+    }
+    .msg.bot.claimed .msg-sender { color:#334455; }
+
+    /* typing dots */
+    .msg.typing .msg-body { color:#003a4a; letter-spacing:4px; }
+    .dot { animation:tdot 1.2s step-end infinite; }
+    .dot:nth-child(2){animation-delay:.2s;} .dot:nth-child(3){animation-delay:.4s;}
+    @keyframes tdot { 0%,100%{opacity:0} 50%{opacity:1} }
+
+    #bar {
+      position:fixed; bottom:0; left:0; right:0;
+      padding:12px 24px 16px; border-top:1px solid #003a4a; background:#000;
+    }
+    #bar-label { font-size:8px; color:#004455; letter-spacing:4px; margin-bottom:8px; }
+    #bar-row { display:flex; align-items:center; border:1px solid #003a4a; }
+    #bar-pr { padding:10px 12px; font-size:11px; color:#005566; }
+    #bar-input {
+      flex:1; background:transparent; border:none; outline:none;
+      color:#00aabb; font-family:inherit; font-size:11px; padding:10px 8px; letter-spacing:3px;
+    }
+    #bar-input::placeholder { color:#002233; }
+    #bar-btn {
+      border:none; border-left:1px solid #003a4a; background:transparent; color:#004455;
+      font-family:inherit; font-size:9px; padding:10px 16px; cursor:pointer;
+      letter-spacing:3px; transition:color .15s, background .15s;
+    }
+    #bar-btn:hover { color:#00aabb; background:#001822; }
+    #bar-btn:disabled { color:#002233; cursor:default; }
+  </style>
+</head>
+<body>
+
+  <div id="hd">
+    <div id="hd-top">
+      <div id="hd-title">A.C.EON NODE &mdash; COMMUNICATION CHANNEL</div>
+      <div id="hd-status">
+        <span><span class="hd-dot">&#9679;</span> ONLINE</span>
+        <span id="hd-obs">OBS: &mdash;</span>
+      </div>
+    </div>
+    <div id="hd-div">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
+  </div>
+
+  <div id="chat"></div>
+
+  <div id="bar">
+    <div id="bar-label">[ ENTER FRAGMENT CODE ]</div>
+    <div id="bar-row">
+      <span id="bar-pr">&#8250;_</span>
+      <input id="bar-input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="FRAGMENT_KEY" maxlength="32">
+      <button id="bar-btn">SEND</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+
+  // ─── OBSERVER ID ───────────────────────────────────────────────────────────
+  var obsId = localStorage.getItem('aceon_obs');
+  if(!obsId){
+    obsId = 'OBS_' + Math.random().toString(36).substring(2,8).toUpperCase();
+    localStorage.setItem('aceon_obs', obsId);
+  }
+  document.getElementById('hd-obs').textContent = 'OBS: ' + obsId;
+
+  // ─── DATABASE URL ──────────────────────────────────────────────────────────
+  // Когда добавишь codes.json в репо на GitHub, замени эту строку:
+  // var DB_URL = 'https://raw.githubusercontent.com/ТВО_ИМЯАККА/РЕПО/main/db/codes.json';
+  // Пока — null, бот отвечает только "неверный код".
+  var DB_URL = null;
+
+  // ─── CHAT HELPERS ──────────────────────────────────────────────────────────
+  var chat = document.getElementById('chat');
+  var input = document.getElementById('bar-input');
+  var btn   = document.getElementById('bar-btn');
+
+  function scrollBottom(){ chat.scrollTop = chat.scrollHeight; }
+
+  function addMsg(type, sender, lines, cls){
+    var div = document.createElement('div');
+    div.className = 'msg ' + type + (cls ? ' ' + cls : '');
+    var s = document.createElement('div');
+    s.className = 'msg-sender'; s.textContent = sender;
+    var b = document.createElement('div');
+    b.className = 'msg-body'; b.textContent = lines.join('\n');
+    div.appendChild(s); div.appendChild(b);
+    chat.appendChild(div); scrollBottom();
+  }
+
+  function showTyping(){
+    var div = document.createElement('div'); div.className = 'msg bot typing';
+    var s = document.createElement('div'); s.className = 'msg-sender'; s.textContent = 'A.C.EON NODE';
+    var b = document.createElement('div'); b.className = 'msg-body';
+    b.innerHTML = 'ANALYZING <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
+    div.appendChild(s); div.appendChild(b);
+    chat.appendChild(div); scrollBottom();
+    return div;
+  }
+
+  // ─── RESPONSES ─────────────────────────────────────────────────────────────
+
+  function respondInvalid(code){
+    addMsg('bot', 'A.C.EON NODE', [
+      '> CODE_NOT_RECOGNIZED',
+      '> INPUT: ' + code,
+      '> DATABASE: NO MATCH FOUND',
+      '> STATUS: ACCESS DENIED',
+      '> ',
+      '> NODE: CONTINUE SEARCHING.',
+    ], 'invalid');
+  }
+
+  function respondValid(code, entry){
+    var claimed = JSON.parse(localStorage.getItem('aceon_claimed') || '{}');
+    claimed[code] = { obsId: obsId, at: new Date().toISOString() };
+    localStorage.setItem('aceon_claimed', JSON.stringify(claimed));
+    addMsg('bot', 'A.C.EON NODE', [
+      '> CODE_VERIFIED',
+      '> INPUT: ' + code,
+      '> FRAGMENT: ' + entry.fragment,
+      '> OBSERVER: ' + obsId,
+      '> REWARD: ' + entry.reward + ' — PENDING CLAIM',
+      '> ',
+      '> NODE: YOU WERE FIRST.',
+      '>       THIS DISCOVERY IS LOGGED.',
+      '>       CLAIM PROTOCOL INCOMING.',
+    ], 'valid');
+  }
+
+  function respondClaimed(code, entry){
+    var claimed = JSON.parse(localStorage.getItem('aceon_claimed') || '{}');
+    var who = entry.claimedBy || (claimed[code] ? claimed[code].obsId : 'OBSERVER_UNKNOWN');
+    addMsg('bot', 'A.C.EON NODE', [
+      '> CODE_VERIFIED — ALREADY CLAIMED',
+      '> INPUT: ' + code,
+      '> FRAGMENT: ' + entry.fragment,
+      '> CLAIMED BY: ' + who,
+      '> ',
+      '> NODE: LATE ARRIVAL.',
+      '>       THE VOID HAS MEMORY.',
+    ], 'claimed');
+  }
+
+  // ─── MAIN CHECK ────────────────────────────────────────────────────────────
+
+  function checkCode(raw){
+    var code = raw.trim().toUpperCase();
+    if(!code) return;
+
+    addMsg('user', 'YOU', [raw]);
+    btn.disabled = true; input.value = '';
+    var typing = showTyping();
+    var delay  = 700 + Math.random() * 500;
+
+    setTimeout(function(){
+      typing.remove();
+
+      if(!DB_URL){
+        // ── РЕЖИМ БЕЗ БАЗЫ: всё неверно ──
+        respondInvalid(code);
+        btn.disabled = false;
+        setTimeout(function(){ input.focus(); }, 100);
+        return;
+      }
+
+      // ── РЕЖИМ С БАЗОЙ: читаем codes.json из GitHub ──
+      fetch(DB_URL + '?t=' + Date.now())   // ?t= чтобы браузер не кэшировал
+        .then(function(r){ return r.json(); })
+        .then(function(db){
+          var entry = db[code];
+          var claimed = JSON.parse(localStorage.getItem('aceon_claimed') || '{}');
+
+          if(!entry){
+            respondInvalid(code);
+          } else if(entry.used || claimed[code]){
+            respondClaimed(code, entry);
+          } else {
+            respondValid(code, entry);
+          }
+        })
+        .catch(function(){
+          // База недоступна
+          addMsg('bot', 'A.C.EON NODE', [
+            '> DATABASE_UNAVAILABLE',
+            '> STATUS: CONNECTION ERROR',
+            '> NODE: TRY AGAIN LATER.',
+          ], 'invalid');
+        })
+        .finally(function(){
+          btn.disabled = false;
+          setTimeout(function(){ input.focus(); }, 100);
+        });
+
+    }, delay);
+  }
+
+  btn.onclick = function(){ checkCode(input.value); };
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') checkCode(input.value); });
+
+  // ─── BOOT MESSAGE ──────────────────────────────────────────────────────────
+  setTimeout(function(){
+    addMsg('bot', 'A.C.EON NODE', [
+      '> CHANNEL OPEN',
+      '> OBSERVER: ' + obsId,
+      '> ',
+      '> DATABASE: CONNECTED',
+      '> AWAITING INPUT',
+      '> ',
+      '> NODE: ENTER FRAGMENT CODE TO BEGIN.',
+    ]);
+    input.focus();
+  }, 600);
+
+})();
+</script>
+</body>
+</html>

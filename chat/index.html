@@ -119,6 +119,7 @@
 
 <script>
 (function(){
+  if(!sessionStorage.getItem('aceon_access')){window.location.href='../';}
 
   // ─── OBSERVER ID ───────────────────────────────────────────────────────────
   var obsId = localStorage.getItem('aceon_obs');

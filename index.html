@@ -693,9 +693,9 @@
     btn.disabled=true;btn.textContent='.';
     setTimeout(function(){
       if(!v){resp.className='pwr e';resp.textContent='> NULL';}
-      else if(v==='NODE'){goLayer2();}
-      else if(v==='HELLO'){sessionStorage.setItem('aceon_access','granted');window.location.href='chat/';}
-      else if(v==='LIBRARY'){sessionStorage.setItem('aceon_library','granted');window.location.href='fragment02/';}
+      else if(btoa(v)==='Tk9ERQ=='){goLayer2();}
+      else if(btoa(v)==='SEVMTE8='){sessionStorage.setItem('aceon_access','granted');window.location.href='chat/';}
+      else if(btoa(v)==='TElCUkFSWQ=='){sessionStorage.setItem('aceon_library','granted');window.location.href='fragment02/';}
       else{var e=['> INVALID CODE','> NODE LOGGED ATTEMPT '+Math.floor(Math.random()*9),'> SIGNAL MISMATCH','> ACCESS DENIED'];resp.className='pwr e';resp.textContent=e[Math.random()*e.length|0];glitch(ttl,TORIG,14);nodeWhisper();}
       btn.textContent='OK';btn.disabled=false;
     },280+Math.random()*250|0);
@@ -703,14 +703,14 @@
   document.getElementById('pwb1').onclick=tryPass1;
   document.getElementById('pwi1').addEventListener('keydown',function(e){if(e.key==='Enter')tryPass1();});
 
-  var FRAG_CODES=['VOID','SIGNAL','FRAGMENT'];
+  var FRAG_CODES=['Vk9JRA==','U0lHTkFM','RlJBR01FTlQ='];
   function tryPass2(){
     var v=document.getElementById('pwi2').value.trim().toUpperCase();
     var btn=document.getElementById('pwb2'),resp=document.getElementById('pwr2');
     btn.disabled=true;btn.textContent='.';
     setTimeout(function(){
       if(!v){resp.className='pwr e';resp.textContent='> NULL';}
-      else if(FRAG_CODES.indexOf(v)>=0){goLayer3();}
+      else if(FRAG_CODES.indexOf(btoa(v))>=0){goLayer3();}
       else{var e=['> FRAGMENT_KEY INVALID','> NOT IN ARCHIVE','> SIGNAL MISMATCH','> CHECK THE BROADCAST'];resp.className='pwr e';resp.textContent=e[Math.random()*e.length|0];}
       btn.textContent='ENTER';btn.disabled=false;
     },380+Math.random()*300|0);

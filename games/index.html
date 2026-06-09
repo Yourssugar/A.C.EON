@@ -216,6 +216,7 @@ canvas{display:block;}
 
 <script>
 (function(){
+  if(!sessionStorage.getItem('aceon_games')){window.location.href='../';}
 var cur=null;
 function openGame(id){
   document.getElementById('launcher').classList.add('hidden');

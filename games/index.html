@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>A.C.EON GAMES</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#020802;font-family:Tahoma,Arial,sans-serif;font-size:12px;color:#00cc44;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.hidden{display:none!important;}
+
+/* ── LAUNCHER ── */
+#launcher{text-align:center;padding:40px 20px;}
+.launcher-title{font-size:11px;color:#006622;letter-spacing:4px;margin-bottom:40px;}
+.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:420px;margin:0 auto;}
+.game-icon{padding:18px 12px;border:1px solid #1a3a1a;background:#030a03;cursor:pointer;text-align:center;transition:background .1s,border-color .1s;}
+.game-icon:hover{background:#003800;border-color:#00cc44;}
+.icon-folder{display:inline-block;width:48px;height:36px;background:#00aa33;position:relative;border-radius:0 3px 3px 3px;margin-bottom:10px;}
+.icon-folder::before{content:'';position:absolute;top:-8px;left:0;width:18px;height:8px;background:#00aa33;border-radius:3px 3px 0 0;}
+.icon-label{display:block;font-size:11px;color:#00dd55;letter-spacing:2px;}
+
+/* ── GAME WINDOW ── */
+.game-win{width:98vw;max-width:700px;border:2px solid #1a3a1a;background:#030a03;display:flex;flex-direction:column;}
+.game-tb{background:#003800;padding:3px 6px;display:flex;align-items:center;}
+.game-tb-title{flex:1;color:#00dd55;font-size:11px;font-weight:bold;letter-spacing:2px;}
+.game-tb-btn{width:18px;height:16px;background:#0a120a;border:1px solid;border-color:#1a3a1a #010801 #010801 #1a3a1a;cursor:pointer;font-size:9px;color:#009933;display:flex;align-items:center;justify-content:center;}
+.game-tb-btn:hover{background:#440000;color:#ff4444;}
+.game-area{padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.game-bar{width:100%;display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#020802;border:1px solid #0a200a;font-size:11px;color:#009933;letter-spacing:2px;}
+.btn{padding:3px 14px;background:#0f1f0f;border:1px solid;border-color:#1a3a1a #010801 #010801 #1a3a1a;color:#009933;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px;}
+.btn:hover{background:#003800;color:#00dd55;}
+
+/* ── MINESWEEPER ── */
+#mine-grid{display:inline-grid;border:2px solid;border-color:#010801 #1a3a1a #1a3a1a #010801;background:#0a120a;gap:1px;padding:2px;}
+.mine-cell{width:28px;height:28px;background:#0f1f0f;border:1px solid;border-color:#1a3a1a #010801 #010801 #1a3a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-weight:bold;user-select:none;}
+.mine-cell:hover{background:#1a3a1a;}
+.mine-cell.revealed{background:#020802;border-color:#0a200a;cursor:default;}
+.mine-cell.flagged{color:#ff4444;}
+.mine-cell.mine-hit{background:#440000;color:#ff4444;}
+.n1{color:#4488ff;}.n2{color:#44ff44;}.n3{color:#ff4444;}.n4{color:#8844ff;}
+.n5{color:#ff8844;}.n6{color:#44ffff;}.n7{color:#ffffff;}.n8{color:#888888;}
+
+/* ── SOLITAIRE ── */
+#soli-top{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;}
+#soli-bot{display:flex;gap:8px;align-items:flex-start;}
+.card{width:62px;min-height:88px;border:1px solid #1a3a1a;border-radius:3px;background:#0f1f0f;cursor:pointer;position:relative;user-select:none;flex-shrink:0;}
+.card.face-up{background:#131313;}
+.card.red-card .c-rank{color:#cc3333;}
+.card.blk-card .c-rank{color:#aaaaaa;}
+.card.selected{border-color:#00ff44;box-shadow:0 0 4px #00aa22;}
+.card.empty-slot{background:#020802;border-style:dashed;cursor:default;}
+.c-rank{position:absolute;top:3px;left:4px;font-size:11px;font-weight:bold;line-height:1;}
+.c-suit{position:absolute;bottom:3px;right:4px;font-size:11px;}
+.c-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;}
+.c-back{width:100%;height:100%;background:repeating-linear-gradient(45deg,#002a00,#002a00 4px,#003800 4px,#003800 8px);border-radius:2px;}
+.tab-col{display:flex;flex-direction:column;min-height:100px;width:62px;}
+.tab-col .card{margin-top:-60px;}
+.tab-col .card:first-child{margin-top:0;}
+.tab-col .card.face-down{min-height:22px;height:22px;margin-top:-66px;}
+.tab-col .card.face-down:first-child{margin-top:0;}
+.tab-col .card:last-child{min-height:88px;}
+#soli-foundations{display:flex;gap:8px;}
+
+/* ── SNAKE ── */
+#snake-canvas{border:2px solid #1a3a1a;background:#020802;display:block;}
+
+/* ── MEMORY ── */
+#mem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.mem-card{width:72px;height:90px;border:1px solid #1a3a1a;background:#0f1f0f;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;border-radius:2px;color:transparent;transition:color .1s;}
+.mem-card.flipped,.mem-card.matched{color:#00dd55;background:#031403;}
+.mem-card.matched{border-color:#00dd55;cursor:default;color:#009933;}
+</style>
+</head>
+<body>
+
+<!-- LAUNCHER -->
+<div id="launcher">
+  <div class="launcher-title">A.C.EON &mdash; GAME ARCHIVE &mdash; SELECT PROGRAM</div>
+  <div class="game-grid">
+    <div class="game-icon" onclick="openGame('mine')">
+      <div class="icon-folder"></div>
+      <span class="icon-label">MINESWEEPER</span>
+    </div>
+    <div class="game-icon" onclick="openGame('soli')">
+      <div class="icon-folder"></div>
+      <span class="icon-label">SOLITAIRE</span>
+    </div>
+    <div class="game-icon" onclick="openGame('snake')">
+      <div class="icon-folder"></div>
+      <span class="icon-label">SNAKE</span>
+    </div>
+    <div class="game-icon" onclick="openGame('mem')">
+      <div class="icon-folder"></div>
+      <span class="icon-label">MEMORY</span>
+    </div>
+  </div>
+  <div style="margin-top:48px;font-size:9px;color:#003a18;letter-spacing:3px;">
+    <a href="../" style="color:#003a18;text-decoration:none;" onmouseover="this.style.color='#00dd55'" onmouseout="this.style.color='#003a18'">&larr; MAIN</a>
+  </div>
+</div>
+
+<!-- MINESWEEPER -->
+<div id="game-mine" class="game-win hidden">
+  <div class="game-tb">
+    <span class="game-tb-title">MINESWEEPER</span>
+    <div class="game-tb-btn" onclick="closeGame()">&#10005;</div>
+  </div>
+  <div class="game-area">
+    <div class="game-bar">
+      <span>&#128163; <span id="mine-count">10</span></span>
+      <button class="btn" onclick="initMine()">NEW GAME</button>
+      <span>&#9200; <span id="mine-time">0</span>s</span>
+    </div>
+    <div id="mine-status" style="font-size:11px;letter-spacing:2px;color:#006622;min-height:16px;"></div>
+    <div id="mine-grid"></div>
+  </div>
+</div>
+
+<!-- SOLITAIRE -->
+<div id="game-soli" class="game-win hidden">
+  <div class="game-tb">
+    <span class="game-tb-title">SOLITAIRE (KLONDIKE)</span>
+    <div class="game-tb-btn" onclick="closeGame()">&#10005;</div>
+  </div>
+  <div class="game-area">
+    <div class="game-bar">
+      <span>SCORE: <span id="soli-score">0</span></span>
+      <button class="btn" onclick="initSoli()">NEW GAME</button>
+      <span id="soli-msg" style="color:#006622;"></span>
+    </div>
+    <div id="soli-top">
+      <div id="soli-stock" class="card" onclick="soliDrawStock()" title="Draw"></div>
+      <div id="soli-waste" class="card empty-slot"></div>
+      <div style="flex:1"></div>
+      <div id="soli-foundations"></div>
+    </div>
+    <div id="soli-bot"></div>
+  </div>
+</div>
+
+<!-- SNAKE -->
+<div id="game-snake" class="game-win hidden">
+  <div class="game-tb">
+    <span class="game-tb-title">SNAKE</span>
+    <div class="game-tb-btn" onclick="closeGame()">&#10005;</div>
+  </div>
+  <div class="game-area">
+    <div class="game-bar">
+      <span>SCORE: <span id="snake-score">0</span></span>
+      <button class="btn" onclick="initSnake()">NEW GAME</button>
+      <span style="font-size:9px;color:#006622;">ARROWS / WASD</span>
+    </div>
+    <canvas id="snake-canvas" width="400" height="400"></canvas>
+  </div>
+</div>
+
+<!-- MEMORY -->
+<div id="game-mem" class="game-win hidden">
+  <div class="game-tb">
+    <span class="game-tb-title">MEMORY</span>
+    <div class="game-tb-btn" onclick="closeGame()">&#10005;</div>
+  </div>
+  <div class="game-area">
+    <div class="game-bar">
+      <span>PAIRS: <span id="mem-pairs">0</span>/8</span>
+      <button class="btn" onclick="initMem()">NEW GAME</button>
+      <span>MOVES: <span id="mem-moves">0</span></span>
+    </div>
+    <div id="mem-grid"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  if(!sessionStorage.getItem('aceon_games')){window.location.href='../';}
+
+var currentGame = null;
+
+function openGame(id){
+  document.getElementById('launcher').classList.add('hidden');
+  document.getElementById('game-'+id).classList.remove('hidden');
+  currentGame = id;
+  if(id==='mine')  initMine();
+  if(id==='soli')  initSoli();
+  if(id==='snake') initSnake();
+  if(id==='mem')   initMem();
+}
+window.closeGame = function(){
+  if(currentGame){
+    document.getElementById('game-'+currentGame).classList.add('hidden');
+    if(currentGame==='snake') stopSnake();
+    currentGame = null;
+  }
+  document.getElementById('launcher').classList.remove('hidden');
+};
+window.openGame = openGame;
+
+/* ══════════════════════════════════════════════
+   MINESWEEPER
+══════════════════════════════════════════════ */
+var mRows=9, mCols=9, mMines=10;
+var mBoard, mRevealed, mFlagged, mGameOver, mWon, mFirst, mTimer, mSeconds;
+
+window.initMine = function(){
+  clearInterval(mTimer);
+  mBoard=[], mRevealed=[], mFlagged=[];
+  mGameOver=false; mWon=false; mFirst=true; mSeconds=0;
+  document.getElementById('mine-count').textContent=mMines;
+  document.getElementById('mine-time').textContent='0';
+  document.getElementById('mine-status').textContent='';
+  for(var r=0;r<mRows;r++){mBoard.push(Array(mCols).fill(0));mRevealed.push(Array(mCols).fill(false));mFlagged.push(Array(mCols).fill(false));}
+  renderMine();
+};
+
+function placeMines(safeR,safeC){
+  var placed=0;
+  while(placed<mMines){
+    var r=Math.random()*mRows|0, c=Math.random()*mCols|0;
+    if(mBoard[r][c]===-1)continue;
+    if(Math.abs(r-safeR)<=1&&Math.abs(c-safeC)<=1)continue;
+    mBoard[r][c]=-1; placed++;
+  }
+  for(var r=0;r<mRows;r++) for(var c=0;c<mCols;c++){
+    if(mBoard[r][c]===-1)continue;
+    var n=0;
+    for(var dr=-1;dr<=1;dr++) for(var dc=-1;dc<=1;dc++){
+      var nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<mRows&&nc>=0&&nc<mCols&&mBoard[nr][nc]===-1)n++;
+    }
+    mBoard[r][c]=n;
+  }
+}
+
+function revealMine(r,c){
+  if(r<0||r>=mRows||c<0||c>=mCols||mRevealed[r][c]||mFlagged[r][c])return;
+  mRevealed[r][c]=true;
+  if(mBoard[r][c]===0) for(var dr=-1;dr<=1;dr++) for(var dc=-1;dc<=1;dc++) revealMine(r+dr,c+dc);
+}
+
+function checkWin(){
+  for(var r=0;r<mRows;r++) for(var c=0;c<mCols;c++) if(mBoard[r][c]!==-1&&!mRevealed[r][c])return false;
+  return true;
+}
+
+function renderMine(){
+  var grid=document.getElementById('mine-grid');
+  grid.style.gridTemplateColumns='repeat('+mCols+',28px)';
+  grid.innerHTML='';
+  for(var r=0;r<mRows;r++) for(var c=0;c<mCols;c++){
+    (function(r,c){
+      var el=document.createElement('div');
+      el.className='mine-cell';
+      if(mRevealed[r][c]){
+        el.classList.add('revealed');
+        if(mBoard[r][c]===-1){el.classList.add('mine-hit');el.textContent='*';}
+        else if(mBoard[r][c]>0){el.textContent=mBoard[r][c];el.classList.add('n'+mBoard[r][c]);}
+      } else if(mFlagged[r][c]){
+        el.classList.add('flagged');el.textContent='F';
+      }
+      if(!mGameOver&&!mWon){
+        el.addEventListener('click',function(e){
+          if(mFlagged[r][c])return;
+          if(mFirst){mFirst=false;placeMines(r,c);mTimer=setInterval(function(){mSeconds++;document.getElementById('mine-time').textContent=mSeconds;},1000);}
+          if(mBoard[r][c]===-1){mGameOver=true;clearInterval(mTimer);mRevealed[r][c]=true;revealAllMines();renderMine();document.getElementById('mine-status').textContent='GAME OVER';document.getElementById('mine-status').style.color='#cc3333';return;}
+          revealMine(r,c);
+          if(checkWin()){mWon=true;clearInterval(mTimer);document.getElementById('mine-status').textContent='YOU WIN!';document.getElementById('mine-status').style.color='#00dd55';}
+          renderMine();
+        });
+        el.addEventListener('contextmenu',function(e){
+          e.preventDefault();
+          if(mRevealed[r][c])return;
+          mFlagged[r][c]=!mFlagged[r][c];
+          var fc=0;for(var rr=0;rr<mRows;rr++)for(var cc=0;cc<mCols;cc++)if(mFlagged[rr][cc])fc++;
+          document.getElementById('mine-count').textContent=mMines-fc;
+          renderMine();
+        });
+      }
+      grid.appendChild(el);
+    })(r,c);
+  }
+}
+
+function revealAllMines(){for(var r=0;r<mRows;r++)for(var c=0;c<mCols;c++)if(mBoard[r][c]===-1)mRevealed[r][c]=true;}
+
+/* ══════════════════════════════════════════════
+   SOLITAIRE
+══════════════════════════════════════════════ */
+var SUITS=['♠','♥','♦','♣'], RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+var sStock,sWaste,sFound,sTab,sSel,sScore;
+
+function sCard(suit,rank){return{suit:suit,rank:rank,val:RANKS.indexOf(rank)+1,color:(suit==='♥'||suit==='♦')?'r':'b',up:false};}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.random()*(i+1)|0;var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+window.initSoli = function(){
+  sScore=0; sSel=null;
+  var deck=[];
+  SUITS.forEach(function(s){RANKS.forEach(function(r){deck.push(sCard(s,r));});});
+  shuffle(deck);
+  sFound=[[],[],[],[]];
+  sTab=[[],[],[],[],[],[],[]];
+  for(var c=0;c<7;c++) for(var r=0;r<=c;r++){var card=deck.pop();card.up=(r===c);sTab[c].push(card);}
+  sWaste=[];
+  sStock=deck.map(function(c){c.up=false;return c;});
+  document.getElementById('soli-score').textContent='0';
+  document.getElementById('soli-msg').textContent='';
+  renderSoli();
+};
+
+function renderSoli(){
+  document.getElementById('soli-score').textContent=sScore;
+  // Stock
+  var stock=document.getElementById('soli-stock');
+  if(sStock.length>0){stock.className='card';stock.innerHTML='<div class="c-back"></div>';}
+  else{stock.className='card empty-slot';stock.innerHTML='<span style="color:#003a18;font-size:22px;">&#8635;</span>';}
+
+  // Waste
+  var waste=document.getElementById('soli-waste');
+  if(sWaste.length>0){
+    var wc=sWaste[sWaste.length-1];
+    var sel=sSel&&sSel.pile==='waste';
+    waste.className='card face-up '+(wc.color==='r'?'red-card':'blk-card')+(sel?' selected':'');
+    waste.innerHTML='<span class="c-rank">'+wc.rank+wc.suit+'</span><span class="c-center">'+wc.suit+'</span>';
+    waste.onclick=function(){soliSelect('waste',0,sWaste.length-1);};
+  } else {
+    waste.className='card empty-slot';waste.innerHTML='';waste.onclick=null;
+  }
+
+  // Foundations
+  var fd=document.getElementById('soli-foundations');fd.innerHTML='';
+  sFound.forEach(function(pile,i){
+    var el=document.createElement('div');
+    if(pile.length>0){
+      var tc=pile[pile.length-1];
+      el.className='card face-up '+(tc.color==='r'?'red-card':'blk-card');
+      el.innerHTML='<span class="c-rank">'+tc.rank+tc.suit+'</span><span class="c-center">'+tc.suit+'</span>';
+    } else {
+      el.className='card empty-slot';el.innerHTML='<span style="color:#003a18;font-size:18px;">A</span>';
+    }
+    el.addEventListener('click',(function(i){return function(){soliClickFound(i);};})(i));
+    fd.appendChild(el);
+  });
+
+  // Tableau
+  var bot=document.getElementById('soli-bot');bot.innerHTML='';
+  sTab.forEach(function(col,ci){
+    var colEl=document.createElement('div');colEl.className='tab-col';
+    if(col.length===0){
+      var empty=document.createElement('div');empty.className='card empty-slot';
+      empty.style.minHeight='88px';
+      empty.addEventListener('click',(function(ci){return function(){soliClickTab(ci,-1);};})(ci));
+      colEl.appendChild(empty);
+    }
+    col.forEach(function(card,ki){
+      var el=document.createElement('div');
+      var isSel=sSel&&sSel.pile==='tab'&&sSel.col===ci&&sSel.idx<=ki;
+      if(card.up){
+        el.className='card face-up '+(card.color==='r'?'red-card':'blk-card')+(isSel?' selected':'');
+        el.innerHTML='<span class="c-rank">'+card.rank+card.suit+'</span><span class="c-center">'+card.suit+'</span>';
+        el.addEventListener('click',(function(ci,ki){return function(){soliClickTab(ci,ki);};})(ci,ki));
+      } else {
+        el.className='card face-down';el.innerHTML='<div class="c-back" style="height:22px;"></div>';
+      }
+      colEl.appendChild(el);
+    });
+    bot.appendChild(colEl);
+  });
+}
+
+window.soliDrawStock = function(){
+  sSel=null;
+  if(sStock.length===0){
+    sWaste.reverse().forEach(function(c){c.up=false;sStock.push(c);});
+    sWaste=[];
+  } else {
+    var c=sStock.pop();c.up=true;sWaste.push(c);
+    sScore=Math.max(0,sScore+5);
+  }
+  renderSoli();
+};
+
+function soliSelect(pile,col,idx){
+  if(sSel&&sSel.pile===pile&&sSel.col===col&&sSel.idx===idx){sSel=null;renderSoli();return;}
+  if(pile==='waste'&&sWaste.length>0){sSel={pile:'waste',col:0,idx:sWaste.length-1,cards:[sWaste[sWaste.length-1]]};}
+  else if(pile==='tab'){sSel={pile:'tab',col:col,idx:idx,cards:sTab[col].slice(idx)};}
+  renderSoli();
+}
+
+function soliClickTab(ci,ki){
+  if(ki===-1){
+    // empty column
+    if(sSel){moveToTab(ci); return;}
+    return;
+  }
+  var card=sTab[ci][ki];
+  if(!card.up){return;}
+  if(sSel){moveToTab(ci);}
+  else{soliSelect('tab',ci,ki);}
+}
+
+function soliClickFound(fi){
+  if(sSel){moveToFound(fi);}
+  else if(sFound[fi].length>0){sSel={pile:'found',col:fi,idx:sFound[fi].length-1,cards:[sFound[fi][sFound[fi].length-1]]};renderSoli();}
+}
+
+function moveToTab(ci){
+  if(!sSel)return;
+  var cards=sSel.cards;
+  var top=cards[0];
+  var destCol=sTab[ci];
+  var valid=false;
+  if(destCol.length===0){valid=(top.val===13);}
+  else{var dtop=destCol[destCol.length-1];valid=dtop.up&&dtop.color!==top.color&&dtop.val===top.val+1;}
+  if(!valid){sSel=null;renderSoli();return;}
+  // Remove from source
+  if(sSel.pile==='tab'){sTab[sSel.col].splice(sSel.idx);}
+  else if(sSel.pile==='waste'){sWaste.pop();}
+  else if(sSel.pile==='found'){sFound[sSel.col].pop();}
+  cards.forEach(function(c){sTab[ci].push(c);});
+  // Flip exposed card
+  if(sSel.pile==='tab'&&sSel.idx>0){var tc=sTab[sSel.col];if(tc.length>0&&!tc[tc.length-1].up){tc[tc.length-1].up=true;sScore+=5;}}
+  sScore+=5;sSel=null;checkSoliWin();renderSoli();
+}
+
+function moveToFound(fi){
+  if(!sSel||sSel.cards.length!==1)return;
+  var card=sSel.cards[0];
+  var pile=sFound[fi];
+  var valid=false;
+  if(pile.length===0){valid=(card.val===1);}
+  else{var top=pile[pile.length-1];valid=(card.suit===top.suit&&card.val===top.val+1);}
+  if(!valid){sSel=null;renderSoli();return;}
+  if(sSel.pile==='tab'){sTab[sSel.col].splice(sSel.idx);if(sTab[sSel.col].length>0){var tc=sTab[sSel.col];if(!tc[tc.length-1].up){tc[tc.length-1].up=true;sScore+=5;}}}
+  else if(sSel.pile==='waste'){sWaste.pop();}
+  pile.push(card);sScore+=15;sSel=null;checkSoliWin();renderSoli();
+}
+
+function checkSoliWin(){
+  var done=sFound.every(function(p){return p.length===13;});
+  if(done){document.getElementById('soli-msg').textContent='YOU WIN! SCORE: '+sScore;document.getElementById('soli-msg').style.color='#00dd55';}
+}
+
+/* ══════════════════════════════════════════════
+   SNAKE
+══════════════════════════════════════════════ */
+var snCtx,snSnake,snDir,snFood,snScore,snLoop,snRunning,snDead;
+var SN=20,CELL=20;
+
+window.initSnake = function(){
+  var canvas=document.getElementById('snake-canvas');
+  snCtx=canvas.getContext('2d');
+  snSnake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+  snDir={x:1,y:0}; snScore=0; snDead=false;
+  document.getElementById('snake-score').textContent='0';
+  spawnFood();
+  stopSnake();
+  snRunning=true;
+  snLoop=setInterval(snStep,150);
+  drawSnake();
+};
+
+function stopSnake(){if(snLoop){clearInterval(snLoop);snLoop=null;}snRunning=false;}
+window.stopSnake=stopSnake;
+
+function spawnFood(){
+  do{snFood={x:Math.random()*SN|0,y:Math.random()*SN|0};}
+  while(snSnake.some(function(s){return s.x===snFood.x&&s.y===snFood.y;}));
+}
+
+function snStep(){
+  if(snDead)return;
+  var head={x:snSnake[0].x+snDir.x,y:snSnake[0].y+snDir.y};
+  if(head.x<0||head.x>=SN||head.y<0||head.y>=SN||snSnake.some(function(s){return s.x===head.x&&s.y===head.y;})){
+    snDead=true;stopSnake();drawSnake();return;
+  }
+  snSnake.unshift(head);
+  if(head.x===snFood.x&&head.y===snFood.y){snScore++;document.getElementById('snake-score').textContent=snScore;spawnFood();}
+  else snSnake.pop();
+  drawSnake();
+}
+
+function drawSnake(){
+  if(!snCtx)return;
+  snCtx.fillStyle='#020802';snCtx.fillRect(0,0,400,400);
+  // Grid
+  snCtx.strokeStyle='#031003';
+  for(var i=0;i<=SN;i++){snCtx.beginPath();snCtx.moveTo(i*CELL,0);snCtx.lineTo(i*CELL,400);snCtx.stroke();snCtx.beginPath();snCtx.moveTo(0,i*CELL);snCtx.lineTo(400,i*CELL);snCtx.stroke();}
+  // Food
+  snCtx.fillStyle='#00ff44';snCtx.fillRect(snFood.x*CELL+3,snFood.y*CELL+3,CELL-6,CELL-6);
+  // Snake
+  snSnake.forEach(function(s,i){
+    snCtx.fillStyle=i===0?'#00dd55':'#009933';
+    snCtx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2);
+  });
+  if(snDead){snCtx.fillStyle='rgba(0,0,0,0.6)';snCtx.fillRect(0,0,400,400);snCtx.fillStyle='#ff4444';snCtx.font='bold 20px Tahoma';snCtx.textAlign='center';snCtx.fillText('GAME OVER',200,190);snCtx.fillStyle='#00cc44';snCtx.font='13px Tahoma';snCtx.fillText('SCORE: '+snScore,200,215);snCtx.fillText('NEW GAME to restart',200,240);}
+}
+
+document.addEventListener('keydown',function(e){
+  if(!snRunning)return;
+  var d=null;
+  if(e.key==='ArrowUp'||e.key==='w')d={x:0,y:-1};
+  if(e.key==='ArrowDown'||e.key==='s')d={x:0,y:1};
+  if(e.key==='ArrowLeft'||e.key==='a')d={x:-1,y:0};
+  if(e.key==='ArrowRight'||e.key==='d')d={x:1,y:0};
+  if(d&&!(d.x===-snDir.x&&d.y===-snDir.y)){snDir=d;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();}
+});
+
+/* ══════════════════════════════════════════════
+   MEMORY
+══════════════════════════════════════════════ */
+var memCards,memFlipped,memMatched,memLocked,memPairs,memMoves;
+var memSymbols=['♠','♥','♦','♣','★','☀','♪','✿'];
+
+window.initMem = function(){
+  memPairs=0;memMoves=0;memFlipped=[];memMatched=[];memLocked=false;
+  var pool=memSymbols.concat(memSymbols);
+  for(var i=pool.length-1;i>0;i--){var j=Math.random()*(i+1)|0;var t=pool[i];pool[i]=pool[j];pool[j]=t;}
+  memCards=pool;
+  document.getElementById('mem-pairs').textContent='0';
+  document.getElementById('mem-moves').textContent='0';
+  renderMem();
+};
+
+function renderMem(){
+  var grid=document.getElementById('mem-grid');grid.innerHTML='';
+  memCards.forEach(function(sym,i){
+    var el=document.createElement('div');
+    el.className='mem-card'+(memFlipped.includes(i)||memMatched.includes(i)?memMatched.includes(i)?' matched':' flipped':'');
+    el.textContent=sym;
+    if(!memMatched.includes(i)){
+      el.addEventListener('click',(function(i){return function(){memClick(i);};})(i));
+    }
+    grid.appendChild(el);
+  });
+}
+
+function memClick(i){
+  if(memLocked||memFlipped.includes(i)||memMatched.includes(i))return;
+  memFlipped.push(i);renderMem();
+  if(memFlipped.length===2){
+    memMoves++;document.getElementById('mem-moves').textContent=memMoves;
+    memLocked=true;
+    var a=memFlipped[0],b=memFlipped[1];
+    setTimeout(function(){
+      if(memCards[a]===memCards[b]){memMatched.push(a,b);memPairs++;document.getElementById('mem-pairs').textContent=memPairs;memFlipped=[];}
+      else{memFlipped=[];}
+      memLocked=false;renderMem();
+    },700);
+  }
+}
+
+})();
+</script>
+</body>
+</html>

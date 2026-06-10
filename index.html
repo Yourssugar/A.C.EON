@@ -731,7 +731,37 @@
     rvl.style.clipPath='circle(0px at -200px -200px)';
     pw1.classList.remove('vis');
   });
+// ── BACKGROUND MUSIC ──
+var bgmFired = false;
+var bgmTracks = [
+  'audio/track1.mp3',
+  'audio/track2.mp3',
+  'audio/track3.mp3',
+  // добавляй сколько угодно
+];
+function tryStartMusic() {
+  if (bgmFired) return;
+  bgmFired = true;
+  setTimeout(function() {
+    var bgm = document.getElementById('bgm');
+    if (!bgm) return;
+    bgm.src = bgmTracks[Math.floor(Math.random() * bgmTracks.length)];
+    bgm.volume = 0;
+    bgm.play().catch(function(){});
+    var vol = 0;
+    var fi = setInterval(function() {
+      vol = Math.min(vol + 0.04, 0.65);
+      bgm.volume = vol;
+      if (vol >= 0.65) clearInterval(fi);
+    }, 180);
+  }, 10000);
+}
+document.getElementById('pw1').addEventListener('click', tryStartMusic);
+document.getElementById('pwi1').addEventListener('click', tryStartMusic);
 })();
 </script>
+  <audio id="bgm" preload="auto">
+  <source src="audio/bg.mp3" type="audio/mpeg">
+</audio>
 </body>
 </html>

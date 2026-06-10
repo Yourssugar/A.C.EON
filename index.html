@@ -739,6 +739,7 @@ var bgmTracks = [
   // добавляй сколько угодно
 ];
 function tryStartMusic() {
+  console.log('music triggered');
   if (bgmFired) return;
   bgmFired = true;
   setTimeout(function() {
@@ -755,8 +756,7 @@ function tryStartMusic() {
     }, 180);
   }, 1000);
 }
-document.getElementById('pw1').addEventListener('click', tryStartMusic);
-document.getElementById('pwi1').addEventListener('click', tryStartMusic);
+document.addEventListener('click', tryStartMusic);
 })();
 </script>
   <audio id="bgm" preload="none"></audio>

@@ -354,11 +354,7 @@ header{
 
 <script>
 (function(){
-
-  // ── РАСКОММЕНТИРУЙ ПЕРЕД ДЕПЛОЕМ ──
-  // if(sessionStorage.getItem('aceon_idolls')!=='granted'){
-  //   window.location.href='../'; return;
-  // }
+  if(sessionStorage.getItem('aceon_idolls')!=='granted'){window.location.href='../'; return;}
 
   var BOOKS = [
     {n:'ВИДЕО',       ic:'▶', c:'#6e1c1c', w:56, h:200, sd:'0s'   },

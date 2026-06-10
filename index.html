@@ -732,35 +732,41 @@
     pw1.classList.remove('vis');
   });
 // ── BACKGROUND MUSIC ──
-var bgmFired = false;
-var bgmTracks = [
+let bgm = document.getElementById('bgm');
+let bgmFired = false;
+let bgmTracks = [
   'audio/track1.mp3',
-  'audio/track2.mp3',
-  // добавляй сколько угодно
+  'audio/track2.mp3'
 ];
+
 function tryStartMusic() {
-  console.log('music triggered');
   if (bgmFired) return;
   bgmFired = true;
-  setTimeout(function() {
-    var bgm = document.getElementById('bgm');
-    if (!bgm) return;
+
+  setTimeout(() => {
     bgm.src = bgmTracks[Math.floor(Math.random() * bgmTracks.length)];
     bgm.volume = 0;
-    bgm.play().catch(function(){});
-    var vol = 0;
-    var fi = setInterval(function() {
+
+    bgm.play().then(() => {
+      console.log("playing ok");
+    }).catch(e => {
+      console.log("play error:", e);
+    });
+
+    let vol = 0;
+    let fi = setInterval(() => {
       vol = Math.min(vol + 0.04, 0.65);
       bgm.volume = vol;
       if (vol >= 0.65) clearInterval(fi);
     }, 180);
   }, 1000);
 }
+
 document.addEventListener('click', tryStartMusic);
+
 })();
 </script>
   <audio id="bgm" preload="none"></audio>
-  <source src="audio/bg.mp3" type="audio/mpeg">
 </audio>
 </body>
 </html>

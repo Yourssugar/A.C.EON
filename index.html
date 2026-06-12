@@ -8,6 +8,31 @@
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=JetBrains+Mono:wght@300;400&display=swap');
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html, body { width:100%; height:100%; background:#000; overflow:hidden; cursor:none; user-select:none; font-family:'JetBrains Mono','Courier New',monospace; }
+    
+    /* ── MYSTERY BUTTON (LAYER 1, NEXT TO PASSWORD FIELD) ── */
+    #mystery-btn{position:fixed;left:calc(7% + 300px);top:calc(72% + 21px);z-index:60;
+      background:rgba(0,30,16,.9);border:1px solid #00cc66;
+      color:#00cc66;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+      letter-spacing:6px;padding:9px 20px;cursor:pointer;text-decoration:none;
+      display:none;white-space:nowrap;animation:mysteryBlink 1.7s ease-in-out infinite;
+      transition:left .25s,box-shadow .25s;}
+    #mystery-btn.show{display:inline-block;}
+    #mystery-btn:hover{left:calc(7% + 308px);box-shadow:0 0 28px -2px rgba(0,204,102,.6);}
+    @media(max-width:760px){
+      #mystery-btn{left:7%;top:calc(72% + 64px);}
+      #mystery-btn:hover{left:calc(7% + 4px);}
+    }
+    @keyframes mysteryBlink{0%,100%{opacity:1;box-shadow:0 0 8px rgba(0,204,102,.35);}50%{opacity:.5;box-shadow:0 0 22px rgba(0,204,102,.7);}}
+    @keyframes mysteryShake{
+      0%,100%{transform:translateX(0) rotate(0deg);}
+      20%{transform:translateX(-3px) rotate(-1deg);}
+      40%{transform:translateX(3px) rotate(1deg);}
+      60%{transform:translateX(-2px) rotate(0deg);}
+      80%{transform:translateX(2px) rotate(1deg);}
+    }
+    #mystery-btn.shake{animation:mysteryShake .35s linear, mysteryBlink 1.7s ease-in-out infinite;}
+    #mystery-btn.flicker-red{color:#cc2233;border-color:#cc2233;}
+    #cur { position:fixed; z-index:1000; width:34px; height:34px; margin-left:-17px; margin-top:-17px; pointer-events:none; top:-50px; left:-50px; }
 
     .screen { position:fixed; inset:0; background:#000; opacity:0; transition:opacity .6s ease; pointer-events:none; overflow:hidden; }
     .screen.active { opacity:1; pointer-events:auto; }
@@ -296,6 +321,7 @@
   </div>
 </div>
 
+<a href="info/" id="mystery-btn">????</a>
 <svg id="cur" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
   <g id="currot" fill="none" stroke="#404040" stroke-width="0.6"><rect x="9" y="9" width="16" height="16" transform="rotate(45,17,17)"/></g>
   <line x1="17" y1="1"  x2="17" y2="11" stroke="#3c3c3c" stroke-width="0.5"/>
@@ -309,6 +335,7 @@
 (function(){
   var gch='!<>_[]{}=+#\u2593\u2592\u2591\u2573~';
   var curScreen=1;
+  var mysteryArmed=false;
 
   var rvlPhrases=[
     'A.C.EON_NODE ACTIVE','SIGNAL MONITORED','WHO BROUGHT YOU HERE',
@@ -350,7 +377,13 @@
     if(curScreen===1){
       rvl.style.clipPath='circle(50px at '+mx+'px '+my+'px)';
       var r=pw1.getBoundingClientRect();
-      if(Math.sqrt((mx-r.left-r.width/2)*(mx-r.left-r.width/2)+(my-r.top-r.height/2)*(my-r.top-r.height/2))<150) pw1.classList.add('vis');
+      if(Math.sqrt((mx-r.left-r.width/2)*(mx-r.left-r.width/2)+(my-r.top-r.height/2)*(my-r.top-r.height/2))<150){
+        pw1.classList.add('vis');
+        if(!mysteryArmed){
+          mysteryArmed=true;
+          setTimeout(function(){document.getElementById('mystery-btn').classList.add('show');},2000+Math.random()*3000|0);
+        }
+      }
       if(Math.random()<.013){
         cur.style.left=(mx+(Math.random()*10-5|0))+'px';
         cur.style.top=(my+(Math.random()*10-5|0))+'px';
@@ -437,6 +470,44 @@
   }
   setInterval(function(){glitch(ttl,TORIG,16);},9000+Math.random()*4000|0);
   setInterval(function(){glitch(subel,SORIG,8);},13000+Math.random()*6000|0);
+  // ── MYSTERY BUTTON: cycling glitch text ──
+  var mysteryWords=['??@#?','INFO','ACCESS','?!!??','SIGNAL','??№!?','OPEN','%?*??''NODE','?№?%?''VOID'];
+  var mwIdx=0;
+  function mysteryGlitchTo(el,target,steps,cb){
+    var maxLen=Math.max(el.textContent.length,target.length,4);
+    var f=0,iv=setInterval(function(){
+      var s='';
+      for(var i=0;i<maxLen;i++){
+        s+= Math.random()>0.45 ? gch[Math.random()*gch.length|0] : (target[i]||'');
+      }
+      el.textContent=s;
+      if(++f>=steps){clearInterval(iv);el.textContent=target;if(cb)cb();}
+    },60);
+  }
+  function mysteryCycle(){
+    var el=document.getElementById('mystery-btn');
+    if(!el||!el.classList.contains('show'))return;
+    mwIdx=(mwIdx+1)%mysteryWords.length;
+    mysteryGlitchTo(el,mysteryWords[mwIdx],8+Math.random()*6|0);
+    if(Math.random()<.45){
+      el.classList.add('shake');
+      setTimeout(function(){el.classList.remove('shake');},380);
+    }
+    if(Math.random()<.18){
+      el.classList.add('flicker-red');
+      setTimeout(function(){el.classList.remove('flicker-red');},220);
+    }
+  }
+  setInterval(mysteryCycle,3200+Math.random()*1800|0);
+  // occasional quick double-flicker independent of the main cycle
+  setInterval(function(){
+    var el=document.getElementById('mystery-btn');
+    if(!el||!el.classList.contains('show'))return;
+    if(Math.random()<.3){
+      var orig=el.textContent;
+      mysteryGlitchTo(el,orig,4);
+    }
+  },1600);
 
   function megaGlitch(cb){
     var els=[ttl,subel],origs=[TORIG,SORIG],count=0,max=28;
@@ -638,6 +709,7 @@
 
   function goLayer2(){
     curScreen=2;
+    document.getElementById('mystery-btn').classList.remove('show');
     rvl.style.clipPath='circle(0px at -200px -200px)';
     document.getElementById('pwr1').className='pwr ok';
     document.getElementById('pwr1').textContent='> DECRYPTING...';
@@ -731,6 +803,8 @@
     document.getElementById('pwr2').textContent='';document.getElementById('pwi2').value='';
     rvl.style.clipPath='circle(0px at -200px -200px)';
     pw1.classList.remove('vis');
+    document.getElementById('mystery-btn').classList.remove('show');
+    mysteryArmed=false;
   });
 // ── BACKGROUND MUSIC ──
 var bgmFired = false;

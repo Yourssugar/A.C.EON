@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>A.C.EON — PUBLIC ARCHIVE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#030404;
+  --cy:#00b8cc; --cy-d:#005a66; --cy-g:rgba(0,184,204,.5);
+  --rd:#cc0022; --rd-d:#5a0010;
+  --gr:#00cc66; --gr-d:#004422; --gr-g:rgba(0,204,102,.5);
+  --txt:#dfe8e8; --txt-d:#8a9999; --txt-dd:#445050; --bdr:#1a2626;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--txt);font-family:'JetBrains Mono',monospace;overflow-x:hidden;}
+body{min-height:100vh;position:relative;}
+
+#bgcv{position:fixed;inset:0;z-index:0;}
+
+.overlay{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,255,200,0.012) 3px,rgba(0,0,0,0) 4px),
+              radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.75) 100%);
+}
+
+.wrap{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:60px 24px 100px;}
+
+header{text-align:center;margin-bottom:60px;padding-top:30px;}
+.eyebrow{font-size:11px;letter-spacing:6px;color:var(--cy-d);margin-bottom:18px;
+  animation:flicker 5s infinite;}
+@keyframes flicker{0%,92%,100%{opacity:1;}93%{opacity:.3;}94%{opacity:1;}95%{opacity:.2;}96%{opacity:1;}}
+
+.glitch-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(48px,12vw,110px);
+  letter-spacing:14px;color:#f4f4f4;position:relative;display:inline-block;line-height:1;
+  text-shadow:0 0 40px rgba(0,184,204,.25);}
+.glitch-title::before,.glitch-title::after{content:attr(data-text);position:absolute;top:0;left:0;
+  width:100%;height:100%;}
+.glitch-title::before{color:var(--rd);clip-path:inset(0 0 60% 0);animation:gA 6s infinite linear;}
+.glitch-title::after{color:var(--cy);clip-path:inset(55% 0 0 0);animation:gB 6s infinite linear;}
+@keyframes gA{0%,90%,100%{transform:translate(0,0);opacity:0;}91%{transform:translate(-4px,-2px);opacity:.85;}93%{transform:translate(3px,1px);opacity:.85;}95%{opacity:0;}}
+@keyframes gB{0%,90%,100%{transform:translate(0,0);opacity:0;}91%{transform:translate(4px,2px);opacity:.85;}93%{transform:translate(-3px,-1px);opacity:.85;}95%{opacity:0;}}
+
+.subtitle{margin-top:22px;font-size:13px;letter-spacing:5px;color:var(--txt-d);}
+.subtitle span{color:var(--cy);}
+.typecur{display:inline-block;width:9px;background:var(--cy);height:14px;vertical-align:-2px;
+  animation:blink 1s steps(1) infinite;margin-left:4px;}
+@keyframes blink{50%{opacity:0;}}
+
+.hr-fade{height:1px;width:60%;margin:36px auto 0;
+  background:linear-gradient(90deg,transparent,var(--bdr) 30%,var(--bdr) 70%,transparent);}
+
+.sec-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;letter-spacing:6px;
+  color:#f4f4f4;margin-bottom:6px;position:relative;display:inline-block;}
+.sec-title::after{content:'';position:absolute;left:0;bottom:-8px;width:46px;height:2px;
+  background:linear-gradient(90deg,var(--cy),transparent);}
+.sec-sub{font-size:11px;letter-spacing:2px;color:var(--txt-d);margin:14px 0 32px;line-height:1.9;}
+.sec-block{margin-bottom:80px;}
+.sec-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
+.sec-count{font-size:11px;letter-spacing:3px;color:var(--txt-d);}
+.sec-count b{color:var(--gr);}
+
+/* SUPPORT (moved up) */
+.support{text-align:center;padding:50px 20px;border:1px solid var(--bdr);position:relative;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,184,204,.06),transparent 70%);overflow:hidden;}
+.support::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent 0 38px,rgba(0,184,204,.025) 38px 39px);
+  animation:scrollbg 12s linear infinite;}
+@keyframes scrollbg{from{transform:translateX(0);}to{transform:translateX(-39px);}}
+.support-inner{position:relative;z-index:1;}
+.cup{font-size:46px;display:inline-block;position:relative;margin-bottom:18px;
+  filter:drop-shadow(0 0 18px var(--cy-g));}
+.steam{position:absolute;top:-22px;left:50%;font-size:18px;color:var(--cy);opacity:0;
+  animation:steam 3s ease-in-out infinite;}
+.steam.s2{left:62%;animation-delay:1s;}
+.steam.s3{left:38%;animation-delay:2s;}
+@keyframes steam{0%{opacity:0;transform:translate(-50%,0) scale(.7);}30%{opacity:.6;}100%{opacity:0;transform:translate(-50%,-32px) scale(1.3);}}
+.support h2{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;letter-spacing:6px;color:#f4f4f4;margin-bottom:12px;}
+.support p{font-size:12px;letter-spacing:1px;color:var(--txt);line-height:2;max-width:540px;margin:0 auto 12px;}
+.support p.small{font-size:10px;letter-spacing:2px;color:var(--txt-d);max-width:520px;}
+.support-btn{display:inline-block;position:relative;font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:14px;letter-spacing:5px;color:var(--bg);background:var(--cy);padding:16px 42px;
+  text-decoration:none;border:none;cursor:pointer;overflow:hidden;transition:transform .2s,box-shadow .2s;
+  box-shadow:0 0 0px var(--cy-g);margin-top:18px;}
+.support-btn:hover{transform:translateY(-3px);box-shadow:0 10px 34px -8px var(--cy-g);}
+.support-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,.5),transparent);
+  transform:skewX(-20deg);transition:left .6s;}
+.support-btn:hover::before{left:140%;}
+.support-note{margin-top:18px;font-size:9px;letter-spacing:2px;color:var(--txt-dd);}
+
+/* CODE GRID */
+.code-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+.code-card{position:relative;border:1px solid var(--bdr);background:linear-gradient(160deg,#0a1010,#060a0a);
+  padding:18px 14px;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;
+  overflow:hidden;opacity:0;transform:translateY(16px);
+  animation:cardIn .55s ease forwards;cursor:default;transition:border-color .25s,transform .25s,box-shadow .25s;}
+@keyframes cardIn{to{opacity:1;transform:translateY(0);}}
+.code-card .idx{font-size:10px;letter-spacing:3px;color:var(--txt-dd);}
+.code-card .lbl{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;letter-spacing:3px;
+  color:var(--txt-dd);margin-top:auto;}
+.code-card .glow-line{position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--cy);
+  transition:width .4s;}
+
+.code-card.reserved .idx{color:#2a3838;}
+.code-card.reserved .lbl{color:#324040;}
+.code-card.reserved::after{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.012) 8px 9px);}
+.code-card.reserved .lock-ico{position:absolute;top:14px;right:14px;width:14px;height:14px;opacity:.3;}
+.code-card.reserved:hover{border-color:#2a3838;}
+
+.code-card.unlocked{border-color:var(--gr-d);cursor:pointer;
+  box-shadow:0 0 0px var(--gr-g);animation:cardIn .55s ease forwards, pulseGlow 3.4s ease-in-out infinite;}
+.code-card.unlocked .idx{color:var(--gr-d);}
+.code-card.unlocked .lbl{color:var(--gr);text-shadow:0 0 14px var(--gr-g);}
+.code-card.unlocked .glow-line{width:100%;}
+.code-card.unlocked .tag{position:absolute;top:14px;right:14px;font-size:8px;letter-spacing:2px;
+  color:var(--gr);border:1px solid var(--gr-d);padding:2px 6px;border-radius:2px;transition:all .2s;}
+.code-card.unlocked:hover{transform:translateY(-4px);border-color:var(--gr);
+  box-shadow:0 8px 30px -10px var(--gr-g),0 0 24px -4px var(--gr-g);}
+.code-card.unlocked.active{border-color:var(--gr);box-shadow:0 0 26px -2px var(--gr-g);}
+.code-card.unlocked.active .tag{background:var(--gr);color:var(--bg);}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0px var(--gr-g);}50%{box-shadow:0 0 22px -2px var(--gr-g);}}
+
+.code-desc{grid-column:1/-1;overflow:hidden;max-height:0;transition:max-height .45s ease;}
+.code-desc.open{max-height:300px;}
+.code-desc-inner{border:1px solid var(--gr-d);border-top:none;background:rgba(0,40,20,.18);
+  padding:22px 24px;margin-top:-1px;}
+.code-desc-inner h4{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:4px;
+  color:var(--gr);margin-bottom:10px;}
+.code-desc-inner p{font-size:12px;line-height:1.9;color:var(--txt);letter-spacing:.5px;}
+.code-desc-inner p+p{margin-top:8px;}
+.code-desc-inner .accent{color:var(--cy);}
+
+.hint{font-size:9px;letter-spacing:2px;color:var(--txt-dd);margin-top:24px;text-align:center;}
+.hint b{color:var(--cy-d);}
+
+/* RULES */
+.rules{display:grid;gap:28px;}
+.rule-card{border:1px solid var(--bdr);background:rgba(8,14,14,.5);padding:24px 26px;
+  position:relative;border-left:2px solid var(--cy-d);
+  opacity:0;transform:translateX(-12px);animation:slideIn .6s ease forwards;}
+@keyframes slideIn{to{opacity:1;transform:translateX(0);}}
+.rule-card h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;letter-spacing:4px;
+  color:#f0f0f0;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.rule-card h3 .num{font-size:11px;color:var(--cy);border:1px solid var(--cy-d);
+  padding:1px 7px;border-radius:2px;letter-spacing:1px;}
+.rule-card p{font-size:12px;line-height:1.9;color:var(--txt);letter-spacing:.5px;}
+.rule-card p+p{margin-top:8px;}
+.rule-card .accent{color:var(--cy);}
+.rule-card .accent2{color:var(--gr);}
+
+footer{text-align:center;margin-top:80px;font-size:9px;letter-spacing:4px;color:#2a3838;}
+footer .dot{color:var(--cy-d);}
+
+@media(max-width:600px){
+  .glitch-title{letter-spacing:7px;}
+  .subtitle{letter-spacing:3px;font-size:11px;}
+  .code-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
+}
+</style>
+</head>
+<body>
+<canvas id="bgcv"></canvas>
+<div class="overlay"></div>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">// CONNECTION ESTABLISHED — NODE: PUBLIC</div>
+    <div class="glitch-title" data-text="A.C.EON">A.C.EON</div>
+    <div class="subtitle">PUBLIC ARCHIVE <span>/</span> ACCESS REGISTRY<span class="typecur"></span></div>
+    <div class="hr-fade"></div>
+  </header>
+
+  <!-- SUPPORT (moved up) -->
+  <div class="sec-block">
+    <div class="support">
+      <div class="support-inner">
+        <div class="cup">
+          ☕
+          <span class="steam">~</span><span class="steam s2">~</span><span class="steam s3">~</span>
+        </div>
+        <h2>SUPPORT THE PROJECT</h2>
+        <p>A.C.EON is music, visuals, and this whole archive — built and maintained by one person.</p>
+        <p class="small">Behind the scenes there's a real monthly cost: AI generation tools, software
+        subscriptions, hosting, and a lot of hours. If you'd like to help keep new content coming,
+        a small contribution goes a long way.</p>
+        <a href="#" class="support-btn">BUY ME A COFFEE</a>
+        <div class="support-note">LINK WILL BE ADDED SOON</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CODE GRID -->
+  <div class="sec-block">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">PUBLIC ACCESS CODES</div>
+        <div class="sec-sub">These codes are freely given — no hunting required. They unlock sections<br>
+        of the archive available to everyone right away. (Hidden codes exist too —<br>
+        those are scattered across videos and are for viewers to find on their own.)</div>
+      </div>
+      <div class="sec-count">UNLOCKED: <b id="unlocked-count">2</b> / 20</div>
+    </div>
+
+    <div class="code-grid" id="code-grid"></div>
+
+    <div class="hint">CLICK AN OPEN CODE TO SEE WHAT IT UNLOCKS — ENTER IT INTO THE <b>TERMINAL</b> ON THE HOME PAGE</div>
+  </div>
+
+  <!-- RULES -->
+  <div class="sec-block">
+    <div class="sec-title">ARCHIVE RULES</div>
+    <div class="sec-sub">What this site is, why it exists, and how to interact with it.</div>
+
+    <div class="rules">
+      <div class="rule-card" style="animation-delay:.05s">
+        <h3><span class="num">01</span> WHAT THIS IS</h3>
+        <p>A hidden companion site for the <span class="accent">A.C.EON</span> channel — an archive
+        that grows piece by piece. Some content is open to everyone, some is locked behind codes
+        you have to find.</p>
+      </div>
+      <div class="rule-card" style="animation-delay:.15s">
+        <h3><span class="num">02</span> HOW HIDDEN CODES WORK</h3>
+        <p>Hidden codes are tucked into frames, descriptions, track spectrograms, and other places
+        connected to the channel's uploads. One code unlocks one section of the archive.</p>
+        <p>Found a code? Enter it into the <span class="accent">terminal on the home page</span>.</p>
+      </div>
+      <div class="rule-card" style="animation-delay:.25s">
+        <h3><span class="num">03</span> PUBLIC CODES</h3>
+        <p>A small set of codes — like <span class="accent2">GAME</span> and
+        <span class="accent2">HELLO</span> — are public from the start. No searching needed.
+        It's a way to give visitors something right away, with more to come over time.</p>
+      </div>
+      <div class="rule-card" style="animation-delay:.35s">
+        <h3><span class="num">04</span> PRIVACY</h3>
+        <p>This site doesn't collect any visitor data. Anything saved (themes, game high scores,
+        progress) stays in your own browser's local storage and is never sent anywhere.</p>
+      </div>
+      <div class="rule-card" style="animation-delay:.45s">
+        <h3><span class="num">05</span> WHAT'S NEXT</h3>
+        <p>The archive grows alongside the channel: new videos, new hidden codes, new sections.
+        Follow A.C.EON's uploads if you want to be among the first to unlock the next fragment.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>A.C.EON ARCHIVE <span class="dot">•</span> NODE: PUBLIC <span class="dot">•</span> STATUS: ONLINE</footer>
+
+</div>
+
+<script>
+var codes = [
+  {label:'GAME', state:'unlocked',
+    title:'GAME — ARCADE ARCHIVE',
+    desc:[
+      'Unlocks a small browser arcade hidden inside the archive: minesweeper, solitaire, snake, tetris, chess, checkers, and more.',
+      'Five color themes, local high scores, no accounts — nothing leaves your browser.'
+    ]},
+  {label:'HELLO', state:'unlocked',
+    title:'HELLO — TERMINAL CHAT',
+    desc:[
+      'Unlocks a chat terminal — a small bot you can talk to inside the archive.',
+      'Later on, this terminal will be able to issue NFT tokens to visitors who provide the correct phrase. For now, it is online and listening.'
+    ]},
+];
+for(var i=codes.length;i<20;i++) codes.push({label:'???', state:'reserved'});
+
+var grid = document.getElementById('code-grid');
+codes.forEach(function(c,i){
+  var card = document.createElement('div');
+  card.className = 'code-card '+c.state;
+  card.style.animationDelay = (i*0.04)+'s';
+  var idx = document.createElement('div');
+  idx.className='idx';
+  idx.textContent = 'CODE '+String(i+1).padStart(2,'0');
+  card.appendChild(idx);
+  var lbl = document.createElement('div');
+  lbl.className='lbl';
+  lbl.textContent = c.label;
+  card.appendChild(lbl);
+
+  if(c.state==='unlocked'){
+    var tag=document.createElement('div');tag.className='tag';tag.textContent='OPEN';card.appendChild(tag);
+    var gl=document.createElement('div');gl.className='glow-line';card.appendChild(gl);
+
+    var descWrap=document.createElement('div');descWrap.className='code-desc';
+    var descInner=document.createElement('div');descInner.className='code-desc-inner';
+    var h4=document.createElement('h4');h4.textContent=c.title;descInner.appendChild(h4);
+    c.desc.forEach(function(line){
+      var p=document.createElement('p');p.textContent=line;descInner.appendChild(p);
+    });
+    descWrap.appendChild(descInner);
+
+    card.addEventListener('click',(function(card,descWrap){
+      return function(){
+        var isOpen=descWrap.classList.contains('open');
+        document.querySelectorAll('.code-desc.open').forEach(function(d){d.classList.remove('open');});
+        document.querySelectorAll('.code-card.active').forEach(function(c2){c2.classList.remove('active');});
+        if(!isOpen){descWrap.classList.add('open');card.classList.add('active');}
+      };
+    })(card,descWrap));
+
+    grid.appendChild(card);
+    grid.appendChild(descWrap);
+  }else{
+    var lock=document.createElement('div');lock.className='lock-ico';
+    lock.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+    card.appendChild(lock);
+    var gl2=document.createElement('div');gl2.className='glow-line';card.appendChild(gl2);
+    grid.appendChild(card);
+  }
+});
+
+/* BACKGROUND: drifting particle network */
+(function(){
+  var cv=document.getElementById('bgcv'),ctx=cv.getContext('2d');
+  var W,H,pts=[];
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;
+    pts=[];var n=Math.min(70,Math.floor(W*H/22000));
+    for(var i=0;i<n;i++)pts.push({x:Math.random()*W,y:Math.random()*H,
+      vx:(Math.random()-0.5)*0.18,vy:(Math.random()-0.5)*0.18,r:Math.random()*1.6+0.4});
+  }
+  window.addEventListener('resize',resize);resize();
+  function step(){
+    ctx.fillStyle='rgba(3,4,4,1)';ctx.fillRect(0,0,W,H);
+    pts.forEach(function(p){p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;});
+    for(var i=0;i<pts.length;i++)for(var j=i+1;j<pts.length;j++){
+      var a=pts[i],b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<130){ctx.strokeStyle='rgba(0,184,204,'+(0.09*(1-d/130))+')';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    }
+    pts.forEach(function(p){ctx.fillStyle='rgba(0,204,150,0.55)';ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+    requestAnimationFrame(step);
+  }
+  step();
+})();
+
+/* TYPING SUBTITLE EFFECT (loop) */
+(function(){
+  var words=['ACCESS REGISTRY','20 SLOTS','2 OPEN','SOME HIDDEN'];
+  var el=document.querySelector('.subtitle span');
+  var wi=0,ci=0,deleting=false;
+  function tick(){
+    var w=words[wi];
+    if(!deleting){
+      el.textContent=w.slice(0,++ci);
+      if(ci===w.length){deleting=true;setTimeout(tick,1400);return;}
+    }else{
+      el.textContent=w.slice(0,--ci);
+      if(ci===0){deleting=false;wi=(wi+1)%words.length;}
+    }
+    setTimeout(tick,deleting?40:70);
+  }
+  tick();
+})();
+</script>
+</body>
+</html>

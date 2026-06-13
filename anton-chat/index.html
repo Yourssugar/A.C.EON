@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>АНТОН // удалённый узел</title>
+<title>АНТОН</title>
 <style>
   :root {
     --bg: #060a07;
@@ -23,12 +23,21 @@
   html, body {
     margin: 0;
     height: 100%;
-    background: var(--bg);
     color: var(--green);
     font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
   }
 
-  body::before {
+  /* фоновая анимация "матрица" */
+  #matrix {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    background: var(--bg);
+  }
+
+  /* лёгкий эффект CRT-сканлайнов поверх всего */
+  body::after {
     content: "";
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -44,14 +53,18 @@
   }
 
   .app {
+    position: relative;
+    z-index: 1;
     max-width: 760px;
     margin: 0 auto;
     height: 100vh;
     display: flex;
     flex-direction: column;
     padding: 0 16px;
+    background: var(--bg);
   }
 
+  /* ---------- header ---------- */
   header {
     padding: 18px 0 12px 0;
     border-bottom: 1px solid var(--border);
@@ -70,7 +83,18 @@
     font-weight: 700;
     letter-spacing: 4px;
     text-shadow: 0 0 8px var(--glow), 0 0 18px var(--glow);
+    transition: text-shadow 0.05s, transform 0.05s;
   }
+
+  @keyframes glitch {
+    0%   { text-shadow: 0 0 8px var(--glow), 0 0 18px var(--glow); transform: translate(0,0); }
+    20%  { text-shadow: -2px 0 #ff5d5d, 2px 0 #4dd9ff, 0 0 8px var(--glow); transform: translate(-1px,0); }
+    40%  { text-shadow: 2px 0 #ff5d5d, -2px 0 #4dd9ff, 0 0 8px var(--glow); transform: translate(1px,0); }
+    60%  { text-shadow: -1px 0 #4dd9ff, 1px 0 #ff5d5d, 0 0 8px var(--glow); transform: translate(0,0); }
+    100% { text-shadow: 0 0 8px var(--glow), 0 0 18px var(--glow); transform: translate(0,0); }
+  }
+
+  .brand h1.glitch { animation: glitch 0.28s linear; }
 
   .brand .sub { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; }
 
@@ -86,8 +110,13 @@
   }
 
   .status.offline .dot {
-    background: var(--warn); box-shadow: 0 0 6px var(--warn);
+    background: var(--text-muted); box-shadow: none;
     animation: none;
+  }
+
+  .status.busy .dot {
+    background: var(--warn); box-shadow: 0 0 6px var(--warn);
+    animation: pulse 0.8s infinite;
   }
 
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -172,7 +201,16 @@
     display: flex; flex-direction: column; gap: 16px;
   }
 
-  .msg { max-width: 85%; line-height: 1.5; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
+  .msg {
+    max-width: 85%; line-height: 1.5; font-size: 14px;
+    white-space: pre-wrap; word-wrap: break-word;
+    animation: fadein 0.25s ease;
+  }
+
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
   .msg .label { display: block; font-size: 11px; letter-spacing: 2px; margin-bottom: 4px; color: var(--text-muted); }
 
@@ -185,6 +223,8 @@
   .msg.user .label { text-align: right; }
 
   .msg.anton { align-self: flex-start; color: var(--green); text-shadow: 0 0 6px var(--glow); padding: 0 4px; }
+
+  .msg.anton .text.thinking { color: var(--text-muted); text-shadow: none; }
 
   .msg.system { align-self: center; color: var(--text-muted); font-size: 12px; letter-spacing: 1px; text-align: center; }
   .msg.system.warn { color: var(--warn); }
@@ -224,7 +264,7 @@
     text-shadow: 0 0 6px var(--glow);
   }
 
-  button#send:hover { background: var(--green-dim); box-shadow: 0 0 12px var(--glow); }
+  button#send:hover:not(:disabled) { background: var(--green-dim); box-shadow: 0 0 12px var(--glow); }
   button#send:disabled { opacity: 0.35; cursor: default; }
 
   .chat::-webkit-scrollbar { width: 6px; }
@@ -234,12 +274,14 @@
 </head>
 <body>
 
+<canvas id="matrix"></canvas>
+
 <div class="app">
 
   <header>
     <div class="brand">
-      <h1>АНТОН</h1>
-      <span class="sub">удалённое подключение</span>
+      <h1 id="title">АНТОН</h1>
+      <span class="sub">статус: автономный модуль</span>
     </div>
     <div class="status offline" id="status">
       <span class="dot"></span>
@@ -274,6 +316,50 @@
 </div>
 
 <script>
+/* ===================== ФОН: ЦИФРОВОЙ ДОЖДЬ ===================== */
+(function () {
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  const chars = 'アイウエオカキクケコサシスセソ012345789ANTON';
+  const fontSize = 16;
+  let columns, drops;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    columns = Math.floor(canvas.width / fontSize);
+    drops = Array(columns).fill(0).map(() => Math.random() * -100);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function draw() {
+    ctx.fillStyle = 'rgba(6, 10, 7, 0.10)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(61, 255, 138, 0.35)';
+    ctx.font = fontSize + 'px monospace';
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+  setInterval(draw, 60);
+})();
+
+/* ===================== ГЛИТЧ ЗАГОЛОВКА ===================== */
+(function () {
+  const title = document.getElementById('title');
+  function glitchOnce() {
+    title.classList.add('glitch');
+    setTimeout(() => title.classList.remove('glitch'), 280);
+    setTimeout(glitchOnce, 6000 + Math.random() * 9000);
+  }
+  setTimeout(glitchOnce, 4000);
+})();
+
+/* ===================== ОСНОВНАЯ ЛОГИКА ЧАТА ===================== */
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const sendBtn = document.getElementById('send');
@@ -289,8 +375,20 @@ const statusText = document.getElementById('statusText');
 let API_BASE = '';
 let thinkMode = false;
 let busy = false;
+let pollTimer = null;
 
-// запоминаем последний введённый адрес сервера в этом браузере
+const SPINNER_FRAMES = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+
+function getSessionId() {
+  let id = localStorage.getItem('anton_session_id');
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : 'sess-' + Math.random().toString(36).slice(2) + Date.now());
+    localStorage.setItem('anton_session_id', id);
+  }
+  return id;
+}
+const sessionId = getSessionId();
+
 const savedUrl = localStorage.getItem('anton_api_base');
 if (savedUrl) serverUrlInput.value = savedUrl;
 
@@ -315,45 +413,81 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-function setConnected(ok) {
-  if (ok) {
-    statusEl.classList.remove('offline');
+/* uiState: 'disconnected' | 'busy' | 'ready' */
+function setUiState(uiState) {
+  statusEl.classList.remove('offline', 'busy');
+
+  if (uiState === 'ready') {
     statusText.textContent = 'ONLINE';
     input.disabled = false;
-    sendBtn.disabled = false;
+    sendBtn.disabled = busy;
     input.placeholder = 'Напиши что-нибудь Антону...';
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  } else if (uiState === 'busy') {
+    statusEl.classList.add('busy');
+    statusText.textContent = 'ЗАНЯТ';
+    input.disabled = true;
+    sendBtn.disabled = true;
+    input.placeholder = 'Антон сейчас общается с кем-то другим...';
+    if (!pollTimer) pollTimer = setInterval(checkAvailability, 8000);
   } else {
     statusEl.classList.add('offline');
     statusText.textContent = 'НЕ ПОДКЛЮЧЕНО';
     input.disabled = true;
     sendBtn.disabled = true;
     input.placeholder = 'Сначала подключись к серверу...';
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+}
+
+async function checkAvailability() {
+  try {
+    const resp = await fetch(API_BASE + '/api/state?session_id=' + encodeURIComponent(sessionId));
+    if (!resp.ok) throw new Error('bad response');
+    const data = await resp.json();
+    if (!data.busy) {
+      addMessage('system', '— Антон свободен, можно общаться —');
+      setUiState('ready');
+      input.focus();
+    }
+  } catch (err) {
+    // сервер пока недоступен - попробуем ещё раз позже
   }
 }
 
 async function connect() {
   let url = serverUrlInput.value.trim();
   if (!url) {
-    addMessage('system warn', 'Введи адрес сервера (например, https://xxxx.trycloudflare.com)');
+    addMessage('system warn', 'Введи адрес сервера.');
     return;
   }
-  url = url.replace(/\/+$/, ''); // убираем слэш в конце
+  url = url.replace(/\/+$/, '');
   API_BASE = url;
   localStorage.setItem('anton_api_base', url);
 
   chat.innerHTML = '';
-  addMessage('system', '— проверка соединения с ' + API_BASE + ' —');
+  addMessage('system', '— проверка соединения —');
 
   try {
-    const resp = await fetch(API_BASE + '/api/state');
+    const resp = await fetch(API_BASE + '/api/state?session_id=' + encodeURIComponent(sessionId));
     if (!resp.ok) throw new Error('bad response');
     const data = await resp.json();
-    addMessage('system', '— соединение установлено (модель: ' + data.model + ') —');
-    setConnected(true);
-    input.focus();
+
+    thinkMode = !!data.think_mode;
+    thinkSwitch.classList.toggle('on', thinkMode);
+    thinkLabel.textContent = 'режим размышления: ' + (thinkMode ? 'вкл' : 'выкл');
+
+    if (data.busy) {
+      addMessage('system warn', '— Антон сейчас занят, общается с кем-то другим. Жди — проверка идёт автоматически —');
+      setUiState('busy');
+    } else {
+      addMessage('system', '— соединение установлено —');
+      setUiState('ready');
+      input.focus();
+    }
   } catch (err) {
     addMessage('system warn', '— не удалось подключиться. Проверь, что сервер и туннель запущены, и адрес указан верно —');
-    setConnected(false);
+    setUiState('disconnected');
   }
 }
 
@@ -388,16 +522,37 @@ async function sendMessage() {
 
   const antonDiv = addMessage('anton', '');
   const textSpan = antonDiv.querySelector('.text');
+
+  // анимация "размышления", пока не пришёл первый кусок ответа
+  textSpan.classList.add('thinking');
+  let spinnerIdx = 0;
+  textSpan.textContent = SPINNER_FRAMES[0] + ' печатает...';
+  const spinnerTimer = setInterval(() => {
+    spinnerIdx = (spinnerIdx + 1) % SPINNER_FRAMES.length;
+    textSpan.textContent = SPINNER_FRAMES[spinnerIdx] + ' печатает...';
+  }, 90);
+
+  let firstChunk = true;
   const cursor = document.createElement('span');
   cursor.className = 'cursor';
-  antonDiv.appendChild(cursor);
 
   try {
     const resp = await fetch(API_BASE + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ message: text, session_id: sessionId })
     });
+
+    if (resp.status === 409) {
+      clearInterval(spinnerTimer);
+      antonDiv.remove();
+      addMessage('system warn', '— Антон занят, общается с кем-то другим —');
+      setUiState('busy');
+      busy = false;
+      return;
+    }
+
+    if (!resp.ok) throw new Error('bad response');
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder('utf-8');
@@ -406,39 +561,69 @@ async function sendMessage() {
       const { value, done } = await reader.read();
       if (done) break;
       const chunk = decoder.decode(value, { stream: true });
-      textSpan.textContent += chunk;
-      chat.scrollTop = chat.scrollHeight;
+      if (chunk) {
+        if (firstChunk) {
+          clearInterval(spinnerTimer);
+          textSpan.classList.remove('thinking');
+          textSpan.textContent = '';
+          antonDiv.appendChild(cursor);
+          firstChunk = false;
+        }
+        textSpan.textContent += chunk;
+        chat.scrollTop = chat.scrollHeight;
+      }
+    }
+    if (firstChunk) {
+      clearInterval(spinnerTimer);
+      textSpan.classList.remove('thinking');
+      textSpan.textContent = '...';
     }
   } catch (err) {
+    clearInterval(spinnerTimer);
+    textSpan.classList.remove('thinking');
     textSpan.textContent = '[Ошибка соединения с сервером]';
-    setConnected(false);
+    setUiState('disconnected');
   } finally {
     cursor.remove();
     busy = false;
-    sendBtn.disabled = false;
-    input.focus();
+    if (statusEl.classList.contains('busy') === false && !statusEl.classList.contains('offline')) {
+      sendBtn.disabled = false;
+      input.focus();
+    }
   }
 }
 
 clearBtn.addEventListener('click', async () => {
   if (!API_BASE) return;
-  await fetch(API_BASE + '/api/reset', { method: 'POST' });
+  const resp = await fetch(API_BASE + '/api/reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId })
+  });
+  if (resp.status === 409) {
+    addMessage('system warn', '— Антон занят, общается с кем-то другим —');
+    return;
+  }
   chat.innerHTML = '<div class="msg system">— диалог очищен —</div>';
 });
 
 thinkToggle.addEventListener('click', async () => {
   if (!API_BASE) return;
-  thinkMode = !thinkMode;
-  thinkSwitch.classList.toggle('on', thinkMode);
-  thinkLabel.textContent = 'режим размышления: ' + (thinkMode ? 'вкл' : 'выкл');
-  await fetch(API_BASE + '/api/think_mode', {
+  const newValue = !thinkMode;
+  const resp = await fetch(API_BASE + '/api/think_mode', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ enabled: thinkMode })
+    body: JSON.stringify({ enabled: newValue, session_id: sessionId })
   });
+  if (resp.status === 409) {
+    addMessage('system warn', '— Антон занят, общается с кем-то другим —');
+    return;
+  }
+  thinkMode = newValue;
+  thinkSwitch.classList.toggle('on', thinkMode);
+  thinkLabel.textContent = 'режим размышления: ' + (thinkMode ? 'вкл' : 'выкл');
 });
 
-// если адрес уже сохранён - пробуем подключиться автоматически
 if (savedUrl) connect();
 </script>
 

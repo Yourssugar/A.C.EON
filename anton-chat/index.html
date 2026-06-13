@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>АНТОН // удалённый узел</title>
+<style>
+  :root {
+    --bg: #060a07;
+    --bg-panel: #0d140e;
+    --bg-input: #0a100b;
+    --green: #3dff8a;
+    --green-dim: #1f6b3f;
+    --green-soft: #2a5e3f;
+    --text-muted: #5a9b76;
+    --border: #163320;
+    --glow: rgba(61, 255, 138, 0.35);
+    --warn: #ff5d5d;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px
+    );
+    mix-blend-mode: multiply;
+    z-index: 999;
+  }
+
+  .app {
+    max-width: 760px;
+    margin: 0 auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px;
+  }
+
+  header {
+    padding: 18px 0 12px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+
+  .brand h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-shadow: 0 0 8px var(--glow), 0 0 18px var(--glow);
+  }
+
+  .brand .sub { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; }
+
+  .status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-muted); letter-spacing: 1px;
+  }
+
+  .status .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  .status.offline .dot {
+    background: var(--warn); box-shadow: 0 0 6px var(--warn);
+    animation: none;
+  }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* ---------- настройка адреса сервера ---------- */
+  .server-config {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+
+  .server-config input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 8px;
+    outline: none;
+  }
+
+  .server-config input:focus { border-color: var(--green-soft); }
+
+  .server-config button {
+    background: transparent;
+    border: 1px solid var(--green-soft);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+
+  .server-config button:hover { color: var(--green); border-color: var(--green); }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--text-muted); letter-spacing: 0.5px;
+  }
+
+  .controls button {
+    background: transparent;
+    border: 1px solid var(--green-soft);
+    color: var(--text-muted);
+    font-family: inherit; font-size: 12px;
+    padding: 5px 10px; cursor: pointer; letter-spacing: 1px;
+    transition: all 0.15s ease;
+  }
+
+  .controls button:hover { color: var(--green); border-color: var(--green); box-shadow: 0 0 8px var(--glow); }
+
+  .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+
+  .switch {
+    width: 32px; height: 16px;
+    border: 1px solid var(--green-soft);
+    border-radius: 8px; position: relative;
+    transition: all 0.15s ease;
+  }
+
+  .switch::after {
+    content: ""; position: absolute; top: 1px; left: 1px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--text-muted); transition: all 0.15s ease;
+  }
+
+  .switch.on { border-color: var(--green); box-shadow: 0 0 6px var(--glow); }
+  .switch.on::after { left: 17px; background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  /* ---------- chat area ---------- */
+  .chat {
+    flex: 1; overflow-y: auto; padding: 20px 0;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .msg { max-width: 85%; line-height: 1.5; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
+
+  .msg .label { display: block; font-size: 11px; letter-spacing: 2px; margin-bottom: 4px; color: var(--text-muted); }
+
+  .msg.user {
+    align-self: flex-end; background: var(--bg-panel);
+    border: 1px solid var(--border); border-right: 2px solid var(--green-soft);
+    padding: 8px 12px; color: #cdeedd;
+  }
+
+  .msg.user .label { text-align: right; }
+
+  .msg.anton { align-self: flex-start; color: var(--green); text-shadow: 0 0 6px var(--glow); padding: 0 4px; }
+
+  .msg.system { align-self: center; color: var(--text-muted); font-size: 12px; letter-spacing: 1px; text-align: center; }
+  .msg.system.warn { color: var(--warn); }
+
+  .cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+    animation: blink 1s steps(1) infinite;
+    vertical-align: text-bottom; margin-left: 2px;
+  }
+
+  @keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+  /* ---------- input area ---------- */
+  .input-row {
+    border-top: 1px solid var(--border); padding: 14px 0;
+    display: flex; align-items: flex-end; gap: 10px;
+  }
+
+  .prompt-arrow { font-size: 16px; color: var(--green); text-shadow: 0 0 6px var(--glow); padding-bottom: 8px; }
+
+  textarea#input {
+    flex: 1; background: var(--bg-input); border: 1px solid var(--border);
+    color: var(--green); font-family: inherit; font-size: 14px;
+    padding: 8px 10px; resize: none; max-height: 120px; outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  textarea#input:focus { border-color: var(--green-soft); box-shadow: 0 0 8px var(--glow); }
+  textarea#input::placeholder { color: var(--green-soft); }
+  textarea#input:disabled { opacity: 0.4; }
+
+  button#send {
+    background: transparent; border: 1px solid var(--green); color: var(--green);
+    font-family: inherit; font-size: 13px; letter-spacing: 2px;
+    padding: 9px 16px; cursor: pointer; transition: all 0.15s ease;
+    text-shadow: 0 0 6px var(--glow);
+  }
+
+  button#send:hover { background: var(--green-dim); box-shadow: 0 0 12px var(--glow); }
+  button#send:disabled { opacity: 0.35; cursor: default; }
+
+  .chat::-webkit-scrollbar { width: 6px; }
+  .chat::-webkit-scrollbar-thumb { background: var(--green-soft); border-radius: 3px; }
+  .chat::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <h1>АНТОН</h1>
+      <span class="sub">удалённое подключение</span>
+    </div>
+    <div class="status offline" id="status">
+      <span class="dot"></span>
+      <span id="statusText">НЕ ПОДКЛЮЧЕНО</span>
+    </div>
+  </header>
+
+  <div class="server-config">
+    <span>адрес сервера:</span>
+    <input id="serverUrl" type="text" placeholder="https://xxxx.trycloudflare.com">
+    <button id="connectBtn">подключиться</button>
+  </div>
+
+  <div class="controls">
+    <div class="toggle" id="thinkToggle">
+      <div class="switch" id="thinkSwitch"></div>
+      <span id="thinkLabel">режим размышления: выкл</span>
+    </div>
+    <button id="clearBtn">очистить диалог</button>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="msg system">— укажи адрес сервера и нажми "подключиться" —</div>
+  </div>
+
+  <div class="input-row">
+    <span class="prompt-arrow">&gt;</span>
+    <textarea id="input" rows="1" placeholder="Сначала подключись к серверу..." disabled></textarea>
+    <button id="send" disabled>ОТПРАВИТЬ</button>
+  </div>
+
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const clearBtn = document.getElementById('clearBtn');
+const thinkToggle = document.getElementById('thinkToggle');
+const thinkSwitch = document.getElementById('thinkSwitch');
+const thinkLabel = document.getElementById('thinkLabel');
+const serverUrlInput = document.getElementById('serverUrl');
+const connectBtn = document.getElementById('connectBtn');
+const statusEl = document.getElementById('status');
+const statusText = document.getElementById('statusText');
+
+let API_BASE = '';
+let thinkMode = false;
+let busy = false;
+
+// запоминаем последний введённый адрес сервера в этом браузере
+const savedUrl = localStorage.getItem('anton_api_base');
+if (savedUrl) serverUrlInput.value = savedUrl;
+
+function addMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'user') {
+    div.innerHTML = '<span class="label">ТЫ</span>' + escapeHtml(text);
+  } else if (role === 'anton') {
+    div.innerHTML = '<span class="label">АНТОН</span><span class="text"></span>';
+  } else {
+    div.textContent = text;
+  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function setConnected(ok) {
+  if (ok) {
+    statusEl.classList.remove('offline');
+    statusText.textContent = 'ONLINE';
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.placeholder = 'Напиши что-нибудь Антону...';
+  } else {
+    statusEl.classList.add('offline');
+    statusText.textContent = 'НЕ ПОДКЛЮЧЕНО';
+    input.disabled = true;
+    sendBtn.disabled = true;
+    input.placeholder = 'Сначала подключись к серверу...';
+  }
+}
+
+async function connect() {
+  let url = serverUrlInput.value.trim();
+  if (!url) {
+    addMessage('system warn', 'Введи адрес сервера (например, https://xxxx.trycloudflare.com)');
+    return;
+  }
+  url = url.replace(/\/+$/, ''); // убираем слэш в конце
+  API_BASE = url;
+  localStorage.setItem('anton_api_base', url);
+
+  chat.innerHTML = '';
+  addMessage('system', '— проверка соединения с ' + API_BASE + ' —');
+
+  try {
+    const resp = await fetch(API_BASE + '/api/state');
+    if (!resp.ok) throw new Error('bad response');
+    const data = await resp.json();
+    addMessage('system', '— соединение установлено (модель: ' + data.model + ') —');
+    setConnected(true);
+    input.focus();
+  } catch (err) {
+    addMessage('system warn', '— не удалось подключиться. Проверь, что сервер и туннель запущены, и адрес указан верно —');
+    setConnected(false);
+  }
+}
+
+connectBtn.addEventListener('click', connect);
+serverUrlInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') connect();
+});
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text || busy || !API_BASE) return;
+
+  addMessage('user', text);
+  input.value = '';
+  input.style.height = 'auto';
+  busy = true;
+  sendBtn.disabled = true;
+
+  const antonDiv = addMessage('anton', '');
+  const textSpan = antonDiv.querySelector('.text');
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  antonDiv.appendChild(cursor);
+
+  try {
+    const resp = await fetch(API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      textSpan.textContent += chunk;
+      chat.scrollTop = chat.scrollHeight;
+    }
+  } catch (err) {
+    textSpan.textContent = '[Ошибка соединения с сервером]';
+    setConnected(false);
+  } finally {
+    cursor.remove();
+    busy = false;
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+clearBtn.addEventListener('click', async () => {
+  if (!API_BASE) return;
+  await fetch(API_BASE + '/api/reset', { method: 'POST' });
+  chat.innerHTML = '<div class="msg system">— диалог очищен —</div>';
+});
+
+thinkToggle.addEventListener('click', async () => {
+  if (!API_BASE) return;
+  thinkMode = !thinkMode;
+  thinkSwitch.classList.toggle('on', thinkMode);
+  thinkLabel.textContent = 'режим размышления: ' + (thinkMode ? 'вкл' : 'выкл');
+  await fetch(API_BASE + '/api/think_mode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: thinkMode })
+  });
+});
+
+// если адрес уже сохранён - пробуем подключиться автоматически
+if (savedUrl) connect();
+</script>
+
+</body>
+</html>

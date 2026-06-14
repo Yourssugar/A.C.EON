@@ -240,7 +240,7 @@
   </div>
 
   <div class="chat" id="chat">
-    <div class="msg system">— сервер стабилен, "Антон" не всегда. —</div>
+    <div class="msg system">— "АНТОН" (Он очень Антон и не всегда стабилен) —</div>
   </div>
 
   <div class="input-row">
@@ -296,8 +296,14 @@
 })();
 
 /* ===================== ОСНОВНАЯ ЛОГИКА ЧАТА ===================== */
-const configStatus = { className: '', textContent: '' }; // заглушка, не отображается
-const retryBtn = document.getElementById('retryBtn') || { style: {}, addEventListener: () => {} };
+const chat       = document.getElementById('chat');
+const input      = document.getElementById('input');
+const sendBtn    = document.getElementById('send');
+const clearBtn   = document.getElementById('clearBtn');
+const statusEl   = document.getElementById('status');
+const statusText = document.getElementById('statusText');
+const configStatus = { className: '', textContent: '' }; // не отображается, нужен как заглушка
+const retryBtn   = { style: {}, addEventListener: () => {} };  // кнопка убрана
 
 let API_BASE = '';
 let thinkMode = false;
@@ -305,7 +311,7 @@ let busy = false;
 let pollTimer = null;
 
 const SPINNER_FRAMES = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
-const GITHUB_CONFIG = 'https://api.github.com/repos/yourssugar/anton-chat/contents/config.json';
+const GITHUB_CONFIG = 'https://api.github.com/repos/Yourssugar/A.C.EON/contents/anton-chat/config.json';
 
 function getSessionId() {
   let id = localStorage.getItem('anton_session_id');

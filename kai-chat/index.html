@@ -59,7 +59,7 @@
   .msg.user{align-self:flex-end;background:var(--bg-panel);border:1px solid var(--border);
     border-right:2px solid var(--green-soft);padding:8px 12px;color:#cdeedd;}
   .msg.user .label{text-align:right;}
-  .msg.anton{align-self:flex-start;color:var(--green);text-shadow:0 0 6px var(--glow);padding:0 4px;}
+  .msg.kai{align-self:flex-start;color:var(--green);text-shadow:0 0 6px var(--glow);padding:0 4px;}
   .msg.system{align-self:center;color:var(--text-muted);font-size:12px;letter-spacing:1px;text-align:center;}
   .msg.system.warn{color:var(--warn);}
   .cursor{display:inline-block;width:8px;height:14px;background:var(--green);
@@ -490,7 +490,7 @@ async function doSend(){
   addMsg('user',text);input.value='';input.style.height='auto';
   busy=true;sendBtn.disabled=true;
   window.neuralSetActive&&window.neuralSetActive(true);
-  const div=addMsg('anton','');const span=div.querySelector('.text');
+  const div=addMsg('kai','');const span=div.querySelector('.text');
   let si=0;span.textContent=SP[0]+' печатает...';
   const st=setInterval(()=>{si=(si+1)%SP.length;span.textContent=SP[si]+' печатает...';},90);
   let first=true;const cur=document.createElement('span');cur.className='cursor';

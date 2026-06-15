@@ -104,7 +104,7 @@
       <div class="chat" id="chat"><div class="msg system">— инициализация —</div></div>
       <div class="input-row">
         <span class="arrow">&gt;</span>
-        <textarea id="input" rows="1" placeholder="Напиши что-нибудь Антону...(ВНИМАНИЕ АНТОН МОЖЕТ ИСПОЛЬЗОВАТЬ МАТ В СВОЕЙ РЕЧИ) " disabled></textarea>
+        <textarea id="input" rows="1" placeholder="Напиши что-нибудь Антону... " disabled></textarea>
         <button id="send" disabled>ОТПРАВИТЬ</button>
       </div>
     </div>
@@ -455,7 +455,7 @@ function esc(s){const d=document.createElement('div');d.textContent=s;return d.i
 function setUi(st){
   statusEl.classList.remove('offline','busy');
   if(st==='ready'){statusText.textContent='ONLINE';input.disabled=false;sendBtn.disabled=busy;
-    input.placeholder='Напиши что-нибудь Антону...';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+    input.placeholder='Напиши что-нибудь Антону...(ВНИМАНИЕ АНТОН МОЖЕТ ИСПОЛЬЗОВАТЬ МАТ В СВОЕЙ РЕЧИ)';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
   else if(st==='busy'){statusEl.classList.add('busy');statusText.textContent='ЗАНЯТ';
     input.disabled=true;sendBtn.disabled=true;input.placeholder='Антон сейчас с кем-то другим...';
     if(!pollTimer)pollTimer=setInterval(chkAvail,8000);}

@@ -447,7 +447,7 @@ const SID=getSid();
 
 function addMsg(role,text){const d=document.createElement('div');d.className='msg '+role;
   if(role==='user')d.innerHTML='<span class="label">ТЫ</span>'+esc(text);
-  else if(role==='Kai')d.innerHTML='<span class="label">КАЙ</span><span class="text"></span>';
+  else if(role==='kai')d.innerHTML='<span class="label">КАЙ</span><span class="text"></span>';
   else d.textContent=text;
   chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}

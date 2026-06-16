@@ -173,6 +173,59 @@
   .cursor{display:inline-block;width:7px;height:13px;background:var(--pink);border-radius:2px;animation:blink 1s steps(1) infinite;vertical-align:text-bottom;margin-left:2px;}
   @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
 
+  /* ── IMAGE BUBBLE ────────────────────────────── */
+  .img-bubble{
+    background:#fff;border:2.5px solid var(--border);
+    border-radius:0 var(--r) var(--r) var(--r);
+    padding:10px;color:var(--text-dark);
+    box-shadow:3px 3px 0 var(--pink-soft);
+    max-width:340px;
+  }
+  .img-bubble .lbl{margin-bottom:6px;}
+  .img-bubble img{
+    width:100%;border-radius:10px;
+    border:2px solid var(--border);
+    display:block;cursor:zoom-in;
+  }
+  .img-bubble img:hover{opacity:.92;}
+  .img-prompt{
+    font-size:11px;font-weight:600;color:var(--text-muted);
+    margin-top:6px;font-style:italic;line-height:1.4;
+  }
+
+  /* image loading pulse */
+  .img-loading{
+    width:280px;height:180px;border-radius:10px;
+    background:linear-gradient(90deg,var(--pink-soft) 25%,var(--bg-input) 50%,var(--pink-soft) 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+  }
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* image gen status bar */
+  .img-status{
+    display:none;align-items:center;gap:8px;
+    padding:6px 14px;
+    background:rgba(255,214,236,.5);
+    border:1.5px solid var(--border);border-radius:20px;
+    font-size:12px;font-weight:700;color:var(--text-mid);
+    align-self:flex-start;
+  }
+  .img-status.show{display:flex;}
+  .img-status-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--pink);animation:pulse .8s infinite;
+  }
+
+  /* lightbox */
+  .lightbox{
+    display:none;position:fixed;inset:0;z-index:1000;
+    background:rgba(30,5,18,.85);backdrop-filter:blur(6px);
+    align-items:center;justify-content:center;cursor:zoom-out;
+  }
+  .lightbox.show{display:flex;}
+  .lightbox img{max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 0 60px rgba(255,107,174,.3);}
+
   /* ── INPUT ───────────────────────────────── */
   .input-row{
     border-top:2.5px solid var(--border);padding:13px 18px 16px;
@@ -237,6 +290,11 @@
       <div class="controls">
         <button id="clearBtn">🗑 очистить диалог</button>
       </div>
+      <!-- image generation status bar -->
+      <div class="img-status" id="imgStatus">
+        <span class="img-status-dot"></span>
+        <span id="imgStatusText">генерирую изображение...</span>
+      </div>
       <div class="chat" id="chat">
         <div class="greet-card" id="greetCard">
           <div class="greet-icon">✦</div>
@@ -253,6 +311,11 @@
     </div>
 
   </div>
+</div>
+
+<!-- lightbox для просмотра картинок -->
+<div class="lightbox" id="lightbox">
+  <img id="lightboxImg" src="" alt="">
 </div>
 
 <script>
@@ -341,11 +404,15 @@
 ═══════════════════════════════════════════════ */
 const chat=document.getElementById('chat'),input=document.getElementById('input'),
   sendBtn=document.getElementById('send'),clearBtn=document.getElementById('clearBtn'),
-  statusEl=document.getElementById('status'),statusTx=document.getElementById('statusText');
+  statusEl=document.getElementById('status'),statusTx=document.getElementById('statusText'),
+  imgStatusEl=document.getElementById('imgStatus'),imgStatusTx=document.getElementById('imgStatusText'),
+  lightbox=document.getElementById('lightbox'),lightboxImg=document.getElementById('lightboxImg');
 
-let API_BASE='',busy=false,pollTimer=null;
+let API_BASE='',busy=false,pollTimer=null,imageAvailable=false;
 const SP=['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
 const GH='https://api.github.com/repos/Yourssugar/A.C.EON/contents/kai-chat/config.json';
+// Regex для извлечения [DRAW: ...] тега из ответа Qwen
+const DRAW_RE = /\[DRAW:\s*([^\]]+)\]/i;
 
 function getSid(){let i=localStorage.getItem('kai_sid');if(!i){i=crypto.randomUUID?crypto.randomUUID():'s'+Math.random().toString(36).slice(2);localStorage.setItem('kai_sid',i);}return i;}
 const SID=getSid();
@@ -353,6 +420,7 @@ const SID=getSid();
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function removeGreeting(){const g=document.getElementById('greetCard');if(g)g.remove();}
 
+/* ── Добавить обычное сообщение ── */
 function addMsg(role,text){
   if(role==='user')removeGreeting();
   const d=document.createElement('div');d.className='msg '+role;
@@ -360,6 +428,64 @@ function addMsg(role,text){
   else if(role==='kai') d.innerHTML='<div class="av">✦</div><div class="bubble"><span class="lbl">КАЙ</span><span class="text"></span></div>';
   else d.textContent=text;
   chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;
+}
+
+/* ── Добавить изображение в чат ── */
+function addImageMsg(imgB64, prompt){
+  const d=document.createElement('div');
+  d.className='msg kai';
+  d.innerHTML=`<div class="av">✦</div>
+    <div class="img-bubble">
+      <span class="lbl">КАЙ</span>
+      <img src="data:image/png;base64,${imgB64}" alt="generated image" title="Нажми для просмотра">
+      <div class="img-prompt">🎨 ${esc(prompt)}</div>
+    </div>`;
+  // lightbox при клике
+  d.querySelector('img').addEventListener('click', ()=>{
+    lightboxImg.src='data:image/png;base64,'+imgB64;
+    lightbox.classList.add('show');
+  });
+  chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+}
+
+/* ── Lightbox закрытие ── */
+lightbox.addEventListener('click',()=>lightbox.classList.remove('show'));
+
+/* ── Проверить доступность ComfyUI ── */
+async function checkImageService(){
+  if(!API_BASE) return;
+  try{
+    const r=await fetch(API_BASE+'/api/image_status');
+    const d=await r.json();
+    imageAvailable=d.available;
+    if(imageAvailable) console.log('✓ ComfyUI доступен — генерация изображений активна');
+    else console.log('⚠ ComfyUI недоступен — только текст');
+  }catch(_){imageAvailable=false;}
+}
+
+/* ── Генерация изображения по промпту ── */
+async function generateImage(prompt){
+  if(!imageAvailable||!API_BASE) return;
+  imgStatusTx.textContent='генерирую изображение...';
+  imgStatusEl.classList.add('show');
+  try{
+    const r=await fetch(API_BASE+'/api/image',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt}),
+    });
+    if(!r.ok){
+      const err=await r.json();
+      throw new Error(err.error||'ошибка генерации');
+    }
+    const d=await r.json();
+    addImageMsg(d.image, d.prompt);
+  }catch(e){
+    console.error('Image gen error:',e);
+    addMsg('system warn',`— не удалось нарисовать: ${e.message} 😢 —`);
+  }finally{
+    imgStatusEl.classList.remove('show');
+  }
 }
 
 function setUi(st){
@@ -373,7 +499,10 @@ async function chkAvail(){try{const r=await fetch(API_BASE+'/api/state?session_i
 
 async function loadConfig(){try{const r=await fetch(GH+'?t='+Date.now(),{headers:{'Accept':'application/vnd.github.v3+json'}});if(!r.ok)throw 0;const d=await r.json();const cfg=JSON.parse(atob(d.content.replace(/\n/g,'')));if(!cfg.api_url)throw 0;API_BASE=cfg.api_url;await connect();}catch(_){addMsg('system warn','— Кай офлайн 😴 —');setUi('disconnected');}}
 
-async function connect(){try{const r=await fetch(API_BASE+'/api/state?session_id='+encodeURIComponent(SID));if(!r.ok)throw 0;const d=await r.json();if(d.busy){addMsg('system warn','— Кай занят 💭 —');setUi('busy');}else{addMsg('system','— привет! Кай здесь 🌸 —');setUi('ready');input.focus();}}catch(_){addMsg('system warn','— сервер недоступен 😴 —');setUi('disconnected');}}
+async function connect(){try{const r=await fetch(API_BASE+'/api/state?session_id='+encodeURIComponent(SID));if(!r.ok)throw 0;const d=await r.json();if(d.busy){addMsg('system warn','— Кай занят 💭 —');setUi('busy');}else{addMsg('system','— привет! Кай здесь 🌸 —');setUi('ready');input.focus();}}catch(_){addMsg('system warn','— сервер недоступен 😴 —');setUi('disconnected');}
+  // Проверяем ComfyUI параллельно
+  checkImageService();
+}
 
 input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,120)+'px';});
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSend();}});
@@ -395,6 +524,14 @@ async function doSend(){
     const reader=r.body.getReader();const dec=new TextDecoder('utf-8');
     while(true){const{value,done}=await reader.read();if(done)break;const chunk=dec.decode(value,{stream:true});if(chunk){if(first){clearInterval(st);span.textContent='';bubble.appendChild(cur);first=false;}span.textContent+=chunk;chat.scrollTop=chat.scrollHeight;}}
     if(first){clearInterval(st);span.textContent='...';}
+    // Ищем [DRAW: ...] тег в полном ответе — запускаем генерацию
+    const fullText=span.textContent;
+    const drawMatch=fullText.match(DRAW_RE);
+    if(drawMatch){
+      span.textContent=fullText.replace(DRAW_RE,'').trimEnd();
+      const drawPrompt=drawMatch[1].trim();
+      setTimeout(()=>generateImage(drawPrompt),300);
+    }
   }catch(_){clearInterval(st);span.textContent='[Ошибка соединения 😢]';setUi('disconnected');}
   finally{cur.remove();busy=false;sendBtn.disabled=false;window.neuralSetActive&&window.neuralSetActive(false);if(!statusEl.classList.contains('busy')&&!statusEl.classList.contains('offline'))input.focus();}
 }

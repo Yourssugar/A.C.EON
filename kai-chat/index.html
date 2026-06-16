@@ -409,6 +409,7 @@ const chat=document.getElementById('chat'),input=document.getElementById('input'
   lightbox=document.getElementById('lightbox'),lightboxImg=document.getElementById('lightboxImg');
 
 let API_BASE='',busy=false,pollTimer=null,imageAvailable=false;
+const activeImageJobs = {};
 const SP=['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
 const GH='https://api.github.com/repos/Yourssugar/A.C.EON/contents/kai-chat/config.json';
 // Regex для извлечения [DRAW: ...] тега из ответа Qwen
@@ -465,41 +466,84 @@ async function checkImageService(){
 
 /* ── Генерация изображения по промпту (polling) ── */
 async function generateImage(prompt){
-  if(!imageAvailable||!API_BASE) return;
-  imgStatusTx.textContent='генерирую изображение...';
-  imgStatusEl.classList.add('show');
+
+  if(!imageAvailable || !API_BASE) return;
+
   try{
-    // Запускаем задачу — Flask сразу отвечает job_id (не ждёт генерации)
-    const r=await fetch(API_BASE+'/api/image',{
+
+    const r = await fetch(API_BASE+'/api/image',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({prompt}),
+      body:JSON.stringify({prompt})
     });
-    if(!r.ok) throw new Error('ошибка запуска задачи');
-    const {job_id}=await r.json();
-    if(!job_id) throw new Error('нет job_id');
 
-    // Опрашиваем каждые 3 секунды пока не готово (макс 3 мин)
-    for(let i=0;i<60;i++){
-      await new Promise(res=>setTimeout(res,3000));
-      imgStatusTx.textContent='генерирую... '+(i*3+3)+'с';
-      const poll=await fetch(API_BASE+'/api/image_poll/'+job_id);
-      const data=await poll.json();
-      if(data.status==='done'){
-        addImageMsg(data.image,data.prompt);
-        return;
-      }
-      if(data.status==='error') throw new Error(data.error||'ошибка генерации');
-    }
-    throw new Error('таймаут — попробуй снова');
+    if(!r.ok) throw new Error('ошибка запуска');
+
+    const data = await r.json();
+
+    if(!data.job_id)
+      throw new Error('нет job_id');
+
+    activeImageJobs[data.job_id] = true;
+
+    addMsg(
+      'system',
+      '🎨 Кай начал рисовать изображение. Оно появится автоматически когда будет готово.'
+    );
+
   }catch(e){
-    console.error('Image gen error:',e);
-    addMsg('system warn',`— не удалось нарисовать: ${e.message} \uD83D\uDE22 —`);
-  }finally{
-    imgStatusEl.classList.remove('show');
+
+    console.error(e);
+
+    addMsg(
+      'system warn',
+      '— ошибка запуска генерации 😢 —'
+    );
   }
 }
 
+  async function checkImageJobs(){
+
+  if(!API_BASE) return;
+
+  for(const jobId of Object.keys(activeImageJobs)){
+
+    try{
+
+      const r = await fetch(
+        API_BASE+'/api/image_poll/'+jobId
+      );
+
+      if(!r.ok) continue;
+
+      const data = await r.json();
+
+      if(data.status === 'done'){
+
+        addImageMsg(
+          data.image,
+          data.prompt
+        );
+
+        delete activeImageJobs[jobId];
+      }
+
+      else if(data.status === 'error'){
+
+        addMsg(
+          'system warn',
+          '— ошибка генерации 😢 —'
+        );
+
+        delete activeImageJobs[jobId];
+      }
+
+    }catch(e){
+      console.log(e);
+    }
+  }
+}
+  
 function setUi(st){
   statusEl.className='hstatus';
   if(st==='ready'){statusEl.classList.add('online');statusTx.textContent='ОНЛАЙН';input.disabled=false;sendBtn.disabled=busy;input.placeholder='Напиши Каю что-нибудь... ✨';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
@@ -565,6 +609,7 @@ clearBtn.addEventListener('click',async()=>{
   setTimeout(f,3000);
 })();
 
+setInterval(checkImageJobs,5000);
 loadConfig();
 </script>
 </body>

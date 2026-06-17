@@ -16,7 +16,7 @@
       --surface2:     #1a1a2c;
       --border:       rgba(255,255,255,0.08);
       --accent:       #6d28d9;
-      --accent-hover: #5b21b6;
+      --accent-h:     #5b21b6;
       --accent-light: #a78bfa;
       --accent-bg:    rgba(109,40,217,0.12);
       --text:         #e8e8f8;
@@ -33,12 +33,8 @@
       padding: 32px 16px 64px;
     }
 
-    .container {
-      max-width: 640px;
-      margin: 0 auto;
-    }
+    .container { max-width: 640px; margin: 0 auto; }
 
-    /* ── Заголовок ── */
     .page-title {
       font-size: 18px;
       font-weight: 600;
@@ -47,7 +43,7 @@
       margin-bottom: 20px;
     }
 
-    /* ── Плеер ── */
+    /* Player */
     .player {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -55,14 +51,12 @@
       padding: 18px;
       margin-bottom: 10px;
     }
-
     .track-info {
       display: flex;
       align-items: center;
       gap: 13px;
       margin-bottom: 14px;
     }
-
     .cover {
       width: 46px;
       height: 46px;
@@ -73,11 +67,18 @@
       justify-content: center;
       font-size: 12px;
       font-weight: 600;
+      background: #1e1b4b;
+      color: #a78bfa;
     }
-
-    .track-meta    { flex: 1; min-width: 0; }
-    .track-title   { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .track-sub     { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .track-meta { flex: 1; min-width: 0; }
+    .track-title {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .track-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
     .like-btn {
       background: none;
@@ -92,18 +93,16 @@
       color: var(--dim);
       transition: color 0.15s, transform 0.15s;
     }
-    .like-btn:hover      { transform: scale(1.2); color: var(--liked); }
-    .like-btn.liked      { color: var(--liked); }
-    .like-btn i          { font-size: 20px; }
+    .like-btn:hover { transform: scale(1.2); color: var(--liked); }
+    .like-btn.liked { color: var(--liked); }
+    .like-btn i { font-size: 20px; }
 
-    /* Прогресс */
     .progress-wrap {
       height: 4px;
       background: var(--border);
       border-radius: 2px;
       cursor: pointer;
       margin-bottom: 6px;
-      position: relative;
     }
     .progress-fill {
       height: 100%;
@@ -120,7 +119,6 @@
       margin-bottom: 14px;
     }
 
-    /* Управление */
     .controls {
       display: flex;
       align-items: center;
@@ -138,9 +136,9 @@
       justify-content: center;
       transition: color 0.12s, background 0.12s;
     }
-    .ctrl-btn:hover   { color: var(--text); background: var(--surface2); }
-    .ctrl-btn.active  { color: var(--accent-light); }
-    .ctrl-btn i       { font-size: 20px; }
+    .ctrl-btn:hover  { color: var(--text); background: var(--surface2); }
+    .ctrl-btn.active { color: var(--accent-light); }
+    .ctrl-btn i { font-size: 20px; }
 
     .play-btn {
       width: 46px;
@@ -155,13 +153,11 @@
       justify-content: center;
       transition: background 0.12s, transform 0.1s;
     }
-    .play-btn:hover  { background: var(--accent-hover); transform: scale(1.05); }
+    .play-btn:hover  { background: var(--accent-h); transform: scale(1.05); }
     .play-btn:active { transform: scale(0.96); }
-    .play-btn i      { font-size: 18px; }
-
+    .play-btn i { font-size: 18px; }
     .ctrl-group { display: flex; align-items: center; gap: 4px; }
 
-    /* Бейджи режимов */
     .mode-row {
       display: flex;
       gap: 6px;
@@ -179,11 +175,8 @@
       border: 1px solid rgba(109,40,217,0.25);
     }
 
-    /* ── Вкладки ── */
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-    }
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); }
     .tab {
       background: none;
       border: none;
@@ -208,9 +201,8 @@
       font-weight: 500;
     }
 
-    /* ── Список треков ── */
+    /* Track list */
     .track-list { padding-top: 4px; }
-
     .track-row {
       display: flex;
       align-items: center;
@@ -220,8 +212,8 @@
       cursor: pointer;
       transition: background 0.1s;
     }
-    .track-row:hover   { background: var(--surface); }
-    .track-row.active  { background: var(--accent-bg); }
+    .track-row:hover  { background: var(--surface); }
+    .track-row.active { background: var(--accent-bg); }
 
     .row-num {
       width: 22px;
@@ -243,7 +235,6 @@
       font-size: 11px;
       font-weight: 600;
     }
-
     .row-title {
       flex: 1;
       font-size: 13px;
@@ -253,9 +244,7 @@
       min-width: 0;
     }
     .track-row.active .row-title { color: var(--accent-light); font-weight: 500; }
-
-    .row-dur  { font-size: 11px; color: var(--dim); flex-shrink: 0; }
-
+    .row-dur { font-size: 11px; color: var(--dim); flex-shrink: 0; }
     .row-heart {
       background: none;
       border: none;
@@ -269,11 +258,10 @@
       color: var(--dim);
       transition: color 0.15s, transform 0.15s;
     }
-    .row-heart:hover     { color: var(--liked); transform: scale(1.2); }
-    .row-heart.liked     { color: var(--liked); }
-    .row-heart i         { font-size: 15px; }
+    .row-heart:hover { color: var(--liked); transform: scale(1.2); }
+    .row-heart.liked { color: var(--liked); }
+    .row-heart i { font-size: 15px; }
 
-    /* Пустой список */
     .empty {
       text-align: center;
       padding: 64px 0;
@@ -282,21 +270,19 @@
     }
     .empty i { font-size: 40px; display: block; margin: 0 auto 14px; color: var(--dim); }
 
-    /* Скроллбар */
-    ::-webkit-scrollbar        { width: 4px; }
-    ::-webkit-scrollbar-track  { background: transparent; }
-    ::-webkit-scrollbar-thumb  { background: var(--surface2); border-radius: 4px; }
+    ::-webkit-scrollbar       { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <p class="page-title">◈ Архив звука</p>
+  <p class="page-title">&#9672; Архив звука</p>
 
-  <!-- ── Плеер ──────────────────────────────────── -->
   <div class="player">
     <div class="track-info">
-      <div class="cover" id="playerCover" style="background:#1e1b4b;color:#a78bfa;">
+      <div class="cover" id="playerCover">
         <i class="ti ti-music" style="font-size:20px;"></i>
       </div>
       <div class="track-meta">
@@ -304,7 +290,7 @@
         <div class="track-sub"   id="playerSub">нажми на трек ниже</div>
       </div>
       <button class="like-btn" id="playerLike" onclick="likeFromPlayer()" aria-label="в понравившееся">
-        <i class="ti ti-heart"></i>
+        <i class="ti ti-heart" id="playerLikeIcon"></i>
       </button>
     </div>
 
@@ -317,21 +303,21 @@
     </div>
 
     <div class="controls">
-      <button class="ctrl-btn" id="btnShuffle" onclick="toggleShuffle()" aria-label="случайное воспроизведение" title="Случайно">
+      <button class="ctrl-btn" id="btnShuffle" onclick="toggleShuffle()" aria-label="случайное воспроизведение">
         <i class="ti ti-arrows-shuffle"></i>
       </button>
       <div class="ctrl-group">
         <button class="ctrl-btn" onclick="skip(-1)" aria-label="предыдущий">
           <i class="ti ti-player-skip-back"></i>
         </button>
-        <button class="play-btn" id="btnPlay" onclick="togglePlay()" aria-label="играть / пауза">
+        <button class="play-btn" onclick="togglePlay()" aria-label="играть / пауза">
           <i class="ti ti-player-play" id="playIcon"></i>
         </button>
         <button class="ctrl-btn" onclick="skip(1)" aria-label="следующий">
           <i class="ti ti-player-skip-forward"></i>
         </button>
       </div>
-      <button class="ctrl-btn" id="btnRepeat" onclick="toggleRepeat()" aria-label="повтор трека" title="Повтор трека">
+      <button class="ctrl-btn" id="btnRepeat" onclick="toggleRepeat()" aria-label="повтор трека">
         <i class="ti ti-repeat-once"></i>
       </button>
     </div>
@@ -342,35 +328,29 @@
     </div>
   </div>
 
-  <!-- ── Вкладки ──────────────────────────────────── -->
   <div class="tabs">
     <button class="tab active" id="tabAll"  onclick="setTab('all')">Все треки</button>
     <button class="tab"        id="tabFavs" onclick="setTab('favs')">Понравилось</button>
   </div>
 
-  <!-- ── Список треков ──────────────────────────────── -->
   <div class="track-list" id="trackList"></div>
 
-</div><!-- /container -->
+</div>
 
 <script>
-/* ================================================================
-   ТРЕКИ — ВСЁ ЧТО НУЖНО РЕДАКТИРОВАТЬ НАХОДИТСЯ ЗДЕСЬ
-   ================================================================
 
-   Каждый трек — одна строчка:
-     { id: число,  title: "Название",  src: "путь/к/файлу.mp3",  duration: "3:42" }
+/* =================================================================
+   ТРЕКИ — ЕДИНСТВЕННОЕ МЕСТО ДЛЯ РЕДАКТИРОВАНИЯ
 
-   • id       — порядковый номер, каждый уникальный
-   • title    — название трека (отображается в плеере и списке)
-   • src      — путь к аудиофайлу относительно этого HTML
-                Если файлы лежат в папке audio/ рядом с HTML:  "audio/track.mp3"
-                Если где-то в интернете — полная ссылка: "https://example.com/track.mp3"
-   • duration — длительность строкой (необязательно, можно убрать)
+   Каждая строка — один трек:
+     { id: 1, title: "Название", src: "audio/файл.mp3", duration: "3:42" },
 
-   Добавить трек = скопировать строчку и изменить данные.
-   Порядок в списке = порядок в массиве.
-   ================================================================ */
+   id       — уникальный номер (просто по порядку)
+   title    — название (отображается в плеере и списке)
+   src      — путь к mp3 от этого HTML файла, например "audio/track01.mp3"
+              или полная ссылка "https://cdn.example.com/track.mp3"
+   duration — длительность строкой, можно не писать — подтянется из файла
+================================================================= */
 
 const TRACKS = [
 
@@ -385,228 +365,340 @@ const TRACKS = [
   { id: 9,  title: "До утра (modern pop).mp3",                   src: "audio/До утра (modern pop).mp3",                    },
   { id: 10, title: "Dance Me Closer.mp3",                        src: "audio/Dance Me Closer.mp3",                         },
   { id: 11, title: "Не забыл.mp3",                               src: "audio/Не забыл.mp3",                                },
+
   
   /* ← сюда добавляй новые треки, не забудь запятую в конце предыдущей строки */
 
 ];
 
-/* ================================================================
-   НИЖЕ — КОД ПЛЕЕРА. МЕНЯТЬ НЕ НУЖНО.
-   ================================================================ */
+/* ================================================================= */
 
-/* Цвета обложек — цикл по треку, добавлять не нужно */
-const PALETTE = [
-  { bg:'#1e1b4b', fg:'#a78bfa' },
-  { bg:'#1a2a1a', fg:'#6ee7b7' },
-  { bg:'#2a1000', fg:'#fdba74' },
-  { bg:'#2a0a1a', fg:'#f9a8d4' },
-  { bg:'#0a1a2a', fg:'#7dd3fc' },
-  { bg:'#1a1500', fg:'#fde68a' },
-  { bg:'#1a0a0a', fg:'#fca5a5' },
-  { bg:'#0a1a1a', fg:'#5eead4' },
+var PALETTE = [
+  { bg: "#1e1b4b", fg: "#a78bfa" },
+  { bg: "#1a2a1a", fg: "#6ee7b7" },
+  { bg: "#2a1000", fg: "#fdba74" },
+  { bg: "#2a0a1a", fg: "#f9a8d4" },
+  { bg: "#0a1a2a", fg: "#7dd3fc" },
+  { bg: "#1a1500", fg: "#fde68a" },
+  { bg: "#1a0a0a", fg: "#fca5a5" },
+  { bg: "#0a1a1a", fg: "#5eead4" }
 ];
-const color   = id => PALETTE[(id - 1) % PALETTE.length];
-const initials = title => title.split(/[\s_.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
-const fmtTime  = s => { if (!isFinite(s)) return '0:00'; return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; };
 
-/* Состояние */
-let current = null;
-let playing  = false;
-let shuffle  = false;
-let repeat   = false;
-let tab      = 'all';
-let favs     = new Set();
+function trackColor(id) {
+  return PALETTE[(id - 1) % PALETTE.length];
+}
 
-/* Audio */
-const audio = new Audio();
+function trackInitials(title) {
+  var parts = title.split(/[\s_.\-]+/).filter(function(p) { return p.length > 0; });
+  var result = "";
+  for (var i = 0; i < Math.min(2, parts.length); i++) {
+    result += parts[i][0].toUpperCase();
+  }
+  return result || "?";
+}
 
-/* localStorage */
+function fmtTime(sec) {
+  if (!isFinite(sec) || sec < 0) return "0:00";
+  var m = Math.floor(sec / 60);
+  var s = Math.floor(sec % 60);
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+/* State */
+var current = null;
+var playing  = false;
+var shuffle  = false;
+var repeat   = false;
+var activeTab = "all";
+var favs = {};
+
+var audio = new Audio();
+
+/* localStorage — сохранение понравившихся */
 function loadFavs() {
-  try { const s = localStorage.getItem('sound_archive_favs'); if (s) favs = new Set(JSON.parse(s)); } catch(_) {}
+  try {
+    var raw = localStorage.getItem("sound_archive_favs");
+    if (raw) {
+      var ids = JSON.parse(raw);
+      for (var i = 0; i < ids.length; i++) {
+        favs[ids[i]] = true;
+      }
+    }
+  } catch (e) {}
 }
+
 function saveFavs() {
-  try { localStorage.setItem('sound_archive_favs', JSON.stringify([...favs])); } catch(_) {}
+  try {
+    var ids = Object.keys(favs).filter(function(k) { return favs[k]; });
+    localStorage.setItem("sound_archive_favs", JSON.stringify(ids.map(Number)));
+  } catch (e) {}
 }
 
-/* Текущий список */
+/* Список с учётом вкладки */
 function getList() {
-  return tab === 'favs' ? TRACKS.filter(t => favs.has(t.id)) : TRACKS;
+  if (activeTab === "favs") {
+    return TRACKS.filter(function(t) { return favs[t.id]; });
+  }
+  return TRACKS;
 }
 
-/* Следующий / предыдущий трек */
+/* Следующий / предыдущий */
 function pickNext(forward) {
-  const list = getList();
+  var list = getList();
   if (!list.length) return null;
+
   if (shuffle) {
-    const pool = list.length > 1 ? list.filter(t => t.id !== current?.id) : list;
+    var pool = list.length > 1
+      ? list.filter(function(t) { return !current || t.id !== current.id; })
+      : list;
     return pool[Math.floor(Math.random() * pool.length)];
   }
-  const i = current ? list.findIndex(t => t.id === current.id) : -1;
-  return forward ? list[(i + 1) % list.length] : list[(i - 1 + list.length) % list.length];
+
+  var i = -1;
+  if (current) {
+    for (var j = 0; j < list.length; j++) {
+      if (list[j].id === current.id) { i = j; break; }
+    }
+  }
+
+  if (forward) return list[(i + 1) % list.length];
+  return list[(i - 1 + list.length) % list.length];
 }
 
-/* Воспроизведение трека */
-function playTrack(track, autoPlay = true) {
+/* Воспроизведение */
+function playTrack(track, autoPlay) {
+  if (autoPlay === undefined) autoPlay = true;
   current = track;
   audio.src = track.src;
-  if (autoPlay) { audio.play(); playing = true; }
+  if (autoPlay) {
+    audio.play();
+    playing = true;
+  }
   updatePlayer();
   renderList();
 }
 
-/* Play / Pause */
-function togglePlay() {
-  if (!current) { const f = getList()[0]; if (f) playTrack(f); return; }
-  if (playing) { audio.pause(); playing = false; }
-  else         { audio.play();  playing = true;  }
-  updatePlayer();
+/* Глобальная функция для onclick в списке */
+function playById(id) {
+  for (var i = 0; i < TRACKS.length; i++) {
+    if (TRACKS[i].id === id) {
+      if (current && current.id === id) {
+        togglePlay();
+      } else {
+        playTrack(TRACKS[i], true);
+      }
+      return;
+    }
+  }
 }
 
-/* Пропуск */
+function togglePlay() {
+  if (!current) {
+    var list = getList();
+    if (list.length) playTrack(list[0]);
+    return;
+  }
+  if (playing) {
+    audio.pause();
+    playing = false;
+  } else {
+    audio.play();
+    playing = true;
+  }
+  updatePlayer();
+  renderList();
+}
+
 function skip(dir) {
-  const next = pickNext(dir > 0);
+  var next = pickNext(dir > 0);
   if (next) playTrack(next, playing);
 }
 
-/* Shuffle */
 function toggleShuffle() {
   shuffle = !shuffle;
-  document.getElementById('btnShuffle').classList.toggle('active', shuffle);
+  var btn = document.getElementById("btnShuffle");
+  if (shuffle) btn.classList.add("active");
+  else btn.classList.remove("active");
   updateModes();
 }
 
-/* Repeat */
 function toggleRepeat() {
   repeat = !repeat;
-  document.getElementById('btnRepeat').classList.toggle('active', repeat);
+  var btn = document.getElementById("btnRepeat");
+  if (repeat) btn.classList.add("active");
+  else btn.classList.remove("active");
   updateModes();
 }
 
-/* Seek по клику на прогресс-бар */
 function seek(e) {
   if (!current || !audio.duration) return;
-  const r = e.currentTarget.getBoundingClientRect();
-  audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+  var rect = e.currentTarget.getBoundingClientRect();
+  audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
 }
 
 /* Лайки */
-function toggleLike(id, e) {
-  if (e) e.stopPropagation();
-  favs.has(id) ? favs.delete(id) : favs.add(id);
+function toggleLike(id) {
+  if (favs[id]) {
+    delete favs[id];
+  } else {
+    favs[id] = true;
+  }
   saveFavs();
   updatePlayerLike();
   renderList();
   renderTabs();
 }
+
+/* Глобальная функция для onclick в списке */
+function likeById(id, e) {
+  if (e) e.stopPropagation();
+  toggleLike(id);
+}
+
 function likeFromPlayer() {
   if (current) toggleLike(current.id);
 }
 
-/* Вкладка */
 function setTab(t) {
-  tab = t;
+  activeTab = t;
   renderTabs();
   renderList();
 }
 
-/* ── Обновление плеера ── */
+/* UI обновление */
 function updatePlayer() {
   if (!current) return;
-  const col = color(current.id);
-  const cov = document.getElementById('playerCover');
+
+  var col = trackColor(current.id);
+  var cov = document.getElementById("playerCover");
   cov.style.background = col.bg;
   cov.style.color      = col.fg;
-  cov.innerHTML        = `<span>${initials(current)}</span>`;
+  cov.innerHTML        = trackInitials(current);
 
-  document.getElementById('playerTitle').textContent = current.title;
-  document.getElementById('playerSub').textContent   = current.duration || '—';
-  document.getElementById('playIcon').className      = `ti ti-player-${playing ? 'pause' : 'play'}`;
+  document.getElementById("playerTitle").textContent = current.title;
+  document.getElementById("playerSub").textContent   = current.duration || "...";
+  document.getElementById("playIcon").className      = playing ? "ti ti-player-pause" : "ti ti-player-play";
   updatePlayerLike();
 }
+
 function updatePlayerLike() {
   if (!current) return;
-  const liked = favs.has(current.id);
-  const btn   = document.getElementById('playerLike');
-  btn.querySelector('i').className = liked ? 'ti ti-heart-filled' : 'ti ti-heart';
-  btn.classList.toggle('liked', liked);
+  var liked = !!favs[current.id];
+  var btn   = document.getElementById("playerLike");
+  document.getElementById("playerLikeIcon").className = liked ? "ti ti-heart-filled" : "ti ti-heart";
+  if (liked) btn.classList.add("liked");
+  else btn.classList.remove("liked");
 }
+
 function updateModes() {
-  const active = shuffle || repeat;
-  document.getElementById('modeRow').style.display    = active ? 'flex' : 'none';
-  document.getElementById('badgeShuf').style.display  = shuffle ? 'inline' : 'none';
-  document.getElementById('badgeRep').style.display   = repeat  ? 'inline' : 'none';
+  var active = shuffle || repeat;
+  document.getElementById("modeRow").style.display   = active ? "flex" : "none";
+  document.getElementById("badgeShuf").style.display = shuffle ? "inline" : "none";
+  document.getElementById("badgeRep").style.display  = repeat  ? "inline" : "none";
 }
 
-/* ── Рендер вкладок ── */
+/* Рендер вкладок */
 function renderTabs() {
-  document.getElementById('tabAll').className  = 'tab' + (tab === 'all'  ? ' active' : '');
-  document.getElementById('tabFavs').className = 'tab' + (tab === 'favs' ? ' active' : '');
-  document.getElementById('tabFavs').innerHTML =
-    'Понравилось' + (favs.size ? `<span class="badge">${favs.size}</span>` : '');
+  var tabAll  = document.getElementById("tabAll");
+  var tabFavs = document.getElementById("tabFavs");
+
+  if (activeTab === "all") tabAll.classList.add("active");
+  else tabAll.classList.remove("active");
+
+  if (activeTab === "favs") tabFavs.classList.add("active");
+  else tabFavs.classList.remove("active");
+
+  var count = Object.keys(favs).filter(function(k) { return favs[k]; }).length;
+  tabFavs.innerHTML = count > 0
+    ? "Понравилось <span class=\"badge\">" + count + "</span>"
+    : "Понравилось";
 }
 
-/* ── Рендер списка треков ── */
+/* Рендер списка треков */
 function renderList() {
-  const list = getList();
-  const el   = document.getElementById('trackList');
+  var list = getList();
+  var el   = document.getElementById("trackList");
 
   if (!list.length) {
-    el.innerHTML = `<div class="empty">
-      <i class="ti ti-heart"></i>
-      Нажми ♡ у трека чтобы добавить в понравившееся
-    </div>`;
+    el.innerHTML = '<div class="empty"><i class="ti ti-heart"></i>Нажми на сердечко у трека чтобы добавить в понравившееся</div>';
     return;
   }
 
-  el.innerHTML = list.map((t, idx) => {
-    const col     = color(t.id);
-    const isActive = current?.id === t.id;
-    const liked   = favs.has(t.id);
+  var html = "";
+  for (var i = 0; i < list.length; i++) {
+    var t      = list[i];
+    var col    = trackColor(t.id);
+    var isAct  = current && current.id === t.id;
+    var liked  = !!favs[t.id];
 
-    return `<div class="track-row ${isActive ? 'active' : ''}" onclick="playTrack(TRACKS.find(r=>r.id===${t.id}))">
-      <div class="row-num">${isActive
-        ? `<i class="ti ti-player-${playing ? 'play' : 'pause'}" style="font-size:12px;"></i>`
-        : idx + 1
-      }</div>
-      <div class="row-cover" style="background:${col.bg};color:${col.fg};">${initials(t)}</div>
-      <div class="row-title">${t.title}</div>
-      ${t.duration ? `<div class="row-dur">${t.duration}</div>` : ''}
-      <button class="row-heart ${liked ? 'liked' : ''}" onclick="toggleLike(${t.id}, event)" aria-label="в понравившееся">
-        <i class="ti ti-heart${liked ? '-filled' : ''}"></i>
-      </button>
-    </div>`;
-  }).join('');
+    var numHtml = isAct
+      ? '<i class="ti ti-' + (playing ? "player-play" : "player-pause") + '" style="font-size:12px;"></i>'
+      : String(i + 1);
+
+    var durHtml = t.duration ? '<div class="row-dur">' + t.duration + '</div>' : "";
+
+    html += '<div class="track-row' + (isAct ? " active" : "") + '" onclick="playById(' + t.id + ')">'
+      + '<div class="row-num">' + numHtml + '</div>'
+      + '<div class="row-cover" style="background:' + col.bg + ';color:' + col.fg + ';">' + trackInitials(t) + '</div>'
+      + '<div class="row-title">' + t.title + '</div>'
+      + durHtml
+      + '<button class="row-heart' + (liked ? " liked" : "") + '" onclick="likeById(' + t.id + ', event)" aria-label="в понравившееся">'
+      + '<i class="ti ti-' + (liked ? "heart-filled" : "heart") + '"></i>'
+      + '</button>'
+      + '</div>';
+  }
+
+  el.innerHTML = html;
 }
 
-/* ── Audio события ── */
-audio.addEventListener('timeupdate', () => {
+/* Audio события */
+audio.addEventListener("timeupdate", function() {
   if (!audio.duration) return;
-  const pct = (audio.currentTime / audio.duration) * 100;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('timeCur').textContent      = fmtTime(audio.currentTime);
-  document.getElementById('timeTotal').textContent    = fmtTime(audio.duration);
+  var pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("timeCur").textContent      = fmtTime(audio.currentTime);
+  document.getElementById("timeTotal").textContent    = fmtTime(audio.duration);
 });
 
-audio.addEventListener('loadedmetadata', () => {
-  document.getElementById('timeTotal').textContent = fmtTime(audio.duration);
-  if (current && !current.duration)
-    document.getElementById('playerSub').textContent = fmtTime(audio.duration);
+audio.addEventListener("loadedmetadata", function() {
+  document.getElementById("timeTotal").textContent = fmtTime(audio.duration);
+  if (current && !current.duration) {
+    document.getElementById("playerSub").textContent = fmtTime(audio.duration);
+  }
 });
 
-audio.addEventListener('ended', () => {
-  if (repeat) { audio.currentTime = 0; audio.play(); return; }
-  const next = pickNext(true);
-  if (next) playTrack(next, true);
-  else { playing = false; document.getElementById('playIcon').className = 'ti ti-player-play'; }
+audio.addEventListener("ended", function() {
+  if (repeat) {
+    audio.currentTime = 0;
+    audio.play();
+    return;
+  }
+  var next = pickNext(true);
+  if (next) {
+    playTrack(next, true);
+  } else {
+    playing = false;
+    document.getElementById("playIcon").className = "ti ti-player-play";
+  }
 });
 
-audio.addEventListener('play',  () => { playing = true;  document.getElementById('playIcon').className = 'ti ti-player-pause'; });
-audio.addEventListener('pause', () => { playing = false; document.getElementById('playIcon').className = 'ti ti-player-play';  });
+audio.addEventListener("play", function() {
+  playing = true;
+  document.getElementById("playIcon").className = "ti ti-player-pause";
+  renderList();
+});
 
-/* ── Старт ── */
+audio.addEventListener("pause", function() {
+  playing = false;
+  document.getElementById("playIcon").className = "ti ti-player-play";
+  renderList();
+});
+
+/* Старт */
 loadFavs();
 renderList();
 renderTabs();
+
 </script>
 </body>
 </html>

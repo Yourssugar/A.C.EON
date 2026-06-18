@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Архив звука</title>
+  <title>A.C.EON Music Archive</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
@@ -340,32 +340,40 @@
 <script>
 
 /* =================================================================
-   ТРЕКИ — ЕДИНСТВЕННОЕ МЕСТО ДЛЯ РЕДАКТИРОВАНИЯ
-
    Каждая строка — один трек:
-     { id: 1, title: "Название", src: "../audio/файл.mp3", duration: "3:42" },
+     { id: 1, title: "Название", src: "../audio/файл.mp3"    },
 
    id       — уникальный номер (просто по порядку)
    title    — название (отображается в плеере и списке)
    src      — путь к mp3 от этого HTML файла, например "audio/track01.mp3"
               или полная ссылка "https://cdn.example.com/track.mp3"
-   duration — длительность строкой, можно не писать — подтянется из файла
 ================================================================= */
 
 var TRACKS = [
 
-  { id: 1,  title: "Это Любовь!",                  src: "../audio/Это Любовь!.mp3"                  },
-  { id: 2,  title: "Ночной город",                 src: "../audio/Ночной город.mp3"                 },
-  { id: 3,  title: "Ночной город (rock edit)",     src: "../audio/Ночной город (rock edit).mp3"     },
-  { id: 4,  title: "The Xerox of My Childhood",    src: "../audio/The Xerox of My Childhood.mp3"    },
-  { id: 5,  title: "Ксерокс моего детства",        src: "../audio/Ксерокс моего детства.mp3"        },
-  { id: 6,  title: "Сегодня всё можно",            src: "../audio/«Сегодня всё можно».mp3"          },
-  { id: 7,  title: "Princess",                     src: "../audio/“Princess”.mp3"                   },
-  { id: 8,  title: "Sweet Poison",                 src: "../audio/Sweet Poison.mp3"                 },
-  { id: 9,  title: "До утра (modern pop)",         src: "../audio/До утра (modern pop).mp3"         },
-  { id: 10, title: "Dance Me Closer",              src: "../audio/Dance Me Closer.mp3"              },
-  { id: 11, title: "Не забыл",                     src: "../audio/Не забыл.mp3"                     }
-
+  { id: 1,  title: "Это Любовь!",                                      src: "../audio/Это Любовь!.mp3"                                    },
+  { id: 2,  title: "Ночной город",                                     src: "../audio/Ночной город.mp3"                                   },
+  { id: 3,  title: "Ночной город (rock edit)",                         src: "../audio/Ночной город (rock edit).mp3"                       },
+  { id: 4,  title: "The Xerox of My Childhood",                        src: "../audio/The Xerox of My Childhood.mp3"                      },
+  { id: 5,  title: "Ксерокс моего детства",                            src: "../audio/Ксерокс моего детства.mp3"                          },
+  { id: 6,  title: "Сегодня всё можно",                                src: "../audio/«Сегодня всё можно».mp3"                            },
+  { id: 7,  title: "Princess",                                         src: "../audio/“Princess”.mp3"                                     },
+  { id: 8,  title: "Sweet Poison",                                     src: "../audio/Sweet Poison.mp3"                                   },
+  { id: 9,  title: "До утра (modern pop)",                             src: "../audio/До утра (modern pop).mp3"                           },
+  { id: 10, title: "Dance Me Closer",                                  src: "../audio/Dance Me Closer.mp3"                                },
+  { id: 11, title: "Не забыл",                                         src: "../audio/Не забыл.mp3"                                       },
+  { id: 12, title: "Midnight Pulse",                                   src: "../audio/Midnight Pulse.mp3"                                 },
+  { id: 13, title: "Reflections A Story Without Words",                src: "../audio/Reflections A Story Without Words.mp3"              },
+  { id: 14, title: "Classical Experiment No. 1",                       src: "../audio/Classical Experiment No. 1.mp3"                     },
+  { id: 15, title: "I Am Not Alive, But I Answer  (Awake)",            src: "../audio/I Am Not Alive, But I Answer  (Awake).mp3"          },
+  { id: 16, title: "I Am Not Alive, But I Answer (Echo)",              src: "../audio/I Am Not Alive, But I Answer (Echo).mp3"            },
+  { id: 17, title: "Лигурия",                                          src: "../audio/Лигурия.mp3"                                        },
+  { id: 18, title: "Dance With The Shadows",                           src: "../audio/Dance With The Shadows A.C.EON.mp3"                 },
+  { id: 19, title: "Signal One (1)",                                   src: "../audio/track1.mp3"                                         },
+  { id: 20, title: "Signal One (1)",                                   src: "../audio/track2.mp3"                                         },
+  { id: 21, title: "Void 1 A.C.EON studio",                            src: "../audio/Void 1 A.C.EON studio.mp3"                          },
+  { id: 21, title: "Void 2 A.C.EON Studio",                            src: "../audio/Void 2 A.C.EON Studio.mp3"                          }
+  
   // <- добавляй треки сюда, не забудь запятую после предыдущей строки
 
 ];

@@ -215,11 +215,24 @@
       .catch(function(){ setBotStatus('botKai', 'offline'); });
   }
 
-  checkKaiStatus();
-  setInterval(checkKaiStatus, 15000);
+  var ANTON_CONFIG_URL = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/anton-chat/config.json';
 
-  // Антона подключим тем же способом позже, когда пришлёшь его адрес/эндпоинт
-  setBotStatus('botAnton', 'offline');
+  function checkAntonStatus(){
+    fetchWithTimeout(ANTON_CONFIG_URL + '?t=' + Date.now(), 6000)
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(cfg){
+        if(!cfg.api_url) throw 0;
+        return fetchWithTimeout(cfg.api_url + '/api/state', 5000);
+      })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(st){ setBotStatus('botAnton', st.busy ? 'busy' : 'online'); })
+      .catch(function(){ setBotStatus('botAnton', 'offline'); });
+  }
+
+  checkKaiStatus();
+  checkAntonStatus();
+  setInterval(checkKaiStatus, 15000);
+  setInterval(checkAntonStatus, 15000);
   // ─── DATABASE URL ──────────────────────────────────────────────────────────
   // Когда добавишь codes.json в репо на GitHub, замени эту строку:
   // var DB_URL = 'https://raw.githubusercontent.com/ТВО_ИМЯАККА/РЕПО/main/db/codes.json';

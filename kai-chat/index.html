@@ -218,6 +218,32 @@
     background:var(--pink);animation:pulse .8s infinite;
   }
 
+  /* ── GENERATION OVERLAY (заменяет чат, пока Кай рисует) ── */
+  .gen-overlay{
+    display:none;flex:1;align-items:center;justify-content:center;
+    padding:20px;
+    background-color:var(--bg);
+    background-image:radial-gradient(circle, rgba(240,176,208,.38) 1.2px, transparent 1.2px);
+    background-size:22px 22px;
+  }
+  .gen-overlay.show{display:flex;}
+  .gen-card{
+    text-align:center;max-width:300px;
+    background:#fff;border:2.5px solid var(--border);border-radius:28px;
+    padding:36px 30px;box-shadow:4px 4px 0 var(--pink-soft);
+    animation:fadein .3s ease;
+  }
+  .gen-icon{font-size:38px;margin-bottom:10px;animation:genFloat 2.4s ease-in-out infinite;}
+  @keyframes genFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .gen-title{font-size:18px;font-weight:900;color:var(--pink-deep);margin-bottom:10px;}
+  .gen-sub{font-size:12.5px;font-weight:600;color:var(--text-muted);line-height:1.6;}
+  .gen-sub b{color:var(--pink-deep);}
+  .gen-pulse{display:flex;gap:6px;justify-content:center;margin-top:18px;}
+  .gen-pulse span{width:8px;height:8px;border-radius:50%;background:var(--pink);animation:genDot 1.2s ease-in-out infinite;}
+  .gen-pulse span:nth-child(2){animation-delay:.2s;}
+  .gen-pulse span:nth-child(3){animation-delay:.4s;}
+  @keyframes genDot{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
+
   /* lightbox */
   .lightbox{
     display:none;position:fixed;inset:0;z-index:1000;
@@ -302,6 +328,14 @@
           <div class="greet-icon">✦</div>
           <div class="greet-title">Привет, я КАЙ</div>
           <div class="greet-sub">Напиши мне что-нибудь — я здесь и рад помочь 🌸</div>
+        </div>
+      </div>
+      <div class="gen-overlay" id="genOverlay">
+        <div class="gen-card">
+          <div class="gen-icon">🎨</div>
+          <div class="gen-title">Кай рисует...</div>
+          <div class="gen-sub">Пожалуйста, не закрывай эту вкладку.<br>Обычно это занимает <b>от 3 до 9 минут</b> — в зависимости от загруженности сервера.</div>
+          <div class="gen-pulse"><span></span><span></span><span></span></div>
         </div>
       </div>
       <div class="input-row">
@@ -410,7 +444,7 @@ const chat=document.getElementById('chat'),input=document.getElementById('input'
   imgStatusEl=document.getElementById('imgStatus'),imgStatusTx=document.getElementById('imgStatusText'),
   lightbox=document.getElementById('lightbox'),lightboxImg=document.getElementById('lightboxImg');
 
-let API_BASE='',busy=false,pollTimer=null,imageAvailable=false;
+let API_BASE='',busy=false,pollTimer=null,imageAvailable=false,imageGenerating=false;
 const activeImageJobs = {};
 const SP=['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
 const GH='https://api.github.com/repos/Yourssugar/A.C.EON/contents/kai-chat/config.json';
@@ -466,37 +500,53 @@ async function checkImageService(){
   }catch(_){imageAvailable=false;}
 }
 
+/* ── Переключатель состояния "Кай рисует" ── */
+function setGenerating(on){
+  imageGenerating = on;
+  if(on){
+    window.neuralSetActive && window.neuralSetActive(true);
+    input.disabled = true;
+    sendBtn.disabled = true;
+    chat.style.display = 'none';
+    document.getElementById('genOverlay').classList.add('show');
+  } else {
+    window.neuralSetActive && window.neuralSetActive(false);
+    document.getElementById('genOverlay').classList.remove('show');
+    chat.style.display = '';
+    chat.scrollTop = chat.scrollHeight;
+    if(!statusEl.classList.contains('busy') && !statusEl.classList.contains('offline')){
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+}
+
 /* ── Генерация изображения по промпту (polling) ── */
 async function generateImage(prompt){
-
-  if(!imageAvailable || !API_BASE) return;
-
+  if(!imageAvailable || !API_BASE){
+    setGenerating(false);
+    addMsg('system warn','— рисование сейчас недоступно 😢 —');
+    return;
+  }
   try{
-
     const r = await fetch(API_BASE+'/api/image',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({prompt})
     });
-
     if(!r.ok) throw new Error('ошибка запуска');
-
     const data = await r.json();
-
     if(!data.job_id)
       throw new Error('нет job_id');
-
     activeImageJobs[data.job_id] = true;
-
     addMsg(
       'system',
       '🎨 Кай начал рисовать изображение. Оно появится автоматически когда будет готово.'
     );
-
   }catch(e){
-
     console.error(e);
-
+    setGenerating(false);
     addMsg(
       'system warn',
       '— ошибка запуска генерации 😢 —'
@@ -505,41 +555,31 @@ async function generateImage(prompt){
 }
 
   async function checkImageJobs(){
-
   if(!API_BASE) return;
-
   for(const jobId of Object.keys(activeImageJobs)){
-
     try{
-
       const r = await fetch(
         API_BASE+'/api/image_poll/'+jobId
       );
-
       if(!r.ok) continue;
-
       const data = await r.json();
 
-      if(data.status === 'done'){
-
+     if(data.status === 'done'){
         addImageMsg(
           data.image,
           data.prompt
         );
-
         delete activeImageJobs[jobId];
+        if(Object.keys(activeImageJobs).length === 0) setGenerating(false);
       }
-
       else if(data.status === 'error'){
-
         addMsg(
           'system warn',
           '— ошибка генерации 😢 —'
         );
-
         delete activeImageJobs[jobId];
+        if(Object.keys(activeImageJobs).length === 0) setGenerating(false);
       }
-
     }catch(e){
       console.log(e);
     }
@@ -567,7 +607,7 @@ input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventD
 sendBtn.addEventListener('click',doSend);
 
 async function doSend(){
-  const text=input.value.trim();if(!text||busy||!API_BASE)return;
+  const text=input.value.trim();if(!text||busy||!API_BASE||imageGenerating)return;
   addMsg('user',text);input.value='';input.style.height='auto';
   busy=true;sendBtn.disabled=true;
   window.neuralSetActive&&window.neuralSetActive(true);
@@ -576,6 +616,7 @@ async function doSend(){
   let si=0;span.textContent=SP[0]+' думает...';
   const st=setInterval(()=>{si=(si+1)%SP.length;span.textContent=SP[si]+' думает...';},90);
   let first=true;const cur=document.createElement('span');cur.className='cursor';
+  let willDraw=false;
   try{
     const r=await fetch(API_BASE+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,session_id:SID})});
     if(r.status===409){clearInterval(st);div.remove();addMsg('system warn','— Кай занят 💭 —');setUi('busy');busy=false;window.neuralSetActive&&window.neuralSetActive(false);return;}
@@ -586,12 +627,21 @@ async function doSend(){
     const fullText=span.textContent;
     const drawMatch=fullText.match(DRAW_RE);
     if(drawMatch){
+      willDraw=true;
       span.textContent=fullText.replace(DRAW_RE,'').trimEnd();
       const drawPrompt=drawMatch[1].trim();
+      setGenerating(true);
       setTimeout(()=>generateImage(drawPrompt),300);
     }
   }catch(_){clearInterval(st);span.textContent='[Ошибка соединения 😢]';setUi('disconnected');}
-  finally{cur.remove();busy=false;sendBtn.disabled=false;window.neuralSetActive&&window.neuralSetActive(false);if(!statusEl.classList.contains('busy')&&!statusEl.classList.contains('offline'))input.focus();}
+  finally{
+    cur.remove();busy=false;
+    if(!willDraw){
+      sendBtn.disabled=false;
+      window.neuralSetActive&&window.neuralSetActive(false);
+      if(!statusEl.classList.contains('busy')&&!statusEl.classList.contains('offline'))input.focus();
+    }
+  }
 }
 
 clearBtn.addEventListener('click',async()=>{

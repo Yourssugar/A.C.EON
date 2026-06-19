@@ -82,18 +82,19 @@
 
   /* ── CHAT PANEL ──────────────────────────── */
   .chat-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
-  .controls{
-    display:flex;align-items:center;padding:9px 18px;
+ .controls{
+    display:flex;align-items:center;gap:10px;padding:9px 18px;
     border-bottom:2px solid var(--border);background:var(--bg);flex-shrink:0;
   }
-  .controls button{
+  .controls button, .gallery-link{
     background:var(--bg);border:2px solid var(--border);color:var(--text-muted);
     font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;
     padding:5px 16px;border-radius:20px;cursor:pointer;
     box-shadow:2px 2px 0 var(--border);transition:all .12s;
+    text-decoration:none;display:inline-flex;align-items:center;
   }
-  .controls button:hover{color:var(--pink-deep);border-color:var(--pink);box-shadow:3px 3px 0 var(--pink);transform:translate(-1px,-1px);}
-  .controls button:active{transform:translate(1px,1px);box-shadow:none;}
+  .controls button:hover, .gallery-link:hover{color:var(--pink-deep);border-color:var(--pink);box-shadow:3px 3px 0 var(--pink);transform:translate(-1px,-1px);}
+  .controls button:active, .gallery-link:active{transform:translate(1px,1px);box-shadow:none;}
 
   /* ── CHAT AREA — dot texture ─────────────── */
   .chat{
@@ -287,8 +288,9 @@
 
     <!-- RIGHT: chat -->
     <div class="chat-panel">
-      <div class="controls">
+     <div class="controls">
         <button id="clearBtn">🗑 очистить диалог</button>
+        <a href="../gallery/" class="gallery-link">🖼 галерея</a>
       </div>
       <!-- image generation status bar -->
       <div class="img-status" id="imgStatus">

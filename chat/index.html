@@ -8,6 +8,15 @@
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap');
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html, body { width:100%; height:100%; background:#040b16; overflow:hidden; font-family:'JetBrains Mono','Courier New',monospace; }
+    #bg-fx{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+    #bg-fx .orb{ position:absolute; width:46vw; height:46vw; border-radius:50%; filter:blur(60px); opacity:.16; }
+    #bg-fx .orb1{ top:-14%; left:-10%; background:radial-gradient(circle, #2fe3ff 0%, transparent 70%); animation:driftA 26s ease-in-out infinite alternate; }
+    #bg-fx .orb2{ bottom:-18%; right:-12%; background:radial-gradient(circle, #1d6fff 0%, transparent 70%); animation:driftB 32s ease-in-out infinite alternate; }
+    @keyframes driftA{ 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(6%,8%) scale(1.12);} }
+    @keyframes driftB{ 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(-7%,-6%) scale(1.08);} }
+    #bg-fx .scan{ position:absolute; left:0; right:0; height:140px; background:linear-gradient(to bottom, rgba(47,227,255,0) 0%, rgba(47,227,255,.05) 50%, rgba(47,227,255,0) 100%); animation:scanmv 9s linear infinite; }
+    @keyframes scanmv{ 0%{top:-140px;} 100%{top:100%;} }
+    #bg-fx .grid{ position:absolute; inset:0; opacity:.05; background-image:linear-gradient(to right, #2fe3ff 1px, transparent 1px), linear-gradient(to bottom, #2fe3ff 1px, transparent 1px); background-size:42px 42px; }
 
     #hd {
       position:fixed; top:0; left:0; right:0; z-index:10;
@@ -38,6 +47,7 @@
     @keyframes botpulse { 0%,100%{opacity:1} 50%{opacity:.45} }
     .bot-state { font-size:10px; color:#6fb3c8; letter-spacing:1px; }
     #chat {
+      z-index:1;
       position:fixed; top:148px; bottom:150px; left:0; right:0;
       overflow-y:auto; padding:24px 26px; scrollbar-width:thin;
     }
@@ -91,6 +101,7 @@
     @keyframes tdot { 0%,100%{opacity:0} 50%{opacity:1} }
 
     #bar {
+      z-index:1;
       position:fixed; bottom:0; left:0; right:0;
       padding:16px 26px 20px; border-top:1px solid #0f2c3e; background:#040b16;
     }
@@ -119,7 +130,12 @@
   </style>
 </head>
 <body>
-
+  <div id="bg-fx">
+    <div class="grid"></div>
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="scan"></div>
+  </div>
   <div id="hd">
     <div id="hd-top">
       <a href="../" style="font-size:11px;color:#5f93a8;letter-spacing:3px;text-decoration:none;padding:2px 0;" onmouseover="this.style.color='#2fe3ff'" onmouseout="this.style.color='#5f93a8'">&#8592; MAIN</a>

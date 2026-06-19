@@ -19,7 +19,24 @@
     .hd-dot { color:#00aabb; animation:blink 2s step-end infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
     #hd-div { font-size:9px; color:#002a38; margin-top:8px; overflow:hidden; white-space:nowrap; }
-
+    #bots-row { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+    .bot-link {
+      display:flex; align-items:center; gap:8px;
+      padding:6px 13px; border:1px solid #003a4a; border-radius:20px;
+      text-decoration:none; font-size:9px; letter-spacing:2px; color:#0099aa;
+      background:rgba(0,30,40,.4); transition:border-color .15s, box-shadow .15s;
+    }
+    .bot-link:hover { border-color:#00aabb; box-shadow:0 0 14px -2px rgba(0,170,187,.4); }
+    .bot-dot {
+      width:8px; height:8px; border-radius:50%; background:#334455; flex-shrink:0;
+      transition:background .3s, box-shadow .3s;
+    }
+    .bot-dot.online { background:#1fd56a; box-shadow:0 0 0 3px rgba(31,213,106,.22); animation:botpulse 2s infinite; }
+    .bot-dot.busy,
+    .bot-dot.offline { background:#ff4d5e; box-shadow:0 0 0 3px rgba(255,77,94,.18); }
+    .bot-dot.busy { animation:botpulse .9s infinite; }
+    @keyframes botpulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .bot-state { font-size:8px; color:#445566; letter-spacing:1px; }
     #chat {
       position:fixed; top:64px; bottom:90px; left:0; right:0;
       overflow-y:auto; padding:20px 24px; scrollbar-width:none;
@@ -103,7 +120,19 @@
         <span id="hd-obs">OBS: &mdash;</span>
       </div>
     </div>
-    <div id="hd-div">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
+   <div id="hd-div">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
+    <div id="bots-row">
+      <a class="bot-link" id="botKai" href="https://yourssugar.github.io/A.C.EON/kai-chat/">
+        <span class="bot-dot" id="botKaiDot"></span>
+        <span class="bot-name">КАЙ</span>
+        <span class="bot-state" id="botKaiState">&mdash;</span>
+      </a>
+      <a class="bot-link" id="botAnton" href="https://yourssugar.github.io/A.C.EON/anton-chat/">
+        <span class="bot-dot" id="botAntonDot"></span>
+        <span class="bot-name">АНТОН</span>
+        <span class="bot-state" id="botAntonState">скоро</span>
+      </a>
+    </div>
   </div>
 
   <div id="chat"></div>
@@ -129,7 +158,41 @@
     localStorage.setItem('aceon_obs', obsId);
   }
   document.getElementById('hd-obs').textContent = 'OBS: ' + obsId;
+// ─── BOT STATUS (KAI / ANTON) ───────────────────────────────────────────────
+  var KAI_CONFIG_URL = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/kai-chat/config.json';
 
+  function setBotStatus(prefix, state){
+    // state: 'online' | 'busy' | 'offline'
+    var dot = document.getElementById(prefix + 'Dot');
+    var txt = document.getElementById(prefix + 'State');
+    if(!dot) return;
+    dot.className = 'bot-dot ' + state;
+    if(txt) txt.textContent = state === 'online' ? 'свободен' : state === 'busy' ? 'занят' : 'офлайн';
+  }
+
+  function fetchWithTimeout(url, ms){
+    var ctrl = new AbortController();
+    var id = setTimeout(function(){ ctrl.abort(); }, ms);
+    return fetch(url, { signal: ctrl.signal }).finally(function(){ clearTimeout(id); });
+  }
+
+  function checkKaiStatus(){
+    fetchWithTimeout(KAI_CONFIG_URL + '?t=' + Date.now(), 6000)
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(cfg){
+        if(!cfg.api_url) throw 0;
+        return fetchWithTimeout(cfg.api_url + '/api/state', 5000);
+      })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(st){ setBotStatus('botKai', st.busy ? 'busy' : 'online'); })
+      .catch(function(){ setBotStatus('botKai', 'offline'); });
+  }
+
+  checkKaiStatus();
+  setInterval(checkKaiStatus, 15000);
+
+  // Антона подключим тем же способом позже, когда пришлёшь его адрес/эндпоинт
+  setBotStatus('botAnton', 'offline');
   // ─── DATABASE URL ──────────────────────────────────────────────────────────
   // Когда добавишь codes.json в репо на GitHub, замени эту строку:
   // var DB_URL = 'https://raw.githubusercontent.com/ТВО_ИМЯАККА/РЕПО/main/db/codes.json';

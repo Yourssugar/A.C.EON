@@ -38,49 +38,51 @@
     @keyframes botpulse { 0%,100%{opacity:1} 50%{opacity:.45} }
     .bot-state { font-size:10px; color:#6fb3c8; letter-spacing:1px; }
     #chat {
-      position:fixed; top:64px; bottom:90px; left:0; right:0;
-      overflow-y:auto; padding:20px 24px; scrollbar-width:none;
+      position:fixed; top:148px; bottom:150px; left:0; right:0;
+      overflow-y:auto; padding:24px 26px; scrollbar-width:thin;
     }
-    #chat::-webkit-scrollbar { display:none; }
+    #chat::-webkit-scrollbar { width:6px; }
+    #chat::-webkit-scrollbar-thumb { background:#1b4a64; border-radius:6px; }
 
-    .msg { margin:10px 0; max-width:78%; animation:fadein .3s ease; }
-    @keyframes fadein { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    .msg { margin:14px 0; max-width:82%; animation:fadein .3s ease; }
+    @keyframes fadein { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
     .msg.bot  { margin-right:auto; }
     .msg.user { margin-left:auto; text-align:right; }
 
-    .msg-sender { font-size:8px; letter-spacing:3px; margin-bottom:4px; }
-    .msg.bot  .msg-sender { color:#004a5a; }
-    .msg.user .msg-sender { color:#003322; }
+    .msg-sender { font-size:10px; letter-spacing:3px; margin-bottom:6px; }
+    .msg.bot  .msg-sender { color:#3a8fa8; }
+    .msg.user .msg-sender { color:#3a6056; }
 
     .msg-body {
-      font-size:11px; letter-spacing:1px; line-height:1.9;
-      padding:12px 14px; border:1px solid; white-space:pre-wrap;
+      font-size:14.5px; letter-spacing:.4px; line-height:1.85;
+      padding:14px 17px; border:1px solid; border-radius:4px; white-space:pre-wrap;
     }
     .msg.bot .msg-body {
-      color:#008899; border-color:#003a4a; background:rgba(0,40,55,0.4);
-      border-left:2px solid #007799;
+      color:#7fe3ff; border-color:#1b4a64; background:rgba(8,38,52,.55);
+      border-left:3px solid #2fb8d8;
     }
     .msg.user .msg-body {
-      color:#004a3a; border-color:#002a22; background:rgba(0,20,16,0.4); font-size:10px;
+      color:#a8f0d2; border-color:#173a30; background:rgba(8,30,22,.5); font-size:13.5px;
     }
 
     /* invalid — amber */
     .msg.bot.invalid .msg-body {
-      color:#886600; border-color:#3a2800; border-left-color:#664400; background:rgba(20,10,0,0.5);
+      color:#ffcf70; border-color:#5a3d10; border-left-color:#c98a2a; background:rgba(30,18,4,.55);
     }
-    .msg.bot.invalid .msg-sender { color:#443300; }
+    .msg.bot.invalid .msg-sender { color:#c98a2a; }
 
     /* valid — bright cyan */
     .msg.bot.valid .msg-body {
-      color:#00ccdd; border-color:#005566; border-left-color:#00aabb; background:rgba(0,35,44,0.6);
+      color:#52f3ff; border-color:#0c5c70; border-left-color:#1fd0ea; background:rgba(4,42,52,.6);
+      box-shadow:0 0 22px -8px rgba(47,227,255,.55);
     }
-    .msg.bot.valid .msg-sender { color:#006677; }
+    .msg.bot.valid .msg-sender { color:#1fd0ea; }
 
     /* already claimed — dim grey-blue */
     .msg.bot.claimed .msg-body {
-      color:#445566; border-color:#223344; border-left-color:#334455; background:rgba(8,14,22,0.5);
+      color:#8aa3b3; border-color:#27414f; border-left-color:#3a5b6c; background:rgba(10,18,26,.55);
     }
-    .msg.bot.claimed .msg-sender { color:#334455; }
+    .msg.bot.claimed .msg-sender { color:#5d7d8c; }
 
     /* typing dots */
     .msg.typing .msg-body { color:#003a4a; letter-spacing:4px; }
@@ -90,23 +92,30 @@
 
     #bar {
       position:fixed; bottom:0; left:0; right:0;
-      padding:12px 24px 16px; border-top:1px solid #003a4a; background:#000;
+      padding:16px 26px 20px; border-top:1px solid #0f2c3e; background:#040b16;
     }
-    #bar-label { font-size:8px; color:#004455; letter-spacing:4px; margin-bottom:8px; }
-    #bar-row { display:flex; align-items:center; border:1px solid #003a4a; }
-    #bar-pr { padding:10px 12px; font-size:11px; color:#005566; }
+    #bar-label { font-size:11px; color:#2fe3ff; letter-spacing:3px; margin-bottom:6px; font-weight:600; }
+    #bar-hint {
+      font-size:11px; color:#5f93a8; letter-spacing:.3px; line-height:1.6;
+      margin-bottom:12px; max-width:560px;
+    }
+    #bar-hint b { color:#bfe9f5; font-weight:600; }
+    #bar-row { display:flex; align-items:center; border:1.5px solid #1b4a64; border-radius:8px; background:rgba(6,18,28,.65); transition:border-color .18s, box-shadow .18s; }
+    #bar-row:focus-within { border-color:#2fe3ff; box-shadow:0 0 0 3px rgba(47,227,255,.12); }
+    #bar-key { padding:0 0 0 16px; font-size:16px; color:#0fa6c2; display:flex; align-items:center; }
+    #bar-pr { padding:13px 8px 13px 10px; font-size:13px; color:#0fa6c2; }
     #bar-input {
       flex:1; background:transparent; border:none; outline:none;
-      color:#00aabb; font-family:inherit; font-size:11px; padding:10px 8px; letter-spacing:3px;
+      color:#2fe3ff; font-family:inherit; font-size:14px; padding:13px 10px; letter-spacing:3px;
     }
-    #bar-input::placeholder { color:#002233; }
+    #bar-input::placeholder { color:#3a6072; letter-spacing:2px; }
     #bar-btn {
-      border:none; border-left:1px solid #003a4a; background:transparent; color:#004455;
-      font-family:inherit; font-size:9px; padding:10px 16px; cursor:pointer;
-      letter-spacing:3px; transition:color .15s, background .15s;
+      border:none; border-left:1px solid #1b4a64; background:transparent; color:#5f93a8;
+      font-family:inherit; font-size:11px; font-weight:600; padding:13px 22px; cursor:pointer;
+      letter-spacing:3px; transition:color .15s, background .15s; border-radius:0 6px 6px 0;
     }
-    #bar-btn:hover { color:#00aabb; background:#001822; }
-    #bar-btn:disabled { color:#002233; cursor:default; }
+    #bar-btn:hover { color:#2fe3ff; background:rgba(47,227,255,.08); }
+    #bar-btn:disabled { color:#3a6072; cursor:default; }
   </style>
 </head>
 <body>
@@ -139,7 +148,9 @@
 
   <div id="bar">
     <div id="bar-label">[ ENTER FRAGMENT CODE ]</div>
+    <div id="bar-hint">Сюда вводятся коды доступа, спрятанные в роликах A.C.EON. <b>Верный код = NFT-токен</b>, который останется навсегда у того, кто найдёт его первым.</div>
     <div id="bar-row">
+      <span id="bar-key">🔑</span>
       <span id="bar-pr">&#8250;_</span>
       <input id="bar-input" type="text" autocomplete="off" spellcheck="false"
              placeholder="FRAGMENT_KEY" maxlength="32">

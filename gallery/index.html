@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Галерея Кая</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF8FC;
+    --bg-input:#FFF0F8;
+    --pink:#FF6BAE;
+    --pink-dim:#F5A0CC;
+    --pink-soft:#FFD6EC;
+    --pink-deep:#C8356E;
+    --text-dark:#3B0A22;
+    --text-mid:#8C4D6E;
+    --text-muted:#BF86A8;
+    --border:#F0B0D0;
+    --glow:rgba(255,107,174,.38);
+    --green:#2DA866;
+    --warn:#FF5D7A;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{min-height:100%;background:var(--bg);color:var(--text-dark);font-family:'Nunito',sans-serif;}
+
+  header{
+    position:sticky; top:0; z-index:10;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+    padding:14px 24px;
+    background:linear-gradient(to right, #FFF0F8, #FFF8FC, #FFF0F8);
+    border-bottom:2.5px solid var(--border);
+    box-shadow:0 3px 14px rgba(255,107,174,.10);
+  }
+  .brand{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .back-link{
+    font-size:12px;font-weight:800;color:var(--text-muted);text-decoration:none;
+    letter-spacing:1px;padding:4px 0;transition:color .15s;
+  }
+  .back-link:hover{color:var(--pink-deep);}
+  .brand h1{
+    font-size:24px;font-weight:900;color:var(--pink);letter-spacing:1px;
+    text-shadow:2px 2px 0 var(--pink-deep);
+  }
+  .count-badge{
+    font-size:11px;font-weight:800;color:var(--text-mid);
+    background:var(--pink-soft);padding:4px 12px;border-radius:20px;
+    border:2px solid var(--border);box-shadow:2px 2px 0 var(--border);
+  }
+  .hstatus{
+    display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;
+    letter-spacing:1px;color:var(--text-muted);background:var(--bg);
+    padding:7px 16px;border-radius:20px;border:2px solid var(--border);
+    box-shadow:2px 2px 0 var(--border);
+  }
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--border);transition:background .3s;flex-shrink:0;}
+  .hstatus.online{border-color:#7DE8B0;box-shadow:2px 2px 0 #7DE8B0;color:var(--green);}
+  .hstatus.online .dot{background:#3DCA7A;box-shadow:0 0 0 3px rgba(61,202,122,.25);animation:pulse 2s infinite;}
+  .hstatus.offline{border-color:var(--warn);box-shadow:2px 2px 0 var(--warn);color:var(--warn);}
+  .hstatus.offline .dot{background:var(--warn);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  main{ max-width:1180px; margin:0 auto; padding:28px 24px 60px; }
+
+  .state-card{
+    max-width:420px; margin:60px auto; text-align:center;
+    background:#fff; border:2.5px solid var(--border); border-radius:28px;
+    padding:36px 32px; box-shadow:4px 4px 0 var(--pink-soft);
+  }
+  .state-icon{ font-size:38px; margin-bottom:14px; }
+  .state-title{ font-size:18px; font-weight:900; color:var(--pink-deep); margin-bottom:8px; }
+  .state-sub{ font-size:13px; font-weight:600; color:var(--text-muted); line-height:1.6; }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+    gap:18px;
+  }
+  .card{
+    background:#fff; border:2.5px solid var(--border); border-radius:18px;
+    overflow:hidden; box-shadow:3px 3px 0 var(--pink-soft);
+    transition:transform .15s, box-shadow .15s; cursor:zoom-in;
+    display:flex; flex-direction:column;
+    animation:fadein .3s ease;
+  }
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .card:hover{ transform:translate(-2px,-2px); box-shadow:5px 5px 0 var(--pink-soft); }
+  .card img{ width:100%; aspect-ratio:1/1; object-fit:cover; display:block; background:var(--bg-input); }
+  .card .cap{ padding:10px 12px 12px; }
+  .card .prompt{
+    font-size:11.5px; font-weight:600; color:var(--text-mid); line-height:1.45;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .card .meta{ font-size:9.5px; color:var(--text-muted); margin-top:5px; letter-spacing:.5px; }
+
+  .lightbox{
+    display:none; position:fixed; inset:0; z-index:1000;
+    background:rgba(30,5,18,.86); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center; cursor:zoom-out;
+    padding:30px; flex-direction:column; gap:16px;
+  }
+  .lightbox.show{ display:flex; }
+  .lightbox img{ max-width:88vw; max-height:78vh; border-radius:14px; box-shadow:0 0 60px rgba(255,107,174,.35); }
+  .lightbox .lb-prompt{
+    max-width:640px; text-align:center; color:#ffe3f1; font-size:13px; font-weight:600;
+    line-height:1.6; cursor:default;
+  }
+
+  .skeleton{ background:linear-gradient(90deg,var(--pink-soft) 25%,var(--bg-input) 50%,var(--pink-soft) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; }
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .skel-card{ aspect-ratio:1/1; border-radius:18px; border:2.5px solid var(--border); }
+
+  @media(max-width:520px){
+    header{ padding:12px 16px; }
+    main{ padding:18px 14px 40px; }
+    .brand h1{ font-size:20px; }
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <a href="../kai-chat/" class="back-link">&#8592; КАЙ</a>
+      <h1>ГАЛЕРЕЯ ✦</h1>
+      <span class="count-badge" id="countBadge">&mdash;</span>
+    </div>
+    <div class="hstatus" id="status">
+      <span class="dot"></span>
+      <span id="statusText">ПОДКЛЮЧЕНИЕ...</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="content">
+      <div class="grid" id="skeletonGrid">
+        <div class="skel-card skeleton"></div>
+        <div class="skel-card skeleton"></div>
+        <div class="skel-card skeleton"></div>
+        <div class="skel-card skeleton"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="lightbox" id="lightbox">
+    <img id="lightboxImg" src="" alt="">
+    <div class="lb-prompt" id="lightboxPrompt"></div>
+  </div>
+
+<script>
+const KAI_CONFIG_URL = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/kai-chat/config.json';
+const MANIFEST_URL   = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/gallery/manifest.json';
+const IMAGE_BASE     = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/gallery/images/';
+const POLL_MS = 30000;
+
+const statusEl = document.getElementById('status');
+const statusTx = document.getElementById('statusText');
+const content  = document.getElementById('content');
+const countBadge = document.getElementById('countBadge');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxPrompt = document.getElementById('lightboxPrompt');
+
+let lastFileList = null;
+
+function fetchWithTimeout(url, ms){
+  const ctrl = new AbortController();
+  const id = setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(()=>clearTimeout(id));
+}
+
+function setStatus(state){
+  statusEl.className = 'hstatus ' + state;
+  statusTx.textContent = state === 'online' ? 'КАЙ РИСУЕТ' : 'КАЙ ОФЛАЙН';
+}
+
+function renderEmpty(){
+  content.innerHTML = `
+    <div class="state-card">
+      <div class="state-icon">🎨</div>
+      <div class="state-title">Пока пусто</div>
+      <div class="state-sub">Кай ещё ничего не нарисовал. Загляни позже — здесь появится всё, что он создаст.</div>
+    </div>`;
+  countBadge.textContent = '0';
+}
+
+function renderGrid(items){
+  countBadge.textContent = items.length;
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  items.forEach(item=>{
+    const url = IMAGE_BASE + item.file;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <img src="${url}" alt="generated" loading="lazy">
+      <div class="cap">
+        <div class="prompt">${escapeHtml(item.prompt || '')}</div>
+      </div>`;
+    card.querySelector('img').addEventListener('click', ()=>{
+      lightboxImg.src = url;
+      lightboxPrompt.textContent = item.prompt || '';
+      lightbox.classList.add('show');
+    });
+    grid.appendChild(card);
+  });
+  content.innerHTML = '';
+  content.appendChild(grid);
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+lightbox.addEventListener('click', ()=> lightbox.classList.remove('show'));
+
+// ── Список картинок: всегда с GitHub, доступен даже когда Кай выключен ──
+async function loadManifest(){
+  try{
+    const r = await fetchWithTimeout(MANIFEST_URL + '?t=' + Date.now(), 8000);
+    if(!r.ok) throw 0; // 404 — manifest.json ещё ни разу не создавался, это нормально для первого раза
+    const items = await r.json();
+
+    const fingerprint = items.map(i=>i.file).join(',');
+    if(fingerprint === lastFileList) return;
+    lastFileList = fingerprint;
+
+    if(!items.length) renderEmpty();
+    else renderGrid(items.slice().reverse()); // новые сверху
+  }catch(_){
+    if(lastFileList !== 'empty'){
+      lastFileList = 'empty';
+      renderEmpty();
+    }
+  }
+}
+
+// ── Статус "онлайн/офлайн": отдельно, через текущий туннель ──
+async function checkKaiOnline(){
+  try{
+    const cfgR = await fetchWithTimeout(KAI_CONFIG_URL + '?t=' + Date.now(), 6000);
+    if(!cfgR.ok) throw 0;
+    const cfg = await cfgR.json();
+    if(!cfg.api_url) throw 0;
+    const r = await fetchWithTimeout(cfg.api_url + '/api/state', 5000);
+    if(!r.ok) throw 0;
+    setStatus('online');
+  }catch(_){
+    setStatus('offline');
+  }
+}
+
+loadManifest();
+checkKaiOnline();
+setInterval(loadManifest, POLL_MS);
+setInterval(checkKaiOnline, POLL_MS);
+</script>
+</body>
+</html>

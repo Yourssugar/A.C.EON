@@ -22,6 +22,29 @@
       #mystery-btn{left:7%;top:calc(72% + 64px);}
       #mystery-btn:hover{left:calc(7% + 4px);}
     }
+    /* ── PLAYER ICON (LAYER 1, NEXT TO PASSWORD FIELD → MUSIC ARCHIVE) ── */
+#player-btn{position:fixed;left:calc(7% + 300px);top:calc(72% + 70px);z-index:60;
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(0,20,30,.9);border:1px solid #00b8cc;
+  color:#00b8cc;display:none;align-items:center;justify-content:center;
+  text-decoration:none;cursor:pointer;
+  animation:playerPulse 2.1s ease-in-out infinite;
+  transition:left .25s, transform .2s, box-shadow .25s;}
+#player-btn.show{display:flex;}
+#player-btn:hover{transform:scale(1.12);box-shadow:0 0 26px -2px rgba(0,184,204,.65);}
+#player-btn svg{width:18px;height:18px;}
+@keyframes playerPulse{0%,100%{opacity:1;box-shadow:0 0 8px rgba(0,184,204,.35);}50%{opacity:.55;box-shadow:0 0 20px rgba(0,184,204,.7);}}
+@keyframes playerShake{
+  0%,100%{transform:translateX(0) rotate(0deg);}
+  20%{transform:translateX(-2px) rotate(-4deg);}
+  40%{transform:translateX(2px) rotate(4deg);}
+  60%{transform:translateX(-1px) rotate(0deg);}
+  80%{transform:translateX(1px) rotate(3deg);}
+}
+#player-btn.shake{animation:playerShake .35s linear, playerPulse 2.1s ease-in-out infinite;}
+@media(max-width:760px){
+  #player-btn{left:7%;top:calc(72% + 104px);}
+}
     @keyframes mysteryBlink{0%,100%{opacity:1;box-shadow:0 0 8px rgba(0,204,102,.35);}50%{opacity:.5;box-shadow:0 0 22px rgba(0,204,102,.7);}}
     @keyframes mysteryShake{
       0%,100%{transform:translateX(0) rotate(0deg);}
@@ -322,6 +345,13 @@
 </div>
 
 <a href="info/" id="mystery-btn">????</a>
+<a href="Music%20archive/" id="player-btn" aria-label="A.C.EON Music Archive">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 18V5l12-2v13"/>
+    <circle cx="6" cy="18" r="3"/>
+    <circle cx="18" cy="16" r="3"/>
+  </svg>
+</a>
 <svg id="cur" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
   <g id="currot" fill="none" stroke="#404040" stroke-width="0.6"><rect x="9" y="9" width="16" height="16" transform="rotate(45,17,17)"/></g>
   <line x1="17" y1="1"  x2="17" y2="11" stroke="#3c3c3c" stroke-width="0.5"/>
@@ -336,6 +366,7 @@
   var gch='!<>_[]{}=+#\u2593\u2592\u2591\u2573~';
   var curScreen=1;
   var mysteryArmed=false;
+  var playerArmed=false;
 
   var rvlPhrases=[
     'A.C.EON_NODE ACTIVE','SIGNAL MONITORED','WHO BROUGHT YOU HERE',
@@ -382,6 +413,10 @@
         if(!mysteryArmed){
           mysteryArmed=true;
           setTimeout(function(){document.getElementById('mystery-btn').classList.add('show');},2000+Math.random()*3000|0);
+        }
+        if(!playerArmed){
+          playerArmed=true;
+          setTimeout(function(){document.getElementById('player-btn').classList.add('show');},3500+Math.random()*3000|0);
         }
       }
       if(Math.random()<.013){
@@ -499,6 +534,14 @@
     }
   }
   setInterval(mysteryCycle,3200+Math.random()*1800|0);
+  setInterval(function(){
+    var el=document.getElementById('player-btn');
+    if(!el||!el.classList.contains('show'))return;
+    if(Math.random()<.35){
+      el.classList.add('shake');
+      setTimeout(function(){el.classList.remove('shake');},380);
+    }
+  },4200+Math.random()*1800|0);
   // occasional quick double-flicker independent of the main cycle
   setInterval(function(){
     var el=document.getElementById('mystery-btn');
@@ -805,6 +848,8 @@
     pw1.classList.remove('vis');
     document.getElementById('mystery-btn').classList.remove('show');
     mysteryArmed=false;
+    document.getElementById('player-btn').classList.remove('show');
+    playerArmed=false;
   });
 // ── BACKGROUND MUSIC ──
 var bgmFired = false;

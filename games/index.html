@@ -650,7 +650,6 @@ function slCanGoToTableau(card){return sTb.some(function(col){return col.length=
 function slIsDeadlocked(){
   for(var ci=0;ci<sTb.length;ci++){var col=sTb[ci];for(var ki=0;ki<col.length;ki++){if(!col[ki].up)continue;var card=col[ki];for(var dj=0;dj<sTb.length;dj++){if(dj===ci)continue;var dst=sTb[dj];var ok=dst.length===0?(card.val===13):(dst[dst.length-1].up&&dst[dst.length-1].col!==card.col&&dst[dst.length-1].val===card.val+1);if(ok)return false;}}}
   for(var ci2=0;ci2<sTb.length;ci2++){var col2=sTb[ci2];if(col2.length&&col2[col2.length-1].up&&slCanGoToFoundation(col2[col2.length-1]))return false;}
-  for(var fi=0;fi<sFn.length;fi++){if(sFn[fi].length&&slCanGoToTableau(sFn[fi][sFn[fi].length-1]))return false;}
   if(sWs.length&&(slCanGoToFoundation(sWs[sWs.length-1])||slCanGoToTableau(sWs[sWs.length-1])))return false;
   var rest=sSt.concat(sWs.slice(0,-1));
   for(var i=0;i<rest.length;i++){if(slCanGoToFoundation(rest[i])||slCanGoToTableau(rest[i]))return false;}

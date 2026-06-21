@@ -287,6 +287,23 @@ canvas{display:block;}
 #bs-setup-grid .bs-cell{cursor:pointer;}
 #bs-start-btn{display:none;}
 
+/* MASTERMIND */
+#mm-history{display:flex;flex-direction:column;gap:6px;width:100%;max-width:320px;max-height:240px;overflow-y:auto;margin:0 auto;}
+.mm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 8px;background:var(--bg2);border:1px solid var(--bdr-d);}
+.mm-pegs{display:flex;gap:5px;}
+.mm-peg{width:24px;height:24px;border-radius:50%;border:2px solid rgba(0,0,0,.3);box-shadow:0 1px 2px rgba(0,0,0,.35);flex-shrink:0;cursor:pointer;}
+.mm-peg.empty{background:var(--bg3);border-style:dashed;border-color:var(--bdr);}
+.mm-fb{display:flex;flex-wrap:wrap;gap:3px;width:22px;}
+.mm-fbdot{width:8px;height:8px;border-radius:50%;background:transparent;}
+.mm-fbdot.black{background:#1a1a1a;border:1px solid #555;}
+.mm-fbdot.white{background:#fff;border:1px solid #999;}
+#mm-current{display:flex;gap:8px;justify-content:center;margin:12px 0 8px;}
+#mm-palette{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+.mm-sw{width:38px;height:38px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.18);
+       transition:transform .1s;box-shadow:0 2px 4px rgba(0,0,0,.3);}
+.mm-sw:hover{transform:scale(1.1);}
+#mm-submit:disabled{opacity:.35;cursor:default;}
+
 </style>
 </head>
 <body>
@@ -318,6 +335,7 @@ canvas{display:block;}
     <div class="game-icon" onclick="openGame('wordle')"><div class="ico-fold"></div><span class="ico-label">WORDLE</span></div>
     <div class="game-icon" onclick="openGame('flood')"><div class="ico-fold"></div><span class="ico-label">FLOOD-IT</span></div>
     <div class="game-icon" onclick="openGame('battle')"><div class="ico-fold"></div><span class="ico-label">BATTLESHIP</span></div>
+    <div class="game-icon" onclick="openGame('mind')"><div class="ico-fold"></div><span class="ico-label">MASTERMIND</span></div>
   </div>
   <div style="margin-top:12px;font-size:9px;color:var(--pri-d);letter-spacing:1px;">PRESS M TO TOGGLE MOBILE CONTROLS</div>
 </div>
@@ -620,12 +638,35 @@ canvas{display:block;}
         <div class="bs-grid" id="bs-pgrid"></div>
       </div>
       <div class="bs-board">
-        <div class="bs-label">ENEMY WATERS (<span id="bs-eleft">10</span>/10)</div>
+       <div class="bs-label">ENEMY WATERS (<span id="bs-eleft">10</span>/10)</div>
         <div class="bs-grid" id="bs-egrid"></div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- MASTERMIND -->
+<div id="game-mind" class="gwin hidden">
+  <div class="gtb"><span class="gtb-t">MASTERMIND</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
+  <div class="garea">
+    <div class="gbar">
+      <span>GUESS: <span id="mm-tries">0</span> / <span id="mm-max">10</span></span>
+      <span><button class="btn sel" id="mmb-easy" onclick="setMindDiff('easy')">EASY</button><button class="btn" id="mmb-med" onclick="setMindDiff('med')">MED</button><button class="btn" id="mmb-hard" onclick="setMindDiff('hard')">HARD</button></span>
+      <button class="btn" onclick="initMind()">NEW</button>
+      <span>WINS: <span id="hi-mind">0</span></span>
+    </div>
+    <div id="mm-msg" style="font-size:11px;letter-spacing:1px;min-height:16px;"></div>
+    <div id="mm-history"></div>
+    <div id="mm-current"></div>
+    <div id="mm-palette"></div>
+    <button class="btn sel" id="mm-submit" onclick="mmSubmit()" disabled>SUBMIT GUESS</button>
+  </div>
+</div>
+
+<script>
+
+(function(){
+'use strict';
 
 <script>
 
@@ -707,7 +748,7 @@ window.openGame=function(id){
   var fn={mine:initMine,soli:initSoli,snake:initSnake,brkout:initBreak,
           g2048:init2048,ttt:initTTT,tetris:initTetris,pong:initPong,
           checkers:initCheckers,chess:initChess,pf:initPf,
-          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,battle:initBattle};
+          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,battle:initBattle,mind:initMind};
   if(fn[id])fn[id]();
 };
 window.closeGame=function(){
@@ -1565,8 +1606,158 @@ function bsRenderGrid(id,board,ownBoard){
 }
 (function(){var el=document.getElementById('hi-battle');if(el)el.textContent=localStorage.getItem('aceon_bs_wins')||'0';})();
 
-})(); // end IIFE
+/* ════════════════ MASTERMIND ════════════════ */
+var MM_COLORS=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c','#ecf0f1'];
+var mmCfg={easy:{len:4,colors:6,max:10},med:{len:5,colors:6,max:10},hard:{len:5,colors:8,max:10}};
+var mmDiff='easy',mmLen,mmColors,mmMax,mmSecret,mmGuess,mmTries,mmOver,mmHistory;
 
+window.setMindDiff=function(d){mmDiff=d;['easy','med','hard'].forEach(function(x){document.getElementById('mmb-'+x).className='btn'+(x===d?' sel':'');});initMind();};
+
+window.initMind=function(){
+  var c=mmCfg[mmDiff];
+  mmLen=c.len;mmColors=c.colors;mmMax=c.max;
+  mmSecret=[];for(var i=0;i<mmLen;i++)mmSecret.push(Math.random()*mmColors|0);
+  mmGuess=Array(mmLen).fill(null);
+  mmTries=0;mmOver=false;mmHistory=[];
+  document.getElementById('mm-tries').textContent='0';
+  document.getElementById('mm-max').textContent=mmMax;
+  var msg=document.getElementById('mm-msg');msg.textContent='';msg.style.color='';
+  renderMindHistory();
+  renderMindCurrent();
+  renderMindPalette();
+  mmUpdateSubmit();
+};
+
+function mmScoreGuess(secret,guess){
+  var black=0,secretLeft=[],guessLeft=[];
+  for(var i=0;i<secret.length;i++){
+    if(guess[i]===secret[i])black++;
+    else{secretLeft.push(secret[i]);guessLeft.push(guess[i]);}
+  }
+  var white=0,used=Array(secretLeft.length).fill(false);
+  guessLeft.forEach(function(g){
+    for(var j=0;j<secretLeft.length;j++){
+      if(!used[j]&&secretLeft[j]===g){used[j]=true;white++;break;}
+    }
+  });
+  return {black:black,white:white};
+}
+
+window.mmPickColor=function(ci){
+  if(mmOver)return;
+  var idx=mmGuess.indexOf(null);
+  if(idx===-1)return;
+  mmGuess[idx]=ci;
+  renderMindCurrent();
+  mmUpdateSubmit();
+};
+
+window.mmClearSlot=function(i){
+  if(mmOver)return;
+  mmGuess[i]=null;
+  renderMindCurrent();
+  mmUpdateSubmit();
+};
+
+function mmUpdateSubmit(){
+  var btn=document.getElementById('mm-submit');
+  if(btn)btn.disabled=mmOver||mmGuess.indexOf(null)!==-1;
+}
+
+window.mmSubmit=function(){
+  if(mmOver||mmGuess.indexOf(null)!==-1)return;
+  var fb=mmScoreGuess(mmSecret,mmGuess);
+  mmHistory.push({guess:mmGuess.slice(),fb:fb});
+  mmTries++;
+  document.getElementById('mm-tries').textContent=mmTries;
+  renderMindHistory();
+  if(fb.black===mmLen){
+    mmOver=true;
+    var wins=parseInt(localStorage.getItem('aceon_mm_wins')||'0')+1;
+    localStorage.setItem('aceon_mm_wins',wins);
+    document.getElementById('hi-mind').textContent=wins;
+    var m=document.getElementById('mm-msg');
+    m.textContent='\u2713 CRACKED IN '+mmTries+' GUESSES!';m.style.color='var(--pri-b)';
+  }else if(mmTries>=mmMax){
+    mmOver=true;
+    var m2=document.getElementById('mm-msg');
+    m2.textContent='OUT OF GUESSES \u2014 CODE REVEALED BELOW';m2.style.color='var(--err)';
+    renderMindReveal();
+  }else{
+    mmGuess=Array(mmLen).fill(null);
+    renderMindCurrent();
+  }
+  mmUpdateSubmit();
+};
+
+function renderMindReveal(){
+  var row=document.createElement('div');
+  row.className='mm-row';
+  var pegs=document.createElement('div');pegs.className='mm-pegs';
+  mmSecret.forEach(function(ci){
+    var p=document.createElement('div');p.className='mm-peg';p.style.background=MM_COLORS[ci];p.style.cursor='default';pegs.appendChild(p);
+  });
+  row.appendChild(pegs);
+  var lbl=document.createElement('span');lbl.style.fontSize='10px';lbl.style.color='var(--err)';lbl.style.letterSpacing='1px';lbl.textContent='SECRET';
+  row.appendChild(lbl);
+  var hist=document.getElementById('mm-history');
+  hist.appendChild(row);
+  hist.scrollTop=hist.scrollHeight;
+}
+
+function renderMindHistory(){
+  var el=document.getElementById('mm-history');
+  el.innerHTML='';
+  mmHistory.forEach(function(h){
+    var row=document.createElement('div');row.className='mm-row';
+    var pegs=document.createElement('div');pegs.className='mm-pegs';
+    h.guess.forEach(function(ci){
+      var p=document.createElement('div');p.className='mm-peg';p.style.background=MM_COLORS[ci];p.style.cursor='default';pegs.appendChild(p);
+    });
+    row.appendChild(pegs);
+    var fb=document.createElement('div');fb.className='mm-fb';
+    var dots=[];
+    for(var i=0;i<h.fb.black;i++)dots.push('black');
+    for(var i=0;i<h.fb.white;i++)dots.push('white');
+    while(dots.length<mmLen)dots.push('');
+    dots.forEach(function(d){
+      var dot=document.createElement('div');dot.className='mm-fbdot'+(d?' '+d:'');fb.appendChild(dot);
+    });
+    row.appendChild(fb);
+    el.appendChild(row);
+  });
+  el.scrollTop=el.scrollHeight;
+}
+
+function renderMindCurrent(){
+  var el=document.getElementById('mm-current');
+  el.innerHTML='';
+  mmGuess.forEach(function(ci,i){
+    var p=document.createElement('div');
+    p.className='mm-peg'+(ci===null?' empty':'');
+    if(ci!==null)p.style.background=MM_COLORS[ci];
+    p.addEventListener('click',function(){mmClearSlot(i);});
+    el.appendChild(p);
+  });
+}
+
+function renderMindPalette(){
+  var el=document.getElementById('mm-palette');
+  el.innerHTML='';
+  for(var i=0;i<mmColors;i++){
+    (function(i){
+      var sw=document.createElement('div');
+      sw.className='mm-sw';
+      sw.style.background=MM_COLORS[i];
+      sw.addEventListener('click',function(){mmPickColor(i);});
+      el.appendChild(sw);
+    })(i);
+  }
+}
+
+(function(){var el=document.getElementById('hi-mind');if(el)el.textContent=localStorage.getItem('aceon_mm_wins')||'0';})();
+
+})(); // end IIFE
 </script>
 </body>
 </html>

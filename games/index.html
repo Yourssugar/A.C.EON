@@ -303,6 +303,22 @@ canvas{display:block;}
 }
 .bs-cell.bs-flash.miss::after{animation:bsMissPop .4s cubic-bezier(.34,1.56,.64,1);}
 
+/* REACTION TEST */
+#rt-box{
+  width:100%;max-width:560px;height:260px;margin:0 auto;
+  display:flex;align-items:center;justify-content:center;
+  background:#444;border:2px solid var(--bdr);cursor:pointer;
+  transition:background .15s;user-select:none;
+}
+#rt-box.wait{background:#a33333;}
+#rt-box.ready{background:#2a9d4f;}
+#rt-box.early{background:#c98a2a;}
+#rt-box.result{background:#2a5e8a;}
+#rt-text{font-size:18px;font-weight:bold;color:#fff;letter-spacing:2px;text-align:center;padding:0 20px;}
+#rt-summary{margin-top:12px;font-size:11px;letter-spacing:1px;color:var(--txt-d);text-align:center;}
+#rt-summary .rt-times{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;}
+#rt-summary .rt-chip{padding:4px 10px;background:var(--bg3);border:1px solid var(--bdr);font-size:11px;}
+
 </style>
 </head>
 <body>
@@ -335,6 +351,7 @@ canvas{display:block;}
     <div class="game-icon" onclick="openGame('flood')"><div class="ico-fold"></div><span class="ico-label">FLOOD-IT</span></div>
     <div class="game-icon" onclick="openGame('battle')"><div class="ico-fold"></div><span class="ico-label">BATTLESHIP</span></div>
     <div class="game-icon" onclick="openGame('mind')"><div class="ico-fold"></div><span class="ico-label">MASTERMIND</span></div>
+    <div class="game-icon" onclick="openGame('react')"><div class="ico-fold"></div><span class="ico-label">REACTION</span></div>
   </div>
   <div style="margin-top:12px;font-size:9px;color:var(--pri-d);letter-spacing:1px;">PRESS M TO TOGGLE MOBILE CONTROLS</div>
 </div>
@@ -662,6 +679,22 @@ canvas{display:block;}
   </div>
 </div>
 
+<!-- REACTION TEST -->
+<div id="game-react" class="gwin hidden">
+  <div class="gtb"><span class="gtb-t">REACTION TEST</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
+  <div class="garea">
+    <div class="gbar">
+      <span>ROUND: <span id="rt-round">0</span>/5</span>
+      <button class="btn" onclick="initReact()">NEW</button>
+      <span>BEST: <span id="hi-react">&mdash;</span> ms</span>
+    </div>
+    <div id="rt-box" onclick="rtClickBox()">
+      <div id="rt-text">CLICK TO START</div>
+    </div>
+    <div id="rt-summary"></div>
+  </div>
+</div>
+
 <script>
 
 (function(){
@@ -742,7 +775,7 @@ window.openGame=function(id){
   var fn={mine:initMine,soli:initSoli,snake:initSnake,brkout:initBreak,
           g2048:init2048,ttt:initTTT,tetris:initTetris,pong:initPong,
           checkers:initCheckers,chess:initChess,pf:initPf,
-          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,battle:initBattle,mind:initMind};
+          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,battle:initBattle,mind:initMind,react:initReact};
   if(fn[id])fn[id]();
 };
 window.closeGame=function(){
@@ -751,6 +784,7 @@ window.closeGame=function(){
   if(cur==='snake')snStop();if(cur==='brkout')bkStop();
   if(cur==='tetris')tetStop();if(cur==='pong')pongStop();
   if(cur==='pf')pfStop();if(cur==='ts')tsStop();
+  if(cur==='react'&&typeof rtTimer!=='undefined')clearTimeout(rtTimer);
   cur=null;
   document.getElementById('launcher').classList.remove('hidden');
 };
@@ -1750,6 +1784,81 @@ function renderMindPalette(){
 }
 
 (function(){var el=document.getElementById('hi-mind');if(el)el.textContent=localStorage.getItem('aceon_mm_wins')||'0';})();
+
+/* ════════════════ REACTION TEST ════════════════ */
+var rtState='idle',rtTimer=null,rtReadyAt,rtRound=0,rtTimes=[],rtMax=5;
+
+window.initReact=function(){
+  rtState='idle';rtRound=0;rtTimes=[];
+  clearTimeout(rtTimer);
+  document.getElementById('rt-round').textContent='0';
+  document.getElementById('rt-summary').innerHTML='';
+  rtShowBest();
+  rtSetBox('','CLICK TO START');
+};
+
+function rtSetBox(cls,text){
+  var box=document.getElementById('rt-box');
+  if(!box)return;
+  box.className=cls;
+  document.getElementById('rt-text').textContent=text;
+}
+
+window.rtClickBox=function(){
+  if(cur!=='react')return;
+  if(rtState==='idle'){
+    rtRound=0;rtTimes=[];
+    document.getElementById('rt-round').textContent='0';
+    document.getElementById('rt-summary').innerHTML='';
+    rtStartRound();
+  }else if(rtState==='waiting'){
+    clearTimeout(rtTimer);
+    rtState='early';
+    rtSetBox('early','TOO SOON! CLICK TO TRY AGAIN');
+  }else if(rtState==='early'){
+    rtStartRound();
+  }else if(rtState==='ready'){
+    var elapsed=Math.round(performance.now()-rtReadyAt);
+    rtTimes.push(elapsed);
+    rtRound++;
+    document.getElementById('rt-round').textContent=rtRound;
+    rtState='result';
+    rtSetBox('result',elapsed+' ms');
+    if(rtRound>=rtMax){
+      rtTimer=setTimeout(rtFinish,900);
+    }else{
+      rtTimer=setTimeout(rtStartRound,1100);
+    }
+  }
+};
+
+function rtStartRound(){
+  rtState='waiting';
+  rtSetBox('wait','WAIT FOR GREEN...');
+  var delay=1200+Math.random()*3300;
+  rtTimer=setTimeout(function(){
+    rtState='ready';
+    rtReadyAt=performance.now();
+    rtSetBox('ready','CLICK NOW!');
+  },delay);
+}
+
+function rtFinish(){
+  rtState='idle';
+  var avg=Math.round(rtTimes.reduce(function(a,b){return a+b;},0)/rtTimes.length);
+  var best=Math.min.apply(null,rtTimes);
+  rtSetBox('','CLICK TO PLAY AGAIN');
+  var allBest=rtGetBest();
+  var newBest=(allBest===null||best<allBest);
+  if(newBest){rtSetBest(best);rtShowBest();}
+  var html='AVERAGE: '+avg+' ms &nbsp;|&nbsp; BEST ROUND: '+best+' ms'+(newBest?' \u2014 NEW RECORD!':'');
+  html+='<div class="rt-times">'+rtTimes.map(function(t){return '<span class="rt-chip">'+t+' ms</span>';}).join('')+'</div>';
+  document.getElementById('rt-summary').innerHTML=html;
+}
+
+function rtGetBest(){var v=localStorage.getItem('aceon_hi_react');return v?parseInt(v):null;}
+function rtSetBest(ms){var b=rtGetBest();if(b===null||ms<b)localStorage.setItem('aceon_hi_react',ms);}
+function rtShowBest(){var b=rtGetBest();var el=document.getElementById('hi-react');if(el)el.textContent=b===null?'\u2014':b;}
 
 })(); // end IIFE
 

@@ -259,16 +259,29 @@ canvas{display:block;}
 #bs-wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;}
 .bs-board{display:flex;flex-direction:column;align-items:center;gap:6px;}
 .bs-label{font-size:10px;letter-spacing:2px;color:var(--txt-d);}
-.bs-grid{display:inline-grid;grid-template-columns:repeat(10,var(--bs-cell,28px));grid-template-rows:repeat(10,var(--bs-cell,28px));gap:1px;background:var(--bdr-d);border:2px solid var(--bdr-d);}
-.bs-cell{width:var(--bs-cell,28px);height:var(--bs-cell,28px);background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;}
-.bs-cell.ship{background:var(--bdr);}
+.bs-grid{display:inline-grid;grid-template-columns:repeat(10,var(--bs-cell,28px));grid-template-rows:repeat(10,var(--bs-cell,28px));gap:1px;background:#000;border:2px solid #000;}
+.bs-cell{width:var(--bs-cell,28px);height:var(--bs-cell,28px);background:#fff;display:flex;align-items:center;justify-content:center;position:relative;}
+.bs-cell.ship{background:#5a7a9a;}
 .bs-cell.enemy{cursor:pointer;}
-.bs-cell.enemy:hover{background:var(--sel);}
+.bs-cell.enemy:hover{background:rgba(52,152,219,.22);}
 .bs-cell.hit{background:#c0392b;}
 .bs-cell.hit::after{content:'\2715';color:#fff;font-weight:bold;font-size:calc(var(--bs-cell,28px) * 0.5);}
 .bs-cell.sunk{background:#0a0a0a;}
 .bs-cell.sunk::after{content:'\2715';color:#ff4d4d;font-weight:bold;font-size:calc(var(--bs-cell,28px) * 0.5);}
-.bs-cell.miss::after{content:'';width:32%;height:32%;border-radius:50%;background:rgba(255,255,255,.55);}
+.bs-cell.miss::after{content:'';width:32%;height:32%;border-radius:50%;background:rgba(44,62,80,.6);}
+
+@keyframes bsHitFlash{
+  0%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
+  18%{box-shadow:inset 0 0 0 4px rgba(255,255,255,.95);transform:scale(1.2);}
+  100%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
+}
+.bs-cell.bs-flash.hit,.bs-cell.bs-flash.sunk{animation:bsHitFlash .5s ease-out;z-index:2;}
+@keyframes bsMissPop{
+  0%{transform:scale(0);opacity:0;}
+  60%{transform:scale(1.7);opacity:.85;}
+  100%{transform:scale(1);opacity:1;}
+}
+.bs-cell.bs-flash.miss::after{animation:bsMissPop .4s cubic-bezier(.34,1.56,.64,1);}
 .bs-cell.preview-ok{background:rgba(76,175,80,.55);}
 .bs-cell.preview-bad{background:rgba(239,83,80,.55);}
 #bs-setup-grid .bs-cell{cursor:pointer;}
@@ -1260,7 +1273,7 @@ function flShowBest(){var b=flGetBest();var el=document.getElementById('hi-flood
 /* ════════════════ BATTLESHIP ════════════════ */
 var BS_SHIPS=[4,3,3,2,2,2,1,1,1,1]; // classic fleet: 1x4, 2x3, 3x2, 4x1
 var bsDiff='easy';
-var bsPlayer,bsEnemy,bsTurn,bsOver,bsHunt,bsHuntDir,bsHuntOrigin;
+var bsPlayer,bsEnemy,bsTurn,bsOver,bsHunt,bsHuntDir,bsHuntOrigin,bsLastShot;
 var bsSetupGrid,bsSetupShips,bsToPlace,bsPlaceIdx,bsOrient;
 
 window.setBattleDiff=function(d){bsDiff=d;['easy','hard'].forEach(function(x){document.getElementById('bsb-'+x).className='btn'+(x===d?' sel':'');});initBattle();};
@@ -1309,7 +1322,7 @@ function bsPlaceFleet(){
 window.initBattle=function(){
   bsEnemy=bsPlaceFleet();
   bsTurn='player';bsOver=false;
-  bsHunt=[];bsHuntDir=null;bsHuntOrigin=null;
+  bsHunt=[];bsHuntDir=null;bsHuntOrigin=null;bsLastShot=null;
   bsToPlace=BS_SHIPS.slice();
   bsPlaceIdx=0;
   bsOrient='h';
@@ -1415,6 +1428,15 @@ window.bsStartBattle=function(){
 document.addEventListener('keydown',function(e){if(cur==='battle'&&(e.key==='r'||e.key==='R'))bsRotate();});
 
 /* ── battle ── */
+function bsMarkAroundSunk(board,ship){
+  ship.cells.forEach(function(p){
+    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+      var nr=p[0]+dr,nc=p[1]+dc;
+      if(nr<0||nr>=10||nc<0||nc>=10)continue;
+      if(board.grid[nr][nc]===0)board.grid[nr][nc]=3;
+    }
+  });
+}
 function bsFireAt(board,r,c){
   var grid=board.grid;
   if(grid[r][c]===2||grid[r][c]===3)return null;
@@ -1422,7 +1444,7 @@ function bsFireAt(board,r,c){
     grid[r][c]=2;
     var ship=board.ships.filter(function(s){return s.cells.some(function(p){return p[0]===r&&p[1]===c;});})[0];
     ship.hits++;
-    if(ship.hits===ship.size)ship.sunk=true;
+    if(ship.hits===ship.size){ship.sunk=true;bsMarkAroundSunk(board,ship);}
     return {result:'hit',ship:ship};
   }else{
     grid[r][c]=3;
@@ -1434,6 +1456,7 @@ window.bsPlayerFire=function(r,c){
   if(bsOver||bsTurn!=='player'||cur!=='battle')return;
   var res=bsFireAt(bsEnemy,r,c);
   if(!res)return;
+  bsLastShot={board:bsEnemy,r:r,c:c};
   renderBattle();
   if(res.result==='hit'){
     var left=bsEnemy.ships.filter(function(s){return !s.sunk;}).length;
@@ -1467,6 +1490,7 @@ function bsAiTurn(){
   if(bsOver||cur!=='battle')return;
   var target=bsPickAiTarget();
   var res=bsFireAt(bsPlayer,target[0],target[1]);
+  bsLastShot={board:bsPlayer,r:target[0],c:target[1]};
   renderBattle();
   if(res.result==='hit'){
     if(bsDiff==='hard'){
@@ -1531,6 +1555,9 @@ function bsRenderGrid(id,board,ownBoard){
       if(!ownBoard){
         el.classList.add('enemy');
         el.addEventListener('click',function(){bsPlayerFire(r,c);});
+      }
+      if(bsLastShot&&bsLastShot.board===board&&bsLastShot.r===r&&bsLastShot.c===c){
+        el.classList.add('bs-flash');
       }
       g.appendChild(el);
     })(r,c);

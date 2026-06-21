@@ -269,19 +269,6 @@ canvas{display:block;}
 .bs-cell.sunk{background:#0a0a0a;}
 .bs-cell.sunk::after{content:'\2715';color:#ff4d4d;font-weight:bold;font-size:calc(var(--bs-cell,28px) * 0.5);}
 .bs-cell.miss::after{content:'';width:32%;height:32%;border-radius:50%;background:rgba(44,62,80,.6);}
-
-@keyframes bsHitFlash{
-  0%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
-  18%{box-shadow:inset 0 0 0 4px rgba(255,255,255,.95);transform:scale(1.2);}
-  100%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
-}
-.bs-cell.bs-flash.hit,.bs-cell.bs-flash.sunk{animation:bsHitFlash .5s ease-out;z-index:2;}
-@keyframes bsMissPop{
-  0%{transform:scale(0);opacity:0;}
-  60%{transform:scale(1.7);opacity:.85;}
-  100%{transform:scale(1);opacity:1;}
-}
-.bs-cell.bs-flash.miss::after{animation:bsMissPop .4s cubic-bezier(.34,1.56,.64,1);}
 .bs-cell.preview-ok{background:rgba(76,175,80,.55);}
 .bs-cell.preview-bad{background:rgba(239,83,80,.55);}
 #bs-setup-grid .bs-cell{cursor:pointer;}
@@ -303,6 +290,18 @@ canvas{display:block;}
        transition:transform .1s;box-shadow:0 2px 4px rgba(0,0,0,.3);}
 .mm-sw:hover{transform:scale(1.1);}
 #mm-submit:disabled{opacity:.35;cursor:default;}
+@keyframes bsHitFlash{
+  0%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
+  18%{box-shadow:inset 0 0 0 4px rgba(255,255,255,.95);transform:scale(1.2);}
+  100%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
+}
+.bs-cell.bs-flash.hit,.bs-cell.bs-flash.sunk{animation:bsHitFlash .5s ease-out;z-index:2;}
+@keyframes bsMissPop{
+  0%{transform:scale(0);opacity:0;}
+  60%{transform:scale(1.7);opacity:.85;}
+  100%{transform:scale(1);opacity:1;}
+}
+.bs-cell.bs-flash.miss::after{animation:bsMissPop .4s cubic-bezier(.34,1.56,.64,1);}
 
 </style>
 </head>
@@ -638,7 +637,7 @@ canvas{display:block;}
         <div class="bs-grid" id="bs-pgrid"></div>
       </div>
       <div class="bs-board">
-       <div class="bs-label">ENEMY WATERS (<span id="bs-eleft">10</span>/10)</div>
+        <div class="bs-label">ENEMY WATERS (<span id="bs-eleft">10</span>/10)</div>
         <div class="bs-grid" id="bs-egrid"></div>
       </div>
     </div>
@@ -662,11 +661,6 @@ canvas{display:block;}
     <button class="btn sel" id="mm-submit" onclick="mmSubmit()" disabled>SUBMIT GUESS</button>
   </div>
 </div>
-
-<script>
-
-(function(){
-'use strict';
 
 <script>
 
@@ -1758,6 +1752,7 @@ function renderMindPalette(){
 (function(){var el=document.getElementById('hi-mind');if(el)el.textContent=localStorage.getItem('aceon_mm_wins')||'0';})();
 
 })(); // end IIFE
+
 </script>
 </body>
 </html>

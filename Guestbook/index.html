@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A.C.EON — Гостевая книга</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#07050f;--t1:rgba(255,255,255,.9);--t2:rgba(255,255,255,.5);--t3:rgba(255,255,255,.2);--bd:rgba(255,255,255,.07)}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',sans-serif;color:var(--t1)}
+#cv{position:fixed;inset:0;z-index:0;pointer-events:none}
+#w{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+#top{padding:18px 22px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd);flex-shrink:0}
+#ttl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:400;color:rgba(255,255,255,.35)}
+#cnt{font-size:11px;font-weight:300;color:var(--t3)}
+#rb{margin-left:auto;background:none;border:1px solid var(--bd);color:var(--t2);font-size:14px;cursor:pointer;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
+#rb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
+#fld{flex:1;position:relative;overflow:hidden}
+.dw{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10}
+.dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 0 4px 1px rgba(255,255,255,.28),0 0 10px 2px rgba(255,255,255,.08);animation:pu var(--pd,3s) ease-in-out infinite var(--pdly,0s);transition:transform .22s ease,box-shadow .22s ease,opacity .22s ease}
+@keyframes pu{0%,100%{opacity:.38;box-shadow:0 0 2px 1px rgba(255,255,255,.18)}50%{opacity:.9;box-shadow:0 0 8px 3px rgba(255,255,255,.5),0 0 18px 5px rgba(255,255,255,.12)}}
+.dw:hover .dot,.dw.on .dot{transform:scale(4);box-shadow:0 0 14px 5px rgba(255,255,255,.85),0 0 28px 10px rgba(255,255,255,.28);opacity:1}
+.tip{position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;background:rgba(4,2,10,.94);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;min-width:130px;max-width:215px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:opacity .18s,transform .18s;white-space:nowrap;z-index:200}
+.dw:hover .tip,.dw.on .tip{opacity:1;transform:translateX(-50%) translateY(0)}
+.tip.dn{bottom:auto;top:calc(100% + 14px);transform:translateX(-50%) translateY(-8px)}
+.dw:hover .tip.dn,.dw.on .tip.dn{transform:translateX(-50%) translateY(0)}
+.tn{font-size:12px;font-weight:500;margin-bottom:4px;color:var(--t1)}
+.tp{font-size:11px;color:var(--t2);font-style:italic;line-height:1.45;white-space:normal}
+.tt{font-size:10px;color:var(--t3);margin-top:5px;font-weight:300}
+#frm{padding:14px 22px 18px;border-top:1px solid var(--bd);flex-shrink:0}
+#fi{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:6px;color:var(--t1);font-family:inherit;font-size:13px;padding:8px 10px;outline:none;transition:.18s}
+input::placeholder{color:rgba(255,255,255,.18)}
+input:focus{border-color:rgba(255,255,255,.18)}
+#ni{flex:0 0 125px}
+#pw{flex:1;position:relative;min-width:150px}
+#pi{width:100%;padding-right:42px}
+#cc{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--t3);pointer-events:none}
+#cc.lim{color:rgba(255,100,100,.7)}
+#sb{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--t1);font-size:16px;width:36px;height:36px;border-radius:6px;cursor:pointer;flex-shrink:0;transition:.18s}
+#sb:hover:not(:disabled){background:rgba(255,255,255,.11)}
+#sb:disabled{opacity:.35;cursor:default}
+#ms{min-height:16px;font-size:11px;margin-top:7px;font-weight:300}
+#ms.err{color:#ff7272}
+#ms.ok{color:#7dffaa}
+#dc{font-size:10px;color:rgba(255,255,255,.13);margin-top:5px;letter-spacing:.03em}
+@media(max-width:520px){#ni{flex:0 0 100px}#pw{min-width:120px}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="w">
+  <div id="top">
+    <span id="ttl">✦ гостевая книга</span>
+    <span id="cnt"></span>
+    <button id="rb" title="обновить">↻</button>
+  </div>
+  <div id="fld"></div>
+  <div id="frm">
+    <div id="fi">
+      <input id="ni" placeholder="имя / ник" maxlength="20" autocomplete="off" spellcheck="false">
+      <div id="pw">
+        <input id="pi" placeholder="оставь след во вселенной" maxlength="35" autocomplete="off">
+        <span id="cc">0/35</span>
+      </div>
+      <button id="sb">→</button>
+    </div>
+    <div id="ms"></div>
+    <div id="dc">записи видны всем посетителям · будь добрее ✦</div>
+  </div>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════
+// URL конфига берётся из GitHub — сервер обновляет его
+// при каждом запуске / смене туннеля автоматически
+// ═══════════════════════════════════════════════════════
+const CONFIG_URL = 'https://raw.githubusercontent.com/yourssugar/A.C.EON/main/guestbook_config.json';
+
+// ══════════
+// CONSTANTS
+// ══════════
+const CROSS_MS = 20 * 60 * 1000;
+const TICK_MS  = 150;
+const REFRESH  = 60 * 1000;
+const MAX_FETCH = 300;
+const PL = 35;
+
+// ════════════════════
+// API URL — динамический
+// ════════════════════
+let currentApi = '';
+let configFetchedAt = 0;
+const CONFIG_TTL = 5 * 60 * 1000; // перечитываем конфиг не чаще чем раз в 5 мин
+
+async function fetchConfig() {
+  try {
+    const res = await fetch(CONFIG_URL + '?t=' + Date.now());
+    const d   = await res.json();
+    if (d.api) {
+      currentApi = d.api;
+      configFetchedAt = Date.now();
+      console.log('[gb] API URL:', currentApi);
+    }
+  } catch(e) {
+    console.warn('[gb] config fetch failed:', e.message);
+  }
+}
+
+async function getApi() {
+  // Перечитываем конфиг если устарел или ещё не загружен
+  if (!currentApi || Date.now() - configFetchedAt > CONFIG_TTL) {
+    await fetchConfig();
+  }
+  return currentApi;
+}
+
+// Умный fetch: при ошибке сети пробует обновить конфиг и повторить
+async function apiFetch(path, opts) {
+  const url = await getApi();
+  if (!url) throw new Error('нет URL сервера');
+  try {
+    return await fetch(url + path, opts);
+  } catch(e) {
+    // Возможно туннель сменился — сбрасываем кеш и пробуем ещё раз
+    configFetchedAt = 0;
+    const freshUrl = await getApi();
+    if (!freshUrl) throw e;
+    return await fetch(freshUrl + path, opts);
+  }
+}
+
+// ═══════════
+// PROFANITY
+// ═══════════
+const BAN = [
+  'хуй','залуп','пизд','пидор','педик','ёбан','ебан','ебат','нахуй',
+  'бляд','блять','мудак','уёб','уеб','мразь','шлюх',
+  'х*й','п*зд','е*ать','б*ять','х у й',' сука ',' суку ',' суки ',
+  'fuck','shit','bitch','cunt',' ass ','dick','cock',
+  'pussy','nigger','nigga','fag','bastard','whore','slut','asshole'
+];
+const hasBan = t => BAN.some(w => (' '+t.toLowerCase().replace(/ё/g,'е')+' ').includes(w));
+
+// ═══════════════
+// SEEDED RANDOM
+// ═══════════════
+const srand  = s => { let x = Math.sin(s*1.7+3)*10000; return x-Math.floor(x); };
+const seedY  = id => srand(id*37+7)*80+10;
+
+// ═══════
+// CANVAS
+// ═══════
+function initCV() {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  cv.width  = window.innerWidth;
+  cv.height = window.innerHeight;
+  const W = cv.width, H = cv.height;
+
+  [[.28,.28,'rgba(55,18,110,',0.07],[.72,.62,'rgba(18,38,100,',0.05],[.52,.1,'rgba(95,28,55,',0.045]]
+    .forEach(([rx,ry,c,a]) => {
+      const g = ctx.createRadialGradient(rx*W,ry*H,0,rx*W,ry*H,Math.min(W,H)*0.48);
+      g.addColorStop(0,c+a+')'); g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    });
+
+  for (let i=0;i<180;i++) {
+    const x=Math.random()*W, y=Math.random()*H, r=Math.random()*.9+.15;
+    ctx.fillStyle=`rgba(255,255,255,${(Math.random()*.5+.15).toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ════════
+// UTILS
+// ════════
+function relTime(ts) {
+  const s = Math.floor(Date.now()/1000 - ts);
+  if (s<60)    return 'только что';
+  if (s<3600)  return Math.floor(s/60)+' мин. назад';
+  if (s<86400) return Math.floor(s/3600)+' ч. назад';
+  return Math.floor(s/86400)+' д. назад';
+}
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ════════════
+// ORBS STATE
+// ════════════
+const activeOrbs = new Map();
+let hoveredEl = null;
+
+function unhover(el) {
+  if (!el) return;
+  const id = +el.dataset.id, orb = activeOrbs.get(id);
+  if (orb) {
+    orb.hovered = false;
+    const x = parseFloat(el.style.left), sw = window.innerWidth;
+    orb.birthTime = Date.now() - Math.max(0, ((sw-x)/(sw+100))*CROSS_MS);
+  }
+  el.classList.remove('on');
+  hoveredEl = null;
+}
+
+function makeDot(entry) {
+  const el = document.createElement('div');
+  el.className = 'dw';
+  el.dataset.id = entry.id;
+  const y = seedY(entry.id);
+  el.style.top  = y+'%';
+  el.style.left = (window.innerWidth+60)+'px';
+  el.style.setProperty('--pd',   (2+srand(entry.id)*3).toFixed(1)+'s');
+  el.style.setProperty('--pdly', (srand(entry.id*13)*4).toFixed(1)+'s');
+  const tc = y<18?'tip dn':'tip';
+  el.innerHTML = `<div class="dot"></div>
+<div class="${tc}">
+  <div class="tn">${esc(entry.name)}</div>
+  <div class="tp">«${esc(entry.phrase)}»</div>
+  <div class="tt">${relTime(entry.created_at)}</div>
+</div>`;
+
+  el.addEventListener('mouseenter', () => {
+    if (hoveredEl && hoveredEl!==el) unhover(hoveredEl);
+    const o = activeOrbs.get(entry.id); if(o) o.hovered=true;
+    el.classList.add('on'); hoveredEl=el;
+  });
+  el.addEventListener('mouseleave', () => unhover(el));
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    if (el.classList.contains('on') && hoveredEl===el) { unhover(el); }
+    else {
+      if (hoveredEl) unhover(hoveredEl);
+      const o = activeOrbs.get(entry.id); if(o) o.hovered=true;
+      el.classList.add('on'); hoveredEl=el;
+    }
+  });
+  return el;
+}
+
+function addEntry(entry, birthTime) {
+  if (activeOrbs.has(entry.id)) return;
+  const el = makeDot(entry);
+  document.getElementById('fld').appendChild(el);
+  activeOrbs.set(entry.id, {entry, birthTime, el, hovered:false});
+}
+
+// ════════
+// LOAD
+// ════════
+function setCount(n) {
+  document.getElementById('cnt').textContent = n ? n.toLocaleString('ru')+' следов' : '';
+}
+
+async function loadEntries(initial=false) {
+  try {
+    const res  = await apiFetch(`/entries?count=${MAX_FETCH}`);
+    const data = await res.json();
+    setCount(data.total);
+    const N=data.entries.length, now=Date.now();
+    data.entries.forEach((e,i) => {
+      addEntry(e, initial
+        ? now - (i/N)*CROSS_MS*0.96          // начальная загрузка: размазываем по экрану
+        : now + Math.random()*12000           // обновление: входят справа с разбросом
+      );
+    });
+  } catch(err) {
+    console.warn('[gb] loadEntries failed:', err.message);
+  }
+}
+
+// ════════════
+// DRIFT TICK
+// ════════════
+function tick() {
+  const now=Date.now(), sw=window.innerWidth;
+  for (const [id,orb] of activeOrbs) {
+    if (orb.hovered) continue;
+    const x = sw - ((now-orb.birthTime)/CROSS_MS)*(sw+100);
+    if (x < -80) { orb.el.remove(); activeOrbs.delete(id); }
+    else          { orb.el.style.left = x+'px'; }
+  }
+}
+
+setInterval(() => {
+  document.querySelectorAll('.dw.on .tt').forEach(el => {
+    const o = activeOrbs.get(+el.closest('.dw').dataset.id);
+    if (o) el.textContent = relTime(o.entry.created_at);
+  });
+}, 30000);
+
+// ════════
+// FORM
+// ════════
+const ni=document.getElementById('ni'),pi=document.getElementById('pi'),
+      cc=document.getElementById('cc'),ms=document.getElementById('ms'),
+      sb=document.getElementById('sb');
+
+pi.addEventListener('input', ()=>{
+  const l=pi.value.length; cc.textContent=l+'/'+PL; cc.classList.toggle('lim',l>=PL);
+});
+ni.addEventListener('keydown', e=>{ if(e.key==='Enter') pi.focus(); });
+pi.addEventListener('keydown', e=>{ if(e.key==='Enter') doSubmit(); });
+
+let msgT;
+function showMsg(t,c,d=0){
+  ms.textContent=t; ms.className=c||'';
+  clearTimeout(msgT); if(d) msgT=setTimeout(()=>{ms.textContent='';ms.className='';},d);
+}
+
+async function doSubmit() {
+  const name=ni.value.trim(), phrase=pi.value.trim();
+  if (!name)   { showMsg('введи имя','err'); ni.focus(); return; }
+  if (!phrase) { showMsg('введи фразу','err'); pi.focus(); return; }
+  if (hasBan(name)||hasBan(phrase)) { showMsg('нецензурная лексика','err',3000); return; }
+  sb.disabled=true; sb.textContent='…';
+  try {
+    const res = await apiFetch('/entry',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,phrase})
+    });
+    const d = await res.json();
+    if (d.ok) {
+      ni.value=''; pi.value=''; cc.textContent='0/'+PL; cc.classList.remove('lim');
+      showMsg('след оставлен ✦','ok',3000);
+      if (d.total) setCount(d.total);
+    } else { showMsg(d.error||'ошибка','err',4000); }
+  } catch { showMsg('нет связи с сервером','err',4000); }
+  finally  { sb.disabled=false; sb.textContent='→'; }
+}
+
+sb.addEventListener('click', doSubmit);
+
+// ═══════
+// INIT
+// ═══════
+document.addEventListener('click', e => { if(!e.target.closest('.dw')&&hoveredEl) unhover(hoveredEl); });
+document.getElementById('rb').addEventListener('click', ()=>loadEntries(false));
+window.addEventListener('resize', ()=>{ initCV(); });
+
+async function init() {
+  initCV();
+  await fetchConfig();     // сначала получаем URL сервера
+  setInterval(tick, TICK_MS);
+  setInterval(()=>loadEntries(false), REFRESH);
+  loadEntries(true);
+}
+
+init();
+</script>
+</body>
+</html>

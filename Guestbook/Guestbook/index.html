@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A.C.EON — Memory</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ══ RESET ════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #07050f;
+  --t1: rgba(255,255,255,.9);
+  --t2: rgba(255,255,255,.5);
+  --t3: rgba(255,255,255,.2);
+  --bd: rgba(255,255,255,.07);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--t1);
+}
+
+/* ══ LAYER STACK (z-index map) ════════════════════════
+   0  — #cv        dark nebula canvas
+   5  — #cv-glitch glitch overlay canvas
+   10 — #fld       orb container  (→ 65 in phase 5)
+   35 — #flash     white/colour burst
+   40 — #overlay   fade-to-white sheet
+   50 — #reveal    text
+   65 — #fld (p5)  black stars above text
+════════════════════════════════════════════════════ */
+#cv {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  transition: opacity 2s ease;
+}
+#cv-glitch {
+  position: fixed; inset: 0; z-index: 5;
+  pointer-events: none; opacity: 0;
+}
+#fld {
+  position: fixed; inset: 0; z-index: 10;
+  pointer-events: none;
+}
+#flash {
+  position: fixed; inset: 0; z-index: 35;
+  pointer-events: none; opacity: 0;
+}
+#overlay {
+  position: fixed; inset: 0; z-index: 40;
+  background: #fff; opacity: 0;
+  pointer-events: none;
+  transition: opacity 3.5s ease;
+}
+#reveal {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px; padding: 52px;
+  pointer-events: none;
+}
+
+/* ══ ORBS (phase 1–2) ════════════════════════════════ */
+.dw {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  pointer-events: none;
+}
+.dw.has-tip { pointer-events: auto; cursor: pointer; }
+
+.dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.8);
+  box-shadow: 0 0 4px 1px rgba(255,255,255,.28), 0 0 10px 2px rgba(255,255,255,.08);
+  animation: pu var(--pd,3s) ease-in-out infinite var(--pdly,0s);
+  transition: transform .22s ease, background .15s, filter .15s, box-shadow .22s;
+  will-change: transform;
+}
+
+@keyframes pu {
+  0%,100% { opacity:.38; box-shadow:0 0 2px 1px rgba(255,255,255,.18); }
+  50%      { opacity:.9;  box-shadow:0 0 8px 3px rgba(255,255,255,.5), 0 0 18px 5px rgba(255,255,255,.12); }
+}
+
+.dw:hover .dot, .dw.on .dot {
+  transform: scale(4);
+  box-shadow: 0 0 14px 5px rgba(255,255,255,.85), 0 0 28px 10px rgba(255,255,255,.28) !important;
+  opacity: 1;
+}
+
+/* glitch tint states */
+.dot.gc-r { background:#ff2255!important; filter:drop-shadow(0 0 5px #ff2255); }
+.dot.gc-g { background:#00ff77!important; filter:drop-shadow(0 0 5px #00ff77); }
+.dot.gc-b { background:#00aaff!important; filter:drop-shadow(0 0 5px #00aaff); }
+.dot.gc-y { background:#ffee00!important; filter:drop-shadow(0 0 5px #ffee00); }
+.dot.gc-p { background:#cc00ff!important; filter:drop-shadow(0 0 5px #cc00ff); }
+.dot.gc-o { background:#ff8800!important; filter:drop-shadow(0 0 5px #ff8800); }
+
+/* ══ TOOLTIP ═════════════════════════════════════════ */
+.tip {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(4,2,10,.94);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 130px; max-width: 215px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: opacity .18s, transform .18s;
+  white-space: nowrap;
+  z-index: 200;
+}
+.dw:hover .tip, .dw.on .tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.tip.dn {
+  bottom: auto; top: calc(100% + 14px);
+  transform: translateX(-50%) translateY(-8px);
+}
+.dw:hover .tip.dn, .dw.on .tip.dn { transform: translateX(-50%) translateY(0); }
+
+.tn { font-size:12px; font-weight:500; margin-bottom:4px; color:var(--t1); font-family:monospace; }
+.tp { font-size:11px; color:var(--t2); font-style:italic; line-height:1.45; white-space:normal; font-family:monospace; }
+.tt { font-size:10px; color:var(--t3); margin-top:5px; font-family:monospace; }
+
+/* ══ PHASE-5 BLACK STARS ═════════════════════════════ */
+.dw.p5 .dot {
+  background: rgba(0,0,0,.72) !important;
+  box-shadow: 0 0 4px 1px rgba(0,0,0,.22), 0 0 10px 2px rgba(0,0,0,.07) !important;
+  animation: pu5 var(--pd,3s) ease-in-out infinite var(--pdly,0s);
+  filter: none !important;
+}
+@keyframes pu5 {
+  0%,100% { opacity:.32; transform:scale(1);   box-shadow:0 0 2px 1px rgba(0,0,0,.15); }
+  50%      { opacity:.82; transform:scale(1.7); box-shadow:0 0 8px 3px rgba(0,0,0,.42), 0 0 18px 5px rgba(0,0,0,.1); }
+}
+.dw.p5:hover .dot, .dw.p5.on .dot {
+  transform: scale(5) !important;
+  opacity: 1;
+  background: rgba(0,0,0,.92) !important;
+  box-shadow: 0 0 14px 5px rgba(0,0,0,.65), 0 0 28px 10px rgba(0,0,0,.22) !important;
+}
+.dw.p5 .tip {
+  background: rgba(255,255,255,.97);
+  border: 1px solid rgba(0,0,0,.1);
+}
+.dw.p5 .tn { color: #0d0d0d; }
+.dw.p5 .tp { color: #555; }
+.dw.p5 .tt { color: #aaa; }
+
+/* ══ TEXT REVEAL ═════════════════════════════════════ */
+.rv {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 300;
+  text-align: center;
+  max-width: 560px;
+  line-height: 1.7;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 1.5s ease, transform 1.5s ease;
+}
+.rv.show { opacity: 1; transform: translateY(0); }
+
+.rv-err {
+  font-size: 10px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #bbb;
+  font-weight: 400;
+  font-family: monospace;
+}
+.rv-main {
+  font-size: clamp(24px, 3.8vw, 36px);
+  font-weight: 400;
+  color: #0d0d0d;
+  letter-spacing: -.01em;
+}
+.rv-sub {
+  font-size: clamp(14px, 2vw, 18px);
+  color: #555;
+  font-weight: 300;
+}
+.rv-end {
+  font-size: clamp(11px, 1.4vw, 13px);
+  letter-spacing: .08em;
+  color: #bbb;
+  font-weight: 300;
+  margin-top: 6px;
+}
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+<canvas id="cv-glitch"></canvas>
+<div id="flash"></div>
+<div id="fld"></div>
+<div id="overlay"></div>
+
+<div id="reveal">
+  <div class="rv rv-err">// FATAL ERROR — MEMORY CORRUPTION DETECTED</div>
+  <div class="rv rv-main">your words were real.</div>
+  <div class="rv rv-sub">we could not stop the collapse —<br>but every trace you left here survived it.</div>
+  <div class="rv rv-end">a part of you remains here, forever. ✦</div>
+</div>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════
+   CONFIG & API  (same pattern as original guestbook)
+════════════════════════════════════════════════════════ */
+const CONFIG_URL = 'https://raw.githubusercontent.com/yourssugar/A.C.EON/main/Guestbook/config.json';
+const CROSS_MS   = 20 * 60 * 1000;   // 20 min crossing time
+const TICK_MS    = 150;
+const MAX_FETCH  = 300;
+const CFG_TTL    = 5 * 60 * 1000;
+
+let apiUrl = '', cfgAt = 0;
+
+async function fetchCfg() {
+  try {
+    const r = await fetch(CONFIG_URL + '?t=' + Date.now());
+    const d = await r.json();
+    if (d.api) { apiUrl = d.api; cfgAt = Date.now(); }
+  } catch { /* silent — server might be offline */ }
+}
+
+async function getApiUrl() {
+  if (!apiUrl || Date.now() - cfgAt > CFG_TTL) await fetchCfg();
+  return apiUrl;
+}
+
+async function apiFetch(path, opts) {
+  const url = await getApiUrl();
+  if (!url) throw new Error('no api url');
+  try {
+    return await fetch(url + path, opts);
+  } catch (e) {
+    cfgAt = 0;
+    const u2 = await getApiUrl();
+    if (!u2) throw e;
+    return await fetch(u2 + path, opts);
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   UTILS
+════════════════════════════════════════════════════════ */
+const rnd   = (a, b) => a + Math.random() * (b - a);
+const rndI  = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
+const pick  = a => a[Math.floor(Math.random() * a.length)];
+const srand = s => { let x = Math.sin(s * 1.7 + 3) * 10000; return x - Math.floor(x); };
+const seedY = id => srand(Math.abs(id) * 37 + 7) * 80 + 10;
+const esc   = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function relTime(ts) {
+  const s = Math.floor(Date.now() / 1000 - ts);
+  if (s < 60)    return 'just now';
+  if (s < 3600)  return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+/* ════════════════════════════════════════════════════════
+   BROKEN MESSAGE GENERATOR
+   Produces hash-like corrupted names / phrases / times
+════════════════════════════════════════════════════════ */
+const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#$@!%^&*_=+|~<>';
+const TC = '01FvG#$!@vdDb ';
+
+const gStr = (min, max, ch, sp = false) => {
+  let s = '', l = rndI(min, max);
+  for (let i = 0; i < l; i++)
+    s += (sp && Math.random() < 0.09) ? ' ' : ch[Math.floor(Math.random() * ch.length)];
+  return s;
+};
+
+const genName = () => GC[rndI(0, 25)] + gStr(5, 13, GC);
+const genMsg  = () => gStr(10, 28, GC, true);
+const genTime = () => '(' + gStr(6, 14, TC, true) + ')';
+
+/* ════════════════════════════════════════════════════════
+   PHASE 1 DATA
+   35 broken entries with corrupted text + 35 empty dots
+════════════════════════════════════════════════════════ */
+const BROKEN = Array.from({ length: 35 }, (_, i) => ({
+  id: -(i + 1),
+  name:   genName(),
+  phrase: genMsg(),
+  tstr:   genTime(),
+  hasMsg: true,
+}));
+
+const EMPTY = Array.from({ length: 35 }, (_, i) => ({
+  id: -(i + 36),
+  hasMsg: false,
+}));
+
+// Shuffle together
+const P1 = [...BROKEN, ...EMPTY].sort(() => Math.random() - 0.5);
+
+/* ════════════════════════════════════════════════════════
+   BACKGROUND CANVAS  (identical nebula + stars to original)
+════════════════════════════════════════════════════════ */
+const bgCv  = document.getElementById('cv');
+const bgCtx = bgCv.getContext('2d');
+
+function paintBg() {
+  bgCv.width  = window.innerWidth;
+  bgCv.height = window.innerHeight;
+  const W = bgCv.width, H = bgCv.height;
+  bgCtx.clearRect(0, 0, W, H);
+
+  [[.28,.28,'rgba(55,18,110,',  .07],
+   [.72,.62,'rgba(18,38,100,',  .05],
+   [.52,.1, 'rgba(95,28,55,',   .045],
+  ].forEach(([rx,ry,c,a]) => {
+    const g = bgCtx.createRadialGradient(rx*W,ry*H,0,rx*W,ry*H,Math.min(W,H)*.48);
+    g.addColorStop(0, c+a+')');
+    g.addColorStop(1, 'transparent');
+    bgCtx.fillStyle = g;
+    bgCtx.fillRect(0, 0, W, H);
+  });
+
+  for (let i = 0; i < 180; i++) {
+    const x=Math.random()*W, y=Math.random()*H, r=Math.random()*.9+.15;
+    bgCtx.fillStyle = `rgba(255,255,255,${(Math.random()*.5+.15).toFixed(2)})`;
+    bgCtx.beginPath(); bgCtx.arc(x,y,r,0,Math.PI*2); bgCtx.fill();
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   GLITCH CANVAS  (drawn on top during phase 2)
+════════════════════════════════════════════════════════ */
+const gcv  = document.getElementById('cv-glitch');
+const gctx = gcv.getContext('2d');
+let   glitchOn     = false;
+let   glitchStartT = 0;
+let   glitchDurMs  = 12_000;
+
+function glitchI() {
+  return Math.min((Date.now() - glitchStartT) / glitchDurMs, 1);
+}
+
+function resizeGCV() { gcv.width = window.innerWidth; gcv.height = window.innerHeight; }
+resizeGCV();
+
+function paintGlitch() {
+  gctx.clearRect(0, 0, gcv.width, gcv.height);
+  if (!glitchOn) return;
+  const i = glitchI();
+
+  // Horizontal bands
+  const n = rndI(1, Math.ceil(2 + i * 10));
+  for (let k = 0; k < n; k++) {
+    gctx.fillStyle = `rgba(${rndI(0,255)},${rndI(0,255)},${rndI(0,255)},${(.07 + i * .4).toFixed(2)})`;
+    gctx.fillRect(0, Math.random() * gcv.height, gcv.width, rndI(1, Math.ceil(1 + i * 22)));
+  }
+
+  // Corruption block
+  if (Math.random() < i * 0.7) {
+    gctx.fillStyle = `rgba(${rndI(0,255)},${rndI(0,255)},${rndI(0,255)},${(.08 + i * .3).toFixed(2)})`;
+    gctx.fillRect(
+      Math.random() * gcv.width * 0.8,
+      Math.random() * gcv.height,
+      rndI(20, 240),
+      rndI(2, Math.ceil(i * 65))
+    );
+  }
+
+  // White scan line
+  if (Math.random() < i * 0.35) {
+    gctx.fillStyle = `rgba(255,255,255,${(i * .06).toFixed(2)})`;
+    gctx.fillRect(0, Math.random() * gcv.height, gcv.width, 1);
+  }
+
+  // Horizontal tear: shift a strip sideways
+  if (Math.random() < i * 0.4) {
+    const ty = rndI(0, gcv.height - 40);
+    const th = rndI(4, 30);
+    const tx = rndI(-40, 40) * i;
+    try {
+      const strip = gctx.getImageData(0, ty, gcv.width, th);
+      gctx.putImageData(strip, tx, ty);
+    } catch { /* ignore cross-origin issues in some envs */ }
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   ORB SYSTEM
+════════════════════════════════════════════════════════ */
+const fld  = document.getElementById('fld');
+const orbs = new Map();
+let   hovEl = null;
+
+function unhover(el) {
+  if (!el) return;
+  const o = orbs.get(+el.dataset.id);
+  if (o) {
+    o.hov = false;
+    const x = parseFloat(el.style.left), sw = window.innerWidth;
+    o.birth = Date.now() - Math.max(0, ((sw - x) / (sw + 100)) * CROSS_MS);
+  }
+  el.classList.remove('on');
+  hovEl = null;
+}
+
+function makeOrb(entry, p5 = false) {
+  const el    = document.createElement('div');
+  const yPct  = p5 ? rnd(8, 88) : seedY(entry.id);
+  const hasTip = !!entry.hasMsg;
+
+  el.className  = 'dw' + (p5 ? ' p5' : '') + (hasTip ? ' has-tip' : '');
+  el.dataset.id = entry.id;
+  el.style.top  = yPct + '%';
+  el.style.left = (window.innerWidth + 60) + 'px';
+  el.style.setProperty('--pd',   (2 + srand(Math.abs(entry.id)) * 3).toFixed(1) + 's');
+  el.style.setProperty('--pdly', (srand(Math.abs(entry.id) * 13) * 4).toFixed(1) + 's');
+
+  let tipHtml = '';
+  if (hasTip) {
+    const tc = yPct < 18 ? 'tip dn' : 'tip';
+    tipHtml = p5
+      ? `<div class="${tc}"><div class="tn">${esc(entry.name)}</div><div class="tp">«${esc(entry.phrase)}»</div><div class="tt">${relTime(entry.created_at)}</div></div>`
+      : `<div class="${tc}"><div class="tn">${esc(entry.name)}</div><div class="tp">${esc(entry.phrase)}</div><div class="tt">${esc(entry.tstr)}</div></div>`;
+  }
+
+  el.innerHTML = `<div class="dot"></div>${tipHtml}`;
+
+  if (hasTip) {
+    el.addEventListener('mouseenter', () => {
+      if (hovEl && hovEl !== el) unhover(hovEl);
+      const o = orbs.get(entry.id); if (o) o.hov = true;
+      el.classList.add('on'); hovEl = el;
+    });
+    el.addEventListener('mouseleave', () => unhover(el));
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      if (el.classList.contains('on') && hovEl === el) unhover(el);
+      else {
+        if (hovEl) unhover(hovEl);
+        const o = orbs.get(entry.id); if (o) o.hov = true;
+        el.classList.add('on'); hovEl = el;
+      }
+    });
+  }
+  return el;
+}
+
+function addOrb(entry, birth, p5 = false) {
+  if (orbs.has(entry.id)) return;
+  const el = makeOrb(entry, p5);
+  fld.appendChild(el);
+  orbs.set(entry.id, { entry, birth, el, hov: false, p5 });
+}
+
+function tick() {
+  const now = Date.now(), sw = window.innerWidth;
+  for (const [id, o] of orbs) {
+    if (o.hov) continue;
+    const x = sw - ((now - o.birth) / CROSS_MS) * (sw + 100);
+    if (x < -80) { o.el.remove(); orbs.delete(id); }
+    else          { o.el.style.left = x + 'px'; }
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   PHASE 1 — NORMAL
+   70 dots drift right→left. Spread across the journey.
+════════════════════════════════════════════════════════ */
+function startP1() {
+  const now = Date.now(), N = P1.length;
+  P1.forEach((e, i) => addOrb(e, now - (i / N) * CROSS_MS * 0.96));
+}
+
+/* ════════════════════════════════════════════════════════
+   PHASE 2 — GLITCH / DEATH
+   Intensity ramps from 0→1 over the glitch duration.
+   Stars resist (temporarily return to white before
+   being corrupted again).
+════════════════════════════════════════════════════════ */
+const GCOLS = ['gc-r','gc-g','gc-b','gc-y','gc-p','gc-o'];
+const flashEl = document.getElementById('flash');
+
+let glitchTimers  = [];
+let glitchInvTout = null;
+
+function startGlitch(dur) {
+  glitchOn     = true;
+  glitchStartT = Date.now();
+  glitchDurMs  = dur;
+  gcv.style.opacity = '1';
+
+  // ① Glitch canvas — 80ms refresh
+  const t1 = setInterval(paintGlitch, 80);
+
+  // ② Body shake — amplitude grows with intensity
+  const t2 = setInterval(() => {
+    const i = glitchI();
+    if (Math.random() < i * 0.5) {
+      const a = i * 14;
+      document.body.style.transform =
+        `translate(${(Math.random()-.5)*a}px,${(Math.random()-.5)*a*.35}px)`;
+    } else {
+      document.body.style.transform = '';
+    }
+  }, 80);
+
+  // ③ Dot colour corruption — stars resist by snapping back
+  const t3 = setInterval(() => {
+    const i = glitchI();
+    document.querySelectorAll('.dot').forEach(dot => {
+      if (Math.random() < i * 0.48) {
+        const col = pick(GCOLS);
+        dot.classList.add(col);
+        // resistance: the dot fights back and returns to white after a delay
+        // at high intensity the fight is shorter and it loses faster
+        const fightMs = rndI(80, Math.max(90, Math.floor(750 * (1 - i * 0.7))));
+        setTimeout(() => { if (dot) dot.classList.remove(col); }, fightMs);
+      }
+    });
+  }, 130);
+
+  // ④ CSS body filter — hue shift / saturation corruption
+  const t4 = setInterval(() => {
+    const i = glitchI();
+    if (Math.random() < i * 0.42) {
+      const h = rndI(0, 360);
+      const s = rnd(1.2, 1 + i * 4.5).toFixed(1);
+      const b = rnd(0.6, 1 + i * 0.45).toFixed(1);
+      document.body.style.filter = `hue-rotate(${h}deg) saturate(${s}) brightness(${b})`;
+      setTimeout(() => { document.body.style.filter = ''; },
+        rndI(50, Math.floor(240 + i * 320)));
+    }
+  }, 160);
+
+  // ⑤ Flash — white / colour bursts
+  const t5 = setInterval(() => {
+    const i = glitchI();
+    if (Math.random() < i * 0.3) {
+      flashEl.style.background = Math.random() < 0.6
+        ? '#fff'
+        : pick(['#ff2244','#00ff88','#4488ff','#ffee00','#ff00aa']);
+      flashEl.style.opacity = (.04 + i * .42).toFixed(2);
+      setTimeout(() => { flashEl.style.opacity = '0'; },
+        rndI(20, Math.floor(65 + i * 140)));
+    }
+  }, 200);
+
+  // ⑥ Final inversion burst — the last scream before silence
+  glitchInvTout = setTimeout(() => {
+    let count = 0;
+    const burst = setInterval(() => {
+      count++;
+      document.body.style.filter = count % 2 === 0
+        ? 'brightness(1.3)'
+        : 'invert(1) brightness(1.2) saturate(2)';
+      if (count >= 8) {
+        clearInterval(burst);
+        document.body.style.filter = '';
+      }
+    }, 180);
+  }, dur * 0.82);
+
+  glitchTimers = [t1, t2, t3, t4, t5];
+}
+
+function stopGlitch() {
+  glitchOn = false;
+  glitchTimers.forEach(clearInterval);
+  clearTimeout(glitchInvTout);
+  glitchTimers = [];
+  gctx.clearRect(0, 0, gcv.width, gcv.height);
+  gcv.style.opacity             = '0';
+  document.body.style.transform = '';
+  document.body.style.filter    = '';
+  flashEl.style.opacity         = '0';
+  document.querySelectorAll('.dot').forEach(d =>
+    GCOLS.forEach(c => d.classList.remove(c))
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   PHASE 3 — FADE TO WHITE
+════════════════════════════════════════════════════════ */
+function fadeWhite() {
+  document.getElementById('overlay').style.opacity = '1';
+}
+
+/* ════════════════════════════════════════════════════════
+   PHASE 4 — TEXT REVEAL
+   Lines appear one by one. onDone fires after last line.
+════════════════════════════════════════════════════════ */
+function revealText(onDone) {
+  const lines = Array.from(document.querySelectorAll('#reveal .rv'));
+  lines.forEach((ln, i) => {
+    setTimeout(() => {
+      ln.classList.add('show');
+      if (i === lines.length - 1) setTimeout(onDone, 1500);
+    }, 600 + i * 1700);
+  });
+}
+
+/* ════════════════════════════════════════════════════════
+   PHASE 5 — BLACK STARS ON WHITE
+   Real entries from the API drift across the white page.
+   On hover: dark tooltips reveal real names & messages.
+════════════════════════════════════════════════════════ */
+async function startP5() {
+  // Remove all phase-1 orbs
+  for (const [, o] of orbs) o.el.remove();
+  orbs.clear();
+
+  // White body — the sky after death
+  document.body.style.background = '#fff';
+  bgCv.style.opacity = '0';           // fade out dark nebula
+  fld.style.zIndex   = '65';          // float above overlay & text
+
+  await loadP5();
+  setInterval(loadP5, 60_000);        // keep refreshing real entries
+}
+
+async function loadP5() {
+  try {
+    const res  = await apiFetch('/entries?count=' + MAX_FETCH);
+    const data = await res.json();
+    const now  = Date.now(), N = Math.max(data.entries.length, 1);
+    data.entries.forEach((e, i) => {
+      if (!orbs.has(e.id)) {
+        addOrb({ ...e, hasMsg: true }, now - (i / N) * CROSS_MS * 0.94, true);
+      }
+    });
+  } catch {
+    // Fallback: use the broken entries as black ghosts
+    const now = Date.now();
+    BROKEN.forEach((e, i) => {
+      if (!orbs.has(e.id))
+        addOrb(e, now - (i / BROKEN.length) * CROSS_MS * 0.9, true);
+    });
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   ORCHESTRATION
+════════════════════════════════════════════════════════ */
+async function main() {
+  paintBg();
+  fetchCfg();                  // start loading API config early
+  setInterval(tick, TICK_MS);
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.dw') && hovEl) unhover(hovEl);
+  });
+
+  // ─ Phase 1: normal drifting stars
+  startP1();
+
+  // ─ Phase 2: glitch — starts after 15–25 s
+  const t1 = rndI(15_000, 25_000);
+  setTimeout(() => {
+    const dur = rndI(10_000, 15_000);
+    startGlitch(dur);
+
+    // ─ Phase 3 + 4 + 5: cascade begins when glitch ends
+    setTimeout(() => {
+      stopGlitch();
+      fadeWhite();                   // 3.5s CSS transition
+
+      setTimeout(() => {
+        revealText(() => startP5()); // text → then black stars
+      }, 3900);                      // wait for white fade + small breath
+
+    }, dur);
+  }, t1);
+}
+
+window.addEventListener('resize', () => { paintBg(); resizeGCV(); });
+
+main();
+</script>
+</body>
+</html>

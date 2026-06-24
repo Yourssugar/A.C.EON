@@ -14,7 +14,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Gr
 #top{padding:18px 22px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd);flex-shrink:0}
 #ttl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:400;color:rgba(255,255,255,.35)}
 #cnt{font-size:11px;font-weight:300;color:var(--t3)}
-#rb{margin-left:auto;background:none;border:1px solid var(--bd);color:var(--t2);font-size:14px;cursor:pointer;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
+#mb{margin-left:auto;background:none;border:1px solid var(--bd);color:var(--t2);font-size:13px;text-decoration:none;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
+#mb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
+#rb{background:none;border:1px solid var(--bd);color:var(--t2);font-size:14px;cursor:pointer;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
 #rb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
 #fld{flex:1;position:relative;overflow:hidden}
 .dw{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10}
@@ -54,6 +56,7 @@ input:focus{border-color:rgba(255,255,255,.18)}
   <div id="top">
     <span id="ttl">✦ гостевая книга</span>
     <span id="cnt"></span>
+    <a href="./guestbook/" id="mb" title="memory archive">✦</a>
     <button id="rb" title="обновить">↻</button>
   </div>
   <div id="fld"></div>

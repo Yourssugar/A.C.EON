@@ -18,6 +18,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Gr
 #mb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
 #rb{background:none;border:1px solid var(--bd);color:var(--t2);font-size:14px;cursor:pointer;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
 #rb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
+
+/* ── BGM BUTTON ── */
+#bgm-btn{
+  display:none;align-items:center;justify-content:center;
+  background:none;border:1px solid var(--bd);
+  color:var(--t2);font-size:14px;cursor:pointer;
+  border-radius:50%;width:27px;height:27px;
+  transition:.2s;flex-shrink:0;
+}
+#bgm-btn.on{display:flex}
+#bgm-btn:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
+#bgm-btn.muted{color:var(--t3)}
+
 #fld{flex:1;position:relative;overflow:hidden}
 .dw{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10}
 .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 0 4px 1px rgba(255,255,255,.28),0 0 10px 2px rgba(255,255,255,.08);animation:pu var(--pd,3s) ease-in-out infinite var(--pdly,0s);transition:transform .22s ease,box-shadow .22s ease,opacity .22s ease}
@@ -58,6 +71,7 @@ input:focus{border-color:rgba(255,255,255,.18)}
     <span id="cnt"></span>
     <a href="./Guestbook/" id="mb" title="memory archive">✦</a>
     <button id="rb" title="обновить">↻</button>
+    <button id="bgm-btn" title="выключить звук">♫</button>
   </div>
   <div id="fld"></div>
   <div id="frm">
@@ -94,7 +108,7 @@ const PL = 35;
 // ════════════════════
 let currentApi = '';
 let configFetchedAt = 0;
-const CONFIG_TTL = 5 * 60 * 1000; // перечитываем конфиг не чаще чем раз в 5 мин
+const CONFIG_TTL = 5 * 60 * 1000;
 
 async function fetchConfig() {
   try {
@@ -111,21 +125,18 @@ async function fetchConfig() {
 }
 
 async function getApi() {
-  // Перечитываем конфиг если устарел или ещё не загружен
   if (!currentApi || Date.now() - configFetchedAt > CONFIG_TTL) {
     await fetchConfig();
   }
   return currentApi;
 }
 
-// Умный fetch: при ошибке сети пробует обновить конфиг и повторить
 async function apiFetch(path, opts) {
   const url = await getApi();
   if (!url) throw new Error('нет URL сервера');
   try {
     return await fetch(url + path, opts);
   } catch(e) {
-    // Возможно туннель сменился — сбрасываем кеш и пробуем ещё раз
     configFetchedAt = 0;
     const freshUrl = await getApi();
     if (!freshUrl) throw e;
@@ -262,8 +273,8 @@ async function loadEntries(initial=false) {
     const N=data.entries.length, now=Date.now();
     data.entries.forEach((e,i) => {
       addEntry(e, initial
-        ? now - (i/N)*CROSS_MS*0.96          // начальная загрузка: размазываем по экрану
-        : now + Math.random()*12000           // обновление: входят справа с разбросом
+        ? now - (i/N)*CROSS_MS*0.96
+        : now + Math.random()*12000
       );
     });
   } catch(err) {
@@ -337,19 +348,78 @@ sb.addEventListener('click', doSubmit);
 // ═══════
 // INIT
 // ═══════
-document.addEventListener('click', e => { if(!e.target.closest('.dw')&&hoveredEl) unhover(hoveredEl); });
+document.addEventListener('click', e => { if(!e.target.closest('.dw')&&!e.target.closest('#bgm-btn')&&hoveredEl) unhover(hoveredEl); });
 document.getElementById('rb').addEventListener('click', ()=>loadEntries(false));
 window.addEventListener('resize', ()=>{ initCV(); });
 
 async function init() {
   initCV();
-  await fetchConfig();     // сначала получаем URL сервера
+  await fetchConfig();
   setInterval(tick, TICK_MS);
   setInterval(()=>loadEntries(false), REFRESH);
   loadEntries(true);
 }
 
 init();
+
+// ════════════════════
+// BACKGROUND MUSIC
+// ════════════════════
+const BGM = new Audio('../audio/Reflections A Story Without Words.mp3');
+BGM.volume = 0;
+const BGM_VOL = 0.4;
+let bgmStarted = false;
+let bgmMuted   = false;
+
+function startBGM() {
+  if (bgmStarted) return;
+  bgmStarted = true;
+  BGM.play().then(() => {
+    document.getElementById('bgm-btn').classList.add('on');
+    let v = 0;
+    const fi = setInterval(() => {
+      v = Math.min(v + 0.016, BGM_VOL);
+      BGM.volume = bgmMuted ? 0 : v;
+      if (v >= BGM_VOL) clearInterval(fi);
+    }, 160);
+  }).catch(() => {});
+}
+
+function toggleBGM() {
+  bgmMuted = !bgmMuted;
+  const btn = document.getElementById('bgm-btn');
+  if (bgmMuted) {
+    let v = BGM.volume;
+    const fo = setInterval(() => {
+      v = Math.max(v - 0.04, 0);
+      BGM.volume = v;
+      if (v <= 0) clearInterval(fo);
+    }, 60);
+    btn.textContent = '♪';
+    btn.title = 'включить звук';
+    btn.classList.add('muted');
+  } else {
+    let v = 0;
+    const fi = setInterval(() => {
+      v = Math.min(v + 0.016, BGM_VOL);
+      BGM.volume = v;
+      if (v >= BGM_VOL) clearInterval(fi);
+    }, 160);
+    btn.textContent = '♫';
+    btn.title = 'выключить звук';
+    btn.classList.remove('muted');
+  }
+}
+
+// Первое взаимодействие → запуск
+['click', 'touchstart', 'keydown'].forEach(ev => {
+  document.addEventListener(ev, startBGM, { once: true, passive: true });
+});
+
+document.getElementById('bgm-btn').addEventListener('click', e => {
+  e.stopPropagation(); // не триггерит unhover
+  toggleBGM();
+});
 </script>
 </body>
 </html>

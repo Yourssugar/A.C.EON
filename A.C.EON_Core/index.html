@@ -134,6 +134,20 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
   font-size:9px;color:var(--dim);letter-spacing:.08em;opacity:0;transition:opacity .8s}
 .hint.on{opacity:1}
 
+/* ── BGM BUTTON ── */
+.bgm-btn{
+  display:none;align-items:center;justify-content:center;
+  width:26px;height:26px;padding:0;
+  background:rgba(2,5,9,.8);
+  border:1px solid rgba(77,175,255,.25);border-radius:5px;
+  cursor:pointer;color:var(--acc);font-size:13px;
+  transition:all .2s;pointer-events:auto;flex-shrink:0;
+  line-height:1;
+}
+.bgm-btn.on{display:flex}
+.bgm-btn:hover{border-color:var(--acc);box-shadow:0 0 10px rgba(77,175,255,.3)}
+.bgm-btn.muted{color:var(--dim);border-color:rgba(216,238,248,.15)}
+
 /* ── DZ ANIMATIONS (injected) ── */
 
 /* ── WIP BANNER ── */
@@ -175,7 +189,10 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
 <div class="hdr" id="hdr">
   <div class="hdr-logo">A.C.EON</div>
   <div class="hdr-m" id="hst">NETWORK · 9 NODES · ONLINE</div>
-  <div class="hdr-m" id="hclock"></div>
+  <div style="display:flex;align-items:center;gap:12px;pointer-events:auto">
+    <div class="hdr-m" id="hclock"></div>
+    <button class="bgm-btn" id="bgm-btn" onclick="toggleBGM()" title="Выключить звук">♫</button>
+  </div>
 </div>
 
 <div class="leg" id="leg"></div>
@@ -224,7 +241,7 @@ const ND = [
   {id:5,label:'NODE AI',  sub:'Kai + Anton',                type:'special', w:2.2,url:'../chat/'},
   {id:6,label:'ТОВАРЫ',   sub:'Наши продукты',              type:'partner', w:1.8,url:'#', offline:true},
   {id:7,label:'ARG',      sub:'Информация о сайте',         type:'special', w:2.0,url:'../info/'},
-  {id:8,label:'ГОСТЕВАЯ', sub:'Архив памяти',               type:'archive', w:1.5,url:'../Guestbook/'},
+  {id:8,label:'ГОСТЕВАЯ', sub:'Архив памяти',                type:'archive', w:1.5,url:'../Guestbook/'},
 ];
 
 const ED = [
@@ -737,6 +754,75 @@ dzStyle.textContent=`
 .dz.on{animation:dzp 1.8s ease-in-out infinite;border:1.5px solid rgba(77,175,255,.5)}
 `;
 document.head.appendChild(dzStyle);
+
+/* ============================================================
+   BACKGROUND MUSIC
+   Замени имена файлов на свои — они должны лежать в ../audio/
+============================================================ */
+const BGM_TRACKS=[
+  '../audio/Связи.mp3',
+  '../audio/Связи (female).mp3',
+];
+
+const bgm=new Audio();
+bgm.volume=0;
+let bgmVol=0.45;
+let bgmIdx=Math.floor(Math.random()*BGM_TRACKS.length);
+let bgmStarted=false;
+let bgmMuted=false;
+
+// Трек играет один раз — после окончания тишина
+
+function startBGM(){
+  if(bgmStarted) return;
+  bgmStarted=true;
+  bgm.src=BGM_TRACKS[bgmIdx];
+  bgm.volume=0;
+  bgm.play().then(()=>{
+    // Плавное нарастание
+    let v=0;
+    const fi=setInterval(()=>{
+      v=Math.min(v+0.018, bgmVol);
+      bgm.volume=bgmMuted?0:v;
+      if(v>=bgmVol) clearInterval(fi);
+    },150);
+    // Показать кнопку
+    document.getElementById('bgm-btn').classList.add('on');
+  }).catch(()=>{});
+}
+
+function toggleBGM(){
+  bgmMuted=!bgmMuted;
+  const btn=document.getElementById('bgm-btn');
+  if(bgmMuted){
+    // Плавное затихание
+    let v=bgm.volume;
+    const fo=setInterval(()=>{
+      v=Math.max(v-0.04,0);
+      bgm.volume=v;
+      if(v<=0) clearInterval(fo);
+    },60);
+    btn.classList.add('muted');
+    btn.textContent='♪';
+    btn.title='Включить звук';
+  } else {
+    // Плавное нарастание
+    let v=0;
+    const fi=setInterval(()=>{
+      v=Math.min(v+0.018,bgmVol);
+      bgm.volume=v;
+      if(v>=bgmVol) clearInterval(fi);
+    },150);
+    btn.classList.remove('muted');
+    btn.textContent='♫';
+    btn.title='Выключить звук';
+  }
+}
+
+// Первое взаимодействие → запуск (требование браузеров)
+['click','touchstart','keydown'].forEach(ev=>{
+  document.addEventListener(ev, startBGM, {once:true, passive:true});
+});
 
 /* ============================================================
    LEGEND + FILTERS

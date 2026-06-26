@@ -24,7 +24,7 @@
     }
     #hd-top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
     #hd-title { font-size:13px; color:#2fe3ff; letter-spacing:4px; font-weight:600; }
-    #hd-status { font-size:11px; color:#6fb3c8; letter-spacing:2px; display:flex; gap:20px; }
+    #hd-status { font-size:11px; color:#6fb3c8; letter-spacing:2px; display:flex; gap:16px; align-items:center; }
     .hd-dot { color:#2fe3ff; font-size:13px; animation:blink 2s step-end infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
     #hd-div { font-size:9px; color:#0f3a4a; margin-top:10px; overflow:hidden; white-space:nowrap; }
@@ -74,27 +74,19 @@
     .msg.user .msg-body {
       color:#a8f0d2; border-color:#173a30; background:rgba(8,30,22,.5); font-size:13.5px;
     }
-
-    /* invalid — amber */
     .msg.bot.invalid .msg-body {
       color:#ffcf70; border-color:#5a3d10; border-left-color:#c98a2a; background:rgba(30,18,4,.55);
     }
     .msg.bot.invalid .msg-sender { color:#c98a2a; }
-
-    /* valid — bright cyan */
     .msg.bot.valid .msg-body {
       color:#52f3ff; border-color:#0c5c70; border-left-color:#1fd0ea; background:rgba(4,42,52,.6);
       box-shadow:0 0 22px -8px rgba(47,227,255,.55);
     }
     .msg.bot.valid .msg-sender { color:#1fd0ea; }
-
-    /* already claimed — dim grey-blue */
     .msg.bot.claimed .msg-body {
       color:#8aa3b3; border-color:#27414f; border-left-color:#3a5b6c; background:rgba(10,18,26,.55);
     }
     .msg.bot.claimed .msg-sender { color:#5d7d8c; }
-
-    /* typing dots */
     .msg.typing .msg-body { color:#003a4a; letter-spacing:4px; }
     .dot { animation:tdot 1.2s step-end infinite; }
     .dot:nth-child(2){animation-delay:.2s;} .dot:nth-child(3){animation-delay:.4s;}
@@ -127,6 +119,18 @@
     }
     #bar-btn:hover { color:#2fe3ff; background:rgba(47,227,255,.08); }
     #bar-btn:disabled { color:#3a6072; cursor:default; }
+
+    /* ── BGM BUTTON ── */
+    #bgm-btn {
+      display:none; align-items:center; justify-content:center;
+      width:26px; height:26px; background:none;
+      border:1px solid #1b4a64; border-radius:4px;
+      cursor:pointer; color:#5f93a8; font-size:13px; transition:.2s;
+      flex-shrink:0;
+    }
+    #bgm-btn.on  { display:flex; }
+    #bgm-btn:hover { color:#2fe3ff; border-color:#2fe3ff; }
+    #bgm-btn.muted { color:#1b4a64; }
   </style>
 </head>
 <body>
@@ -143,9 +147,10 @@
       <div id="hd-status">
         <span><span class="hd-dot">&#9679;</span> ONLINE</span>
         <span id="hd-obs">OBS: &mdash;</span>
+        <button id="bgm-btn" title="Mute">♫</button>
       </div>
     </div>
-   <div id="hd-div">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
+    <div id="hd-div">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
     <div id="bots-row">
       <a class="bot-link" id="botKai" href="https://yourssugar.github.io/A.C.EON/kai-chat/">
         <span class="bot-dot" id="botKaiDot"></span>
@@ -155,7 +160,7 @@
       <a class="bot-link" id="botAnton" href="https://yourssugar.github.io/A.C.EON/anton-chat/">
         <span class="bot-dot" id="botAntonDot"></span>
         <span class="bot-name">АНТОН</span>
-        <span class="bot-state" id="botAntonState">скоро</span>
+        <span class="bot-state" id="botAntonState">SOON</span>
       </a>
     </div>
   </div>
@@ -164,7 +169,7 @@
 
   <div id="bar">
     <div id="bar-label">[ ENTER FRAGMENT CODE ]</div>
-    <div id="bar-hint">Сюда вводятся коды доступа, спрятанные в роликах A.C.EON. <b>Верный код = NFT-токен</b>, который останется навсегда у того, кто найдёт его первым.</div>
+    <div id="bar-hint">Codes hidden across A.C.EON broadcasts and videos. <b>A correct code = unique NFT token</b> — claimed permanently by whoever finds it first.</div>
     <div id="bar-row">
       <span id="bar-key">🔑</span>
       <span id="bar-pr">&#8250;_</span>
@@ -185,16 +190,16 @@
     localStorage.setItem('aceon_obs', obsId);
   }
   document.getElementById('hd-obs').textContent = 'OBS: ' + obsId;
-// ─── BOT STATUS (KAI / ANTON) ───────────────────────────────────────────────
+
+  // ─── BOT STATUS (KAI / ANTON) ───────────────────────────────────────────────
   var KAI_CONFIG_URL = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/kai-chat/config.json';
 
   function setBotStatus(prefix, state){
-    // state: 'online' | 'busy' | 'offline'
     var dot = document.getElementById(prefix + 'Dot');
     var txt = document.getElementById(prefix + 'State');
     if(!dot) return;
     dot.className = 'bot-dot ' + state;
-    if(txt) txt.textContent = state === 'online' ? 'свободен' : state === 'busy' ? 'занят' : 'офлайн';
+    if(txt) txt.textContent = state === 'online' ? 'ONLINE' : state === 'busy' ? 'BUSY' : 'OFFLINE';
   }
 
   function fetchWithTimeout(url, ms){
@@ -233,10 +238,8 @@
   checkAntonStatus();
   setInterval(checkKaiStatus, 15000);
   setInterval(checkAntonStatus, 15000);
+
   // ─── DATABASE URL ──────────────────────────────────────────────────────────
-  // Когда добавишь codes.json в репо на GitHub, замени эту строку:
-  // var DB_URL = 'https://raw.githubusercontent.com/ТВО_ИМЯАККА/РЕПО/main/db/codes.json';
-  // Пока — null, бот отвечает только "неверный код".
   var DB_URL = null;
 
   // ─── CHAT HELPERS ──────────────────────────────────────────────────────────
@@ -266,8 +269,6 @@
     chat.appendChild(div); scrollBottom();
     return div;
   }
-
-  // ─── RESPONSES ─────────────────────────────────────────────────────────────
 
   function respondInvalid(code){
     addMsg('bot', 'A.C.EON NODE', [
@@ -311,45 +312,31 @@
     ], 'claimed');
   }
 
-  // ─── MAIN CHECK ────────────────────────────────────────────────────────────
-
   function checkCode(raw){
     var code = raw.trim().toUpperCase();
     if(!code) return;
-
     addMsg('user', 'YOU', [raw]);
     btn.disabled = true; input.value = '';
     var typing = showTyping();
     var delay  = 700 + Math.random() * 500;
-
     setTimeout(function(){
       typing.remove();
-
       if(!DB_URL){
-        // ── РЕЖИМ БЕЗ БАЗЫ: всё неверно ──
         respondInvalid(code);
         btn.disabled = false;
         setTimeout(function(){ input.focus(); }, 100);
         return;
       }
-
-      // ── РЕЖИМ С БАЗОЙ: читаем codes.json из GitHub ──
-      fetch(DB_URL + '?t=' + Date.now())   // ?t= чтобы браузер не кэшировал
+      fetch(DB_URL + '?t=' + Date.now())
         .then(function(r){ return r.json(); })
         .then(function(db){
           var entry = db[code];
           var claimed = JSON.parse(localStorage.getItem('aceon_claimed') || '{}');
-
-          if(!entry){
-            respondInvalid(code);
-          } else if(entry.used || claimed[code]){
-            respondClaimed(code, entry);
-          } else {
-            respondValid(code, entry);
-          }
+          if(!entry){ respondInvalid(code); }
+          else if(entry.used || claimed[code]){ respondClaimed(code, entry); }
+          else { respondValid(code, entry); }
         })
         .catch(function(){
-          // База недоступна
           addMsg('bot', 'A.C.EON NODE', [
             '> DATABASE_UNAVAILABLE',
             '> STATUS: CONNECTION ERROR',
@@ -360,14 +347,12 @@
           btn.disabled = false;
           setTimeout(function(){ input.focus(); }, 100);
         });
-
     }, delay);
   }
 
   btn.onclick = function(){ checkCode(input.value); };
   input.addEventListener('keydown', function(e){ if(e.key === 'Enter') checkCode(input.value); });
 
-  // ─── BOOT MESSAGE ──────────────────────────────────────────────────────────
   setTimeout(function(){
     addMsg('bot', 'A.C.EON NODE', [
       '> CHANNEL OPEN',
@@ -380,6 +365,51 @@
     ]);
     input.focus();
   }, 600);
+
+  // ─── BACKGROUND MUSIC ──────────────────────────────────────────────────────
+  var BGM_TRACKS = [
+    '../audio/I Am Not Alive, But I Answer  (Awake).mp3',
+    '../audio/I Am Not Alive, But I Answer (Echo).mp3'
+  ];
+  var bgm = new Audio(BGM_TRACKS[Math.floor(Math.random() * BGM_TRACKS.length)]);
+  bgm.volume = 0;
+  var BGM_VOL = 0.38, bgmStarted = false, bgmMuted = false;
+
+  function startBGM(){
+    if(bgmStarted) return;
+    bgmStarted = true;
+    bgm.play().then(function(){
+      document.getElementById('bgm-btn').classList.add('on');
+      var v = 0;
+      var fi = setInterval(function(){
+        v = Math.min(v + 0.016, BGM_VOL);
+        bgm.volume = bgmMuted ? 0 : v;
+        if(v >= BGM_VOL) clearInterval(fi);
+      }, 160);
+    }).catch(function(){});
+  }
+
+  function toggleBGM(){
+    bgmMuted = !bgmMuted;
+    var b = document.getElementById('bgm-btn');
+    if(bgmMuted){
+      var v = bgm.volume;
+      var fo = setInterval(function(){ v = Math.max(v - 0.04, 0); bgm.volume = v; if(v <= 0) clearInterval(fo); }, 60);
+      b.textContent = '♪'; b.title = 'Unmute'; b.classList.add('muted');
+    } else {
+      var v2 = 0;
+      var fi = setInterval(function(){ v2 = Math.min(v2 + 0.016, BGM_VOL); bgm.volume = v2; if(v2 >= BGM_VOL) clearInterval(fi); }, 160);
+      b.textContent = '♫'; b.title = 'Mute'; b.classList.remove('muted');
+    }
+  }
+
+  ['click', 'touchstart', 'keydown'].forEach(function(ev){
+    document.addEventListener(ev, startBGM, { once: true, passive: true });
+  });
+  document.getElementById('bgm-btn').addEventListener('click', function(e){
+    e.stopPropagation();
+    if(!bgmStarted) startBGM(); else toggleBGM();
+  });
 
 })();
 </script>

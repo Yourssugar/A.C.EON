@@ -190,7 +190,7 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
     </div>
     <div class="hud-body">
       <div class="hud-row"><div class="hud-k">ТИП</div><div class="hud-v" id="htype"></div></div>
-      <div class="hud-row"><div class="hud-k">СТАТУС</div><div class="hud-v g"><span class="sdot"></span>АКТИВЕН</div></div>
+      <div class="hud-row"><div class="hud-k">СТАТУС</div><div class="hud-v" id="hstat"><span class="sdot" id="hsdot"></span><span id="hstxt">АКТИВЕН</span></div></div>
       <div class="hud-sep"></div>
       <div class="hud-desc" id="hdesc"></div>
       <div class="hud-hint">↓ ЗАХВАТИ · ТЯНИ В ПОРТАЛ</div>
@@ -216,15 +216,15 @@ const TYPES = {
 };
 
 const ND = [
-  {id:0,label:'ИСТОРИЯ',  sub:'История проекта A.C.EON',  type:'archive', w:2.0,url:'#'},
-  {id:1,label:'VIDEOS',   sub:'YouTube каналы',             type:'core',    w:2.0,url:'#'},
-  {id:2,label:'ПАРТНЁРЫ', sub:'Люди, помогшие проекту',    type:'partner', w:1.8,url:'#'},
+  {id:0,label:'ИСТОРИЯ',  sub:'/ В РАЗРАБОТКЕ /',           type:'archive', w:2.0,url:'#', offline:true},
+  {id:1,label:'VIDEOS',   sub:'YouTube каналы',             type:'core',    w:2.0,url:'#', offline:true},
+  {id:2,label:'ПАРТНЁРЫ', sub:'Люди, помогшие проекту',    type:'partner', w:1.8,url:'#', offline:true},
   {id:3,label:'GAMES',    sub:'Браузерные игры',            type:'core',    w:2.5,url:'../games/'},
   {id:4,label:'MUSIC',    sub:'Музыкальный плеер',          type:'core',    w:3.0,url:'../Music%20archive/'},
   {id:5,label:'NODE AI',  sub:'Kai + Anton',                type:'special', w:2.2,url:'../chat/'},
-  {id:6,label:'ТОВАРЫ',   sub:'Наши продукты',              type:'partner', w:1.8,url:'#'},
+  {id:6,label:'ТОВАРЫ',   sub:'Наши продукты',              type:'partner', w:1.8,url:'#', offline:true},
   {id:7,label:'ARG',      sub:'Информация о сайте',         type:'special', w:2.0,url:'../info/'},
-  {id:8,label:'ГОСТЕВАЯ', sub:'Архив памяти',               type:'archive', w:1.5,url:'../Guestbook/'},
+  {id:8,label:'ГОСТЕВАЯ', sub:'Архив памяти',               type:'archive', w:1.5,url:'../Guestbook.html'},
 ];
 
 const ED = [
@@ -373,26 +373,94 @@ function drawNode(n){
   // Body fill
   cx.beginPath();cx.arc(n.x,n.y,r,0,Math.PI*2);
   const bg=cx.createRadialGradient(n.x-r*.2,n.y-r*.2,0,n.x,n.y,r);
-  bg.addColorStop(0,n.color+(hot?'80':'3E'));
-  bg.addColorStop(1,n.color+(hot?'1E':'08'));
+  bg.addColorStop(0,n.color+(hot?(n.offline?'48':'80'):(n.offline?'1E':'3E')));
+  bg.addColorStop(1,n.color+(hot?(n.offline?'0A':'1E'):(n.offline?'04':'08')));
   cx.fillStyle=bg;cx.fill();
 
   // Border
   cx.beginPath();cx.arc(n.x,n.y,r,0,Math.PI*2);
-  cx.strokeStyle=n.color+(hot?'C0':'4E');cx.lineWidth=hot?2:1;cx.stroke();
+  cx.strokeStyle=n.color+(hot?(n.offline?'70':'C0'):(n.offline?'25':'4E'));
+  cx.lineWidth=hot?2:1;cx.stroke();
 
-  // Text (fade in with spawn)
+  // Text (fade in with spawn) — sub removed, label centered
   if(sp<.5) return;
   const ta=Math.max(0,sp*2-1);
   cx.globalAlpha=ta;
   cx.font=`600 ${Math.max(9,r*.37)}px 'Space Grotesk',sans-serif`;
   cx.textAlign='center';cx.textBaseline='middle';
-  cx.fillStyle='#D8EEF8';
-  cx.fillText(n.label,n.x,n.y-r*.1);
-  cx.font=`300 ${Math.max(8,r*.265)}px 'JetBrains Mono',monospace`;
-  cx.fillStyle='rgba(216,238,248,.4)';
-  cx.fillText(n.sub,n.x,n.y+r*.4);
+  cx.fillStyle=n.offline?'rgba(216,238,248,.38)':'#D8EEF8';
+  cx.fillText(n.label,n.x,n.y);
   cx.globalAlpha=1;
+}
+
+/* ============================================================
+   SIDE HUD PANELS
+============================================================ */
+const SIDE_L=['SIG·07','0x1A3F','PKT·042','NODE·9','SCAN··','440HZ·','ERR·0·','LAT·12'];
+const SIDE_R=['MEM·74%','CPU·031','0xFF2A','CONN·4','TX··OK','RX··OK','0xA3B1','BUF·88'];
+
+function drawSideHUD(){
+  if(!graphOn) return;
+  const t=Date.now();
+  const yS=88, yE=H-88, step=70;
+  const lx=26, rx=W-26;
+
+  // Corner brackets
+  const cs=22;
+  cx.strokeStyle='rgba(77,175,255,.12)';cx.lineWidth=1;
+  [[16,16,1,1],[W-16,16,-1,1],[16,H-16,1,-1],[W-16,H-16,-1,-1]].forEach(([x,y,sx,sy])=>{
+    cx.beginPath();
+    cx.moveTo(x,y+sy*cs);cx.lineTo(x,y);cx.lineTo(x+sx*cs,y);
+    cx.stroke();
+    // inner dot
+    cx.beginPath();cx.arc(x+sx*3,y+sy*3,1,0,Math.PI*2);
+    cx.fillStyle='rgba(77,175,255,.25)';cx.fill();
+  });
+
+  // Vertical side lines
+  cx.lineWidth=1;
+  cx.beginPath();cx.moveTo(lx,yS);cx.lineTo(lx,yE);
+  cx.strokeStyle='rgba(77,175,255,.06)';cx.stroke();
+  cx.beginPath();cx.moveTo(rx,yS);cx.lineTo(rx,yE);
+  cx.stroke();
+
+  // Scan pulse (moves down, wraps)
+  const scanY=(t*.016)%(yE-yS)+yS;
+  const scanA=.55;
+  cx.beginPath();cx.moveTo(lx-3,scanY);cx.lineTo(lx+3,scanY);
+  cx.strokeStyle=`rgba(77,175,255,${scanA})`;cx.lineWidth=1;cx.stroke();
+  // glow above
+  cx.beginPath();cx.moveTo(lx-1,scanY-3);cx.lineTo(lx+1,scanY-3);
+  cx.strokeStyle='rgba(77,175,255,.15)';cx.stroke();
+  // right side
+  cx.beginPath();cx.moveTo(rx-3,scanY);cx.lineTo(rx+3,scanY);
+  cx.strokeStyle=`rgba(77,175,255,${scanA})`;cx.lineWidth=1;cx.stroke();
+  cx.beginPath();cx.moveTo(rx-1,scanY-3);cx.lineTo(rx+1,scanY-3);
+  cx.strokeStyle='rgba(77,175,255,.15)';cx.stroke();
+
+  // Labels
+  cx.font='8px JetBrains Mono,monospace';
+  for(let i=0;yS+i*step<yE;i++){
+    const y=yS+i*step;
+    const bL=Math.sin(t*.0007+i*.85)>.5;
+    const bR=Math.sin(t*.0007+i*1.1+1.8)>.5;
+    const aL=bL?.15:.055;
+    const aR=bR?.15:.055;
+
+    // Left tick + label
+    cx.beginPath();cx.moveTo(lx,y);cx.lineTo(lx+4,y);
+    cx.strokeStyle=`rgba(77,175,255,${aL*1.8})`;cx.lineWidth=1;cx.stroke();
+    cx.textAlign='left';cx.textBaseline='middle';
+    cx.fillStyle=`rgba(77,175,255,${aL})`;
+    cx.fillText(SIDE_L[i%SIDE_L.length],lx+8,y);
+
+    // Right tick + label
+    cx.beginPath();cx.moveTo(rx,y);cx.lineTo(rx-4,y);
+    cx.strokeStyle=`rgba(77,175,255,${aR*1.8})`;cx.stroke();
+    cx.textAlign='right';
+    cx.fillStyle=`rgba(77,175,255,${aR})`;
+    cx.fillText(SIDE_R[i%SIDE_R.length],rx-8,y);
+  }
 }
 
 /* ============================================================
@@ -410,6 +478,7 @@ function frame(){
   });
   cx.fillStyle='#020509';cx.fillRect(0,0,W,H);
   drawGrid();
+  drawSideHUD();
   edges.forEach(drawEdge);
   nodes.forEach(drawNode);
   if(flashA>0){
@@ -575,6 +644,18 @@ cv.addEventListener('mousemove',e=>{
     hname.textContent=h.label;
     htype.textContent=TYPES[h.type].label;
     hdesc.textContent=h.sub;
+    // dynamic status
+    const sdotEl=document.getElementById('hsdot');
+    const stxtEl=document.getElementById('hstxt');
+    if(h.offline){
+      sdotEl.style.cssText='background:#FF6060;box-shadow:0 0 5px #FF6060';
+      stxtEl.textContent='ОФЛАЙН';
+      stxtEl.style.color='#FF6060';
+    } else {
+      sdotEl.style.cssText='';
+      stxtEl.textContent='АКТИВЕН';
+      stxtEl.style.color='';
+    }
     hudEl.style.left=(e.clientX+28)+'px';
     hudEl.style.top=(e.clientY-16)+'px';
     hudEl.classList.add('on');

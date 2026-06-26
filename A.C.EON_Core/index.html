@@ -623,6 +623,9 @@ cv.addEventListener('touchend',e=>{
 
 function openNode(n){
   flashA=.5;
+  if(n.url&&n.url!=='#'){
+    sessionStorage.setItem('aceon_access','granted');
+  }
   setTimeout(()=>{if(n.url&&n.url!=='#') window.location.href=n.url;},580);
 }
 

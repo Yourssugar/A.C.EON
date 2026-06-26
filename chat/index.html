@@ -1,189 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A.C.EON NODE — COMMUNICATION</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap');
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    html, body { width:100%; height:100%; background:#040b16; overflow:hidden; font-family:'JetBrains Mono','Courier New',monospace; }
-    #bg-fx{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
-    #bg-fx .orb{ position:absolute; width:46vw; height:46vw; border-radius:50%; filter:blur(60px); opacity:.16; }
-    #bg-fx .orb1{ top:-14%; left:-10%; background:radial-gradient(circle, #2fe3ff 0%, transparent 70%); animation:driftA 26s ease-in-out infinite alternate; }
-    #bg-fx .orb2{ bottom:-18%; right:-12%; background:radial-gradient(circle, #1d6fff 0%, transparent 70%); animation:driftB 32s ease-in-out infinite alternate; }
-    @keyframes driftA{ 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(6%,8%) scale(1.12);} }
-    @keyframes driftB{ 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(-7%,-6%) scale(1.08);} }
-    #bg-fx .scan{ position:absolute; left:0; right:0; height:140px; background:linear-gradient(to bottom, rgba(47,227,255,0) 0%, rgba(47,227,255,.05) 50%, rgba(47,227,255,0) 100%); animation:scanmv 9s linear infinite; }
-    @keyframes scanmv{ 0%{top:-140px;} 100%{top:100%;} }
-    #bg-fx .grid{ position:absolute; inset:0; opacity:.05; background-image:linear-gradient(to right, #2fe3ff 1px, transparent 1px), linear-gradient(to bottom, #2fe3ff 1px, transparent 1px); background-size:42px 42px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>A.C.EON NODE — COMMUNICATION</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
-    #hd {
-      position:fixed; top:0; left:0; right:0; z-index:10;
-      padding:18px 26px 16px; border-bottom:1px solid #0f2c3e; background:#040b16;
-    }
-    #hd-top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
-    #hd-title { font-size:13px; color:#2fe3ff; letter-spacing:4px; font-weight:600; }
-    #hd-status { font-size:11px; color:#6fb3c8; letter-spacing:2px; display:flex; gap:16px; align-items:center; }
-    .hd-dot { color:#2fe3ff; font-size:13px; animation:blink 2s step-end infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
-    #hd-div { font-size:9px; color:#0f3a4a; margin-top:10px; overflow:hidden; white-space:nowrap; }
-    #bots-row { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
-    .bot-link {
-      display:flex; align-items:center; gap:10px;
-      padding:9px 18px; border:1px solid #1b4a64; border-radius:24px;
-      text-decoration:none; font-size:11px; letter-spacing:2px; color:#bfe9f5;
-      background:rgba(8,28,42,.6); transition:border-color .18s, box-shadow .18s, transform .12s;
-    }
-    .bot-link:hover { border-color:#2fe3ff; box-shadow:0 0 18px -4px rgba(47,227,255,.5); transform:translateY(-1px); }
-    .bot-dot {
-      width:13px; height:13px; border-radius:50%; background:#3a6072; flex-shrink:0;
-      transition:background .3s, box-shadow .3s;
-    }
-    .bot-dot.online { background:#34e6a0; box-shadow:0 0 0 4px rgba(52,230,160,.22), 0 0 10px rgba(52,230,160,.7); animation:botpulse 2s infinite; }
-    .bot-dot.busy,
-    .bot-dot.offline { background:#ff5d6c; box-shadow:0 0 0 4px rgba(255,93,108,.18), 0 0 10px rgba(255,93,108,.55); }
-    .bot-dot.busy { animation:botpulse .9s infinite; }
-    @keyframes botpulse { 0%,100%{opacity:1} 50%{opacity:.45} }
-    .bot-state { font-size:10px; color:#6fb3c8; letter-spacing:1px; }
-    #chat {
-      z-index:1;
-      position:fixed; top:148px; bottom:150px; left:0; right:0;
-      overflow-y:auto; padding:24px 26px; scrollbar-width:thin;
-    }
-    #chat::-webkit-scrollbar { width:6px; }
-    #chat::-webkit-scrollbar-thumb { background:#1b4a64; border-radius:6px; }
+:root{
+  --bg:#060400;
+  --bg2:#0d0800;
+  --am:#E8A000;
+  --am-d:#5A3E00;
+  --am-b:#FFC444;
+  --am-f:rgba(232,160,0,.07);
+  --err:#FF5500;
+  --ok:#44DD66;
+  --dim:#886600;
+}
 
-    .msg { margin:14px 0; max-width:82%; animation:fadein .3s ease; }
-    @keyframes fadein { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
-    .msg.bot  { margin-right:auto; }
-    .msg.user { margin-left:auto; text-align:right; }
+html,body{
+  width:100%;height:100%;
+  background:var(--bg);
+  overflow:hidden;
+  font-family:'JetBrains Mono','Courier New',monospace;
+  color:var(--am);
+}
 
-    .msg-sender { font-size:10px; letter-spacing:3px; margin-bottom:6px; }
-    .msg.bot  .msg-sender { color:#3a8fa8; }
-    .msg.user .msg-sender { color:#3a6056; }
+/* ── PHOSPHOR GLOW on all text ── */
+body{ text-shadow:0 0 7px rgba(232,160,0,.35); }
 
-    .msg-body {
-      font-size:14.5px; letter-spacing:.4px; line-height:1.85;
-      padding:14px 17px; border:1px solid; border-radius:4px; white-space:pre-wrap;
-    }
-    .msg.bot .msg-body {
-      color:#7fe3ff; border-color:#1b4a64; background:rgba(8,38,52,.55);
-      border-left:3px solid #2fb8d8;
-    }
-    .msg.user .msg-body {
-      color:#a8f0d2; border-color:#173a30; background:rgba(8,30,22,.5); font-size:13.5px;
-    }
-    .msg.bot.invalid .msg-body {
-      color:#ffcf70; border-color:#5a3d10; border-left-color:#c98a2a; background:rgba(30,18,4,.55);
-    }
-    .msg.bot.invalid .msg-sender { color:#c98a2a; }
-    .msg.bot.valid .msg-body {
-      color:#52f3ff; border-color:#0c5c70; border-left-color:#1fd0ea; background:rgba(4,42,52,.6);
-      box-shadow:0 0 22px -8px rgba(47,227,255,.55);
-    }
-    .msg.bot.valid .msg-sender { color:#1fd0ea; }
-    .msg.bot.claimed .msg-body {
-      color:#8aa3b3; border-color:#27414f; border-left-color:#3a5b6c; background:rgba(10,18,26,.55);
-    }
-    .msg.bot.claimed .msg-sender { color:#5d7d8c; }
-    .msg.typing .msg-body { color:#003a4a; letter-spacing:4px; }
-    .dot { animation:tdot 1.2s step-end infinite; }
-    .dot:nth-child(2){animation-delay:.2s;} .dot:nth-child(3){animation-delay:.4s;}
-    @keyframes tdot { 0%,100%{opacity:0} 50%{opacity:1} }
+/* ── SCANLINES ── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:997;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.1) 2px,rgba(0,0,0,.1) 4px);
+}
+/* ── VIGNETTE ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:996;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.82) 100%);
+}
 
-    #bar {
-      z-index:1;
-      position:fixed; bottom:0; left:0; right:0;
-      padding:16px 26px 20px; border-top:1px solid #0f2c3e; background:#040b16;
-    }
-    #bar-label { font-size:11px; color:#2fe3ff; letter-spacing:3px; margin-bottom:6px; font-weight:600; }
-    #bar-hint {
-      font-size:11px; color:#5f93a8; letter-spacing:.3px; line-height:1.6;
-      margin-bottom:12px; max-width:560px;
-    }
-    #bar-hint b { color:#bfe9f5; font-weight:600; }
-    #bar-row { display:flex; align-items:center; border:1.5px solid #1b4a64; border-radius:8px; background:rgba(6,18,28,.65); transition:border-color .18s, box-shadow .18s; }
-    #bar-row:focus-within { border-color:#2fe3ff; box-shadow:0 0 0 3px rgba(47,227,255,.12); }
-    #bar-key { padding:0 0 0 16px; font-size:16px; color:#0fa6c2; display:flex; align-items:center; }
-    #bar-pr { padding:13px 8px 13px 10px; font-size:13px; color:#0fa6c2; }
-    #bar-input {
-      flex:1; background:transparent; border:none; outline:none;
-      color:#2fe3ff; font-family:inherit; font-size:14px; padding:13px 10px; letter-spacing:3px;
-    }
-    #bar-input::placeholder { color:#3a6072; letter-spacing:2px; }
-    #bar-btn {
-      border:none; border-left:1px solid #1b4a64; background:transparent; color:#5f93a8;
-      font-family:inherit; font-size:11px; font-weight:600; padding:13px 22px; cursor:pointer;
-      letter-spacing:3px; transition:color .15s, background .15s; border-radius:0 6px 6px 0;
-    }
-    #bar-btn:hover { color:#2fe3ff; background:rgba(47,227,255,.08); }
-    #bar-btn:disabled { color:#3a6072; cursor:default; }
+/* ── CRT FLICKER ── */
+@keyframes flicker{0%,96%,100%{opacity:1;}97%{opacity:.94;}98%{opacity:1;}99%{opacity:.97;}}
+html{animation:flicker 11s ease-in-out infinite;}
 
-    /* ── BGM BUTTON ── */
-    #bgm-btn {
-      display:none; align-items:center; justify-content:center;
-      width:26px; height:26px; background:none;
-      border:1px solid #1b4a64; border-radius:4px;
-      cursor:pointer; color:#5f93a8; font-size:13px; transition:.2s;
-      flex-shrink:0;
-    }
-    #bgm-btn.on  { display:flex; }
-    #bgm-btn:hover { color:#2fe3ff; border-color:#2fe3ff; }
-    #bgm-btn.muted { color:#1b4a64; }
-  </style>
+/* ── REFRESH LINE (CRT artifact) ── */
+.refresh{position:fixed;left:0;right:0;height:80px;z-index:995;pointer-events:none;
+  background:linear-gradient(to bottom,transparent,rgba(232,160,0,.03),transparent);
+  animation:rfr 7s linear infinite;}
+@keyframes rfr{0%{top:-80px;}100%{top:100%;}}
+
+/* ── BOOT SCREEN ── */
+#boot{
+  position:fixed;inset:0;z-index:600;
+  background:var(--bg);
+  display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(30px,6vw,80px);
+  transition:opacity .4s;
+}
+#boot.gone{opacity:0;pointer-events:none;}
+.bl{
+  font-size:12.5px;line-height:2.1;
+  color:var(--am);
+  opacity:0;transform:translateX(-4px);
+  transition:opacity .1s,transform .1s;
+}
+.bl.on{opacity:1;transform:none;}
+.bl.dim{color:var(--am-d);}
+.bl.br{color:var(--am-b);font-weight:700;}
+.bl.ok{color:var(--ok);}
+.bl.blink::after{content:'█';animation:cur .65s step-end infinite;color:var(--am);}
+@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+
+.boot-bar-wrap{margin-top:6px;height:10px;background:var(--am-d);width:0%;max-width:260px;transition:none;}
+.boot-bar-fill{height:100%;background:var(--am);width:0%;box-shadow:0 0 8px var(--am);}
+.boot-skip{margin-top:20px;font-size:9px;color:var(--am-d);letter-spacing:3px;animation:flicker 1.2s step-end infinite;}
+
+/* ── HEADER ── */
+#hd{
+  position:fixed;top:0;left:0;right:0;z-index:10;
+  background:var(--bg);
+  border-bottom:1px solid var(--am-d);
+  padding:14px 26px 0;
+}
+#hd-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+
+.back-lnk{
+  font-size:9px;letter-spacing:3px;color:var(--am-d);
+  text-decoration:none;transition:color .15s;
+}
+.back-lnk:hover{color:var(--am);}
+
+#hd-title{font-size:11px;font-weight:700;letter-spacing:5px;color:var(--am-b);}
+
+#hd-right{display:flex;align-items:center;gap:14px;}
+#hd-status{font-size:9px;color:var(--dim);letter-spacing:2px;display:flex;gap:14px;align-items:center;}
+.hd-dot{color:var(--am);animation:cur 2s step-end infinite;}
+#hd-obs{font-size:9px;color:var(--am-d);letter-spacing:2px;}
+
+/* separator */
+.hd-sep{
+  font-size:8px;color:var(--am-d);letter-spacing:1px;
+  padding-bottom:10px;overflow:hidden;white-space:nowrap;
+}
+
+/* bgm btn */
+#bgm-btn{
+  display:none;align-items:center;justify-content:center;
+  width:22px;height:22px;background:none;
+  border:1px solid var(--am-d);
+  cursor:pointer;color:var(--dim);font-size:12px;transition:.2s;flex-shrink:0;
+}
+#bgm-btn.on{display:flex;}
+#bgm-btn:hover{color:var(--am);border-color:var(--am);}
+#bgm-btn.muted{color:var(--am-d);}
+
+/* bot links — pure terminal */
+#bots-row{display:flex;gap:10px;padding-bottom:11px;flex-wrap:wrap;}
+.bot-link{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 14px;
+  border:1px solid var(--am-d);border-radius:0;
+  text-decoration:none;font-size:9px;letter-spacing:2px;color:var(--am-d);
+  background:transparent;transition:border-color .15s,color .15s;
+}
+.bot-link:hover{border-color:var(--am);color:var(--am);}
+.bot-dot{width:8px;height:8px;border-radius:0;background:var(--am-d);flex-shrink:0;transition:.3s;}
+.bot-dot.online{background:var(--ok);box-shadow:0 0 6px var(--ok);animation:botpls 2s infinite;}
+.bot-dot.busy{background:var(--err);box-shadow:0 0 6px var(--err);animation:botpls .9s infinite;}
+.bot-dot.offline{background:#443300;}
+@keyframes botpls{0%,100%{opacity:1}50%{opacity:.3}}
+.bot-state{font-size:8px;color:var(--am-d);letter-spacing:1px;}
+
+/* ── CHAT ── */
+#chat{
+  position:fixed;top:130px;bottom:132px;left:0;right:0;
+  overflow-y:auto;padding:20px 26px;z-index:1;
+  scrollbar-width:thin;scrollbar-color:var(--am-d) transparent;
+}
+#chat::-webkit-scrollbar{width:3px;}
+#chat::-webkit-scrollbar-thumb{background:var(--am-d);}
+
+.msg{margin:12px 0;max-width:84%;animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+.msg.bot{margin-right:auto;}
+.msg.user{margin-left:auto;}
+
+/* meta row */
+.msg-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:10px;}
+.msg.user .msg-meta{flex-direction:row-reverse;}
+.msg-sender{font-size:8px;letter-spacing:3px;color:var(--am-d);}
+.msg-time{font-size:7px;letter-spacing:1px;color:var(--am-d);}
+
+/* body — pure terminal lines */
+.msg-body{
+  font-size:13px;letter-spacing:.3px;line-height:1.9;
+  padding:8px 14px;
+  white-space:pre-wrap;
+  border:none;border-left:2px solid var(--am-d);
+  background:var(--am-f);
+  color:var(--am);
+}
+.msg.user .msg-body{
+  border-left:none;border-right:2px solid var(--am-d);
+  color:var(--am-b);font-size:12.5px;
+  text-align:right;
+}
+
+/* states */
+.msg.bot.invalid .msg-body{color:var(--err);border-left-color:var(--err);background:rgba(255,85,0,.05);}
+.msg.bot.invalid .msg-sender{color:rgba(255,85,0,.5);}
+.msg.bot.valid .msg-body{
+  color:var(--ok);border-left-color:var(--ok);
+  background:rgba(68,221,102,.05);
+  box-shadow:0 0 18px -10px var(--ok);
+}
+.msg.bot.valid .msg-sender{color:rgba(68,221,102,.5);}
+.msg.bot.claimed .msg-body{color:#666644;border-left-color:#443300;background:rgba(80,70,0,.08);}
+
+/* typing */
+.msg.typing .msg-body{color:var(--am-d);}
+.dot{display:inline-block;color:var(--am);animation:tdot 1.2s step-end infinite;}
+.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
+@keyframes tdot{0%,100%{opacity:.1}50%{opacity:1}}
+
+/* ── INPUT BAR ── */
+#bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:1;
+  background:var(--bg);border-top:1px solid var(--am-d);
+  padding:11px 26px 16px;
+}
+.bar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+#bar-label{font-size:9px;font-weight:700;color:var(--am-b);letter-spacing:4px;}
+.bar-sess{font-size:7px;letter-spacing:2px;color:var(--am-d);}
+#bar-hint{font-size:10px;color:var(--am-d);letter-spacing:.3px;line-height:1.6;margin-bottom:9px;max-width:600px;}
+#bar-hint b{color:var(--am);font-weight:600;}
+.bar-sep{height:1px;background:var(--am-d);margin-bottom:9px;opacity:.4;}
+#bar-row{
+  display:flex;align-items:center;
+  border:1px solid var(--am-d);
+  background:var(--am-f);
+  transition:border-color .15s;
+}
+#bar-row:focus-within{border-color:var(--am);}
+#bar-key{padding:0 4px 0 12px;font-size:14px;color:var(--am-d);display:flex;align-items:center;}
+#bar-pr{padding:11px 6px 11px 8px;font-size:11px;color:var(--am-d);}
+#bar-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--am);font-family:inherit;font-size:13px;
+  padding:11px 8px;letter-spacing:3px;
+  text-shadow:0 0 7px rgba(232,160,0,.4);
+}
+#bar-input::placeholder{color:var(--am-d);letter-spacing:2px;}
+#bar-btn{
+  border:none;border-left:1px solid var(--am-d);background:transparent;
+  color:var(--am-d);font-family:inherit;font-size:9px;font-weight:700;
+  padding:11px 18px;cursor:pointer;letter-spacing:3px;transition:color .15s,background .15s;
+}
+#bar-btn:hover{color:var(--am);background:rgba(232,160,0,.06);}
+#bar-btn:disabled{color:var(--am-d);opacity:.4;cursor:default;}
+</style>
 </head>
 <body>
-  <div id="bg-fx">
-    <div class="grid"></div>
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-    <div class="scan"></div>
+
+<div class="refresh"></div>
+
+<!-- ── BOOT SCREEN ── -->
+<div id="boot">
+  <div id="boot-lines"></div>
+  <div class="boot-bar-wrap" id="bbar-wrap" style="display:none;">
+    <div class="boot-bar-fill" id="bbar"></div>
   </div>
-  <div id="hd">
-    <div id="hd-top">
-      <a href="../" style="font-size:11px;color:#5f93a8;letter-spacing:3px;text-decoration:none;padding:2px 0;" onmouseover="this.style.color='#2fe3ff'" onmouseout="this.style.color='#5f93a8'">&#8592; MAIN</a>
-      <div id="hd-title">A.C.EON NODE &mdash; COMMUNICATION CHANNEL</div>
+  <div class="boot-skip" id="boot-skip">[ CLICK ANYWHERE TO SKIP ]</div>
+</div>
+
+<!-- ── MAIN UI ── -->
+<div id="hd">
+  <div id="hd-top">
+    <a href="../" class="back-lnk">&#8592; MAIN</a>
+    <div id="hd-title">A.C.EON NODE &mdash; COMMUNICATION CHANNEL</div>
+    <div id="hd-right">
       <div id="hd-status">
-        <span><span class="hd-dot">&#9679;</span> ONLINE</span>
+        <span><span class="hd-dot">&#9632;</span> ONLINE</span>
         <span id="hd-obs">OBS: &mdash;</span>
-        <button id="bgm-btn" title="Mute">♫</button>
       </div>
-    </div>
-    <div id="hd-div">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
-    <div id="bots-row">
-      <a class="bot-link" id="botKai" href="https://yourssugar.github.io/A.C.EON/kai-chat/">
-        <span class="bot-dot" id="botKaiDot"></span>
-        <span class="bot-name">КАЙ</span>
-        <span class="bot-state" id="botKaiState">&mdash;</span>
-      </a>
-      <a class="bot-link" id="botAnton" href="https://yourssugar.github.io/A.C.EON/anton-chat/">
-        <span class="bot-dot" id="botAntonDot"></span>
-        <span class="bot-name">АНТОН</span>
-        <span class="bot-state" id="botAntonState">SOON</span>
-      </a>
+      <button id="bgm-btn" title="Mute">♫</button>
     </div>
   </div>
+  <div class="hd-sep" id="hd-sep">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</div>
+  <div id="bots-row">
+    <a class="bot-link" id="botKai" href="https://yourssugar.github.io/A.C.EON/kai-chat/">
+      <span class="bot-dot" id="botKaiDot"></span>
+      <span>КАЙ</span>
+      <span class="bot-state" id="botKaiState">&mdash;</span>
+    </a>
+    <a class="bot-link" id="botAnton" href="https://yourssugar.github.io/A.C.EON/anton-chat/">
+      <span class="bot-dot" id="botAntonDot"></span>
+      <span>АНТОН</span>
+      <span class="bot-state" id="botAntonState">SOON</span>
+    </a>
+  </div>
+</div>
 
-  <div id="chat"></div>
+<div id="chat"></div>
 
-  <div id="bar">
+<div id="bar">
+  <div class="bar-top">
     <div id="bar-label">[ ENTER FRAGMENT CODE ]</div>
-    <div id="bar-hint">Codes hidden across A.C.EON broadcasts and videos. <b>A correct code = unique NFT token</b> — claimed permanently by whoever finds it first.</div>
-    <div id="bar-row">
-      <span id="bar-key">🔑</span>
-      <span id="bar-pr">&#8250;_</span>
-      <input id="bar-input" type="text" autocomplete="off" spellcheck="false"
-             placeholder="FRAGMENT_KEY" maxlength="32">
-      <button id="bar-btn">SEND</button>
-    </div>
+    <div class="bar-sess">SESSION ACTIVE</div>
   </div>
+  <div id="bar-hint">Codes hidden across A.C.EON broadcasts and videos. <b>A correct code = unique NFT token</b> — claimed permanently by whoever finds it first.</div>
+  <div class="bar-sep"></div>
+  <div id="bar-row">
+    <span id="bar-key">&#128273;</span>
+    <span id="bar-pr">&#8250;_</span>
+    <input id="bar-input" type="text" autocomplete="off" spellcheck="false" placeholder="FRAGMENT_KEY" maxlength="32">
+    <button id="bar-btn">SEND</button>
+  </div>
+</div>
 
 <script>
 (function(){
-  if(!sessionStorage.getItem('aceon_access')){window.location.href='../';}
+  if(!sessionStorage.getItem('aceon_access')){ window.location.href='../'; return; }
 
-  // ─── OBSERVER ID ───────────────────────────────────────────────────────────
+  /* ── OBSERVER ID ── */
   var obsId = localStorage.getItem('aceon_obs');
   if(!obsId){
     obsId = 'OBS_' + Math.random().toString(36).substring(2,8).toUpperCase();
@@ -191,225 +293,238 @@
   }
   document.getElementById('hd-obs').textContent = 'OBS: ' + obsId;
 
-  // ─── BOT STATUS (KAI / ANTON) ───────────────────────────────────────────────
-  var KAI_CONFIG_URL = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/kai-chat/config.json';
+  /* ── BOOT SEQUENCE ── */
+  var BOOT_LINES = [
+    {t:'A.C.EON SECURE TERMINAL  v1.0.4',  c:'br', d:0},
+    {t:'NODE INTERFACE  /  FRAGMENT ACCESS SYSTEM', c:'dim', d:120},
+    {t:'', d:200},
+    {t:'MEMORY CHECK................... OK', c:'', d:300},
+    {t:'FRAGMENT DATABASE.............. CONNECTED', c:'', d:550},
+    {t:'NODE UPLINK.................... ACTIVE', c:'', d:780},
+    {t:'ENCRYPTION MODULE.............. ENABLED', c:'', d:1000},
+    {t:'', d:1140},
+    {t:'SCANNING FOR OBSERVER...........', c:'', d:1200},
+    {t:'  ID       : ' + obsId,  c:'br', d:1650},
+    {t:'  CLEARANCE: PUBLIC',     c:'br', d:1850},
+    {t:'', d:1980},
+    {t:'INITIALIZING INTERFACE...',  c:'dim', d:2050},
+  ];
+
+  var bootEl   = document.getElementById('boot');
+  var linesEl  = document.getElementById('boot-lines');
+  var barWrap  = document.getElementById('bbar-wrap');
+  var barFill  = document.getElementById('bbar');
+  var skipEl   = document.getElementById('boot-skip');
+  var booted   = false;
+
+  function dismissBoot(){
+    if(booted) return;
+    booted = true;
+    bootEl.classList.add('gone');
+    setTimeout(function(){ bootEl.remove(); }, 500);
+  }
+
+  BOOT_LINES.forEach(function(cfg, i){
+    setTimeout(function(){
+      if(booted) return;
+      var d = document.createElement('div');
+      d.className = 'bl' + (cfg.c ? ' '+cfg.c : '');
+      d.textContent = cfg.t;
+      if(i < BOOT_LINES.length - 1) d.classList.add('blink');
+      linesEl.appendChild(d);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ d.classList.add('on'); }); });
+      // remove blink from previous
+      var prev = linesEl.querySelector('.blink');
+      if(prev && prev !== d) prev.classList.remove('blink');
+    }, cfg.d);
+  });
+
+  var lastD = BOOT_LINES[BOOT_LINES.length-1].d + 200;
+  setTimeout(function(){
+    if(booted) return;
+    barWrap.style.display = 'block';
+    var pct = 0;
+    var iv = setInterval(function(){
+      pct = Math.min(100, pct + Math.random()*5 + 1);
+      barFill.style.width = pct + '%';
+      if(pct >= 100){ clearInterval(iv); setTimeout(dismissBoot, 300); }
+    }, 35);
+  }, lastD);
+
+  document.addEventListener('click', dismissBoot, {once:true});
+
+  /* ── BOT STATUS ── */
+  var KAI_CONFIG_URL   = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/kai-chat/config.json';
+  var ANTON_CONFIG_URL = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/anton-chat/config.json';
 
   function setBotStatus(prefix, state){
-    var dot = document.getElementById(prefix + 'Dot');
-    var txt = document.getElementById(prefix + 'State');
+    var dot = document.getElementById(prefix+'Dot');
+    var txt = document.getElementById(prefix+'State');
     if(!dot) return;
     dot.className = 'bot-dot ' + state;
-    if(txt) txt.textContent = state === 'online' ? 'ONLINE' : state === 'busy' ? 'BUSY' : 'OFFLINE';
+    if(txt) txt.textContent = state==='online'?'ONLINE': state==='busy'?'BUSY':'OFFLINE';
   }
 
   function fetchWithTimeout(url, ms){
     var ctrl = new AbortController();
     var id = setTimeout(function(){ ctrl.abort(); }, ms);
-    return fetch(url, { signal: ctrl.signal }).finally(function(){ clearTimeout(id); });
+    return fetch(url, {signal:ctrl.signal}).finally(function(){ clearTimeout(id); });
   }
 
   function checkKaiStatus(){
-    fetchWithTimeout(KAI_CONFIG_URL + '?t=' + Date.now(), 6000)
+    fetchWithTimeout(KAI_CONFIG_URL+'?t='+Date.now(), 6000)
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(cfg){
-        if(!cfg.api_url) throw 0;
-        return fetchWithTimeout(cfg.api_url + '/api/state', 5000);
-      })
+      .then(function(cfg){ if(!cfg.api_url) throw 0; return fetchWithTimeout(cfg.api_url+'/api/state',5000); })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(st){ setBotStatus('botKai', st.busy ? 'busy' : 'online'); })
-      .catch(function(){ setBotStatus('botKai', 'offline'); });
+      .then(function(st){ setBotStatus('botKai', st.busy?'busy':'online'); })
+      .catch(function(){ setBotStatus('botKai','offline'); });
   }
-
-  var ANTON_CONFIG_URL = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/anton-chat/config.json';
-
   function checkAntonStatus(){
-    fetchWithTimeout(ANTON_CONFIG_URL + '?t=' + Date.now(), 6000)
+    fetchWithTimeout(ANTON_CONFIG_URL+'?t='+Date.now(), 6000)
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(cfg){
-        if(!cfg.api_url) throw 0;
-        return fetchWithTimeout(cfg.api_url + '/api/state', 5000);
-      })
+      .then(function(cfg){ if(!cfg.api_url) throw 0; return fetchWithTimeout(cfg.api_url+'/api/state',5000); })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(st){ setBotStatus('botAnton', st.busy ? 'busy' : 'online'); })
-      .catch(function(){ setBotStatus('botAnton', 'offline'); });
+      .then(function(st){ setBotStatus('botAnton', st.busy?'busy':'online'); })
+      .catch(function(){ setBotStatus('botAnton','offline'); });
   }
-
-  checkKaiStatus();
-  checkAntonStatus();
+  checkKaiStatus(); checkAntonStatus();
   setInterval(checkKaiStatus, 15000);
   setInterval(checkAntonStatus, 15000);
 
-  // ─── DATABASE URL ──────────────────────────────────────────────────────────
+  /* ── DATABASE ── */
   var DB_URL = null;
 
-  // ─── CHAT HELPERS ──────────────────────────────────────────────────────────
-  var chat = document.getElementById('chat');
+  /* ── CHAT ── */
+  var chat  = document.getElementById('chat');
   var input = document.getElementById('bar-input');
   var btn   = document.getElementById('bar-btn');
 
+  function nowTime(){
+    var d=new Date(), p=function(v){return String(v).padStart(2,'0');};
+    return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  }
   function scrollBottom(){ chat.scrollTop = chat.scrollHeight; }
 
   function addMsg(type, sender, lines, cls){
     var div = document.createElement('div');
-    div.className = 'msg ' + type + (cls ? ' ' + cls : '');
-    var s = document.createElement('div');
-    s.className = 'msg-sender'; s.textContent = sender;
-    var b = document.createElement('div');
-    b.className = 'msg-body'; b.textContent = lines.join('\n');
-    div.appendChild(s); div.appendChild(b);
+    div.className = 'msg '+type+(cls?' '+cls:'');
+    var meta = document.createElement('div'); meta.className='msg-meta';
+    var s = document.createElement('div'); s.className='msg-sender'; s.textContent=sender;
+    var t = document.createElement('div'); t.className='msg-time'; t.textContent=nowTime();
+    meta.appendChild(s); meta.appendChild(t);
+    var b = document.createElement('div'); b.className='msg-body'; b.textContent=lines.join('\n');
+    div.appendChild(meta); div.appendChild(b);
     chat.appendChild(div); scrollBottom();
   }
 
   function showTyping(){
-    var div = document.createElement('div'); div.className = 'msg bot typing';
-    var s = document.createElement('div'); s.className = 'msg-sender'; s.textContent = 'A.C.EON NODE';
-    var b = document.createElement('div'); b.className = 'msg-body';
-    b.innerHTML = 'ANALYZING <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
-    div.appendChild(s); div.appendChild(b);
+    var div=document.createElement('div'); div.className='msg bot typing';
+    var meta=document.createElement('div'); meta.className='msg-meta';
+    var s=document.createElement('div'); s.className='msg-sender'; s.textContent='A.C.EON NODE';
+    var t=document.createElement('div'); t.className='msg-time'; t.textContent=nowTime();
+    meta.appendChild(s); meta.appendChild(t);
+    var b=document.createElement('div'); b.className='msg-body';
+    b.innerHTML='ANALYZING <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
+    div.appendChild(meta); div.appendChild(b);
     chat.appendChild(div); scrollBottom();
     return div;
   }
 
   function respondInvalid(code){
-    addMsg('bot', 'A.C.EON NODE', [
-      '> CODE_NOT_RECOGNIZED',
-      '> INPUT: ' + code,
-      '> DATABASE: NO MATCH FOUND',
-      '> STATUS: ACCESS DENIED',
-      '> ',
-      '> NODE: CONTINUE SEARCHING.',
-    ], 'invalid');
+    addMsg('bot','A.C.EON NODE',['> CODE_NOT_RECOGNIZED','> INPUT: '+code,'> DATABASE: NO MATCH FOUND','> STATUS: ACCESS DENIED','> ','> NODE: CONTINUE SEARCHING.'],'invalid');
   }
-
   function respondValid(code, entry){
-    var claimed = JSON.parse(localStorage.getItem('aceon_claimed') || '{}');
-    claimed[code] = { obsId: obsId, at: new Date().toISOString() };
-    localStorage.setItem('aceon_claimed', JSON.stringify(claimed));
-    addMsg('bot', 'A.C.EON NODE', [
-      '> CODE_VERIFIED',
-      '> INPUT: ' + code,
-      '> FRAGMENT: ' + entry.fragment,
-      '> OBSERVER: ' + obsId,
-      '> REWARD: ' + entry.reward + ' — PENDING CLAIM',
-      '> ',
-      '> NODE: YOU WERE FIRST.',
-      '>       THIS DISCOVERY IS LOGGED.',
-      '>       CLAIM PROTOCOL INCOMING.',
-    ], 'valid');
+    var claimed=JSON.parse(localStorage.getItem('aceon_claimed')||'{}');
+    claimed[code]={obsId:obsId,at:new Date().toISOString()};
+    localStorage.setItem('aceon_claimed',JSON.stringify(claimed));
+    addMsg('bot','A.C.EON NODE',['> CODE_VERIFIED','> INPUT: '+code,'> FRAGMENT: '+entry.fragment,'> OBSERVER: '+obsId,'> REWARD: '+entry.reward+' — PENDING CLAIM','> ','> NODE: YOU WERE FIRST.','>       THIS DISCOVERY IS LOGGED.','>       CLAIM PROTOCOL INCOMING.'],'valid');
   }
-
   function respondClaimed(code, entry){
-    var claimed = JSON.parse(localStorage.getItem('aceon_claimed') || '{}');
-    var who = entry.claimedBy || (claimed[code] ? claimed[code].obsId : 'OBSERVER_UNKNOWN');
-    addMsg('bot', 'A.C.EON NODE', [
-      '> CODE_VERIFIED — ALREADY CLAIMED',
-      '> INPUT: ' + code,
-      '> FRAGMENT: ' + entry.fragment,
-      '> CLAIMED BY: ' + who,
-      '> ',
-      '> NODE: LATE ARRIVAL.',
-      '>       THE VOID HAS MEMORY.',
-    ], 'claimed');
+    var claimed=JSON.parse(localStorage.getItem('aceon_claimed')||'{}');
+    var who=entry.claimedBy||(claimed[code]?claimed[code].obsId:'OBSERVER_UNKNOWN');
+    addMsg('bot','A.C.EON NODE',['> CODE_VERIFIED — ALREADY CLAIMED','> INPUT: '+code,'> FRAGMENT: '+entry.fragment,'> CLAIMED BY: '+who,'> ','> NODE: LATE ARRIVAL.','>       THE VOID HAS MEMORY.'],'claimed');
   }
 
   function checkCode(raw){
-    var code = raw.trim().toUpperCase();
+    var code=raw.trim().toUpperCase();
     if(!code) return;
-    addMsg('user', 'YOU', [raw]);
-    btn.disabled = true; input.value = '';
-    var typing = showTyping();
-    var delay  = 700 + Math.random() * 500;
+    addMsg('user','YOU',[raw]);
+    btn.disabled=true; input.value='';
+    var typing=showTyping();
     setTimeout(function(){
       typing.remove();
       if(!DB_URL){
-        respondInvalid(code);
-        btn.disabled = false;
-        setTimeout(function(){ input.focus(); }, 100);
-        return;
+        respondInvalid(code); btn.disabled=false;
+        setTimeout(function(){ input.focus(); },100); return;
       }
-      fetch(DB_URL + '?t=' + Date.now())
+      fetch(DB_URL+'?t='+Date.now())
         .then(function(r){ return r.json(); })
         .then(function(db){
-          var entry = db[code];
-          var claimed = JSON.parse(localStorage.getItem('aceon_claimed') || '{}');
-          if(!entry){ respondInvalid(code); }
-          else if(entry.used || claimed[code]){ respondClaimed(code, entry); }
-          else { respondValid(code, entry); }
+          var entry=db[code];
+          var claimed=JSON.parse(localStorage.getItem('aceon_claimed')||'{}');
+          if(!entry) respondInvalid(code);
+          else if(entry.used||claimed[code]) respondClaimed(code,entry);
+          else respondValid(code,entry);
         })
-        .catch(function(){
-          addMsg('bot', 'A.C.EON NODE', [
-            '> DATABASE_UNAVAILABLE',
-            '> STATUS: CONNECTION ERROR',
-            '> NODE: TRY AGAIN LATER.',
-          ], 'invalid');
-        })
-        .finally(function(){
-          btn.disabled = false;
-          setTimeout(function(){ input.focus(); }, 100);
-        });
-    }, delay);
+        .catch(function(){ addMsg('bot','A.C.EON NODE',['> DATABASE_UNAVAILABLE','> STATUS: CONNECTION ERROR','> NODE: TRY AGAIN LATER.'],'invalid'); })
+        .finally(function(){ btn.disabled=false; setTimeout(function(){ input.focus(); },100); });
+    }, 700+Math.random()*500);
   }
 
-  btn.onclick = function(){ checkCode(input.value); };
-  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') checkCode(input.value); });
+  btn.onclick=function(){ checkCode(input.value); };
+  input.addEventListener('keydown',function(e){ if(e.key==='Enter') checkCode(input.value); });
 
   setTimeout(function(){
-    addMsg('bot', 'A.C.EON NODE', [
-      '> CHANNEL OPEN',
-      '> OBSERVER: ' + obsId,
-      '> ',
-      '> DATABASE: CONNECTED',
-      '> AWAITING INPUT',
-      '> ',
-      '> NODE: ENTER FRAGMENT CODE TO BEGIN.',
-    ]);
+    addMsg('bot','A.C.EON NODE',['> CHANNEL OPEN','> OBSERVER: '+obsId,'> ','> DATABASE: CONNECTED','> AWAITING INPUT','> ','> NODE: ENTER FRAGMENT CODE TO BEGIN.']);
     input.focus();
   }, 600);
 
-  // ─── BACKGROUND MUSIC ──────────────────────────────────────────────────────
-  var BGM_TRACKS = [
+  /* ── BACKGROUND MUSIC ── */
+  var BGM_TRACKS=[
     '../audio/I Am Not Alive, But I Answer  (Awake).mp3',
     '../audio/I Am Not Alive, But I Answer (Echo).mp3'
   ];
-  var bgm = new Audio(BGM_TRACKS[Math.floor(Math.random() * BGM_TRACKS.length)]);
-  bgm.volume = 0;
-  var BGM_VOL = 0.38, bgmStarted = false, bgmMuted = false;
+  var bgm=new Audio(BGM_TRACKS[Math.floor(Math.random()*BGM_TRACKS.length)]);
+  bgm.volume=0;
+  var BGM_VOL=0.38, bgmStarted=false, bgmMuted=false;
 
   function startBGM(){
     if(bgmStarted) return;
-    bgmStarted = true;
+    bgmStarted=true;
     bgm.play().then(function(){
       document.getElementById('bgm-btn').classList.add('on');
-      var v = 0;
-      var fi = setInterval(function(){
-        v = Math.min(v + 0.016, BGM_VOL);
-        bgm.volume = bgmMuted ? 0 : v;
-        if(v >= BGM_VOL) clearInterval(fi);
-      }, 160);
+      var v=0, fi=setInterval(function(){
+        v=Math.min(v+0.016,BGM_VOL); bgm.volume=bgmMuted?0:v;
+        if(v>=BGM_VOL) clearInterval(fi);
+      },160);
     }).catch(function(){});
   }
-
   function toggleBGM(){
-    bgmMuted = !bgmMuted;
-    var b = document.getElementById('bgm-btn');
+    bgmMuted=!bgmMuted;
+    var b=document.getElementById('bgm-btn');
     if(bgmMuted){
-      var v = bgm.volume;
-      var fo = setInterval(function(){ v = Math.max(v - 0.04, 0); bgm.volume = v; if(v <= 0) clearInterval(fo); }, 60);
-      b.textContent = '♪'; b.title = 'Unmute'; b.classList.add('muted');
+      var v=bgm.volume, fo=setInterval(function(){ v=Math.max(v-0.04,0); bgm.volume=v; if(v<=0) clearInterval(fo); },60);
+      b.textContent='♪'; b.title='Unmute'; b.classList.add('muted');
     } else {
-      var v2 = 0;
-      var fi = setInterval(function(){ v2 = Math.min(v2 + 0.016, BGM_VOL); bgm.volume = v2; if(v2 >= BGM_VOL) clearInterval(fi); }, 160);
-      b.textContent = '♫'; b.title = 'Mute'; b.classList.remove('muted');
+      var v2=0, fi=setInterval(function(){ v2=Math.min(v2+0.016,BGM_VOL); bgm.volume=v2; if(v2>=BGM_VOL) clearInterval(fi); },160);
+      b.textContent='♫'; b.title='Mute'; b.classList.remove('muted');
     }
   }
-
-  ['click', 'touchstart', 'keydown'].forEach(function(ev){
-    document.addEventListener(ev, startBGM, { once: true, passive: true });
+  ['click','touchstart','keydown'].forEach(function(ev){
+    document.addEventListener(ev, startBGM, {once:true, passive:true});
   });
-  document.getElementById('bgm-btn').addEventListener('click', function(e){
+  document.getElementById('bgm-btn').addEventListener('click',function(e){
     e.stopPropagation();
     if(!bgmStarted) startBGM(); else toggleBGM();
   });
+
+  /* ── DYNAMIC CHAT TOP ── */
+  function fixChatTop(){
+    var hd=document.getElementById('hd');
+    if(hd) document.getElementById('chat').style.top=(hd.offsetHeight+2)+'px';
+  }
+  fixChatTop();
+  window.addEventListener('resize', fixChatTop);
 
 })();
 </script>

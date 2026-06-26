@@ -135,6 +135,20 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
 .hint.on{opacity:1}
 
 /* ── DZ ANIMATIONS (injected) ── */
+
+/* ── WIP BANNER ── */
+.wip{
+  position:fixed;top:52px;left:50%;transform:translateX(-50%);
+  z-index:20;white-space:nowrap;
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:.14em;color:var(--ylw);
+  padding:4px 16px;
+  border:1px solid rgba(255,208,96,.2);
+  background:rgba(255,208,96,.05);
+  opacity:0;transition:opacity .6s;pointer-events:none;
+}
+.wip.on{opacity:1}
+.wip-blink{animation:blink .7s step-end infinite}
 </style>
 </head>
 <body>
@@ -153,6 +167,9 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
     <div class="access" id="acc">■ &nbsp;ACCESS GRANTED&nbsp; ■</div>
   </div>
 </div>
+
+<!-- WIP -->
+<div class="wip" id="wip"><span class="wip-blink">⚠</span> &nbsp;СТРАНИЦА В РАЗРАБОТКЕ · ДАННЫЕ ВРЕМЕННЫЕ</div>
 
 <!-- UI -->
 <div class="hdr" id="hdr">
@@ -194,24 +211,34 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
 const TYPES = {
   core:    {color:'#4DAFFF', label:'CORE'},
   partner: {color:'#3DFFB4', label:'PARTNER'},
-  preview: {color:'#FF4D8B', label:'PREVIEW'},
-  archive: {color:'#6B8CA0', label:'ARCHIVE'},
   special: {color:'#FFD060', label:'SPECIAL'},
+  archive: {color:'#6B8CA0', label:'ARCHIVE'},
 };
 
 const ND = [
-  {id:0,label:'MUSIC',     sub:'Музыкальные релизы',  type:'core',    w:3.0,url:'../music/'},
-  {id:1,label:'GAMES',     sub:'Браузерные игры',      type:'core',    w:2.5,url:'../games/'},
-  {id:2,label:'AI AGENTS', sub:'Anton & Kai',          type:'special', w:2.2,url:'../'},
-  {id:3,label:'PARTNERS',  sub:'Партнёрства',           type:'partner', w:1.8,url:'#'},
-  {id:4,label:'ARG',       sub:'Паззлы & Механики',    type:'special', w:2.0,url:'../'},
-  {id:5,label:'COMING',    sub:'Скоро — следи',        type:'preview', w:1.5,url:'#'},
-  {id:6,label:'VIDEOS',    sub:'YouTube канал',         type:'core',    w:1.5,url:'#'},
-  {id:7,label:'ARCHIVE',   sub:'История A.C.EON',       type:'archive', w:1.2,url:'#'},
-  {id:8,label:'LINIYA',    sub:'Ателье Линия',          type:'partner', w:1.8,url:'#'},
+  {id:0,label:'ИСТОРИЯ',  sub:'История проекта A.C.EON',  type:'archive', w:2.0,url:'#'},
+  {id:1,label:'VIDEOS',   sub:'YouTube каналы',             type:'core',    w:2.0,url:'#'},
+  {id:2,label:'ПАРТНЁРЫ', sub:'Люди, помогшие проекту',    type:'partner', w:1.8,url:'#'},
+  {id:3,label:'GAMES',    sub:'Браузерные игры',            type:'core',    w:2.5,url:'../games/'},
+  {id:4,label:'MUSIC',    sub:'Музыкальный плеер',          type:'core',    w:3.0,url:'../Music%20archive/'},
+  {id:5,label:'NODE AI',  sub:'Kai + Anton',                type:'special', w:2.2,url:'../chat/'},
+  {id:6,label:'ТОВАРЫ',   sub:'Наши продукты',              type:'partner', w:1.8,url:'#'},
+  {id:7,label:'ARG',      sub:'Информация о сайте',         type:'special', w:2.0,url:'../info/'},
+  {id:8,label:'ГОСТЕВАЯ', sub:'Архив памяти',               type:'archive', w:1.5,url:'../guestbook_memorial.html'},
 ];
 
-const ED = [[0,2],[0,6],[0,7],[1,2],[1,4],[2,3],[2,4],[3,5],[3,8],[4,7]];
+const ED = [
+  [0,1], // История — Videos
+  [0,7], // История — ARG
+  [0,8], // История — Гостевая
+  [1,2], // Videos — Партнёры
+  [1,4], // Videos — Music
+  [4,5], // Music — Node AI
+  [3,5], // Games — Node AI
+  [5,7], // Node AI — ARG
+  [2,6], // Партнёры — Товары
+  [7,8], // ARG — Гостевая
+];
 
 /* ============================================================
    CANVAS
@@ -474,6 +501,7 @@ function startGraph(){
   setTimeout(()=>{
     document.getElementById('loader').remove();
     document.getElementById('hdr').classList.add('on');
+    document.getElementById('wip').classList.add('on');
     document.getElementById('leg').classList.add('on');
     document.getElementById('fil').classList.add('on');
     graphOn=true;

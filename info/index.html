@@ -1,425 +1,583 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>A.C.EON — Гостевая книга</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>A.C.EON — PUBLIC ARCHIVE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#07050f;--t1:rgba(255,255,255,.9);--t2:rgba(255,255,255,.5);--t3:rgba(255,255,255,.2);--bd:rgba(255,255,255,.07)}
-html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',sans-serif;color:var(--t1)}
-#cv{position:fixed;inset:0;z-index:0;pointer-events:none}
-#w{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
-#top{padding:18px 22px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd);flex-shrink:0}
-#ttl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:400;color:rgba(255,255,255,.35)}
-#cnt{font-size:11px;font-weight:300;color:var(--t3)}
-#mb{margin-left:auto;background:none;border:1px solid var(--bd);color:var(--t2);font-size:13px;text-decoration:none;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
-#mb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
-#rb{background:none;border:1px solid var(--bd);color:var(--t2);font-size:14px;cursor:pointer;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
-#rb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
-
-/* ── BGM BUTTON ── */
-#bgm-btn{
-  display:none;align-items:center;justify-content:center;
-  background:none;border:1px solid var(--bd);
-  color:var(--t2);font-size:14px;cursor:pointer;
-  border-radius:50%;width:27px;height:27px;
-  transition:.2s;flex-shrink:0;
+:root{
+  --bg:#030404;
+  --cy:#00b8cc; --cy-d:#005a66; --cy-g:rgba(0,184,204,.45);
+  --rd:#cc0022;
+  --gr:#00cc66; --gr-d:#004422; --gr-g:rgba(0,204,102,.5);
+  --txt:#dfe8e8; --txt-d:#8a9999; --txt-dd:#445050; --bdr:#1a2626;
 }
-#bgm-btn.on{display:flex}
-#bgm-btn:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
-#bgm-btn.muted{color:var(--t3)}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--txt);font-family:'JetBrains Mono',monospace;overflow-x:hidden;}
+body{min-height:100vh;}
 
-#fld{flex:1;position:relative;overflow:hidden}
-.dw{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10}
-.dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 0 4px 1px rgba(255,255,255,.28),0 0 10px 2px rgba(255,255,255,.08);animation:pu var(--pd,3s) ease-in-out infinite var(--pdly,0s);transition:transform .22s ease,box-shadow .22s ease,opacity .22s ease}
-@keyframes pu{0%,100%{opacity:.38;box-shadow:0 0 2px 1px rgba(255,255,255,.18)}50%{opacity:.9;box-shadow:0 0 8px 3px rgba(255,255,255,.5),0 0 18px 5px rgba(255,255,255,.12)}}
-.dw:hover .dot,.dw.on .dot{transform:scale(4);box-shadow:0 0 14px 5px rgba(255,255,255,.85),0 0 28px 10px rgba(255,255,255,.28);opacity:1}
-.tip{position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;background:rgba(4,2,10,.94);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;min-width:130px;max-width:215px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:opacity .18s,transform .18s;white-space:nowrap;z-index:200}
-.dw:hover .tip,.dw.on .tip{opacity:1;transform:translateX(-50%) translateY(0)}
-.tip.dn{bottom:auto;top:calc(100% + 14px);transform:translateX(-50%) translateY(-8px)}
-.dw:hover .tip.dn,.dw.on .tip.dn{transform:translateX(-50%) translateY(0)}
-.tn{font-size:12px;font-weight:500;margin-bottom:4px;color:var(--t1)}
-.tp{font-size:11px;color:var(--t2);font-style:italic;line-height:1.45;white-space:normal}
-.tt{font-size:10px;color:var(--t3);margin-top:5px;font-weight:300}
-#frm{padding:14px 22px 18px;border-top:1px solid var(--bd);flex-shrink:0}
-#fi{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-input{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:6px;color:var(--t1);font-family:inherit;font-size:13px;padding:8px 10px;outline:none;transition:.18s}
-input::placeholder{color:rgba(255,255,255,.18)}
-input:focus{border-color:rgba(255,255,255,.18)}
-#ni{flex:0 0 125px}
-#pw{flex:1;position:relative;min-width:150px}
-#pi{width:100%;padding-right:42px}
-#cc{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--t3);pointer-events:none}
-#cc.lim{color:rgba(255,100,100,.7)}
-#sb{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--t1);font-size:16px;width:36px;height:36px;border-radius:6px;cursor:pointer;flex-shrink:0;transition:.18s}
-#sb:hover:not(:disabled){background:rgba(255,255,255,.11)}
-#sb:disabled{opacity:.35;cursor:default}
-#ms{min-height:16px;font-size:11px;margin-top:7px;font-weight:300}
-#ms.err{color:#ff7272}
-#ms.ok{color:#7dffaa}
-#dc{font-size:10px;color:rgba(255,255,255,.13);margin-top:5px;letter-spacing:.03em}
-@media(max-width:520px){#ni{flex:0 0 100px}#pw{min-width:120px}}
+/* ══════════════════════════════════════
+   SPLASH
+══════════════════════════════════════ */
+#splash{
+  position:fixed;inset:0;z-index:200;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:transform 1.15s cubic-bezier(.75,0,.25,1), opacity .5s ease .6s;
+}
+#splash.gone{transform:translateY(-105%);opacity:0;pointer-events:none;}
+
+/* scanlines */
+.sp-scan{position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,184,204,.013) 3px,rgba(0,0,0,0) 4px);}
+/* corner brackets */
+.sp-c{position:absolute;width:30px;height:30px;pointer-events:none;}
+.sp-c.tl{top:22px;left:22px;border-top:1.5px solid var(--cy-d);border-left:1.5px solid var(--cy-d);}
+.sp-c.tr{top:22px;right:22px;border-top:1.5px solid var(--cy-d);border-right:1.5px solid var(--cy-d);}
+.sp-c.bl{bottom:22px;left:22px;border-bottom:1.5px solid var(--cy-d);border-left:1.5px solid var(--cy-d);}
+.sp-c.br{bottom:22px;right:22px;border-bottom:1.5px solid var(--cy-d);border-right:1.5px solid var(--cy-d);}
+
+/* horizontal dashes top/bottom */
+.sp-dash{position:absolute;left:50%;transform:translateX(-50%);
+  font-size:9px;letter-spacing:4px;color:var(--cy-d);white-space:nowrap;}
+.sp-dash.top{top:26px;}
+.sp-dash.bot{bottom:26px;}
+
+.sp-body{
+  text-align:center;position:relative;z-index:1;
+  max-width:720px;padding:20px 28px;
+  animation:spIn .8s ease both;
+}
+@keyframes spIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+
+.sp-eyebrow{
+  font-size:10px;letter-spacing:6px;color:var(--cy-d);
+  margin-bottom:28px;animation:flicker 5s infinite;
+}
+@keyframes flicker{0%,92%,100%{opacity:1;}93%{opacity:.25;}94%{opacity:1;}95%{opacity:.15;}96%{opacity:1;}}
+
+/* Big glitch title (same logic as main page) */
+.sp-title{
+  font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:clamp(56px,14vw,130px);
+  letter-spacing:16px;color:#f4f4f4;
+  position:relative;display:inline-block;line-height:1;
+  text-shadow:0 0 50px rgba(0,184,204,.22);
+}
+.sp-title::before,.sp-title::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;}
+.sp-title::before{color:var(--rd);clip-path:inset(0 0 58% 0);animation:gA 5s infinite linear;}
+.sp-title::after{color:var(--cy);clip-path:inset(54% 0 0 0);animation:gB 5s infinite linear;}
+@keyframes gA{0%,88%,100%{transform:translate(0);opacity:0;}89%{transform:translate(-5px,-2px);opacity:.9;}91%{transform:translate(3px,1px);opacity:.9;}93%{opacity:0;}}
+@keyframes gB{0%,88%,100%{transform:translate(0);opacity:0;}89%{transform:translate(5px,2px);opacity:.9;}91%{transform:translate(-3px,-1px);opacity:.9;}93%{opacity:0;}}
+
+.sp-presents{
+  margin-top:12px;
+  font-size:11px;letter-spacing:8px;color:var(--txt-d);
+}
+.sp-presents span{color:var(--cy);}
+
+.sp-divider{
+  margin:22px auto;width:180px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cy-d),transparent);
+}
+
+.sp-tagline{
+  font-family:'Rajdhani',sans-serif;font-weight:500;
+  font-size:clamp(16px,3.5vw,26px);
+  letter-spacing:5px;color:rgba(223,232,232,.55);
+  line-height:1.6;
+}
+.sp-sub{
+  margin-top:14px;font-size:11px;letter-spacing:2px;
+  color:var(--txt-dd);line-height:2;
+}
+
+.sp-skip{
+  position:absolute;bottom:30px;
+  font-size:9px;letter-spacing:4px;color:var(--txt-dd);
+  animation:blink 1.4s steps(1) infinite;
+}
+@keyframes blink{50%{opacity:0;}}
+
+/* progress bar at bottom */
+.sp-bar{
+  position:absolute;bottom:0;left:0;height:1.5px;
+  background:linear-gradient(90deg,transparent,var(--cy-d) 20%,var(--cy) 60%,var(--cy-d) 80%,transparent);
+  width:0%;transition:width linear;
+}
+
+/* ══════════════════════════════════════
+   BACKGROUND CANVAS + OVERLAY
+══════════════════════════════════════ */
+#bgcv{position:fixed;inset:0;z-index:0;}
+.overlay{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,255,200,.011) 3px,rgba(0,0,0,0) 4px),
+    radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.72) 100%);
+}
+
+/* ══════════════════════════════════════
+   WRAP / MAIN CONTENT
+══════════════════════════════════════ */
+.wrap{
+  position:relative;z-index:2;
+  max-width:1100px;margin:0 auto;padding:40px 24px 100px;
+  opacity:0;transition:opacity .75s ease;
+}
+.wrap.show{opacity:1;}
+
+.back-link{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:10px;letter-spacing:3px;color:var(--txt-d);
+  text-decoration:none;margin-bottom:40px;
+  transition:color .15s;
+}
+.back-link:hover{color:var(--cy);}
+
+/* HEADER */
+header{text-align:center;margin-bottom:64px;}
+.eyebrow{font-size:10px;letter-spacing:6px;color:var(--cy-d);margin-bottom:16px;animation:flicker 5s infinite;}
+
+.glitch-title{
+  font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:clamp(44px,11vw,100px);
+  letter-spacing:14px;color:#f4f4f4;
+  position:relative;display:inline-block;line-height:1;
+  text-shadow:0 0 40px rgba(0,184,204,.2);
+}
+.glitch-title::before,.glitch-title::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;}
+.glitch-title::before{color:var(--rd);clip-path:inset(0 0 60% 0);animation:gA 6s infinite linear;}
+.glitch-title::after{color:var(--cy);clip-path:inset(55% 0 0 0);animation:gB 6s infinite linear;}
+
+.subtitle{margin-top:18px;font-size:12px;letter-spacing:5px;color:var(--txt-d);}
+.subtitle span{color:var(--cy);}
+.typecur{display:inline-block;width:8px;background:var(--cy);height:13px;
+  vertical-align:-2px;animation:blink 1s steps(1) infinite;margin-left:4px;}
+
+.hr-fade{height:1px;width:55%;margin:32px auto 0;
+  background:linear-gradient(90deg,transparent,var(--bdr) 30%,var(--bdr) 70%,transparent);}
+
+/* SECTION BLOCKS */
+.sec-block{margin-bottom:72px;}
+.sec-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
+
+.sec-title{
+  font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:22px;letter-spacing:6px;color:#f4f4f4;
+  margin-bottom:6px;position:relative;display:inline-block;
+}
+.sec-title::after{content:'';position:absolute;left:0;bottom:-8px;width:44px;height:2px;
+  background:linear-gradient(90deg,var(--cy),transparent);}
+.sec-sub{font-size:11px;letter-spacing:1.5px;color:var(--txt-d);margin:16px 0 30px;line-height:2;}
+
+/* INFO CARDS */
+.info-cards{display:grid;gap:20px;}
+.info-card{
+  border:1px solid var(--bdr);background:rgba(8,14,14,.45);
+  padding:24px 28px;position:relative;
+  border-left:2px solid var(--cy-d);
+  opacity:0;transform:translateX(-10px);
+  animation:slideIn .55s ease forwards;
+  transition:border-color .22s,box-shadow .22s,transform .22s;
+}
+@keyframes slideIn{to{opacity:1;transform:translateX(0);}}
+.info-card:hover{
+  border-color:rgba(0,184,204,.28);
+  box-shadow:inset 0 0 32px -18px rgba(0,184,204,.09);
+  transform:translateX(3px);
+}
+.info-card h3{
+  font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:15px;letter-spacing:4px;
+  color:#f0f0f0;margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.info-card h3 .num{
+  font-size:10px;color:var(--cy);
+  border:1px solid var(--cy-d);padding:1px 7px;border-radius:2px;letter-spacing:1px;
+  font-family:'JetBrains Mono',monospace;
+}
+.info-card p{font-size:12px;line-height:2;color:var(--txt);letter-spacing:.4px;}
+.info-card p+p{margin-top:10px;}
+.info-card .hl{color:var(--cy);}
+.info-card .hl2{color:var(--gr);}
+.info-card .dim{color:var(--txt-d);}
+
+/* status badge */
+.status-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:14px;padding:6px 14px;
+  border:1px solid var(--cy-d);font-size:10px;
+  letter-spacing:3px;color:var(--cy-d);
+}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--cy);
+  box-shadow:0 0 6px var(--cy);animation:sdot 2s ease-in-out infinite;}
+@keyframes sdot{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* CODE GRID */
+.sec-count{font-size:11px;letter-spacing:3px;color:var(--txt-d);}
+.sec-count b{color:var(--gr);}
+
+.code-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:13px;}
+.code-card{
+  position:relative;border:1px solid var(--bdr);
+  background:linear-gradient(160deg,#0a1010,#060a0a);
+  padding:18px 14px;min-height:112px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  overflow:hidden;
+  opacity:0;transform:translateY(12px);
+  animation:cardIn .48s ease forwards;
+  transition:border-color .2s;
+}
+@keyframes cardIn{to{opacity:1;transform:translateY(0);}}
+.code-card .idx{font-size:10px;letter-spacing:3px;color:#243535;}
+.code-card .lbl{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;
+  letter-spacing:3px;color:#2e4040;margin-top:auto;}
+.code-card::after{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.009) 8px 9px);}
+.code-card .lock-ico{position:absolute;top:12px;right:12px;width:12px;height:12px;opacity:.2;}
+.code-card:hover{border-color:#253535;}
+.code-card .glow-line{position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--cy);}
+
+.hint{font-size:9px;letter-spacing:2px;color:var(--txt-dd);margin-top:20px;text-align:center;}
+.hint b{color:var(--cy-d);}
+
+footer{text-align:center;margin-top:64px;font-size:9px;letter-spacing:4px;color:#2a3838;padding-bottom:16px;}
+footer .dot{color:var(--cy-d);}
+
+/* SUPPORT QUIET */
+.support-quiet{
+  border:1px solid var(--bdr);
+  background:rgba(6,10,10,.5);
+  padding:22px 26px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:24px;flex-wrap:wrap;
+  border-left:2px solid var(--cy-d);
+}
+.support-quiet-left{display:flex;align-items:flex-start;gap:16px;flex:1;min-width:240px;}
+.sq-cup{font-size:26px;line-height:1;flex-shrink:0;margin-top:2px;
+  filter:drop-shadow(0 0 8px var(--cy-g));opacity:.7;}
+.sq-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+  letter-spacing:4px;color:var(--txt-d);margin-bottom:8px;}
+.sq-text{font-size:11px;letter-spacing:.4px;color:var(--txt-dd);line-height:1.9;max-width:520px;}
+.support-quiet-right{
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;
+}
+.sq-btn{
+  display:inline-block;
+  font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:11px;letter-spacing:4px;
+  color:var(--cy-d);
+  border:1px solid var(--cy-d);
+  padding:9px 22px;text-decoration:none;
+  transition:color .2s,border-color .2s,box-shadow .2s;
+}
+.sq-btn:hover{color:var(--cy);border-color:var(--cy);box-shadow:0 0 14px -4px var(--cy-g);}
+.sq-note{font-size:9px;letter-spacing:2px;color:var(--txt-dd);text-align:right;}
+
+@media(max-width:600px){
+  .glitch-title,.sp-title{letter-spacing:7px;}
+  .subtitle{letter-spacing:3px;font-size:11px;}
+  .code-grid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;}
+  .info-card{padding:18px 18px;}
+}
 </style>
 </head>
 <body>
-<canvas id="cv"></canvas>
-<div id="w">
-  <div id="top">
-    <span id="ttl">✦ гостевая книга</span>
-    <span id="cnt"></span>
-    <a href="./Guestbook/" id="mb" title="memory archive">✦</a>
-    <button id="rb" title="обновить">↻</button>
-    <button id="bgm-btn" title="выключить звук">♫</button>
-  </div>
-  <div id="fld"></div>
-  <div id="frm">
-    <div id="fi">
-      <input id="ni" placeholder="имя / ник" maxlength="20" autocomplete="off" spellcheck="false">
-      <div id="pw">
-        <input id="pi" placeholder="оставь след во вселенной" maxlength="35" autocomplete="off">
-        <span id="cc">0/35</span>
-      </div>
-      <button id="sb">→</button>
+
+<!-- ══ SPLASH ════════════════════════════════════════════════════ -->
+<div id="splash">
+  <div class="sp-scan"></div>
+  <div class="sp-c tl"></div><div class="sp-c tr"></div>
+  <div class="sp-c bl"></div><div class="sp-c br"></div>
+  <div class="sp-dash top">// NODE: PUBLIC &nbsp;·&nbsp; CONNECTION: ESTABLISHED</div>
+
+  <div class="sp-body">
+    <div class="sp-eyebrow">A.C.EON STUDIO PROJECT PRESENTS</div>
+
+    <div class="sp-title" data-text="A.C.EON">A.C.EON</div>
+
+    <div class="sp-presents">PUBLIC ARCHIVE &nbsp;<span>/</span>&nbsp; ACCESS REGISTRY</div>
+
+    <div class="sp-divider"></div>
+
+    <div class="sp-tagline">
+      Not a channel. Not a brand.<br>
+      A creative signal in progress.
     </div>
-    <div id="ms"></div>
-    <div id="dc">записи видны всем посетителям · будь добрее ✦</div>
+    <div class="sp-sub">
+      Music &nbsp;·&nbsp; Visuals &nbsp;·&nbsp; Ideas &nbsp;·&nbsp; Built in the space between human and machine.
+    </div>
   </div>
+
+  <div class="sp-dash bot">[ CLICK ANYWHERE TO ENTER ]</div>
+  <div class="sp-skip" id="sp-skip">— or wait —</div>
+  <div class="sp-bar" id="sp-bar"></div>
 </div>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════ -->
+<canvas id="bgcv"></canvas>
+<div class="overlay"></div>
+
+<div class="wrap" id="main-wrap">
+
+  <a href="../" class="back-link">&#8592; MAIN</a>
+
+  <header>
+    <div class="eyebrow">// A.C.EON STUDIO PROJECT — PUBLIC ARCHIVE</div>
+    <div class="glitch-title" data-text="A.C.EON">A.C.EON</div>
+    <div class="subtitle">PUBLIC ARCHIVE <span>/</span> ACCESS REGISTRY<span class="typecur"></span></div>
+    <div class="hr-fade"></div>
+  </header>
+
+  <!-- INFO CARDS -->
+  <div class="sec-block">
+    <div class="sec-title">ABOUT THE PROJECT</div>
+    <div class="sec-sub">What A.C.EON is, what we believe, and what this site is for.</div>
+
+    <div class="info-cards">
+
+      <div class="info-card" style="animation-delay:.04s">
+        <h3><span class="num">01</span> WHO WE ARE</h3>
+        <p>
+          <span class="hl">A.C.EON Studio</span> is a creative collective — a group of people who write music, produce visuals, build experiences, and constantly explore what becomes possible when human imagination is paired with new tools.
+        </p>
+        <p>
+          We create because we have to. That's the only reason that's ever mattered.
+        </p>
+      </div>
+
+      <div class="info-card" style="animation-delay:.10s">
+        <h3><span class="num">02</span> ORIGINALITY</h3>
+        <p>
+          Everything here is ours. Original lyrics, original concepts, original sound. We don't imitate, parody, or borrow from others without acknowledgement.
+        </p>
+        <p>
+          If something we've created resembles work we've never encountered — that's coincidence, not imitation. People sometimes independently arrive at similar ideas. It happens. But the intention is always entirely our own.
+        </p>
+      </div>
+
+      <div class="info-card" style="animation-delay:.16s">
+        <h3><span class="num">03</span> THIS SITE</h3>
+        <p>
+          This is a place to rest. To listen. To wander through something built with care and find a moment away from the noise — somewhere to listen to music, think your own thoughts, and feel no urgency to be anywhere else.
+        </p>
+        <p>
+          The main branch of the site is open to everyone via the <span class="hl">Core icon</span> on the home page — the blue symbol. Everything there is freely accessible. Just tap and explore.
+        </p>
+      </div>
+
+      <div class="info-card" style="animation-delay:.22s">
+        <h3><span class="num">04</span> NODE AI &amp; THE ARG</h3>
+        <p>
+          Somewhere across the pages, videos, and signals of this project, codes are hidden. Find one — through curiosity, patience, or careful attention to what others skip past — and you can enter it into the <span class="hl">Node AI terminal</span>.
+        </p>
+        <p>
+          A correct code unlocks a unique <span class="hl2">NFT token</span>: a generated image created for that exact moment of discovery. Made once. Belonging to whoever finds it first. A small reward for the kind of attention that deserves one.
+        </p>
+      </div>
+
+      <div class="info-card" style="animation-delay:.28s">
+        <h3><span class="num">05</span> PROJECT STATUS</h3>
+        <p>
+          A.C.EON is actively in development. Everything you see now — the design, the music, the structure — may change, evolve, or be removed entirely as the project grows.
+        </p>
+        <p class="dim">
+          What exists now is a transmission in progress. The estimated completion of the main body of work is <span style="color:var(--txt)">early 2027</span>.
+        </p>
+        <div class="status-badge">
+          <span class="status-dot"></span>
+          IN DEVELOPMENT — ONGOING
+        </div>
+      </div>
+
+      <div class="info-card" style="animation-delay:.34s">
+        <h3><span class="num">06</span> COPYRIGHT</h3>
+        <p>
+          All materials on this site were created by the <span class="hl">A.C.EON Studio</span> team and are protected by copyright. You're welcome to enjoy everything here for yourself — that's what it's for.
+        </p>
+        <p>
+          Distributing our work without crediting A.C.EON Studio may result in complaints and content removal. <span class="dim">Respect creative work the same way you'd want yours respected.</span>
+        </p>
+      </div>
+
+      <div class="info-card" style="animation-delay:.40s">
+        <h3><span class="num">07</span> YOUR PRIVACY</h3>
+        <p>
+          We minimise data collection wherever possible. There is no registration, no mandatory sign-in, and no tracking — your attention here is your own.
+        </p>
+        <p>
+          If any data is collected through interactive features or the terminal, it is stored on <span class="hl">our own servers</span> and is never shared with or made available to third parties. What happens here stays here.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SUPPORT — quiet -->
+  <div class="sec-block">
+    <div class="support-quiet">
+      <div class="support-quiet-left">
+        <span class="sq-cup">☕</span>
+        <div>
+          <div class="sq-title">SUPPORT THE PROJECT</div>
+          <div class="sq-text">
+            A.C.EON is built by a small team with real monthly costs —
+            AI tools, software subscriptions, hosting, and a lot of hours.
+            If you enjoy what's here and want to help keep new content coming,
+            any contribution is genuinely appreciated. No pressure, no obligation.
+          </div>
+        </div>
+      </div>
+      <div class="support-quiet-right">
+        <a href="#" class="sq-btn">BUY ME A COFFEE</a>
+        <div class="sq-note">LINK COMING SOON</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CODE GRID -->
+  <div class="sec-block">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">ACCESS CODES</div>
+        <div class="sec-sub">
+          Twenty codes will be distributed across the project over time —<br>
+          some hidden in videos, some buried in the site itself, some given freely.<br>
+          Each one unlocks something. Nothing is placed without reason.
+        </div>
+      </div>
+      <div class="sec-count">UNLOCKED: <b>0</b> / 20</div>
+    </div>
+    <div class="code-grid" id="code-grid"></div>
+    <div class="hint">ENTER CODES INTO THE <b>TERMINAL</b> ON THE HOME PAGE TO UNLOCK ARCHIVE SECTIONS</div>
+  </div>
+
+  <footer>
+    A.C.EON STUDIO PROJECT
+    <span class="dot">·</span> PUBLIC ARCHIVE
+    <span class="dot">·</span> STATUS: ONLINE
+  </footer>
+
+</div>
+
 <script>
-// ═══════════════════════════════════════════════════════
-// URL конфига берётся из GitHub — сервер обновляет его
-// при каждом запуске / смене туннеля автоматически
-// ═══════════════════════════════════════════════════════
-const CONFIG_URL = 'https://raw.githubusercontent.com/yourssugar/A.C.EON/main/Guestbook/config.json';
+/* ── SPLASH ─────────────────────────────────────────────────── */
+(function(){
+  var splash = document.getElementById('splash');
+  var wrap   = document.getElementById('main-wrap');
+  var bar    = document.getElementById('sp-bar');
+  var skip   = document.getElementById('sp-skip');
+  var DELAY  = 4000;
 
-// ══════════
-// CONSTANTS
-// ══════════
-const CROSS_MS = 20 * 60 * 1000;
-const TICK_MS  = 150;
-const REFRESH  = 60 * 1000;
-const MAX_FETCH = 300;
-const PL = 35;
+  // progress bar
+  bar.style.transition = 'width ' + DELAY + 'ms linear';
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){ bar.style.width = '100%'; });
+  });
 
-// ════════════════════
-// API URL — динамический
-// ════════════════════
-let currentApi = '';
-let configFetchedAt = 0;
-const CONFIG_TTL = 5 * 60 * 1000;
+  // countdown hint
+  var secs = Math.round(DELAY / 1000);
+  var civ = setInterval(function(){
+    secs--;
+    if(secs > 0) skip.textContent = '— or wait ' + secs + 's —';
+    else clearInterval(civ);
+  }, 1000);
 
-async function fetchConfig() {
-  try {
-    const res = await fetch(CONFIG_URL + '?t=' + Date.now());
-    const d   = await res.json();
-    if (d.api) {
-      currentApi = d.api;
-      configFetchedAt = Date.now();
-      console.log('[gb] API URL:', currentApi);
+  function dismiss(){
+    clearInterval(civ);
+    splash.classList.add('gone');
+    wrap.classList.add('show');
+    setTimeout(function(){ splash.remove(); }, 1400);
+  }
+
+  var timer = setTimeout(dismiss, DELAY);
+  splash.addEventListener('click', function(){ clearTimeout(timer); dismiss(); });
+})();
+
+/* ── CODE GRID ───────────────────────────────────────────────── */
+(function(){
+  var grid = document.getElementById('code-grid');
+  for(var i = 0; i < 20; i++){
+    var card = document.createElement('div');
+    card.className = 'code-card';
+    card.style.animationDelay = (i * 0.035) + 's';
+
+    var idx = document.createElement('div');
+    idx.className = 'idx';
+    idx.textContent = 'CODE ' + String(i+1).padStart(2,'0');
+    card.appendChild(idx);
+
+    var lbl = document.createElement('div');
+    lbl.className = 'lbl';
+    lbl.textContent = '???';
+    card.appendChild(lbl);
+
+    var lock = document.createElement('div');
+    lock.className = 'lock-ico';
+    lock.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+    card.appendChild(lock);
+
+    card.appendChild(Object.assign(document.createElement('div'), {className:'glow-line'}));
+    grid.appendChild(card);
+  }
+})();
+
+/* ── BACKGROUND PARTICLES ────────────────────────────────────── */
+(function(){
+  var cv = document.getElementById('bgcv');
+  var ctx = cv.getContext('2d');
+  var W, H, pts = [];
+  function resize(){
+    W = cv.width = innerWidth; H = cv.height = innerHeight;
+    pts = [];
+    var n = Math.min(65, Math.floor(W * H / 22000));
+    for(var i=0;i<n;i++) pts.push({
+      x:Math.random()*W, y:Math.random()*H,
+      vx:(Math.random()-.5)*.17, vy:(Math.random()-.5)*.17,
+      r:Math.random()*1.5+.4
+    });
+  }
+  window.addEventListener('resize', resize); resize();
+  (function step(){
+    ctx.fillStyle = 'rgba(3,4,4,1)'; ctx.fillRect(0,0,W,H);
+    pts.forEach(function(p){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+    });
+    for(var i=0;i<pts.length;i++) for(var j=i+1;j<pts.length;j++){
+      var a=pts[i],b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<128){
+        ctx.strokeStyle='rgba(0,184,204,'+(0.08*(1-d/128))+')';
+        ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
     }
-  } catch(e) {
-    console.warn('[gb] config fetch failed:', e.message);
-  }
-}
-
-async function getApi() {
-  if (!currentApi || Date.now() - configFetchedAt > CONFIG_TTL) {
-    await fetchConfig();
-  }
-  return currentApi;
-}
-
-async function apiFetch(path, opts) {
-  const url = await getApi();
-  if (!url) throw new Error('нет URL сервера');
-  try {
-    return await fetch(url + path, opts);
-  } catch(e) {
-    configFetchedAt = 0;
-    const freshUrl = await getApi();
-    if (!freshUrl) throw e;
-    return await fetch(freshUrl + path, opts);
-  }
-}
-
-// ═══════════
-// PROFANITY
-// ═══════════
-const BAN = [
-  'хуй','залуп','пизд','пидор','педик','ёбан','ебан','ебат','нахуй',
-  'бляд','блять','мудак','уёб','уеб','мразь','шлюх',
-  'х*й','п*зд','е*ать','б*ять','х у й',' сука ',' суку ',' суки ',
-  'fuck','shit','bitch','cunt',' ass ','dick','cock',
-  'pussy','nigger','nigga','fag','bastard','whore','slut','asshole'
-];
-const hasBan = t => BAN.some(w => (' '+t.toLowerCase().replace(/ё/g,'е')+' ').includes(w));
-
-// ═══════════════
-// SEEDED RANDOM
-// ═══════════════
-const srand  = s => { let x = Math.sin(s*1.7+3)*10000; return x-Math.floor(x); };
-const seedY  = id => srand(id*37+7)*80+10;
-
-// ═══════
-// CANVAS
-// ═══════
-function initCV() {
-  const cv = document.getElementById('cv');
-  const ctx = cv.getContext('2d');
-  cv.width  = window.innerWidth;
-  cv.height = window.innerHeight;
-  const W = cv.width, H = cv.height;
-
-  [[.28,.28,'rgba(55,18,110,',0.07],[.72,.62,'rgba(18,38,100,',0.05],[.52,.1,'rgba(95,28,55,',0.045]]
-    .forEach(([rx,ry,c,a]) => {
-      const g = ctx.createRadialGradient(rx*W,ry*H,0,rx*W,ry*H,Math.min(W,H)*0.48);
-      g.addColorStop(0,c+a+')'); g.addColorStop(1,'transparent');
-      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    pts.forEach(function(p){
+      ctx.fillStyle='rgba(0,200,148,.5)';
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
     });
+    requestAnimationFrame(step);
+  })();
+})();
 
-  for (let i=0;i<180;i++) {
-    const x=Math.random()*W, y=Math.random()*H, r=Math.random()*.9+.15;
-    ctx.fillStyle=`rgba(255,255,255,${(Math.random()*.5+.15).toFixed(2)})`;
-    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+/* ── TYPING EFFECT ───────────────────────────────────────────── */
+(function(){
+  var words = ['ACCESS REGISTRY','20 CODES TOTAL','SOMETHING HIDDEN','EXPLORE CAREFULLY'];
+  var el = document.querySelector('.subtitle span');
+  var wi=0, ci=0, del=false;
+  function tick(){
+    var w=words[wi];
+    if(!del){ el.textContent=w.slice(0,++ci); if(ci===w.length){del=true;setTimeout(tick,1500);return;} }
+    else{ el.textContent=w.slice(0,--ci); if(ci===0){del=false;wi=(wi+1)%words.length;} }
+    setTimeout(tick, del?38:68);
   }
-}
-
-// ════════
-// UTILS
-// ════════
-function relTime(ts) {
-  const s = Math.floor(Date.now()/1000 - ts);
-  if (s<60)    return 'только что';
-  if (s<3600)  return Math.floor(s/60)+' мин. назад';
-  if (s<86400) return Math.floor(s/3600)+' ч. назад';
-  return Math.floor(s/86400)+' д. назад';
-}
-const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-// ════════════
-// ORBS STATE
-// ════════════
-const activeOrbs = new Map();
-let hoveredEl = null;
-
-function unhover(el) {
-  if (!el) return;
-  const id = +el.dataset.id, orb = activeOrbs.get(id);
-  if (orb) {
-    orb.hovered = false;
-    const x = parseFloat(el.style.left), sw = window.innerWidth;
-    orb.birthTime = Date.now() - Math.max(0, ((sw-x)/(sw+100))*CROSS_MS);
-  }
-  el.classList.remove('on');
-  hoveredEl = null;
-}
-
-function makeDot(entry) {
-  const el = document.createElement('div');
-  el.className = 'dw';
-  el.dataset.id = entry.id;
-  const y = seedY(entry.id);
-  el.style.top  = y+'%';
-  el.style.left = (window.innerWidth+60)+'px';
-  el.style.setProperty('--pd',   (2+srand(entry.id)*3).toFixed(1)+'s');
-  el.style.setProperty('--pdly', (srand(entry.id*13)*4).toFixed(1)+'s');
-  const tc = y<18?'tip dn':'tip';
-  el.innerHTML = `<div class="dot"></div>
-<div class="${tc}">
-  <div class="tn">${esc(entry.name)}</div>
-  <div class="tp">«${esc(entry.phrase)}»</div>
-  <div class="tt">${relTime(entry.created_at)}</div>
-</div>`;
-
-  el.addEventListener('mouseenter', () => {
-    if (hoveredEl && hoveredEl!==el) unhover(hoveredEl);
-    const o = activeOrbs.get(entry.id); if(o) o.hovered=true;
-    el.classList.add('on'); hoveredEl=el;
-  });
-  el.addEventListener('mouseleave', () => unhover(el));
-  el.addEventListener('click', e => {
-    e.stopPropagation();
-    if (el.classList.contains('on') && hoveredEl===el) { unhover(el); }
-    else {
-      if (hoveredEl) unhover(hoveredEl);
-      const o = activeOrbs.get(entry.id); if(o) o.hovered=true;
-      el.classList.add('on'); hoveredEl=el;
-    }
-  });
-  return el;
-}
-
-function addEntry(entry, birthTime) {
-  if (activeOrbs.has(entry.id)) return;
-  const el = makeDot(entry);
-  document.getElementById('fld').appendChild(el);
-  activeOrbs.set(entry.id, {entry, birthTime, el, hovered:false});
-}
-
-// ════════
-// LOAD
-// ════════
-function setCount(n) {
-  document.getElementById('cnt').textContent = n ? n.toLocaleString('ru')+' следов' : '';
-}
-
-async function loadEntries(initial=false) {
-  try {
-    const res  = await apiFetch(`/entries?count=${MAX_FETCH}`);
-    const data = await res.json();
-    setCount(data.total);
-    const N=data.entries.length, now=Date.now();
-    data.entries.forEach((e,i) => {
-      addEntry(e, initial
-        ? now - (i/N)*CROSS_MS*0.96
-        : now + Math.random()*12000
-      );
-    });
-  } catch(err) {
-    console.warn('[gb] loadEntries failed:', err.message);
-  }
-}
-
-// ════════════
-// DRIFT TICK
-// ════════════
-function tick() {
-  const now=Date.now(), sw=window.innerWidth;
-  for (const [id,orb] of activeOrbs) {
-    if (orb.hovered) continue;
-    const x = sw - ((now-orb.birthTime)/CROSS_MS)*(sw+100);
-    if (x < -80) { orb.el.remove(); activeOrbs.delete(id); }
-    else          { orb.el.style.left = x+'px'; }
-  }
-}
-
-setInterval(() => {
-  document.querySelectorAll('.dw.on .tt').forEach(el => {
-    const o = activeOrbs.get(+el.closest('.dw').dataset.id);
-    if (o) el.textContent = relTime(o.entry.created_at);
-  });
-}, 30000);
-
-// ════════
-// FORM
-// ════════
-const ni=document.getElementById('ni'),pi=document.getElementById('pi'),
-      cc=document.getElementById('cc'),ms=document.getElementById('ms'),
-      sb=document.getElementById('sb');
-
-pi.addEventListener('input', ()=>{
-  const l=pi.value.length; cc.textContent=l+'/'+PL; cc.classList.toggle('lim',l>=PL);
-});
-ni.addEventListener('keydown', e=>{ if(e.key==='Enter') pi.focus(); });
-pi.addEventListener('keydown', e=>{ if(e.key==='Enter') doSubmit(); });
-
-let msgT;
-function showMsg(t,c,d=0){
-  ms.textContent=t; ms.className=c||'';
-  clearTimeout(msgT); if(d) msgT=setTimeout(()=>{ms.textContent='';ms.className='';},d);
-}
-
-async function doSubmit() {
-  const name=ni.value.trim(), phrase=pi.value.trim();
-  if (!name)   { showMsg('введи имя','err'); ni.focus(); return; }
-  if (!phrase) { showMsg('введи фразу','err'); pi.focus(); return; }
-  if (hasBan(name)||hasBan(phrase)) { showMsg('нецензурная лексика','err',3000); return; }
-  sb.disabled=true; sb.textContent='…';
-  try {
-    const res = await apiFetch('/entry',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,phrase})
-    });
-    const d = await res.json();
-    if (d.ok) {
-      ni.value=''; pi.value=''; cc.textContent='0/'+PL; cc.classList.remove('lim');
-      showMsg('след оставлен ✦','ok',3000);
-      if (d.total) setCount(d.total);
-    } else { showMsg(d.error||'ошибка','err',4000); }
-  } catch { showMsg('нет связи с сервером','err',4000); }
-  finally  { sb.disabled=false; sb.textContent='→'; }
-}
-
-sb.addEventListener('click', doSubmit);
-
-// ═══════
-// INIT
-// ═══════
-document.addEventListener('click', e => { if(!e.target.closest('.dw')&&!e.target.closest('#bgm-btn')&&hoveredEl) unhover(hoveredEl); });
-document.getElementById('rb').addEventListener('click', ()=>loadEntries(false));
-window.addEventListener('resize', ()=>{ initCV(); });
-
-async function init() {
-  initCV();
-  await fetchConfig();
-  setInterval(tick, TICK_MS);
-  setInterval(()=>loadEntries(false), REFRESH);
-  loadEntries(true);
-}
-
-init();
-
-// ════════════════════
-// BACKGROUND MUSIC
-// ════════════════════
-const BGM = new Audio('../audio/Reflections A Story Without Words.mp3');
-BGM.volume = 0;
-const BGM_VOL = 0.4;
-let bgmStarted = false;
-let bgmMuted   = false;
-
-function startBGM() {
-  if (bgmStarted) return;
-  bgmStarted = true;
-  BGM.play().then(() => {
-    document.getElementById('bgm-btn').classList.add('on');
-    let v = 0;
-    const fi = setInterval(() => {
-      v = Math.min(v + 0.016, BGM_VOL);
-      BGM.volume = bgmMuted ? 0 : v;
-      if (v >= BGM_VOL) clearInterval(fi);
-    }, 160);
-  }).catch(() => {});
-}
-
-function toggleBGM() {
-  bgmMuted = !bgmMuted;
-  const btn = document.getElementById('bgm-btn');
-  if (bgmMuted) {
-    let v = BGM.volume;
-    const fo = setInterval(() => {
-      v = Math.max(v - 0.04, 0);
-      BGM.volume = v;
-      if (v <= 0) clearInterval(fo);
-    }, 60);
-    btn.textContent = '♪';
-    btn.title = 'включить звук';
-    btn.classList.add('muted');
-  } else {
-    let v = 0;
-    const fi = setInterval(() => {
-      v = Math.min(v + 0.016, BGM_VOL);
-      BGM.volume = v;
-      if (v >= BGM_VOL) clearInterval(fi);
-    }, 160);
-    btn.textContent = '♫';
-    btn.title = 'выключить звук';
-    btn.classList.remove('muted');
-  }
-}
-
-// Первое взаимодействие → запуск
-['click', 'touchstart', 'keydown'].forEach(ev => {
-  document.addEventListener(ev, startBGM, { once: true, passive: true });
-});
-
-document.getElementById('bgm-btn').addEventListener('click', e => {
-  e.stopPropagation(); // не триггерит unhover
-  toggleBGM();
-});
+  tick();
+})();
 </script>
 </body>
 </html>

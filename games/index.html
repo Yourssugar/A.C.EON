@@ -1323,21 +1323,25 @@ function gC(){
    to a CSS custom property. The grid/board CSS reads that variable via var(),
    so cells shrink on phones without any change to game logic or click handling. */
 /* ── Dynamic cell fitter — always uses available screen space ── */
-var ARC_MAX={'mine-cell':40,'t2048-cell':140,'ck-cell':96,'ch-cell':100,'wl-key':46,'fl-cell':52,'bs-cell':46};
 function fitCells(varName,cols,opts){
   opts=opts||{};
-  /* dynamic margin: small fraction of screen width, never more than 48px */
-  var margin=Math.min(48, Math.round(window.innerWidth*0.05));
-  var min=opts.min||16;
-  /* always use the largest known max for this variable */
-  var max=Math.max(opts.max||999, ARC_MAX[varName]||0)||999;
+  var min_c=opts.min||16;
   var extra=opts.extra||0;
-  /* also constrain by viewport height so cells don't overflow vertically */
-  var availW=window.innerWidth-margin;
-  var availH=window.innerHeight-150; /* 150px for titlebar+gbar */
+  var margin=Math.min(48,Math.round(window.innerWidth*0.05));
+
+  /* width: how wide can one cell be */
+  var availW=window.innerWidth-margin*2;
   var cellW=Math.floor((availW-extra)/cols);
-  var cellH=Math.floor(availH/cols); /* rough square cap */
-  var cell=Math.max(min,Math.min(max,cellW,cellH));
+
+  /* height: measure actual .garea so titlebar/gbar height is exact */
+  var gareaEl=cur?document.querySelector('#game-'+cur+' .garea'):null;
+  var availH=gareaEl&&gareaEl.clientHeight>50
+    ? gareaEl.clientHeight-20        /* small buffer for padding */
+    : window.innerHeight-130;        /* fallback if DOM not ready */
+  var cellH=Math.floor(availH/cols); /* boards are square: rows==cols */
+
+  /* no arbitrary upper cap — screen size is the only limit */
+  var cell=Math.max(min_c,Math.min(cellW,cellH));
   document.documentElement.style.setProperty('--'+varName,cell+'px');
   return cell;
 }
@@ -2066,9 +2070,14 @@ window.initBattle=function(){
 };
 
 function bsFitCells(){
-  var avail=Math.min(window.innerWidth, window.innerHeight * 1.4) - 60;
-  var cell=Math.floor((avail-40)/20);
-  cell=Math.max(14,Math.min(46,cell));
+  var gareaEl=document.querySelector('#game-battle .garea');
+  var availH=gareaEl&&gareaEl.clientHeight>50?gareaEl.clientHeight-20:window.innerHeight-130;
+  var availW=window.innerWidth-60;
+  /* two grids side by side on desktop, one grid on mobile */
+  var twoCol=availW>600;
+  var gridW=twoCol?Math.floor((availW-80)/2):availW-20;
+  var gridH=Math.floor(availH/10);
+  var cell=Math.max(14,Math.min(Math.floor(gridW/10),gridH));
   document.documentElement.style.setProperty('--bs-cell',cell+'px');
 }
 

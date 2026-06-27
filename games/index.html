@@ -8,113 +8,253 @@
 
 /* ═══════════ ROOT THEME (GREEN – EYE-FRIENDLY) ═══════════ */
 :root {
-  --bg:   #0d1a0d; --bg2:  #162416; --bg3:  #1e301e; --bg4: #263826;
-  --pri:  #4caf50; --pri-b:#66bb6a; --pri-m:#57bb5b; --pri-d:#2e7d32;
-  --txt:  #81c784; --txt-d:#4caf50; --bdr:  #2e5a2e; --bdr-d:#1a3a1a;
-  --sel:  #1b3a1b; --err:  #ef5350; --dim:  #0a140a;
-}
-/* CYAN – deep ocean */
-body.tc {
-  --bg:#0a1520; --bg2:#0d1e2e; --bg3:#122840; --bg4:#163050;
-  --pri:#26c6da; --pri-b:#4dd0e1; --pri-m:#38ccd8; --pri-d:#00838f;
-  --txt:#80deea; --txt-d:#4dd0e1; --bdr:#0e4757; --bdr-d:#092a38;
-  --sel:#0a2a38; --err:#ef5350; --dim:#060e18;
-}
-/* PURPLE – soft indigo, properly readable */
-body.tp {
-  --bg:#130d1f; --bg2:#1a1028; --bg3:#221535; --bg4:#2c1c42;
-  --pri:#9575cd; --pri-b:#b39ddb; --pri-m:#a587d4; --pri-d:#512da8;
-  --txt:#ce93d8; --txt-d:#9575cd; --bdr:#3d2b5c; --bdr-d:#271a40;
-  --sel:#221040; --err:#ef5350; --dim:#0d0815;
-}
-/* AMBER – warm, not glaring */
-body.ta {
-  --bg:#1a1200; --bg2:#221800; --bg3:#2d2000; --bg4:#3a2800;
-  --pri:#ffa726; --pri-b:#ffb74d; --pri-m:#ffad33; --pri-d:#e65100;
-  --txt:#ffcc80; --txt-d:#ffa726; --bdr:#4a3000; --bdr-d:#301e00;
-  --sel:#2d1e00; --err:#ef5350; --dim:#100c00;
-}
-/* RED – soft crimson */
-body.tr {
-  --bg:#1a0808; --bg2:#220c0c; --bg3:#2d1010; --bg4:#3a1515;
-  --pri:#e57373; --pri-b:#ef9a9a; --pri-m:#e87878; --pri-d:#c62828;
-  --txt:#ff8a80; --txt-d:#e57373; --bdr:#5c1a1a; --bdr-d:#3a0e0e;
-  --sel:#2d0808; --err:#ffb74d; --dim:#100404;
+  --bg:#050510;  --bg2:#08081a;  --bg3:#0d0d22;  --bg4:#12122c;
+  --pri:#00e5ff; --pri-b:#80f0ff; --pri-m:#00ccee; --pri-d:#007799;
+  --txt:#b0e0ff; --txt-d:#00e5ff; --bdr:#003355;  --bdr-d:#001a33;
+  --sel:#001833; --err:#ff3344;  --dim:#020208;
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);font-family:Tahoma,Arial,sans-serif;font-size:12px;
-     color:var(--pri);min-height:100vh;display:flex;align-items:center;
-     justify-content:center;transition:background .35s,color .35s;}
+     color:var(--pri);min-height:100dvh;display:flex;align-items:center;
+     justify-content:center;overflow-x:hidden;}
+/* launcher height handled in arcade section */
 .hidden{display:none!important;}
 canvas{display:block;}
 
-/* THEME BAR */
-.theme-bar{display:flex;gap:10px;justify-content:center;margin-bottom:20px;}
-.th-btn{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);
-        cursor:pointer;transition:transform .15s,border-color .2s;flex-shrink:0;}
-.th-btn:hover{transform:scale(1.3);}
-.th-btn.active{border-color:rgba(255,255,255,0.75);transform:scale(1.25);}
-.th-g{background:#4caf50;}.th-c{background:#26c6da;}
-.th-p{background:#9575cd;}.th-a{background:#ffa726;}.th-r{background:#e57373;}
+/* CRT OVERLAY */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.09) 2px,rgba(0,0,0,.09) 4px);}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.65) 100%);}
 
-/* LAUNCHER */
-#launcher{text-align:center;padding:28px 20px;width:100%;max-width:580px;}
-.l-title{font-size:11px;color:var(--txt-d);letter-spacing:4px;margin-bottom:4px;}
-.l-sub{font-size:9px;color:var(--pri-d);letter-spacing:2px;margin-bottom:24px;}
-.l-plays{color:var(--txt);font-weight:bold;}
-.game-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:640px;margin:0 auto;}
-.game-icon{padding:14px 6px 10px;border:1px solid var(--bdr-d);background:var(--bg2);
-           cursor:pointer;text-align:center;
-           opacity:0;transform:translateY(-10px) scale(.88);
-           transition:background .15s,border-color .2s,box-shadow .18s;}
-.game-icon.appeared{opacity:1;transform:none;
-  transition:background .15s,border-color .2s,box-shadow .18s,opacity .28s,transform .36s cubic-bezier(.34,1.52,.64,1);}
-.game-icon:hover{background:var(--sel);border-color:var(--bdr);box-shadow:0 4px 14px rgba(0,0,0,.4);}
-.game-icon.appeared:hover{transform:translateY(-3px);}
+/* ── ARCADE LAUNCHER — fits 100dvh, no scroll ── */
+#launcher,#launcher-2{
+  height:100dvh;
+  width:100%;
+  max-width:min(95vw,960px);
+  margin:0 auto;
+  text-align:center;
+  padding:clamp(6px,1.5vh,14px) clamp(8px,2vw,14px);
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:clamp(4px,1vh,10px);
+  overflow:hidden;
+}
+/* header strip — fixed height, won't grow */
+.l-head{flex-shrink:0;}
+.arc-marquee{
+  font-family:'Press Start 2P',monospace;
+  font-size:clamp(11px,2.8vw,22px);
+  color:#ff2d78;
+  text-shadow:0 0 12px #ff2d78,0 0 28px rgba(255,45,120,.5);
+  letter-spacing:3px;
+  margin-bottom:2px;
+  animation:arcGlow 2.4s ease-in-out infinite;
+}
+.arc-sub{
+  font-size:clamp(6px,1vw,9px);
+  letter-spacing:4px;color:var(--pri-d);
+  margin-bottom:3px;
+  font-family:'Press Start 2P',monospace;
+}
+.arc-coin{
+  font-size:clamp(6px,1vw,8px);
+  letter-spacing:2px;color:#ffe600;
+  margin-bottom:0;
+  animation:blink .9s step-end infinite;
+  font-family:'Press Start 2P',monospace;
+}
+.arc-coin span{color:#fff;}
 
-/* folder shape — Windows classic yellow */
-.ico-fold{display:inline-block;width:46px;height:36px;position:relative;margin-bottom:8px;}
-/* tab */
-.ico-fold::before{content:'';position:absolute;top:0;left:2px;width:18px;height:9px;
-  border-radius:3px 3px 0 0;
-  background:linear-gradient(160deg,#ffe066 0%,#f5c518 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.55);}
-/* body */
-.ico-fold::after{content:'';position:absolute;bottom:0;left:0;right:0;height:29px;
-  border-radius:1px 4px 3px 3px;
-  background:linear-gradient(175deg,#ffd740 0%,#f5c518 40%,#d4a017 100%);
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 5px rgba(0,0,0,.35);}
-.ico-label{display:block;font-size:9px;color:var(--pri-m);letter-spacing:2px;}
+/* GAME GRID — 3 col × 5 row, fills remaining height */
+.game-grid{
+  flex:1;
+  min-height:0;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(5,1fr);
+  gap:clamp(3px,.8vw,8px);
+  width:100%;
+  max-width:min(95vw,960px);
+}
 
-/* ── BOOT SCREEN ── */
+/* ICON CELLS — fill their grid cell completely */
+.game-icon{
+  border:2px solid var(--bdr-d);
+  background:var(--bg2);
+  cursor:pointer;text-align:center;
+  opacity:0;transform:scale(.85);
+  transition:background .12s,border-color .18s,box-shadow .18s;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-height:0;min-width:0;
+  padding:0;
+}
+.game-icon.appeared{
+  opacity:1;transform:none;
+  transition:background .12s,border-color .18s,box-shadow .18s,
+             opacity .22s,transform .3s cubic-bezier(.34,1.52,.64,1);
+}
+.game-icon:hover{
+  background:var(--sel);border-color:#00e5ff;
+  box-shadow:0 0 0 1px #00e5ff,0 0 18px rgba(0,229,255,.55),inset 0 0 14px rgba(0,229,255,.07);
+}
+.game-icon.appeared:hover{transform:scale(1.05);}
+.game-icon.page-btn{border-color:#ff2d78;}
+.game-icon.page-btn:hover{border-color:#ff2d78;box-shadow:0 0 0 1px #ff2d78,0 0 18px rgba(255,45,120,.55);}
+
+/* EMOJI — size = ~40% of the smaller side of its cell:
+   cell width  ≈ viewport_width / 3
+   cell height ≈ (viewport_height - header) / 5
+   so min(11vw, 14vh) lands at ~40-45% of each           */
+.ico-pixel{
+  display:block;
+  font-size:clamp(16px,min(10vw,13vh),68px);
+  line-height:1;
+  margin-bottom:clamp(2px,.6vh,6px);
+  filter:drop-shadow(0 0 5px currentColor);
+}
+.ico-label{
+  display:block;
+  font-size:clamp(5px,min(1.4vw,1.6vh),9px);
+  color:var(--pri-m);
+  letter-spacing:1px;line-height:1.3;
+  font-family:'Press Start 2P',monospace;
+  padding:0 2px;
+}
+.ico-page-arrow{
+  display:block;
+  font-size:clamp(14px,min(7vw,9vh),48px);
+  margin-bottom:clamp(2px,.4vh,6px);
+  color:#ff2d78;
+  text-shadow:0 0 12px #ff2d78;
+  animation:blink 1s step-end infinite;
+}
+
+/* ── ARCADE BOOT SCREEN ── */
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
-#boot-overlay{position:fixed;inset:0;z-index:9998;background:#000d00;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Courier New',Courier,monospace;padding:20px;
-  transition:opacity .5s ease;}
-#boot-overlay::before{content:'';position:fixed;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.13) 3px,rgba(0,0,0,.13) 4px);}
-#boot-box{border:1px solid #2dff2d;max-width:460px;width:100%;padding:22px 28px;
-  position:relative;z-index:1;box-shadow:0 0 36px rgba(45,255,45,.1);}
-#boot-hdr{text-align:center;color:#2dff2d;font-size:11px;letter-spacing:5px;
-  padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid rgba(45,255,45,.25);}
-#boot-ver{font-size:9px;letter-spacing:2px;color:#1a7a1a;margin-top:3px;}
-#boot-log{font-size:11px;color:#2dff2d;line-height:2.1;min-height:116px;letter-spacing:.4px;}
-.b-ok{color:#00ff88;font-weight:bold;}.b-dim{color:rgba(45,255,45,.45);}
-.bcursor{display:inline-block;width:7px;height:12px;background:#2dff2d;
-  animation:blink .65s step-end infinite;vertical-align:middle;margin-left:2px;}
-#boot-bar-outer{margin-top:14px;height:17px;border:1px solid rgba(45,255,45,.4);
-  background:rgba(45,255,45,.04);overflow:hidden;position:relative;}
-#boot-bar-inner{height:100%;width:0%;background:linear-gradient(90deg,#0a4a0a,#2dff2d);
-  transition:width .14s linear;}
-#boot-bar-pct{text-align:center;margin-top:5px;font-size:10px;letter-spacing:3px;color:#1a7a1a;}
+@keyframes arcGlow{0%,100%{text-shadow:0 0 8px #00e5ff,0 0 20px rgba(0,229,255,.4);}50%{text-shadow:0 0 16px #00e5ff,0 0 40px rgba(0,229,255,.7),0 0 60px rgba(0,229,255,.2);}}
+@keyframes scanRoll{0%{transform:translateY(-100%);}100%{transform:translateY(100vh);}}
+
+#boot-overlay{
+  position:fixed;inset:0;z-index:9998;
+  background:#000010;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Press Start 2P',monospace;
+  padding:20px;transition:opacity .5s ease;
+  overflow:hidden;
+}
+/* scanline roll */
+#boot-overlay::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,.03) 2px,rgba(0,229,255,.03) 4px);
+}
+#boot-overlay::after{
+  content:'';position:fixed;left:0;right:0;height:40%;pointer-events:none;z-index:2;
+  background:linear-gradient(to bottom,transparent,rgba(0,229,255,.04),transparent);
+  animation:scanRoll 4s linear infinite;
+}
+
+/* header marquee area */
+#boot-arcade-title{
+  text-align:center;margin-bottom:clamp(14px,3vh,28px);position:relative;z-index:3;
+}
+#boot-ac-big{
+  font-size:clamp(14px,4vw,28px);
+  color:#ff2d78;
+  text-shadow:0 0 14px #ff2d78,0 0 32px rgba(255,45,120,.6),0 0 60px rgba(255,45,120,.2);
+  letter-spacing:4px;
+  animation:arcGlow 2.2s ease-in-out infinite;
+  display:block;margin-bottom:6px;
+}
+#boot-ac-sub{
+  font-size:clamp(7px,1.5vw,10px);
+  color:#007799;letter-spacing:6px;display:block;
+}
+
+/* main box */
+#boot-box{
+  border:2px solid #00e5ff;
+  max-width:min(560px,92vw);width:100%;
+  padding:clamp(14px,3vw,26px) clamp(16px,4vw,32px);
+  position:relative;z-index:3;
+  background:#000018;
+  box-shadow:0 0 0 1px #003355,0 0 40px rgba(0,229,255,.2),inset 0 0 30px rgba(0,229,255,.04);
+}
+/* corner decorations */
+#boot-box::before,#boot-box::after{
+  content:'';position:absolute;width:12px;height:12px;
+  border-color:#ff2d78;border-style:solid;
+}
+#boot-box::before{top:-2px;left:-2px;border-width:2px 0 0 2px;}
+#boot-box::after{bottom:-2px;right:-2px;border-width:0 2px 2px 0;}
+
+#boot-hdr{
+  text-align:center;
+  color:#00e5ff;
+  font-size:clamp(8px,1.6vw,11px);
+  letter-spacing:3px;
+  padding-bottom:10px;margin-bottom:12px;
+  border-bottom:1px solid #003355;
+}
+#boot-ver{
+  font-size:clamp(6px,1vw,8px);
+  letter-spacing:2px;color:#003355;margin-top:5px;
+  animation:blink 1.4s step-end infinite;
+}
+#boot-log{
+  font-size:clamp(7px,1.3vw,10px);
+  color:#00e5ff;line-height:2.2;
+  min-height:120px;letter-spacing:.5px;
+}
+.b-ok{color:#00ff88;}.b-dim{color:#003355;}
+.bcursor{
+  display:inline-block;width:8px;height:clamp(10px,1.5vw,14px);
+  background:#00e5ff;
+  animation:blink .65s step-end infinite;
+  vertical-align:middle;margin-left:2px;
+  box-shadow:0 0 6px #00e5ff;
+}
+#boot-bar-outer{
+  margin-top:14px;height:14px;
+  border:1px solid #003355;
+  background:#000010;overflow:hidden;
+  position:relative;
+}
+/* pixelated progress bar */
+#boot-bar-inner{
+  height:100%;width:0%;
+  background:repeating-linear-gradient(90deg,#007799 0px,#007799 6px,#00e5ff 6px,#00e5ff 10px);
+  background-size:10px 100%;
+  transition:width .14s linear;
+  box-shadow:0 0 10px rgba(0,229,255,.6);
+}
+#boot-bar-pct{
+  text-align:center;margin-top:6px;
+  font-size:clamp(7px,1.2vw,9px);
+  letter-spacing:3px;color:#007799;
+}
+
+/* high score / credits strip */
+#boot-hiscore{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:10px;
+  font-size:clamp(6px,1vw,8px);
+  color:#ff2d78;letter-spacing:2px;
+}
 /* ── ASSEMBLY PROGRESS BAR (bottom strip) ── */
 #assembly-bar{position:fixed;bottom:0;left:0;right:0;height:3px;
-  background:var(--bdr-d);z-index:9997;opacity:0;transition:opacity .3s;}
+  background:#001020;z-index:9997;opacity:0;transition:opacity .3s;}
 #assembly-bar.show{opacity:1;}
 #assembly-bar.hide{opacity:0;transition:opacity .6s .3s;}
-#assembly-bar-fill{height:100%;width:0%;background:var(--pri);transition:width .15s ease;}
+#assembly-bar-fill{height:100%;width:0%;
+  background:linear-gradient(90deg,#007799,#00e5ff);
+  box-shadow:0 0 8px rgba(0,229,255,.6);
+  transition:width .15s ease;}
 
 /* ── GAME SPLASH SCREEN ── */
 #game-splash{position:fixed;inset:0;z-index:9000;background:#000;
@@ -152,40 +292,151 @@ canvas{display:block;}
 
 
 
-/* GAME WINDOW + OPEN ANIMATION */
-@keyframes gwinIn{from{opacity:0;transform:scale(0.96) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);}}
-.gwin{width:98vw;max-width:780px;border:2px solid var(--bdr-d);background:var(--bg2);
-      display:flex;flex-direction:column;animation:gwinIn .22s ease-out;}
-.gtb{background:var(--sel);padding:3px 8px;display:flex;align-items:center;flex-shrink:0;}
-.gtb-t{flex:1;color:var(--pri-m);font-size:11px;font-weight:bold;letter-spacing:2px;}
-.gtb-x{width:18px;height:16px;background:var(--bg3);border:1px solid;
-        border-color:var(--bdr) var(--bdr-d) var(--bdr-d) var(--bdr);
-        cursor:pointer;font-size:9px;color:var(--txt-d);display:flex;align-items:center;justify-content:center;}
-.gtb-x:hover{background:#5c1a1a;color:#ef5350;}
-.garea{padding:12px;display:flex;flex-direction:column;align-items:center;gap:10px;}
-.gbar{width:100%;display:flex;justify-content:space-between;align-items:center;
-      padding:5px 10px;background:var(--bg);border:1px solid var(--bdr-d);
-      font-size:11px;color:var(--txt-d);letter-spacing:1px;gap:8px;flex-wrap:wrap;}
-.btn{padding:2px 12px;background:var(--bg3);border:1px solid;
-     border-color:var(--bdr) var(--bdr-d) var(--bdr-d) var(--bdr);
-     color:var(--txt-d);cursor:pointer;font-family:inherit;font-size:11px;transition:background .1s;}
-.btn:hover{background:var(--sel);color:var(--pri);}
-.btn.sel{background:var(--sel);color:var(--pri-b);border-color:var(--pri-d);}
+/* ── ARCADE GAME WINDOWS ── */
+@keyframes gwinIn{from{opacity:0;transform:scale(0.97) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes arcScan{0%{background-position:0 0;}100%{background-position:0 100px;}}
+
+.gwin{
+  width:100vw;height:100dvh;
+  max-width:none;
+  border:none;
+  border-top:2px solid #00e5ff;
+  box-shadow:0 0 0 1px #007799 inset;
+  background:#050510;
+  display:flex;flex-direction:column;
+  animation:gwinIn .2s ease-out;
+  overflow:hidden;
+  position:relative;
+}
+/* subtle scanline inside game window */
+.gwin::after{
+  content:'';pointer-events:none;position:absolute;inset:0;z-index:800;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,229,255,.025) 3px,rgba(0,229,255,.025) 4px);
+}
+
+/* TITLE BAR */
+.gtb{
+  background:linear-gradient(90deg,#001833,#002244,#001833);
+  padding:7px 10px 7px 14px;
+  display:flex;align-items:center;flex-shrink:0;
+  border-bottom:2px solid #00e5ff;
+  position:relative;z-index:1;
+}
+.gtb::before{
+  content:'▶';
+  color:#ff2d78;font-size:8px;
+  text-shadow:0 0 8px #ff2d78;
+  margin-right:9px;
+  font-family:'Press Start 2P',monospace;
+}
+.gtb-t{
+  flex:1;
+  font-family:'Press Start 2P',monospace;
+  font-size:clamp(7px,1.8vw,10px);
+  color:#00e5ff;
+  text-shadow:0 0 8px rgba(0,229,255,.7);
+  letter-spacing:2px;
+}
+.gtb-x{
+  width:26px;height:26px;
+  background:#1a0010;
+  border:1px solid #ff3344;
+  color:#ff3344;
+  font-size:10px;font-weight:bold;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  text-shadow:0 0 6px #ff3344;
+  transition:background .12s,color .12s;
+  font-family:'Press Start 2P',monospace;
+}
+.gtb-x:hover{background:#ff3344;color:#fff;text-shadow:none;}
+
+/* GAME AREA */
+.garea{
+  flex:1;min-height:0;
+  padding:8px 12px;
+  display:flex;flex-direction:column;
+  align-items:center;gap:8px;
+  overflow-y:auto;overflow-x:hidden;
+  position:relative;z-index:1;
+  scrollbar-width:thin;scrollbar-color:#003355 transparent;
+}
+
+/* STATUS BAR */
+.gbar{
+  width:100%;max-width:1200px;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 16px;
+  background:#001020;
+  border:1px solid #003355;
+  border-left:3px solid #00e5ff;
+  font-family:'Press Start 2P',monospace;
+  font-size:clamp(6px,1.5vw,9px);
+  color:#00e5ff;
+  letter-spacing:1px;
+  gap:10px;flex-wrap:wrap;
+  text-shadow:0 0 6px rgba(0,229,255,.5);
+}
+
+/* BUTTONS */
+.btn{
+  padding:5px 12px;
+  background:#001020;
+  border:1px solid #003355;
+  border-bottom:2px solid #007799;
+  color:#80f0ff;
+  cursor:pointer;
+  font-family:'Press Start 2P',monospace;
+  font-size:clamp(6px,1.4vw,8px);
+  letter-spacing:1px;
+  transition:background .1s,border-color .1s,color .1s;
+  white-space:nowrap;
+}
+.btn:hover{
+  background:#003355;
+  border-color:#00e5ff;
+  border-bottom-color:#00e5ff;
+  color:#fff;
+  box-shadow:0 0 10px rgba(0,229,255,.35);
+}
+.btn.sel{
+  background:#003355;
+  border-color:#00e5ff;
+  border-bottom-color:#00ccdd;
+  color:#fff;
+  box-shadow:0 0 10px rgba(0,229,255,.3),inset 0 0 8px rgba(0,229,255,.06);
+}
 
 /* MOBILE CONTROLS */
-.m-ctrl{display:none;gap:6px;flex-wrap:wrap;justify-content:center;padding:6px 0;width:100%;}
+.m-ctrl{display:none;gap:6px;flex-wrap:wrap;justify-content:center;padding:8px 0;width:100%;}
 @media(max-width:768px){.m-ctrl{display:flex;}}
 .m-ctrl.show{display:flex;}
-.m-pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:3px;}
-.m-btn{font-size:18px;background:var(--bg3);border:1px solid var(--bdr);color:var(--pri);
-       cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;
-       user-select:none;touch-action:manipulation;width:44px;height:44px;-webkit-tap-highlight-color:transparent;}
-.m-btn:active{background:var(--sel);color:var(--pri-b);}
-.m-btn.wide{width:100px;}
-.m-hint{font-size:9px;color:var(--pri-d);text-align:center;letter-spacing:1px;}
+.m-pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:4px;}
+.m-btn{
+  font-size:20px;
+  background:#001020;
+  border:2px solid #003355;
+  border-bottom:3px solid #007799;
+  color:#00e5ff;
+  cursor:pointer;border-radius:0;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;touch-action:manipulation;
+  width:48px;height:48px;
+  -webkit-tap-highlight-color:transparent;
+  text-shadow:0 0 8px rgba(0,229,255,.6);
+  transition:background .08s;
+  font-family:'Press Start 2P',monospace;
+}
+.m-btn:active{
+  background:#003355;border-bottom-width:1px;
+  transform:translateY(2px);
+  box-shadow:0 0 8px rgba(0,229,255,.4);
+}
+.m-btn.wide{width:110px;font-size:8px;letter-spacing:1px;}
+.m-hint{font-size:7px;color:#007799;text-align:center;letter-spacing:2px;font-family:'Press Start 2P',monospace;}
 
 /* CANVAS AUTO-SCALE — keeps internal game resolution intact, only shrinks visually */
-.gcv{max-width:100%;height:auto;display:block;margin:0 auto;}
+.gcv{max-width:100%;height:auto;display:block;margin:0 auto;max-height:calc(100dvh - 130px);width:auto;}
 
 /* MINESWEEPER */
 #mine-grid{display:inline-grid;border:2px solid;border-color:var(--bdr-d) var(--bdr) var(--bdr) var(--bdr-d);background:var(--bg3);gap:1px;padding:2px;}
@@ -200,7 +451,7 @@ canvas{display:block;}
 /* SOLITAIRE */
 #game-soli{position:fixed;inset:0;z-index:100;max-width:100vw;width:100vw;height:100vh;overflow:hidden;border:none;}
 #game-soli .garea{flex:1;overflow-y:auto;overflow-x:hidden;align-items:stretch;padding:10px 20px;}
-#soli-center{max-width:900px;margin:0 auto;width:100%;}
+#soli-center{max-width:1100px;margin:0 auto;width:100%;}
 .card{width:100px;min-height:145px;border:1px solid #00000040;border-radius:6px;
       background:var(--bg4);cursor:pointer;position:relative;user-select:none;flex-shrink:0;
       box-shadow:0 1px 3px rgba(0,0,0,.35);}
@@ -335,7 +586,7 @@ canvas{display:block;}
 .fl-sw.cur{outline:3px solid #fff;outline-offset:2px;}
 
 /* BATTLESHIP */
-#bs-wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;}
+#bs-wrap{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;width:100%;}
 .bs-board{display:flex;flex-direction:column;align-items:center;gap:6px;}
 .bs-label{font-size:10px;letter-spacing:2px;color:var(--txt-d);}
 .bs-grid{display:inline-grid;grid-template-columns:repeat(10,var(--bs-cell,28px));grid-template-rows:repeat(10,var(--bs-cell,28px));gap:1px;background:#000;border:2px solid #000;}
@@ -354,7 +605,7 @@ canvas{display:block;}
 #bs-start-btn{display:none;}
 
 /* MASTERMIND */
-#mm-history{display:flex;flex-direction:column;gap:6px;width:100%;max-width:320px;max-height:240px;overflow-y:auto;margin:0 auto;}
+#mm-history{display:flex;flex-direction:column;gap:6px;width:100%;max-width:480px;max-height:min(360px,40vh);overflow-y:auto;margin:0 auto;}
 .mm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 8px;background:var(--bg2);border:1px solid var(--bdr-d);}
 .mm-pegs{display:flex;gap:5px;}
 .mm-peg{width:24px;height:24px;border-radius:50%;border:2px solid rgba(0,0,0,.3);box-shadow:0 1px 2px rgba(0,0,0,.35);flex-shrink:0;cursor:pointer;}
@@ -384,7 +635,7 @@ canvas{display:block;}
 
 /* REACTION TEST */
 #rt-box{
-  width:100%;max-width:560px;height:260px;margin:0 auto;
+  width:100%;max-width:760px;height:clamp(200px,40vh,380px);margin:0 auto;
   display:flex;align-items:center;justify-content:center;
   background:#444;border:2px solid var(--bdr);cursor:pointer;
   transition:background .15s;user-select:none;
@@ -452,16 +703,130 @@ canvas{display:block;}
 .pz-tile.empty{background:var(--dim);border-color:var(--bdr-d);cursor:default;}
 .pz-tile.correct{color:var(--pri-b);border-color:var(--pri-d);}
 
+
+/* ══ ARCADE OVERRIDES FOR GAME-SPECIFIC ELEMENTS ══ */
+
+/* Minesweeper cell */
+.mc{border-color:#003355 #001a33 #001a33 #003355;background:#001020;color:#80f0ff;}
+.mc:hover{background:#003355;}
+.mc.rev{background:#050510;border-color:#002233;}
+.mc.boom{background:#330008;color:#ff3344;}
+.n1{color:#00e5ff;}.n2{color:#00ff88;}.n3{color:#ff3344;}.n4{color:#ff2d78;}
+.n5{color:#ffb830;}.n6{color:#b088ff;}.n7{color:#fff;}.n8{color:#666;}
+
+/* TicTacToe */
+.ttt{background:#001020;border-color:#003355;font-size:32px;}
+.ttt:hover{background:#003355;}
+.ttt.X{color:#ff3344;text-shadow:0 0 12px #ff3344;}
+.ttt.O{color:#00e5ff;text-shadow:0 0 12px #00e5ff;}
+
+/* Wordle cells */
+.wl-cell{border-color:#003355;background:#001020;color:#00e5ff;font-family:'Press Start 2P',monospace;font-size:16px;}
+.wl-filled{border-color:#007799;}
+.wl-correct{background:#005522;border-color:#00ff88;color:#00ff88;}
+.wl-present{background:#553300;border-color:#ffb830;color:#ffb830;}
+.wl-absent{background:#0a0a1a;border-color:#002233;color:#003355;}
+.wl-k{background:#001020;border-color:#003355;color:#80f0ff;border-radius:0;font-family:'Press Start 2P',monospace;font-size:6px;}
+.wl-k:hover{background:#003355;}
+.wl-kc{background:#005522;border-color:#00ff88;color:#00ff88;}
+.wl-kp{background:#553300;border-color:#ffb830;color:#ffb830;}
+.wl-ka{background:#050510;border-color:#001a33;color:#002233;}
+
+/* Solitaire cards — keep cream colour (contrast is important for gameplay) */
+.card{border-color:#002233;background:#0c0c22;}
+.card.fu{background:#f7f2e3;border-color:#c8bfa0;}  /* face-up stays cream */
+
+/* Chess/Checkers boards — keep classic board colours */
+.ch-light{background:#d4b87a;}.ch-dark{background:#8b5e3c;}
+.ck-light{background:#c8b06a;}.ck-dark{background:#7a5230;}
+.ch-hint::before{background:rgba(0,229,255,.45);}
+.ck-hint::after{background:rgba(0,229,255,.4);}
+
+/* Flood-It palette swatches */
+.fl-sw{border-color:rgba(0,229,255,.25);border-radius:0;}
+.fl-sw.cur{outline:3px solid #00e5ff;outline-offset:2px;}
+
+/* Mastermind swatches */
+.mm-sw{border-color:rgba(0,229,255,.2);border-radius:0;}
+.mm-peg.empty{background:#001020;border-color:#003355;}
+.mm-row{background:#001020;border-color:#003355;}
+.mm-fbdot.black{background:#1a1a1a;border-color:#444;}
+.mm-fbdot.white{background:#fff;border-color:#999;}
+
+/* Simon Says */
+.ss-btn{border-radius:0;border-color:rgba(0,229,255,.2);}
+
+/* Reaction Test */
+#rt-box{border-color:#003355;border-radius:0;}
+#rt-chip{background:#001020;border-color:#003355;border-radius:0;font-family:'Press Start 2P',monospace;font-size:7px;}
+
+/* Blackjack table */
+#bj-table{background:#001a0a;border-color:#003322;border-radius:0;}
+.bj-zlbl{font-family:'Press Start 2P',monospace;font-size:7px;color:#007744;letter-spacing:2px;}
+.bj-score{font-family:'Press Start 2P',monospace;font-size:7px;color:#00ff88;}
+.bj-chip{border-radius:0;}
+
+/* Yahtzee dice */
+.yz-die{border-radius:0;border-color:#003355;}
+.yz-die.held{border-color:#ffb830;box-shadow:0 0 10px rgba(255,184,48,.5);}
+.yz-dot{background:#00e5ff;}
+.yz-cat{background:#001020;border-color:#003355;font-family:'Press Start 2P',monospace;font-size:7px;}
+.yz-cat:hover:not(.used){background:#003355;border-color:#00e5ff;}
+.yz-cat.used{color:#007799;}
+.yz-cat.preview{border-color:#ffb830;color:#ffb830;}
+
+/* 15-Puzzle */
+.pz-tile{background:#001020;border-color:#003355;font-family:'Press Start 2P',monospace;border-radius:0;}
+.pz-tile:hover:not(.empty){background:#003355;}
+.pz-tile.correct{color:#00ff88;border-color:#005522;}
+.pz-tile.empty{background:#020208;border-color:#001a33;}
+
+/* Battleship grid */
+.bs-cell{background:#001020;}
+.bs-cell.ship{background:#003355;}
+.bs-cell.hit{background:#330008;}
+.bs-cell.hit::after{color:#ff3344;}
+.bs-cell.sunk{background:#220005;}
+.bs-cell.sunk::after{color:#ff3344;}
+.bs-cell.enemy:hover{background:rgba(0,229,255,.15);}
+.bs-cell.preview-ok{background:rgba(0,229,255,.3);}
+.bs-cell.preview-bad{background:rgba(255,51,68,.3);}
+.bs-label{font-family:'Press Start 2P',monospace;font-size:7px;color:#007799;letter-spacing:1px;}
+
+/* Message text in game bars — inherit arcade font */
+#mine-st,#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ch-msg,#ck-msg,#ttt-msg,#ss-msg,#rt-text,#bj-msg,#t-msg{
+  font-family:'Press Start 2P',monospace;
+  font-size:clamp(6px,1.5vw,9px);
+  letter-spacing:1px;
+}
+
+/* canvas fullscreen scaling — browser keeps aspect ratio via width:auto + max constraints */
+#snake-cv  { max-height:calc(min(100vw, calc(100dvh - 130px))); }
+#tet-cv    { max-height:calc(100dvh - 130px); width:auto; }
+#pong-cv   { max-height:calc(100dvh - 130px); width:auto; }
+#bk-cv     { max-height:calc(100dvh - 130px); width:auto; }
+#pf-cv     { max-height:calc(100dvh - 130px); width:auto; }
+#ts-cv     { max-height:calc(100dvh - 130px); width:auto; }
+#bub-cv    { max-height:calc(100dvh - 130px); width:auto; }
+
 </style>
 </head>
 <body>
 
-<!-- BOOT OVERLAY -->
+<!-- ARCADE BOOT OVERLAY -->
 <div id="boot-overlay">
+  <div id="boot-arcade-title">
+    <span id="boot-ac-big">A.C.EON</span>
+    <span id="boot-ac-sub">ARCADE</span>
+  </div>
   <div id="boot-box">
+    <div id="boot-hiscore">
+      <span>HI&#8209;SCORE&nbsp;<span id="boot-hi">000000</span></span>
+      <span>CREDITS&nbsp;<span id="boot-cr">99</span></span>
+    </div>
     <div id="boot-hdr">
-      A.C.EON — GAME ARCHIVE
-      <div id="boot-ver">SYSTEM v1.0 // ARG.BUILD.2024 // CLICK TO SKIP</div>
+      SYSTEM BOOT
+      <div id="boot-ver">v1.0 // COIN-OP // CLICK TO SKIP</div>
     </div>
     <div id="boot-log"><span class="bcursor"></span></div>
     <div id="boot-bar-outer"><div id="boot-bar-inner"></div></div>
@@ -484,40 +849,48 @@ canvas{display:block;}
 </div>
 
 <div id="launcher">
-  <div class="l-title">A.C.EON &mdash; GAME ARCHIVE</div>
-  <div class="l-sub">[ SELECT PROGRAM ] &nbsp;&bull;&nbsp; PLAYS: <span class="l-plays" id="play-cnt">0</span></div>
-  <div class="theme-bar">
-    <div class="th-btn th-g active" onclick="setTheme(0)" title="GREEN"></div>
-    <div class="th-btn th-c"        onclick="setTheme(1)" title="CYAN"></div>
-    <div class="th-btn th-p"        onclick="setTheme(2)" title="PURPLE"></div>
-    <div class="th-btn th-a"        onclick="setTheme(3)" title="AMBER"></div>
-    <div class="th-btn th-r"        onclick="setTheme(4)" title="RED"></div>
+  <div class="l-head">
+    <div class="arc-marquee">A.C.EON ARCADE</div>
+    <div class="arc-sub">&#9654; SELECT YOUR GAME &#9664;</div>
+    <div class="arc-coin">INSERT COIN &nbsp;<span>&#x25CF;</span>&nbsp; CREDITS: <span id="play-cnt">0</span></div>
   </div>
   <div class="game-grid">
-    <div class="game-icon" onclick="openGame('mine')"><div class="ico-fold"></div><span class="ico-label">MINESWEEPER</span></div>
-    <div class="game-icon" onclick="openGame('soli')"><div class="ico-fold"></div><span class="ico-label">SOLITAIRE</span></div>
-    <div class="game-icon" onclick="openGame('snake')"><div class="ico-fold"></div><span class="ico-label">SNAKE</span></div>
-    <div class="game-icon" onclick="openGame('brkout')"><div class="ico-fold"></div><span class="ico-label">BREAKOUT</span></div>
-    <div class="game-icon" onclick="openGame('g2048')"><div class="ico-fold"></div><span class="ico-label">2048</span></div>
-    <div class="game-icon" onclick="openGame('ttt')"><div class="ico-fold"></div><span class="ico-label">TIC-TAC-TOE</span></div>
-    <div class="game-icon" onclick="openGame('tetris')"><div class="ico-fold"></div><span class="ico-label">TETRIS</span></div>
-    <div class="game-icon" onclick="openGame('pong')"><div class="ico-fold"></div><span class="ico-label">PONG</span></div>
-    <div class="game-icon" onclick="openGame('checkers')"><div class="ico-fold"></div><span class="ico-label">CHECKERS</span></div>
-    <div class="game-icon" onclick="openGame('chess')"><div class="ico-fold"></div><span class="ico-label">CHESS</span></div>
-    <div class="game-icon" onclick="openGame('pf')"><div class="ico-fold"></div><span class="ico-label">RUNNER</span></div>
-    <div class="game-icon" onclick="openGame('simon')"><div class="ico-fold"></div><span class="ico-label">SIMON SAYS</span></div>
-    <div class="game-icon" onclick="openGame('ts')"><div class="ico-fold"></div><span class="ico-label">STACKER</span></div>
-    <div class="game-icon" onclick="openGame('wordle')"><div class="ico-fold"></div><span class="ico-label">WORDLE</span></div>
-    <div class="game-icon" onclick="openGame('flood')"><div class="ico-fold"></div><span class="ico-label">FLOOD-IT</span></div>
-    <div class="game-icon" onclick="openGame('battle')"><div class="ico-fold"></div><span class="ico-label">BATTLESHIP</span></div>
-    <div class="game-icon" onclick="openGame('mind')"><div class="ico-fold"></div><span class="ico-label">MASTERMIND</span></div>
-    <div class="game-icon" onclick="openGame('react')"><div class="ico-fold"></div><span class="ico-label">REACTION</span></div>
-    <div class="game-icon" onclick="openGame('bj')"><div class="ico-fold"></div><span class="ico-label">BLACKJACK</span></div>
-    <div class="game-icon" onclick="openGame('yahtzee')"><div class="ico-fold"></div><span class="ico-label">YAHTZEE</span></div>
-    <div class="game-icon" onclick="openGame('puzzle')"><div class="ico-fold"></div><span class="ico-label">15-PUZZLE</span></div>
-    <div class="game-icon" onclick="openGame('bubbles')"><div class="ico-fold"></div><span class="ico-label">BUBBLES</span></div>
+    <div class="game-icon" onclick="openGame('mine')"><span class="ico-pixel">&#128163;</span><span class="ico-label">MINE&#xAD;SWEEPER</span></div>
+    <div class="game-icon" onclick="openGame('soli')"><span class="ico-pixel">&#127183;</span><span class="ico-label">SOLITAIRE</span></div>
+    <div class="game-icon" onclick="openGame('snake')"><span class="ico-pixel">&#128027;</span><span class="ico-label">SNAKE</span></div>
+    <div class="game-icon" onclick="openGame('brkout')"><span class="ico-pixel">&#129667;</span><span class="ico-label">BREAKOUT</span></div>
+    <div class="game-icon" onclick="openGame('g2048')"><span class="ico-pixel">&#127922;</span><span class="ico-label">2048</span></div>
+    <div class="game-icon" onclick="openGame('ttt')"><span class="ico-pixel">&#10060;</span><span class="ico-label">TIC TAC TOE</span></div>
+    <div class="game-icon" onclick="openGame('tetris')"><span class="ico-pixel">&#129001;</span><span class="ico-label">TETRIS</span></div>
+    <div class="game-icon" onclick="openGame('pong')"><span class="ico-pixel">&#127955;</span><span class="ico-label">PONG</span></div>
+    <div class="game-icon" onclick="openGame('checkers')"><span class="ico-pixel">&#9823;</span><span class="ico-label">CHECKERS</span></div>
+    <div class="game-icon" onclick="openGame('chess')"><span class="ico-pixel">&#9822;</span><span class="ico-label">CHESS</span></div>
+    <div class="game-icon" onclick="openGame('pf')"><span class="ico-pixel">&#127939;</span><span class="ico-label">RUNNER</span></div>
+    <div class="game-icon" onclick="openGame('simon')"><span class="ico-pixel">&#127918;</span><span class="ico-label">SIMON SAYS</span></div>
+    <div class="game-icon" onclick="openGame('ts')"><span class="ico-pixel">&#128310;</span><span class="ico-label">STACKER</span></div>
+    <div class="game-icon" onclick="openGame('wordle')"><span class="ico-pixel">&#128172;</span><span class="ico-label">WORDLE</span></div>
+    <div class="game-icon page-btn" onclick="showPage(2)"><span class="ico-page-arrow">&#9654;&#9654;</span><span class="ico-label">MORE GAMES</span></div>
   </div>
-  <div style="margin-top:12px;font-size:9px;color:var(--pri-d);letter-spacing:1px;">PRESS M TO TOGGLE MOBILE CONTROLS</div>
+</div>
+
+<!-- PAGE 2 LAUNCHER -->
+<div id="launcher-2" class="hidden">
+  <div class="l-head">
+    <div class="arc-marquee">A.C.EON ARCADE</div>
+    <div class="arc-sub">&#9654; PAGE 2 / 2 &#9664;</div>
+    <div class="arc-coin">INSERT COIN &nbsp;<span>&#x25CF;</span>&nbsp; CREDITS: <span id="play-cnt-2">0</span></div>
+  </div>
+  <div class="game-grid">
+    <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
+    <div class="game-icon" onclick="openGame('battle')"><span class="ico-pixel">&#128674;</span><span class="ico-label">BATTLESHIP</span></div>
+    <div class="game-icon" onclick="openGame('mind')"><span class="ico-pixel">&#127919;</span><span class="ico-label">MASTERMIND</span></div>
+    <div class="game-icon" onclick="openGame('react')"><span class="ico-pixel">&#9889;</span><span class="ico-label">REACTION</span></div>
+    <div class="game-icon" onclick="openGame('bj')"><span class="ico-pixel">&#127920;</span><span class="ico-label">BLACKJACK</span></div>
+    <div class="game-icon" onclick="openGame('yahtzee')"><span class="ico-pixel">&#127922;</span><span class="ico-label">YAHTZEE</span></div>
+    <div class="game-icon" onclick="openGame('puzzle')"><span class="ico-pixel">&#129513;</span><span class="ico-label">15-PUZZLE</span></div>
+    <div class="game-icon" onclick="openGame('bubbles')"><span class="ico-pixel">&#129749;</span><span class="ico-label">BUBBLES</span></div>
+    <div class="game-icon page-btn" onclick="showPage(1)"><span class="ico-page-arrow">&#9664;&#9664;</span><span class="ico-label">BACK</span></div>
+  </div>
 </div>
 
 <!-- MINESWEEPER -->
@@ -547,7 +920,7 @@ canvas{display:block;}
       <span>BEST: <span id="hi-soli">0</span></span>
       <span id="sl-msg" style="font-size:10px;"></span>
     </div>
-    <div id="sl-dead" style="display:none;max-width:900px;margin:8px auto 0;padding:8px 14px;background:rgba(239,83,80,.12);border:1.5px solid var(--err);color:var(--err);font-size:12px;font-weight:bold;letter-spacing:1px;text-align:center;border-radius:4px;">
+    <div id="sl-dead" style="display:none;max-width:900px;margin:8px auto 0;padding:8px 14px;background:rgba(255,51,68,.08);border:1.5px solid #ff3344;color:#ff3344;font-family:'Press Start 2P',monospace;font-size:12px;font-weight:bold;letter-spacing:1px;text-align:center;border-radius:4px;">
       NO MORE MOVES AVAILABLE — START A NEW GAME
     </div>
     <div id="soli-center">
@@ -562,9 +935,9 @@ canvas{display:block;}
   </div>
   <div id="soli-win" style="display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.78);align-items:center;justify-content:center;">
     <div style="text-align:center;animation:gwinIn .3s ease-out;">
-      <div style="font-size:36px;font-weight:bold;color:var(--pri-b);text-shadow:0 0 22px var(--pri);letter-spacing:4px;">YOU WIN!</div>
-      <div style="font-size:15px;color:var(--txt);margin-top:16px;letter-spacing:2px;">SCORE: <span id="soli-win-score">0</span></div>
-      <button class="btn" style="margin-top:26px;padding:9px 26px;font-size:13px;" onclick="document.getElementById('soli-win').style.display='none';initSoli();">PLAY AGAIN</button>
+      <div style="font-family:'Press Start 2P',monospace;font-size:clamp(16px,5vw,28px);color:#00e5ff;text-shadow:0 0 22px #00e5ff,0 0 44px rgba(0,229,255,.5);letter-spacing:3px;margin-bottom:6px;">YOU WIN!</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:#80f0ff;margin-top:14px;letter-spacing:2px;">SCORE: <span id="soli-win-score">0</span></div>
+      <button class="btn" style="margin-top:24px;padding:8px 22px;" onclick="document.getElementById('soli-win').style.display='none';initSoli();">PLAY AGAIN</button>
     </div>
   </div>
 </div>
@@ -579,7 +952,7 @@ canvas{display:block;}
       <span><button class="btn sel" id="snb-n" onclick="setSnakeDiff('n')">NORMAL</button><button class="btn" id="snb-f" onclick="setSnakeDiff('f')">FAST</button></span>
       <span>BEST: <span id="hi-snake">0</span></span>
     </div>
-    <canvas id="snake-cv" class="gcv" width="400" height="400" style="border:2px solid var(--bdr);"></canvas>
+    <canvas id="snake-cv" class="gcv" width="400" height="400" style="border:2px solid #003355;box-shadow:0 0 12px rgba(0,229,255,.1);"></canvas>
     <div class="m-ctrl" id="mc-snake">
       <div class="m-pad">
         <div></div><button class="m-btn" onpointerdown="snSetDir(0,-1)">&#9650;</button><div></div>
@@ -602,7 +975,7 @@ canvas{display:block;}
       <span>&#9829; <span id="bk-lf">3</span></span>
       <span>BEST: <span id="hi-brkout">0</span></span>
     </div>
-    <canvas id="bk-cv" class="gcv" width="560" height="380" style="border:2px solid var(--bdr);"></canvas>
+    <canvas id="bk-cv" class="gcv" width="560" height="380" style="border:2px solid #003355;box-shadow:0 0 12px rgba(0,229,255,.1);"></canvas>
     <div class="m-ctrl" id="mc-brkout">
       <button class="m-btn wide" id="bk-left" onpointerdown="bkHold(-1)" onpointerup="bkRelease()" ontouchend="bkRelease()">&#9664; LEFT</button>
       <button class="m-btn wide" id="bk-right" onpointerdown="bkHold(1)" onpointerup="bkRelease()" ontouchend="bkRelease()">RIGHT &#9654;</button>
@@ -655,7 +1028,7 @@ canvas{display:block;}
       <span>LINES: <span id="tet-ln">0</span></span>
       <span>BEST: <span id="hi-tetris">0</span></span>
     </div>
-    <canvas id="tet-cv" class="gcv" width="300" height="400" style="border:2px solid var(--bdr);"></canvas>
+    <canvas id="tet-cv" class="gcv" width="300" height="400" style="border:2px solid #003355;box-shadow:0 0 12px rgba(0,229,255,.1);"></canvas>
     <div class="m-ctrl" id="mc-tetris">
       <button class="m-btn" onclick="tetMoveL()">&#9664;</button>
       <button class="m-btn" onclick="tetRotate()">&#8635;</button>
@@ -675,7 +1048,7 @@ canvas{display:block;}
       <button class="btn" onclick="initPong()">NEW</button>
       <span><button class="btn sel" id="pdb-easy" onclick="setPongDiff('easy')">EASY</button><button class="btn" id="pdb-med" onclick="setPongDiff('med')">MED</button><button class="btn" id="pdb-hard" onclick="setPongDiff('hard')">HARD</button></span>
     </div>
-    <canvas id="pong-cv" class="gcv" width="560" height="320" style="border:2px solid var(--bdr);"></canvas>
+    <canvas id="pong-cv" class="gcv" width="560" height="320" style="border:2px solid #003355;box-shadow:0 0 12px rgba(0,229,255,.1);"></canvas>
     <div class="m-ctrl" id="mc-pong">
       <button class="m-btn" style="height:60px;width:60px;font-size:22px;"
         onpointerdown="pongHold(-1)" onpointerup="pongRelease()" ontouchend="pongRelease()">&#9650;</button>
@@ -721,7 +1094,7 @@ canvas{display:block;}
       <button class="btn" onclick="initPf()">NEW</button>
       <span>BEST: <span id="pf-hi">0</span></span>
     </div>
-    <canvas id="pf-cv" class="gcv" width="600" height="260" style="border:2px solid var(--bdr);"></canvas>
+    <canvas id="pf-cv" class="gcv" width="600" height="260" style="border:2px solid #003355;box-shadow:0 0 12px rgba(0,229,255,.1);"></canvas>
     <div class="m-ctrl" id="mc-pf">
       <button class="m-btn" style="width:100px;height:52px;font-size:14px;" onclick="pfJump()">JUMP &#9650;</button>
     </div>
@@ -922,7 +1295,7 @@ canvas{display:block;}
       <span>BEST: <span id="hi-bubble">0</span></span>
       <span id="bub-msg" style="font-size:10px;"></span>
     </div>
-    <canvas id="bub-cv" class="gcv" style="border:2px solid var(--bdr);cursor:crosshair;touch-action:none;"></canvas>
+    <canvas id="bub-cv" class="gcv" style="border:2px solid #003355;box-shadow:0 0 14px rgba(0,229,255,.12);cursor:crosshair;touch-action:none;"></canvas>
   </div>
 </div>
 
@@ -949,38 +1322,53 @@ function gC(){
    Computes a cell size (px) that fits the current viewport width and writes it
    to a CSS custom property. The grid/board CSS reads that variable via var(),
    so cells shrink on phones without any change to game logic or click handling. */
+/* ── Dynamic cell fitter — always uses available screen space ── */
+var ARC_MAX={'mine-cell':40,'t2048-cell':140,'ck-cell':96,'ch-cell':100,'wl-key':46,'fl-cell':52,'bs-cell':46};
 function fitCells(varName,cols,opts){
   opts=opts||{};
-  var min=opts.min||16,max=opts.max||999,extra=opts.extra||0,margin=opts.margin||48;
-  var avail=window.innerWidth-margin;
-  var cell=Math.floor((avail-extra)/cols);
-  cell=Math.max(min,Math.min(max,cell));
+  /* dynamic margin: small fraction of screen width, never more than 48px */
+  var margin=Math.min(48, Math.round(window.innerWidth*0.05));
+  var min=opts.min||16;
+  /* always use the largest known max for this variable */
+  var max=Math.max(opts.max||999, ARC_MAX[varName]||0)||999;
+  var extra=opts.extra||0;
+  /* also constrain by viewport height so cells don't overflow vertically */
+  var availW=window.innerWidth-margin;
+  var availH=window.innerHeight-150; /* 150px for titlebar+gbar */
+  var cellW=Math.floor((availW-extra)/cols);
+  var cellH=Math.floor(availH/cols); /* rough square cap */
+  var cell=Math.max(min,Math.min(max,cellW,cellH));
   document.documentElement.style.setProperty('--'+varName,cell+'px');
   return cell;
 }
 var t2048Cell=76;
 function refitCurrent(){
-  if(cur==='mine'&&typeof mC==='number')fitCells('mine-cell',mC,{max:26,min:14,extra:8+(mC-1),margin:48});
-  if(cur==='g2048'){t2048Cell=fitCells('t2048-cell',4,{max:76,min:48,extra:38,margin:48});render2048();}
-  if(cur==='checkers')fitCells('ck-cell',8,{max:54,min:30,extra:4,margin:48});
-  if(cur==='chess')fitCells('ch-cell',8,{max:56,min:32,extra:6,margin:48});
-  if(cur==='wordle')fitCells('wl-key',10,{max:34,min:22,extra:36,margin:48});
-  if(cur==='flood'&&typeof flN==='number')fitCells('fl-cell',flN,{max:34,min:13,extra:2,margin:48});
+  /* fitCells is now self-aware — just re-call each game's fit function */
+  if(cur==='mine'&&typeof mC==='number'){fitCells('mine-cell',mC,{min:12,extra:8+(mC-1)});renderMine();}
+  if(cur==='g2048'){t2048Cell=fitCells('t2048-cell',4,{min:48,extra:38});render2048();}
+  if(cur==='checkers'){fitCells('ck-cell',8,{min:30,extra:4});ckRender();}
+  if(cur==='chess'){fitCells('ch-cell',8,{min:32,extra:6});CH.render();}
+  if(cur==='wordle'){fitCells('wl-key',10,{min:22,extra:36});renderWlGrid();renderWlKeys();}
+  if(cur==='flood'&&typeof flN==='number'){fitCells('fl-cell',flN,{min:13,extra:2});renderFlood();}
   if(cur==='battle')bsFitCells();
+  if(cur==='puzzle')renderPuzzle();
 }
 var resizeTmr;
 window.addEventListener('resize',function(){clearTimeout(resizeTmr);resizeTmr=setTimeout(refitCurrent,120);});
 window.addEventListener('orientationchange',function(){setTimeout(refitCurrent,200);});
 
 /* ── THEMES ── */
-var THEMES=['','tc','tp','ta','tr'];
-function setTheme(i){
-  document.body.className=THEMES[i];
-  document.querySelectorAll('.th-btn').forEach(function(b,j){b.classList.toggle('active',j===i);});
-  localStorage.setItem('aceon_t',i);
-}
-window.setTheme=setTheme;
-(function(){var t=parseInt(localStorage.getItem('aceon_t')||'0');if(t>0)setTheme(t);})();
+/* arcade palette — no theme switching */
+var curPage=1;
+window.showPage=function(n){
+  curPage=n;
+  document.getElementById('launcher').classList.toggle('hidden',n!==1);
+  document.getElementById('launcher-2').classList.toggle('hidden',n!==2);
+  // sync credits counter
+  var cnt=localStorage.getItem('aceon_plays')||'0';
+  var el2=document.getElementById('play-cnt-2');
+  if(el2)el2.textContent=cnt;
+};
 
 /* ── BACKGROUND MUSIC ── */
 var bgIdx=0,bgAudio=null,bgStarted=false;
@@ -990,8 +1378,8 @@ function startBg(){if(bgStarted)return;bgStarted=true;bgAudio=new Audio();bgAudi
 document.addEventListener('click',startBg,{once:true});
 
 /* ── PLAY COUNTER ── */
-function trackPlay(){var n=parseInt(localStorage.getItem('aceon_plays')||'0')+1;localStorage.setItem('aceon_plays',n);var el=document.getElementById('play-cnt');if(el)el.textContent=n;}
-(function(){var el=document.getElementById('play-cnt');if(el)el.textContent=localStorage.getItem('aceon_plays')||'0';})();
+function trackPlay(){var n=parseInt(localStorage.getItem('aceon_plays')||'0')+1;localStorage.setItem('aceon_plays',n);var el=document.getElementById('play-cnt');if(el)el.textContent=n;var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=n;}
+(function(){var cnt=localStorage.getItem('aceon_plays')||'0';var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;})();
 
 /* ── MOBILE CONTROLS ── */
 document.addEventListener('keydown',function(e){
@@ -999,17 +1387,25 @@ document.addEventListener('keydown',function(e){
 });
 
 /* ── OPEN / CLOSE ── */
+var PAGE2_GAMES={flood:1,battle:1,mind:1,react:1,bj:1,yahtzee:1,puzzle:1,bubbles:1};
 window.openGame=function(id){
   document.getElementById('launcher').classList.add('hidden');
+  document.getElementById('launcher-2').classList.add('hidden');
   document.getElementById('game-'+id).classList.remove('hidden');
   cur=id;trackPlay();
+  var cnt=localStorage.getItem('aceon_plays')||'0';
+  var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
+  var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
   var fn={mine:initMine,soli:initSoli,snake:initSnake,brkout:initBreak,
           g2048:init2048,ttt:initTTT,tetris:initTetris,pong:initPong,
           checkers:initCheckers,chess:initChess,pf:initPf,
           simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,battle:initBattle,mind:initMind,react:initReact,
           bj:initBJ,yahtzee:initYahtzee,puzzle:initPuzzle,bubbles:initBubble};
-  if(fn[id])fn[id](); // init immediately so canvas has correct size under the splash
-  showGameSplash();
+  /* Show PRESS START — init game only after player clicks */
+  showGameSplash(function(){
+    if(fn[id])fn[id]();
+    setTimeout(refitCurrent, 40); // refit grid/board sizes after init
+  });
 };
 window.closeGame=function(){
   if(!cur)return;
@@ -1019,8 +1415,9 @@ window.closeGame=function(){
   if(cur==='pf')pfStop();if(cur==='ts')tsStop();
   if(cur==='react'&&typeof rtTimer!=='undefined')clearTimeout(rtTimer);
   if(cur==='bubbles'&&typeof bubRaf!=='undefined'&&bubRaf){cancelAnimationFrame(bubRaf);bubRaf=null;}
+  var wasP2=PAGE2_GAMES[cur];
   cur=null;
-  document.getElementById('launcher').classList.remove('hidden');
+  showPage(wasP2?2:1);
 };
 
 /* ════════════════ MINESWEEPER ════════════════ */
@@ -1123,7 +1520,7 @@ function tSpawn(){var e=[];for(var r=0;r<4;r++)for(var c=0;c<4;c++)if(tGrd[r][c]
 function tSlide(row){row=row.filter(function(x){return x!==0;});for(var i=0;i<row.length-1;i++){if(row[i]===row[i+1]){row[i]*=2;tSc+=row[i];row.splice(i+1,1);}}while(row.length<4)row.push(0);return row;}
 function tMove(dir){var moved=false;if(dir==='left'||dir==='right'){for(var r=0;r<4;r++){var row=tGrd[r].slice();if(dir==='right')row.reverse();var s=tSlide(row);if(dir==='right')s.reverse();if(JSON.stringify(tGrd[r])!==JSON.stringify(s)){moved=true;tGrd[r]=s;}}}else{for(var c=0;c<4;c++){var col=[tGrd[0][c],tGrd[1][c],tGrd[2][c],tGrd[3][c]];if(dir==='down')col.reverse();var s2=tSlide(col);if(dir==='down')s2.reverse();for(var r2=0;r2<4;r2++)if(tGrd[r2][c]!==s2[r2]){moved=true;tGrd[r2][c]=s2[r2];}}}if(moved){tSpawn();if(tSc>tBest){tBest=tSc;document.getElementById('t-best').textContent=tBest;}document.getElementById('t-sc').textContent=tSc;render2048();tCheck();}}
 window.tMove=tMove;
-function render2048(){var g=document.getElementById('g2048');g.innerHTML='';for(var r=0;r<4;r++)for(var c=0;c<4;c++){var v=tGrd[r][c];var cl=T_CLR[v]||{bg:'var(--bg3)',fg:'var(--txt)'};var el=document.createElement('div');el.className='t2';el.style.background=cl.bg||'var(--bg3)';el.style.color=cl.fg||'var(--txt-d)';el.style.border='1px solid var(--bdr-d)';el.style.fontSize=(v>=1000?t2048Cell*0.184:v>=100?t2048Cell*0.21:t2048Cell*0.263)+'px';el.textContent=v>0?v:'';g.appendChild(el);}}
+function render2048(){var g=document.getElementById('g2048');g.innerHTML='';for(var r=0;r<4;r++)for(var c=0;c<4;c++){var v=tGrd[r][c];var cl=T_CLR[v]||{bg:'var(--bg3)',fg:'var(--txt)'};var el=document.createElement('div');el.className='t2';el.style.background=cl.bg||'var(--bg3)';el.style.color=cl.fg||'var(--txt-d)';el.style.border='1px solid var(--bdr-d)';el.style.fontSize=(v>=1000?t2048Cell*0.19:v>=100?t2048Cell*0.22:t2048Cell*0.27)+'px';el.textContent=v>0?v:'';g.appendChild(el);}}
 function tCheck(){var has=false,can=false;for(var r=0;r<4;r++)for(var c=0;c<4;c++){if(tGrd[r][c]===2048)has=true;if(tGrd[r][c]===0)can=true;if(c<3&&tGrd[r][c]===tGrd[r][c+1])can=true;if(r<3&&tGrd[r][c]===tGrd[r+1][c])can=true;}var m=document.getElementById('t-msg');if(has){m.textContent='2048!';m.style.color='#fff176';}else if(!can){m.textContent='NO MOVES';m.style.color='#ef5350';}}
 document.addEventListener('keydown',function(e){if(cur!=='g2048')return;var map={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'};if(map[e.key]){e.preventDefault();tMove(map[e.key]);}});
 (function(){var el=document.getElementById('g2048');if(!el)return;var tx,ty;el.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;ty=e.touches[0].clientY;e.preventDefault();},{passive:false});el.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>Math.abs(dy))tMove(dx>0?'right':'left');else tMove(dy>0?'down':'up');e.preventDefault();},{passive:false});})();
@@ -1669,9 +2066,9 @@ window.initBattle=function(){
 };
 
 function bsFitCells(){
-  var avail=window.innerWidth-80;
+  var avail=Math.min(window.innerWidth, window.innerHeight * 1.4) - 60;
   var cell=Math.floor((avail-40)/20);
-  cell=Math.max(14,Math.min(30,cell));
+  cell=Math.max(14,Math.min(46,cell));
   document.documentElement.style.setProperty('--bs-cell',cell+'px');
 }
 
@@ -2428,7 +2825,7 @@ window.pzClick=function(idx){
 
 function renderPuzzle(){
   var el=document.getElementById('pz-grid');if(!el)return;
-  var cell=Math.min(72,Math.floor((window.innerWidth-80)/(pzN+.5)));
+  var cell=Math.min(Math.floor((window.innerHeight-180)/pzN),Math.floor((window.innerWidth-40)/(pzN+.3)),160);
   el.style.gridTemplateColumns='repeat('+pzN+','+cell+'px)';
   el.style.gridTemplateRows='repeat('+pzN+','+cell+'px)';
   el.innerHTML='';
@@ -2724,12 +3121,19 @@ function bubDrawCircle(ctx,x,y,r,color){
     return d;
   }
 
+  /* fill hi-score from localStorage */
+  var hiEl=document.getElementById('boot-hi');
+  if(hiEl){var plays=parseInt(localStorage.getItem('aceon_plays')||'0');hiEl.textContent=String(plays*100).padStart(6,'0');}
+  var crEl=document.getElementById('boot-cr');
+  if(crEl){crEl.textContent=String(Math.max(0,99-parseInt(localStorage.getItem('aceon_plays')||'0')));}
+
   var STEPS=[
-    {t:80,   msg:'SCANNING ARCHIVE DIRECTORY.....', pct:12, ok:380},
-    {t:560,  msg:'LOADING GAME MODULES [22].......',pct:36, ok:320},
-    {t:970,  msg:'INITIALIZING RENDERER...........',pct:60, ok:280},
-    {t:1340, msg:'CALIBRATING INPUT DEVICES.......',pct:80, ok:240},
-    {t:1670, msg:'ALL SYSTEMS NOMINAL',             pct:94, ok:null, special:true}
+    {t:60,   msg:'LOADING GAME ROM  [22 TITLES]',  pct:14, ok:340},
+    {t:500,  msg:'CHECKING HIGH SCORES...........',  pct:32, ok:280},
+    {t:880,  msg:'WARMING UP DISPLAY.............',  pct:55, ok:260},
+    {t:1200, msg:'CALIBRATING JOYSTICK...........',  pct:74, ok:240},
+    {t:1500, msg:'INSERTING COIN.................',  pct:91, ok:220},
+    {t:1780, msg:'READY PLAYER ONE',                 pct:98, ok:null, special:true}
   ];
 
   STEPS.forEach(function(s){
@@ -2750,7 +3154,7 @@ function bubDrawCircle(ctx,x,y,r,color){
     barInner.style.transition='width .5s ease';
     if(cursor&&cursor.parentNode)cursor.parentNode.removeChild(cursor);
     setTimeout(function(){
-      addLine('[ &nbsp;LAUNCH &nbsp;]','#00ff88');
+      addLine('&#9654; INSERT COIN &#9654; PRESS START','#ff2d78');
     },180);
   },2000);
 
@@ -2763,7 +3167,7 @@ function bubDrawCircle(ctx,x,y,r,color){
   }
 
   // auto-dismiss
-  setTimeout(function(){dismiss(false);},2860);
+  setTimeout(function(){dismiss(false);},3100);
   // click to skip
   overlay.addEventListener('click',function(){
     overlay.style.transition='opacity .22s';
@@ -2771,15 +3175,17 @@ function bubDrawCircle(ctx,x,y,r,color){
   },{once:true});
 
   function launchIcons(fast){
-    var icons=document.querySelectorAll('.game-icon');
+    var icons=document.querySelectorAll('#launcher .game-icon'); // page 1 only on boot
     var total=icons.length;
     if(abar){abar.classList.add('show');}
     icons.forEach(function(el,i){
-      var delay=fast?i*18+30:i*60+80;
+      var delay=fast?i*18+30:i*55+60;
       setTimeout(function(){
         el.classList.add('appeared');
         if(afill)afill.style.width=(((i+1)/total)*100)+'%';
         if(i===total-1){
+          // Also appear page2 icons silently
+          document.querySelectorAll('#launcher-2 .game-icon').forEach(function(e){e.classList.add('appeared');});
           setTimeout(function(){
             if(abar)abar.classList.remove('show');
             if(abar)abar.classList.add('hide');
@@ -2790,37 +3196,55 @@ function bubDrawCircle(ctx,x,y,r,color){
   }
 })();
 
-/* ── showGameSplash: plays the A.C.EON studio ident before each game ── */
-function showGameSplash(){
+/* ── showGameSplash: arcade ident + PRESS START → then runs callback ── */
+function showGameSplash(onStart){
   var sp=document.getElementById('game-splash');
-  var content=document.getElementById('splash-content');
+  var cnt=document.getElementById('splash-content');
   var prog=document.getElementById('splash-prog');
   if(!sp)return;
 
-  // Restart CSS animations by re-inserting the animated nodes
-  sp.removeChild(content);
-  sp.removeChild(prog);
-  // force a single reflow so removing nodes is flushed before re-appending
+  // Restart animations
+  sp.removeChild(cnt);sp.removeChild(prog);
   void sp.offsetWidth;
-  sp.appendChild(content);
-  sp.appendChild(prog);
+  sp.appendChild(cnt);sp.appendChild(prog);
 
-  sp.style.cssText='opacity:1;transition:none;';
+  // Add / reset PRESS START button
+  var psEl=document.getElementById('splash-ps');
+  if(!psEl){
+    psEl=document.createElement('div');psEl.id='splash-ps';
+    psEl.style.cssText='position:absolute;bottom:18%;left:0;right:0;text-align:center;font-family:"Press Start 2P",monospace;font-size:clamp(9px,2.5vw,14px);color:#ffe600;text-shadow:0 0 10px #ffe600,0 0 22px #ff8800;animation:blink .9s step-end infinite;letter-spacing:2px;z-index:2;';
+    psEl.textContent='PRESS START';
+    sp.appendChild(psEl);
+  }
+  psEl.style.display='block';
+
+  sp.style.cssText='opacity:1;transition:none;position:fixed;';
   sp.classList.remove('hidden');
 
   var done=false;
-  function dismiss(){
+  function launch(){
     if(done)return;done=true;
-    sp.style.cssText='opacity:0;transition:opacity .38s ease;';
-    setTimeout(function(){sp.classList.add('hidden');},390);
+    psEl.style.display='none';
+    sp.style.cssText='opacity:0;transition:opacity .3s ease;';
+    setTimeout(function(){
+      sp.classList.add('hidden');
+      if(onStart)onStart();
+    },320);
   }
 
-  var t=setTimeout(dismiss,1850);
-  sp.addEventListener('click',function handler(){
-    sp.removeEventListener('click',handler);
-    clearTimeout(t);
-    dismiss();
-  });
+  // Auto-show PRESS START after 1.6s, then wait for click
+  var autoT=setTimeout(function(){
+    sp.addEventListener('click',launch,{once:true});
+  },1600);
+
+  // Click before 1.6s = skip ident, still wait for PRESS START replacement
+  sp.addEventListener('click',function skip(){
+    clearTimeout(autoT);
+    sp.removeEventListener('click',skip);
+    setTimeout(function(){
+      sp.addEventListener('click',launch,{once:true});
+    },0);
+  },{once:true});
 }
 
 })(); // end IIFE

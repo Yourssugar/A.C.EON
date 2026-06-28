@@ -789,17 +789,19 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .pz-tile.correct{color:#00ff88;border-color:#005522;}
 .pz-tile.empty{background:#020208;border-color:#001a33;}
 
-/* Battleship grid */
-.bs-cell{background:#001020;}
-.bs-cell.ship{background:#003355;}
-.bs-cell.hit{background:#330008;}
-.bs-cell.hit::after{color:#ff3344;}
-.bs-cell.sunk{background:#220005;}
-.bs-cell.sunk::after{color:#ff3344;}
-.bs-cell.enemy:hover{background:rgba(0,229,255,.15);}
-.bs-cell.preview-ok{background:rgba(0,229,255,.3);}
-.bs-cell.preview-bad{background:rgba(255,51,68,.3);}
-.bs-label{font-family:'Press Start 2P',monospace;font-size:7px;color:#007799;letter-spacing:1px;}
+/* Battleship grid — paper / pencil look */
+.bs-grid{background:#9fb3cc;border:3px solid #33485f;border-radius:2px;box-shadow:0 2px 12px rgba(0,0,0,.45);}
+.bs-cell{background:#f4ecd6;}
+.bs-cell.ship{background:repeating-linear-gradient(45deg,#7c8aa3 0,#7c8aa3 2px,#93a1b9 2px,#93a1b9 4px);box-shadow:inset 0 0 0 2px #46566f;}
+.bs-cell.hit{background:#efd6cd;}
+.bs-cell.hit::after{color:#b22f1c;text-shadow:0 0 1px rgba(178,47,28,.4);}
+.bs-cell.sunk{background:#7c1d12;}
+.bs-cell.sunk::after{color:#ffe3da;}
+.bs-cell.miss::after{background:#54637e;width:30%;height:30%;}
+.bs-cell.enemy:hover{background:#fff4d2;}
+.bs-cell.preview-ok{background:rgba(58,150,84,.45);}
+.bs-cell.preview-bad{background:rgba(196,58,46,.45);}
+.bs-label{font-family:'Press Start 2P',monospace;font-size:7px;color:#a8bdd6;letter-spacing:1px;text-shadow:0 0 6px rgba(120,150,190,.3);}
 
 /* Message text in game bars — inherit arcade font */
 #mine-st,#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ch-msg,#ck-msg,#ttt-msg,#ss-msg,#rt-text,#bj-msg,#t-msg{
@@ -981,6 +983,200 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 #aceon-bot.mood-lose .bot-face{filter:hue-rotate(40deg) brightness(.8);}
 #aceon-bot.mood-lose .bot-eye{height:5px;border-radius:2px;}
 
+/* ═══════════ MINESWEEPER: SAPPER ENTITY (right, desktop) ═══════════ */
+#mine-bot{
+  position:fixed;right:10px;top:50%;
+  transform:translateY(-50%) scale(var(--mbot-scale,1.5));transform-origin:100% 50%;
+  z-index:500;width:190px;pointer-events:none;user-select:none;
+  display:none;flex-direction:column;align-items:center;gap:10px;
+  --mbot-accent:#ff9d2e;--mbot-scale:1.5;font-family:'Press Start 2P',monospace;
+}
+#mine-bot.on{display:flex;}
+@media(max-width:1600px){#mine-bot{--mbot-scale:1.4;}}
+@media(max-width:1440px){#mine-bot{--mbot-scale:1.3;}}
+@media(max-width:1280px){#mine-bot{--mbot-scale:1.15;}}
+@media(max-width:1120px){#mine-bot{--mbot-scale:1.0;}}
+@media(max-width:1000px){#mine-bot{--mbot-scale:.92;}}
+@media(max-width:640px){#mine-bot{display:none!important;}}
+
+.mbot-stage{position:relative;width:190px;height:188px;display:flex;align-items:center;justify-content:center;}
+.mbot-core{position:relative;width:150px;height:172px;display:flex;align-items:flex-end;justify-content:center;animation:mbotFloat 3.4s ease-in-out infinite;}
+@keyframes mbotFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.mbot-core::before{content:'';position:absolute;bottom:4px;width:120%;height:115%;border-radius:50%;
+  background:radial-gradient(circle,var(--mbot-accent) 0%,transparent 60%);opacity:.16;filter:blur(6px);z-index:0;animation:mbotHalo 3s ease-in-out infinite;}
+@keyframes mbotHalo{0%,100%{opacity:.12;}50%{opacity:.26;}}
+
+.mbot-fuse{position:absolute;top:0;left:55%;width:3px;height:28px;background:#5a4a2a;border-radius:2px;transform:rotate(20deg);transform-origin:bottom;z-index:3;}
+.mbot-spark{position:absolute;top:-6px;left:50%;width:11px;height:11px;border-radius:50%;transform:translateX(-50%);
+  background:radial-gradient(circle,#fff,#ffd23a 45%,#ff7a00 75%,transparent);box-shadow:0 0 10px #ffae00,0 0 22px #ff7a00;
+  animation:mbotSpark .5s steps(2) infinite;}
+@keyframes mbotSpark{0%,100%{opacity:1;transform:translateX(-50%) scale(1);}50%{opacity:.5;transform:translateX(-54%) scale(.7);}}
+
+.mbot-body{position:relative;width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#3a3f4a,#10131b 70%,#05070c);
+  border:2px solid var(--mbot-accent);
+  box-shadow:0 0 16px var(--mbot-accent),inset -8px -8px 18px rgba(0,0,0,.7),inset 6px 6px 14px rgba(255,255,255,.06);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  transition:box-shadow .2s,border-color .2s,filter .2s;}
+.mbot-body::after{content:'';position:absolute;top:18px;left:24px;width:22px;height:12px;border-radius:50%;
+  background:rgba(255,255,255,.16);filter:blur(2px);transform:rotate(-25deg);}
+
+.mbot-eyes{display:flex;gap:18px;z-index:1;}
+.mbot-eye{width:20px;height:20px;border-radius:50%;background:#06210f;border:2px solid var(--mbot-accent);
+  box-shadow:0 0 8px var(--mbot-accent);position:relative;animation:mbotBlink 4.4s infinite;overflow:hidden;}
+.mbot-eye::after{content:'';position:absolute;top:3px;left:3px;width:7px;height:7px;border-radius:50%;background:#aef0ff;box-shadow:0 0 6px #aef0ff;}
+@keyframes mbotBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.1);}}
+
+.mbot-mouth{width:22px;height:8px;border-bottom:3px solid var(--mbot-accent);border-radius:0 0 12px 12px;z-index:1;transition:all .15s;}
+
+.mbot-name{color:var(--mbot-accent);font-size:11px;letter-spacing:2px;text-shadow:0 0 10px var(--mbot-accent);}
+.mbot-sub{color:#9fb6c4;font-size:7px;letter-spacing:3px;}
+.mbot-status{color:#ffe0b0;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(255,157,46,.4);}
+
+.mbot-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--mbot-accent);box-shadow:0 0 8px var(--mbot-accent);opacity:.5;}
+.mbot-particle.mp1{top:20%;left:14%;animation:mbotDrift1 5s ease-in-out infinite;}
+.mbot-particle.mp2{top:34%;right:12%;animation:mbotDrift2 6.4s ease-in-out infinite;}
+.mbot-particle.mp3{bottom:24%;left:18%;animation:mbotDrift2 5.6s ease-in-out infinite;}
+.mbot-particle.mp4{bottom:30%;right:15%;animation:mbotDrift1 7s ease-in-out infinite;}
+@keyframes mbotDrift1{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(6px,-9px);opacity:.7;}}
+@keyframes mbotDrift2{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(-7px,-8px);opacity:.7;}}
+
+/* moods */
+#mine-bot.mmood-safe .mbot-body{border-color:#00ff88;box-shadow:0 0 22px #00ff88,inset -8px -8px 18px rgba(0,0,0,.7);}
+#mine-bot.mmood-safe .mbot-eye{height:9px;border-radius:3px 3px 0 0;}
+#mine-bot.mmood-safe .mbot-mouth{width:26px;height:12px;border-bottom-color:#00ff88;}
+
+#mine-bot.mmood-count .mbot-eye{width:14px;}
+#mine-bot.mmood-count .mbot-body{animation:mbotThink .8s ease-in-out infinite;}
+@keyframes mbotThink{0%,100%{transform:rotate(-2deg);}50%{transform:rotate(2deg);}}
+
+#mine-bot.mmood-flag .mbot-body{border-color:#ffd23a;box-shadow:0 0 22px #ffd23a,inset -8px -8px 18px rgba(0,0,0,.7);}
+#mine-bot.mmood-flag .mbot-mouth{width:10px;}
+
+#mine-bot.mmood-go .mbot-spark{animation:mbotSpark .22s steps(2) infinite;}
+
+#mine-bot.mmood-boom .mbot-core{animation:mbotShake .5s;}
+#mine-bot.mmood-boom .mbot-body{border-color:#ff3344;box-shadow:0 0 40px #ff3344,0 0 70px #ff3344,inset -8px -8px 18px rgba(0,0,0,.7);filter:brightness(1.25) saturate(1.3);}
+#mine-bot.mmood-boom .mbot-mouth{width:20px;height:18px;border:3px solid #ff3344;border-radius:50%;}
+#mine-bot.mmood-boom .mbot-eye{background:transparent;border:none;box-shadow:none;animation:none;}
+#mine-bot.mmood-boom .mbot-eye::after{display:none;}
+#mine-bot.mmood-boom .mbot-eye::before{content:'\2715';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ff3344;font-size:16px;font-weight:bold;text-shadow:0 0 8px #ff3344;}
+#mine-bot.mmood-boom .mbot-spark{opacity:0;}
+#mine-bot.mmood-boom .mbot-status{color:#ff8a8a;}
+@keyframes mbotShake{0%,100%{transform:translateX(0);}15%{transform:translate(-8px,2px) rotate(-6deg);}30%{transform:translate(7px,-2px) rotate(5deg);}45%{transform:translate(-6px,1px) rotate(-4deg);}60%{transform:translate(5px,0) rotate(3deg);}80%{transform:translate(-3px,0);}}
+
+#mine-bot.mmood-win .mbot-core{animation:mbotWin .7s ease;}
+@keyframes mbotWin{0%{transform:translateY(0);}30%{transform:translateY(-22px) scale(1.05);}60%{transform:translateY(0);}80%{transform:translateY(-8px);}100%{transform:translateY(0);}}
+#mine-bot.mmood-win .mbot-body{border-color:#00ff88;box-shadow:0 0 34px #00ff88,inset -8px -8px 18px rgba(0,0,0,.7);}
+#mine-bot.mmood-win .mbot-mouth{width:30px;height:14px;border-bottom-color:#00ff88;}
+#mine-bot.mmood-win .mbot-eye{height:9px;border-radius:3px 3px 0 0;}
+#mine-bot.mmood-win .mbot-status{color:#9affc9;}
+
+/* ═══════════ BATTLESHIP: ENEMY CAPTAIN (below boards) ═══════════ */
+#bs-captain{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  margin:18px auto 6px;width:210px;pointer-events:none;user-select:none;
+  --cap-accent:#e8b84b;font-family:'Press Start 2P',monospace;
+}
+@media(max-width:640px){#bs-captain{display:none;}}
+
+.cap-stage{position:relative;width:200px;height:188px;display:flex;align-items:flex-end;justify-content:center;}
+.cap-core{position:relative;width:160px;height:180px;display:flex;align-items:flex-end;justify-content:center;animation:capFloat 3.6s ease-in-out infinite;}
+@keyframes capFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+.cap-core::before{content:'';position:absolute;bottom:6px;width:118%;height:80%;border-radius:50%;
+  background:radial-gradient(circle,var(--cap-accent) 0%,transparent 62%);opacity:.14;filter:blur(7px);z-index:0;}
+
+/* sea-spray particles */
+.cap-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:#a8bdd6;box-shadow:0 0 7px #a8bdd6;opacity:.5;}
+.cap-particle.cp1{bottom:16%;left:12%;animation:capDrift 5.4s ease-in-out infinite;}
+.cap-particle.cp2{bottom:26%;right:12%;animation:capDrift 6.6s ease-in-out infinite .5s;}
+.cap-particle.cp3{bottom:10%;right:22%;animation:capDrift 6s ease-in-out infinite 1s;}
+@keyframes capDrift{0%,100%{transform:translateY(0);opacity:.25;}50%{transform:translateY(-9px);opacity:.7;}}
+
+/* hat */
+.cap-hat{position:absolute;top:46px;left:50%;transform:translateX(-50%);width:120px;z-index:3;transition:transform .25s;}
+.cap-hat-crown{width:92px;height:34px;margin:0 auto;background:linear-gradient(#1c2b46,#0f1830);
+  border:2px solid #2c3f5e;border-bottom:none;border-radius:16px 16px 4px 4px;position:relative;}
+.cap-hat-band{position:absolute;left:-2px;right:-2px;bottom:0;height:9px;background:var(--cap-accent);
+  box-shadow:0 0 8px rgba(232,184,75,.5);display:flex;align-items:center;justify-content:center;}
+.cap-badge{color:#1c2b46;font-size:8px;line-height:1;}
+.cap-hat-brim{width:120px;height:14px;margin:-2px auto 0;background:linear-gradient(#0c1424,#060b16);
+  border:2px solid #243450;border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.5);}
+
+/* face (parchment portrait) */
+.cap-face{position:relative;width:100px;height:88px;margin-bottom:6px;z-index:1;
+  background:linear-gradient(160deg,#ead9b3,#d8c298);
+  border:2px solid #6a4a2a;border-radius:26px 26px 30px 30px;
+  box-shadow:0 0 14px rgba(232,184,75,.25),inset 0 -6px 10px rgba(120,80,40,.25);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:20px;transition:box-shadow .2s,filter .2s,transform .2s;}
+.cap-brows{position:absolute;top:14px;left:0;right:0;display:flex;justify-content:center;gap:18px;z-index:2;}
+.cap-brow{width:18px;height:4px;background:#5a3c1f;border-radius:2px;transition:transform .15s;}
+.cap-brow.l{transform:rotate(6deg);}
+.cap-brow.r{transform:rotate(-6deg);}
+.cap-eyes{display:flex;gap:16px;z-index:1;}
+.cap-eye{width:14px;height:14px;border-radius:50%;background:#22324a;position:relative;animation:capBlink 4.6s infinite;}
+.cap-eye::after{content:'';position:absolute;top:2px;left:2px;width:5px;height:5px;border-radius:50%;background:#bfe3ff;}
+@keyframes capBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.1);}}
+.cap-stache{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:74px;height:22px;z-index:2;
+  background:linear-gradient(#f4f4f4,#cfcfcf);border-radius:0 0 40px 40px;
+  box-shadow:0 2px 3px rgba(0,0,0,.25);clip-path:polygon(0 0,100% 0,86% 100%,50% 70%,14% 100%);}
+.cap-mouth{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:18px;height:4px;background:#7a3b2a;border-radius:0 0 6px 6px;z-index:1;transition:all .15s;}
+
+/* pipe + smoke */
+.cap-pipe{position:absolute;bottom:20px;right:18px;width:22px;height:7px;background:#3a2a1c;border-radius:3px;z-index:2;}
+.cap-pipe::after{content:'';position:absolute;right:-3px;top:-9px;width:9px;height:12px;background:#2a1d12;border-radius:3px;}
+.cap-smoke{position:absolute;right:-2px;top:-16px;width:7px;height:7px;border-radius:50%;background:rgba(220,220,220,.5);
+  animation:capSmoke 2.4s ease-out infinite;}
+@keyframes capSmoke{0%{opacity:0;transform:translate(0,0) scale(.5);}30%{opacity:.6;}100%{opacity:0;transform:translate(6px,-22px) scale(1.8);}}
+
+.cap-name{color:var(--cap-accent);font-size:9px;letter-spacing:2px;text-shadow:0 0 9px rgba(232,184,75,.6);}
+.cap-status{color:#ffe6b0;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(232,184,75,.4);}
+
+/* ── moods ── */
+#bs-captain.cmood-taunt .cap-brow.l{transform:rotate(18deg) translateY(-2px);}
+#bs-captain.cmood-taunt .cap-mouth{width:24px;height:9px;border-radius:0 0 12px 12px;background:#7a3b2a;}
+#bs-captain.cmood-taunt .cap-face{transform:rotate(-3deg);}
+
+#bs-captain.cmood-hurt .cap-face{animation:capShake .45s;box-shadow:0 0 18px rgba(178,47,28,.5),inset 0 -6px 10px rgba(120,80,40,.25);}
+#bs-captain.cmood-hurt .cap-brow{transform:rotate(0);}
+#bs-captain.cmood-hurt .cap-brow.l{transform:rotate(-16deg);}
+#bs-captain.cmood-hurt .cap-brow.r{transform:rotate(16deg);}
+#bs-captain.cmood-hurt .cap-eye{height:6px;}
+@keyframes capShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
+
+#bs-captain.cmood-shipsunk .cap-core{animation:capShake .5s;}
+#bs-captain.cmood-shipsunk .cap-face{filter:brightness(1.05) saturate(1.1);box-shadow:0 0 26px rgba(178,47,28,.7),inset 0 -6px 10px rgba(120,80,40,.25);}
+#bs-captain.cmood-shipsunk .cap-brow.l{transform:rotate(-20deg);}
+#bs-captain.cmood-shipsunk .cap-brow.r{transform:rotate(20deg);}
+#bs-captain.cmood-shipsunk .cap-mouth{width:22px;height:16px;background:#3a1810;border-radius:0 0 50% 50%;}
+#bs-captain.cmood-shipsunk .cap-status{color:#ff9a8a;}
+
+#bs-captain.cmood-attack .cap-core{animation:capLunge .5s ease;}
+@keyframes capLunge{0%{transform:translateX(0);}40%{transform:translateX(8px) rotate(3deg);}100%{transform:translateX(0);}}
+#bs-captain.cmood-attack .cap-mouth{width:24px;height:10px;background:#7a3b2a;border-radius:0 0 12px 12px;}
+#bs-captain.cmood-attack .cap-eye{transform:scale(1.15);}
+
+#bs-captain.cmood-aimiss .cap-brow.l{transform:rotate(-10deg);}
+#bs-captain.cmood-aimiss .cap-brow.r{transform:rotate(10deg);}
+#bs-captain.cmood-aimiss .cap-mouth{width:14px;}
+
+#bs-captain.cmood-begin .cap-hat{transform:translateX(-50%) translateY(-4px);}
+#bs-captain.cmood-begin .cap-smoke{animation-duration:1.2s;}
+
+#bs-captain.cmood-win .cap-core{animation:capWin .8s ease;}
+@keyframes capWin{0%{transform:translateY(0);}30%{transform:translateY(-18px) scale(1.05);}60%{transform:translateY(0);}80%{transform:translateY(-7px);}100%{transform:translateY(0);}}
+#bs-captain.cmood-win .cap-face{box-shadow:0 0 28px var(--cap-accent),inset 0 -6px 10px rgba(120,80,40,.25);}
+#bs-captain.cmood-win .cap-mouth{width:28px;height:12px;border-radius:0 0 14px 14px;}
+#bs-captain.cmood-win .cap-status{color:#ffe08a;}
+
+#bs-captain.cmood-lose .cap-hat{transform:translateX(-50%) translateY(8px) rotate(-8deg);}
+#bs-captain.cmood-lose .cap-face{filter:grayscale(.5) brightness(.85);}
+#bs-captain.cmood-lose .cap-eye{height:6px;}
+#bs-captain.cmood-lose .cap-brow.l{transform:rotate(-12deg) translateY(3px);}
+#bs-captain.cmood-lose .cap-brow.r{transform:rotate(12deg) translateY(3px);}
+#bs-captain.cmood-lose .cap-mouth{width:18px;height:8px;border-radius:8px 8px 0 0;background:#5a2a20;}
+#bs-captain.cmood-lose .cap-status{color:#bfcad8;}
+
 </style>
 </head>
 <body>
@@ -1078,6 +1274,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     </div>
     <div id="mine-st" style="font-size:11px;letter-spacing:2px;min-height:16px;"></div>
     <div id="mine-grid"></div>
+
+    <!-- SAPPER ENTITY (desktop only) -->
+    <div id="mine-bot" aria-hidden="true">
+      <div class="mbot-stage">
+        <span class="mbot-particle mp1"></span>
+        <span class="mbot-particle mp2"></span>
+        <span class="mbot-particle mp3"></span>
+        <span class="mbot-particle mp4"></span>
+        <div class="mbot-core">
+          <div class="mbot-fuse"><span class="mbot-spark"></span></div>
+          <div class="mbot-body">
+            <div class="mbot-eyes"><span class="mbot-eye"></span><span class="mbot-eye"></span></div>
+            <div class="mbot-mouth"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mbot-name">SAPPER</div>
+      <div class="mbot-sub" id="mine-bot-sub">BOMB SQUAD</div>
+      <div class="mbot-status" id="mine-bot-status">ON WATCH</div>
+    </div>
   </div>
 </div>
 
@@ -1467,6 +1683,30 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
         <div class="bs-grid" id="bs-egrid"></div>
       </div>
     </div>
+
+    <!-- ENEMY CAPTAIN -->
+    <div id="bs-captain" aria-hidden="true">
+      <div class="cap-stage">
+        <span class="cap-particle cp1"></span>
+        <span class="cap-particle cp2"></span>
+        <span class="cap-particle cp3"></span>
+        <div class="cap-core">
+          <div class="cap-hat">
+            <div class="cap-hat-crown"><div class="cap-hat-band"><span class="cap-badge">&#9875;</span></div></div>
+            <div class="cap-hat-brim"></div>
+          </div>
+          <div class="cap-face">
+            <div class="cap-brows"><span class="cap-brow l"></span><span class="cap-brow r"></span></div>
+            <div class="cap-eyes"><span class="cap-eye"></span><span class="cap-eye"></span></div>
+            <div class="cap-stache"></div>
+            <div class="cap-mouth"></div>
+            <div class="cap-pipe"><span class="cap-smoke"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap-name">ENEMY CAPTAIN</div>
+      <div class="cap-status" id="bs-captain-status">AT THE READY</div>
+    </div>
   </div>
 </div>
 
@@ -1695,12 +1935,65 @@ window.closeGame=function(){
 /* ════════════════ MINESWEEPER ════════════════ */
 var mCfg={easy:{r:9,c:9,m:10},med:{r:12,c:12,m:25},hard:{r:16,c:16,m:50}};
 var mDiff='easy',mR,mC,mM,mBd,mRv,mFl,mDead,mWon,mFst,mTmr,mSec;
+
+/* ── SAPPER ENTITY (right of the field, reacts to digs/flags/boom/win) ── */
+var MineBot=(function(){
+  var root=null,statusEl=null,shown=false,cur='idle',rt=null;
+  var SAY={
+    idle:['DEFUSING...','ON WATCH','STEADY...','TICK... TICK...'],
+    go:['GO!','FIRST DIG...','HERE WE GO'],
+    safe:['PHEW.','CLEAR!','SAFE.','NICE DIG.'],
+    count:['HMM...','COUNTING','CAREFUL...','I SEE NUMBERS'],
+    flag:['FLAG UP.','MINE THERE?','MARKED.','NOTED.'],
+    unflag:['FLAG OFF.','NEVERMIND.','UNSURE?'],
+    boom:['BOOM!','KABOOM!','...OOPS.','WE LOST ONE.'],
+    win:['CLEARED!','ALL SAFE!','GG!','FLAWLESS!']
+  };
+  function pick(a){return a[Math.random()*a.length|0];}
+  function grab(){if(!root){root=document.getElementById('mine-bot');statusEl=document.getElementById('mine-bot-status');}return root;}
+  function mood(m,txt){if(!grab())return;cur=m;root.className=(shown?'on ':'')+'mmood-'+m;if(statusEl)statusEl.textContent=txt||pick(SAY[m]||['...']);}
+  return {
+    show:function(){if(!grab())return;shown=true;root.classList.add('on');mood('idle');},
+    hide:function(){if(grab()){shown=false;root.classList.remove('on');}},
+    react:function(m,txt){
+      if(!grab()||!shown)return;
+      if(rt){clearTimeout(rt);rt=null;}
+      mood(m,txt);
+      var transient={go:1,safe:1,count:1,flag:1,unflag:1};
+      if(transient[m])rt=setTimeout(function(){if(cur===m)mood('idle');},1600);
+    }
+  };
+})();
+window.MineBot=MineBot;
+
+function positionMineBot(){
+  var grid=document.getElementById('mine-grid'),bot=document.getElementById('mine-bot');
+  if(!grid||!bot)return;
+  var win=document.getElementById('game-mine');
+  if(win&&win.classList.contains('hidden'))return;
+  if(!bot.classList.contains('on'))return;
+  var gr=grid.getBoundingClientRect();
+  if(!gr.width)return;
+  var vw=window.innerWidth||document.documentElement.clientWidth;
+  var GAP=18,EDGE=10;
+  bot.style.display='';
+  var bw=bot.getBoundingClientRect().width||0;
+  var rg=vw-gr.right;
+  if(bw&&rg>=bw+GAP+EDGE){
+    var cx=gr.right+rg/2,rightEdge=cx+bw/2,ro=vw-rightEdge;
+    ro=Math.min(Math.max(EDGE,ro),vw-gr.right-GAP-bw);
+    bot.style.right=ro+'px';bot.style.display='';
+  }else{bot.style.display='none';}
+}
+window.positionMineBot=positionMineBot;
+if(!window.__mineBotResize){window.__mineBotResize=true;window.addEventListener('resize',function(){positionMineBot();});}
+
 window.setMineDiff=function(d){mDiff=d;['easy','med','hard'].forEach(function(x){document.getElementById('mb-'+x).className='btn'+(x===d?' sel':'');});initMine();};
-window.initMine=function(){clearInterval(mTmr);var c=mCfg[mDiff];mR=c.r;mC=c.c;mM=c.m;mBd=[];mRv=[];mFl=[];mDead=mWon=false;mFst=true;mSec=0;for(var i=0;i<mR;i++){mBd.push(Array(mC).fill(0));mRv.push(Array(mC).fill(false));mFl.push(Array(mC).fill(false));}document.getElementById('mine-cnt').textContent=mM;document.getElementById('mine-t').textContent='0';document.getElementById('mine-st').textContent='';showHi('mine');fitCells('mine-cell',mC,{max:26,min:14,extra:8+(mC-1),margin:48});renderMine();};
+window.initMine=function(){clearInterval(mTmr);var c=mCfg[mDiff];mR=c.r;mC=c.c;mM=c.m;mBd=[];mRv=[];mFl=[];mDead=mWon=false;mFst=true;mSec=0;for(var i=0;i<mR;i++){mBd.push(Array(mC).fill(0));mRv.push(Array(mC).fill(false));mFl.push(Array(mC).fill(false));}document.getElementById('mine-cnt').textContent=mM;document.getElementById('mine-t').textContent='0';document.getElementById('mine-st').textContent='';showHi('mine');fitCells('mine-cell',mC,{min:14,extra:8+(mC-1),margin:48});if(window.MineBot)MineBot.show();renderMine();};
 function mPlace(sr,sc){var p=0;while(p<mM){var r=Math.random()*mR|0,c=Math.random()*mC|0;if(mBd[r][c]===-1||Math.abs(r-sr)<=1&&Math.abs(c-sc)<=1)continue;mBd[r][c]=-1;p++;}for(var r=0;r<mR;r++)for(var c=0;c<mC;c++){if(mBd[r][c]===-1)continue;var n=0;for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){var nr=r+dr,nc=c+dc;if(nr>=0&&nr<mR&&nc>=0&&nc<mC&&mBd[nr][nc]===-1)n++;}mBd[r][c]=n;}}
 function mRev(r,c){if(r<0||r>=mR||c<0||c>=mC||mRv[r][c]||mFl[r][c])return;mRv[r][c]=true;if(mBd[r][c]===0)for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++)mRev(r+dr,c+dc);}
 function mChkW(){for(var r=0;r<mR;r++)for(var c=0;c<mC;c++)if(mBd[r][c]!==-1&&!mRv[r][c])return false;return true;}
-function renderMine(){var g=document.getElementById('mine-grid');g.style.gridTemplateColumns='repeat('+mC+',var(--mine-cell,26px))';g.innerHTML='';for(var r=0;r<mR;r++)for(var c=0;c<mC;c++){(function(r,c){var el=document.createElement('div');el.className='mc';if(mRv[r][c]){el.classList.add('rev');if(mBd[r][c]===-1){el.classList.add('boom');el.textContent='\u2736';}else if(mBd[r][c]>0){el.textContent=mBd[r][c];el.classList.add('n'+mBd[r][c]);}}else if(mFl[r][c]){el.classList.add('flag');el.textContent='F';}if(!mDead&&!mWon){el.addEventListener('click',function(){if(mFl[r][c])return;if(mFst){mFst=false;mPlace(r,c);mTmr=setInterval(function(){mSec++;document.getElementById('mine-t').textContent=mSec;},1000);}if(mBd[r][c]===-1){mDead=true;clearInterval(mTmr);for(var rr=0;rr<mR;rr++)for(var cc=0;cc<mC;cc++)if(mBd[rr][cc]===-1)mRv[rr][cc]=true;renderMine();document.getElementById('mine-st').style.color='#ef5350';document.getElementById('mine-st').textContent='GAME OVER';return;}mRev(r,c);if(mChkW()){mWon=true;clearInterval(mTmr);setHi('mine',-mSec);var st=document.getElementById('mine-st');st.textContent='YOU WIN! '+mSec+'s';st.style.color='var(--pri)';showHi('mine');}renderMine();});el.addEventListener('contextmenu',function(e){e.preventDefault();if(mRv[r][c])return;mFl[r][c]=!mFl[r][c];var f=0;for(var rr=0;rr<mR;rr++)for(var cc=0;cc<mC;cc++)if(mFl[rr][cc])f++;document.getElementById('mine-cnt').textContent=mM-f;renderMine();});}g.appendChild(el);})(r,c);}}
+function renderMine(){var g=document.getElementById('mine-grid');g.style.gridTemplateColumns='repeat('+mC+',var(--mine-cell,26px))';g.innerHTML='';for(var r=0;r<mR;r++)for(var c=0;c<mC;c++){(function(r,c){var el=document.createElement('div');el.className='mc';if(mRv[r][c]){el.classList.add('rev');if(mBd[r][c]===-1){el.classList.add('boom');el.textContent='\u2736';}else if(mBd[r][c]>0){el.textContent=mBd[r][c];el.classList.add('n'+mBd[r][c]);}}else if(mFl[r][c]){el.classList.add('flag');el.textContent='F';}if(!mDead&&!mWon){el.addEventListener('click',function(){if(mFl[r][c])return;if(mFst){mFst=false;mPlace(r,c);mTmr=setInterval(function(){mSec++;document.getElementById('mine-t').textContent=mSec;},1000);}if(mBd[r][c]===-1){mDead=true;clearInterval(mTmr);for(var rr=0;rr<mR;rr++)for(var cc=0;cc<mC;cc++)if(mBd[rr][cc]===-1)mRv[rr][cc]=true;if(window.MineBot)MineBot.react('boom');renderMine();document.getElementById('mine-st').style.color='#ef5350';document.getElementById('mine-st').textContent='GAME OVER';return;}mRev(r,c);if(mChkW()){mWon=true;clearInterval(mTmr);setHi('mine',-mSec);var st=document.getElementById('mine-st');st.textContent='YOU WIN! '+mSec+'s';st.style.color='var(--pri)';showHi('mine');if(window.MineBot)MineBot.react('win');}else if(window.MineBot)MineBot.react(mBd[r][c]===0?'safe':'count');renderMine();});el.addEventListener('contextmenu',function(e){e.preventDefault();if(mRv[r][c])return;mFl[r][c]=!mFl[r][c];if(window.MineBot)MineBot.react(mFl[r][c]?'flag':'unflag');var f=0;for(var rr=0;rr<mR;rr++)for(var cc=0;cc<mC;cc++)if(mFl[rr][cc])f++;document.getElementById('mine-cnt').textContent=mM-f;renderMine();});}g.appendChild(el);})(r,c);}if(window.positionMineBot)positionMineBot();}
 
 /* ════════════════ SOLITAIRE ════════════════ */
 var SUITS=['\u2660','\u2665','\u2666','\u2663'],RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -2273,6 +2566,37 @@ var BS_SHIPS=[4,3,3,2,2,2,1,1,1,1]; // classic fleet: 1x4, 2x3, 3x2, 4x1
 var bsDiff='easy';
 var bsPlayer,bsEnemy,bsTurn,bsOver,bsHunt,bsHuntDir,bsHuntOrigin,bsLastShot;
 var bsSetupGrid,bsSetupShips,bsToPlace,bsPlaceIdx,bsOrient;
+var bsHoverR=-1,bsHoverC=-1;
+
+/* ── ENEMY CAPTAIN ENTITY (reacts to the battle) ── */
+var BattleBot=(function(){
+  var root=null,st=null,shown=false,cur='idle',rt=null;
+  var SAY={
+    idle:['AT THE READY','STEADY AS SHE GOES','EYES ON THE SEA','HMMM...'],
+    begin:['BATTLE STATIONS!','OPEN FIRE!','TO ARMS!'],
+    taunt:['HA! MISSED!','POOR AIM!','IS THAT ALL?','TRY AGAIN!'],
+    hurt:['ARGH!','A HIT?!','BLAST YOU!','MY HULL!'],
+    shipsunk:['MY SHIP!!','SCUTTLED!','DOWN SHE GOES!','CURSES!'],
+    attack:['DIRECT HIT!','TAKE THAT!','BULLSEYE!','FIRE!'],
+    aimiss:['BLAST!','MISSED HER!','STEADY...','HMPH.'],
+    win:['VICTORY IS MINE!','THE SEA IS MINE!','SURRENDER, SAILOR!'],
+    lose:['I YIELD...','WELL FOUGHT...','YOU WIN, SAILOR.']
+  };
+  function pick(a){return a[Math.random()*a.length|0];}
+  function grab(){if(!root){root=document.getElementById('bs-captain');st=document.getElementById('bs-captain-status');}return root;}
+  function mood(m){if(!grab())return;cur=m;root.className='cmood-'+m;if(st)st.textContent=pick(SAY[m]||['...']);}
+  return {
+    show:function(){if(!grab())return;shown=true;mood('idle');},
+    react:function(m){
+      if(!grab()||!shown)return;
+      if(rt){clearTimeout(rt);rt=null;}
+      mood(m);
+      var transient={begin:1,taunt:1,hurt:1,shipsunk:1,attack:1,aimiss:1};
+      if(transient[m])rt=setTimeout(function(){if(cur===m)mood('idle');},1700);
+    }
+  };
+})();
+window.BattleBot=BattleBot;
 
 window.setBattleDiff=function(d){bsDiff=d;['easy','hard'].forEach(function(x){document.getElementById('bsb-'+x).className='btn'+(x===d?' sel':'');});initBattle();};
 
@@ -2335,6 +2659,7 @@ window.initBattle=function(){
   bsFitCells();
   bsUpdateSetupMsg();
   renderBsSetup();
+  if(window.BattleBot)BattleBot.show();
 };
 
 function bsFitCells(){
@@ -2359,7 +2684,7 @@ function bsUpdateSetupMsg(){
     btn.style.display='none';
   }
 }
-window.bsRotate=function(){bsOrient=bsOrient==='h'?'v':'h';bsUpdateSetupMsg();};
+window.bsRotate=function(){bsOrient=bsOrient==='h'?'v':'h';bsUpdateSetupMsg();if(bsHoverR>=0&&bsPlaceIdx<bsToPlace.length)bsSetupHover(bsHoverR,bsHoverC);};
 window.bsResetSetup=function(){
   bsSetupGrid=[];for(var i=0;i<10;i++)bsSetupGrid.push(Array(10).fill(0));
   bsSetupShips=[];bsToPlace=BS_SHIPS.slice();bsPlaceIdx=0;
@@ -2381,6 +2706,7 @@ function bsSetupCandidateCells(r,c){
 }
 function bsSetupHover(r,c){
   if(bsPlaceIdx>=bsToPlace.length)return;
+  bsHoverR=r;bsHoverC=c;
   var cells=bsSetupCandidateCells(r,c);
   var valid=bsValidPlacement(bsSetupGrid,cells);
   var g=document.getElementById('bs-setup-grid');
@@ -2422,6 +2748,7 @@ window.bsStartBattle=function(){
   document.getElementById('bs-wrap').style.display='';
   document.getElementById('bs-msg').textContent='YOUR TURN \u2014 FIRE AT ENEMY WATERS';
   renderBattle();
+  if(window.BattleBot)BattleBot.react('begin');
 };
 document.addEventListener('keydown',function(e){if(cur==='battle'&&(e.key==='r'||e.key==='R'))bsRotate();});
 
@@ -2461,8 +2788,10 @@ window.bsPlayerFire=function(r,c){
     document.getElementById('bs-eleft').textContent=left;
     if(left===0){bsWin();return;}
     document.getElementById('bs-msg').textContent=res.ship.sunk?'YOU SUNK A SHIP! FIRE AGAIN':'HIT! FIRE AGAIN';
+    if(window.BattleBot)BattleBot.react(res.ship.sunk?'shipsunk':'hurt');
   }else{
     document.getElementById('bs-msg').textContent='MISS! ENEMY TURN...';
+    if(window.BattleBot)BattleBot.react('taunt');
     bsTurn='ai';
     setTimeout(bsAiTurn,650);
   }
@@ -2509,9 +2838,11 @@ function bsAiTurn(){
     document.getElementById('bs-pleft').textContent=left;
     if(left===0){bsLose();return;}
     document.getElementById('bs-msg').textContent='ENEMY HIT YOUR SHIP! ENEMY FIRES AGAIN...';
+    if(window.BattleBot)BattleBot.react('attack');
     setTimeout(bsAiTurn,650);
   }else{
     document.getElementById('bs-msg').textContent='ENEMY MISSED. YOUR TURN';
+    if(window.BattleBot)BattleBot.react('aimiss');
     bsTurn='player';
   }
 }
@@ -2523,11 +2854,13 @@ function bsWin(){
   document.getElementById('hi-battle').textContent=wins;
   var m=document.getElementById('bs-msg');
   m.textContent='\u2713 VICTORY! ALL ENEMY SHIPS SUNK';m.style.color='var(--pri-b)';
+  if(window.BattleBot)BattleBot.react('lose');
 }
 function bsLose(){
   bsOver=true;
   var m=document.getElementById('bs-msg');
   m.textContent='YOUR FLEET IS DESTROYED \u2014 TRY AGAIN';m.style.color='var(--err)';
+  if(window.BattleBot)BattleBot.react('win');
 }
 
 function renderBattle(){

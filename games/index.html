@@ -1406,7 +1406,7 @@ function refitCurrent(){
   if(cur==='mine'&&typeof mC==='number'){fitCells('mine-cell',mC,{min:12,extra:8+(mC-1)});renderMine();}
   if(cur==='g2048'){t2048Cell=fitCells('t2048-cell',4,{min:48,extra:38});render2048();}
   if(cur==='checkers'){fitCells('ck-cell',8,{min:30,extra:4});ckRender();}
-  if(cur==='chess'){fitCells('ch-cell',8,{min:32,extra:6});CH.render();}
+  if(cur==='chess'){fitCells('ch-cell',8,{min:32,extra:6});(window.CH&&window.CH.render?window.CH:CH).render();}
   if(cur==='wordle'){fitCells('wl-key',10,{min:22,extra:36});renderWlGrid();renderWlKeys();}
   if(cur==='flood'&&typeof flN==='number'){fitCells('fl-cell',flN,{min:13,extra:2});renderFlood();}
   if(cur==='battle')bsFitCells();
@@ -1896,7 +1896,7 @@ CH.checkEnd=function(moved){
   }
 };
 CH.render=function(){
-  var el=document.getElementById('ch-board');if(!el)return;
+  var el=document.getElementById('ch-board');if(!el||!this.board)return;
   el.innerHTML='';
   var self=this,leg=this.sel?this.legal(this.sel.r,this.sel.c,this.board):[];
   var flip=(this.human==='b');
@@ -3325,6 +3325,10 @@ function showGameSplash(onStart){
     if(p)p.style.display='none';
     if(gp)gp.style.display='none';
   }
+  function chessVisible(){
+    var el=document.getElementById('game-chess');
+    return !!(el&&!el.classList.contains('hidden'));
+  }
 
   var SF=(function(){
     var worker=null,ready=false,loading=false,busy=false,moveCb=null,depthCb=null,readyCbs=[],failCbs=[],timer=null,lastError='';
@@ -3654,7 +3658,7 @@ function showGameSplash(onStart){
   };
 
   ch.localAiMove=function(reason){
-    if(this.dead||window.cur!=='chess')return;
+    if(this.dead||!chessVisible())return;
     var all=this.allLegal(this.ai,this.board),self=this,b=this.board;
     if(!all.length){msg(this.inCheck(this.ai,b)?'CHECKMATE! YOU WIN!':'STALEMATE!');this.dead=true;this.render();return;}
     var mv;
@@ -3674,7 +3678,7 @@ function showGameSplash(onStart){
   };
 
   ch.aiMove=function(){
-    if(this.dead||window.cur!=='chess')return;
+    if(this.dead||!chessVisible())return;
     var self=this,fen=this.toFEN(),depth=2,movetime=null;
     if(this.diff==='professional')depth=6;
     if(this.diff==='aceon'){
@@ -3688,9 +3692,9 @@ function showGameSplash(onStart){
       SF.opt('Skill Level',self.diff==='beginner'?2:(self.diff==='professional'?10:20));
       SF.opt('Contempt',(self.diff==='aceon'&&self.aceonSubmode==='grandmaster')?50:0);
     }
-    function onDepth(d){if(window.cur==='chess')msg(label.replace('...','')+' [depth '+d+']');}
+    function onDepth(d){if(chessVisible())msg(label.replace('...','')+' [depth '+d+']');}
     function onBestMove(uci){
-      if(window.cur!=='chess'||self.dead)return;
+      if(!chessVisible()||self.dead)return;
       if(!uci){msg(self.inCheck(self.ai,self.board)?'CHECKMATE! YOU WIN!':'STALEMATE!');self.dead=true;self.render();return;}
       var mv=self.findLegalUCIMove(uci);
       if(!mv){
@@ -3702,13 +3706,13 @@ function showGameSplash(onStart){
       self.render();
     }
     function engineFailed(errorText){
-      if(window.cur!=='chess'||self.dead)return;
+      if(!chessVisible()||self.dead)return;
       if(self.diff==='aceon'){msg(errorText);self.turn=self.human;self.render();return;}
       msg(errorText+' - LOCAL AI');
       setTimeout(function(){self.localAiMove(errorText);},350);
     }
     function startSearch(){
-      if(window.cur!=='chess'||self.dead)return;
+      if(!chessVisible()||self.dead)return;
       configure();msg(label);
       if(!SF.go(fen,depth,movetime,onBestMove,onDepth))engineFailed(SF.lastError()||'ENGINE NOT READY');
     }

@@ -817,6 +817,121 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 #ts-cv     { max-height:calc(100dvh - 130px); width:auto; }
 #bub-cv    { max-height:calc(100dvh - 130px); width:auto; }
 
+/* ═══════════ CHESS: LAST-MOVE HIGHLIGHT ═══════════ */
+/* player = cyan, computer = pink; sits under the piece (z-index:2) */
+.ch-cell.ch-last-h::after{content:'';position:absolute;inset:0;background:rgba(0,229,255,.32);pointer-events:none;z-index:0;}
+.ch-cell.ch-last-a::after{content:'';position:absolute;inset:0;background:rgba(255,45,120,.34);pointer-events:none;z-index:0;}
+.ch-cell.ch-last-h.ch-last-a::after{background:linear-gradient(135deg,rgba(0,229,255,.32) 0 50%,rgba(255,45,120,.34) 50% 100%);}
+
+/* ═══════════ CHESS: PAWN PROMOTION BUTTONS ═══════════ */
+.ch-promo-btn{width:clamp(54px,9vw,74px);height:clamp(54px,9vw,74px);background:#001020;
+  border:2px solid #003355;border-bottom:3px solid #007799;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .12s,border-color .12s,transform .12s,box-shadow .12s;}
+.ch-promo-btn:hover{background:#003355;border-color:#00e5ff;transform:translateY(-3px);box-shadow:0 0 16px rgba(0,229,255,.45);}
+.ch-promo-pc{font-size:clamp(30px,5vw,46px);line-height:1;}
+.ch-promo-pc.ch-white{color:#fff;text-shadow:0 1px 2px #000,0 0 2px #000;}
+.ch-promo-pc.ch-black{color:#1a1a1a;text-shadow:0 0 7px rgba(255,255,255,.6);}
+
+/* ═══════════ A.C.EON AI ENTITY (desktop only) ═══════════ */
+#aceon-bot{
+  position:fixed;right:clamp(14px,4vw,72px);top:50%;transform:translateY(-50%);
+  z-index:500;width:190px;pointer-events:none;user-select:none;
+  display:none;flex-direction:column;align-items:center;gap:10px;
+  --bot-accent:#ff2d78;font-family:'Press Start 2P',monospace;
+}
+#aceon-bot.on{display:flex;}
+@media(max-width:1024px){#aceon-bot.on{display:none!important;}}
+
+.bot-stage{position:relative;width:190px;height:178px;display:flex;align-items:center;justify-content:center;}
+.bot-core{position:relative;width:150px;height:165px;display:flex;align-items:center;justify-content:center;animation:botFloat 3.6s ease-in-out infinite;}
+@keyframes botFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+.bot-core::before{content:'';position:absolute;width:130%;height:130%;border-radius:50%;
+  background:radial-gradient(circle,var(--bot-accent) 0%,transparent 62%);
+  opacity:.18;filter:blur(6px);z-index:0;animation:botHalo 3.2s ease-in-out infinite;}
+@keyframes botHalo{0%,100%{opacity:.14;transform:scale(1);}50%{opacity:.30;transform:scale(1.06);}}
+
+.bot-ring{position:absolute;width:142px;height:142px;border-radius:50%;
+  border:2px dashed var(--bot-accent);opacity:0;z-index:0;}
+#aceon-bot.mood-thinking .bot-ring{opacity:.55;animation:botSpin 2.4s linear infinite;}
+@keyframes botSpin{to{transform:rotate(360deg);}}
+
+.bot-antenna{position:absolute;top:4px;left:50%;width:2px;height:18px;background:var(--bot-accent);
+  transform:translateX(-50%);box-shadow:0 0 6px var(--bot-accent);z-index:2;}
+.bot-antenna-dot{position:absolute;top:-7px;left:50%;width:9px;height:9px;border-radius:50%;
+  background:var(--bot-accent);transform:translateX(-50%);box-shadow:0 0 10px var(--bot-accent);
+  animation:botPulse 1.4s ease-in-out infinite;}
+@keyframes botPulse{0%,100%{opacity:1;transform:translateX(-50%) scale(1);}50%{opacity:.4;transform:translateX(-50%) scale(.7);}}
+
+.bot-face{position:relative;width:118px;height:112px;margin-top:14px;z-index:1;
+  background:linear-gradient(160deg,#0b0b1c,#020208);
+  border:2px solid var(--bot-accent);border-radius:20px 20px 26px 26px;
+  box-shadow:0 0 16px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  transition:box-shadow .2s,filter .2s;overflow:hidden;}
+.bot-face::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.18) 3px,rgba(0,0,0,.18) 4px);}
+
+.bot-eyes{display:flex;gap:24px;z-index:1;}
+.bot-eye{width:20px;height:20px;border-radius:50%;background:var(--bot-accent);
+  box-shadow:0 0 12px var(--bot-accent);animation:botBlink 4.5s infinite;}
+@keyframes botBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.12);}}
+
+.bot-mouth{display:flex;gap:4px;align-items:center;height:16px;z-index:1;}
+.bot-mouth span{width:5px;height:5px;border-radius:1px;background:var(--bot-accent);
+  box-shadow:0 0 6px var(--bot-accent);transition:height .15s;}
+
+.bot-name{color:var(--bot-accent);font-size:11px;letter-spacing:3px;text-shadow:0 0 10px var(--bot-accent);}
+.bot-sub{color:#9fb6c4;font-size:7px;letter-spacing:3px;}
+.bot-status{color:#d4ecff;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(0,229,255,.4);}
+
+.bot-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--bot-accent);
+  box-shadow:0 0 8px var(--bot-accent);opacity:.5;}
+.bot-particle.p1{top:16%;left:12%;animation:botDrift1 5s ease-in-out infinite;}
+.bot-particle.p2{top:30%;right:10%;animation:botDrift2 6.5s ease-in-out infinite;}
+.bot-particle.p3{bottom:20%;left:16%;animation:botDrift2 5.8s ease-in-out infinite;}
+.bot-particle.p4{bottom:28%;right:14%;animation:botDrift1 7s ease-in-out infinite;}
+@keyframes botDrift1{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(6px,-10px);opacity:.8;}}
+@keyframes botDrift2{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(-7px,-8px);opacity:.8;}}
+
+/* ── moods ── */
+#aceon-bot.mood-thinking .bot-eye{animation:botScan 1.1s ease-in-out infinite;}
+@keyframes botScan{0%,100%{transform:translateX(-3px) scaleY(.8);}50%{transform:translateX(3px) scaleY(.8);}}
+#aceon-bot.mood-thinking .bot-mouth span{animation:botEq .6s ease-in-out infinite;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(1){animation-delay:0s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(2){animation-delay:.1s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(3){animation-delay:.2s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(4){animation-delay:.15s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(5){animation-delay:.05s;}
+@keyframes botEq{0%,100%{height:4px;}50%{height:15px;}}
+#aceon-bot.mood-thinking #aceon-bot-status::after{content:'';animation:botDots 1.3s steps(1) infinite;}
+@keyframes botDots{0%{content:'';}25%{content:'.';}50%{content:'..';}75%{content:'...';}}
+
+#aceon-bot.mood-attack .bot-face{animation:botChomp .45s ease;box-shadow:0 0 30px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}
+#aceon-bot.mood-attack .bot-eye{height:7px;border-radius:2px;}
+#aceon-bot.mood-attack .bot-mouth span{height:13px;}
+@keyframes botChomp{0%,100%{transform:scale(1);}40%{transform:scale(1.12);}}
+
+#aceon-bot.mood-hurt .bot-core{animation:botShake .45s;}
+#aceon-bot.mood-hurt .bot-face{filter:brightness(.6);}
+@keyframes botShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
+
+#aceon-bot.mood-check .bot-face{animation:botMenace .7s ease infinite;}
+@keyframes botMenace{0%,100%{box-shadow:0 0 16px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}50%{box-shadow:0 0 40px var(--bot-accent),0 0 72px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}}
+#aceon-bot.mood-check .bot-eye{height:24px;border-radius:3px;}
+
+#aceon-bot.mood-aiChecked .bot-core{animation:botShake .35s 2;}
+
+#aceon-bot.mood-win .bot-core{animation:botWin .7s ease;}
+@keyframes botWin{0%{transform:translateY(0);}30%{transform:translateY(-22px) scale(1.06);}60%{transform:translateY(0);}80%{transform:translateY(-9px);}100%{transform:translateY(0);}}
+#aceon-bot.mood-win .bot-face{box-shadow:0 0 34px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}
+#aceon-bot.mood-win .bot-mouth span{height:13px;}
+
+#aceon-bot.mood-lose .bot-core{animation:botGlitch .12s steps(2) 6;}
+@keyframes botGlitch{0%{transform:translate(0,0);}25%{transform:translate(-4px,2px);}50%{transform:translate(3px,-2px);opacity:.7;}75%{transform:translate(-2px,-1px);}100%{transform:translate(0,0);}}
+#aceon-bot.mood-lose .bot-face{filter:hue-rotate(40deg) brightness(.8);}
+#aceon-bot.mood-lose .bot-eye{height:5px;border-radius:2px;}
+
 </style>
 </head>
 <body>
@@ -1097,32 +1212,32 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div id="ch-board"></div>
 
     <div id="aceon-ai-popup" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.92);align-items:center;justify-content:center;">
-      <div style="max-width:520px;width:94%;background:#050510;border:2px solid #ff2d78;padding:clamp(16px,4vw,30px);text-align:center;box-shadow:0 0 60px rgba(255,45,120,.3),0 0 120px rgba(255,45,120,.08);">
+      <div style="max-width:520px;width:94%;max-height:92vh;overflow-y:auto;background:#050510;border:2px solid #ff2d78;padding:clamp(16px,4vw,30px);text-align:center;box-shadow:0 0 60px rgba(255,45,120,.3),0 0 120px rgba(255,45,120,.08);">
         <div style="font-family:'Press Start 2P',monospace;font-size:clamp(11px,2.5vw,16px);color:#ff2d78;text-shadow:0 0 20px #ff2d78,0 0 40px rgba(255,45,120,.5);margin-bottom:14px;letter-spacing:3px;">&#9888; A.C.EON AI</div>
-        <div style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.2vw,8px);color:#80f0ff;line-height:2.5;margin-bottom:22px;letter-spacing:1px;">
+        <div style="font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.7vw,11px);color:#aee9ff;line-height:2.1;margin-bottom:22px;letter-spacing:1px;">
           POWERED BY STOCKFISH &mdash;<br>THE WORLD'S STRONGEST CHESS ENGINE.<br>THIS IS NOT A SIMULATED AI.<br>IT CALCULATES. IT DOES NOT FORGIVE.<br><br>CHOOSE YOUR DOOM:
         </div>
         <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
           <button class="btn" onclick="window.setAceonSubmode('professional')" style="padding:clamp(8px,2vw,14px);text-align:left;border-color:#00e5ff;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.4vw,9px);color:#00e5ff;">&#9817; PROFESSIONAL</span>
-              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,.9vw,7px);color:#007799;">DEPTH 10 &middot; 60s</span>
+              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.6vw,11px);color:#00e5ff;">&#9817; PROFESSIONAL</span>
+              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.2vw,8px);color:#4fc6e0;">DEPTH 10 &middot; 60s</span>
             </div>
-            <div style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,.9vw,6px);color:#666;letter-spacing:.5px;">STRONG. MOST PLAYERS WILL LOSE.</div>
+            <div style="font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.3vw,9px);color:#9fb6c4;line-height:1.7;letter-spacing:.5px;">STRONG. MOST PLAYERS WILL LOSE.</div>
           </button>
           <button class="btn" onclick="window.setAceonSubmode('expert')" style="padding:clamp(8px,2vw,14px);text-align:left;border-color:#ff8800;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.4vw,9px);color:#ff8800;">&#9822; EXPERT</span>
-              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,.9vw,7px);color:#804000;">DEPTH 14 &middot; 60s</span>
+              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.6vw,11px);color:#ff8800;">&#9822; EXPERT</span>
+              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.2vw,8px);color:#cc8a44;">DEPTH 14 &middot; 60s</span>
             </div>
-            <div style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,.9vw,6px);color:#666;letter-spacing:.5px;">ONLY FOR EXPERIENCED PLAYERS.</div>
+            <div style="font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.3vw,9px);color:#d3a76f;line-height:1.7;letter-spacing:.5px;">ONLY FOR EXPERIENCED PLAYERS.</div>
           </button>
           <button class="btn" onclick="window.setAceonSubmode('grandmaster')" style="padding:clamp(8px,2vw,14px);text-align:left;border-color:#ff2d78;color:#ff2d78;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.4vw,9px);color:#ff2d78;">&#9819; GRANDMASTER</span>
-              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,.9vw,7px);color:#800020;">DEPTH 20 &middot; 60s</span>
+              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.6vw,11px);color:#ff2d78;">&#9819; GRANDMASTER</span>
+              <span style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.2vw,8px);color:#cc4a68;">DEPTH 20 &middot; 60s</span>
             </div>
-            <div style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,.9vw,6px);color:#ff2d78;letter-spacing:.5px;">GRANDMASTER LEVEL. YOU WILL NOT WIN.</div>
+            <div style="font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.3vw,9px);color:#ff6a96;line-height:1.7;letter-spacing:.5px;">GRANDMASTER LEVEL. YOU WILL NOT WIN.</div>
           </button>
         </div>
         <button class="btn" onclick="window.hideAceonAiPopup()" style="color:#555;border-color:#1a0010;font-size:clamp(5px,.9vw,7px);">&#10005; CANCEL</button>
@@ -1130,9 +1245,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     </div>
 
     <div id="aceon-gm-popup" style="display:none;position:fixed;inset:0;z-index:601;background:rgba(0,0,0,.95);align-items:center;justify-content:center;">
-      <div style="max-width:440px;width:92%;background:#080000;border:2px solid #ff0000;padding:clamp(16px,4vw,28px);text-align:center;box-shadow:0 0 80px rgba(255,0,0,.4),0 0 160px rgba(255,0,0,.1);">
+      <div style="max-width:440px;width:92%;max-height:92vh;overflow-y:auto;background:#080000;border:2px solid #ff0000;padding:clamp(16px,4vw,28px);text-align:center;box-shadow:0 0 80px rgba(255,0,0,.4),0 0 160px rgba(255,0,0,.1);">
         <div style="font-family:'Press Start 2P',monospace;font-size:clamp(9px,2vw,13px);color:#ff0000;text-shadow:0 0 24px #ff0000,0 0 48px rgba(255,0,0,.5);margin-bottom:14px;letter-spacing:2px;animation:blink .5s step-end infinite;">&#9888;&#9888; GRANDMASTER MODE &#9888;&#9888;</div>
-        <div style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.1vw,8px);color:#ff8888;line-height:2.5;margin-bottom:22px;letter-spacing:1px;">
+        <div style="font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.6vw,11px);color:#ffb3b3;line-height:2.0;margin-bottom:22px;letter-spacing:1px;">
           DEPTH 20. NO RESTRICTIONS.<br><br>A.C.EON AI WILL PLAY WITH<br>MAXIMUM AGGRESSION AND CONTEMPT.<br>IT WILL NOT OFFER DRAWS.<br>IT WILL NOT SHOW MERCY.<br><br>GRANDMASTERS PLAY TO DEPTH 22.<br>THIS IS DEPTH 20.<br>VICTORY IS STATISTICALLY POSSIBLE.<br>VICTORY IS PRACTICALLY IMPOSSIBLE.<br><br>ARE YOU SURE YOU WANT THIS?
         </div>
         <div style="display:flex;gap:14px;justify-content:center;">
@@ -1140,6 +1255,35 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
           <button class="btn" onclick="document.getElementById('aceon-gm-popup').style.display='none';document.getElementById('aceon-ai-popup').style.display='flex';" style="color:#555;border-color:#200000;">BACK</button>
         </div>
       </div>
+    </div>
+
+    <!-- PAWN PROMOTION CHOICE -->
+    <div id="ch-promo-popup" style="display:none;position:fixed;inset:0;z-index:602;background:rgba(0,0,0,.9);align-items:center;justify-content:center;">
+      <div style="background:#050510;border:2px solid #00e5ff;padding:clamp(16px,4vw,26px);text-align:center;box-shadow:0 0 50px rgba(0,229,255,.35),0 0 110px rgba(0,229,255,.08);max-width:92vw;">
+        <div style="font-family:'Press Start 2P',monospace;font-size:clamp(9px,2vw,13px);color:#00e5ff;text-shadow:0 0 14px #00e5ff;margin-bottom:18px;letter-spacing:2px;">PROMOTE PAWN</div>
+        <div id="ch-promo-row" style="display:flex;gap:10px;justify-content:center;"></div>
+      </div>
+    </div>
+
+    <!-- A.C.EON AI ENTITY (desktop only, A.C.EON AI mode) -->
+    <div id="aceon-bot" aria-hidden="true">
+      <div class="bot-stage">
+        <span class="bot-particle p1"></span>
+        <span class="bot-particle p2"></span>
+        <span class="bot-particle p3"></span>
+        <span class="bot-particle p4"></span>
+        <div class="bot-core">
+          <div class="bot-ring"></div>
+          <div class="bot-antenna"><span class="bot-antenna-dot"></span></div>
+          <div class="bot-face">
+            <div class="bot-eyes"><span class="bot-eye"></span><span class="bot-eye"></span></div>
+            <div class="bot-mouth"><span></span><span></span><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="bot-name">A.C.EON</div>
+      <div class="bot-sub" id="aceon-bot-sub">AI</div>
+      <div class="bot-status" id="aceon-bot-status">READY.</div>
     </div>
   </div>
 </div>
@@ -3330,6 +3474,61 @@ function showGameSplash(onStart){
     return !!(el&&!el.classList.contains('hidden'));
   }
 
+  /* ── A.C.EON AI ENTITY (right of board, A.C.EON AI mode only, desktop only) ── */
+  var AceonBot=(function(){
+    var root=null,statusEl=null,subEl=null,shown=false,curMood='idle',revertT=null;
+    var ACCENT={professional:'#00e5ff',expert:'#ff8800',grandmaster:'#ff0000'};
+    var SAY={
+      idle:['READY.','BEGIN.','YOUR MOVE.'],
+      thinking:['CALCULATING','PROCESSING','HMMMM','ANALYSING'],
+      moved:['YOUR MOVE.','GO ON.','YOUR TURN.'],
+      attack:['MINE.','TAKEN.','THANK YOU.','DELICIOUS.'],
+      hurt:['...OW.','LUCKY.','NOTED.','HOW RUDE.'],
+      check:['CHECK.','TICK TOCK.','NO ESCAPE.'],
+      aiChecked:['TSK.','CUTE.','POINTLESS.'],
+      win:['I WIN.','INEVITABLE.','GG.'],
+      lose:['...IMPOSSIBLE.','HOW?!','REMATCH.']
+    };
+    function pick(a){return a[Math.random()*a.length|0];}
+    function grab(){
+      if(!root){
+        root=document.getElementById('aceon-bot');
+        statusEl=document.getElementById('aceon-bot-status');
+        subEl=document.getElementById('aceon-bot-sub');
+      }
+      return root;
+    }
+    function applyMood(m){
+      if(!grab())return;
+      curMood=m;
+      root.className=(shown?'on ':'')+'mood-'+m;
+      if(statusEl)statusEl.textContent=pick(SAY[m]||['...']);
+    }
+    return {
+      show:function(submode){
+        if(!grab())return;
+        shown=true;
+        root.style.setProperty('--bot-accent',ACCENT[submode]||'#ff2d78');
+        if(subEl)subEl.textContent=(submode||'AI').toUpperCase();
+        root.classList.add('on');
+      },
+      hide:function(){if(grab()){shown=false;root.classList.remove('on');}},
+      react:function(m){
+        if(!grab()||!shown)return;
+        if(revertT){clearTimeout(revertT);revertT=null;}
+        applyMood(m);
+        var transient={moved:1,attack:1,hurt:1,check:1,aiChecked:1};
+        if(transient[m]){
+          revertT=setTimeout(function(){
+            if(curMood!==m)return;
+            applyMood(window.CH&&window.CH.turn===window.CH.ai?'thinking':'idle');
+          },1700);
+        }
+      }
+    };
+  })();
+  window.AceonBot=AceonBot;
+
   var SF=(function(){
     var worker=null,ready=false,loading=false,busy=false,moveCb=null,depthCb=null,readyCbs=[],failCbs=[],timer=null,lastError='';
     function clearTimer(){if(timer){clearTimeout(timer);timer=null;}}
@@ -3413,6 +3612,7 @@ function showGameSplash(onStart){
   if(typeof oldClose==='function'&&!oldClose.__aceonWrapped){
     window.closeGame=function(){
       if(window.SF)window.SF.stop();
+      if(window.AceonBot)window.AceonBot.hide();
       return oldClose.apply(this,arguments);
     };
     window.closeGame.__aceonWrapped=true;
@@ -3426,7 +3626,7 @@ function showGameSplash(onStart){
   ch.UNI={wK:'\u2654',wQ:'\u2655',wR:'\u2656',wB:'\u2657',wN:'\u2658',wP:'\u2659',bK:'\u265a',bQ:'\u265b',bR:'\u265c',bB:'\u265d',bN:'\u265e',bP:'\u265f'};
 
   window.showAceonAiPopup=function(){var p=document.getElementById('aceon-ai-popup');if(p)p.style.display='flex';};
-  window.hideAceonAiPopup=function(){hidePopups();ch.diff='beginner';setButtons('beginner');};
+  window.hideAceonAiPopup=function(){hidePopups();ch.diff='beginner';setButtons('beginner');AceonBot.hide();};
   window.setAceonSubmode=function(mode){
     if(mode==='grandmaster'){
       var p=document.getElementById('aceon-ai-popup'),gp=document.getElementById('aceon-gm-popup');
@@ -3456,11 +3656,13 @@ function showGameSplash(onStart){
       ['wR','wN','wB','wQ','wK','wB','wN','wR']
     ];
     this.sel=null;this.castling={wK:true,wQ:true,bK:true,bQ:true};this.enPassant=null;
+    this.lastHuman=null;this.lastAi=null;this._promoPending=null;
     this.human=Math.random()<0.5?'w':'b';this.ai=this.human==='w'?'b':'w';
     this.turn='w';this.dead=false;setButtons(this.diff);
     var sideEl=document.getElementById('ch-side');
     if(sideEl)sideEl.textContent=this.human==='w'?'WHITE = YOU':'BLACK = YOU';
     if(typeof fitCells==='function')fitCells('ch-cell',8,{max:56,min:32,extra:6,margin:48});
+    if(this.diff==='aceon'){AceonBot.show(this.aceonSubmode);AceonBot.react('idle');}else AceonBot.hide();
     msg('YOU ARE '+(this.human==='w'?'WHITE':'BLACK')+'...');
     this.render();
     var self=this;
@@ -3642,19 +3844,65 @@ function showGameSplash(onStart){
 
   ch.click=function(r,c){
     if(this.dead||this.turn!==this.human)return;
+    if(this._promoPending)return;
     var p=this.board[r][c];
     if(this.sel){
       var leg=this.legal(this.sel.r,this.sel.c,this.board),mv=null;
       for(var i=0;i<leg.length;i++)if(leg[i].tr===r&&leg[i].tc===c){mv=leg[i];break;}
       if(mv){
-        this.updateState(mv);this.board=this.apply(this.board,mv);this.sel=null;this.checkEnd(this.human);
-        if(!this.dead){this.turn=this.ai;msg('AI THINKING...');var self=this;setTimeout(function(){self.aiMove();},250);}
-        this.render();return;
+        var piece=this.board[mv.r][mv.c];
+        var isPromo=piece&&piece[1]==='P'&&((piece[0]==='w'&&mv.tr===0)||(piece[0]==='b'&&mv.tr===7));
+        this.sel=null;
+        if(isPromo&&!mv.promo){this.showPromotion(mv);this.render();return;}
+        this.finishHumanMove(mv);return;
       }
       if(p&&p[0]===this.human){this.sel={r:r,c:c};this.render();return;}
       this.sel=null;this.render();return;
     }
     if(p&&p[0]===this.human&&this.legal(r,c,this.board).length>0){this.sel={r:r,c:c};this.render();}
+  };
+
+  ch.finishHumanMove=function(mv){
+    var captured=!!this.board[mv.tr][mv.tc]||!!mv.enPassant;
+    this.updateState(mv);
+    this.board=this.apply(this.board,mv);
+    this.lastHuman={r:mv.r,c:mv.c,tr:mv.tr,tc:mv.tc};
+    this.checkEnd(this.human);
+    if(this.dead){
+      if(this.inCheck(this.ai,this.board))AceonBot.react('lose');
+      this.render();return;
+    }
+    var givesCheck=this.inCheck(this.ai,this.board);
+    if(givesCheck)AceonBot.react('aiChecked');
+    else if(captured)AceonBot.react('hurt');
+    this.turn=this.ai;msg('AI THINKING...');
+    var self=this;setTimeout(function(){self.aiMove();},(captured||givesCheck)?650:250);
+    this.render();
+  };
+
+  ch.showPromotion=function(mv){
+    this._promoPending=mv;
+    var popup=document.getElementById('ch-promo-popup'),row=document.getElementById('ch-promo-row');
+    if(!popup||!row){this._promoPending=null;mv.promo='q';this.finishHumanMove(mv);return;}
+    var color=this.human,self=this,defs=[['q','Q'],['r','R'],['b','B'],['n','N']];
+    row.innerHTML='';
+    defs.forEach(function(d){
+      var btn=document.createElement('button');
+      btn.className='ch-promo-btn';
+      btn.innerHTML='<span class="ch-promo-pc '+(color==='w'?'ch-white':'ch-black')+'">'+(self.UNI[color+d[1]]||d[1])+'</span>';
+      btn.addEventListener('click',function(){self.choosePromotion(d[0]);});
+      row.appendChild(btn);
+    });
+    popup.style.display='flex';
+  };
+
+  ch.choosePromotion=function(promo){
+    var popup=document.getElementById('ch-promo-popup');
+    if(popup)popup.style.display='none';
+    var mv=this._promoPending;this._promoPending=null;
+    if(!mv)return;
+    mv.promo=promo;
+    this.finishHumanMove(mv);
   };
 
   ch.localAiMove=function(reason){
@@ -3672,8 +3920,15 @@ function showGameSplash(onStart){
       var top=scored[0].s,best=scored.filter(function(x){return aiMax?x.s>=top-20:x.s<=top+20;});
       mv=best[Math.random()*best.length|0].m;
     }
-    this.updateState(mv);this.board=this.apply(this.board,mv);this.checkEnd(this.ai);
-    if(!this.dead){this.turn=this.human;msg(this.inCheck(this.human,this.board)?'CHECK! YOUR TURN':(reason?'LOCAL AI: YOUR TURN':'YOUR TURN'));}
+    var captured=!!this.board[mv.tr][mv.tc]||!!mv.enPassant;
+    this.updateState(mv);this.board=this.apply(this.board,mv);
+    this.lastAi={r:mv.r,c:mv.c,tr:mv.tr,tc:mv.tc};
+    this.checkEnd(this.ai);
+    if(this.dead){if(this.inCheck(this.human,this.board))AceonBot.react('win');this.render();return;}
+    this.turn=this.human;
+    var chk=this.inCheck(this.human,this.board);
+    msg(chk?'CHECK! YOUR TURN':(reason?'LOCAL AI: YOUR TURN':'YOUR TURN'));
+    AceonBot.react(chk?'check':(captured?'attack':'moved'));
     this.render();
   };
 
@@ -3701,8 +3956,15 @@ function showGameSplash(onStart){
         if(self.diff==='aceon'){msg('ENGINE MOVE ERROR');self.turn=self.human;self.render();return;}
         self.localAiMove('ENGINE MOVE ERROR');return;
       }
-      self.updateState(mv);self.board=self.apply(self.board,mv);self.checkEnd(self.ai);
-      if(!self.dead){self.turn=self.human;msg(self.inCheck(self.human,self.board)?'CHECK! YOUR TURN':'YOUR TURN');}
+      var captured=!!self.board[mv.tr][mv.tc]||!!mv.enPassant;
+      self.updateState(mv);self.board=self.apply(self.board,mv);
+      self.lastAi={r:mv.r,c:mv.c,tr:mv.tr,tc:mv.tc};
+      self.checkEnd(self.ai);
+      if(self.dead){if(self.inCheck(self.human,self.board))AceonBot.react('win');self.render();return;}
+      self.turn=self.human;
+      var chk=self.inCheck(self.human,self.board);
+      msg(chk?'CHECK! YOUR TURN':'YOUR TURN');
+      AceonBot.react(chk?'check':(captured?'attack':'moved'));
       self.render();
     }
     function engineFailed(errorText){
@@ -3713,11 +3975,11 @@ function showGameSplash(onStart){
     }
     function startSearch(){
       if(!chessVisible()||self.dead)return;
-      configure();msg(label);
+      configure();msg(label);AceonBot.react('thinking');
       if(!SF.go(fen,depth,movetime,onBestMove,onDepth))engineFailed(SF.lastError()||'ENGINE NOT READY');
     }
     if(SF.isReady())startSearch();
-    else{msg('LOADING ENGINE...');SF.load('../js/stockfish.js',startSearch,engineFailed);}
+    else{msg('LOADING ENGINE...');AceonBot.react('thinking');SF.load('../js/stockfish.js',startSearch,engineFailed);}
   };
 
   ch.checkEnd=function(moved){
@@ -3737,6 +3999,8 @@ function showGameSplash(onStart){
         var r=flip?7-vr:vr,c=flip?7-vc:vc,cell=document.createElement('div');
         cell.className='ch-cell '+((r+c)%2===0?'ch-light':'ch-dark');
         if(self.sel&&self.sel.r===r&&self.sel.c===c)cell.classList.add('ch-sel');
+        if(self.lastHuman&&((self.lastHuman.r===r&&self.lastHuman.c===c)||(self.lastHuman.tr===r&&self.lastHuman.tc===c)))cell.classList.add('ch-last-h');
+        if(self.lastAi&&((self.lastAi.r===r&&self.lastAi.c===c)||(self.lastAi.tr===r&&self.lastAi.tc===c)))cell.classList.add('ch-last-a');
         for(var i=0;i<leg.length;i++)if(leg[i].tr===r&&leg[i].tc===c){cell.classList.add('ch-hint');break;}
         var p=self.board[r][c];
         if(p){var sp=document.createElement('span');sp.className='ch-piece '+(p[0]==='w'?'ch-white':'ch-black');sp.textContent=self.UNI[p]||p;cell.appendChild(sp);}

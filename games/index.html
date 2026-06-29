@@ -671,16 +671,19 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 /* REACTION TEST */
 #rt-box{
-  width:100%;max-width:760px;height:clamp(200px,40vh,380px);margin:0 auto;
-  display:flex;align-items:center;justify-content:center;
-  background:#444;border:2px solid var(--bdr);cursor:pointer;
-  transition:background .15s;user-select:none;
+  position:relative;width:100%;max-width:720px;height:clamp(240px,54dvh,460px);margin:0 auto;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(circle at 50% 40%,#3a3f48,#22252d);border:3px solid #243049;border-radius:18px;cursor:pointer;
+  transition:background .12s,box-shadow .2s;user-select:none;
+  box-shadow:inset 0 0 60px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.5);
 }
-#rt-box.wait{background:#a33333;}
-#rt-box.ready{background:#2a9d4f;}
-#rt-box.early{background:#c98a2a;}
-#rt-box.result{background:#2a5e8a;}
-#rt-text{font-size:18px;font-weight:bold;color:#fff;letter-spacing:2px;text-align:center;padding:0 20px;}
+#rt-box::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 32%,rgba(255,255,255,.10),transparent 60%);pointer-events:none;}
+#rt-box.wait{background:radial-gradient(circle at 50% 40%,#c0392b,#7a1f17);box-shadow:inset 0 0 70px rgba(0,0,0,.45),0 0 30px rgba(192,57,43,.35);}
+#rt-box.ready{background:radial-gradient(circle at 50% 40%,#2ec45f,#13863a);box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 0 50px rgba(46,196,95,.7);animation:rtPulse .5s ease-in-out infinite;}
+#rt-box.early{background:radial-gradient(circle at 50% 40%,#e0962a,#9c5f12);box-shadow:0 0 30px rgba(224,150,42,.4);}
+#rt-box.result{background:radial-gradient(circle at 50% 40%,#2f7fc4,#16467a);box-shadow:0 0 30px rgba(47,127,196,.4);}
+@keyframes rtPulse{0%,100%{box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 0 40px rgba(46,196,95,.6);}50%{box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 0 66px rgba(46,196,95,.95);}}
+#rt-text{position:relative;z-index:1;font-size:clamp(20px,4.5vw,34px);font-weight:bold;color:#fff;letter-spacing:2px;text-align:center;padding:0 20px;text-shadow:0 2px 6px rgba(0,0,0,.5);}
 #rt-summary{margin-top:12px;font-size:11px;letter-spacing:1px;color:var(--txt-d);text-align:center;}
 #rt-summary .rt-times{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;}
 #rt-summary .rt-chip{padding:4px 10px;background:var(--bg3);border:1px solid var(--bdr);font-size:11px;}
@@ -815,8 +818,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .ss-btn.ss-on:hover{filter:brightness(1.18);}
 
 /* Reaction Test */
-#rt-box{border-color:#003355;border-radius:0;}
-#rt-chip{background:#001020;border-color:#003355;border-radius:0;font-family:'Press Start 2P',monospace;font-size:7px;}
+#rt-summary .rt-chip{background:#0a1426;border:1px solid #243049;border-radius:6px;color:#9fefff;font-family:'Press Start 2P',monospace;font-size:8px;padding:6px 9px;}
 
 /* Blackjack table */
 #bj-table{background:#001a0a;border-color:#003322;border-radius:0;}
@@ -1398,6 +1400,75 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 #tet-bot.tmood-over .tbot-eye{height:5px;border-radius:2px;}
 #tet-bot.tmood-over .tbot-mouth{border-radius:10px 10px 0 0;height:8px;}
 #tet-bot.tmood-over .tbot-status{color:#ff9a9a;}
+
+/* ═══════════ REACTION: THE STARTER ENTITY (right, desktop) ═══════════ */
+#react-bot{
+  position:fixed;right:10px;top:50%;
+  transform:translateY(-50%) scale(var(--rb-scale,1.5));transform-origin:100% 50%;
+  z-index:500;width:190px;pointer-events:none;user-select:none;
+  display:none;flex-direction:column;align-items:center;gap:10px;
+  --rb-accent:#ffc23a;--rb-lamp:#c0392b;--rb-scale:1.5;font-family:'Press Start 2P',monospace;
+}
+#react-bot.on{display:flex;}
+@media(max-width:1600px){#react-bot{--rb-scale:1.4;}}
+@media(max-width:1440px){#react-bot{--rb-scale:1.3;}}
+@media(max-width:1280px){#react-bot{--rb-scale:1.15;}}
+@media(max-width:1120px){#react-bot{--rb-scale:1.0;}}
+@media(max-width:1040px){#react-bot{display:none!important;}}
+
+.rbot-stage{position:relative;width:190px;height:188px;display:flex;align-items:flex-end;justify-content:center;}
+.rbot-core{position:relative;width:150px;height:176px;display:flex;align-items:flex-end;justify-content:center;animation:rbFloat 3.4s ease-in-out infinite;}
+@keyframes rbFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.rbot-core::before{content:'';position:absolute;bottom:6px;width:118%;height:82%;border-radius:50%;background:radial-gradient(circle,var(--rb-lamp) 0%,transparent 60%);opacity:.18;filter:blur(7px);z-index:0;transition:background .15s;}
+
+.rbot-head{position:relative;width:120px;height:130px;z-index:1;
+  background:linear-gradient(160deg,#11233a,#070d18);border:3px solid var(--rb-accent);border-radius:20px;
+  box-shadow:0 0 16px rgba(255,194,58,.4),inset 0 -8px 14px rgba(0,0,0,.6),inset 0 6px 12px rgba(255,255,255,.05);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:12px;gap:10px;}
+.rbot-lamp{width:34px;height:34px;border-radius:50%;background:var(--rb-lamp);box-shadow:0 0 18px var(--rb-lamp),inset 0 -4px 8px rgba(0,0,0,.4);transition:background .12s,box-shadow .12s;}
+.rbot-eyes{display:flex;gap:18px;}
+.rbot-eye{width:15px;height:15px;border-radius:50%;background:var(--rb-accent);box-shadow:0 0 8px var(--rb-accent);animation:rbBlink 4.6s infinite;}
+@keyframes rbBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.12);}}
+.rbot-mouth{width:20px;height:6px;border-bottom:3px solid var(--rb-accent);border-radius:0 0 10px 10px;transition:all .15s;}
+
+.rbot-name{color:var(--rb-accent);font-size:9px;letter-spacing:2px;text-shadow:0 0 10px var(--rb-accent);}
+.rbot-status{color:#ffe6b0;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(255,194,58,.4);}
+
+.rbot-particle{position:absolute;width:4px;height:4px;border-radius:1px;background:var(--rb-accent);box-shadow:0 0 8px var(--rb-accent);opacity:.5;}
+.rbot-particle.rp1{top:20%;left:14%;animation:rbDrift 5.2s ease-in-out infinite;}
+.rbot-particle.rp2{top:34%;right:12%;animation:rbDrift 6.2s ease-in-out infinite .6s;}
+.rbot-particle.rp3{bottom:26%;left:18%;animation:rbDrift 5.6s ease-in-out infinite 1s;}
+@keyframes rbDrift{0%,100%{transform:translateY(0);opacity:.25;}50%{transform:translateY(-9px);opacity:.7;}}
+
+/* ── moods (lamp colour reflects the signal) ── */
+#react-bot.rmood-idle{--rb-lamp:#6b7280;}
+#react-bot.rmood-waiting{--rb-lamp:#c0392b;}
+#react-bot.rmood-waiting .rbot-eye{animation:rbScan 1.2s ease-in-out infinite;}
+@keyframes rbScan{0%,100%{transform:translateX(-2px);}50%{transform:translateX(2px);}}
+#react-bot.rmood-fake{--rb-lamp:#8a3ad9;}
+#react-bot.rmood-fake .rbot-mouth{width:14px;transform:rotate(-12deg);}
+#react-bot.rmood-fake .rbot-core{animation:rbTilt .3s ease;}
+@keyframes rbTilt{0%,100%{transform:rotate(0);}50%{transform:rotate(-4deg);}}
+#react-bot.rmood-ready{--rb-lamp:#2ee85f;}
+#react-bot.rmood-ready .rbot-lamp{box-shadow:0 0 30px #2ee85f,0 0 60px #2ee85f;}
+#react-bot.rmood-ready .rbot-mouth{width:30px;height:13px;border-radius:0 0 15px 15px;}
+#react-bot.rmood-ready .rbot-core{animation:rbBounce .4s ease;}
+@keyframes rbBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+#react-bot.rmood-early{--rb-lamp:#ff4d5e;}
+#react-bot.rmood-early .rbot-core{animation:rbShake .45s;}
+@keyframes rbShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
+#react-bot.rmood-early .rbot-mouth{width:24px;height:11px;border-radius:0 0 12px 12px;}
+#react-bot.rmood-fast{--rb-lamp:#2ee85f;}
+#react-bot.rmood-fast .rbot-lamp{box-shadow:0 0 34px #2ee85f,0 0 64px #2ee85f;}
+#react-bot.rmood-fast .rbot-eye{border-radius:2px;height:9px;}
+#react-bot.rmood-fast .rbot-mouth{width:30px;height:13px;border-radius:0 0 15px 15px;}
+#react-bot.rmood-fast .rbot-core{animation:rbBounce .5s ease;}
+#react-bot.rmood-mid{--rb-lamp:#ffc23a;}
+#react-bot.rmood-mid .rbot-mouth{width:24px;height:9px;border-radius:0 0 12px 12px;}
+#react-bot.rmood-slow{--rb-lamp:#2f7fc4;}
+#react-bot.rmood-slow .rbot-mouth{border-radius:10px 10px 0 0;height:8px;}
+#react-bot.rmood-finish{--rb-lamp:#ffc23a;}
+#react-bot.rmood-finish .rbot-mouth{width:28px;height:12px;border-radius:0 0 14px 14px;}
 
 </style>
 </head>
@@ -2007,6 +2078,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
       <div id="rt-text">CLICK TO START</div>
     </div>
     <div id="rt-summary"></div>
+
+    <!-- REACTION AI ENTITY (desktop only) -->
+    <div id="react-bot" aria-hidden="true">
+      <div class="rbot-stage">
+        <span class="rbot-particle rp1"></span>
+        <span class="rbot-particle rp2"></span>
+        <span class="rbot-particle rp3"></span>
+        <div class="rbot-core">
+          <div class="rbot-head">
+            <div class="rbot-lamp"></div>
+            <div class="rbot-eyes"><span class="rbot-eye"></span><span class="rbot-eye"></span></div>
+            <div class="rbot-mouth"></div>
+          </div>
+        </div>
+      </div>
+      <div class="rbot-name">THE STARTER</div>
+      <div class="rbot-status" id="react-bot-status">READY?</div>
+    </div>
   </div>
 </div>
 
@@ -4187,22 +4276,43 @@ function renderMindPalette(){
 (function(){var el=document.getElementById('hi-mind');if(el)el.textContent=localStorage.getItem('aceon_mm_wins')||'0';})();
 
 /* ════════════════ REACTION TEST ════════════════ */
-var rtState='idle',rtTimer=null,rtReadyAt,rtRound=0,rtTimes=[],rtMax=5;
+var rtState='idle',rtTimer=null,rtReadyAt,rtRound=0,rtTimes=[],rtMax=5,rtFakeTimer=null,rtFakeEnd=0;
 
 window.initReact=function(){
   rtState='idle';rtRound=0;rtTimes=[];
-  clearTimeout(rtTimer);
+  clearTimeout(rtTimer);rtClearFake();
   document.getElementById('rt-round').textContent='0';
   document.getElementById('rt-summary').innerHTML='';
   rtShowBest();
   rtSetBox('','CLICK TO START');
+  if(window.ReactBot){ReactBot.show();ReactBot.react('idle');}
+  if(window.positionReactBot){positionReactBot();setTimeout(positionReactBot,60);}
 };
 
 function rtSetBox(cls,text){
   var box=document.getElementById('rt-box');
   if(!box)return;
-  box.className=cls;
+  box.className=cls;box.style.background='';
   document.getElementById('rt-text').textContent=text;
+}
+
+/* ── distractor flashes during the wait (only GREEN means go) ── */
+function rtClearFake(){if(rtFakeTimer){clearTimeout(rtFakeTimer);rtFakeTimer=null;}}
+function rtScheduleFake(delay){
+  rtClearFake();
+  rtFakeEnd=performance.now()+delay-320;
+  var PAL=[['#d9a521','NOPE'],['#2a6ed9','NOT YET'],['#8a3ad9','STEADY'],['#d97a2a','HOLD'],['#d92a8a','ALMOST'],['#c0392b','WAIT...']];
+  function flash(){
+    if(rtState!=='waiting'||performance.now()>=rtFakeEnd){return;}
+    var f=PAL[Math.random()*PAL.length|0],box=document.getElementById('rt-box');
+    if(box){box.style.background=f[0];document.getElementById('rt-text').textContent=f[1];}
+    if(window.ReactBot)ReactBot.react('fake');
+    rtFakeTimer=setTimeout(function(){
+      if(rtState==='waiting'){var b=document.getElementById('rt-box');if(b){b.style.background='';b.className='wait';}document.getElementById('rt-text').textContent='WAIT FOR GREEN...';}
+      rtFakeTimer=setTimeout(flash,320+Math.random()*620);
+    },150+Math.random()*120);
+  }
+  rtFakeTimer=setTimeout(flash,480+Math.random()*700);
 }
 
 window.rtClickBox=function(){
@@ -4213,9 +4323,10 @@ window.rtClickBox=function(){
     document.getElementById('rt-summary').innerHTML='';
     rtStartRound();
   }else if(rtState==='waiting'){
-    clearTimeout(rtTimer);
+    clearTimeout(rtTimer);rtClearFake();
     rtState='early';
     rtSetBox('early','TOO SOON! CLICK TO TRY AGAIN');
+    if(window.ReactBot)ReactBot.react('early');
   }else if(rtState==='early'){
     rtStartRound();
   }else if(rtState==='ready'){
@@ -4225,22 +4336,24 @@ window.rtClickBox=function(){
     document.getElementById('rt-round').textContent=rtRound;
     rtState='result';
     rtSetBox('result',elapsed+' ms');
-    if(rtRound>=rtMax){
-      rtTimer=setTimeout(rtFinish,900);
-    }else{
-      rtTimer=setTimeout(rtStartRound,1100);
-    }
+    if(window.ReactBot)ReactBot.react(elapsed<250?'fast':elapsed<450?'mid':'slow',elapsed);
+    if(rtRound>=rtMax){rtTimer=setTimeout(rtFinish,900);}
+    else{rtTimer=setTimeout(rtStartRound,1100);}
   }
 };
 
 function rtStartRound(){
   rtState='waiting';
   rtSetBox('wait','WAIT FOR GREEN...');
+  if(window.ReactBot)ReactBot.react('waiting');
   var delay=1200+Math.random()*3300;
+  rtScheduleFake(delay);
   rtTimer=setTimeout(function(){
+    rtClearFake();
     rtState='ready';
     rtReadyAt=performance.now();
     rtSetBox('ready','CLICK NOW!');
+    if(window.ReactBot)ReactBot.react('ready');
   },delay);
 }
 
@@ -4252,6 +4365,7 @@ function rtFinish(){
   var allBest=rtGetBest();
   var newBest=(allBest===null||best<allBest);
   if(newBest){rtSetBest(best);rtShowBest();}
+  if(window.ReactBot)ReactBot.react('finish');
   var html='AVERAGE: '+avg+' ms &nbsp;|&nbsp; BEST ROUND: '+best+' ms'+(newBest?' \u2014 NEW RECORD!':'');
   html+='<div class="rt-times">'+rtTimes.map(function(t){return '<span class="rt-chip">'+t+' ms</span>';}).join('')+'</div>';
   document.getElementById('rt-summary').innerHTML=html;
@@ -4260,6 +4374,56 @@ function rtFinish(){
 function rtGetBest(){var v=localStorage.getItem('aceon_hi_react');return v?parseInt(v):null;}
 function rtSetBest(ms){var b=rtGetBest();if(b===null||ms<b)localStorage.setItem('aceon_hi_react',ms);}
 function rtShowBest(){var b=rtGetBest();var el=document.getElementById('hi-react');if(el)el.textContent=b===null?'\u2014':b;}
+
+/* ── THE STARTER entity ── */
+var ReactBot=(function(){
+  var root=null,st=null,shown=false,cur2='idle',rt=null;
+  var SAY={
+    idle:['READY?','LET\'S GO','FOCUS UP','EYES OPEN'],
+    waiting:['STEADY...','HOLD IT...','NOT YET...','WAIT FOR IT'],
+    fake:['GOTCHA?','NOT THAT ONE','TRICKED YA?','HA, NOPE'],
+    ready:['GO GO GO!','NOW! NOW!','SMASH IT!'],
+    early:['TOO SOON!','HAH! JUMPY','PATIENCE!','GOT BAITED'],
+    fast:['LIGHTNING!','INHUMAN!','SO FAST!','WOW!'],
+    mid:['NOT BAD!','SOLID.','DECENT!'],
+    slow:['...SLOW.','WAKE UP!','C\'MON!'],
+    finish:['GG!','NICE RUN','THAT\'S FIVE!']
+  };
+  function pick(a){return a[Math.random()*a.length|0];}
+  function grab(){if(!root){root=document.getElementById('react-bot');st=document.getElementById('react-bot-status');}return root;}
+  function mood(m){if(!grab())return;cur2=m;root.className=(shown?'on ':'')+'rmood-'+m;if(st)st.textContent=pick(SAY[m]||['...']);}
+  return {
+    show:function(){if(!grab())return;shown=true;root.classList.add('on');mood('idle');},
+    hide:function(){if(grab()){shown=false;root.classList.remove('on');}},
+    react:function(m,ms){
+      if(!grab()||!shown)return;
+      if(rt){clearTimeout(rt);rt=null;}
+      mood(m);
+      if(typeof ms==='number'&&st)st.textContent=ms+' ms';
+      var transient={fake:1,early:1,fast:1,mid:1,slow:1,ready:1};
+      if(transient[m])rt=setTimeout(function(){if(cur2===m&&rtState==='waiting')mood('waiting');else if(cur2===m&&rtState!=='waiting')mood('idle');},1500);
+    }
+  };
+})();
+window.ReactBot=ReactBot;
+function positionReactBot(){
+  var box=document.getElementById('rt-box'),bot=document.getElementById('react-bot');
+  if(!box||!bot)return;
+  var win=document.getElementById('game-react');
+  if(win&&win.classList.contains('hidden'))return;
+  if(!bot.classList.contains('on'))return;
+  var br=box.getBoundingClientRect();if(!br.width)return;
+  var vw=window.innerWidth||document.documentElement.clientWidth,GAP=18,EDGE=10;
+  bot.style.display='';
+  var bw=bot.getBoundingClientRect().width||0,rg=vw-br.right;
+  if(bw&&rg>=bw+GAP+EDGE){
+    var cx=br.right+rg/2,rightEdge=cx+bw/2,ro=vw-rightEdge;
+    ro=Math.min(Math.max(EDGE,ro),vw-br.right-GAP-bw);
+    bot.style.right=ro+'px';bot.style.display='';
+  }else{bot.style.display='none';}
+}
+window.positionReactBot=positionReactBot;
+if(!window.__rbResize){window.__rbResize=true;window.addEventListener('resize',function(){if(typeof cur!=='undefined'&&cur==='react')positionReactBot();});}
 
 /* ════════════════ BLACKJACK ════════════════ */
 var BJ_SUITS=['\u2660','\u2665','\u2666','\u2663'];

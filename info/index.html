@@ -466,10 +466,23 @@ footer .dot{color:var(--cy-d);}
 </div>
 
 <script>
+/* ── PORTAL MODE (страница открыта внутри воронки главной) ──── */
+var PORTAL=false;
+try{ PORTAL=(window.self!==window.top); }catch(e){ PORTAL=true; }
+
 /* ── SPLASH ─────────────────────────────────────────────────── */
 (function(){
   var splash = document.getElementById('splash');
   var wrap   = document.getElementById('main-wrap');
+
+  if(PORTAL){
+    /* пользователь уже пережил варп — второй splash не нужен */
+    splash.remove();
+    wrap.classList.add('show');
+    try{ window.parent.postMessage({aceon:'ready'},location.origin); }catch(e){}
+    return;
+  }
+
   var bar    = document.getElementById('sp-bar');
   var skip   = document.getElementById('sp-skip');
   var DELAY  = 4000;
@@ -497,6 +510,20 @@ footer .dot{color:var(--cy-d);}
 
   var timer = setTimeout(dismiss, DELAY);
   splash.addEventListener('click', function(){ clearTimeout(timer); dismiss(); });
+})();
+
+/* ── PORTAL: возврат без перезагрузки ────────────────────────── */
+(function(){
+  if(!PORTAL)return;
+  function requestClose(){
+    try{ window.parent.postMessage({aceon:'close'},location.origin); }catch(e){}
+  }
+  document.querySelectorAll('.back-link').forEach(function(a){
+    a.addEventListener('click',function(e){ e.preventDefault(); requestClose(); });
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape')requestClose();
+  });
 })();
 
 /* ── CODE GRID ───────────────────────────────────────────────── */

@@ -43,6 +43,17 @@
     }
     #blackout.on { opacity:1; }
 
+    /* ═══ SEAMLESS PORTAL ═══ */
+    #portal-host { position:fixed; inset:0; z-index:208; display:none; }
+    #portal-host.open { display:block; }
+    #portal-host iframe {
+      width:100%; height:100%; border:0; display:block; background:#000;
+      opacity:0; transform:scale(1.05);
+      transition:opacity .6s ease, transform .85s cubic-bezier(.2,.7,.3,1);
+    }
+    #portal-host.reveal iframe { opacity:1; transform:scale(1); }
+    #portal-host.closing iframe { opacity:0; transform:scale(1.12); transition:opacity .55s ease, transform .7s ease; }
+
     /* ═══ GLITCH FX ═══ */
     #tears { position:fixed; inset:0; z-index:40; pointer-events:none; overflow:hidden; }
     .tear {
@@ -805,6 +816,7 @@
   var last=performance.now();
   var emaDt=16, qCooldown=0, liteLast=0;
   function frame(now){
+    if(portalOpen){ setTimeout(function(){ requestAnimationFrame(frame); },320); return; }
     if(LITE&&now-liteLast<30){ requestAnimationFrame(frame); return; }
     liteLast=now;
     var dt=Math.min((now-last)/1000,.05); last=now; tGlobal+=dt;
@@ -860,7 +872,7 @@
   var blackout=document.getElementById('blackout');
   function wT(fn,ms){ warpTimers.push(setTimeout(fn,ms)); }
   function goVortex(href,label){
-    if(warping||reduceMotion)return; warping=true;
+    if(warping||portalOpen||reduceMotion)return; warping=true;
     VX.warp=true; VX.target=9*VX.base;
     rumble(2.25);
     spiralLetters();
@@ -869,15 +881,70 @@
     document.getElementById('hud-l').classList.add('fadeout');
     document.getElementById('sb').classList.add('fadeout');
     irisActive=true; irisT=0;
+    /* страница грузится параллельно анимации в скрытом слое */
+    spawnPortalFrame(href);
     wT(function(){ warpLine.textContent=label||'ENTERING SIGNAL'; warpLine.classList.add('on'); },800);
     wT(tearBurst,400); wT(tearBurst,1100); wT(tearBurst,1650);
     wT(function(){flash(.06);},1750);
     wT(function(){flash(.10);},2050);
     wT(function(){ blackout.classList.add('on'); },1850);
-    wT(function(){ window.location.href=href; },2300);
+    wT(function(){ tryOpenPortal(href,label,0); },2300);
   }
-  /* portal API — сюда позже подключим бесшовную подгрузку страниц */
-  window.ACEON={ warpTo:goVortex, visits:visits };
+
+  /* ═══ SEAMLESS PORTAL ═══ */
+  var portalHost=document.getElementById('portal-host');
+  var portalOpen=false, portalFrame=null, portalReadyF=false;
+  function spawnPortalFrame(href){
+    portalReadyF=false;
+    portalHost.innerHTML='';
+    portalFrame=document.createElement('iframe');
+    portalFrame.addEventListener('load',function(){ portalReadyF=true; });
+    portalFrame.src=href;
+    portalHost.appendChild(portalFrame);
+    portalHost.classList.add('open');            /* под blackout, невидим */
+  }
+  function tryOpenPortal(href,label,waited){
+    if(portalReadyF){ openPortal(href); return; }
+    if(waited>=4500){ window.location.href=href; return; }   /* фолбэк: обычный переход */
+    warpTimers.push(setTimeout(function(){ tryOpenPortal(href,label,waited+250); },250));
+  }
+  function openPortal(href){
+    portalOpen=true; warping=false;
+    VX.warp=false; VX.target=VX.base;
+    try{ history.pushState({aceonPortal:href},'',href); }catch(e){}
+    warpLine.classList.remove('on');
+    cur.style.display='none';
+    requestAnimationFrame(function(){
+      portalHost.classList.add('reveal');
+      blackout.classList.remove('on');
+    });
+  }
+  function closePortal(){
+    if(!portalOpen)return;
+    portalOpen=false;
+    cur.style.display='';
+    hardReset();                                  /* мгновенно вернуть сцену */
+    VX.rev=true; VX.target=3*VX.base;             /* воронка «выдыхает» гостя обратно */
+    setTimeout(function(){ VX.rev=false; VX.target=VX.base; },1200);
+    portalHost.classList.remove('reveal');
+    portalHost.classList.add('closing');
+    setTimeout(function(){
+      portalHost.classList.remove('open','closing');
+      portalHost.innerHTML=''; portalFrame=null;
+    },720);
+  }
+  window.addEventListener('popstate',function(){ if(portalOpen)closePortal(); });
+  window.addEventListener('message',function(e){
+    if(e.origin!==location.origin)return;
+    var d=e.data||{};
+    if(d.aceon==='ready')portalReadyF=true;
+    if(d.aceon==='close'&&portalOpen)history.back();
+  });
+  /* если главная случайно оказалась внутри чужого iframe (клик "назад" внутри Core) — просим родителя закрыть портал */
+  if(window.self!==window.top){
+    try{ window.parent.postMessage({aceon:'close'},location.origin); }catch(e){}
+  }
+  window.ACEON={ warpTo:goVortex, closePortal:closePortal, visits:visits };
 
   /* ═══ LETTER SPIRAL ═══ */
   var letterClones=[];
@@ -960,13 +1027,19 @@
     document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});
   }
   window.addEventListener('pageshow',function(e){
-    if(e.persisted||warping)hardReset();
+    if(e.persisted||warping||portalOpen){
+      portalOpen=false;
+      portalHost.classList.remove('open','reveal','closing');
+      portalHost.innerHTML='';
+      cur.style.display='';
+      hardReset();
+    }
   });
 
   /* ═══ GLITCH FX ═══ */
   var tears=document.getElementById('tears');
   function tearBurst(){
-    if(reduceMotion)return;
+    if(reduceMotion||portalOpen)return;
     var n=2+(Math.random()*3|0);
     for(var i=0;i<n;i++){
       var el=document.createElement('div');
@@ -983,7 +1056,7 @@
 
   var sigb=document.getElementById('sigbroken');
   function signalBroken(){
-    if(reduceMotion||warping)return;
+    if(reduceMotion||warping||portalOpen)return;
     sigb.style.left=(12+Math.random()*56)+'%';
     sigb.style.top=(14+Math.random()*62)+'%';
     sigb.classList.remove('on'); void sigb.offsetWidth;
@@ -999,14 +1072,14 @@
     document.body.appendChild(el);
     setTimeout(function(){el.remove();},60);
   }
-  setInterval(function(){ if(Math.random()<.28&&!warping&&!LITE)flash(0.012+Math.random()*.018); },7500);
+  setInterval(function(){ if(Math.random()<.28&&!warping&&!portalOpen&&!LITE)flash(0.012+Math.random()*.018); },7500);
 
   /* ═══ GHOST PHRASES ═══ */
   var lagPool=['...are you there...','wrong channel','can you hear this','still here','not alone','signal broken','please respond','...hello...','it pulls everything','do not resist','closer now'];
   if(visits>2)lagPool=lagPool.concat(['you came back','it remembers you','visit '+String(visits).padStart(2,'0'),'you always return']);
   var lagC=0;
   function spawnLag(){
-    if(lagC>=2||warping)return; lagC++;
+    if(lagC>=2||warping||portalOpen)return; lagC++;
     var phrase=lagPool[Math.random()*lagPool.length|0];
     var el=document.createElement('div');
     var vw=window.innerWidth,vh=window.innerHeight,x,y,tries=0;
@@ -1039,10 +1112,10 @@
       if(++f>=n){clearInterval(iv);el.textContent=orig;}
     },55);
   }
-  setInterval(function(){if(!warping)glitch(ttl,TORIG,16);},9000+Math.random()*4000|0);
-  setInterval(function(){if(!warping)glitch(subel,SORIG,8);},13000+Math.random()*6000|0);
+  setInterval(function(){if(!warping&&!portalOpen)glitch(ttl,TORIG,16);},9000+Math.random()*4000|0);
+  setInterval(function(){if(!warping&&!portalOpen)glitch(subel,SORIG,8);},13000+Math.random()*6000|0);
   setInterval(function(){
-    if(reduceMotion||warping)return;
+    if(reduceMotion||warping||portalOpen)return;
     if(Math.random()<.5){
       var dx=(Math.random()*2-1).toFixed(1), dy=(Math.random()*1.4-.7).toFixed(1);
       ttl.style.transform='translate('+dx+'px,'+dy+'px)';
@@ -1072,7 +1145,7 @@
     document.addEventListener(ev,bumpActivity,{passive:true});
   });
   setInterval(function(){
-    if(warping||reduceMotion)return;
+    if(warping||portalOpen||reduceMotion)return;
     var idle=(Date.now()-lastAct)/1000;
     if(idle>40){
       var k=Math.min((idle-40)/25,1);
@@ -1193,7 +1266,7 @@
   }
   var iwIdx=0;
   setInterval(function(){
-    if(warping)return;
+    if(warping||portalOpen)return;
     iwIdx=(iwIdx+1)%infoWords.length;
     morphTo(function(s){btnInfo.textContent=s;},function(){return btnInfo.textContent;},infoWords[iwIdx],8+Math.random()*6|0,false);
     if(Math.random()<.45){btnInfo.classList.add('shake');setTimeout(function(){btnInfo.classList.remove('shake');},380);}
@@ -1202,7 +1275,7 @@
 
   var cwIdx=0;
   setInterval(function(){
-    if(warping)return;
+    if(warping||portalOpen)return;
     cwIdx=(cwIdx+1)%coreWords.length;
     morphTo(function(s){coreLabelNode.textContent=s+' ';},function(){return coreLabelNode.textContent.trim();},coreWords[cwIdx],6+Math.random()*5|0,true);
     if(Math.random()<.3){btnCore.classList.add('shake');setTimeout(function(){btnCore.classList.remove('shake');},380);}

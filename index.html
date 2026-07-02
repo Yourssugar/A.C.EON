@@ -232,7 +232,12 @@
     #cur { position:fixed; z-index:1000; width:34px; height:34px; margin-left:-17px; margin-top:-17px; pointer-events:none; top:-50px; left:-50px; }
     #currot { animation:crspin 9s linear infinite; transform-origin:50% 50%; transform-box:fill-box; }
     @keyframes crspin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-    @media (pointer:coarse){ #cur{display:none;} html,body{cursor:auto;} .pwip,.pwbt,.rbtn{cursor:auto;} }
+    @media (pointer:coarse){
+      #cur{display:none;} html,body{cursor:auto;} .pwip,.pwbt,.rbtn{cursor:auto;}
+      #scanfx{display:none;}
+      #stage{animation:none;}
+      #stage.suck{filter:none;}
+    }
 
     @media(max-width:560px){
       #routes { flex-direction:column; align-items:center; gap:16px; }
@@ -320,6 +325,7 @@
   var gch='!<>_[]{}=+#\u2593\u2592\u2591\u2573~';
   var reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var isCoarse=window.matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
+  var LITE=isCoarse;   /* мобильный профиль: без WebGL, низкое внутреннее разрешение, 30fps */
   var nightMode=(function(){var h=new Date().getHours();return h>=0&&h<5;})();
 
   /* ═══ ПАМЯТЬ УЗЛА ═══ */
@@ -353,14 +359,14 @@
   VX.target=VX.base; VX.g=VX.base;
 
   var W=0,H=0;                 /* css px */
-  var S=isCoarse?0.62:0.85;    /* внутренний масштаб рендера */
+  var S=LITE?Math.min(.5,420/Math.max(window.innerWidth,320)):0.85;   /* внутренний масштаб рендера */
   var SW=0,SH=0;               /* internal px */
   var CXi=0,CYi=0,COREi=0;     /* центр/ядро в internal px */
   var SQUASH=.80,TILT=-0.10;
   var cosT=Math.cos(TILT),sinT=Math.sin(TILT);
 
-  var MAXN=isCoarse?900:4200;
-  var N=isCoarse?Math.min(340,MAXN):Math.min(2800,MAXN);
+  var MAXN=LITE?420:4200;
+  var N=LITE?170:Math.min(2800,MAXN);
 
   /* ═══════════════════════════════════════════
      WORKER: физика частиц (fallback — инлайн-шима)
@@ -492,11 +498,12 @@
           'vec2 uv=vUV;vec2 cc=uv-0.5;'+
           'uv=0.5+cc*(1.0+dot(cc,cc)*(0.05+uWarp*0.06));'+
           'float k=uLens*(1.0+uWarp*2.6+uBass*0.7);'+
-          'vec3 col;'+
-          'col.r=texture2D(uTex,lens(uv,k*1.07)).r;'+
-          'col.g=texture2D(uTex,lens(uv,k)).g;'+
-          'col.b=texture2D(uTex,lens(uv,k*0.93)).b;'+
           'vec2 buv=lens(uv,k);'+
+          'vec2 dv=buv-uv;'+
+          'vec3 col;'+
+          'col.r=texture2D(uTex,uv+dv*1.10).r;'+
+          'col.g=texture2D(uTex,buv).g;'+
+          'col.b=texture2D(uTex,uv+dv*0.90).b;'+
           'vec2 px=(2.6+uWarp*2.0)/uRes;'+
           'vec3 bl=texture2D(uTex,buv+vec2(px.x,0.)).rgb;'+
           'bl+=texture2D(uTex,buv-vec2(px.x,0.)).rgb;'+
@@ -545,7 +552,11 @@
       srcC.style.display='block';
     }
   }
-  initGL();
+  if(LITE){
+    glOK=false;
+    glC.style.display='none';
+    srcC.style.display='block';
+  } else initGL();
 
   /* ═══ GEOMETRY ═══ */
   var coreFromWorker=20;
@@ -558,6 +569,9 @@
     if(glOK){
       glC.width=(W*GLDPR)|0; glC.height=(H*GLDPR)|0;
       gl.viewport(0,0,glC.width,glC.height);
+      gl.bindTexture(gl.TEXTURE_2D,tex);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,SW,SH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+      texW=SW; texH=SH;
     }
     worker.postMessage({t:'resize',W:SW,H:SH});
   }
@@ -710,13 +724,13 @@
       sctx.fillStyle=partColor(heat,z,accI,warpNow,redNow);
       if(kind===0){
         var s=buf[o+2]*(1+heat*.8);
-        sctx.fillRect(x,y,s,s);
+        sctx.fillRect(x|0,y|0,s,s);
       } else {
         var fs=(buf[o+2]*(1+heat*.4))|0;
         var f=fs+'px "JetBrains Mono",monospace';
         if(f!==lastFont){sctx.font=f;lastFont=f;}
         if(chArr[i]===undefined||Math.random()<.004)chArr[i]=randChar();
-        if(kind===2&&heat<.55){
+        if(kind===2&&heat<.55&&!LITE){
           if(wordArr[i]===undefined)wordArr[i]=phrases[Math.random()*phrases.length|0];
           sctx.save();
           sctx.translate(x,y);
@@ -750,11 +764,17 @@
   }
 
   /* ═══ POST ═══ */
+  var texW=0,texH=0;
   function renderGL(){
     if(!glOK)return;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D,tex);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srcC);
+    if(texW===srcC.width&&texH===srcC.height){
+      gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,gl.RGBA,gl.UNSIGNED_BYTE,srcC);
+    }else{
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srcC);
+      texW=srcC.width; texH=srcC.height;
+    }
     gl.uniform2f(uni.uRes,glC.width,glC.height);
     gl.uniform2f(uni.uCenter,.5,1-.46);
     gl.uniform1f(uni.uAspect,W/H);
@@ -783,15 +803,23 @@
 
   /* ═══ MAIN LOOP + адаптивное качество ═══ */
   var last=performance.now();
-  var emaDt=16, qCooldown=0;
+  var emaDt=16, qCooldown=0, liteLast=0;
   function frame(now){
+    if(LITE&&now-liteLast<30){ requestAnimationFrame(frame); return; }
+    liteLast=now;
     var dt=Math.min((now-last)/1000,.05); last=now; tGlobal+=dt;
     emaDt=emaDt*.95+(dt*1000)*.05;
 
     /* адаптивное качество */
     qCooldown-=dt;
     if(qCooldown<=0){
-      if(emaDt>26&&N>160){
+      if(emaDt>34&&glOK&&N<=900){
+        /* слабый GPU: сбрасываем пост-обработку, переходим на прямой 2D */
+        glOK=false;
+        glC.style.display='none';
+        srcC.style.display='block';
+        qCooldown=3;
+      } else if(emaDt>26&&N>160){
         N=Math.max(160,(N*.82)|0);
         worker.postMessage({t:'setn',n:N});
         qCooldown=2.5;
@@ -950,7 +978,7 @@
       (function(el){ setTimeout(function(){el.remove();},120+Math.random()*160|0); })(el);
     }
   }
-  function schTear(){ setTimeout(function(){tearBurst();schTear();},3200+Math.random()*5600); }
+  function schTear(){ setTimeout(function(){tearBurst();schTear();},(LITE?6800:3200)+Math.random()*(LITE?8000:5600)); }
   schTear();
 
   var sigb=document.getElementById('sigbroken');
@@ -971,7 +999,7 @@
     document.body.appendChild(el);
     setTimeout(function(){el.remove();},60);
   }
-  setInterval(function(){ if(Math.random()<.28&&!warping)flash(0.012+Math.random()*.018); },7500);
+  setInterval(function(){ if(Math.random()<.28&&!warping&&!LITE)flash(0.012+Math.random()*.018); },7500);
 
   /* ═══ GHOST PHRASES ═══ */
   var lagPool=['...are you there...','wrong channel','can you hear this','still here','not alone','signal broken','please respond','...hello...','it pulls everything','do not resist','closer now'];

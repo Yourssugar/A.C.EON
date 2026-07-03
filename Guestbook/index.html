@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>A.C.EON — Гостевая книга</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="../universe.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#07050f;--t1:rgba(255,255,255,.9);--t2:rgba(255,255,255,.5);--t3:rgba(255,255,255,.2);--bd:rgba(255,255,255,.07)}
@@ -14,8 +15,23 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Gr
 #top{padding:18px 22px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd);flex-shrink:0}
 #ttl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:400;color:rgba(255,255,255,.35)}
 #cnt{font-size:11px;font-weight:300;color:var(--t3)}
-#mb{margin-left:auto;background:none;border:1px solid var(--bd);color:var(--t2);font-size:13px;text-decoration:none;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
-#mb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
+
+/* ── КНОПКА АРХИВА ПАМЯТИ ── */
+#mb{
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  background:none;border:1px solid var(--bd);color:var(--t2);
+  font-size:11px;letter-spacing:.08em;text-decoration:none;
+  border-radius:14px;padding:5px 12px;transition:.2s;white-space:nowrap;
+}
+#mb:hover{color:var(--t1);border-color:rgba(255,255,255,.22);box-shadow:0 0 12px rgba(255,255,255,.08)}
+#mb .mb-s{font-size:12px}
+html.ufx2 #mb, html.ufx3 #mb{animation:mbp 4.5s ease-in-out infinite}
+@keyframes mbp{0%,100%{box-shadow:0 0 0 rgba(255,255,255,0)}50%{box-shadow:0 0 10px rgba(255,255,255,.10)}}
+@media(max-width:520px){
+  #mb .mb-t{display:none}
+  #mb{border-radius:50%;width:27px;height:27px;padding:0;justify-content:center;gap:0}
+}
+
 #rb{background:none;border:1px solid var(--bd);color:var(--t2);font-size:14px;cursor:pointer;border-radius:50%;width:27px;height:27px;display:flex;align-items:center;justify-content:center;transition:.2s}
 #rb:hover{color:var(--t1);border-color:rgba(255,255,255,.18)}
 
@@ -33,9 +49,20 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Gr
 
 #fld{flex:1;position:relative;overflow:hidden}
 .dw{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10}
-.dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 0 4px 1px rgba(255,255,255,.28),0 0 10px 2px rgba(255,255,255,.08);animation:pu var(--pd,3s) ease-in-out infinite var(--pdly,0s);transition:transform .22s ease,box-shadow .22s ease,opacity .22s ease}
+.dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 0 4px 1px rgba(255,255,255,.28),0 0 10px 2px rgba(255,255,255,.08);animation:pu var(--pd,3s) ease-in-out infinite var(--pdly,0s);transition:transform .22s ease,box-shadow .22s ease,opacity .22s ease;position:relative}
 @keyframes pu{0%,100%{opacity:.38;box-shadow:0 0 2px 1px rgba(255,255,255,.18)}50%{opacity:.9;box-shadow:0 0 8px 3px rgba(255,255,255,.5),0 0 18px 5px rgba(255,255,255,.12)}}
 .dw:hover .dot,.dw.on .dot{transform:scale(4);box-shadow:0 0 14px 5px rgba(255,255,255,.85),0 0 28px 10px rgba(255,255,255,.28);opacity:1}
+
+/* ── кометные хвосты следов (U-2/U-3) ── */
+html.ufx2 .dot::after, html.ufx3 .dot::after{
+  content:'';position:absolute;left:100%;top:50%;height:1px;
+  transform:translateY(-50%);
+  background:linear-gradient(90deg,rgba(255,255,255,.5),transparent);
+  width:26px;pointer-events:none;opacity:1;transition:opacity .2s;
+}
+html.ufx3 .dot::after{width:46px;height:1.2px}
+.dw:hover .dot::after,.dw.on .dot::after{opacity:0}
+
 .tip{position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;background:rgba(4,2,10,.94);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;min-width:130px;max-width:215px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:opacity .18s,transform .18s;white-space:nowrap;z-index:200}
 .dw:hover .tip,.dw.on .tip{opacity:1;transform:translateX(-50%) translateY(0)}
 .tip.dn{bottom:auto;top:calc(100% + 14px);transform:translateX(-50%) translateY(-8px)}
@@ -69,7 +96,7 @@ input:focus{border-color:rgba(255,255,255,.18)}
   <div id="top">
     <span id="ttl">✦ гостевая книга</span>
     <span id="cnt"></span>
-    <a href="./Guestbook/" id="mb" title="memory archive">✦</a>
+    <a href="./Guestbook/" id="mb" title="архив памяти"><span class="mb-s">✦</span><span class="mb-t">архив памяти</span></a>
     <button id="rb" title="обновить">↻</button>
     <button id="bgm-btn" title="выключить звук">♫</button>
   </div>
@@ -93,6 +120,10 @@ input:focus{border-color:rgba(255,255,255,.18)}
 // при каждом запуске / смене туннеля автоматически
 // ═══════════════════════════════════════════════════════
 const CONFIG_URL = 'https://raw.githubusercontent.com/yourssugar/A.C.EON/main/Guestbook/config.json';
+
+// ── универс-мост: тир графики (../universe.js) ──
+const AU = window.AceonUniverse || {id:1,fx:1};
+const LIVEBG = AU.id>=2 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ══════════
 // CONSTANTS
@@ -163,7 +194,7 @@ const srand  = s => { let x = Math.sin(s*1.7+3)*10000; return x-Math.floor(x); }
 const seedY  = id => srand(id*37+7)*80+10;
 
 // ═══════
-// CANVAS
+// CANVAS: статичный фон (U-1) — как было
 // ═══════
 function initCV() {
   const cv = document.getElementById('cv');
@@ -184,6 +215,96 @@ function initCV() {
     ctx.fillStyle=`rgba(255,255,255,${(Math.random()*.5+.15).toFixed(2)})`;
     ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
   }
+}
+
+// ═══════════════════════════════════════
+// ЖИВОЙ ФОН (U-2/U-3): дышащие туманности,
+// дрейф звёзд в такт следам, падающие звёзды
+// ═══════════════════════════════════════
+let lbg=null;
+function buildBlob(cw,color,a){
+  const c=document.createElement('canvas');c.width=c.height=cw;
+  const g=c.getContext('2d');
+  const gr=g.createRadialGradient(cw/2,cw/2,0,cw/2,cw/2,cw/2);
+  gr.addColorStop(0,color+a+')');gr.addColorStop(1,'transparent');
+  g.fillStyle=gr;g.fillRect(0,0,cw,cw);
+  return c;
+}
+function lbgSetup(){
+  const cv=document.getElementById('cv');
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const W=cv.width,H=cv.height,bs=Math.max(120,Math.min(W,H)*.96|0);
+  lbg={
+    W,H,ctx:cv.getContext('2d'),
+    blobs:[
+      {sp:buildBlob(bs,'rgba(55,18,110,',0.09),x:.28,y:.28,ax:.05,ay:.04,s1:.00007,s2:.00005},
+      {sp:buildBlob(bs,'rgba(18,38,100,',0.07),x:.72,y:.62,ax:.06,ay:.05,s1:.00005,s2:.00008},
+      {sp:buildBlob(bs,'rgba(95,28,55,',0.06),x:.52,y:.10,ax:.04,ay:.03,s1:.00006,s2:.00004}
+    ],
+    stars:Array.from({length:AU.id>=3?150:110},()=>({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*.9+.15,z:.3+Math.random()*.7,
+      ph:Math.random()*6.283
+    })),
+    streaks:[], shoot:null,
+    last:performance.now(), lastF:0
+  };
+}
+function startLiveBG(){
+  lbgSetup();
+  const capMs=(AU.id>=3&&!window.matchMedia('(pointer:coarse)').matches)?15:31;
+  function loop(now){
+    requestAnimationFrame(loop);
+    if(document.hidden||!lbg)return;
+    if(now-lbg.lastF<capMs-1)return;
+    lbg.lastF=now;
+    const dt=Math.min((now-lbg.last)/1000,.05);lbg.last=now;
+    const W=lbg.W,H=lbg.H,g=lbg.ctx,T=now;
+    g.fillStyle='#07050f';g.fillRect(0,0,W,H);
+    /* туманности медленно дышат */
+    lbg.blobs.forEach(b=>{
+      const bx=(b.x+Math.sin(T*b.s1)*b.ax)*W, by=(b.y+Math.cos(T*b.s2)*b.ay)*H;
+      const s=b.sp.width;
+      g.drawImage(b.sp,bx-s/2,by-s/2);
+    });
+    /* звёзды дрейфуют влево — в такт следам гостей */
+    lbg.stars.forEach(st=>{
+      st.x-=(2+st.z*6)*dt;
+      if(st.x<-4){st.x=W+4;st.y=Math.random()*H;}
+      const tw=.5+.5*Math.sin(T*.001+st.ph);
+      g.fillStyle=`rgba(255,255,255,${(st.z*(.2+.4*tw)).toFixed(2)})`;
+      g.beginPath();g.arc(st.x,st.y,st.r,0,6.283);g.fill();
+    });
+    if(AU.id>=3){
+      /* тонкие световые потоки */
+      if(lbg.streaks.length<3&&Math.random()<.006)
+        lbg.streaks.push({x:W+80,y:Math.random()*H,len:60+Math.random()*90,sp:50+Math.random()*50,a:.06+Math.random()*.06});
+      for(let i=lbg.streaks.length-1;i>=0;i--){
+        const s=lbg.streaks[i];s.x-=s.sp*dt;
+        if(s.x+s.len<0){lbg.streaks.splice(i,1);continue;}
+        const gr=g.createLinearGradient(s.x,0,s.x+s.len,0);
+        gr.addColorStop(0,'rgba(255,255,255,0)');
+        gr.addColorStop(1,`rgba(255,255,255,${s.a.toFixed(3)})`);
+        g.fillStyle=gr;g.fillRect(s.x,s.y,s.len,1);
+      }
+      /* падающая звезда */
+      if(!lbg.shoot&&Math.random()<.0012)
+        lbg.shoot={x:Math.random()*W*.7+W*.2,y:Math.random()*H*.3,t:0};
+      if(lbg.shoot){
+        const sh=lbg.shoot;sh.t+=dt*1.8;
+        if(sh.t>=1)lbg.shoot=null;
+        else{
+          const dx=sh.x-sh.t*220,dy=sh.y+sh.t*120;
+          const gr=g.createLinearGradient(dx,dy,dx+60,dy-33);
+          gr.addColorStop(0,`rgba(255,255,255,${((1-sh.t)*.7).toFixed(3)})`);
+          gr.addColorStop(1,'rgba(255,255,255,0)');
+          g.strokeStyle=gr;g.lineWidth=1.1;
+          g.beginPath();g.moveTo(dx,dy);g.lineTo(dx+60,dy-33);g.stroke();
+        }
+      }
+    }
+  }
+  requestAnimationFrame(loop);
 }
 
 // ════════
@@ -350,10 +471,10 @@ sb.addEventListener('click', doSubmit);
 // ═══════
 document.addEventListener('click', e => { if(!e.target.closest('.dw')&&!e.target.closest('#bgm-btn')&&hoveredEl) unhover(hoveredEl); });
 document.getElementById('rb').addEventListener('click', ()=>loadEntries(false));
-window.addEventListener('resize', ()=>{ initCV(); });
+window.addEventListener('resize', ()=>{ if(LIVEBG){ lbgSetup(); } else { initCV(); } });
 
 async function init() {
-  initCV();
+  if (LIVEBG) startLiveBG(); else initCV();
   await fetchConfig();
   setInterval(tick, TICK_MS);
   setInterval(()=>loadEntries(false), REFRESH);

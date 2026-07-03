@@ -122,8 +122,11 @@ input:focus{border-color:rgba(255,255,255,.18)}
 const CONFIG_URL = 'https://raw.githubusercontent.com/yourssugar/A.C.EON/main/Guestbook/config.json';
 
 // ── универс-мост: тир графики (../universe.js) ──
-const AU = window.AceonUniverse || {id:1,fx:1};
-const LIVEBG = AU.id>=2 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let AU={id:1,fx:1}, LIVEBG=false;
+try{
+  AU=window.AceonUniverse||AU;
+  LIVEBG=AU.id>=2 && !(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}catch(e){}
 
 // ══════════
 // CONSTANTS
@@ -400,6 +403,7 @@ async function loadEntries(initial=false) {
     });
   } catch(err) {
     console.warn('[gb] loadEntries failed:', err.message);
+    if (initial) showMsg('сервер следов недоступен — попробуй ↻ чуть позже','err',7000);
   }
 }
 
@@ -474,7 +478,7 @@ document.getElementById('rb').addEventListener('click', ()=>loadEntries(false));
 window.addEventListener('resize', ()=>{ if(LIVEBG){ lbgSetup(); } else { initCV(); } });
 
 async function init() {
-  if (LIVEBG) startLiveBG(); else initCV();
+  if (LIVEBG) { try{ startLiveBG(); }catch(e){ initCV(); } } else initCV();
   await fetchConfig();
   setInterval(tick, TICK_MS);
   setInterval(()=>loadEntries(false), REFRESH);

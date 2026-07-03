@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A.C.EON STUDIO | [OFFICIAL]</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=JetBrains+Mono:wght@300;400&display=swap');
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html, body {
       width:100%; height:100%;
@@ -30,8 +32,7 @@
     }
     #scanfx {
       position:fixed; inset:0; z-index:3; pointer-events:none;
-      background:repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px);
-      mix-blend-mode:overlay;
+      background:repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
     }
 
     /* iris: fullscreen-слой, дырка сужается JS-градиентом — без квадратов */
@@ -58,8 +59,7 @@
     #tears { position:fixed; inset:0; z-index:40; pointer-events:none; overflow:hidden; }
     .tear {
       position:absolute; left:0; right:0; pointer-events:none;
-      background:linear-gradient(90deg, rgba(221,0,37,.10), rgba(200,200,200,.06) 30%, rgba(0,136,187,.10));
-      mix-blend-mode:screen;
+      background:linear-gradient(90deg, rgba(221,0,37,.13), rgba(220,220,220,.08) 30%, rgba(0,136,187,.13));
     }
     #sigbroken {
       position:fixed; z-index:45; pointer-events:none;
@@ -239,6 +239,59 @@
     #warp-line.on { opacity:1; animation:warpPulse .5s ease-in-out infinite; }
     @keyframes warpPulse { 0%,100%{opacity:.55} 50%{opacity:1} }
 
+    /* ── УРОВНИ РЕАЛЬНОСТИ: на лёгких тирах гасим вечные paint-анимации ── */
+    body.fx0 #stage, body.fx1 #stage { animation:none; }
+    body.fx0 .ttl, body.fx1 .ttl { animation:none; text-shadow:0 0 22px rgba(200,200,200,.09); }
+    body.fx0 .ttl::before, body.fx0 .ttl::after { content:none; }
+    body.fx0 #btn-info, body.fx1 #btn-info { animation:none; box-shadow:0 0 10px rgba(0,204,102,.28); }
+    body.fx0 #btn-core, body.fx1 #btn-core { animation:none; box-shadow:0 0 10px rgba(77,175,255,.25); }
+    body.fx0 #scanfx, body.fx1 #scanfx { display:none; }
+    body.fx0 .hg { animation:none; opacity:.85; }
+
+    /* ═══ UNIVERSE SELECTOR ═══ */
+    #uni-ov{
+      position:fixed; inset:0; z-index:126; background:rgba(0,0,0,.9);
+      display:none; align-items:center; justify-content:center; flex-direction:column; gap:24px;
+      padding:20px;
+    }
+    #uni-ov.on{ display:flex; }
+    .us-cap{ font-size:10px; letter-spacing:6px; color:#3a4a4a; }
+    .us-row{ display:flex; gap:clamp(14px,5vw,38px); }
+    .us-d{
+      font-family:'Rajdhani',sans-serif; font-weight:700;
+      font-size:clamp(40px,9vw,58px); line-height:1;
+      color:#2a3a3a; cursor:pointer; padding:4px 14px;
+      border:1px solid transparent;
+      transition:color .2s, text-shadow .2s, border-color .2s;
+    }
+    .us-d:hover{ color:#7ac9dd; }
+    .us-d.sel{ color:#eafcff; text-shadow:0 0 26px rgba(0,184,204,.7); border-color:#0e3a44; }
+    .us-panel{
+      width:min(560px,90vw); border:1px solid #10282e;
+      background:rgba(2,8,10,.94); padding:18px 22px;
+      font-size:11px; line-height:2; letter-spacing:1px; color:#7ba9b4;
+      transform:translateY(8px); opacity:0; transition:transform .35s ease, opacity .35s ease;
+    }
+    #uni-ov.on .us-panel{ transform:translateY(0); opacity:1; }
+    .us-p-head{ font-family:'Rajdhani',sans-serif; font-size:16px; letter-spacing:5px; color:#d8f4fa; margin-bottom:6px; }
+    .us-p-hw{ color:#3f636d; font-size:9px; letter-spacing:2px; margin-top:10px; }
+    .us-p-fx{ color:#4b7a86; font-size:9px; letter-spacing:1.5px; margin-top:6px; }
+    .us-enter{
+      margin-top:16px; background:transparent;
+      border:1px solid #0a5a2a; color:#00cc66;
+      font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:4px;
+      padding:9px 26px; cursor:pointer; transition:box-shadow .2s;
+    }
+    .us-enter:hover{ box-shadow:0 0 16px rgba(0,204,102,.4); }
+    .us-hint{ font-size:8px; letter-spacing:3px; color:#223333; text-align:center; }
+    #uni-mark{
+      pointer-events:auto; cursor:pointer;
+      font-size:12px; letter-spacing:4px; margin-top:4px;
+      color:#cc2233; text-shadow:0 0 10px rgba(204,34,51,.35);
+      transition:color .2s, text-shadow .2s;
+    }
+    #uni-mark:hover{ color:#ff4455; text-shadow:0 0 16px rgba(255,68,85,.6); }
+
     /* ═══ CURSOR ═══ */
     #cur { position:fixed; z-index:1000; width:34px; height:34px; margin-left:-17px; margin-top:-17px; pointer-events:none; top:-50px; left:-50px; }
     #currot { animation:crspin 9s linear infinite; transform-origin:50% 50%; transform-box:fill-box; }
@@ -281,6 +334,7 @@
 <div id="hud-l">
   <div id="layerlbl">LAYER_01 // SINGULARITY</div>
   <div id="feed">FEED: LIVE</div>
+  <div id="uni-mark">UNIVERSE: U-0 &#9656; SHIFT</div>
 </div>
 
 <div id="stage">
@@ -311,6 +365,24 @@
   </div>
 </div>
 
+<div id="uni-ov">
+  <div class="us-cap">SELECT REALITY DENSITY</div>
+  <div class="us-row">
+    <div class="us-d" data-u="0">0</div>
+    <div class="us-d" data-u="1">1</div>
+    <div class="us-d" data-u="2">2</div>
+    <div class="us-d" data-u="3">3</div>
+  </div>
+  <div class="us-panel">
+    <div class="us-p-head" id="usp-head"></div>
+    <div id="usp-desc"></div>
+    <div class="us-p-fx" id="usp-fx"></div>
+    <div class="us-p-hw" id="usp-hw"></div>
+    <button class="us-enter" id="us-enter">ENTER UNIVERSE</button>
+  </div>
+  <div class="us-hint">CHOICE IS REMEMBERED &middot; SHIFT ANYTIME VIA THE U-MARK, TOP LEFT &middot; KEYS 0&ndash;3</div>
+</div>
+
 <div id="boot"></div>
 
 <div id="sb">
@@ -336,7 +408,34 @@
   var gch='!<>_[]{}=+#\u2593\u2592\u2591\u2573~';
   var reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var isCoarse=window.matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
-  var LITE=isCoarse;   /* мобильный профиль: без WebGL, низкое внутреннее разрешение, 30fps */
+  /* ═══ ВСЕЛЕННЫЕ (уровни плотности реальности) ═══ */
+  var UNIVERSES=[
+    {id:0,tag:'U-0',name:'DORMANT',capMs:95,n:110,S:.5,gl:false,gldpr:1,fx:0,
+     desc:'A near-still signal. The singularity holds its breath. The site is fully functional \u2014 the well simply moves in slow motion.',
+     fxl:'ACTIVE: STATIC FIELD \u00b7 SLOW CORE \u00b7 10 FPS',
+     hw:'RUNS ON ANYTHING \u2014 OLD PHONES, OFFICE LAPTOPS, TIRED HARDWARE'},
+    {id:1,tag:'U-1',name:'DRIFT',capMs:31,n:isCoarse?170:320,S:isCoarse?.55:.6,gl:false,gldpr:1,fx:1,
+     desc:'The well wakes. Live vortex, soft particle trails, occasional glitches. Pure 2D \u2014 no GPU post-processing.',
+     fxl:'ACTIVE: LIVE VORTEX \u00b7 TRAILS \u00b7 BASIC GLITCH \u00b7 30 FPS',
+     hw:'ANY PHONE OR LAPTOP FROM ~2016 ONWARD'},
+    {id:2,tag:'U-2',name:'FLUX',capMs:isCoarse?31:15,n:isCoarse?480:1300,S:isCoarse?.6:.7,gl:true,gldpr:isCoarse?.9:1.0,fx:2,
+     desc:'Gravitational lensing ignites. Space bends around the core, the disc blooms, the signal reacts to the music.',
+     fxl:'HEAVIEST: WEBGL LENSING \u00b7 BLOOM \u00b7 AUDIO-REACTIVE CORE \u00b7 PARALLAX',
+     hw:'MODERN PHONES / INTEGRATED GPU 2018+ \u2014 IRIS XE, VEGA, APPLE M1'},
+    {id:3,tag:'U-3',name:'SINGULARITY',capMs:15,n:isCoarse?900:2800,S:isCoarse?.7:.85,gl:true,gldpr:isCoarse?1.25:1.75,fx:3,
+     desc:'Everything at once. Full lens field with chromatic dispersion, thousands of particles, deep trails, cursor gravity, every glitch layer.',
+     fxl:'HEAVIEST: FULL LENS FIELD \u00b7 CHROMATIC DISPERSION \u00b7 2800+ PARTICLES \u00b7 DEEP TRAILS \u00b7 CURSOR GRAVITY',
+     hw:'DEDICATED GPU RECOMMENDED \u2014 GTX 1050 / RX 560 / APPLE M1 PRO OR BETTER'}
+  ];
+  var savedU=null;
+  try{
+    var _su=localStorage.getItem('aceon_universe');
+    if(_su!==null){ savedU=Math.max(0,Math.min(3,parseInt(_su,10)||0)); }
+  }catch(e){}
+  /* переопределение через URL: ?fx=0..3 */
+  var _m=location.search.match(/[?&]fx=([0-3])/);
+  if(_m)savedU=parseInt(_m[1],10);
+  var PRO=UNIVERSES[savedU===null?0:savedU];
   var nightMode=(function(){var h=new Date().getHours();return h>=0&&h<5;})();
 
   /* ═══ ПАМЯТЬ УЗЛА ═══ */
@@ -370,14 +469,14 @@
   VX.target=VX.base; VX.g=VX.base;
 
   var W=0,H=0;                 /* css px */
-  var S=LITE?Math.min(.5,420/Math.max(window.innerWidth,320)):0.85;   /* внутренний масштаб рендера */
+  var S=PRO.S;                 /* внутренний масштаб рендера */
   var SW=0,SH=0;               /* internal px */
   var CXi=0,CYi=0,COREi=0;     /* центр/ядро в internal px */
   var SQUASH=.80,TILT=-0.10;
   var cosT=Math.cos(TILT),sinT=Math.sin(TILT);
 
-  var MAXN=LITE?420:4200;
-  var N=LITE?170:Math.min(2800,MAXN);
+  var MAXN=4200;
+  var N=PRO.n;
 
   /* ═══════════════════════════════════════════
      WORKER: физика частиц (fallback — инлайн-шима)
@@ -478,12 +577,12 @@
 
   /* ═══ 2D SOURCE ═══ */
   var srcC=document.getElementById('src');
-  var sctx=srcC.getContext('2d',{alpha:false,desynchronized:true});
+  var sctx=srcC.getContext('2d',{alpha:false});
 
   /* ═══ WEBGL POST ═══ */
   var glC=document.getElementById('gl');
-  var gl=null,prog=null,uni={},tex=null,glOK=false;
-  var GLDPR=Math.min(window.devicePixelRatio||1,isCoarse?1.25:1.75);
+  var gl=null,prog=null,uni={},tex=null,glOK=false,glSupported=false,glInited=false;
+  var GLDPR=Math.min(window.devicePixelRatio||1,PRO.gldpr);
   function initGL(){
     try{
       gl=glC.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false})
@@ -556,18 +655,15 @@
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
       gl.uniform1i(uni.uTex,0);
-      glOK=true;
+      glSupported=true;
     }catch(e){
-      glOK=false;
-      glC.style.display='none';
-      srcC.style.display='block';
+      glSupported=false;
     }
   }
-  if(LITE){
-    glOK=false;
-    glC.style.display='none';
-    srcC.style.display='block';
-  } else initGL();
+  /* GL включается через applyUniverse ниже */
+  glOK=false;
+  glC.style.display='none';
+  srcC.style.display='block';
 
   /* ═══ GEOMETRY ═══ */
   var coreFromWorker=20;
@@ -607,6 +703,36 @@
   worker.postMessage({t:'init',W:Math.max(320,(window.innerWidth*S)|0),H:Math.max(240,(window.innerHeight*S)|0),
     n:N,max:MAXN,greenP:nightMode?.02:.045,redP:nightMode?.09:.025});
   resize();
+
+  /* ═══ ПРИМЕНЕНИЕ ВСЕЛЕННОЙ (живое переключение) ═══ */
+  var overloadHinted=false;
+  function applyUniverse(u){
+    PRO=UNIVERSES[u];
+    try{ localStorage.setItem('aceon_universe',String(u)); }catch(e){}
+    document.body.classList.remove('fx0','fx1','fx2','fx3');
+    document.body.classList.add('fx'+PRO.fx);
+    S=PRO.S;
+    GLDPR=Math.min(window.devicePixelRatio||1,PRO.gldpr);
+    N=PRO.n;
+    if(PRO.gl){
+      if(!glInited){ initGL(); glInited=true; }
+      if(glSupported){
+        glOK=true; glC.style.display='block'; srcC.style.display='none';
+      } else {
+        glOK=false; glC.style.display='none'; srcC.style.display='block';
+      }
+    } else {
+      glOK=false; glC.style.display='none'; srcC.style.display='block';
+    }
+    colorCache={};
+    overloadHinted=false;
+    resize();
+    worker.postMessage({t:'setn',n:N});
+    var um=document.getElementById('uni-mark');
+    if(um)um.textContent='UNIVERSE: '+PRO.tag+' \u25b8 SHIFT';
+    document.title='A.C.EON STUDIO | [OFFICIAL] | '+PRO.tag;
+  }
+  applyUniverse(PRO.id);
 
   /* ═══ INPUT: мышь / гироскоп ═══ */
   var mouseX=.5,mouseY=.5,mPix={x:-999,y:-999},mAct=false,mSpeed=0,lastMx=0,lastMy=0,lastMT=0;
@@ -733,7 +859,7 @@
       var heat=buf[o+3],z=buf[o+4];
       var ka=buf[o+5]|0, kind=ka%10, accI=(ka/10)|0;
       sctx.fillStyle=partColor(heat,z,accI,warpNow,redNow);
-      if(kind===0){
+      if(kind===0||PRO.fx===0){
         var s=buf[o+2]*(1+heat*.8);
         sctx.fillRect(x|0,y|0,s,s);
       } else {
@@ -741,7 +867,7 @@
         var f=fs+'px "JetBrains Mono",monospace';
         if(f!==lastFont){sctx.font=f;lastFont=f;}
         if(chArr[i]===undefined||Math.random()<.004)chArr[i]=randChar();
-        if(kind===2&&heat<.55&&!LITE){
+        if(kind===2&&heat<.55&&PRO.fx>=2&&!isCoarse){
           if(wordArr[i]===undefined)wordArr[i]=phrases[Math.random()*phrases.length|0];
           sctx.save();
           sctx.translate(x,y);
@@ -792,7 +918,7 @@
     gl.uniform1f(uni.uTime,tGlobal);
     gl.uniform1f(uni.uWarp,VX.warp?Math.min((VX.g-VX.base)/8,1):0);
     gl.uniform1f(uni.uBass,aBass);
-    gl.uniform1f(uni.uLens,isCoarse?.075:.10);
+    gl.uniform1f(uni.uLens,PRO.id>=3?.10:.085);
     gl.uniform1f(uni.uRed,VX.red);
     gl.drawArrays(gl.TRIANGLES,0,3);
   }
@@ -817,7 +943,8 @@
   var emaDt=16, qCooldown=0, liteLast=0;
   function frame(now){
     if(portalOpen){ setTimeout(function(){ requestAnimationFrame(frame); },320); return; }
-    if(LITE&&now-liteLast<30){ requestAnimationFrame(frame); return; }
+    var capMs=warping?15:PRO.capMs;
+    if(capMs>17&&now-liteLast<capMs-1){ requestAnimationFrame(frame); return; }
     liteLast=now;
     var dt=Math.min((now-last)/1000,.05); last=now; tGlobal+=dt;
     emaDt=emaDt*.95+(dt*1000)*.05;
@@ -825,18 +952,17 @@
     /* адаптивное качество */
     qCooldown-=dt;
     if(qCooldown<=0){
-      if(emaDt>34&&glOK&&N<=900){
-        /* слабый GPU: сбрасываем пост-обработку, переходим на прямой 2D */
-        glOK=false;
-        glC.style.display='none';
-        srcC.style.display='block';
-        qCooldown=3;
-      } else if(emaDt>26&&N>160){
-        N=Math.max(160,(N*.82)|0);
+      var nFloor=Math.max(100,(PRO.n*.4)|0);
+      var budget=PRO.capMs>17?PRO.capMs+10:26;
+      if(emaDt>budget&&N>nFloor){
+        N=Math.max(nFloor,(N*.82)|0);
         worker.postMessage({t:'setn',n:N});
         qCooldown=2.5;
-      } else if(emaDt<15&&N<MAXN*.7){
-        N=Math.min(MAXN,(N*1.12)|0);
+      } else if(emaDt>budget+16&&PRO.id>=2&&!overloadHinted){
+        overloadHinted=true;
+        document.getElementById('feed').textContent='FEED: OVERLOAD \u2014 TRY LOWER UNIVERSE';
+      } else if(emaDt<budget*.6&&N<PRO.n){
+        N=Math.min(PRO.n,(N*1.12)|0);
         worker.postMessage({t:'setn',n:N});
         qCooldown=4;
       }
@@ -1039,7 +1165,7 @@
   /* ═══ GLITCH FX ═══ */
   var tears=document.getElementById('tears');
   function tearBurst(){
-    if(reduceMotion||portalOpen)return;
+    if(reduceMotion||portalOpen||PRO.fx<1)return;
     var n=2+(Math.random()*3|0);
     for(var i=0;i<n;i++){
       var el=document.createElement('div');
@@ -1051,12 +1177,12 @@
       (function(el){ setTimeout(function(){el.remove();},120+Math.random()*160|0); })(el);
     }
   }
-  function schTear(){ setTimeout(function(){tearBurst();schTear();},(LITE?6800:3200)+Math.random()*(LITE?8000:5600)); }
+  function schTear(){ setTimeout(function(){tearBurst();schTear();},(PRO.fx<2?6800:3200)+Math.random()*(PRO.fx<2?8000:5600)); }
   schTear();
 
   var sigb=document.getElementById('sigbroken');
   function signalBroken(){
-    if(reduceMotion||warping||portalOpen)return;
+    if(reduceMotion||warping||portalOpen||PRO.fx<2)return;
     sigb.style.left=(12+Math.random()*56)+'%';
     sigb.style.top=(14+Math.random()*62)+'%';
     sigb.classList.remove('on'); void sigb.offsetWidth;
@@ -1072,14 +1198,14 @@
     document.body.appendChild(el);
     setTimeout(function(){el.remove();},60);
   }
-  setInterval(function(){ if(Math.random()<.28&&!warping&&!portalOpen&&!LITE)flash(0.012+Math.random()*.018); },7500);
+  setInterval(function(){ if(PRO.fx>=3&&Math.random()<.28&&!warping&&!portalOpen)flash(0.012+Math.random()*.018); },7500);
 
   /* ═══ GHOST PHRASES ═══ */
   var lagPool=['...are you there...','wrong channel','can you hear this','still here','not alone','signal broken','please respond','...hello...','it pulls everything','do not resist','closer now'];
   if(visits>2)lagPool=lagPool.concat(['you came back','it remembers you','visit '+String(visits).padStart(2,'0'),'you always return']);
   var lagC=0;
   function spawnLag(){
-    if(lagC>=2||warping||portalOpen)return; lagC++;
+    if(lagC>=2||warping||portalOpen||PRO.fx<1)return; lagC++;
     var phrase=lagPool[Math.random()*lagPool.length|0];
     var el=document.createElement('div');
     var vw=window.innerWidth,vh=window.innerHeight,x,y,tries=0;
@@ -1112,10 +1238,10 @@
       if(++f>=n){clearInterval(iv);el.textContent=orig;}
     },55);
   }
-  setInterval(function(){if(!warping&&!portalOpen)glitch(ttl,TORIG,16);},9000+Math.random()*4000|0);
-  setInterval(function(){if(!warping&&!portalOpen)glitch(subel,SORIG,8);},13000+Math.random()*6000|0);
+  setInterval(function(){if(!warping&&!portalOpen&&PRO.fx>=1)glitch(ttl,TORIG,16);},9000+Math.random()*4000|0);
+  setInterval(function(){if(!warping&&!portalOpen&&PRO.fx>=1)glitch(subel,SORIG,8);},13000+Math.random()*6000|0);
   setInterval(function(){
-    if(reduceMotion||warping||portalOpen)return;
+    if(reduceMotion||warping||portalOpen||PRO.fx<2)return;
     if(Math.random()<.5){
       var dx=(Math.random()*2-1).toFixed(1), dy=(Math.random()*1.4-.7).toFixed(1);
       ttl.style.transform='translate('+dx+'px,'+dy+'px)';
@@ -1124,6 +1250,7 @@
   },900);
   var lscan=document.getElementById('logo-scan');
   function runScan(){
+    if(PRO.fx<1)return;
     lscan.classList.remove('run'); void lscan.offsetWidth;
     lscan.classList.add('run');
   }
@@ -1216,7 +1343,70 @@
       pwstat.textContent='> RED SHIFT ENGAGED \u2014 10 SECONDS';
       return true;
     }
+    if(b==='U1RBU0lT'){                       /* STASIS: время почти останавливается */
+      VX.target=0.06*VX.base;
+      setTimeout(function(){ if(!warping)VX.target=VX.base; },5000);
+      pwstat.className='arg';
+      pwstat.textContent='> STASIS FIELD ENGAGED \u2014 TIME DILATED';
+      return true;
+    }
+    if(b==='UFVMU0U='){                       /* PULSE: ударная волна от ядра */
+      shockwave();
+      VX.target=4*VX.base;
+      setTimeout(function(){ if(!warping)VX.target=VX.base; },700);
+      pwstat.className='arg';
+      pwstat.textContent='> CORE PULSE EMITTED';
+      return true;
+    }
+    if(b==='REFSSw=='){                       /* DARK: свет гаснет */
+      var dk=document.createElement('div');
+      dk.style.cssText='position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:75;transition:opacity .6s ease;';
+      document.body.appendChild(dk);
+      requestAnimationFrame(function(){ dk.style.opacity='.93'; });
+      setTimeout(function(){ dk.style.opacity='0'; setTimeout(function(){dk.remove();},900); },2600);
+      pwstat.className='arg';
+      pwstat.textContent='> LIGHTS OUT \u2014 IT PREFERS THE DARK';
+      return true;
+    }
+    if(b==='NDQw'){                           /* 440: несущая частота */
+      playCarrier();
+      glitch(ttl,TORIG,10);
+      pwstat.className='arg';
+      pwstat.textContent='> 440 HZ \u2014 THE CARRIER FREQUENCY';
+      return true;
+    }
     return false;
+  }
+  function shockwave(){
+    var r=document.createElement('div');
+    r.style.cssText='position:fixed;left:50%;top:46%;width:12px;height:12px;border-radius:50%;'
+      +'border:1px solid rgba(120,210,255,.85);box-shadow:0 0 18px rgba(120,210,255,.4);'
+      +'transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:none;z-index:70;'
+      +'transition:transform 1.1s cubic-bezier(.2,.7,.4,1), opacity 1.1s ease;';
+    document.body.appendChild(r);
+    requestAnimationFrame(function(){
+      r.style.transform='translate(-50%,-50%) scale('+(Math.max(W,H)/6|0)+')';
+      r.style.opacity='0';
+    });
+    setTimeout(function(){r.remove();},1200);
+    flash(.05);
+    tearBurst();
+  }
+  function playCarrier(){
+    var ac=ensureAudioCtx(); if(!ac)return;
+    try{
+      if(ac.state==='suspended')ac.resume();
+      var t0=ac.currentTime;
+      var g=ac.createGain();
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(.16,t0+.35);
+      g.gain.exponentialRampToValueAtTime(.0001,t0+2.3);
+      g.connect(ac.destination);
+      var o=ac.createOscillator();
+      o.type='sine';
+      o.frequency.value=440;
+      o.connect(g); o.start(t0); o.stop(t0+2.4);
+    }catch(e){}
   }
   function tryPass(){
     if(warping)return;
@@ -1326,6 +1516,7 @@
   var bootLines=['> A.C.EON NODE \u2014 COLD BOOT'];
   if(visits>1)bootLines.push('> RETURN DETECTED \u2014 VISIT '+String(visits).padStart(2,'0'));
   if(nightMode)bootLines.push('> NIGHT PROTOCOL ACTIVE');
+  if(savedU!==null)bootLines.push('> UNIVERSE '+UNIVERSES[savedU].tag+' RESTORED');
   bootLines=bootLines.concat([
     '> GRAVITY WELL: STABLE',
     '> LAYER_01 \u2014 SINGULARITY MOUNTED',
@@ -1336,9 +1527,8 @@
     if(i>=bootLines.length){
       setTimeout(function(){
         boot.classList.add('gone');
-        var ins=document.querySelectorAll('.st-in');
-        ins.forEach(function(el,k){ setTimeout(function(){el.classList.add('on');},300+k*450); });
-        setTimeout(runScan,1400);
+        if(savedU===null)showUniverseSel(true);
+        else revealStage();
       },350);
       return;
     }
@@ -1354,6 +1544,64 @@
     boot.classList.add('gone');
     document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});
   } else typeBoot(0);
+
+  /* ═══ UNIVERSE SELECTOR UI ═══ */
+  var uniOv=document.getElementById('uni-ov');
+  var uniFirst=false, uniSel=0;
+  function revealStage(){
+    document.querySelectorAll('.st-in').forEach(function(el,k){
+      setTimeout(function(){el.classList.add('on');},300+k*450);
+    });
+    setTimeout(runScan,1400);
+  }
+  function fillUniPanel(u){
+    var P=UNIVERSES[u];
+    document.getElementById('usp-head').textContent=P.tag+' // '+P.name;
+    document.getElementById('usp-desc').textContent=P.desc;
+    document.getElementById('usp-fx').textContent=P.fxl;
+    document.getElementById('usp-hw').textContent=P.hw;
+    document.querySelectorAll('.us-d').forEach(function(d){
+      d.classList.toggle('sel',+d.getAttribute('data-u')===u);
+    });
+  }
+  function showUniverseSel(first){
+    uniFirst=first;
+    uniSel=first?0:PRO.id;
+    fillUniPanel(uniSel);
+    uniOv.classList.add('on');
+  }
+  document.querySelectorAll('.us-d').forEach(function(d){
+    d.addEventListener('click',function(){
+      uniSel=+d.getAttribute('data-u');
+      fillUniPanel(uniSel);
+    });
+  });
+  document.getElementById('us-enter').addEventListener('click',function(){
+    savedU=uniSel;
+    applyUniverse(uniSel);
+    uniOv.classList.remove('on');
+    if(uniFirst){ uniFirst=false; revealStage(); }
+  });
+  document.addEventListener('keydown',function(e){
+    if(!uniOv.classList.contains('on'))return;
+    if(e.key>='0'&&e.key<='3'){ uniSel=+e.key; fillUniPanel(uniSel); }
+    if(e.key==='Enter')document.getElementById('us-enter').click();
+  });
+  document.getElementById('uni-mark').addEventListener('click',function(){
+    if(!warping&&!portalOpen)showUniverseSel(false);
+  });
+
+  /* ═══ DEBUG (?debug в URL) ═══ */
+  if(location.search.indexOf('debug')>=0){
+    var dbg=document.createElement('div');
+    dbg.style.cssText='position:fixed;bottom:34px;left:18px;z-index:400;font-size:10px;color:#0f0;letter-spacing:1px;line-height:1.7;pointer-events:none;font-family:monospace;';
+    document.body.appendChild(dbg);
+    setInterval(function(){
+      dbg.textContent='FPS '+Math.round(1000/emaDt)+' | N='+N+' | '+PRO.tag
+        +' | GL:'+(glOK?'ON':'OFF')+' | SRC '+SW+'x'+SH
+        +(glOK?' | GLC '+glC.width+'x'+glC.height:'');
+    },500);
+  }
 
   /* ═══ MUSIC ═══ */
   var bgmFired=false;

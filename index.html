@@ -368,7 +368,6 @@
 <div id="uni-ov">
   <div class="us-cap">SELECT REALITY DENSITY</div>
   <div class="us-row">
-    <div class="us-d" data-u="0">0</div>
     <div class="us-d" data-u="1">1</div>
     <div class="us-d" data-u="2">2</div>
     <div class="us-d" data-u="3">3</div>
@@ -380,7 +379,7 @@
     <div class="us-p-hw" id="usp-hw"></div>
     <button class="us-enter" id="us-enter">ENTER UNIVERSE</button>
   </div>
-  <div class="us-hint">CHOICE IS REMEMBERED &middot; SHIFT ANYTIME VIA THE U-MARK, TOP LEFT &middot; KEYS 0&ndash;3</div>
+  <div class="us-hint">CHOICE IS REMEMBERED &middot; SHIFT ANYTIME VIA THE U-MARK, TOP LEFT &middot; KEYS 1&ndash;3</div>
 </div>
 
 <div id="boot"></div>
@@ -410,10 +409,6 @@
   var isCoarse=window.matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
   /* ═══ ВСЕЛЕННЫЕ (уровни плотности реальности) ═══ */
   var UNIVERSES=[
-    {id:0,tag:'U-0',name:'DORMANT',capMs:95,n:110,S:.5,gl:false,gldpr:1,fx:0,
-     desc:'A near-still signal. The singularity holds its breath. The site is fully functional \u2014 the well simply moves in slow motion.',
-     fxl:'ACTIVE: STATIC FIELD \u00b7 SLOW CORE \u00b7 10 FPS',
-     hw:'RUNS ON ANYTHING \u2014 OLD PHONES, OFFICE LAPTOPS, TIRED HARDWARE'},
     {id:1,tag:'U-1',name:'DRIFT',capMs:31,n:isCoarse?170:320,S:isCoarse?.55:.6,gl:false,gldpr:1,fx:1,
      desc:'The well wakes. Live vortex, soft particle trails, occasional glitches. Pure 2D \u2014 no GPU post-processing.',
      fxl:'ACTIVE: LIVE VORTEX \u00b7 TRAILS \u00b7 BASIC GLITCH \u00b7 30 FPS',
@@ -427,15 +422,16 @@
      fxl:'HEAVIEST: FULL LENS FIELD \u00b7 CHROMATIC DISPERSION \u00b7 2800+ PARTICLES \u00b7 DEEP TRAILS \u00b7 CURSOR GRAVITY',
      hw:'DEDICATED GPU RECOMMENDED \u2014 GTX 1050 / RX 560 / APPLE M1 PRO OR BETTER'}
   ];
+  function getUni(id){ return UNIVERSES[Math.max(1,Math.min(3,id))-1]; }
   var savedU=null;
   try{
     var _su=localStorage.getItem('aceon_universe');
-    if(_su!==null){ savedU=Math.max(0,Math.min(3,parseInt(_su,10)||0)); }
+    if(_su!==null){ savedU=Math.max(1,Math.min(3,parseInt(_su,10)||1)); }
   }catch(e){}
-  /* переопределение через URL: ?fx=0..3 */
-  var _m=location.search.match(/[?&]fx=([0-3])/);
+  /* переопределение через URL: ?fx=1..3 */
+  var _m=location.search.match(/[?&]fx=([1-3])/);
   if(_m)savedU=parseInt(_m[1],10);
-  var PRO=UNIVERSES[savedU===null?0:savedU];
+  var PRO=getUni(savedU===null?1:savedU);
   var nightMode=(function(){var h=new Date().getHours();return h>=0&&h<5;})();
 
   /* ═══ ПАМЯТЬ УЗЛА ═══ */
@@ -707,7 +703,7 @@
   /* ═══ ПРИМЕНЕНИЕ ВСЕЛЕННОЙ (живое переключение) ═══ */
   var overloadHinted=false;
   function applyUniverse(u){
-    PRO=UNIVERSES[u];
+    PRO=getUni(u);
     try{ localStorage.setItem('aceon_universe',String(u)); }catch(e){}
     document.body.classList.remove('fx0','fx1','fx2','fx3');
     document.body.classList.add('fx'+PRO.fx);
@@ -770,33 +766,15 @@
   }
 
   /* ═══ AUDIO: анализатор + rumble ═══ */
-  var audioCtx=null,analyser=null,freqData=null;
+  /* аудиореактивность отключена: музыка играет напрямую, без MediaElementSource
+     (перехват звука через AudioContext давал фризы и рывки воронки на части устройств).
+     aBass/aTreb оставлены нулями — все формулы рендера нейтральны. */
+  var audioCtx=null;
   var aBass=0,aTreb=0;
   function ensureAudioCtx(){
     if(audioCtx)return audioCtx;
     try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
     return audioCtx;
-  }
-  function hookAnalyser(bgm){
-    var ac=ensureAudioCtx(); if(!ac)return;
-    try{
-      var srcNode=ac.createMediaElementSource(bgm);
-      analyser=ac.createAnalyser();
-      analyser.fftSize=256;
-      analyser.smoothingTimeConstant=.82;
-      freqData=new Uint8Array(analyser.frequencyBinCount);
-      srcNode.connect(analyser);
-      analyser.connect(ac.destination);
-    }catch(e){ analyser=null; }
-  }
-  function analyse(){
-    if(!analyser)return;
-    analyser.getByteFrequencyData(freqData);
-    var b=0,t=0,i;
-    for(i=1;i<9;i++)b+=freqData[i];
-    for(i=70;i<110;i++)t+=freqData[i];
-    aBass=aBass*.7+(b/8/255)*.3;
-    aTreb=aTreb*.7+(t/40/255)*.3;
   }
   function rumble(dur){
     var ac=ensureAudioCtx(); if(!ac)return;
@@ -968,8 +946,7 @@
       }
     }
 
-    analyse();
-    var gTarget=VX.target*(1+aBass*.55+aTreb*.15)*VX.idle;
+    var gTarget=VX.target*VX.idle;
     VX.g+=(gTarget-VX.g)*(VX.warp?.045:.02);
     VX.worldA+=dt*.06*VX.g;
     if(VX.redT>0){ VX.redT-=dt; VX.red=Math.min(VX.red+dt*3,1); }
@@ -1516,7 +1493,7 @@
   var bootLines=['> A.C.EON NODE \u2014 COLD BOOT'];
   if(visits>1)bootLines.push('> RETURN DETECTED \u2014 VISIT '+String(visits).padStart(2,'0'));
   if(nightMode)bootLines.push('> NIGHT PROTOCOL ACTIVE');
-  if(savedU!==null)bootLines.push('> UNIVERSE '+UNIVERSES[savedU].tag+' RESTORED');
+  if(savedU!==null)bootLines.push('> UNIVERSE '+getUni(savedU).tag+' RESTORED');
   bootLines=bootLines.concat([
     '> GRAVITY WELL: STABLE',
     '> LAYER_01 \u2014 SINGULARITY MOUNTED',
@@ -1555,7 +1532,7 @@
     setTimeout(runScan,1400);
   }
   function fillUniPanel(u){
-    var P=UNIVERSES[u];
+    var P=getUni(u);
     document.getElementById('usp-head').textContent=P.tag+' // '+P.name;
     document.getElementById('usp-desc').textContent=P.desc;
     document.getElementById('usp-fx').textContent=P.fxl;
@@ -1566,7 +1543,7 @@
   }
   function showUniverseSel(first){
     uniFirst=first;
-    uniSel=first?0:PRO.id;
+    uniSel=first?1:PRO.id;
     fillUniPanel(uniSel);
     uniOv.classList.add('on');
   }
@@ -1584,7 +1561,7 @@
   });
   document.addEventListener('keydown',function(e){
     if(!uniOv.classList.contains('on'))return;
-    if(e.key>='0'&&e.key<='3'){ uniSel=+e.key; fillUniPanel(uniSel); }
+    if(e.key>='1'&&e.key<='3'){ uniSel=+e.key; fillUniPanel(uniSel); }
     if(e.key==='Enter')document.getElementById('us-enter').click();
   });
   document.getElementById('uni-mark').addEventListener('click',function(){
@@ -1612,9 +1589,6 @@
     if(!bgm)return;
     bgm.src=bgmTracks[Math.floor(Math.random()*bgmTracks.length)];
     bgm.volume=0;
-    hookAnalyser(bgm);
-    var ac=ensureAudioCtx();
-    if(ac&&ac.state==='suspended')ac.resume();
     bgm.play().catch(function(){});
     setTimeout(function(){
       var vol=0,fiv=setInterval(function(){

@@ -409,10 +409,10 @@
   var isCoarse=window.matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
   /* ═══ ВСЕЛЕННЫЕ (уровни плотности реальности) ═══ */
   var UNIVERSES=[
-    {id:1,tag:'U-1',name:'DRIFT',capMs:31,n:isCoarse?170:320,S:isCoarse?.55:.6,gl:false,gldpr:1,fx:1,
-     desc:'The well wakes. Live vortex, soft particle trails, occasional glitches. Pure 2D \u2014 no GPU post-processing.',
-     fxl:'ACTIVE: LIVE VORTEX \u00b7 TRAILS \u00b7 BASIC GLITCH \u00b7 30 FPS',
-     hw:'ANY PHONE OR LAPTOP FROM ~2016 ONWARD'},
+    {id:1,tag:'U-1',name:'STILL',capMs:31,n:isCoarse?900:2800,S:isCoarse?.65:.85,gl:false,gldpr:1,fx:1,st:1,
+     desc:'A frozen galaxy. Thousands of particles locked mid-fall around a breathing core. A painting that is alive in exactly one place.',
+     fxl:'ACTIVE: STATIC GALAXY (U-3 DENSITY) \u00b7 LIVE CORE \u00b7 GLITCHES',
+     hw:'RUNS ON ANYTHING \u2014 COST OF A SINGLE IMAGE'},
     {id:2,tag:'U-2',name:'FLUX',capMs:isCoarse?31:15,n:isCoarse?480:1300,S:isCoarse?.6:.7,gl:true,gldpr:isCoarse?.9:1.0,fx:2,
      desc:'Gravitational lensing ignites. Space bends around the core, the disc blooms, the signal reacts to the music.',
      fxl:'HEAVIEST: WEBGL LENSING \u00b7 BLOOM \u00b7 AUDIO-REACTIVE CORE \u00b7 PARALLAX',
@@ -676,6 +676,7 @@
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,SW,SH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
       texW=SW; texH=SH;
     }
+    staticCv=null; staticAngle=0;
     worker.postMessage({t:'resize',W:SW,H:SH});
   }
   window.addEventListener('resize',resize);
@@ -722,6 +723,7 @@
     }
     colorCache={};
     overloadHinted=false;
+    staticCv=null; staticAngle=0;
     resize();
     worker.postMessage({t:'setn',n:N});
     var um=document.getElementById('uni-mark');
@@ -855,7 +857,9 @@
         } else sctx.fillText(chArr[i],x,y);
       }
     }
-    /* ── ядро ── */
+    drawCore(warpNow,redNow);
+  }
+  function drawCore(warpNow,redNow){
     var flare=(warpNow?1.9:1)+aBass*.9;
     var cR=redNow||nightMode;
     var g1=sctx.createRadialGradient(CXi,CYi,0,CXi,CYi,COREi*6*flare);
@@ -876,6 +880,60 @@
     sctx.strokeStyle=cR?'rgba(255,130,140,'+(warpNow?.4:.14)+')':'rgba(120,210,255,'+(warpNow?.4:.14)+')';
     sctx.beginPath();sctx.arc(0,0,COREi+11,0,6.2832);sctx.stroke();
     sctx.restore();
+  }
+
+  /* ═══ СТАТИЧНАЯ ГАЛАКТИКА (U-1) ═══ */
+  var staticCv=null, staticAngle=0;
+  function buildStatic(){
+    staticCv=document.createElement('canvas');
+    staticCv.width=SW; staticCv.height=SH;
+    var g=staticCv.getContext('2d');
+    g.fillStyle='#000'; g.fillRect(0,0,SW,SH);
+    var MAXR2=Math.sqrt(SW*SW+SH*SH)*.62;
+    var CORE2=Math.max(14,Math.min(SW,SH)*.033);
+    var n=PRO.n, arms=3;
+    var cosT2=Math.cos(TILT), sinT2=Math.sin(TILT);
+    for(var i=0;i<n;i++){
+      var t=Math.pow(Math.random(),.65);
+      var arm=(Math.random()*arms)|0;
+      var r=CORE2*1.3+t*MAXR2;
+      var spread=.38/(t+.25);
+      var ang=arm*(6.2832/arms)+t*5.2+(Math.random()-.5)*spread;
+      var z=.35+Math.random()*.65;
+      var ex=Math.cos(ang)*r, ey=Math.sin(ang)*r*SQUASH;
+      var x=ex*cosT2-ey*sinT2+SW/2;
+      var y=ex*sinT2+ey*cosT2+SH*.46;
+      if(x<-4||x>SW+4||y<-4||y>SH+4)continue;
+      var heat=Math.max(0,1-r/(MAXR2*.55));
+      var acc=Math.random(), cr,cg,cb;
+      if(acc<.03){cr=0;cg=190;cb=90;}
+      else if(acc<.05){cr=210;cg=20;cb=50;}
+      else{cr=(110-heat*55)|0;cg=(120+heat*70)|0;cb=(135+heat*120)|0;}
+      var alpha=z*(.10+heat*.6);
+      g.fillStyle='rgba('+cr+','+cg+','+cb+','+alpha.toFixed(3)+')';
+      if(Math.random()<.05){
+        g.font=(7+Math.random()*7|0)+'px "JetBrains Mono",monospace';
+        g.fillText(randChar(),x,y);
+      } else {
+        var sz=(1+Math.random()*1.6)*(1+heat*.8);
+        g.fillRect(x,y,sz,sz);
+      }
+    }
+  }
+  function renderStatic(dt){
+    if(!staticCv)buildStatic();
+    var spin=VX.g-VX.base;
+    if(VX.warp||spin>0.2) staticAngle+=dt*spin*.35;
+    sctx.fillStyle='#000'; sctx.fillRect(0,0,SW,SH);
+    if(Math.abs(staticAngle)>0.0001){
+      sctx.save();
+      sctx.translate(CXi,CYi); sctx.rotate(staticAngle); sctx.translate(-CXi,-CYi);
+      sctx.drawImage(staticCv,0,0);
+      sctx.restore();
+    } else {
+      sctx.drawImage(staticCv,0,0);
+    }
+    drawCore(VX.warp, VX.red>.5);
   }
 
   /* ═══ POST ═══ */
@@ -952,6 +1010,12 @@
     if(VX.redT>0){ VX.redT-=dt; VX.red=Math.min(VX.red+dt*3,1); }
     else VX.red=Math.max(VX.red-dt*1.5,0);
 
+    if(PRO.st){
+      renderStatic(dt);
+      irisFrame(dt);
+      requestAnimationFrame(frame);
+      return;
+    }
     if(!pending&&freeBuf){
       pending=true;
       var pxp=((mouseX+gyroX*.5)-.5)*26*S, pyp=((mouseY+gyroY*.5)-.5)*18*S;
@@ -1035,6 +1099,10 @@
     portalOpen=true; warping=false;
     VX.warp=false; VX.target=VX.base;
     if(/core/i.test(href))duckMainBGM(true);
+    try{
+      if(portalFrame&&portalFrame.contentWindow)
+        portalFrame.contentWindow.postMessage({aceon:'reveal'},location.origin);
+    }catch(e){}
     try{ history.pushState({aceonPortal:href},'',href); }catch(e){}
     warpLine.classList.remove('on');
     cur.style.display='none';

@@ -1011,9 +1011,30 @@
     if(waited>=4500){ window.location.href=href; return; }   /* фолбэк: обычный переход */
     warpTimers.push(setTimeout(function(){ tryOpenPortal(href,label,waited+250); },250));
   }
+  /* передача музыки: под Core-порталом главная глушит свой трек (у Core своя музыка) */
+  var duckIv=null, ducked=false;
+  function duckMainBGM(down){
+    var bgm=document.getElementById('bgm');
+    if(!bgm||!bgmFired)return;
+    clearInterval(duckIv);
+    if(down){
+      ducked=true;
+      duckIv=setInterval(function(){
+        bgm.volume=Math.max(0,bgm.volume-0.06);
+        if(bgm.volume<=0){clearInterval(duckIv);bgm.pause();}
+      },70);
+    } else {
+      try{ bgm.play().catch(function(){}); }catch(e){}
+      duckIv=setInterval(function(){
+        bgm.volume=Math.min(0.65,bgm.volume+0.05);
+        if(bgm.volume>=0.65)clearInterval(duckIv);
+      },90);
+    }
+  }
   function openPortal(href){
     portalOpen=true; warping=false;
     VX.warp=false; VX.target=VX.base;
+    if(/core/i.test(href))duckMainBGM(true);
     try{ history.pushState({aceonPortal:href},'',href); }catch(e){}
     warpLine.classList.remove('on');
     cur.style.display='none';
@@ -1026,6 +1047,7 @@
     if(!portalOpen)return;
     portalOpen=false;
     cur.style.display='';
+    if(ducked){ ducked=false; duckMainBGM(false); }
     hardReset();                                  /* мгновенно вернуть сцену */
     VX.rev=true; VX.target=3*VX.base;             /* воронка «выдыхает» гостя обратно */
     setTimeout(function(){ VX.rev=false; VX.target=VX.base; },1200);

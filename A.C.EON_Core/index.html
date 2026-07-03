@@ -546,7 +546,7 @@ function drawNeb(){
 let vparts=null,_vT=0;
 function initVortex(){
   vparts=[];
-  for(let i=0;i<280;i++)vparts.push({
+  for(let i=0;i<380;i++)vparts.push({
     r:30+Math.pow(Math.random(),.6)*Math.min(W,H)*.55,
     a:Math.random()*Math.PI*2,
     z:.3+Math.random()*.7
@@ -567,8 +567,8 @@ function drawVortex(){
     const x=cxp+Math.cos(p.a)*p.r - pmx*6;
     const y=cyp+Math.sin(p.a)*p.r*.85 - pmy*6;
     const heat=1-p.r/lim;
-    cx.globalAlpha=Math.max(0,p.z*(.03+heat*.07)*(1+agit*.9));
-    cx.fillRect(x,y,1.6+heat,1.6+heat);
+    cx.globalAlpha=Math.max(0,p.z*(.055+heat*.13)*(1+agit*.9));
+    cx.fillRect(x,y,1.8+heat*1.5,1.8+heat*1.5);
   }
   cx.globalAlpha=1;
 }
@@ -1254,25 +1254,12 @@ requestAnimationFrame(frame);
 const GID=Math.random().toString(36).substr(2,8).toUpperCase();
 
 const LINES=[
-  {t:'A.C.EON  NETWORK   v2.4.1',      c:'ca b', d:0},
-  {t:'══════════════════════════════════════════',c:'cd',d:110},
-  {t:'',d:200},
-  {t:'> INITIALISING NEURAL MAP............',    c:'',  d:300,  sx:'OK',        sc:'cg'},
-  {t:'> SCANNING NODE REGISTRY..............',   c:'',  d:620,  sx:'[9 NODES]', sc:'cg'},
-  {t:'> LOADING PARTITION DATA...............',  c:'',  d:940,  sx:'OK',        sc:'cg'},
-  {t:'> VERIFYING CONNECTIONS................',  c:'',  d:1210, sx:'OK',        sc:'cg'},
-  {t:'> CHECKING ENCRYPTION LAYER............', c:'',  d:1450, sx:'OK',        sc:'cg'},
-  {t:'',d:1620},
-  {t:'> DETECTING EXTERNAL PRESENCE..........',  c:'',  d:1720, sx:'!!',        sc:'cy'},
-  {t:'',d:1920},
-  {t:'  ▸ БИОМЕТРИЯ...................ЗАВЕРШЕНА', c:'cd',d:2020},
-  {t:'  ▸ IP АДРЕС...................ЗАФИКСИРОВАН',c:'cd',d:2230},
-  {t:'  ▸ ПОВЕДЕНЧЕСКИЙ ПРОФИЛЬ......СОЗДАН',    c:'cd',d:2440},
-  {t:'',d:2630},
-  {t:`> USER_ID  :  GUEST_${GID}`,               c:'ca',d:2730},
-  {t:'> CLEARANCE:  PUBLIC ACCESS',              c:'ca',d:2940},
-  {t:'',d:3130},
-  {t:'══════════════════════════════════════════',c:'cd',d:3230},
+  {t:'A.C.EON  NETWORK   v2.4.1',              c:'ca b', d:0},
+  {t:'RE-ENTRY DETECTED — COLD PATH',       c:'cy',   d:240},
+  {t:'> SIGNAL RE-SYNC.......................', c:'',     d:560,  sx:'OK',    sc:'cg'},
+  {t:'> WORMHOLE RESIDUE.....................', c:'',     d:1050, sx:'TRACE', sc:'cy'},
+  {t:`> USER_ID  :  GUEST_${GID}`,              c:'ca',   d:1430},
+  {t:'> RESTORING NODE MAP...................', c:'',     d:1770, sx:'OK',    sc:'cg'},
 ];
 
 function addLine(cfg){
@@ -1316,10 +1303,10 @@ function runLoader(){
         clearInterval(iv);pctEl.textContent='100%';
         setTimeout(()=>{
           document.getElementById('acc').classList.add('on');
-          setTimeout(startGraph,700);
-        },380);
+          setTimeout(startGraph,480);
+        },300);
       }
-    },38);
+    },22);
   },last);
 }
 
@@ -1409,6 +1396,10 @@ if(PORTAL){
 } else {
   runLoader();
 }
+/* возврат из bfcache: не держим гостя в темноте */
+window.addEventListener('pageshow',e=>{
+  if(e.persisted&&holdBlack)beginEmerge();
+});
 
 /* ============================================================
    MICROGLITCH SCHEDULER

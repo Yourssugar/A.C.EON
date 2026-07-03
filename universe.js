@@ -36,6 +36,26 @@
 
   document.documentElement.classList.add('ufx'+P.fx);
 
+  /* ── авто-бейдж вселенной: виден на каждой странице с мостом ──
+     не показывается, если страница рисует свою метку (#umark),
+     либо подключена с <script ... data-no-umark> */
+  function injectMark(){
+    try{
+      if(document.getElementById('umark')||document.getElementById('aceon-umark'))return;
+      if(document.querySelector('script[src*="universe"][data-no-umark]'))return;
+      var el=document.createElement('div');
+      el.id='aceon-umark';
+      el.textContent=P.tag;
+      el.style.cssText='position:fixed;right:12px;bottom:10px;z-index:2147483000;'
+        +'font-family:"JetBrains Mono",Consolas,monospace;font-size:10px;letter-spacing:3px;'
+        +'color:#cc2233;text-shadow:0 0 8px rgba(204,34,51,.35);opacity:.8;'
+        +'pointer-events:none;user-select:none;';
+      document.body.appendChild(el);
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',injectMark);
+  else injectMark();
+
   window.AceonUniverse={
     id:P.id, tag:P.tag, name:P.name, fx:P.fx, gl:P.gl, capMs:P.capMs,
     particleScale:[0.35,0.7,1][P.id-1],

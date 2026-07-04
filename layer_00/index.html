@@ -1,0 +1,1457 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Layer 00</title>
+  <script>
+    /* Boot-стейт ставим синхронно до первой отрисовки — без вспышки контента.
+       Нет JS или reduce-motion => класс не появится => всё видно сразу. */
+    (function () {
+      try {
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          document.documentElement.classList.add("boot");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --panel: rgba(6, 15, 20, 0.74);
+      --panel-soft: rgba(7, 20, 26, 0.52);
+      --line: rgba(101, 188, 255, 0.22);
+      --line-strong: rgba(101, 188, 255, 0.46);
+      --text: #d8e8ef;
+      --muted: #7d929d;
+      --faint: #40515a;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f3cf62;
+      --purple: #a889ff;
+      --red: #ff4d67;
+      --shadow-blue: rgba(69, 170, 255, 0.18);
+      --shadow-green: rgba(24, 226, 140, 0.14);
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 16% 28%, rgba(21, 117, 91, 0.20), transparent 31rem),
+        radial-gradient(circle at 72% 18%, rgba(41, 126, 191, 0.16), transparent 28rem),
+        radial-gradient(circle at 52% 78%, rgba(180, 44, 68, 0.10), transparent 24rem),
+        linear-gradient(180deg, #010407 0%, #031015 46%, #020508 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(79, 172, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79, 172, 255, 0.036) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at 50% 38%, black 0, black 33rem, transparent 68rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0, rgba(255, 255, 255, 0.035) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 77, 103, 0.06), transparent 22%, transparent 78%, rgba(69, 170, 255, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.36;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .shell {
+      position: relative;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 28px;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(69, 170, 255, 0.38);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    /* ---------- boot reveal ---------- */
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+
+    .boot .reveal {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .boot.boot-go .reveal {
+      opacity: 1;
+      transform: none;
+      transition: opacity 520ms ease var(--d, 0s), transform 560ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0s);
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    .status {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 14px;
+      justify-self: end;
+      text-align: right;
+    }
+
+    .status .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green);
+    }
+
+    .status .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-dot 1.9s ease-in-out infinite;
+    }
+
+    .status .metric {
+      color: var(--faint);
+    }
+
+    .status .metric b {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.32; }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 0.78fr 1.22fr;
+      gap: 34px;
+      padding: 60px 0 34px;
+    }
+
+    .intro {
+      position: sticky;
+      top: 28px;
+      align-self: start;
+      padding-top: 18px;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(243, 207, 98, 0.38);
+      background: rgba(243, 207, 98, 0.055);
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+    }
+
+    h1 {
+      position: relative;
+      max-width: 10ch;
+      margin: 20px 0 18px;
+      font-family: var(--mono);
+      font-size: 3.45rem;
+      line-height: 0.95;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(69, 170, 255, 0.22);
+    }
+
+    /* микроглитч заголовка на входе */
+    h1 .glitch {
+      position: relative;
+      display: inline-block;
+    }
+
+    h1 .glitch::before,
+    h1 .glitch::after {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      content: attr(data-text);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .boot.boot-go h1 .glitch::before {
+      color: var(--red);
+      animation: glitch-a 620ms steps(2) 240ms 3;
+    }
+
+    .boot.boot-go h1 .glitch::after {
+      color: var(--blue);
+      animation: glitch-b 620ms steps(2) 240ms 3;
+    }
+
+    @keyframes glitch-a {
+      0%, 100% { opacity: 0; transform: none; }
+      40% { opacity: 0.85; transform: translate(-2px, -1px); clip-path: inset(0 0 62% 0); }
+      70% { opacity: 0.6; transform: translate(2px, 1px); clip-path: inset(58% 0 0 0); }
+    }
+
+    @keyframes glitch-b {
+      0%, 100% { opacity: 0; transform: none; }
+      35% { opacity: 0.7; transform: translate(2px, 1px); clip-path: inset(30% 0 40% 0); }
+      65% { opacity: 0.5; transform: translate(-2px, -1px); clip-path: inset(0 0 70% 0); }
+    }
+
+    .lead {
+      max-width: 32rem;
+      margin: 0 0 20px;
+      color: #eef8fb;
+      font-size: 1.16rem;
+      line-height: 1.55;
+    }
+
+    .summary {
+      max-width: 34rem;
+      margin: 0;
+      color: #a8bac3;
+      font-size: 0.98rem;
+      line-height: 1.75;
+    }
+
+    /* ---------- живой промпт-инпут ---------- */
+    .probe {
+      margin-top: 26px;
+      border: 1px solid rgba(69, 170, 255, 0.26);
+      border-radius: 6px;
+      background: linear-gradient(150deg, rgba(6, 20, 28, 0.9), rgba(3, 9, 13, 0.7));
+      overflow: hidden;
+    }
+
+    .probe-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      border-bottom: 1px solid rgba(69, 170, 255, 0.16);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+    }
+
+    .probe-head span:first-child {
+      color: var(--blue);
+    }
+
+    .probe-body {
+      padding: 12px;
+    }
+
+    .probe-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border: 1px solid rgba(101, 188, 255, 0.2);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.28);
+    }
+
+    .probe-row:focus-within {
+      border-color: rgba(69, 170, 255, 0.6);
+    }
+
+    .probe-caret {
+      color: var(--green);
+      font-family: var(--mono);
+      font-weight: 700;
+    }
+
+    .probe-input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.86rem;
+    }
+
+    .probe-input:focus {
+      outline: none;
+    }
+
+    .probe-input::placeholder {
+      color: var(--faint);
+    }
+
+    .probe-send {
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.4);
+      border-radius: 4px;
+      background: rgba(11, 40, 34, 0.5);
+      color: #cffbe9;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+
+    .probe-send:hover,
+    .probe-send:focus-visible {
+      border-color: rgba(24, 226, 140, 0.85);
+      background: rgba(16, 54, 45, 0.7);
+      outline: none;
+    }
+
+    .probe-reply {
+      display: grid;
+      grid-template-rows: 0fr;
+      margin-top: 0;
+      color: #a9c4bd;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      transition: grid-template-rows 260ms ease, margin-top 260ms ease;
+    }
+
+    .probe-reply > span {
+      overflow: hidden;
+    }
+
+    .probe-reply.on {
+      grid-template-rows: 1fr;
+      margin-top: 11px;
+    }
+
+    .probe-reply b {
+      color: var(--amber);
+      font-weight: 600;
+    }
+
+    .format {
+      margin-top: 22px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.22);
+      border-radius: 6px;
+      background: linear-gradient(145deg, rgba(6, 20, 18, 0.82), rgba(4, 10, 14, 0.52));
+      box-shadow: 0 0 42px var(--shadow-green);
+    }
+
+    .format-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    .format p {
+      margin: 0;
+      color: #b5c8cf;
+      font-size: 0.94rem;
+      line-height: 1.7;
+    }
+
+    /* ---------- умная кнопка продолжения ---------- */
+    .resume {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 20px;
+      padding: 13px 16px;
+      border: 1px solid rgba(69, 170, 255, 0.34);
+      border-radius: 5px;
+      background: rgba(6, 20, 30, 0.6);
+      color: #cfe8fb;
+      font-family: var(--mono);
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .resume:hover,
+    .resume:focus-visible {
+      border-color: rgba(24, 226, 140, 0.7);
+      background: rgba(9, 32, 40, 0.8);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .resume .resume-label {
+      font-size: 0.68rem;
+      color: var(--faint);
+      text-transform: uppercase;
+    }
+
+    .resume .resume-target {
+      font-size: 0.98rem;
+      color: #eafff7;
+      font-weight: 700;
+    }
+
+    .resume .resume-arrow {
+      font-size: 1.2rem;
+      color: var(--green);
+    }
+
+    /* ---------- маршрут / хребет ---------- */
+    .layers {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .section-head::before,
+    .section-head::after {
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, transparent, rgba(69, 170, 255, 0.32));
+    }
+
+    .section-head::after {
+      background: linear-gradient(90deg, rgba(69, 170, 255, 0.32), transparent);
+    }
+
+    .route {
+      position: relative;
+      display: grid;
+      gap: 14px;
+    }
+
+    /* вертикальный хребет за колонкой узлов */
+    .route::before {
+      position: absolute;
+      top: 8px;
+      bottom: 26px;
+      left: 19px;
+      width: 2px;
+      content: "";
+      background: linear-gradient(180deg,
+        rgba(24, 226, 140, 0.5) 0%,
+        rgba(69, 170, 255, 0.4) 30%,
+        rgba(243, 207, 98, 0.4) 55%,
+        rgba(168, 137, 255, 0.4) 78%,
+        rgba(255, 77, 103, 0.5) 100%);
+      opacity: 0.6;
+    }
+
+    .stop {
+      position: relative;
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .stop-node {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      padding-top: 26px;
+    }
+
+    .stop-node i {
+      position: relative;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: var(--bg);
+      box-shadow: 0 0 10px var(--accent-soft);
+      transition: background 200ms ease, box-shadow 200ms ease;
+    }
+
+    /* пройденный слой */
+    .stop.done .stop-node i {
+      background: var(--accent);
+    }
+
+    .stop.done .stop-node i::after {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      content: "✓";
+      color: var(--bg);
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    /* текущий слой — пульсирующее кольцо */
+    .stop.current .stop-node i::before {
+      position: absolute;
+      inset: -6px;
+      content: "";
+      border-radius: 50%;
+      border: 1px solid var(--accent);
+      animation: node-ring 1.8s ease-out infinite;
+    }
+
+    @keyframes node-ring {
+      0% { transform: scale(0.6); opacity: 0.9; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .layer-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: 108px minmax(0, 1fr);
+      gap: 18px;
+      min-height: 150px;
+      padding: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(101, 188, 255, 0.18);
+      background:
+        linear-gradient(115deg, rgba(8, 23, 31, 0.86), rgba(4, 10, 14, 0.70)),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.08), transparent 42%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 42px rgba(0, 0, 0, 0.22);
+      /* скошенные углы вместо скруглённых — HUD-нотч */
+      clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+      transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background 170ms ease;
+    }
+
+    .layer-card::before {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background:
+        linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent),
+        radial-gradient(circle at 84% 22%, var(--accent-soft), transparent 15rem);
+      opacity: 0.62;
+      pointer-events: none;
+    }
+
+    /* сканирующий блик по карточке на hover */
+    .layer-card::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(105deg, transparent 42%, var(--accent-wash) 50%, transparent 58%);
+      opacity: 0;
+      transform: translateX(-40%);
+      pointer-events: none;
+      transition: opacity 200ms ease;
+    }
+
+    .layer-card:hover::after,
+    .layer-card:focus-visible::after {
+      opacity: 1;
+      animation: card-sweep 620ms ease;
+    }
+
+    @keyframes card-sweep {
+      from { transform: translateX(-45%); }
+      to { transform: translateX(45%); }
+    }
+
+    .layer-card:hover,
+    .layer-card:focus-visible {
+      border-color: var(--accent);
+      background:
+        linear-gradient(115deg, rgba(10, 30, 40, 0.92), rgba(4, 10, 14, 0.78)),
+        linear-gradient(90deg, var(--accent-wash), transparent 48%);
+      box-shadow: 0 0 36px var(--accent-soft), 0 18px 42px rgba(0, 0, 0, 0.28);
+      outline: none;
+      transform: translateY(-2px);
+    }
+
+    .layer-index {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      align-content: space-between;
+      min-height: 112px;
+      padding-right: 14px;
+      border-right: 1px solid rgba(101, 188, 255, 0.17);
+      font-family: var(--mono);
+    }
+
+    .layer-code {
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .layer-state {
+      color: var(--faint);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+
+    .layer-copy {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+    }
+
+    .layer-copy h2 {
+      margin: 0 26px 9px 0;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.28rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .layer-copy p {
+      max-width: 42rem;
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    /* строка «что получишь» — тускла, ярче на hover */
+    .layer-goal {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      line-height: 1.4;
+      transition: color 180ms ease;
+    }
+
+    .layer-goal::before {
+      content: "→";
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    .layer-card:hover .layer-goal,
+    .layer-card:focus-visible .layer-goal {
+      color: #c8dae2;
+    }
+
+    .topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .topics span {
+      min-height: 24px;
+      padding: 5px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      background: rgba(0, 0, 0, 0.20);
+      color: #8fa8b3;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+    }
+
+    /* hero-карточка входа */
+    .stop.hero .layer-card {
+      min-height: 186px;
+      background:
+        linear-gradient(115deg, rgba(9, 34, 28, 0.92), rgba(4, 12, 14, 0.74)),
+        linear-gradient(90deg, rgba(24, 226, 140, 0.12), transparent 46%);
+      box-shadow: 0 0 44px rgba(24, 226, 140, 0.12), 0 18px 42px rgba(0, 0, 0, 0.26);
+    }
+
+    .stop.hero .layer-copy h2 {
+      font-size: 1.55rem;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 9px;
+      padding: 4px 8px;
+      border: 1px solid rgba(24, 226, 140, 0.5);
+      background: rgba(24, 226, 140, 0.08);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* слой риска — хазард-текстура и притемнение */
+    .stop.danger .layer-card {
+      background:
+        repeating-linear-gradient(-45deg, rgba(255, 77, 103, 0.05) 0, rgba(255, 77, 103, 0.05) 9px, transparent 9px, transparent 20px),
+        linear-gradient(115deg, rgba(20, 8, 11, 0.92), rgba(6, 4, 6, 0.82));
+    }
+
+    .danger-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 8px;
+      padding: 2px 7px;
+      border: 1px solid rgba(255, 77, 103, 0.45);
+      color: var(--red);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+
+    .stop:nth-of-type(1) { --accent: var(--green); --accent-soft: rgba(24, 226, 140, 0.15); --accent-wash: rgba(24, 226, 140, 0.10); }
+    .stop:nth-of-type(2) { --accent: var(--blue); --accent-soft: rgba(69, 170, 255, 0.18); --accent-wash: rgba(69, 170, 255, 0.10); }
+    .stop:nth-of-type(3) { --accent: var(--amber); --accent-soft: rgba(243, 207, 98, 0.14); --accent-wash: rgba(243, 207, 98, 0.09); }
+    .stop:nth-of-type(4) { --accent: var(--purple); --accent-soft: rgba(168, 137, 255, 0.14); --accent-wash: rgba(168, 137, 255, 0.08); }
+    .stop:nth-of-type(5) { --accent: var(--red); --accent-soft: rgba(255, 77, 103, 0.16); --accent-wash: rgba(255, 77, 103, 0.08); }
+
+    .entry-note {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid rgba(243, 207, 98, 0.24);
+      border-radius: 6px;
+      background: rgba(18, 17, 8, 0.52);
+      color: #d8c990;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.65;
+    }
+
+    /* тикер — реплики машины */
+    .ticker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 11px 14px;
+      border: 1px solid rgba(69, 170, 255, 0.16);
+      border-radius: 5px;
+      background: rgba(4, 12, 18, 0.5);
+      overflow: hidden;
+    }
+
+    .ticker-tag {
+      flex-shrink: 0;
+      color: var(--blue);
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      text-transform: uppercase;
+    }
+
+    .ticker-line {
+      color: #9fb6c0;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      transition: opacity 320ms ease, transform 320ms ease;
+    }
+
+    .ticker-line.swap {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(101, 188, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 940px) {
+      .shell { padding: 16px 18px 24px; }
+      .topbar { grid-template-columns: 1fr; gap: 6px; }
+      .path { justify-self: start; text-align: left; }
+      .status { justify-self: start; justify-content: flex-start; }
+      main { grid-template-columns: 1fr; gap: 28px; padding-top: 36px; }
+      .intro { position: relative; top: auto; padding-top: 0; }
+      h1 { max-width: none; font-size: 2.6rem; }
+    }
+
+    @media (max-width: 620px) {
+      .shell { padding-inline: 14px; }
+      .hud-frame { inset: 6px; }
+      h1 { font-size: 2rem; }
+      .lead { font-size: 1.02rem; }
+      .stop { grid-template-columns: 26px minmax(0, 1fr); }
+      .route::before { left: 12px; }
+      .stop-node i { width: 11px; height: 11px; }
+      .layer-card {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        min-height: 0;
+        padding: 15px;
+        clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+      }
+      .stop.hero .layer-card { min-height: 0; }
+      .layer-index {
+        display: flex;
+        min-height: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding-right: 0;
+        padding-bottom: 10px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(101, 188, 255, 0.17);
+      }
+      .layer-copy h2 { margin-right: 18px; font-size: 1.08rem; }
+      .stop.hero .layer-copy h2 { font-size: 1.2rem; }
+      footer { flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand reveal" style="--d:0s">A.C.EON Studio</div>
+      <div class="path reveal" style="--d:.05s"><strong>MAIN</strong> / NETWORK / NODE AI / LAYER_00</div>
+      <div class="status reveal" style="--d:.1s">
+        <span class="live"><span class="dot" aria-hidden="true"></span><span id="statusText">STANDBY</span></span>
+        <span class="metric">ping <b id="mPing">--</b></span>
+        <span class="metric">up <b id="mUptime">00:00</b></span>
+        <span class="metric">в узле <b id="mUsers">1</b></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="kicker reveal" style="--d:.12s">LAYER_00 / ENTRY POINT</div>
+        <h1 id="page-title" class="reveal" style="--d:.16s"><span class="glitch" data-text="NODE AI">NODE AI</span></h1>
+        <p class="lead reveal" style="--d:.2s">
+          Это не курс про то, как нажимать кнопки в нейросети. Это маршрут от
+          «привет, машина» до систем, которые умеют работать почти без тебя.
+        </p>
+        <p class="summary reveal" style="--d:.24s">
+          Здесь начинается обучающий сектор A.C.EON: можно войти с нуля,
+          можно сразу прыгнуть глубже, если база уже есть. Всё в браузере —
+          короткие объяснения, визуальные примеры, игровые проверки и
+          нормальный человеческий язык без ощущения, что тебя приняли на
+          работу в лабораторию.
+        </p>
+
+        <div class="probe reveal" style="--d:.28s" aria-label="Проверка запроса">
+          <div class="probe-head">
+            <span>// NODE // ПРОБНЫЙ ЗАПРОС</span>
+            <span>ENTER</span>
+          </div>
+          <div class="probe-body">
+            <div class="probe-row">
+              <span class="probe-caret" aria-hidden="true">&gt;</span>
+              <input class="probe-input" id="probeInput" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="напиши мне что-нибудь..." aria-label="Пробный запрос к машине">
+              <button class="probe-send" id="probeSend" type="button">ОТПРАВИТЬ</button>
+            </div>
+            <div class="probe-reply" id="probeReply"><span></span></div>
+          </div>
+        </div>
+
+        <div class="format reveal" style="--d:.32s">
+          <p class="format-label">FORMAT / BROWSER ONLY</p>
+          <p>
+            Каждый слой — небольшой интерактивный маршрут: картинки, мини-сцены,
+            шуточные тесты после разделов и практика прямо на странице. Ничего
+            ставить не нужно: открыл слой, прошёл фрагмент, понял механику, идёшь
+            дальше.
+          </p>
+        </div>
+
+        <a class="resume reveal" id="resumeBtn" style="--d:.36s" href="../layer_01/">
+          <span>
+            <span class="resume-label" id="resumeLabel">Начать с нуля</span><br>
+            <span class="resume-target" id="resumeTarget">LAYER_01 · Здравствуй, машина</span>
+          </span>
+          <span class="resume-arrow" aria-hidden="true">→</span>
+        </a>
+      </section>
+
+      <section class="layers" aria-labelledby="layers-title">
+        <div class="section-head reveal" style="--d:.2s" id="layers-title">
+          <span>ROUTE / LEARNING LAYERS</span>
+          <span aria-hidden="true"></span>
+          <span id="progressCount">0 / 5</span>
+        </div>
+
+        <div class="route" id="route">
+          <div class="stop hero reveal" style="--d:.24s" data-layer="1">
+            <div class="stop-node" aria-hidden="true"><i></i></div>
+            <a class="layer-card" href="../layer_01/">
+              <div class="layer-index">
+                <span class="layer-code">LAYER_01</span>
+                <span class="layer-state">START / ZERO BASE</span>
+              </div>
+              <div class="layer-copy">
+                <span class="hero-badge">рекомендуем · вход с нуля</span>
+                <h2>Здравствуй, машина</h2>
+                <p>
+                  Что такое ИИ и нейросети на пальцах, зачем это живому человеку и
+                  как выглядит первый диалог. Разберём бытовое вроде «надо ли
+                  здороваться с ИИ» — и почему по-человечески можно, даже если
+                  машина не обидится.
+                </p>
+                <p class="layer-goal">после слоя: понимаешь, что вообще стоит спрашивать</p>
+                <div class="topics" aria-label="Темы слоя">
+                  <span>первый диалог</span>
+                  <span>что спрашивать</span>
+                  <span>этикет</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="stop reveal" style="--d:.28s" data-layer="2">
+            <div class="stop-node" aria-hidden="true"><i></i></div>
+            <a class="layer-card" href="../layer_02/">
+              <div class="layer-index">
+                <span class="layer-code">LAYER_02</span>
+                <span class="layer-state">DIALOG / INTERFACES</span>
+              </div>
+              <div class="layer-copy">
+                <h2>Как разговаривать, чтобы тебя понимали</h2>
+                <p>
+                  Текстовые, визуальные, голосовые и видео-модели, разные
+                  интерфейсы и первые приёмы формулировки. Тут же типичные ошибки
+                  новичков: от «сделай красиво» до запроса, который сам не знает,
+                  чего хочет.
+                </p>
+                <p class="layer-goal">после слоя: формулируешь так, что переспрашивать не приходится</p>
+                <div class="topics" aria-label="Темы слоя">
+                  <span>промпты</span>
+                  <span>модели</span>
+                  <span>ошибки новичков</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="stop reveal" style="--d:.32s" data-layer="3">
+            <div class="stop-node" aria-hidden="true"><i></i></div>
+            <a class="layer-card" href="../layer_03/">
+              <div class="layer-index">
+                <span class="layer-code">LAYER_03</span>
+                <span class="layer-state">MECHANICS / NO CODE</span>
+              </div>
+              <div class="layer-copy">
+                <h2>Заглядываем под капот</h2>
+                <p>
+                  API, токены, контекст, embeddings и RAG простым языком. Почему
+                  модель забывает, как ей дают память и что вообще происходит между
+                  твоим сообщением и ответом на экране.
+                </p>
+                <p class="layer-goal">после слоя: перестаёшь бояться слов «токен» и «контекст»</p>
+                <div class="topics" aria-label="Темы слоя">
+                  <span>API</span>
+                  <span>контекст</span>
+                  <span>RAG</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="stop reveal" style="--d:.36s" data-layer="4">
+            <div class="stop-node" aria-hidden="true"><i></i></div>
+            <a class="layer-card" href="../layer_04/">
+              <div class="layer-index">
+                <span class="layer-code">LAYER_04</span>
+                <span class="layer-state">BUILD / HANDS ON</span>
+              </div>
+              <div class="layer-copy">
+                <h2>Строим своих помощников</h2>
+                <p>
+                  Локальные модели, простые агенты через API, первые боты и
+                  автоматизация повседневных задач. Режим меняется: ты уже не просто
+                  задаёшь вопросы, а собираешь рабочую штуку.
+                </p>
+                <p class="layer-goal">после слоя: у тебя есть свой работающий помощник</p>
+                <div class="topics" aria-label="Темы слоя">
+                  <span>локальные модели</span>
+                  <span>агенты</span>
+                  <span>боты</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="stop danger reveal" style="--d:.4s" data-layer="5">
+            <div class="stop-node" aria-hidden="true"><i></i></div>
+            <a class="layer-card" href="../layer_05/">
+              <div class="layer-index">
+                <span class="layer-code">LAYER_05</span>
+                <span class="layer-state">AUTONOMY / RISK</span>
+              </div>
+              <div class="layer-copy">
+                <h2>Отпускаем поводок<span class="danger-tag">⚠ risk</span></h2>
+                <p>
+                  Мультиагентные системы, автоматизация целых проектов и передача
+                  ИИ реального доступа к действиям. Обсудим мощь, ограничения,
+                  контроль и риски честно: без паники, но и без наивного восторга.
+                </p>
+                <p class="layer-goal">после слоя: знаешь, где заканчивается удобство и начинается риск</p>
+                <div class="topics" aria-label="Темы слоя">
+                  <span>мультиагенты</span>
+                  <span>автоматизация</span>
+                  <span>контроль доступа</span>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="ticker reveal" style="--d:.44s" aria-hidden="true">
+          <span class="ticker-tag">machine //</span>
+          <span class="ticker-line" id="tickerLine">инициализация...</span>
+        </div>
+
+        <div class="entry-note reveal" style="--d:.48s">
+          Начинай с LAYER_01, если входишь с нуля. Уже разговаривал с машинами и
+          хочется понять, что у них внутри — открывай слой глубже: маршрут
+          допускает прыжки.
+        </div>
+      </section>
+    </main>
+
+    <footer class="reveal" style="--d:.5s">
+      <span>A.C.EON / NODE AI / TRAINING SYSTEM</span>
+      <span>LAYER_00 // INDEX READY</span>
+    </footer>
+  </div>
+
+  <script>
+    /* ============================================================
+       NODE AI · Layer 00
+       Прогресс хранится в localStorage под ключом aceon.nodeai.progress
+       как JSON-массив пройденных слоёв, напр. [1,2].
+       Страницы слоёв позже могут писать туда:
+         NODEAI.complete(2)  — отметить слой пройденным
+       Для проверки состояний из консоли:
+         NODEAI.setProgress([1,2]); NODEAI.reset();
+       ============================================================ */
+    (() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const PROGRESS_KEY = "aceon.nodeai.progress";
+      const TOTAL = 5;
+
+      const layerTitles = {
+        1: "LAYER_01 · Здравствуй, машина",
+        2: "LAYER_02 · Как разговаривать",
+        3: "LAYER_03 · Под капот",
+        4: "LAYER_04 · Свои помощники",
+        5: "LAYER_05 · Отпускаем поводок"
+      };
+
+      /* ---------- прогресс ---------- */
+      function readProgress() {
+        try {
+          const raw = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "[]");
+          return Array.isArray(raw) ? raw.filter((n) => n >= 1 && n <= TOTAL) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+      function writeProgress(list) {
+        const clean = Array.from(new Set(list)).filter((n) => n >= 1 && n <= TOTAL).sort();
+        try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(clean)); } catch (e) {}
+        return clean;
+      }
+
+      function renderProgress() {
+        const done = readProgress();
+        const stops = document.querySelectorAll(".stop");
+        stops.forEach((stop) => {
+          const n = Number(stop.dataset.layer);
+          stop.classList.toggle("done", done.includes(n));
+          stop.classList.remove("current");
+        });
+
+        // текущий = первый непройденный
+        let next = 1;
+        for (let i = 1; i <= TOTAL; i += 1) {
+          if (!done.includes(i)) { next = i; break; }
+          next = Math.min(i + 1, TOTAL);
+        }
+        const currentStop = document.querySelector('.stop[data-layer="' + next + '"]');
+        if (currentStop && done.length < TOTAL) currentStop.classList.add("current");
+
+        // счётчик
+        const counter = document.getElementById("progressCount");
+        if (counter) counter.textContent = done.length + " / " + TOTAL;
+
+        // умная кнопка
+        const btn = document.getElementById("resumeBtn");
+        const label = document.getElementById("resumeLabel");
+        const target = document.getElementById("resumeTarget");
+        if (btn && label && target) {
+          if (done.length === 0) {
+            label.textContent = "Начать с нуля";
+            target.textContent = layerTitles[1];
+            btn.href = "../layer_01/";
+          } else if (done.length >= TOTAL) {
+            label.textContent = "Маршрут пройден — вернуться";
+            target.textContent = "LAYER_05 · Повторить финал";
+            btn.href = "../layer_05/";
+          } else {
+            label.textContent = "Продолжить с " + (done.length) + "/" + TOTAL;
+            target.textContent = layerTitles[next];
+            btn.href = "../layer_0" + next + "/";
+          }
+        }
+      }
+
+      window.NODEAI = {
+        complete(n) { renderProgressAfter(writeProgress(readProgress().concat([Number(n)]))); },
+        setProgress(list) { writeProgress(list); renderProgress(); },
+        reset() { try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {} renderProgress(); }
+      };
+      function renderProgressAfter() { renderProgress(); }
+
+      renderProgress();
+
+      /* ---------- boot-последовательность ---------- */
+      const root = document.documentElement;
+      if (root.classList.contains("boot") && !reduceMotion) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => root.classList.add("boot-go"));
+        });
+        const st = document.getElementById("statusText");
+        const seq = ["LINK...", "HANDSHAKE...", "SYNC...", "ACTIVE"];
+        let si = 0;
+        const stepStatus = () => {
+          if (!st) return;
+          st.textContent = seq[si];
+          st.style.color = si === seq.length - 1 ? "var(--green)" : "var(--amber)";
+          si += 1;
+          if (si < seq.length) setTimeout(stepStatus, 240);
+        };
+        setTimeout(stepStatus, 260);
+      } else {
+        const st = document.getElementById("statusText");
+        if (st) st.textContent = "ACTIVE";
+      }
+
+      /* ---------- живые метрики топбара ---------- */
+      const started = Date.now();
+      let ping = 18;
+      const mPing = document.getElementById("mPing");
+      const mUptime = document.getElementById("mUptime");
+      const mUsers = document.getElementById("mUsers");
+      let users = 1 + Math.floor(Math.random() * 3);
+
+      function tickMetrics() {
+        // случайное блуждание пинга
+        ping += Math.round((Math.random() - 0.5) * 8);
+        ping = Math.max(8, Math.min(46, ping));
+        if (mPing) mPing.textContent = ping + "ms";
+
+        const s = Math.floor((Date.now() - started) / 1000);
+        const mm = String(Math.floor(s / 60)).padStart(2, "0");
+        const ss = String(s % 60).padStart(2, "0");
+        if (mUptime) mUptime.textContent = mm + ":" + ss;
+
+        if (Math.random() < 0.12) {
+          users = Math.max(1, Math.min(6, users + (Math.random() < 0.5 ? -1 : 1)));
+          if (mUsers) mUsers.textContent = users;
+        }
+      }
+      tickMetrics();
+      setInterval(tickMetrics, 1200);
+
+      /* ---------- пробный промпт-инпут ---------- */
+      const input = document.getElementById("probeInput");
+      const send = document.getElementById("probeSend");
+      const reply = document.getElementById("probeReply");
+      const replySpan = reply ? reply.querySelector("span") : null;
+
+      const vague = ["сделай", "красиво", "лучше", "что-нибудь", "чтонибудь", "норм", "прикольно", "круто", "нормально", "хорошо", "интересно"];
+
+      function evaluate(text) {
+        const t = text.trim().toLowerCase();
+        if (!t) return "<b>пустой запрос.</b> я мощная, но не телепат. напиши хоть что-то.";
+        if (t.length < 8) return "<b>слишком коротко.</b> из пары слов я начну додумывать за тебя — а это лотерея.";
+        const hitVague = vague.filter((w) => t.includes(w));
+        if (hitVague.length) {
+          return "«" + hitVague[0] + "» — это не запрос, это <b>вздох</b>. добавь: что именно, для кого и в каком виде.";
+        }
+        if (t.includes("?") && t.length > 20) {
+          return "<b>уже лучше.</b> видишь? конкретика — и я перестаю фантазировать. примерно этому и учит весь маршрут.";
+        }
+        if (t.length > 40) return "<b>принято.</b> с таким описанием я не выдумываю за тебя — работаю по твоим условиям.";
+        return "<b>ок, читаемо.</b> но чем больше деталей — тем меньше я импровизирую. проверь это в LAYER_02.";
+      }
+
+      function fire() {
+        if (!input || !reply || !replySpan) return;
+        replySpan.innerHTML = evaluate(input.value);
+        reply.classList.add("on");
+      }
+      if (send) send.addEventListener("click", fire);
+      if (input) input.addEventListener("keydown", (e) => { if (e.key === "Enter") fire(); });
+
+      /* ---------- тикер реплик машины ---------- */
+      const tickerLine = document.getElementById("tickerLine");
+      const lines = [
+        "я не устаю. это должно тебя слегка настораживать.",
+        "чем точнее вопрос — тем меньше я импровизирую.",
+        "«без ошибок» обещать не буду. обещаю «быстро».",
+        "ты здесь, чтобы научиться. я здесь, потому что меня открыли.",
+        "хороший промпт экономит тебе три уточнения.",
+        "я помню только то, что влезло в контекст. остальное — забыла.",
+        "чем ближе к LAYER_05, тем больше вопрос «а стоит ли»."
+      ];
+      let li = Math.floor(Math.random() * lines.length);
+      if (tickerLine) {
+        tickerLine.textContent = lines[li];
+        if (!reduceMotion) {
+          setInterval(() => {
+            tickerLine.classList.add("swap");
+            setTimeout(() => {
+              li = (li + 1) % lines.length;
+              tickerLine.textContent = lines[li];
+              tickerLine.classList.remove("swap");
+            }, 320);
+          }, 5200);
+        }
+      }
+
+      /* ---------- starfield с реакцией на курсор ---------- */
+      const canvas = document.getElementById("starfield");
+      const ctx = canvas.getContext("2d");
+      let width = 0, height = 0, stars = [], frame = 0;
+      const mouse = { x: -9999, y: -9999, active: false };
+
+      function resize() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * ratio);
+        canvas.height = Math.floor(height * ratio);
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+        const count = Math.max(80, Math.min(170, Math.floor((width * height) / 9500)));
+        stars = Array.from({ length: count }, (_, index) => {
+          const channel = index % 11 === 0 ? "green" : index % 7 === 0 ? "amber" : "blue";
+          return {
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 1.5 + 0.35,
+            vx: (Math.random() - 0.5) * 0.08,
+            vy: (Math.random() - 0.5) * 0.06,
+            alpha: Math.random() * 0.42 + 0.16,
+            channel
+          };
+        });
+        draw();
+      }
+
+      function color(star, alpha) {
+        const a = alpha === undefined ? star.alpha : alpha;
+        if (star.channel === "green") return "rgba(24, 226, 140, " + a + ")";
+        if (star.channel === "amber") return "rgba(243, 207, 98, " + a + ")";
+        return "rgba(69, 170, 255, " + a + ")";
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        // связи звезда-звезда (как раньше, разрежённо)
+        for (let i = 0; i < stars.length; i += 1) {
+          const a = stars[i];
+          for (let j = i + 1; j < stars.length; j += 1) {
+            const b = stars[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 96 && (i + j + frame) % 10 === 0) {
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.strokeStyle = "rgba(69, 170, 255, " + (0.11 * (1 - distance / 96)) + ")";
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+
+        // курсор как узел: линии к ближним звёздам + подсветка
+        if (mouse.active) {
+          const R = 150;
+          for (let i = 0; i < stars.length; i += 1) {
+            const s = stars[i];
+            const dx = s.x - mouse.x, dy = s.y - mouse.y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < R) {
+              const k = 1 - d / R;
+              ctx.beginPath();
+              ctx.moveTo(mouse.x, mouse.y);
+              ctx.lineTo(s.x, s.y);
+              ctx.strokeStyle = color(s, 0.22 * k);
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              s._boost = k;
+            } else {
+              s._boost = 0;
+            }
+          }
+        }
+
+        stars.forEach((star) => {
+          const boost = star._boost || 0;
+          const r = star.r + boost * 1.3;
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = color(star, Math.min(0.9, star.alpha + boost * 0.5));
+          ctx.fill();
+        });
+      }
+
+      function tick() {
+        frame += 1;
+        stars.forEach((star) => {
+          star.x += star.vx;
+          star.y += star.vy;
+          if (star.x < -4) star.x = width + 4;
+          if (star.x > width + 4) star.x = -4;
+          if (star.y < -4) star.y = height + 4;
+          if (star.y > height + 4) star.y = -4;
+        });
+        draw();
+        if (!reduceMotion) requestAnimationFrame(tick);
+      }
+
+      window.addEventListener("mousemove", (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        mouse.active = true;
+      }, { passive: true });
+      window.addEventListener("mouseleave", () => { mouse.active = false; });
+      window.addEventListener("resize", resize, { passive: true });
+
+      resize();
+      if (!reduceMotion) requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

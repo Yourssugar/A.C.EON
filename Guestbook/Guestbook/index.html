@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A.C.EON — Memory</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="../../universe.js"></script>
 <style>
 /* ══ RESET ════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,22 +26,21 @@ html, body {
   color: var(--t1);
 }
 
-/* ══ LAYER STACK (z-index map) ════════════════════════
-   0  — #cv        dark nebula canvas
-   5  — #cv-glitch glitch overlay canvas
-   10 — #fld       orb container  (→ 65 in phase 5)
-   35 — #flash     white/colour burst
-   40 — #overlay   fade-to-white sheet
-   50 — #reveal    text
-   65 — #fld (p5)  black stars above text
+/* ══ LAYER STACK ══════════════════════════════════════
+   0  — #skywrap → #cv + #cv-glitch (хроматика бьёт только сюда)
+   10 — #fld orb container (→ 65 in phase 5)
+   35 — #flash
+   40 — #overlay
+   50 — #reveal
 ════════════════════════════════════════════════════ */
+#skywrap { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 #cv {
-  position: fixed; inset: 0; z-index: 0;
+  position: absolute; inset: 0;
   pointer-events: none;
   transition: opacity 2s ease;
 }
 #cv-glitch {
-  position: fixed; inset: 0; z-index: 5;
+  position: absolute; inset: 0;
   pointer-events: none; opacity: 0;
 }
 #fld {
@@ -65,7 +65,7 @@ html, body {
   pointer-events: none;
 }
 
-/* ══ ORBS (phase 1–2) ════════════════════════════════ */
+/* ══ ORBS ════════════════════════════════════════════ */
 .dw {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -80,7 +80,7 @@ html, body {
   background: rgba(255,255,255,.8);
   box-shadow: 0 0 4px 1px rgba(255,255,255,.28), 0 0 10px 2px rgba(255,255,255,.08);
   animation: pu var(--pd,3s) ease-in-out infinite var(--pdly,0s);
-  transition: transform .22s ease, background .15s, filter .15s, box-shadow .22s;
+  transition: transform .22s ease, background .15s, box-shadow .22s;
   will-change: transform;
 }
 
@@ -95,13 +95,13 @@ html, body {
   opacity: 1;
 }
 
-/* glitch tint states */
-.dot.gc-r { background:#ff2255!important; filter:drop-shadow(0 0 5px #ff2255); }
-.dot.gc-g { background:#00ff77!important; filter:drop-shadow(0 0 5px #00ff77); }
-.dot.gc-b { background:#00aaff!important; filter:drop-shadow(0 0 5px #00aaff); }
-.dot.gc-y { background:#ffee00!important; filter:drop-shadow(0 0 5px #ffee00); }
-.dot.gc-p { background:#cc00ff!important; filter:drop-shadow(0 0 5px #cc00ff); }
-.dot.gc-o { background:#ff8800!important; filter:drop-shadow(0 0 5px #ff8800); }
+/* glitch tint states — box-shadow вместо filter:drop-shadow (дёшево) */
+.dot.gc-r { background:#ff2255!important; box-shadow:0 0 6px 2px rgba(255,34,85,.7)!important; }
+.dot.gc-g { background:#00ff77!important; box-shadow:0 0 6px 2px rgba(0,255,119,.7)!important; }
+.dot.gc-b { background:#00aaff!important; box-shadow:0 0 6px 2px rgba(0,170,255,.7)!important; }
+.dot.gc-y { background:#ffee00!important; box-shadow:0 0 6px 2px rgba(255,238,0,.7)!important; }
+.dot.gc-p { background:#cc00ff!important; box-shadow:0 0 6px 2px rgba(204,0,255,.7)!important; }
+.dot.gc-o { background:#ff8800!important; box-shadow:0 0 6px 2px rgba(255,136,0,.7)!important; }
 
 /* ══ TOOLTIP ═════════════════════════════════════════ */
 .tip {
@@ -204,8 +204,10 @@ html, body {
 </head>
 <body>
 
-<canvas id="cv"></canvas>
-<canvas id="cv-glitch"></canvas>
+<div id="skywrap">
+  <canvas id="cv"></canvas>
+  <canvas id="cv-glitch"></canvas>
+</div>
 <div id="flash"></div>
 <div id="fld"></div>
 <div id="overlay"></div>
@@ -220,11 +222,16 @@ html, body {
 <script>
 'use strict';
 
+/* ── универс-мост ── */
+let AU = { id: 1, fx: 1 };
+try { AU = window.AceonUniverse || AU; } catch (e) {}
+const RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
 /* ════════════════════════════════════════════════════════
-   CONFIG & API  (same pattern as original guestbook)
+   CONFIG & API  (не тронуто)
 ════════════════════════════════════════════════════════ */
 const CONFIG_URL = 'https://raw.githubusercontent.com/yourssugar/A.C.EON/main/Guestbook/config.json';
-const CROSS_MS   = 20 * 60 * 1000;   // 20 min crossing time
+const CROSS_MS   = 20 * 60 * 1000;
 const TICK_MS    = 150;
 const MAX_FETCH  = 300;
 const CFG_TTL    = 5 * 60 * 1000;
@@ -236,7 +243,7 @@ async function fetchCfg() {
     const r = await fetch(CONFIG_URL + '?t=' + Date.now());
     const d = await r.json();
     if (d.api) { apiUrl = d.api; cfgAt = Date.now(); }
-  } catch { /* silent — server might be offline */ }
+  } catch { /* silent */ }
 }
 
 async function getApiUrl() {
@@ -258,7 +265,7 @@ async function apiFetch(path, opts) {
 }
 
 /* ════════════════════════════════════════════════════════
-   UTILS
+   UTILS (не тронуто)
 ════════════════════════════════════════════════════════ */
 const rnd   = (a, b) => a + Math.random() * (b - a);
 const rndI  = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -276,8 +283,7 @@ function relTime(ts) {
 }
 
 /* ════════════════════════════════════════════════════════
-   BROKEN MESSAGE GENERATOR
-   Produces hash-like corrupted names / phrases / times
+   BROKEN MESSAGE GENERATOR (не тронуто)
 ════════════════════════════════════════════════════════ */
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#$@!%^&*_=+|~<>';
 const TC = '01FvG#$!@vdDb ';
@@ -293,10 +299,6 @@ const genName = () => GC[rndI(0, 25)] + gStr(5, 13, GC);
 const genMsg  = () => gStr(10, 28, GC, true);
 const genTime = () => '(' + gStr(6, 14, TC, true) + ')';
 
-/* ════════════════════════════════════════════════════════
-   PHASE 1 DATA
-   35 broken entries with corrupted text + 35 empty dots
-════════════════════════════════════════════════════════ */
 const BROKEN = Array.from({ length: 35 }, (_, i) => ({
   id: -(i + 1),
   name:   genName(),
@@ -310,21 +312,30 @@ const EMPTY = Array.from({ length: 35 }, (_, i) => ({
   hasMsg: false,
 }));
 
-// Shuffle together
 const P1 = [...BROKEN, ...EMPTY].sort(() => Math.random() - 0.5);
 
 /* ════════════════════════════════════════════════════════
-   BACKGROUND CANVAS  (identical nebula + stars to original)
+   ЖИВОЕ НЕБО — синхронизировано с гостевой по тирам
+   U-1: статичное (оригинальный paintBg)
+   U-2: цветные звёзды, дыхание туманностей, параллакс
+   U-3: + Млечный Путь, светлячки, аврора, созвездия,
+        падающие звёзды
+   Во время смерти движок получает dying 0..1
 ════════════════════════════════════════════════════════ */
 const bgCv  = document.getElementById('cv');
 const bgCtx = bgCv.getContext('2d');
+const LIVESKY = AU.id >= 2 && !RM;
 
-function paintBg() {
+let SKY = null;
+let skyOff = false;
+let dying = 0;              /* 0..1 интенсивность разрушения */
+let deathMode = false;
+
+function paintBg() {        /* U-1 / reduced-motion: как было */
   bgCv.width  = window.innerWidth;
   bgCv.height = window.innerHeight;
   const W = bgCv.width, H = bgCv.height;
   bgCtx.clearRect(0, 0, W, H);
-
   [[.28,.28,'rgba(55,18,110,',  .07],
    [.72,.62,'rgba(18,38,100,',  .05],
    [.52,.1, 'rgba(95,28,55,',   .045],
@@ -335,7 +346,6 @@ function paintBg() {
     bgCtx.fillStyle = g;
     bgCtx.fillRect(0, 0, W, H);
   });
-
   for (let i = 0; i < 180; i++) {
     const x=Math.random()*W, y=Math.random()*H, r=Math.random()*.9+.15;
     bgCtx.fillStyle = `rgba(255,255,255,${(Math.random()*.5+.15).toFixed(2)})`;
@@ -343,65 +353,463 @@ function paintBg() {
   }
 }
 
+function buildBlob(cw,color,a){
+  const c=document.createElement('canvas');c.width=c.height=cw;
+  const g=c.getContext('2d');
+  const gr=g.createRadialGradient(cw/2,cw/2,0,cw/2,cw/2,cw/2);
+  gr.addColorStop(0,color+a+')');gr.addColorStop(1,'transparent');
+  g.fillStyle=gr;g.fillRect(0,0,cw,cw);
+  return c;
+}
+function buildMilky(W,H){
+  const c=document.createElement('canvas');c.width=W+80;c.height=H+80;
+  const g=c.getContext('2d');
+  const x0=-40,y0=H*.72, x1=W+40,y1=H*.22;
+  const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy);
+  const nx=-dy/L,ny=dx/L;
+  for(let k=0;k<3;k++){
+    const t=Math.random();
+    const bx=x0+dx*t+40, by=y0+dy*t+40;
+    const gr=g.createRadialGradient(bx,by,0,bx,by,H*.35);
+    gr.addColorStop(0,'rgba(190,200,235,0.028)');gr.addColorStop(1,'transparent');
+    g.fillStyle=gr;g.fillRect(0,0,c.width,c.height);
+  }
+  for(let i=0;i<720;i++){
+    const t=Math.random();
+    const spread=(Math.random()+Math.random()+Math.random()-1.5)/1.5;
+    const px=x0+dx*t+nx*spread*H*.14+40;
+    const py=y0+dy*t+ny*spread*H*.14+40;
+    const a=(.03+Math.random()*.10)*(1-Math.abs(spread)*.7);
+    if(a<=0)continue;
+    g.fillStyle=`rgba(235,240,255,${a.toFixed(3)})`;
+    g.fillRect(px,py,Math.random()<.85?1:1.6,1);
+  }
+  return c;
+}
+function skySetup(){
+  bgCv.width=window.innerWidth; bgCv.height=window.innerHeight;
+  const W=bgCv.width,H=bgCv.height,bs=Math.max(120,Math.min(W,H)*.96|0);
+  const tint=r=> r<.78?'rgba(255,255,255,' : (r<.90?'rgba(255,214,170,' : 'rgba(170,200,255,');
+  SKY={
+    W,H,
+    px:0,py:0,tx:0,ty:0,
+    blobs:[
+      {sp:buildBlob(bs,'rgba(55,18,110,',0.09),x:.28,y:.28,ax:.05,ay:.04,s1:.00007,s2:.00005},
+      {sp:buildBlob(bs,'rgba(18,38,100,',0.07),x:.72,y:.62,ax:.06,ay:.05,s1:.00005,s2:.00008},
+      {sp:buildBlob(bs,'rgba(95,28,55,',0.06),x:.52,y:.10,ax:.04,ay:.03,s1:.00006,s2:.00004}
+    ],
+    milky:AU.id>=3?buildMilky(W,H):null,
+    stars:Array.from({length:AU.id>=3?170:120},()=>({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*.9+.15,z:.3+Math.random()*.7,
+      ph:Math.random()*6.283,c:tint(Math.random()),
+      vy:0,g:0,flare:0
+    })),
+    flies:AU.id>=3?Array.from({length:50},()=>({
+      x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,ph:Math.random()*6.283
+    })):null,
+    consts:[], shoot:null,
+    constTimer:16+Math.random()*18,
+    last:performance.now(), lastF:0
+  };
+}
+function pickConstellation(broken){
+  if(orbs.size<4)return null;
+  const W=SKY.W,H=SKY.H;
+  const pts=[];
+  for(const [id,o] of orbs){
+    if(o.p5)continue;
+    const x=parseFloat(o.el.style.left);
+    if(!(x>50&&x<W-50))continue;
+    pts.push({o,x,y:o.yFrac*H});
+  }
+  if(pts.length<4)return null;
+  const seed=pts[(Math.random()*pts.length)|0];
+  pts.sort((a,b)=>((a.x-seed.x)**2+(a.y-seed.y)**2)-((b.x-seed.x)**2+(b.y-seed.y)**2));
+  const k=3+(Math.random()*2|0);
+  return {list:pts.slice(0,Math.min(k+1,pts.length)).map(p=>p.o),t:0,broken:!!broken};
+}
+function skyFrame(now){
+  requestAnimationFrame(skyFrame);
+  if(skyOff||document.hidden||!SKY)return;
+  const capMs=(AU.id>=3&&!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches))?15:31;
+  if(now-SKY.lastF<capMs-1)return;
+  SKY.lastF=now;
+  const dt=Math.min((now-SKY.last)/1000,.05);SKY.last=now;
+  const W=SKY.W,H=SKY.H,g=bgCtx,T=now,dy=dying;
+  SKY.px+=(SKY.tx-SKY.px)*.03;
+  SKY.py+=(SKY.ty-SKY.py)*.03;
+  const px=SKY.px,py=SKY.py;
+
+  g.fillStyle='#07050f';g.fillRect(0,0,W,H);
+
+  SKY.blobs.forEach(b=>{
+    const bx=(b.x+Math.sin(T*b.s1)*b.ax)*W - px*26;
+    const by=(b.y+Math.cos(T*b.s2)*b.ay)*H - py*20;
+    const sz=b.sp.width;
+    g.drawImage(b.sp,bx-sz/2,by-sz/2);
+  });
+  /* смерть: свет уходит из туманностей */
+  if(dy>0){
+    g.fillStyle=`rgba(8,8,12,${(dy*.5).toFixed(3)})`;
+    g.fillRect(0,0,W,H);
+  }
+
+  if(SKY.milky){
+    g.globalAlpha=1-dy*.8;
+    g.drawImage(SKY.milky,-40-px*15,-40-py*11);
+    g.globalAlpha=1;
+  }
+
+  /* аврора (U-3) гаснет при смерти */
+  if(AU.id>=3&&dy<.9){
+    const base=H*.14, amp=H*.035;
+    g.beginPath();
+    for(let i=0;i<=24;i++){
+      const x=i/24*W;
+      const y=base+Math.sin(x*.004+T*.00012)*amp+Math.sin(x*.011+T*.00007)*amp*.4;
+      i===0?g.moveTo(x,y):g.lineTo(x,y);
+    }
+    for(let i=24;i>=0;i--){
+      const x=i/24*W;
+      const y=base+Math.sin(x*.004+T*.00012)*amp+Math.sin(x*.011+T*.00007)*amp*.4;
+      g.lineTo(x,y+H*.09);
+    }
+    g.closePath();
+    const ag=g.createLinearGradient(0,base-amp,0,base+H*.11);
+    ag.addColorStop(0,`rgba(120,220,190,${(0.05*(1-dy)).toFixed(3)})`);
+    ag.addColorStop(1,'rgba(120,220,190,0)');
+    g.fillStyle=ag;g.fill();
+  }
+
+  /* звёзды: при смерти падают и мерцают агонией */
+  SKY.stars.forEach(st=>{
+    if(dy>0&&st.g===0)st.g=AU.id>=2?rnd(24,90):rnd(6,16);
+    if(dy>0){ st.vy+=st.g*dy*dt; st.y+=st.vy*dt; }
+    st.x-=(2+st.z*6)*dt;
+    if(st.x<-4&&dy===0){st.x=W+4;st.y=Math.random()*H;}
+    if(st.y>H+6)return;                       /* упавшие не возвращаются */
+    if(AU.id>=3&&st.flare<=0&&Math.random()<.00035)st.flare=1;
+    const tw=.5+.5*Math.sin(T*.001+st.ph);
+    const agony=dy>0?(.6+.4*Math.sin(T*.02+st.ph*7)):1;
+    const sx=st.x-px*14*st.z, sy=st.y-py*10*st.z;
+    let a=st.z*(.2+.4*tw)*agony*(1-dy*.35), r=st.r;
+    if(st.flare>0){
+      a=Math.min(1,a+st.flare*.65); r=st.r*(1+st.flare*1.6);
+      g.strokeStyle=`rgba(255,255,255,${(st.flare*.4).toFixed(3)})`;
+      g.lineWidth=.7;
+      const gl=6+st.flare*8;
+      g.beginPath();g.moveTo(sx-gl,sy);g.lineTo(sx+gl,sy);
+      g.moveTo(sx,sy-gl);g.lineTo(sx,sy+gl);g.stroke();
+      st.flare-=dt*.55;
+    }
+    g.fillStyle=st.c+Math.max(0,a).toFixed(2)+')';
+    g.beginPath();g.arc(sx,sy,r,0,6.283);g.fill();
+  });
+
+  if(SKY.flies){
+    SKY.flies.forEach(f=>{
+      f.vx+=(Math.random()-.5)*3*dt; f.vy+=(Math.random()-.5)*3*dt+dy*30*dt;
+      f.vx*=.985; f.vy*=.985;
+      f.x+=f.vx; f.y+=f.vy;
+      if(f.x<0)f.x=W; if(f.x>W)f.x=0;
+      if(f.y>H)f.y=dy>0?H:0; if(f.y<0)f.y=H;
+      const a=(.10+.16*(.5+.5*Math.sin(T*.0016+f.ph)))*(1-dy*.6);
+      g.fillStyle=`rgba(220,230,255,${Math.max(0,a).toFixed(3)})`;
+      g.fillRect(f.x,f.y,1,1);
+    });
+  }
+
+  /* созвездия памяти (U-3): при смерти рвутся с дрожью */
+  if(AU.id>=3){
+    if(dy===0){
+      SKY.constTimer-=dt;
+      if(SKY.constTimer<=0){
+        const c=pickConstellation(false);
+        if(c)SKY.consts.push(c);
+        SKY.constTimer=32+Math.random()*22;
+      }
+    }
+    for(let i=SKY.consts.length-1;i>=0;i--){
+      const c=SKY.consts[i]; c.t+=dt;
+      const life=c.broken?2.6:3.6;
+      if(c.t>=life){SKY.consts.splice(i,1);continue;}
+      let a;
+      if(c.t<.5)a=c.t/.5;
+      else if(c.t>life-1.1)a=(life-c.t)/1.1;
+      else a=1;
+      let ok=true;
+      g.beginPath();
+      c.list.forEach((o,k)=>{
+        if(!orbs.has(+o.el.dataset.id)){ok=false;return;}
+        const jit=c.broken?(Math.random()-.5)*10*dying:0;
+        const x=parseFloat(o.el.style.left)+jit;
+        const y=o.yFrac*H+jit;
+        k===0?g.moveTo(x,y):g.lineTo(x,y);
+      });
+      if(!ok){SKY.consts.splice(i,1);continue;}
+      g.strokeStyle=c.broken
+        ? `rgba(255,80,110,${(a*.35).toFixed(3)})`
+        : `rgba(255,255,255,${(a*.20).toFixed(3)})`;
+      g.lineWidth=c.broken?1:.8;
+      g.stroke();
+    }
+    /* падающие звёзды — чаще во время смерти */
+    if(!SKY.shoot&&Math.random()<(.0012+dy*.012))
+      SKY.shoot={x:Math.random()*W*.7+W*.2,y:Math.random()*H*.3,t:0};
+    if(SKY.shoot){
+      const sh=SKY.shoot;sh.t+=dt*1.8;
+      if(sh.t>=1)SKY.shoot=null;
+      else{
+        const dx2=sh.x-sh.t*220,dy2=sh.y+sh.t*120;
+        const len=60+dy*70;
+        const gr=g.createLinearGradient(dx2,dy2,dx2+len,dy2-len*.55);
+        gr.addColorStop(0,`rgba(255,255,255,${((1-sh.t)*.7).toFixed(3)})`);
+        gr.addColorStop(1,'rgba(255,255,255,0)');
+        g.strokeStyle=gr;g.lineWidth=1.1;
+        g.beginPath();g.moveTo(dx2,dy2);g.lineTo(dx2+len,dy2-len*.55);g.stroke();
+      }
+    }
+  }
+}
+if(LIVESKY){
+  skySetup();
+  if(!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)){
+    document.addEventListener('mousemove',e=>{
+      if(!SKY)return;
+      SKY.tx=e.clientX/SKY.W-.5;
+      SKY.ty=e.clientY/SKY.H-.5;
+    },{passive:true});
+  }
+  requestAnimationFrame(skyFrame);
+}
+
 /* ════════════════════════════════════════════════════════
-   GLITCH CANVAS  (drawn on top during phase 2)
+   GLITCH CANVAS + ДИРИЖЁР СМЕРТИ
+   Один rAF (кап 30fps). Без body-filter, без getImageData:
+   разрывы неба — drawImage-слайсы из bgCv,
+   хроматика — filter только на #skywrap (U-3),
+   порча точек — из кэша orbs, ≤8 одновременно.
 ════════════════════════════════════════════════════════ */
 const gcv  = document.getElementById('cv-glitch');
 const gctx = gcv.getContext('2d');
 let   glitchOn     = false;
 let   glitchStartT = 0;
-let   glitchDurMs  = 12_000;
+let   glitchDurMs  = 12000;
 
 function glitchI() {
   return Math.min((Date.now() - glitchStartT) / glitchDurMs, 1);
 }
-
 function resizeGCV() { gcv.width = window.innerWidth; gcv.height = window.innerHeight; }
 resizeGCV();
 
-function paintGlitch() {
-  gctx.clearRect(0, 0, gcv.width, gcv.height);
-  if (!glitchOn) return;
-  const i = glitchI();
+const GCOLS = ['gc-r','gc-g','gc-b','gc-y','gc-p','gc-o'];
+const flashEl = document.getElementById('flash');
+const skywrap = document.getElementById('skywrap');
 
-  // Horizontal bands
-  const n = rndI(1, Math.ceil(2 + i * 10));
-  for (let k = 0; k < n; k++) {
-    gctx.fillStyle = `rgba(${rndI(0,255)},${rndI(0,255)},${rndI(0,255)},${(.07 + i * .4).toFixed(2)})`;
-    gctx.fillRect(0, Math.random() * gcv.height, gcv.width, rndI(1, Math.ceil(1 + i * 22)));
-  }
+let deathLoopOn=false, dLastF=0;
+let accDot=0, accFlash=0, accShake=0, accChrom=0;
+let corrupted=[];           /* {dot,cls,until} */
+let cracks=[];              /* U-3: деревья трещин */
+let invDone=false;
 
-  // Corruption block
-  if (Math.random() < i * 0.7) {
-    gctx.fillStyle = `rgba(${rndI(0,255)},${rndI(0,255)},${rndI(0,255)},${(.08 + i * .3).toFixed(2)})`;
-    gctx.fillRect(
-      Math.random() * gcv.width * 0.8,
-      Math.random() * gcv.height,
-      rndI(20, 240),
-      rndI(2, Math.ceil(i * 65))
-    );
-  }
-
-  // White scan line
-  if (Math.random() < i * 0.35) {
-    gctx.fillStyle = `rgba(255,255,255,${(i * .06).toFixed(2)})`;
-    gctx.fillRect(0, Math.random() * gcv.height, gcv.width, 1);
-  }
-
-  // Horizontal tear: shift a strip sideways
-  if (Math.random() < i * 0.4) {
-    const ty = rndI(0, gcv.height - 40);
-    const th = rndI(4, 30);
-    const tx = rndI(-40, 40) * i;
-    try {
-      const strip = gctx.getImageData(0, ty, gcv.width, th);
-      gctx.putImageData(strip, tx, ty);
-    } catch { /* ignore cross-origin issues in some envs */ }
+function genCracks(){
+  cracks=[];
+  const W=gcv.width,H=gcv.height;
+  const trees=AU.id>=3?5:0;
+  for(let t=0;t<trees;t++){
+    const segs=[];
+    (function grow(x,y,ang,len,depth){
+      if(depth>7||len<8)return;
+      const nx=x+Math.cos(ang)*len, ny=y+Math.sin(ang)*len;
+      segs.push([x,y,nx,ny]);
+      grow(nx,ny,ang+rnd(-.5,.5),len*rnd(.7,.95),depth+1);
+      if(Math.random()<.55)grow(nx,ny,ang+rnd(.5,1.3)*(Math.random()<.5?1:-1),len*rnd(.5,.8),depth+2);
+    })(rnd(W*.1,W*.9),rnd(H*.1,H*.9),rnd(0,6.283),rnd(40,90),0);
+    cracks.push(segs);
   }
 }
 
+function deathTick(now){
+  if(!deathLoopOn)return;
+  requestAnimationFrame(deathTick);
+  if(document.hidden)return;
+  if(now-dLastF<31)return;
+  const dt=Math.min((now-dLastF)/1000,.08); dLastF=now;
+  if(!glitchOn)return;
+  const i=glitchI();
+  dying=i;
+  const W=gcv.width,H=gcv.height;
+
+  /* ── слой глитча ── */
+  gctx.clearRect(0,0,W,H);
+
+  /* минимальный глитч — все тиры: тонкие цветные полосы */
+  const bandMax=AU.id>=2?Math.ceil(1+i*9):Math.ceil(1+i*2);
+  const bands=rndI(0,bandMax);
+  for(let k=0;k<bands;k++){
+    gctx.fillStyle=`rgba(${rndI(0,255)},${rndI(0,255)},${rndI(0,255)},${(AU.id>=2?.07+i*.35:.05+i*.14).toFixed(2)})`;
+    gctx.fillRect(0,Math.random()*H,W,rndI(1,Math.ceil(1+i*(AU.id>=2?20:5))));
+  }
+
+  if(AU.id>=2){
+    /* блоки шума */
+    if(Math.random()<i*.7){
+      gctx.fillStyle=`rgba(${rndI(0,255)},${rndI(0,255)},${rndI(0,255)},${(.08+i*.3).toFixed(2)})`;
+      gctx.fillRect(Math.random()*W*.8,Math.random()*H,rndI(20,240),rndI(2,Math.ceil(2+i*60)));
+    }
+    /* разрыв неба: слайс живого канваса, сдвинутый вбок (GPU, без getImageData) */
+    if(Math.random()<i*.45){
+      const ty=rndI(0,Math.max(1,H-40));
+      const th=rndI(4,30);
+      const tx=Math.round(rnd(-46,46)*i);
+      gctx.drawImage(bgCv,0,ty,W,th,tx,ty,W,th);
+    }
+    /* белая скан-линия */
+    if(Math.random()<i*.35){
+      gctx.fillStyle=`rgba(255,255,255,${(i*.06).toFixed(2)})`;
+      gctx.fillRect(0,Math.random()*H,W,1);
+    }
+  }
+
+  /* трещины реальности (U-3): прорастают ко второй половине */
+  if(AU.id>=3&&cracks.length){
+    const frac=Math.max(0,(i-.35)/.65);
+    if(frac>0){
+      gctx.lineWidth=1;
+      cracks.forEach(segs=>{
+        const n=Math.ceil(segs.length*Math.min(1,frac*1.2));
+        gctx.strokeStyle=`rgba(255,255,255,${(.18+i*.3).toFixed(2)})`;
+        gctx.beginPath();
+        for(let k=0;k<n;k++){
+          const s=segs[k];
+          gctx.moveTo(s[0],s[1]);gctx.lineTo(s[2],s[3]);
+        }
+        gctx.stroke();
+        if(i>.7){          /* хроматические двойники трещин */
+          gctx.strokeStyle=`rgba(255,60,90,${(i*.2).toFixed(2)})`;
+          gctx.beginPath();
+          for(let k=0;k<n;k++){
+            const s=segs[k];
+            gctx.moveTo(s[0]+1.5,s[1]);gctx.lineTo(s[2]+1.5,s[3]);
+          }
+          gctx.stroke();
+        }
+      });
+    }
+  }
+
+  /* ── тряска (только transform — композитор) ── */
+  accShake+=dt;
+  if(accShake>.08){
+    accShake=0;
+    if(Math.random()<i*(AU.id>=2?.5:.25)){
+      const a=i*(AU.id>=2?13:6);
+      document.body.style.transform=`translate(${(Math.random()-.5)*a}px,${(Math.random()-.5)*a*.35}px)`;
+    } else document.body.style.transform='';
+  }
+
+  /* ── порча точек: из кэша, ≤8 одновременно ── */
+  accDot+=dt;
+  if(accDot>.14){
+    accDot=0;
+    /* снять отжившие */
+    const nowMs=Date.now();
+    for(let k=corrupted.length-1;k>=0;k--){
+      if(corrupted[k].until<=nowMs){
+        corrupted[k].dot.classList.remove(corrupted[k].cls);
+        corrupted.splice(k,1);
+      }
+    }
+    const budget=Math.min(8-corrupted.length,rndI(1,AU.id>=2?Math.ceil(2+i*5):2));
+    if(budget>0&&orbs.size){
+      const arr=[...orbs.values()];
+      for(let k=0;k<budget;k++){
+        const o=arr[(Math.random()*arr.length)|0];
+        if(o.p5)continue;
+        if(Math.random()>i*.6)continue;
+        const dot=o.el.firstChild;
+        const cls=pick(GCOLS);
+        dot.classList.add(cls);
+        const fight=rndI(80,Math.max(90,Math.floor(750*(1-i*.7))));
+        corrupted.push({dot,cls,until:Date.now()+fight});
+      }
+    }
+  }
+
+  /* ── вспышки ── */
+  accFlash+=dt;
+  if(accFlash>.2){
+    accFlash=0;
+    if(Math.random()<i*(AU.id>=2?.3:.12)){
+      flashEl.style.background=Math.random()<.6?'#fff':pick(['#ff2244','#00ff88','#4488ff','#ffee00','#ff00aa']);
+      flashEl.style.opacity=(.04+i*(AU.id>=2?.42:.2)).toFixed(2);
+      setTimeout(()=>{flashEl.style.opacity='0';},rndI(20,Math.floor(65+i*140)));
+    }
+  }
+
+  /* ── хроматика импульсами (U-3): фильтр только на небе ── */
+  if(AU.id>=3){
+    accChrom+=dt;
+    if(accChrom>.4){
+      accChrom=0;
+      if(Math.random()<i*.5){
+        skywrap.style.filter=`hue-rotate(${rndI(0,360)}deg) saturate(${rnd(1.4,1+i*3.5).toFixed(1)})`;
+        setTimeout(()=>{skywrap.style.filter='';},rndI(60,200));
+      }
+    }
+    /* финальный крик: три инверсии неба на пике */
+    if(i>.84&&!invDone){
+      invDone=true;
+      let c=0;
+      const burst=setInterval(()=>{
+        c++;
+        skywrap.style.filter=c%2?'invert(1) brightness(1.2) saturate(2)':'brightness(1.3)';
+        if(c>=6){clearInterval(burst);skywrap.style.filter='';}
+      },170);
+    }
+  }
+}
+
+function startGlitch(dur){
+  glitchOn=true;
+  glitchStartT=Date.now();
+  glitchDurMs=dur;
+  gcv.style.opacity='1';
+  invDone=false;
+  dying=0.0001;
+  genCracks();
+  /* U-3: все созвездия вспыхивают и рвутся в момент начала смерти */
+  if(AU.id>=3&&SKY){
+    for(let k=0;k<3;k++){
+      const c=pickConstellation(true);
+      if(c)SKY.consts.push(c);
+    }
+  }
+  if(!deathLoopOn){
+    deathLoopOn=true; dLastF=0;
+    requestAnimationFrame(deathTick);
+  }
+}
+
+function stopGlitch(){
+  glitchOn=false;
+  deathLoopOn=false;
+  dying=1;
+  gctx.clearRect(0,0,gcv.width,gcv.height);
+  gcv.style.opacity='0';
+  document.body.style.transform='';
+  skywrap.style.filter='';
+  flashEl.style.opacity='0';
+  corrupted.forEach(c=>c.dot.classList.remove(c.cls));
+  corrupted=[];
+  document.querySelectorAll('.dot').forEach(d=>
+    GCOLS.forEach(c=>d.classList.remove(c))
+  );
+}
+
 /* ════════════════════════════════════════════════════════
-   ORB SYSTEM
+   ORB SYSTEM (не тронуто, + yFrac для созвездий)
 ════════════════════════════════════════════════════════ */
 const fld  = document.getElementById('fld');
 const orbs = new Map();
@@ -465,7 +873,8 @@ function addOrb(entry, birth, p5 = false) {
   if (orbs.has(entry.id)) return;
   const el = makeOrb(entry, p5);
   fld.appendChild(el);
-  orbs.set(entry.id, { entry, birth, el, hov: false, p5 });
+  orbs.set(entry.id, { entry, birth, el, hov: false, p5,
+    yFrac: (p5 ? parseFloat(el.style.top) : seedY(entry.id)) / 100 });
 }
 
 function tick() {
@@ -479,8 +888,7 @@ function tick() {
 }
 
 /* ════════════════════════════════════════════════════════
-   PHASE 1 — NORMAL
-   70 dots drift right→left. Spread across the journey.
+   PHASE 1 (не тронуто)
 ════════════════════════════════════════════════════════ */
 function startP1() {
   const now = Date.now(), N = P1.length;
@@ -488,122 +896,15 @@ function startP1() {
 }
 
 /* ════════════════════════════════════════════════════════
-   PHASE 2 — GLITCH / DEATH
-   Intensity ramps from 0→1 over the glitch duration.
-   Stars resist (temporarily return to white before
-   being corrupted again).
-════════════════════════════════════════════════════════ */
-const GCOLS = ['gc-r','gc-g','gc-b','gc-y','gc-p','gc-o'];
-const flashEl = document.getElementById('flash');
-
-let glitchTimers  = [];
-let glitchInvTout = null;
-
-function startGlitch(dur) {
-  glitchOn     = true;
-  glitchStartT = Date.now();
-  glitchDurMs  = dur;
-  gcv.style.opacity = '1';
-
-  // ① Glitch canvas — 80ms refresh
-  const t1 = setInterval(paintGlitch, 80);
-
-  // ② Body shake — amplitude grows with intensity
-  const t2 = setInterval(() => {
-    const i = glitchI();
-    if (Math.random() < i * 0.5) {
-      const a = i * 14;
-      document.body.style.transform =
-        `translate(${(Math.random()-.5)*a}px,${(Math.random()-.5)*a*.35}px)`;
-    } else {
-      document.body.style.transform = '';
-    }
-  }, 80);
-
-  // ③ Dot colour corruption — stars resist by snapping back
-  const t3 = setInterval(() => {
-    const i = glitchI();
-    document.querySelectorAll('.dot').forEach(dot => {
-      if (Math.random() < i * 0.48) {
-        const col = pick(GCOLS);
-        dot.classList.add(col);
-        // resistance: the dot fights back and returns to white after a delay
-        // at high intensity the fight is shorter and it loses faster
-        const fightMs = rndI(80, Math.max(90, Math.floor(750 * (1 - i * 0.7))));
-        setTimeout(() => { if (dot) dot.classList.remove(col); }, fightMs);
-      }
-    });
-  }, 130);
-
-  // ④ CSS body filter — hue shift / saturation corruption
-  const t4 = setInterval(() => {
-    const i = glitchI();
-    if (Math.random() < i * 0.42) {
-      const h = rndI(0, 360);
-      const s = rnd(1.2, 1 + i * 4.5).toFixed(1);
-      const b = rnd(0.6, 1 + i * 0.45).toFixed(1);
-      document.body.style.filter = `hue-rotate(${h}deg) saturate(${s}) brightness(${b})`;
-      setTimeout(() => { document.body.style.filter = ''; },
-        rndI(50, Math.floor(240 + i * 320)));
-    }
-  }, 160);
-
-  // ⑤ Flash — white / colour bursts
-  const t5 = setInterval(() => {
-    const i = glitchI();
-    if (Math.random() < i * 0.3) {
-      flashEl.style.background = Math.random() < 0.6
-        ? '#fff'
-        : pick(['#ff2244','#00ff88','#4488ff','#ffee00','#ff00aa']);
-      flashEl.style.opacity = (.04 + i * .42).toFixed(2);
-      setTimeout(() => { flashEl.style.opacity = '0'; },
-        rndI(20, Math.floor(65 + i * 140)));
-    }
-  }, 200);
-
-  // ⑥ Final inversion burst — the last scream before silence
-  glitchInvTout = setTimeout(() => {
-    let count = 0;
-    const burst = setInterval(() => {
-      count++;
-      document.body.style.filter = count % 2 === 0
-        ? 'brightness(1.3)'
-        : 'invert(1) brightness(1.2) saturate(2)';
-      if (count >= 8) {
-        clearInterval(burst);
-        document.body.style.filter = '';
-      }
-    }, 180);
-  }, dur * 0.82);
-
-  glitchTimers = [t1, t2, t3, t4, t5];
-}
-
-function stopGlitch() {
-  glitchOn = false;
-  glitchTimers.forEach(clearInterval);
-  clearTimeout(glitchInvTout);
-  glitchTimers = [];
-  gctx.clearRect(0, 0, gcv.width, gcv.height);
-  gcv.style.opacity             = '0';
-  document.body.style.transform = '';
-  document.body.style.filter    = '';
-  flashEl.style.opacity         = '0';
-  document.querySelectorAll('.dot').forEach(d =>
-    GCOLS.forEach(c => d.classList.remove(c))
-  );
-}
-
-/* ════════════════════════════════════════════════════════
-   PHASE 3 — FADE TO WHITE
+   PHASE 3 — FADE TO WHITE (не тронуто)
 ════════════════════════════════════════════════════════ */
 function fadeWhite() {
   document.getElementById('overlay').style.opacity = '1';
+  setTimeout(() => { skyOff = true; }, 3800);   /* небо мертво — цикл спит */
 }
 
 /* ════════════════════════════════════════════════════════
-   PHASE 4 — TEXT REVEAL
-   Lines appear one by one. onDone fires after last line.
+   PHASE 4 — TEXT REVEAL (не тронуто)
 ════════════════════════════════════════════════════════ */
 function revealText(onDone) {
   const lines = Array.from(document.querySelectorAll('#reveal .rv'));
@@ -617,21 +918,19 @@ function revealText(onDone) {
 
 /* ════════════════════════════════════════════════════════
    PHASE 5 — BLACK STARS ON WHITE
-   Real entries from the API drift across the white page.
-   On hover: dark tooltips reveal real names & messages.
+   (не тронуто; опрос сервера — раз в 60с, как в гостевой,
+    свёрнутая вкладка сервер не дёргает)
 ════════════════════════════════════════════════════════ */
 async function startP5() {
-  // Remove all phase-1 orbs
   for (const [, o] of orbs) o.el.remove();
   orbs.clear();
 
-  // White body — the sky after death
   document.body.style.background = '#fff';
-  bgCv.style.opacity = '0';           // fade out dark nebula
-  fld.style.zIndex   = '65';          // float above overlay & text
+  bgCv.style.opacity = '0';
+  fld.style.zIndex   = '65';
 
   await loadP5();
-  setInterval(loadP5, 60_000);        // keep refreshing real entries
+  setInterval(() => { if (!document.hidden) loadP5(); }, 60_000);
 }
 
 async function loadP5() {
@@ -645,7 +944,6 @@ async function loadP5() {
       }
     });
   } catch {
-    // Fallback: use the broken entries as black ghosts
     const now = Date.now();
     BROKEN.forEach((e, i) => {
       if (!orbs.has(e.id))
@@ -655,40 +953,40 @@ async function loadP5() {
 }
 
 /* ════════════════════════════════════════════════════════
-   ORCHESTRATION
+   ORCHESTRATION (тайминги не тронуты)
 ════════════════════════════════════════════════════════ */
 async function main() {
-  paintBg();
-  fetchCfg();                  // start loading API config early
+  if (!LIVESKY) paintBg();
+  fetchCfg();
   setInterval(tick, TICK_MS);
 
   document.addEventListener('click', e => {
     if (!e.target.closest('.dw') && hovEl) unhover(hovEl);
   });
 
-  // ─ Phase 1: normal drifting stars
   startP1();
 
-  // ─ Phase 2: glitch — starts after 15–25 s
   const t1 = rndI(15_000, 25_000);
   setTimeout(() => {
     const dur = rndI(10_000, 15_000);
     startGlitch(dur);
 
-    // ─ Phase 3 + 4 + 5: cascade begins when glitch ends
     setTimeout(() => {
       stopGlitch();
-      fadeWhite();                   // 3.5s CSS transition
+      fadeWhite();
 
       setTimeout(() => {
-        revealText(() => startP5()); // text → then black stars
-      }, 3900);                      // wait for white fade + small breath
+        revealText(() => startP5());
+      }, 3900);
 
     }, dur);
   }, t1);
 }
 
-window.addEventListener('resize', () => { paintBg(); resizeGCV(); });
+window.addEventListener('resize', () => {
+  if (LIVESKY) { if (!skyOff) skySetup(); } else paintBg();
+  resizeGCV();
+});
 
 main();
 </script>

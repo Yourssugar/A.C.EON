@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>A.C.EON Studio / NODE AI / Layer 01</title>
+  <link rel="stylesheet" href="../nodeai.css">
+  <script src="../nodeai.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -775,166 +777,6 @@
       }
     }
 
-    /* ── PROMPT BUILDER · отправка и ответ ── */
-    .prompt-actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .primary-btn:disabled {
-      opacity: 0.5;
-      cursor: default;
-      transform: none;
-    }
-
-    .ghost-btn {
-      min-height: 40px;
-      padding: 9px 13px;
-      border: 1px solid rgba(96, 186, 255, 0.28);
-      border-radius: 4px;
-      background: rgba(2, 8, 12, 0.5);
-      color: #a9c6d2;
-      cursor: pointer;
-      font-family: var(--mono);
-      font-size: 0.72rem;
-      transition: border-color 150ms ease, color 150ms ease;
-    }
-
-    .ghost-btn:hover,
-    .ghost-btn:focus-visible {
-      border-color: rgba(255, 82, 108, 0.5);
-      color: #f0c9d1;
-      outline: none;
-    }
-
-    .sim-badge {
-      margin-left: auto;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 9px;
-      border: 1px solid rgba(242, 207, 98, 0.3);
-      color: var(--amber);
-      font-family: var(--mono);
-      font-size: 0.64rem;
-      letter-spacing: .04em;
-    }
-
-    .sim-badge i {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--amber);
-      box-shadow: 0 0 6px var(--amber);
-    }
-
-    .model-reply {
-      display: grid;
-      grid-template-rows: 0fr;
-      margin-top: 0;
-      transition: grid-template-rows 320ms ease, margin-top 320ms ease;
-    }
-
-    .model-reply.on {
-      grid-template-rows: 1fr;
-      margin-top: 14px;
-    }
-
-    .model-reply > div {
-      overflow: hidden;
-    }
-
-    .reply-card {
-      border: 1px solid rgba(96, 186, 255, 0.22);
-      border-radius: 6px;
-      background: rgba(3, 12, 18, 0.72);
-      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
-    }
-
-    .reply-head {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 9px 13px;
-      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
-    }
-
-    .reply-avatar {
-      position: relative;
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-      border-radius: 50%;
-      border: 1px solid var(--blue);
-      box-shadow: 0 0 10px rgba(69, 170, 255, 0.35);
-    }
-
-    .reply-avatar::after {
-      position: absolute;
-      inset: 5px;
-      content: "";
-      border-radius: 50%;
-      background: var(--blue);
-      opacity: .55;
-      animation: reply-pulse 1.8s ease-in-out infinite;
-    }
-
-    @keyframes reply-pulse {
-      0%, 100% { opacity: .55; }
-      50% { opacity: .15; }
-    }
-
-    .reply-name {
-      color: var(--blue);
-      font-family: var(--mono);
-      font-size: 0.74rem;
-      font-weight: 700;
-      letter-spacing: .06em;
-    }
-
-    .reply-model {
-      margin-left: auto;
-      color: var(--faint);
-      font-family: var(--mono);
-      font-size: 0.64rem;
-    }
-
-    .reply-body {
-      padding: 13px;
-      min-height: 40px;
-      color: #cde0e8;
-      font-size: 0.92rem;
-      line-height: 1.7;
-      white-space: pre-wrap;
-    }
-
-    .reply-body.cur::after {
-      content: "▋";
-      color: var(--green);
-      animation: reply-blink .7s step-end infinite;
-    }
-
-    @keyframes reply-blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    .reply-tip {
-      margin: 0;
-      padding: 10px 13px;
-      border-top: 1px solid rgba(96, 186, 255, 0.12);
-      color: var(--amber);
-      font-family: var(--mono);
-      font-size: 0.72rem;
-      line-height: 1.5;
-    }
-
-    .reply-tip.weak {
-      color: var(--red);
-    }
   </style>
 </head>
 <body>
@@ -1140,24 +982,25 @@
                 </div>
               </div>
             </div>
-            <div class="prompt-output" id="prompt-output" aria-live="polite"></div>
+            <div class="prompt-output" id="prompt-output" data-out aria-live="polite"></div>
 
             <div class="prompt-actions">
-              <button class="primary-btn" type="button" id="send-btn">▸ отправить запрос</button>
-              <button class="ghost-btn" type="button" id="bare-btn" title="Отправить только цель, без контекста и формата">а если только цель?</button>
+              <button class="primary-btn" type="button" id="send-btn" data-send>▸ отправить запрос</button>
+              <button class="ghost-btn" type="button" id="bare-btn" data-bare title="Отправить только цель, без контекста и формата">а если только цель?</button>
               <span class="sim-badge" id="sim-badge"><i></i> имитация ответа</span>
             </div>
 
-            <div class="model-reply" id="model-reply">
+            <div class="model-reply" id="model-reply" data-reply>
               <div>
                 <div class="reply-card">
                   <div class="reply-head">
                     <span class="reply-avatar" aria-hidden="true"></span>
                     <span class="reply-name">NODE · тьютор</span>
-                    <span class="reply-model" id="reply-model">demo</span>
+                    <span class="reply-model" id="reply-model" data-model>demo</span>
                   </div>
-                  <div class="reply-body" id="reply-body"></div>
-                  <p class="reply-tip" id="reply-tip" hidden></p>
+                  <div class="reply-body" id="reply-body" data-body></div>
+                  <div class="reply-actions" data-refine></div>
+                  <p class="reply-tip" id="reply-tip" data-tip hidden></p>
                 </div>
               </div>
             </div>
@@ -1258,68 +1101,20 @@
   </div>
 
   <script>
-    (() => {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    (function () {
+      var N = window.NODEAI;
+      if (!N) return;
 
-      /* прогресс курса — общий ключ с хабом (layer_00 читает его и зажигает узлы) */
-      function markLayerComplete(n) {
-        try {
-          const KEY = "aceon.nodeai.progress";
-          const done = JSON.parse(localStorage.getItem(KEY) || "[]");
-          if (!done.includes(n)) {
-            done.push(n);
-            localStorage.setItem(KEY, JSON.stringify(done.sort((a, b) => a - b)));
-          }
-        } catch (e) {}
-      }
+      /* фон со звёздами (реагирует на курсор) */
+      N.starfield(document.getElementById("starfield"));
 
-      /* ============================================================
-         ПОДКЛЮЧЕНИЕ РЕАЛЬНОЙ МОДЕЛИ (позже)
-         Сейчас ответы — имитация. Точка подмены одна: askModel.
-      ============================================================ */
-      const MODEL = "gpt-5.1-mini";
-      const SYSTEM_PROMPT =
-        "Ты — обучающий ассистент NODE AI в курсе A.C.EON. " +
-        "Твоя задача — на простых примерах учить человека формулировать запросы к нейросетям. " +
-        "Отвечай коротко, по-русски, без жаргона и дружелюбно. " +
-        "Если запрос слабый — мягко покажи, чего в нём не хватает.";
-
-      /* Конструктор даёт конечный набор комбинаций (3×3×3 = 27 + голые цели).
-         Прогони их один раз через реальную модель и положи сюда как
-         {"g_explain|c_zero|f_examples": "..."} — токены потратятся 1 раз, а не на юзера. */
-      const RESPONSES = {};
-
-      async function askModel({ goalKey, contextKey, formatKey, bare, promptText }) {
-        const key = bare ? ("bare:" + goalKey) : (goalKey + "|" + contextKey + "|" + formatKey);
-        if (RESPONSES[key]) return { text: RESPONSES[key], real: true };
-
-        /* ─── РЕАЛЬНАЯ МОДЕЛЬ (включишь позже; ключ держим на своём сервере) ───
-        const r = await fetch("/api/ask", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: MODEL,
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              { role: "user",   content: promptText }
-            ],
-            max_tokens: 320
-          })
-        });
-        const data = await r.json();
-        return { text: data.choices[0].message.content.trim(), real: true };
-        ──────────────────────────────────────────────────────────────────── */
-
-        return { text: compose({ goalKey, formatKey, contextKey, bare }), real: false };
-      }
-
-      /* ── имитация (только демо; реактивна к чипам) ── */
-      const CTX = {
+      /* ── имитация ответа (реактивна к чипам; позже заменяется кэшем/моделью) ── */
+      var CTX = {
         c_zero:  "Раз с нуля — по-простому. ",
         c_tried: "Ты уже пробовал, поэтому чуть глубже. ",
         c_plain: "Без единого технического слова. "
       };
-      const BODY = {
+      var BODY = {
         g_explain: {
           f_examples:
             "Нейросеть — программа, которая училась на огромном числе примеров и по ним угадывает подходящий ответ.\n\nИз жизни:\n• подсказки при наборе текста в телефоне\n• распознавание лиц в галерее\n• голосовой помощник, который понимает речь\n\n🧩 Проверь себя: чем это отличается от обычного калькулятора?",
@@ -1345,7 +1140,7 @@
             "Аналогия: проверка — как разговор с новым коллегой, чтобы понять, что он уже умеет.\n\nМои три вопроса:\n1. Чем ИИ-модель отличается от обычной программы?\n2. Что важнее в запросе — длина или конкретика?\n3. Что делать, если ответ звучит уверенно, но странно?"
         }
       };
-      const BARE = {
+      var BARE = {
         g_explain:
           "Нейросети — это область искусственного интеллекта, где системы обучаются на данных для решения широкого спектра задач…\n\n(заметил? без контекста и формата я не знаю твой уровень и лью общие слова. Добавь «кто ты» и «в каком виде» — и ответ станет твоим.)",
         g_plan:
@@ -1354,232 +1149,44 @@
           "Понимание ИИ — обширная тема, включающая машинное обучение, нейросети, данные и многое другое…\n\n(без указания «проверь и задай 3 вопроса» я просто пересказываю тему, а не проверяю тебя.)"
       };
 
-      function compose({ goalKey, formatKey, contextKey, bare }) {
-        if (bare) return BARE[goalKey] || BARE.g_explain;
-        const base = (BODY[goalKey] && BODY[goalKey][formatKey]) || BODY.g_explain.f_short;
-        return (CTX[contextKey] || "") + base;
+      function compose(keys, o) {
+        if (o.bare) return BARE[keys.goal] || BARE.g_explain;
+        if (o.refine) {
+          if (/Сократи/.test(o.refine))
+            return "Короче некуда:\n• ИИ учился на примерах\n• он предлагает вероятное, а не истину\n• точный запрос = точный ответ";
+          if (/пример/.test(o.refine))
+            return "Пример: спрашиваешь «объясни фотосинтез 8-класснику в 3 предложениях» — и получаешь ровно это, а не лекцию на страницу.";
+          return "Учту.";
+        }
+        var b = (BODY[keys.goal] && BODY[keys.goal][keys.format]) || BODY.g_explain.f_short;
+        return (CTX[keys.context] || "") + b;
       }
 
-      /* ── UI билдера ── */
-      const selected = { goal: null, context: null, format: null };
-      const keys = { goal: null, context: null, format: null };
-
-      const output = document.getElementById("prompt-output");
-      const replyWrap = document.getElementById("model-reply");
-      const replyBody = document.getElementById("reply-body");
-      const replyTip = document.getElementById("reply-tip");
-      const replyModel = document.getElementById("reply-model");
-      const sendBtn = document.getElementById("send-btn");
-      const bareBtn = document.getElementById("bare-btn");
-
-      document.querySelectorAll(".chip").forEach((chip) => {
-        const g = chip.dataset.group;
-        if (chip.classList.contains("is-active")) {
-          selected[g] = chip.dataset.value; keys[g] = chip.dataset.key;
-        }
-        chip.addEventListener("click", () => {
-          selected[g] = chip.dataset.value; keys[g] = chip.dataset.key;
-          document.querySelectorAll('.chip[data-group="' + g + '"]').forEach((c) =>
-            c.classList.toggle("is-active", c === chip));
-          renderPrompt();
-        });
+      N.mountBuilder(document.querySelector(".prompt-tool"), {
+        groups: ["goal", "context", "format"],
+        compose: compose,
+        cache: {},
+        refine: [
+          { label: "короче", suffix: "Сократи ответ до 3 пунктов." },
+          { label: "добавь пример", suffix: "Добавь один пример из жизни." }
+        ]
       });
 
-      function renderPrompt() {
-        output.textContent = selected.goal + "\n" + selected.context + "\n" + selected.format;
-      }
-      renderPrompt();
-
-      let typing = null;
-      function typeOut(text, done) {
-        clearInterval(typing);
-        replyBody.classList.add("cur");
-        if (reduceMotion) {
-          replyBody.textContent = text;
-          replyBody.classList.remove("cur");
-          done && done();
-          return;
-        }
-        let i = 0;
-        const step = Math.max(1, Math.round(text.length / 220));
-        typing = setInterval(() => {
-          i += step;
-          replyBody.textContent = text.slice(0, i);
-          if (i >= text.length) {
-            clearInterval(typing);
-            replyBody.textContent = text;
-            replyBody.classList.remove("cur");
-            done && done();
-          }
-        }, 16);
-      }
-
-      async function runBuilder(bare) {
-        if (!selected.goal) return;
-        sendBtn.disabled = true; bareBtn.disabled = true;
-        replyWrap.classList.add("on");
-        replyTip.hidden = true;
-        replyBody.textContent = "";
-        replyBody.classList.add("cur");
-
-        const promptText = bare
-          ? selected.goal
-          : selected.goal + " " + selected.context + " " + selected.format;
-
-        await new Promise((r) => setTimeout(r, reduceMotion ? 0 : 340));
-
-        const res = await askModel({
-          goalKey: keys.goal, contextKey: keys.context, formatKey: keys.format,
-          bare, promptText
-        });
-        replyModel.textContent = res.real ? MODEL : "demo · имитация";
-
-        typeOut(res.text, () => {
-          if (bare) {
-            replyTip.textContent = "▲ Это тот же вопрос, но голый. Ответ общий и не под тебя — потому что модель гадала.";
-            replyTip.className = "reply-tip weak"; replyTip.hidden = false;
-          } else {
-            replyTip.textContent = "✓ Заметь: вид ответа поменялся вслед за твоим выбором формата. Так работает управление запросом.";
-            replyTip.className = "reply-tip"; replyTip.hidden = false;
-          }
-          sendBtn.disabled = false; bareBtn.disabled = false;
-        });
-      }
-
-      sendBtn.addEventListener("click", () => runBuilder(false));
-      bareBtn.addEventListener("click", () => runBuilder(true));
-
-      const quiz = document.getElementById("quiz-tool");
-      const result = document.getElementById("quiz-result");
-
-      quiz.querySelectorAll(".answer").forEach((answer) => {
-        answer.addEventListener("click", () => {
-          const question = answer.closest(".quiz-question");
-          question.querySelectorAll(".answer").forEach((item) => {
-            item.classList.remove("is-selected", "is-correct", "is-wrong");
-          });
-          answer.classList.add("is-selected");
-          result.textContent = "";
-        });
-      });
-
-      document.getElementById("check-quiz").addEventListener("click", () => {
-        let score = 0;
-        const questions = quiz.querySelectorAll(".quiz-question");
-
-        questions.forEach((question) => {
-          const correct = question.dataset.answer;
-          const selectedAnswer = question.querySelector(".answer.is-selected");
-          question.querySelectorAll(".answer").forEach((answer) => {
-            answer.classList.remove("is-correct", "is-wrong");
-            if (answer.dataset.choice === correct) answer.classList.add("is-correct");
-          });
-
-          if (selectedAnswer && selectedAnswer.dataset.choice === correct) {
-            score += 1;
-          } else if (selectedAnswer) {
-            selectedAnswer.classList.add("is-wrong");
-          }
-        });
-
-        if (score === questions.length) {
-          markLayerComplete(1);
-          result.textContent = `Сигнал чистый: ${score}/${questions.length}. Слой пройден — на карте он теперь отмечен. Можно открывать следующий.`;
-        } else if (score > 0) {
-          result.textContent = `Сигнал принят частично: ${score}/${questions.length}. Посмотри зелёные ответы и можно повторить.`;
-        } else {
-          result.textContent = `Связь шумит: ${score}/${questions.length}. Ничего страшного, машина терпеливая.`;
+      N.enhanceQuiz(document.getElementById("quiz-tool"), {
+        resultEl: document.getElementById("quiz-result"),
+        checkId: "check-quiz",
+        layer: 1,
+        explains: [
+          "ИИ ищет закономерности и предлагает вероятный ответ — не «сознание» и не безошибочная энциклопедия.",
+          "Цель + контекст + формат убирают догадки. Капс, угрозы и «сделай нормально» не помогают.",
+          "Благодарить не обязательно — модель не обидится. Но по-человечески можно."
+        ],
+        messages: {
+          pass: function (s, t) { return "Сигнал чистый: " + s + "/" + t + ". Слой пройден — на карте он отмечен. Можно открывать следующий."; },
+          partial: function (s, t) { return "Сигнал принят частично: " + s + "/" + t + ". Посмотри зелёные ответы и разбор, потом повтори."; },
+          fail: function (s, t) { return "Связь шумит: " + s + "/" + t + ". Ничего страшного, машина терпеливая — глянь разбор."; }
         }
       });
-    })();
-
-    (() => {
-      const canvas = document.getElementById("starfield");
-      const ctx = canvas.getContext("2d");
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      let width = 0;
-      let height = 0;
-      let nodes = [];
-      let frame = 0;
-
-      function resize() {
-        const ratio = Math.min(window.devicePixelRatio || 1, 2);
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = Math.floor(width * ratio);
-        canvas.height = Math.floor(height * ratio);
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-
-        const count = Math.max(72, Math.min(150, Math.floor((width * height) / 10500)));
-        nodes = Array.from({ length: count }, (_, index) => {
-          const channel = index % 13 === 0 ? "green" : index % 9 === 0 ? "amber" : "blue";
-          return {
-            x: Math.random() * width,
-            y: Math.random() * height,
-            r: Math.random() * 1.35 + 0.35,
-            vx: (Math.random() - 0.5) * 0.075,
-            vy: (Math.random() - 0.5) * 0.055,
-            alpha: Math.random() * 0.4 + 0.14,
-            channel
-          };
-        });
-        draw();
-      }
-
-      function nodeColor(node, alpha = node.alpha) {
-        if (node.channel === "green") return `rgba(24, 226, 140, ${alpha})`;
-        if (node.channel === "amber") return `rgba(242, 207, 98, ${alpha})`;
-        return `rgba(69, 170, 255, ${alpha})`;
-      }
-
-      function draw() {
-        ctx.clearRect(0, 0, width, height);
-
-        for (let i = 0; i < nodes.length; i += 1) {
-          const a = nodes[i];
-          for (let j = i + 1; j < nodes.length; j += 1) {
-            const b = nodes[j];
-            const dx = a.x - b.x;
-            const dy = a.y - b.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < 92 && (i + j + frame) % 12 === 0) {
-              ctx.beginPath();
-              ctx.moveTo(a.x, a.y);
-              ctx.lineTo(b.x, b.y);
-              ctx.strokeStyle = `rgba(96, 186, 255, ${0.11 * (1 - distance / 92)})`;
-              ctx.lineWidth = 1;
-              ctx.stroke();
-            }
-          }
-        }
-
-        nodes.forEach((node) => {
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
-          ctx.fillStyle = nodeColor(node);
-          ctx.fill();
-        });
-      }
-
-      function tick() {
-        frame += 1;
-        nodes.forEach((node) => {
-          node.x += node.vx;
-          node.y += node.vy;
-          if (node.x < -4) node.x = width + 4;
-          if (node.x > width + 4) node.x = -4;
-          if (node.y < -4) node.y = height + 4;
-          if (node.y > height + 4) node.y = -4;
-        });
-        draw();
-        if (!reduceMotion) requestAnimationFrame(tick);
-      }
-
-      window.addEventListener("resize", resize, { passive: true });
-      resize();
-      if (!reduceMotion) requestAnimationFrame(tick);
     })();
   </script>
 </body>

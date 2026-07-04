@@ -1,0 +1,1586 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Layer 01</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --panel: rgba(5, 16, 21, 0.76);
+      --panel-soft: rgba(7, 22, 27, 0.52);
+      --line: rgba(96, 186, 255, 0.22);
+      --line-strong: rgba(96, 186, 255, 0.48);
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 18% 12%, rgba(24, 226, 140, 0.14), transparent 28rem),
+        radial-gradient(circle at 82% 22%, rgba(69, 170, 255, 0.16), transparent 28rem),
+        radial-gradient(circle at 54% 86%, rgba(242, 207, 98, 0.08), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031117 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 52% 26%, black 0, black 34rem, transparent 72rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.055), transparent 26%, transparent 78%, rgba(24, 226, 140, 0.065));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--amber);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.36);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3.1rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(69, 170, 255, 0.12);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--blue);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.62);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(242, 207, 98, 0.34);
+      color: #f2dea2;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .signal-map {
+      position: relative;
+      min-height: 220px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.08), transparent 32%, rgba(69, 170, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.14), transparent 17rem);
+    }
+
+    .signal-map::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .signal-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: center;
+      gap: 16px;
+      min-height: 220px;
+      padding: 28px;
+    }
+
+    .signal-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 108px;
+      padding: 14px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      line-height: 1.45;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .signal-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 92px;
+      height: 92px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .signal-node::after {
+      position: absolute;
+      top: 50%;
+      right: -28px;
+      width: 40px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .signal-node:last-child::after {
+      display: none;
+    }
+
+    .signal-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.92rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.62rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .concept-grid,
+    .example-grid,
+    .question-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .concept,
+    .example,
+    .question-card,
+    .ethic-item {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .concept h3,
+    .example h3,
+    .question-card h3,
+    .ethic-item h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .concept p,
+    .example p,
+    .question-card p,
+    .ethic-item p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .concept:nth-child(1) {
+      border-color: rgba(24, 226, 140, 0.28);
+    }
+
+    .concept:nth-child(2) {
+      border-color: rgba(69, 170, 255, 0.28);
+    }
+
+    .concept:nth-child(3) {
+      border-color: rgba(242, 207, 98, 0.28);
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c9dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .prompt-tool,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 20, 19, 0.82), rgba(3, 9, 13, 0.70)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .builder-group {
+      min-width: 0;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.64);
+      color: #effff9;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.78);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .prompt-output {
+      min-height: 116px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .ethic-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .ethic-item {
+      border-color: rgba(242, 207, 98, 0.24);
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .signal-row,
+      .concept-grid,
+      .example-grid,
+      .question-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .signal-node:nth-child(2)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .signal-row,
+      .concept-grid,
+      .example-grid,
+      .question-grid,
+      .builder-grid,
+      .ethic-list,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .signal-map {
+        min-height: 0;
+      }
+
+      .signal-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .signal-node {
+        min-height: 88px;
+      }
+
+      .signal-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .signal-node:nth-child(2)::after {
+        display: block;
+      }
+
+      .signal-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    /* ── PROMPT BUILDER · отправка и ответ ── */
+    .prompt-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+      transform: none;
+    }
+
+    .ghost-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(96, 186, 255, 0.28);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.5);
+      color: #a9c6d2;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, color 150ms ease;
+    }
+
+    .ghost-btn:hover,
+    .ghost-btn:focus-visible {
+      border-color: rgba(255, 82, 108, 0.5);
+      color: #f0c9d1;
+      outline: none;
+    }
+
+    .sim-badge {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border: 1px solid rgba(242, 207, 98, 0.3);
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: .04em;
+    }
+
+    .sim-badge i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 6px var(--amber);
+    }
+
+    .model-reply {
+      display: grid;
+      grid-template-rows: 0fr;
+      margin-top: 0;
+      transition: grid-template-rows 320ms ease, margin-top 320ms ease;
+    }
+
+    .model-reply.on {
+      grid-template-rows: 1fr;
+      margin-top: 14px;
+    }
+
+    .model-reply > div {
+      overflow: hidden;
+    }
+
+    .reply-card {
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 6px;
+      background: rgba(3, 12, 18, 0.72);
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    }
+
+    .reply-head {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 13px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .reply-avatar {
+      position: relative;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 1px solid var(--blue);
+      box-shadow: 0 0 10px rgba(69, 170, 255, 0.35);
+    }
+
+    .reply-avatar::after {
+      position: absolute;
+      inset: 5px;
+      content: "";
+      border-radius: 50%;
+      background: var(--blue);
+      opacity: .55;
+      animation: reply-pulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes reply-pulse {
+      0%, 100% { opacity: .55; }
+      50% { opacity: .15; }
+    }
+
+    .reply-name {
+      color: var(--blue);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+
+    .reply-model {
+      margin-left: auto;
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.64rem;
+    }
+
+    .reply-body {
+      padding: 13px;
+      min-height: 40px;
+      color: #cde0e8;
+      font-size: 0.92rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .reply-body.cur::after {
+      content: "▋";
+      color: var(--green);
+      animation: reply-blink .7s step-end infinite;
+    }
+
+    @keyframes reply-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .reply-tip {
+      margin: 0;
+      padding: 10px 13px;
+      border-top: 1px solid rgba(96, 186, 255, 0.12);
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+
+    .reply-tip.weak {
+      color: var(--red);
+    }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_01</div>
+      <div class="status">FOUNDATION // FIRST CONTACT</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="layer-title">
+        <div class="kicker">LAYER_01 / ZERO BASE</div>
+        <h1 id="layer-title">Здравствуй, машина</h1>
+        <p class="lead">
+          Первый слой нужен не для того, чтобы сразу стать инженером будущего.
+          Он нужен, чтобы перестать смотреть на ИИ как на туманную магию и
+          начать говорить с ним спокойно.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">MISSION</p>
+          <p>
+            После этого слоя ты понимаешь, что такое ИИ на бытовом уровне,
+            чем он отличается от обычной программы, зачем он тебе нужен и как
+            начать первый диалог без ощущения, что надо знать тайный пароль.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы слоя">
+          <p class="nav-label">COURSE MAP</p>
+          <a href="#what"><span>01</span><span>что такое ИИ</span></a>
+          <a href="#not-magic"><span>02</span><span>не магия</span></a>
+          <a href="#uses"><span>03</span><span>зачем человеку</span></a>
+          <a href="#dialogue"><span>04</span><span>первый диалог</span></a>
+          <a href="#etiquette"><span>05</span><span>этикет</span></a>
+          <a href="#quiz"><span>06</span><span>мини-тест</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../layer_00/"><span>BACK</span><span>LAYER_00</span></a>
+          <a class="route-link next" href="../layer_02/"><span>NEXT</span><span>LAYER_02</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="signal-map" aria-label="Схема первого диалога">
+          <div class="signal-row">
+            <div class="signal-node"><span><strong>Ты</strong>задаёшь цель</span></div>
+            <div class="signal-node"><span><strong>Контекст</strong>помогает понять задачу</span></div>
+            <div class="signal-node"><span><strong>Модель</strong>ищет вероятный ответ</span></div>
+            <div class="signal-node"><span><strong>Ответ</strong>проверяется человеком</span></div>
+          </div>
+        </div>
+
+        <section class="lesson" id="what">
+          <p class="lesson-kicker">01 / BASIC SIGNAL</p>
+          <h2>Что мы вообще называем ИИ</h2>
+          <p>
+            В этом курсе ИИ — это программа, которая умеет распознавать
+            закономерности и генерировать полезный ответ: текст, картинку,
+            план, идею, код, звук или другое действие. Она не читает мысли и
+            не получает мудрость из космоса. Она смотрит на твой запрос,
+            контекст и свою обученную статистику, а потом предлагает наиболее
+            подходящее продолжение.
+          </p>
+          <p>
+            Самая простая формула для старта: ИИ не заменяет мышление, а
+            ускоряет черновую работу, поиск вариантов и объяснение сложных
+            вещей. Ты всё ещё главный редактор, проверяющий и человек с
+            реальной целью.
+          </p>
+          <div class="quote-line">
+            Если совсем коротко: ИИ — это не оракул. Это мощный собеседник,
+            которому надо давать задачу, рамки и проверку реальностью.
+          </div>
+        </section>
+
+        <section class="lesson" id="not-magic">
+          <p class="lesson-kicker">02 / REALITY CHECK</p>
+          <h2>Нейросеть не магия и не обычный калькулятор</h2>
+          <p>
+            Новички чаще всего прыгают между двумя крайностями: либо “она
+            всё знает”, либо “она просто случайно болтает”. Правда скучнее и
+            полезнее: модель умеет находить паттерны в данных и строить
+            ответы, похожие на разумные. Но ответственность за смысл и
+            проверку остаётся у человека.
+          </p>
+          <div class="concept-grid">
+            <article class="concept">
+              <h3>Обычная программа</h3>
+              <p>
+                Работает по заранее прописанным правилам. Если условие такое,
+                делай вот это. Хорошо для точных задач.
+              </p>
+            </article>
+            <article class="concept">
+              <h3>ИИ-модель</h3>
+              <p>
+                Учится на примерах и отвечает вероятностно. Хорошо для языка,
+                образов, идей и задач с неполными условиями.
+              </p>
+            </article>
+            <article class="concept">
+              <h3>Интерфейс</h3>
+              <p>
+                Чат, генератор картинок, голосовой помощник или приложение.
+                Это оболочка, через которую ты общаешься с моделью.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="uses">
+          <p class="lesson-kicker">03 / HUMAN USE CASES</p>
+          <h2>Для чего это нужно живому человеку</h2>
+          <p>
+            На первом слое не надо думать о мультиагентах и сложных системах.
+            Достаточно увидеть, где ИИ экономит силы уже сегодня: объясняет,
+            структурирует, придумывает варианты, помогает с черновиками и
+            превращает хаос мыслей в рабочий список.
+          </p>
+          <div class="example-grid">
+            <article class="example">
+              <h3>Понять</h3>
+              <p>Попросить объяснить тему проще, с примерами, аналогиями и проверочным вопросом.</p>
+            </article>
+            <article class="example">
+              <h3>Собрать</h3>
+              <p>Сделать план, список шагов, структуру текста, сценарий видео или маршрут обучения.</p>
+            </article>
+            <article class="example">
+              <h3>Переписать</h3>
+              <p>Сжать, развернуть, перевести стиль, убрать канцелярит или сделать текст человечнее.</p>
+            </article>
+            <article class="example">
+              <h3>Проверить</h3>
+              <p>Найти слабые места идеи, задать неудобные вопросы, увидеть пропущенные детали.</p>
+            </article>
+            <article class="example">
+              <h3>Придумать</h3>
+              <p>Получить варианты названий, визуальных идей, упражнений, тестов или рабочих гипотез.</p>
+            </article>
+            <article class="example">
+              <h3>Начать</h3>
+              <p>Преодолеть пустой лист. Иногда это главная суперсила, без пафоса и фанфар.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="dialogue">
+          <p class="lesson-kicker">04 / FIRST DIALOGUE</p>
+          <h2>Как выглядит нормальный первый запрос</h2>
+          <p>
+            Хороший запрос не обязан быть длинным. Но в нём обычно есть три
+            вещи: что ты хочешь получить, какой у тебя контекст и в каком
+            формате нужен ответ. Чем меньше модель должна угадывать, тем
+            меньше она устраивает театр импровизации.
+          </p>
+          <div class="question-grid">
+            <article class="question-card">
+              <h3>Цель</h3>
+              <p>“Объясни”, “составь план”, “найди ошибки”, “предложи варианты”.</p>
+            </article>
+            <article class="question-card">
+              <h3>Контекст</h3>
+              <p>Кто ты, что уже знаешь, для чего нужен результат, какие есть ограничения.</p>
+            </article>
+            <article class="question-card">
+              <h3>Формат</h3>
+              <p>Список, таблица, короткий ответ, инструкция по шагам, пример или тест.</p>
+            </article>
+          </div>
+
+          <div class="prompt-tool" aria-labelledby="prompt-builder-title">
+            <p class="tool-label" id="prompt-builder-title">PROMPT BUILDER / СОБЕРИ И ОТПРАВЬ</p>
+            <div class="builder-grid">
+              <div class="builder-group">
+                <p>Цель</p>
+                <div class="chip-list">
+                  <button class="chip is-active" type="button" data-group="goal" data-key="g_explain" data-value="Объясни, что такое нейросеть простыми словами.">объяснить</button>
+                  <button class="chip" type="button" data-group="goal" data-key="g_plan" data-value="Составь мне первый план знакомства с ИИ на один вечер.">составить план</button>
+                  <button class="chip" type="button" data-group="goal" data-key="g_check" data-value="Проверь моё понимание ИИ и задай три уточняющих вопроса.">проверить</button>
+                </div>
+              </div>
+              <div class="builder-group">
+                <p>Контекст</p>
+                <div class="chip-list">
+                  <button class="chip is-active" type="button" data-group="context" data-key="c_zero" data-value="Я начинаю с нуля и путаю ИИ с обычными программами.">с нуля</button>
+                  <button class="chip" type="button" data-group="context" data-key="c_tried" data-value="Я уже пользовался чатами, но не понимаю, почему ответы бывают разными.">уже пробовал</button>
+                  <button class="chip" type="button" data-group="context" data-key="c_plain" data-value="Мне нужно объяснение для человека, который не любит технический жаргон.">без жаргона</button>
+                </div>
+              </div>
+              <div class="builder-group">
+                <p>Формат</p>
+                <div class="chip-list">
+                  <button class="chip is-active" type="button" data-group="format" data-key="f_examples" data-value="Дай 3 примера из жизни и в конце один вопрос для самопроверки.">примеры</button>
+                  <button class="chip" type="button" data-group="format" data-key="f_short" data-value="Ответь короткими пунктами, без длинной лекции.">коротко</button>
+                  <button class="chip" type="button" data-group="format" data-key="f_analogy" data-value="Сначала дай аналогию, потом объяснение.">аналогия</button>
+                </div>
+              </div>
+            </div>
+            <div class="prompt-output" id="prompt-output" aria-live="polite"></div>
+
+            <div class="prompt-actions">
+              <button class="primary-btn" type="button" id="send-btn">▸ отправить запрос</button>
+              <button class="ghost-btn" type="button" id="bare-btn" title="Отправить только цель, без контекста и формата">а если только цель?</button>
+              <span class="sim-badge" id="sim-badge"><i></i> имитация ответа</span>
+            </div>
+
+            <div class="model-reply" id="model-reply">
+              <div>
+                <div class="reply-card">
+                  <div class="reply-head">
+                    <span class="reply-avatar" aria-hidden="true"></span>
+                    <span class="reply-name">NODE · тьютор</span>
+                    <span class="reply-model" id="reply-model">demo</span>
+                  </div>
+                  <div class="reply-body" id="reply-body"></div>
+                  <p class="reply-tip" id="reply-tip" hidden></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="etiquette">
+          <p class="lesson-kicker">05 / HUMAN MODE</p>
+          <h2>Надо ли здороваться и благодарить ИИ</h2>
+          <p>
+            Технически — не обязательно. Модель не обижается, не радуется и не
+            записывает тебя в список невежливых людей. Но вежливый тон часто
+            помогает тебе самому формулировать запрос спокойнее и точнее.
+          </p>
+          <p>
+            Рабочее правило простое: можно обращаться по-человечески, но не
+            нужно забывать, что перед тобой инструмент. Не надо поклоняться
+            чату, но и превращать диалог в командный крик тоже странновато.
+          </p>
+          <div class="ethic-list">
+            <article class="ethic-item">
+              <h3>Можно</h3>
+              <p>“Привет, помоги разобраться”, “спасибо”, “объясни проще”. Это нормальный человеческий режим.</p>
+            </article>
+            <article class="ethic-item">
+              <h3>Лучше не надо</h3>
+              <p>“Ты обязан”, “сделай идеально”, “сам догадайся”. Так обычно страдает не модель, а результат.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="quiz">
+          <p class="lesson-kicker">06 / MINI TEST</p>
+          <h2>Проверка первого контакта</h2>
+          <p>
+            Небольшой тест без строгого лица преподавателя. Он нужен только
+            для одного: понять, что базовый сигнал принят и можно идти дальше.
+          </p>
+
+          <div class="quiz-tool" id="quiz-tool">
+            <div class="quiz-question" data-answer="b">
+              <h3>01. Что лучше всего описывает ИИ на этом уровне?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">сознание в коробке</button>
+                <button class="answer" type="button" data-choice="b">инструмент, который ищет паттерны и генерирует ответы</button>
+                <button class="answer" type="button" data-choice="c">обычный калькулятор с настроением</button>
+                <button class="answer" type="button" data-choice="d">магическая энциклопедия без ошибок</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="c">
+              <h3>02. Что сильнее всего улучшает первый запрос?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">написать всё капсом</button>
+                <button class="answer" type="button" data-choice="b">попросить “сделай нормально”</button>
+                <button class="answer" type="button" data-choice="c">дать цель, контекст и желаемый формат</button>
+                <button class="answer" type="button" data-choice="d">угрожать удалить приложение</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="a">
+              <h3>03. Нужно ли благодарить ИИ?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">не обязательно, но по-человечески можно</button>
+                <button class="answer" type="button" data-choice="b">обязательно, иначе модель запомнит</button>
+                <button class="answer" type="button" data-choice="c">нельзя, это ломает ответы</button>
+                <button class="answer" type="button" data-choice="d">только по праздникам</button>
+              </div>
+            </div>
+
+            <div class="quiz-actions">
+              <button class="primary-btn" type="button" id="check-quiz">проверить сигнал</button>
+              <div class="quiz-result" id="quiz-result" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson">
+          <p class="lesson-kicker">EXIT / NEXT ROUTE</p>
+          <h2>Что должно остаться после слоя</h2>
+          <div class="exit-panel">
+            <p>
+              ИИ не надо бояться и не надо обожествлять. С ним можно работать:
+              задавать цель, давать контекст, просить формат, проверять ответ
+              и уточнять задачу. Этого достаточно, чтобы перейти к следующему
+              слою — разговаривать так, чтобы тебя понимали лучше.
+            </p>
+            <a class="route-link next" href="../layer_02/"><span>OPEN</span><span>LAYER_02</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / TRAINING SYSTEM</span>
+      <span>LAYER_01 // FIRST CONTACT READY</span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      /* прогресс курса — общий ключ с хабом (layer_00 читает его и зажигает узлы) */
+      function markLayerComplete(n) {
+        try {
+          const KEY = "aceon.nodeai.progress";
+          const done = JSON.parse(localStorage.getItem(KEY) || "[]");
+          if (!done.includes(n)) {
+            done.push(n);
+            localStorage.setItem(KEY, JSON.stringify(done.sort((a, b) => a - b)));
+          }
+        } catch (e) {}
+      }
+
+      /* ============================================================
+         ПОДКЛЮЧЕНИЕ РЕАЛЬНОЙ МОДЕЛИ (позже)
+         Сейчас ответы — имитация. Точка подмены одна: askModel.
+      ============================================================ */
+      const MODEL = "gpt-5.1-mini";
+      const SYSTEM_PROMPT =
+        "Ты — обучающий ассистент NODE AI в курсе A.C.EON. " +
+        "Твоя задача — на простых примерах учить человека формулировать запросы к нейросетям. " +
+        "Отвечай коротко, по-русски, без жаргона и дружелюбно. " +
+        "Если запрос слабый — мягко покажи, чего в нём не хватает.";
+
+      /* Конструктор даёт конечный набор комбинаций (3×3×3 = 27 + голые цели).
+         Прогони их один раз через реальную модель и положи сюда как
+         {"g_explain|c_zero|f_examples": "..."} — токены потратятся 1 раз, а не на юзера. */
+      const RESPONSES = {};
+
+      async function askModel({ goalKey, contextKey, formatKey, bare, promptText }) {
+        const key = bare ? ("bare:" + goalKey) : (goalKey + "|" + contextKey + "|" + formatKey);
+        if (RESPONSES[key]) return { text: RESPONSES[key], real: true };
+
+        /* ─── РЕАЛЬНАЯ МОДЕЛЬ (включишь позже; ключ держим на своём сервере) ───
+        const r = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: MODEL,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user",   content: promptText }
+            ],
+            max_tokens: 320
+          })
+        });
+        const data = await r.json();
+        return { text: data.choices[0].message.content.trim(), real: true };
+        ──────────────────────────────────────────────────────────────────── */
+
+        return { text: compose({ goalKey, formatKey, contextKey, bare }), real: false };
+      }
+
+      /* ── имитация (только демо; реактивна к чипам) ── */
+      const CTX = {
+        c_zero:  "Раз с нуля — по-простому. ",
+        c_tried: "Ты уже пробовал, поэтому чуть глубже. ",
+        c_plain: "Без единого технического слова. "
+      };
+      const BODY = {
+        g_explain: {
+          f_examples:
+            "Нейросеть — программа, которая училась на огромном числе примеров и по ним угадывает подходящий ответ.\n\nИз жизни:\n• подсказки при наборе текста в телефоне\n• распознавание лиц в галерее\n• голосовой помощник, который понимает речь\n\n🧩 Проверь себя: чем это отличается от обычного калькулятора?",
+          f_short:
+            "• это программа, обученная на примерах\n• она не знает правду, а предлагает вероятное продолжение\n• чем точнее твой запрос, тем полезнее ответ",
+          f_analogy:
+            "Аналогия: нейросеть — как очень начитанный стажёр. Прочитал миллион текстов и по памяти отвечает на твой вопрос.\n\nОн не «знает истину» — он вспоминает, что чаще всего шло следом. Поэтому иногда уверенно ошибается, и ответ стоит проверять."
+        },
+        g_plan: {
+          f_examples:
+            "План на вечер:\n1. Открой любой чат-ИИ и задай простой вопрос по своей теме.\n2. Переспроси то же самое, но добавь цель и формат — сравни ответы.\n3. Попроси объяснить что-то на примере из твоей работы.\n\nПример шага 2: вместо «расскажи про кофе» → «объясни новичку-бариста, чем отличается эспрессо от американо, 3 пункта».",
+          f_short:
+            "• 10 мин — задать 3 простых вопроса\n• 10 мин — переписать их с целью и форматом\n• 10 мин — сравнить, где ответ полезнее\n• 5 мин — записать, что сработало",
+          f_analogy:
+            "Аналогия: первый вечер с ИИ — как тест-драйв машины. Не изучаешь устройство двигателя, а просто катаешься и чувствуешь руль.\n\nПлан: задай пару вопросов → добавь к ним контекст → сравни, как изменился ответ."
+        },
+        g_check: {
+          f_examples:
+            "Давай проверю на примерах. Скажи, что из этого — ИИ:\n• калькулятор • автоподсказка в поиске • будильник\n\nА теперь мои три вопроса:\n1. Чем модель отличается от обычной программы?\n2. Что делает твой запрос сильнее?\n3. Можно ли верить ответу без проверки?",
+          f_short:
+            "Три вопроса на понимание:\n1. ИИ ищет правду или вероятный ответ?\n2. Зачем в запросе контекст?\n3. Кто отвечает за проверку результата?",
+          f_analogy:
+            "Аналогия: проверка — как разговор с новым коллегой, чтобы понять, что он уже умеет.\n\nМои три вопроса:\n1. Чем ИИ-модель отличается от обычной программы?\n2. Что важнее в запросе — длина или конкретика?\n3. Что делать, если ответ звучит уверенно, но странно?"
+        }
+      };
+      const BARE = {
+        g_explain:
+          "Нейросети — это область искусственного интеллекта, где системы обучаются на данных для решения широкого спектра задач…\n\n(заметил? без контекста и формата я не знаю твой уровень и лью общие слова. Добавь «кто ты» и «в каком виде» — и ответ станет твоим.)",
+        g_plan:
+          "Существует множество способов начать знакомство с ИИ, всё зависит от целей, времени и предпочтений…\n\n(видишь? без «на один вечер» и формата я растекаюсь. Дай рамки — получишь конкретный план.)",
+        g_check:
+          "Понимание ИИ — обширная тема, включающая машинное обучение, нейросети, данные и многое другое…\n\n(без указания «проверь и задай 3 вопроса» я просто пересказываю тему, а не проверяю тебя.)"
+      };
+
+      function compose({ goalKey, formatKey, contextKey, bare }) {
+        if (bare) return BARE[goalKey] || BARE.g_explain;
+        const base = (BODY[goalKey] && BODY[goalKey][formatKey]) || BODY.g_explain.f_short;
+        return (CTX[contextKey] || "") + base;
+      }
+
+      /* ── UI билдера ── */
+      const selected = { goal: null, context: null, format: null };
+      const keys = { goal: null, context: null, format: null };
+
+      const output = document.getElementById("prompt-output");
+      const replyWrap = document.getElementById("model-reply");
+      const replyBody = document.getElementById("reply-body");
+      const replyTip = document.getElementById("reply-tip");
+      const replyModel = document.getElementById("reply-model");
+      const sendBtn = document.getElementById("send-btn");
+      const bareBtn = document.getElementById("bare-btn");
+
+      document.querySelectorAll(".chip").forEach((chip) => {
+        const g = chip.dataset.group;
+        if (chip.classList.contains("is-active")) {
+          selected[g] = chip.dataset.value; keys[g] = chip.dataset.key;
+        }
+        chip.addEventListener("click", () => {
+          selected[g] = chip.dataset.value; keys[g] = chip.dataset.key;
+          document.querySelectorAll('.chip[data-group="' + g + '"]').forEach((c) =>
+            c.classList.toggle("is-active", c === chip));
+          renderPrompt();
+        });
+      });
+
+      function renderPrompt() {
+        output.textContent = selected.goal + "\n" + selected.context + "\n" + selected.format;
+      }
+      renderPrompt();
+
+      let typing = null;
+      function typeOut(text, done) {
+        clearInterval(typing);
+        replyBody.classList.add("cur");
+        if (reduceMotion) {
+          replyBody.textContent = text;
+          replyBody.classList.remove("cur");
+          done && done();
+          return;
+        }
+        let i = 0;
+        const step = Math.max(1, Math.round(text.length / 220));
+        typing = setInterval(() => {
+          i += step;
+          replyBody.textContent = text.slice(0, i);
+          if (i >= text.length) {
+            clearInterval(typing);
+            replyBody.textContent = text;
+            replyBody.classList.remove("cur");
+            done && done();
+          }
+        }, 16);
+      }
+
+      async function runBuilder(bare) {
+        if (!selected.goal) return;
+        sendBtn.disabled = true; bareBtn.disabled = true;
+        replyWrap.classList.add("on");
+        replyTip.hidden = true;
+        replyBody.textContent = "";
+        replyBody.classList.add("cur");
+
+        const promptText = bare
+          ? selected.goal
+          : selected.goal + " " + selected.context + " " + selected.format;
+
+        await new Promise((r) => setTimeout(r, reduceMotion ? 0 : 340));
+
+        const res = await askModel({
+          goalKey: keys.goal, contextKey: keys.context, formatKey: keys.format,
+          bare, promptText
+        });
+        replyModel.textContent = res.real ? MODEL : "demo · имитация";
+
+        typeOut(res.text, () => {
+          if (bare) {
+            replyTip.textContent = "▲ Это тот же вопрос, но голый. Ответ общий и не под тебя — потому что модель гадала.";
+            replyTip.className = "reply-tip weak"; replyTip.hidden = false;
+          } else {
+            replyTip.textContent = "✓ Заметь: вид ответа поменялся вслед за твоим выбором формата. Так работает управление запросом.";
+            replyTip.className = "reply-tip"; replyTip.hidden = false;
+          }
+          sendBtn.disabled = false; bareBtn.disabled = false;
+        });
+      }
+
+      sendBtn.addEventListener("click", () => runBuilder(false));
+      bareBtn.addEventListener("click", () => runBuilder(true));
+
+      const quiz = document.getElementById("quiz-tool");
+      const result = document.getElementById("quiz-result");
+
+      quiz.querySelectorAll(".answer").forEach((answer) => {
+        answer.addEventListener("click", () => {
+          const question = answer.closest(".quiz-question");
+          question.querySelectorAll(".answer").forEach((item) => {
+            item.classList.remove("is-selected", "is-correct", "is-wrong");
+          });
+          answer.classList.add("is-selected");
+          result.textContent = "";
+        });
+      });
+
+      document.getElementById("check-quiz").addEventListener("click", () => {
+        let score = 0;
+        const questions = quiz.querySelectorAll(".quiz-question");
+
+        questions.forEach((question) => {
+          const correct = question.dataset.answer;
+          const selectedAnswer = question.querySelector(".answer.is-selected");
+          question.querySelectorAll(".answer").forEach((answer) => {
+            answer.classList.remove("is-correct", "is-wrong");
+            if (answer.dataset.choice === correct) answer.classList.add("is-correct");
+          });
+
+          if (selectedAnswer && selectedAnswer.dataset.choice === correct) {
+            score += 1;
+          } else if (selectedAnswer) {
+            selectedAnswer.classList.add("is-wrong");
+          }
+        });
+
+        if (score === questions.length) {
+          markLayerComplete(1);
+          result.textContent = `Сигнал чистый: ${score}/${questions.length}. Слой пройден — на карте он теперь отмечен. Можно открывать следующий.`;
+        } else if (score > 0) {
+          result.textContent = `Сигнал принят частично: ${score}/${questions.length}. Посмотри зелёные ответы и можно повторить.`;
+        } else {
+          result.textContent = `Связь шумит: ${score}/${questions.length}. Ничего страшного, машина терпеливая.`;
+        }
+      });
+    })();
+
+    (() => {
+      const canvas = document.getElementById("starfield");
+      const ctx = canvas.getContext("2d");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let width = 0;
+      let height = 0;
+      let nodes = [];
+      let frame = 0;
+
+      function resize() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * ratio);
+        canvas.height = Math.floor(height * ratio);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+        const count = Math.max(72, Math.min(150, Math.floor((width * height) / 10500)));
+        nodes = Array.from({ length: count }, (_, index) => {
+          const channel = index % 13 === 0 ? "green" : index % 9 === 0 ? "amber" : "blue";
+          return {
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 1.35 + 0.35,
+            vx: (Math.random() - 0.5) * 0.075,
+            vy: (Math.random() - 0.5) * 0.055,
+            alpha: Math.random() * 0.4 + 0.14,
+            channel
+          };
+        });
+        draw();
+      }
+
+      function nodeColor(node, alpha = node.alpha) {
+        if (node.channel === "green") return `rgba(24, 226, 140, ${alpha})`;
+        if (node.channel === "amber") return `rgba(242, 207, 98, ${alpha})`;
+        return `rgba(69, 170, 255, ${alpha})`;
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < nodes.length; i += 1) {
+          const a = nodes[i];
+          for (let j = i + 1; j < nodes.length; j += 1) {
+            const b = nodes[j];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 92 && (i + j + frame) % 12 === 0) {
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.strokeStyle = `rgba(96, 186, 255, ${0.11 * (1 - distance / 92)})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+
+        nodes.forEach((node) => {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+          ctx.fillStyle = nodeColor(node);
+          ctx.fill();
+        });
+      }
+
+      function tick() {
+        frame += 1;
+        nodes.forEach((node) => {
+          node.x += node.vx;
+          node.y += node.vy;
+          if (node.x < -4) node.x = width + 4;
+          if (node.x > width + 4) node.x = -4;
+          if (node.y < -4) node.y = height + 4;
+          if (node.y > height + 4) node.y = -4;
+        });
+        draw();
+        if (!reduceMotion) requestAnimationFrame(tick);
+      }
+
+      window.addEventListener("resize", resize, { passive: true });
+      resize();
+      if (!reduceMotion) requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

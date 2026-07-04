@@ -1,1 +1,1440 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Layer 03</title>
+  <link rel="stylesheet" href="../nodeai.css">
+  <script src="../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --panel: rgba(5, 16, 22, 0.76);
+      --line: rgba(96, 186, 255, 0.22);
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
 
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 14% 18%, rgba(242, 207, 98, 0.13), transparent 27rem),
+        radial-gradient(circle at 82% 22%, rgba(24, 226, 140, 0.12), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(69, 170, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 26%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.065));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(242, 207, 98, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--amber);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(242, 207, 98, 0.38);
+      background: rgba(242, 207, 98, 0.055);
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(242, 207, 98, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(242, 207, 98, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(242, 207, 98, 0.66);
+      background: rgba(39, 32, 10, 0.72);
+      color: #fff4c7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(24, 226, 140, 0.34);
+      color: #bff4dc;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .engine-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(242, 207, 98, 0.08), transparent 34%, rgba(24, 226, 140, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .engine-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--amber);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .mechanic-grid,
+    .memory-grid,
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .mechanic-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .mechanic-card,
+    .memory-card,
+    .risk-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .mechanic-card h3,
+    .memory-card h3,
+    .risk-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .mechanic-card h3 {
+      color: var(--amber);
+    }
+
+    .card p,
+    .mechanic-card p,
+    .memory-card p,
+    .risk-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(242, 207, 98, 0.42);
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--amber);
+      background: rgba(242, 207, 98, 0.055);
+      color: #d7ccb0;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .token-lab,
+    .rag-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(242, 207, 98, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(22, 18, 7, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(242, 207, 98, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(242, 207, 98, 0.08);
+    }
+
+    .token-grid,
+    .rag-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .token-input {
+      width: 100%;
+      min-height: 170px;
+      resize: vertical;
+      padding: 13px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.30);
+      color: #dcecf1;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      line-height: 1.6;
+      outline: none;
+    }
+
+    .token-input:focus {
+      border-color: rgba(242, 207, 98, 0.66);
+      box-shadow: 0 0 0 2px rgba(242, 207, 98, 0.09);
+    }
+
+    .token-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .metric {
+      padding: 10px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.20);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: #aebfc7;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--amber);
+      font-size: 1rem;
+    }
+
+    .context-meter {
+      height: 8px;
+      margin-top: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      background: rgba(0, 0, 0, 0.32);
+    }
+
+    .context-fill {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
+      transition: width 180ms ease;
+    }
+
+    .token-output {
+      min-height: 234px;
+      padding: 13px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+    }
+
+    .token-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .token-chip {
+      min-height: 26px;
+      padding: 5px 7px;
+      border: 1px solid rgba(242, 207, 98, 0.24);
+      background: rgba(242, 207, 98, 0.08);
+      color: #f2dea2;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    .token-chip.punctuation {
+      border-color: rgba(69, 170, 255, 0.22);
+      background: rgba(69, 170, 255, 0.08);
+      color: #bddff5;
+    }
+
+    .rag-controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .rag-question {
+      min-height: 40px;
+      padding: 9px 11px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-align: left;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .rag-question:hover,
+    .rag-question:focus-visible,
+    .rag-question.is-active {
+      border-color: rgba(242, 207, 98, 0.68);
+      background: rgba(242, 207, 98, 0.12);
+      color: #fff4c7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .rag-output {
+      min-height: 264px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(242, 207, 98, 0.68);
+      color: #fff4c7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .answer.is-selected {
+      border-color: rgba(242, 207, 98, 0.82);
+      background: rgba(242, 207, 98, 0.13);
+      color: #fff4c7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(242, 207, 98, 0.58);
+      border-radius: 4px;
+      background: rgba(242, 207, 98, 0.12);
+      color: #fff4c7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(242, 207, 98, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .mechanic-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .memory-grid,
+      .risk-grid,
+      .flow-row,
+      .token-grid,
+      .rag-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .mechanic-grid,
+      .memory-grid,
+      .risk-grid,
+      .flow-row,
+      .token-grid,
+      .rag-grid,
+      .token-meta,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .engine-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .ctx-select { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+    .ctx-btn { min-height:30px; padding:6px 9px; border:1px solid rgba(96,186,255,0.22); border-radius:4px; background:rgba(2,8,12,0.6); color:#a9c6d2; cursor:pointer; font-family:var(--mono); font-size:0.68rem; transition:border-color 150ms ease, background 150ms ease, color 150ms ease; }
+    .ctx-btn:hover, .ctx-btn:focus-visible { border-color:rgba(242,207,98,0.55); color:#fff4c7; outline:none; }
+    .ctx-btn.is-active { border-color:rgba(242,207,98,0.8); background:rgba(242,207,98,0.13); color:#fff4c7; }
+    .token-note { margin:10px 0 0; color:#8ba0aa; font-family:var(--mono); font-size:0.72rem; line-height:1.55; }
+    .token-note.over { color:var(--amber); }
+    .rag-sub { margin:0 0 2px; color:#8ba0aa; font-family:var(--mono); font-size:0.7rem; }
+    .rag-mode { display:flex; gap:7px; margin-top:6px; }
+    .rag-mode-btn { flex:1; min-height:32px; border:1px solid rgba(96,186,255,0.22); border-radius:4px; background:rgba(2,8,12,0.6); color:#a9c6d2; cursor:pointer; font-family:var(--mono); font-size:0.7rem; transition:border-color 150ms ease, background 150ms ease, color 150ms ease; }
+    .rag-mode-btn:hover, .rag-mode-btn:focus-visible { border-color:rgba(242,207,98,0.5); color:#fff4c7; outline:none; }
+    .rag-mode-btn.is-active { border-color:rgba(24,226,140,0.7); background:rgba(24,226,140,0.1); color:#d9fff0; }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_03</div>
+      <div class="status">MECHANICS // CONTEXT ENGINE</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="layer-title">
+        <div class="kicker">LAYER_03 / UNDER THE HOOD</div>
+        <h1 id="layer-title">Заглядываем под капот</h1>
+        <p class="lead">
+          Здесь мы не программируем, а разбираем механику: почему модель
+          считает кусками, зачем ей контекст, что такое API и как внешняя
+          память превращает ответ из “кажется” в “нашёл и собрал”.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">MISSION</p>
+          <p>
+            После этого слоя ты понимаешь, почему ИИ забывает, что такое
+            токены, зачем нужен контекст, как API даёт доступ к модели и почему
+            embeddings вместе с RAG становятся фундаментом для умных помощников.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы слоя">
+          <p class="nav-label">COURSE MAP</p>
+          <a href="#pipeline"><span>01</span><span>путь запроса</span></a>
+          <a href="#tokens"><span>02</span><span>токены</span></a>
+          <a href="#context"><span>03</span><span>контекст</span></a>
+          <a href="#api"><span>04</span><span>API</span></a>
+          <a href="#embeddings"><span>05</span><span>embeddings</span></a>
+          <a href="#rag"><span>06</span><span>RAG</span></a>
+          <a href="#risks"><span>07</span><span>риски</span></a>
+          <a href="#quiz"><span>08</span><span>мини-тест</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../layer_02/"><span>BACK</span><span>LAYER_02</span></a>
+          <a class="route-link next" href="../layer_04/"><span>NEXT</span><span>LAYER_04</span></a>
+          <a class="route-link home" href="../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="engine-scan" aria-label="Схема прохождения запроса">
+          <div class="scan-row">
+            <div class="scan-node"><span><strong>Запрос</strong>человек задаёт цель</span></div>
+            <div class="scan-node"><span><strong>Токены</strong>текст режется на части</span></div>
+            <div class="scan-node"><span><strong>Контекст</strong>модель видит окно</span></div>
+            <div class="scan-node"><span><strong>Модель</strong>строит вероятный ответ</span></div>
+            <div class="scan-node"><span><strong>Память</strong>данные можно подтянуть</span></div>
+            <div class="scan-node"><span><strong>Проверка</strong>человек держит руль</span></div>
+          </div>
+        </div>
+
+        <section class="lesson" id="pipeline">
+          <p class="lesson-kicker">01 / REQUEST PIPELINE</p>
+          <h2>Что происходит после твоего сообщения</h2>
+          <p>
+            Снаружи всё выглядит просто: написал запрос, получил ответ.
+            Внутри путь длиннее. Текст превращается в токены, попадает в окно
+            контекста, модель рассчитывает наиболее вероятное продолжение, а
+            иногда система перед этим подтягивает внешние данные из файлов,
+            базы знаний или поиска.
+          </p>
+          <p>
+            Главное: модель не “помнит всё”. Она работает с тем, что оказалось
+            в текущем контексте, с настройками системы и с тем, чему научилась
+            раньше. Поэтому хороший результат часто зависит не от магии, а от
+            того, какие данные дошли до модели.
+          </p>
+          <div class="flow-row">
+            <article class="flow-card">
+              <span class="flow-number">01</span>
+              <h3>Вход</h3>
+              <p>Твой запрос, файлы, системные инструкции, история диалога или данные из приложения.</p>
+            </article>
+            <article class="flow-card">
+              <span class="flow-number">02</span>
+              <h3>Окно</h3>
+              <p>Собранный контекст, который модель видит прямо сейчас.</p>
+            </article>
+            <article class="flow-card">
+              <span class="flow-number">03</span>
+              <h3>Генерация</h3>
+              <p>Модель строит ответ по вероятностям, учитывая запрос и контекст.</p>
+            </article>
+            <article class="flow-card">
+              <span class="flow-number">04</span>
+              <h3>Выход</h3>
+              <p>Ответ нужно читать, уточнять и проверять, особенно если ставка высокая.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="tokens">
+          <p class="lesson-kicker">02 / TOKEN VIEW</p>
+          <h2>Токены: почему текст считают кусками</h2>
+          <p>
+            Модель не читает текст ровно как человек. Она превращает фразы в
+            небольшие фрагменты — токены. Это могут быть слова, части слов,
+            знаки препинания или куски символов. На токенах держится длина
+            контекста, примерная стоимость запроса и количество текста, которое
+            модель способна обработать за один раз.
+          </p>
+          <div class="token-lab" aria-labelledby="token-lab-title">
+            <p class="tool-label" id="token-lab-title">TOKEN METER / КИРИЛЛИЦА ДОРОЖЕ</p>
+            <div class="token-grid">
+              <div>
+                <textarea class="token-input" id="token-input">Объясни простыми словами, почему модель иногда забывает начало длинного диалога, и дай пример из жизни.</textarea>
+                <div class="ctx-select" id="ctx-select" role="group" aria-label="Окно контекста">
+                  <button class="ctx-btn" type="button" data-ctx="2048">2K · минимум</button>
+                  <button class="ctx-btn is-active" type="button" data-ctx="4096">4K · Ollama</button>
+                  <button class="ctx-btn" type="button" data-ctx="128000">128K · облако</button>
+                </div>
+                <div class="token-meta">
+                  <div class="metric">символы<strong id="char-count">0</strong></div>
+                  <div class="metric">≈ токены<strong id="token-count">0</strong></div>
+                  <div class="metric">окно<strong id="context-count">0 / 4096</strong></div>
+                </div>
+                <div class="context-meter" aria-hidden="true"><div class="context-fill" id="context-fill"></div></div>
+                <p class="token-note" id="token-note"></p>
+              </div>
+              <div class="token-output">
+                <div class="token-list" id="token-list"></div>
+              </div>
+            </div>
+          </div>
+          <div class="quote-line">
+            Счётчик здесь учебный, не официальный. Но идея верная: чем больше текста и файлов ты тащишь в запрос, тем больше места они занимают в контексте.
+          </div>
+        </section>
+
+        <section class="lesson" id="context">
+          <p class="lesson-kicker">03 / CONTEXT WINDOW</p>
+          <h2>Контекст: почему модель забывает</h2>
+          <p>
+            Окно контекста — это рабочий стол модели. На нём лежит история
+            диалога, твой текущий запрос, инструкции, фрагменты файлов и всё,
+            что система решила показать модели. Если стол переполнен, старые
+            части могут исчезнуть из поля зрения или стать менее важными.
+          </p>
+          <div class="memory-grid">
+            <article class="memory-card">
+              <h3>Память чата</h3>
+              <p>То, что видно в текущем диалоге. Длинные разговоры могут терять ранние детали.</p>
+            </article>
+            <article class="memory-card">
+              <h3>Системные правила</h3>
+              <p>Инструкции платформы или приложения. Обычно они важнее обычных сообщений.</p>
+            </article>
+            <article class="memory-card">
+              <h3>Внешние данные</h3>
+              <p>Файлы, база знаний, результаты поиска или куски документов, подтянутые к вопросу.</p>
+            </article>
+          </div>
+          <p>
+            Поэтому “она же должна помнить” — не всегда правильное ожидание.
+            Иногда модель не видит нужный факт прямо сейчас. Хорошая привычка:
+            повторить важные условия, дать короткую сводку или попросить
+            модель сначала перечислить, что она считает исходными данными.
+          </p>
+        </section>
+
+        <section class="lesson" id="api">
+          <p class="lesson-kicker">04 / API WITHOUT CODE</p>
+          <h2>API: машинный вход к модели</h2>
+          <p>
+            API — это способ говорить с моделью не через красивый чат, а через
+            приложение. Сайт, бот или автоматизация отправляют запрос в
+            понятной машине форме, получают ответ и используют его дальше.
+            Это как служебный вход: не так уютно, зато можно строить системы.
+          </p>
+          <div class="mechanic-grid">
+            <article class="mechanic-card">
+              <h3>Запрос</h3>
+              <p>Приложение отправляет модель, задачу, сообщения, настройки и иногда файлы.</p>
+            </article>
+            <article class="mechanic-card">
+              <h3>Параметры</h3>
+              <p>Можно задавать формат ответа, степень вариативности, лимиты и инструменты.</p>
+            </article>
+            <article class="mechanic-card">
+              <h3>Ответ</h3>
+              <p>Система получает текст, структуру, действие инструмента или другой результат.</p>
+            </article>
+            <article class="mechanic-card">
+              <h3>Контроль</h3>
+              <p>Разработчик решает, что показать пользователю и какие действия разрешить.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="embeddings">
+          <p class="lesson-kicker">05 / MEANING COORDINATES</p>
+          <h2>Embeddings: координаты смысла</h2>
+          <p>
+            Embeddings — это способ превратить текст в набор чисел, который
+            хранит не саму фразу, а её смысловой отпечаток. Похожие идеи
+            оказываются рядом. Поэтому система может найти не только точное
+            совпадение слов, но и близкий по смыслу фрагмент.
+          </p>
+          <div class="card-grid">
+            <article class="card">
+              <h3>Не поиск по словам</h3>
+              <p>Запрос “как модель помнит” может найти фрагмент про контекст, даже если слово “помнит” там не встречается.</p>
+            </article>
+            <article class="card">
+              <h3>Смысловая карта</h3>
+              <p>Документы превращаются в точки на карте смыслов. Близкие точки легче достать.</p>
+            </article>
+            <article class="card">
+              <h3>Основа RAG</h3>
+              <p>Embeddings помогают выбрать нужные куски памяти перед тем, как модель отвечает.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="rag">
+          <p class="lesson-kicker">06 / RETRIEVAL AUGMENTED GENERATION</p>
+          <h2>RAG: когда модель получает внешнюю память</h2>
+          <p>
+            RAG — это схема, где модель не пытается отвечать только из своей
+            обученной головы. Система сначала ищет подходящие фрагменты в
+            базе знаний, добавляет их в контекст, и только потом просит модель
+            собрать ответ. Так помощник может работать с твоими документами,
+            правилами проекта или базой обучения.
+          </p>
+
+          <div class="rag-lab" aria-labelledby="rag-lab-title">
+            <p class="tool-label" id="rag-lab-title">RAG DEMO / БЕЗ ПАМЯТИ vs С ПАМЯТЬЮ</p>
+            <div class="rag-grid">
+              <div class="rag-controls">
+                <p class="rag-sub">Вопрос:</p>
+                <button class="rag-question is-active" type="button" data-rag="context">Почему модель забывает начало диалога?</button>
+                <button class="rag-question" type="button" data-rag="api">Зачем нужен API, если есть чат?</button>
+                <button class="rag-question" type="button" data-rag="tokens">Почему длинные файлы могут быть проблемой?</button>
+                <div class="rag-mode" role="group" aria-label="Режим ответа">
+                  <button class="rag-mode-btn" type="button" data-mode="off">без RAG</button>
+                  <button class="rag-mode-btn is-active" type="button" data-mode="on">с RAG</button>
+                </div>
+              </div>
+              <div class="rag-output" id="rag-output" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="risks">
+          <p class="lesson-kicker">07 / MECHANICS WITH SEATBELT</p>
+          <h2>Что важно помнить про механику</h2>
+          <p>
+            Чем ближе мы к API, памяти и внешним данным, тем важнее контроль.
+            Модель может ошибаться, база знаний может быть устаревшей, а
+            лишние данные в контексте могут раскрыть то, что не надо было
+            отправлять. Это не повод бояться, это повод строить аккуратно.
+          </p>
+          <div class="risk-grid">
+            <article class="risk-card">
+              <h3>Конфиденциальность</h3>
+              <p>Не отправляй в модель данные, для которых нет разрешения или понятной причины.</p>
+            </article>
+            <article class="risk-card">
+              <h3>Актуальность</h3>
+              <p>RAG хорош ровно настолько, насколько хороши и свежи фрагменты, которые он достал.</p>
+            </article>
+            <article class="risk-card">
+              <h3>Проверка</h3>
+              <p>Ответ с найденным контекстом всё равно надо проверять, особенно в важных решениях.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="quiz">
+          <p class="lesson-kicker">08 / MINI TEST</p>
+          <h2>Проверка подкапотного режима</h2>
+          <p>
+            Небольшая проверка: если ответы сходятся, значит можно переходить
+            к сборке своих помощников, уже понимая, что происходит внутри.
+          </p>
+
+          <div class="quiz-tool" id="quiz-tool">
+            <div class="quiz-question" data-answer="c">
+              <h3>01. Что такое токены?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">секретные пароли для входа в чат</button>
+                <button class="answer" type="button" data-choice="b">готовые ответы модели</button>
+                <button class="answer" type="button" data-choice="c">фрагменты текста, с которыми работает модель</button>
+                <button class="answer" type="button" data-choice="d">только числа в таблице</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="b">
+              <h3>02. Почему модель может забывать ранние детали?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">она обиделась на длинный диалог</button>
+                <button class="answer" type="button" data-choice="b">нужная информация может не попасть в текущее окно контекста</button>
+                <button class="answer" type="button" data-choice="c">она не умеет читать русский текст</button>
+                <button class="answer" type="button" data-choice="d">API забирает всю память себе</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="a">
+              <h3>03. Что делают embeddings?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">превращают смысл текста в числовой отпечаток</button>
+                <button class="answer" type="button" data-choice="b">стирают старые сообщения из чата</button>
+                <button class="answer" type="button" data-choice="c">делают модель вежливее</button>
+                <button class="answer" type="button" data-choice="d">заменяют человеку проверку ответа</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="d">
+              <h3>04. Что такое RAG?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">режим случайных ответов</button>
+                <button class="answer" type="button" data-choice="b">способ рисовать картинки без промпта</button>
+                <button class="answer" type="button" data-choice="c">кнопка увеличения контраста</button>
+                <button class="answer" type="button" data-choice="d">поиск внешних фрагментов и добавление их в контекст перед ответом</button>
+              </div>
+            </div>
+
+            <div class="quiz-actions">
+              <button class="primary-btn" type="button" id="check-quiz">проверить механику</button>
+              <div class="quiz-result" id="quiz-result" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson">
+          <p class="lesson-kicker">EXIT / NEXT ROUTE</p>
+          <h2>Что должно остаться после слоя</h2>
+          <div class="exit-panel">
+            <p>
+              Теперь чат уже не выглядит мистическим окном. Ты знаешь, что
+              ответ зависит от токенов, контекста, доступа через API и данных,
+              которые система может достать через embeddings и RAG. Следующий
+              слой — уже про сборку собственных помощников.
+            </p>
+            <a class="route-link next" href="../layer_04/"><span>OPEN</span><span>LAYER_04</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / TRAINING SYSTEM</span>
+      <span>LAYER_03 // CONTEXT ENGINE READY</span>
+    </footer>
+  </div>
+
+  <script>
+    /* ── TOKEN METER: кириллица дороже + реальное окно контекста ── */
+    (function () {
+      var input = document.getElementById("token-input");
+      var list = document.getElementById("token-list");
+      var charCount = document.getElementById("char-count");
+      var tokenCount = document.getElementById("token-count");
+      var ctxCount = document.getElementById("context-count");
+      var fill = document.getElementById("context-fill");
+      var note = document.getElementById("token-note");
+      var ctxSelect = document.getElementById("ctx-select");
+      if (!input) return;
+
+      var windowSize = 4096; // Ollama по умолчанию
+
+      function label(n) { return n >= 100000 ? (Math.round(n / 1000) + "K") : String(n); }
+
+      /* кириллицу режем мельче латиницы — так наглядно, что русский дороже */
+      function chunks(word) {
+        var cyr = /[А-Яа-яЁё]/.test(word);
+        var size = cyr ? 3 : 4;
+        var out = [];
+        for (var i = 0; i < word.length; i += size) out.push(word.slice(i, i + size));
+        return out;
+      }
+      function tokenize(text) {
+        var raw = text.match(/[A-Za-zА-Яа-яЁё0-9]+|[^\sA-Za-zА-Яа-яЁё0-9]/g) || [];
+        var toks = [];
+        raw.forEach(function (w) {
+          if (/[A-Za-zА-Яа-яЁё0-9]/.test(w)) toks = toks.concat(chunks(w));
+          else toks.push(w);
+        });
+        return toks;
+      }
+
+      function render() {
+        var toks = tokenize(input.value);
+        list.innerHTML = "";
+        toks.slice(0, 150).forEach(function (t) {
+          var chip = document.createElement("span");
+          chip.className = /[A-Za-zА-Яа-яЁё0-9]/.test(t) ? "token-chip" : "token-chip punctuation";
+          chip.textContent = t;
+          list.appendChild(chip);
+        });
+        var n = toks.length;
+        var pct = Math.min(100, Math.round((n / windowSize) * 100));
+        charCount.textContent = String(input.value.length);
+        tokenCount.textContent = String(n);
+        ctxCount.textContent = n + " / " + label(windowSize);
+        fill.style.width = pct + "%";
+        if (n > windowSize) {
+          note.className = "token-note over";
+          note.textContent = "⚠ Переполнено. На локальной Ollama самое старое молча обрежется без ошибки — вот это и есть «модель забыла начало диалога».";
+        } else {
+          note.className = "token-note";
+          note.textContent = "≈ " + n + " токенов из " + label(windowSize) + ". Счётчик учебный. Кириллица режется мельче латиницы, поэтому русский текст занимает примерно вдвое больше места, чем такой же по смыслу английский.";
+        }
+      }
+
+      if (ctxSelect) {
+        ctxSelect.addEventListener("click", function (e) {
+          var b = e.target.closest(".ctx-btn");
+          if (!b) return;
+          windowSize = parseInt(b.dataset.ctx, 10);
+          ctxSelect.querySelectorAll(".ctx-btn").forEach(function (x) { x.classList.toggle("is-active", x === b); });
+          render();
+        });
+      }
+      input.addEventListener("input", render);
+      render();
+    })();
+
+    /* ── RAG DEMO: без памяти (гадает) vs с памятью (по фактам) ── */
+    (function () {
+      var data = {
+        context: {
+          question: "Почему модель забывает начало диалога?",
+          guess: "Наверное, у модели просто маленькая память, и она устаёт от длинных разговоров. Точно не скажу.",
+          found: "окно контекста — это рабочий стол модели; если стол переполнен, старые части исчезают из поля зрения.",
+          answer: "модель не всегда видит весь старый диалог — он вытесняется из окна контекста. Важные условия стоит повторять или хранить во внешней памяти."
+        },
+        api: {
+          question: "Зачем нужен API, если есть чат?",
+          guess: "Кажется, API — это какой-то платный ключ или тариф для продвинутых. Не уверена.",
+          found: "API — служебный вход, через который приложение отправляет запросы и получает ответы для системы.",
+          answer: "чат удобен человеку, а API нужен приложению. Через него строят ботов, сайты и автоматизацию — повторяемо и без ручного ввода."
+        },
+        tokens: {
+          question: "Почему длинные файлы могут быть проблемой?",
+          guess: "Возможно, большие файлы просто медленно загружаются или весят много мегабайт. Как-то так.",
+          found: "файлы превращаются в токены и занимают место в окне контекста; лишний текст вытесняет важные детали.",
+          answer: "длинный файл не всегда влезает в окно контекста целиком. Нужны отбор, нарезка и поиск релевантных фрагментов, а не «загрузить всё сразу»."
+        }
+      };
+
+      var output = document.getElementById("rag-output");
+      var qButtons = document.querySelectorAll(".rag-question");
+      var mButtons = document.querySelectorAll(".rag-mode-btn");
+      var curKey = "context";
+      var curMode = "on";
+
+      function render() {
+        var item = data[curKey];
+        if (curMode === "off") {
+          output.textContent = [
+            "Вопрос: " + item.question,
+            "",
+            "БЕЗ RAG — модель отвечает из головы:",
+            "«" + item.guess + "»",
+            "",
+            "⚠ Проверить нечем: нет источника, ответ может быть выдумкой (галлюцинацией)."
+          ].join("\n");
+        } else {
+          output.textContent = [
+            "Вопрос: " + item.question,
+            "",
+            "С RAG — сначала ищем факт, потом отвечаем:",
+            "1. Система ищет близкие по смыслу фрагменты.",
+            "2. Найдено: " + item.found,
+            "3. Фрагмент кладётся в контекст.",
+            "4. Ответ: " + item.answer,
+            "",
+            "✓ Ответ опирается на найденный фрагмент — гадать не нужно, галлюцинаций меньше."
+          ].join("\n");
+        }
+      }
+
+      qButtons.forEach(function (b) {
+        b.addEventListener("click", function () {
+          curKey = b.dataset.rag;
+          qButtons.forEach(function (x) { x.classList.toggle("is-active", x === b); });
+          render();
+        });
+      });
+      mButtons.forEach(function (b) {
+        b.addEventListener("click", function () {
+          curMode = b.dataset.mode;
+          mButtons.forEach(function (x) { x.classList.toggle("is-active", x === b); });
+          render();
+        });
+      });
+      render();
+    })();
+
+    /* ── движок: фон + тест с разбором и прогрессом ── */
+    (function () {
+      var N = window.NODEAI;
+      if (!N) return;
+      N.starfield(document.getElementById("starfield"));
+      N.enhanceQuiz(document.getElementById("quiz-tool"), {
+        resultEl: document.getElementById("quiz-result"),
+        checkId: "check-quiz",
+        layer: 3,
+        explains: [
+          "Токены — это кусочки текста (слова, части слов, знаки), с которыми работает модель. От них зависят длина контекста и цена запроса.",
+          "Модель видит только то, что попало в окно контекста. Длинный диалог вытесняет ранние детали — а на локальной Ollama они молча обрезаются.",
+          "Embeddings превращают смысл текста в числа: близкие по смыслу куски оказываются рядом. Это основа поиска по смыслу и RAG.",
+          "RAG сначала находит нужные фрагменты во внешней памяти, кладёт их в контекст, и только потом модель отвечает — по фактам, а не по догадке."
+        ],
+        messages: {
+          pass: function (s, t) { return "Механика сходится: " + s + "/" + t + ". Слой пройден — на карте он отмечен. Можно собирать помощников."; },
+          partial: function (s, t) { return "Почти собрано: " + s + "/" + t + ". Глянь зелёные ответы и разбор, потом повтори."; },
+          fail: function (s, t) { return "Под капотом шумно: " + s + "/" + t + ". Вернись к токенам, контексту и RAG — разбор поможет."; }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

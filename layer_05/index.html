@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Layer 05</title>
+  <link rel="stylesheet" href="../nodeai.css">
+  <script src="../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 13% 16%, rgba(24, 226, 140, 0.15), transparent 28rem),
+        radial-gradient(circle at 82% 20%, rgba(69, 170, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(169, 139, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 25%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.38);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(24, 226, 140, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.66);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(255, 82, 108, 0.34);
+      color: #ffc7d1;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .build-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.09), transparent 34%, rgba(169, 139, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .build-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .assistant-grid,
+    .access-grid,
+    .interface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .assistant-grid,
+    .access-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .assistant-card,
+    .access-card,
+    .interface-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .assistant-card h3,
+    .access-card h3,
+    .interface-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .assistant-card h3 {
+      color: var(--green);
+    }
+
+    .card p,
+    .assistant-card p,
+    .access-card p,
+    .interface-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(24, 226, 140, 0.42);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c6ddd3;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .builder-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 24, 19, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .builder-controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.68);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .blueprint-output {
+      min-height: 348px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .assistant-grid,
+      .access-grid,
+      .flow-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .interface-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .assistant-grid,
+      .access-grid,
+      .interface-grid,
+      .flow-row,
+      .builder-grid,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .build-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      .blueprint-output {
+        min-height: 260px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .risk-lab {
+      border-color: rgba(255, 82, 108, 0.28);
+      background:
+        linear-gradient(145deg, rgba(26, 8, 12, 0.86), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(255, 82, 108, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(255, 82, 108, 0.08);
+    }
+    .risk-panel { display: flex; flex-direction: column; gap: 10px; }
+    .risk-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+    .risk-head strong { font-size: 0.9rem; color: var(--amber); }
+    .risk-meter { height: 12px; border: 1px solid rgba(96, 186, 255, 0.18); background: rgba(0, 0, 0, 0.32); border-radius: 3px; overflow: hidden; }
+    .risk-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); transition: width 220ms ease; }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_05</div>
+      <div class="status">AUTONOMY // RISK CONTROL</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="layer-title">
+        <div class="kicker">LAYER_05 / AUTONOMY · ⚠ RISK</div>
+        <h1 id="layer-title">Отпускаем поводок</h1>
+        <p class="lead">
+          Финальный слой. Про то, где помощник перестаёт «подсказывать» и
+          начинает «действовать сам» — и почему именно тут заканчивается
+          удобство и начинается риск. Без паники, но и без наивного восторга.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">MISSION</p>
+          <p>
+            После этого слоя ты понимаешь, что такое автономность и
+            мультиагенты, как автоматизируют целый процесс, где передача
+            реального доступа становится опасной, какие бывают сбои — и какие
+            ограничители держат всё под контролем.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы слоя">
+          <p class="nav-label">COURSE MAP</p>
+          <a href="#autonomy"><span>01</span><span>спектр автономии</span></a>
+          <a href="#multi"><span>02</span><span>мультиагенты</span></a>
+          <a href="#projects"><span>03</span><span>автоматизация</span></a>
+          <a href="#access"><span>04</span><span>доступ к действиям</span></a>
+          <a href="#failures"><span>05</span><span>где ломается</span></a>
+          <a href="#control"><span>06</span><span>ограничители</span></a>
+          <a href="#sim"><span>07</span><span>симулятор</span></a>
+          <a href="#quiz"><span>08</span><span>мини-тест</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../layer_04/"><span>BACK</span><span>LAYER_04</span></a>
+          <a class="route-link home" href="../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="build-scan" aria-label="Спектр автономии">
+          <div class="scan-row">
+            <div class="scan-node"><span><strong>Совет</strong>только подсказывает</span></div>
+            <div class="scan-node"><span><strong>Черновик</strong>готовит, не шлёт</span></div>
+            <div class="scan-node"><span><strong>Подтверждение</strong>действие после «да»</span></div>
+            <div class="scan-node"><span><strong>Действие</strong>делает сам</span></div>
+            <div class="scan-node"><span><strong>Логи</strong>оставляет след</span></div>
+            <div class="scan-node"><span><strong>Стоп</strong>человек держит кран</span></div>
+          </div>
+        </div>
+
+        <section class="lesson" id="autonomy">
+          <p class="lesson-kicker">01 / AUTONOMY SPECTRUM</p>
+          <h2>Автономия — это ползунок, а не переключатель</h2>
+          <p>
+            «Дать ИИ автономию» звучит как один рубильник: включил — и он
+            делает всё сам. На деле это плавная шкала. Один и тот же помощник
+            может просто советовать, готовить черновик, ждать подтверждения
+            или действовать сам. Чем правее по шкале, тем больше удобства — и
+            тем дороже ошибка.
+          </p>
+          <div class="access-grid">
+            <article class="card"><h3>01 · Советует</h3><p>Предлагает варианты. Решение и действие — за человеком. Ошибка почти ничего не стоит.</p></article>
+            <article class="card"><h3>02 · Черновик</h3><p>Готовит результат, но не отправляет и не меняет систему сам.</p></article>
+            <article class="card"><h3>03 · С подтверждением</h3><p>Готов действовать, но ждёт явного «да» на каждый важный шаг.</p></article>
+            <article class="card"><h3>04 · Действует сам</h3><p>Выполняет без спроса. Быстро и удобно — и здесь начинается настоящий риск.</p></article>
+          </div>
+        </section>
+
+        <section class="lesson" id="multi">
+          <p class="lesson-kicker">02 / MULTI-AGENT SYSTEMS</p>
+          <h2>Мультиагенты: команда из моделей</h2>
+          <p>
+            Иногда одну большую задачу делят на роли: один агент ищет, другой
+            пишет, третий проверяет, а «оркестратор» раздаёт задачи и собирает
+            результат. Как небольшая команда с тимлидом. Это мощно, но
+            добавляет свои сложности: агенты могут спорить, зацикливаться или
+            дружно ошибаться.
+          </p>
+          <div class="card-grid">
+            <article class="card"><h3>Роли</h3><p>Каждый агент отвечает за узкий кусок: поиск, черновик, проверка, оформление.</p></article>
+            <article class="card"><h3>Оркестратор</h3><p>Раздаёт задачи, следит за шагами и собирает финальный результат.</p></article>
+            <article class="card"><h3>Слабое место</h3><p>Больше агентов ≠ умнее. Без ролей, лимитов и проверки система запутывается в самой себе.</p></article>
+          </div>
+        </section>
+
+        <section class="lesson" id="projects">
+          <p class="lesson-kicker">03 / PROJECT AUTOMATION</p>
+          <h2>Автоматизация целого процесса</h2>
+          <p>
+            Отдельный помощник делает один шаг. Автоматизация проекта — это
+            цепочка шагов, которая идёт почти сама: пришли данные → разобрать
+            → подготовить → проверить → передать дальше. Экономит часы, но
+            если один шаг ошибётся, ошибка поедет по всей цепочке.
+          </p>
+          <div class="card-grid">
+            <article class="card"><h3>Что автоматизируют</h3><p>Рутину с понятными правилами: сортировку, черновики, отчёты, разметку, напоминания.</p></article>
+            <article class="card"><h3>Точка контроля</h3><p>Перед необратимым шагом — проверка человеком. Не в конце, а там, где дорого ошибиться.</p></article>
+            <article class="card"><h3>Эффект домино</h3><p>Ошибка на шаге 2 портит шаги 3–10. Поэтому нужны проверки между звеньями.</p></article>
+          </div>
+        </section>
+
+        <section class="lesson" id="access">
+          <p class="lesson-kicker">04 / REAL ACTION ACCESS</p>
+          <h2>Доступ к действиям: где растут ставки</h2>
+          <p>
+            Пока помощник читает и советует — цена ошибки низкая. Как только
+            он получает право что-то менять в реальном мире, ставки прыгают.
+            Отправить письмо не тому. Удалить нужный файл. Перевести деньги
+            дважды. Правило простое: давай минимум прав под задачу, и не больше.
+          </p>
+          <div class="access-grid">
+            <article class="card"><h3>Читать</h3><p>Смотрит данные, анализирует. Сломать почти нечего.</p></article>
+            <article class="card"><h3>Черновик</h3><p>Готовит текст или действие, но не применяет его сам.</p></article>
+            <article class="card"><h3>Отправлять</h3><p>Действие уходит в мир. Обратимо не всегда — нужна проверка.</p></article>
+            <article class="card"><h3>Необратимое</h3><p>Деньги, удаление, публикация. Только с подтверждением, лимитами и логами.</p></article>
+          </div>
+        </section>
+
+        <section class="lesson" id="failures">
+          <p class="lesson-kicker">05 / HOW IT BREAKS</p>
+          <h2>Где это ломается — честно</h2>
+          <p>
+            Не чтобы напугать, а чтобы ты узнал грабли заранее. Автономные
+            системы падают предсказуемо, и почти все аварии — это не «злой
+            ИИ», а слишком много прав плюс слишком мало проверки.
+          </p>
+          <div class="card-grid">
+            <article class="card"><h3>Каскад ошибок</h3><p>Одна неверная догадка на раннем шаге тянет за собой всю цепочку.</p></article>
+            <article class="card"><h3>Зацикливание</h3><p>Агент повторяет действие снова и снова, жжёт токены, деньги и нервы.</p></article>
+            <article class="card"><h3>Галлюцинация → действие</h3><p>Модель уверенно выдумала факт — и, имея доступ, сразу по нему действует.</p></article>
+            <article class="card"><h3>Prompt injection</h3><p>Чужой текст (письмо, сайт, файл) прячет команду «сделай вот это» — и помощник её слушается.</p></article>
+            <article class="card"><h3>Слишком много прав</h3><p>«На всякий случай дали доступ ко всему» — и мелкий баг становится крупной аварией.</p></article>
+            <article class="card"><h3>Нет следов</h3><p>Без логов непонятно, что и почему произошло, и нельзя откатить.</p></article>
+          </div>
+        </section>
+
+        <section class="lesson" id="control">
+          <p class="lesson-kicker">06 / CONTROL &amp; GUARDRAILS</p>
+          <h2>Что держит всё под контролем</h2>
+          <p>
+            Хорошая новость: те же грабли лечатся простыми ограничителями. Не
+            «доверять и надеяться», а спроектировать так, чтобы даже при
+            ошибке ничего страшного не случилось.
+          </p>
+          <div class="access-grid">
+            <article class="card"><h3>Человек в петле</h3><p>Важное и необратимое проходит через подтверждение живого человека.</p></article>
+            <article class="card"><h3>Узкий доступ</h3><p>Минимум прав под задачу. Нет права — нет и аварии этим путём.</p></article>
+            <article class="card"><h3>Лимиты</h3><p>Потолок на действия, деньги и повторы. Зацикливание упирается в стену.</p></article>
+            <article class="card"><h3>Логи и стоп-кран</h3><p>Каждый шаг записан, и есть кнопка, которая всё останавливает.</p></article>
+          </div>
+          <div class="quote-line">
+            Автономия — это не «доверяй и не проверяй». Это «дай ровно столько свободы, сколько не страшно потерять».
+          </div>
+        </section>
+
+        <section class="lesson" id="sim">
+          <p class="lesson-kicker">07 / AUTONOMY SIMULATOR</p>
+          <h2>Симулятор: где кончается удобство</h2>
+          <p>
+            Выбери ставку задачи, уровень автономии и включи ограничители.
+            Полоска риска покажет, где ещё спокойно, а где уже опасно. Это и
+            есть та самая граница удобства и риска — потрогай её руками.
+          </p>
+
+          <div class="builder-lab risk-lab" aria-labelledby="risk-title">
+            <p class="tool-label" id="risk-title">AUTONOMY SIMULATOR / RISK METER</p>
+            <div class="builder-grid">
+              <div class="builder-controls">
+                <div class="builder-group">
+                  <p>Ставка задачи</p>
+                  <div class="chip-list" data-sim="stakes">
+                    <button class="chip is-active" type="button" data-val="1">низкая · сортировать письма</button>
+                    <button class="chip" type="button" data-val="2">средняя · черновики клиентам</button>
+                    <button class="chip" type="button" data-val="3">высокая · платежи и удаление</button>
+                  </div>
+                </div>
+                <div class="builder-group">
+                  <p>Автономия</p>
+                  <div class="chip-list" data-sim="autonomy">
+                    <button class="chip is-active" type="button" data-val="1">подсказывает</button>
+                    <button class="chip" type="button" data-val="2">с подтверждением</button>
+                    <button class="chip" type="button" data-val="3">действует сам</button>
+                  </div>
+                </div>
+                <div class="builder-group">
+                  <p>Ограничители (можно несколько)</p>
+                  <div class="chip-list" data-sim="guards">
+                    <button class="chip" type="button" data-guard="confirm">подтверждение</button>
+                    <button class="chip" type="button" data-guard="limits">лимиты</button>
+                    <button class="chip" type="button" data-guard="logs">логи</button>
+                    <button class="chip" type="button" data-guard="scope">узкий доступ</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="risk-panel">
+                <div class="risk-head"><span>УРОВЕНЬ РИСКА</span><strong id="risk-level">—</strong></div>
+                <div class="risk-meter" aria-hidden="true"><div class="risk-fill" id="risk-fill"></div></div>
+                <div class="blueprint-output" id="risk-output" aria-live="polite"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="quiz">
+          <p class="lesson-kicker">08 / MINI TEST</p>
+          <h2>Проверка границы</h2>
+          <p>
+            Финальная проверка курса: если ответы сходятся, значит ты видишь,
+            где заканчивается удобство и начинается риск.
+          </p>
+
+          <div class="quiz-tool" id="quiz-tool">
+            <div class="quiz-question" data-answer="b">
+              <h3>01. Автономия ИИ — это...</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">один рубильник «включено / выключено»</button>
+                <button class="answer" type="button" data-choice="b">плавная шкала от подсказки до самостоятельного действия</button>
+                <button class="answer" type="button" data-choice="c">всегда полная самостоятельность без человека</button>
+                <button class="answer" type="button" data-choice="d">то же самое, что локальная модель</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="c">
+              <h3>02. Что делает мультиагентную систему надёжнее?</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">чем больше агентов, тем умнее</button>
+                <button class="answer" type="button" data-choice="b">полная свобода каждому агенту</button>
+                <button class="answer" type="button" data-choice="c">чёткие роли, оркестратор, лимиты и проверка</button>
+                <button class="answer" type="button" data-choice="d">отсутствие логов ради скорости</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="a">
+              <h3>03. Prompt injection — это когда...</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">чужой текст (письмо, сайт, файл) подсовывает модели скрытую команду</button>
+                <button class="answer" type="button" data-choice="b">пользователь пишет слишком длинный запрос</button>
+                <button class="answer" type="button" data-choice="c">модель придумывает себе новый промпт сама</button>
+                <button class="answer" type="button" data-choice="d">интерфейс меняет цвет кнопок</button>
+              </div>
+            </div>
+
+            <div class="quiz-question" data-answer="d">
+              <h3>04. Перед необратимым действием (деньги, удаление) помощник должен...</h3>
+              <div class="answers">
+                <button class="answer" type="button" data-choice="a">действовать быстро, пока не передумали</button>
+                <button class="answer" type="button" data-choice="b">иметь максимум прав на всякий случай</button>
+                <button class="answer" type="button" data-choice="c">скрыть действие от человека</button>
+                <button class="answer" type="button" data-choice="d">просить подтверждение, иметь лимиты и оставлять логи</button>
+              </div>
+            </div>
+
+            <div class="quiz-actions">
+              <button class="primary-btn" type="button" id="check-quiz">проверить границу</button>
+              <div class="quiz-result" id="quiz-result" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson">
+          <p class="lesson-kicker">EXIT / ROUTE COMPLETE</p>
+          <h2>Маршрут пройден</h2>
+          <div class="exit-panel">
+            <p>
+              Это был финальный слой. Теперь ты видишь всю картину: от
+              «привет, машина» до систем, которые действуют почти сами — и
+              понимаешь, где заканчивается удобство и начинается риск. Главный
+              вывод курса простой: давай ИИ ровно столько свободы, сколько не
+              страшно потерять, и держи руку на стоп-кране.
+            </p>
+            <a class="route-link home" href="../layer_00/"><span>FINISH</span><span>НА КАРТУ</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / TRAINING SYSTEM</span>
+      <span>LAYER_05 // AUTONOMY CONTROL READY</span>
+    </footer>
+  </div>
+
+  <script>
+    /* ── AUTONOMY SIMULATOR: где кончается удобство и начинается риск ── */
+    (function () {
+      var fill = document.getElementById("risk-fill");
+      var levelEl = document.getElementById("risk-level");
+      var out = document.getElementById("risk-output");
+      if (!fill) return;
+
+      var stakes = 1, autonomy = 1;
+      var guards = { confirm: false, limits: false, logs: false, scope: false };
+      var sLabels = { 1: "низкая", 2: "средняя", 3: "высокая" };
+      var aLabels = { 1: "подсказывает", 2: "с подтверждением", 3: "действует сам" };
+      var gLabels = { confirm: "подтверждение", limits: "лимиты", logs: "логи", scope: "узкий доступ" };
+
+      function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+
+      function render() {
+        var risk = clamp(
+          stakes * autonomy * 11
+          - (guards.confirm ? 22 : 0)
+          - (guards.limits ? 14 : 0)
+          - (guards.logs ? 8 : 0)
+          - (guards.scope ? 16 : 0),
+          3, 100
+        );
+        fill.style.width = risk + "%";
+        var band = risk < 34 ? "низкий" : risk < 67 ? "средний" : "высокий";
+        levelEl.textContent = band + " · " + risk + "/100";
+        levelEl.style.color = risk < 34 ? "var(--green)" : risk < 67 ? "var(--amber)" : "var(--red)";
+
+        var verdict;
+        if (risk < 34) verdict = "Спокойно. Тут даже полная свобода не страшна — ошибка почти ничего не стоит. Удобство побеждает.";
+        else if (risk < 67) verdict = "Осторожно. Работать можно, но добавь подтверждение и логи, чтобы ошибка не ушла дальше.";
+        else verdict = "⚠ Опасно. Высокая ставка и много свободы без страховки — так теряют деньги и данные. Верни подтверждение, узкий доступ и лимиты.";
+
+        var tip = "";
+        if (stakes === 3 && autonomy === 3 && !guards.confirm) tip = "\nСамый большой рычаг сейчас — подтверждение необратимых действий.";
+        else if (risk >= 67 && !guards.scope) tip = "\nСузь доступ: меньше прав — меньше способов навредить.";
+        else if (risk < 34 && autonomy === 3) tip = "\nЗдесь автономия оправдана: цена ошибки мала. Так и надо экономить своё время.";
+
+        var gOn = Object.keys(guards).filter(function (k) { return guards[k]; }).map(function (k) { return gLabels[k]; });
+        out.textContent = [
+          "Ставка: " + sLabels[stakes] + " · Автономия: " + aLabels[autonomy],
+          "Ограничители: " + (gOn.length ? gOn.join(", ") : "нет"),
+          "",
+          "Риск: " + risk + "/100 — " + band,
+          "",
+          verdict + tip
+        ].join("\n");
+      }
+
+      function single(group, setter) {
+        var chips = document.querySelectorAll('[data-sim="' + group + '"] .chip');
+        chips.forEach(function (b) {
+          b.addEventListener("click", function () {
+            setter(parseInt(b.dataset.val, 10));
+            chips.forEach(function (x) { x.classList.toggle("is-active", x === b); });
+            render();
+          });
+        });
+      }
+      single("stakes", function (v) { stakes = v; });
+      single("autonomy", function (v) { autonomy = v; });
+
+      document.querySelectorAll('[data-sim="guards"] .chip').forEach(function (b) {
+        b.addEventListener("click", function () {
+          var g = b.dataset.guard;
+          guards[g] = !guards[g];
+          b.classList.toggle("is-active", guards[g]);
+          render();
+        });
+      });
+
+      render();
+    })();
+
+    /* ── движок: фон + финальный тест (прогресс complete(5)) ── */
+    (function () {
+      var N = window.NODEAI;
+      if (!N) return;
+      N.starfield(document.getElementById("starfield"));
+      N.enhanceQuiz(document.getElementById("quiz-tool"), {
+        resultEl: document.getElementById("quiz-result"),
+        checkId: "check-quiz",
+        layer: 5,
+        explains: [
+          "Автономия — это шкала: советовать → черновик → с подтверждением → действовать сам. Не один рубильник.",
+          "Мультиагенты надёжны не количеством, а структурой: роли, оркестратор, лимиты и проверка между шагами.",
+          "Prompt injection — когда во внешнем тексте спрятана команда, и помощник её исполняет. Поэтому нельзя слепо доверять данным извне.",
+          "Необратимое (деньги, удаление, публикация) — только через подтверждение человека, с лимитами и логами."
+        ],
+        messages: {
+          pass: function (s, t) { return "Граница ясна: " + s + "/" + t + ". Финальный слой пройден — курс завершён, на карте отмечены все пять."; },
+          partial: function (s, t) { return "Почти на месте: " + s + "/" + t + ". Глянь зелёные ответы и разбор, потом повтори."; },
+          fail: function (s, t) { return "Сигнал шумит: " + s + "/" + t + ". Вернись к спектру автономии и ограничителям — разбор поможет."; }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

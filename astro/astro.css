@@ -1,0 +1,103 @@
+/* ASTRO · A.C.EON — орбитальный интерфейс. Тёмная эстетика, под замену/тюнинг. */
+:root{
+  --bg:#07070c; --ink:#ececf4; --muted:#8a8a9c;
+  --gold:#c9a24b; --gold-soft:#f2d98a; --blue:#6a7bd8; --teal:#4bbfa8; --red:#d86a6a; --orange:#d8964b;
+  --panel:#12121a; --line:#23232f; --glass:rgba(16,16,26,.78);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+
+/* СЛОЙ 0 */
+#stars{position:fixed;inset:0;z-index:0}
+#glow{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 55% 55% at 62% 50%,rgba(106,123,216,.10),transparent 70%)}
+
+/* КАРКАС */
+.app{position:fixed;inset:0;z-index:1;display:flex}
+.sidebar{width:340px;flex-shrink:0;height:100%;overflow-y:auto;padding:22px 20px;
+  background:linear-gradient(180deg,rgba(12,12,20,.9),rgba(8,8,14,.75));
+  border-right:1px solid var(--line);backdrop-filter:blur(8px)}
+.stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-width:0}
+svg#chart{width:min(94vmin,760px);height:min(94vmin,760px);overflow:visible}
+.hint{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;opacity:.7}
+.hidden{display:none}
+
+#brand h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.18em}
+#brand span{color:var(--muted);font-size:11px;letter-spacing:.04em}
+
+/* виджеты */
+.widgets{display:flex;flex-direction:column;gap:8px;margin:16px 0 18px}
+.widget{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:12px}
+.widget.retro-on{border-color:rgba(216,106,106,.5)}
+
+/* вкладки */
+.tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:none;color:var(--muted);padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent}
+.tab.active{color:var(--ink);border-bottom-color:var(--gold)}
+
+/* формы */
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.form label.city{grid-column:span 3}
+input,select{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:7px;
+  padding:7px 8px;font-size:14px;width:100%;text-transform:none;letter-spacing:0}
+button.go{margin-top:12px;width:100%;background:var(--gold);color:#0a0a0f;border:none;border-radius:8px;
+  padding:10px;font-weight:600;cursor:pointer;font-size:14px}
+button.go:disabled{opacity:.5;cursor:default}
+.note{color:var(--muted);font-size:11px;margin:10px 0 0;line-height:1.4}
+.card-title{color:var(--blue);font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px}
+.summary{margin-top:16px;color:var(--gold);font-size:12px;min-height:16px}
+
+/* ── КОЛЕСО ── */
+.ring{fill:none;stroke:rgba(255,255,255,.07)}
+.ring-mid{fill:none;stroke:rgba(201,162,75,.14)}
+.tick{stroke:rgba(255,255,255,.08)}
+.zglyph{fill:var(--muted);font-size:15px;text-anchor:middle;dominant-baseline:middle;opacity:.75}
+.core{fill:url(#coreGrad)} .core-ring{fill:none;stroke:rgba(201,162,75,.3);stroke-dasharray:2 6}
+.spoke{stroke:rgba(201,162,75,.28);stroke-width:1;stroke-dasharray:1 4}
+.asc-mark{stroke:var(--gold);stroke-width:1.5} .asc-label{fill:var(--gold);font-size:11px;text-anchor:middle;dominant-baseline:middle}
+
+.asp{stroke-width:1;opacity:.22;transition:opacity .3s,stroke-width .3s}
+.asp.conjunction{stroke:var(--gold)} .asp.opposition{stroke:var(--red)}
+.asp.square{stroke:var(--orange)} .asp.trine{stroke:var(--teal)} .asp.sextile{stroke:var(--blue)}
+.asp.dim{opacity:.05} .asp.hot{opacity:.9;stroke-width:1.6}
+
+.pnode{cursor:pointer}
+.pnode circle.dot{fill:rgba(30,26,40,.95);stroke:rgba(201,162,75,.8);stroke-width:1.4;transition:.2s}
+.pnode text{fill:var(--gold-soft);font-size:22px;text-anchor:middle;dominant-baseline:middle;
+  pointer-events:none;filter:drop-shadow(0 0 4px rgba(201,162,75,.6))}
+.pnode .halo{fill:none;stroke:var(--gold);stroke-width:0;opacity:0;transition:.3s}
+.pnode:hover circle.dot{r:22;stroke:var(--gold)} .pnode:hover text{fill:#fff}
+.pnode.sel circle.dot{fill:rgba(201,162,75,.14);stroke:var(--gold);stroke-width:1.6}
+.pnode.sel .halo{stroke-width:1;opacity:.5}
+.pnode.dim{opacity:.28}
+.retro-dot{fill:var(--red);opacity:.9}
+/* второй человек в синастрии */
+.pnode.b circle.dot{stroke:rgba(106,123,216,.85)} .pnode.b text{fill:#aeb8ee;filter:drop-shadow(0 0 4px rgba(106,123,216,.6))}
+.pnode.b .halo{stroke:var(--blue)} .pnode.b.sel circle.dot{fill:rgba(106,123,216,.16);stroke:var(--blue)}
+
+/* ── ПАНЕЛЬ ПРОЧТЕНИЯ ── */
+#panel{position:fixed;top:0;right:0;height:100%;width:min(380px,86vw);z-index:5;
+  background:var(--glass);backdrop-filter:blur(18px);border-left:1px solid rgba(255,255,255,.09);
+  padding:64px 26px 26px;overflow-y:auto;transform:translateX(100%);
+  transition:transform .4s cubic-bezier(.16,1,.3,1)}
+#panel.open{transform:translateX(0)}
+#panel .close{position:absolute;top:20px;right:22px;color:var(--muted);cursor:pointer;font-size:20px}
+#panel .pglyph{font-size:44px;color:var(--gold);line-height:1}
+#panel h2{margin:10px 0 2px;font-size:20px}
+#panel .psub{color:var(--muted);font-size:12px;margin:0 0 16px}
+#panel .pbody{font-size:14px;line-height:1.65}
+#panel #p-house{font-size:13px;color:var(--muted);margin-top:12px;line-height:1.55}
+.asp-item{border-top:1px solid var(--line);padding:9px 0;font-size:13px}
+.asp-item .h{color:var(--gold)} .asp-item .t{color:var(--muted);display:block;margin-top:2px}
+
+/* мобилка: панель управления сверху, колесо снизу */
+@media(max-width:760px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;height:auto;max-height:52vh;border-right:none;border-bottom:1px solid var(--line)}
+  .stage{min-height:48vh}
+  #panel{width:100%;height:70vh;top:auto;bottom:0;border-left:none;border-top:1px solid rgba(255,255,255,.09);
+    transform:translateY(100%)}
+  #panel.open{transform:translateY(0)}
+}

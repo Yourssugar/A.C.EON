@@ -777,6 +777,21 @@
       }
     }
 
+
+    .lesson-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .lesson-head .lesson-kicker { margin: 0; }
+    .deep-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px;
+      border: 1px solid rgba(24, 226, 140, 0.4); border-radius: 4px;
+      background: rgba(24, 226, 140, 0.06);
+      color: #a9f0d4; font-family: var(--mono); font-size: 0.7rem;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    }
+    .deep-link:hover, .deep-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.75); background: rgba(24, 226, 140, 0.12);
+      color: #eafff7; outline: none; transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -836,7 +851,10 @@
         </div>
 
         <section class="lesson" id="what">
-          <p class="lesson-kicker">01 / BASIC SIGNAL</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">01 / BASIC SIGNAL</p>
+            <a class="deep-link" href="what-is-ai/">разобрать подробнее →</a>
+          </div>
           <h2>Что мы вообще называем ИИ</h2>
           <p>
             В этом курсе ИИ — это программа, которая умеет распознавать
@@ -859,7 +877,10 @@
         </section>
 
         <section class="lesson" id="not-magic">
-          <p class="lesson-kicker">02 / REALITY CHECK</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">02 / REALITY CHECK</p>
+            <a class="deep-link" href="not-magic/">разобрать подробнее →</a>
+          </div>
           <h2>Нейросеть не магия и не обычный калькулятор</h2>
           <p>
             Новички чаще всего прыгают между двумя крайностями: либо “она
@@ -894,7 +915,10 @@
         </section>
 
         <section class="lesson" id="uses">
-          <p class="lesson-kicker">03 / HUMAN USE CASES</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">03 / HUMAN USE CASES</p>
+            <a class="deep-link" href="human-use/">разобрать подробнее →</a>
+          </div>
           <h2>Для чего это нужно живому человеку</h2>
           <p>
             На первом слое не надо думать о мультиагентах и сложных системах.

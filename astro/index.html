@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASTRO · A.C.EON</title>
+<link rel="stylesheet" href="astro.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>☉ ASTRO</h1>
+  <p class="sub">Точный расчёт положений — интерпретация из базы. Без ИИ и API.</p>
+
+  <!-- живые виджеты: считаются от «сейчас», без данных рождения -->
+  <div class="widgets">
+    <div class="widget" id="w-moon">Луна…</div>
+    <div class="widget" id="w-mercury">Меркурий…</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="light">Быстро (по дате)</button>
+    <button class="tab" data-tab="full">Полная карта</button>
+    <button class="tab" data-tab="syn">Совместимость</button>
+  </div>
+
+  <!-- ЛАЙТ -->
+  <div class="panel" id="panel-light">
+    <div class="row">
+      <div class="fld"><label>День</label><input id="l-day" type="number" min="1" max="31" placeholder="15"></div>
+      <div class="fld"><label>Месяц</label><input id="l-month" type="number" min="1" max="12" placeholder="6"></div>
+      <div class="fld"><label>Год</label><input id="l-year" type="number" placeholder="1990" class="wide"></div>
+      <button class="go" id="l-build">Показать знаки</button>
+    </div>
+    <p class="muted" style="font-size:12px;margin:0">Только знаки планет — домов и асцендента нет (для них нужно время и место). Луна помечается ≈, т.к. без времени её знак примерный.</p>
+  </div>
+
+  <!-- ПОЛНЫЙ НАТАЛ -->
+  <div class="panel hidden" id="panel-full">
+    <div class="row">
+      <div class="fld"><label>День</label><input id="f-day" type="number" min="1" max="31"></div>
+      <div class="fld"><label>Месяц</label><input id="f-month" type="number" min="1" max="12"></div>
+      <div class="fld"><label>Год</label><input id="f-year" type="number" class="wide"></div>
+      <div class="fld"><label>Час</label><input id="f-hour" type="number" min="0" max="23"></div>
+      <div class="fld"><label>Мин</label><input id="f-min" type="number" min="0" max="59"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label>Город (пресет)</label>
+        <select class="city-preset" data-target="#f">
+          <option value="">— вручную —</option>
+          <option value="53.9006,27.5590">Минск</option>
+          <option value="55.7558,37.6173">Москва</option>
+          <option value="50.4501,30.5234">Киев</option>
+          <option value="51.5074,-0.1278">Лондон</option>
+          <option value="40.7128,-74.0060">Нью-Йорк</option>
+        </select>
+      </div>
+      <div class="fld"><label>Широта</label><input id="f-lat" type="text" placeholder="53.90"></div>
+      <div class="fld"><label>Долгота</label><input id="f-lon" type="text" placeholder="27.56"></div>
+      <button class="go" id="f-build">Построить карту</button>
+    </div>
+    <p class="muted" style="font-size:12px;margin:0">Таймзона и переход на летнее время определяются по координатам автоматически.</p>
+  </div>
+
+  <!-- СИНАСТРИЯ -->
+  <div class="panel hidden" id="panel-syn">
+    <div class="two-col">
+      <div>
+        <p class="card-title">Карта 1</p>
+        <div class="row">
+          <div class="fld"><label>Д</label><input id="s1-day" type="number" style="width:60px"></div>
+          <div class="fld"><label>М</label><input id="s1-month" type="number" style="width:60px"></div>
+          <div class="fld"><label>Год</label><input id="s1-year" type="number" style="width:80px"></div>
+          <div class="fld"><label>Ч</label><input id="s1-hour" type="number" style="width:55px"></div>
+          <div class="fld"><label>Мин</label><input id="s1-min" type="number" style="width:55px"></div>
+        </div>
+        <div class="row">
+          <div class="fld"><label>Город</label>
+            <select class="city-preset" data-target="#s1">
+              <option value="">— вручную —</option>
+              <option value="53.9006,27.5590">Минск</option>
+              <option value="55.7558,37.6173">Москва</option>
+              <option value="50.4501,30.5234">Киев</option>
+            </select></div>
+          <div class="fld"><label>Шир</label><input id="s1-lat" type="text" style="width:75px"></div>
+          <div class="fld"><label>Долг</label><input id="s1-lon" type="text" style="width:75px"></div>
+        </div>
+      </div>
+      <div>
+        <p class="card-title">Карта 2</p>
+        <div class="row">
+          <div class="fld"><label>Д</label><input id="s2-day" type="number" style="width:60px"></div>
+          <div class="fld"><label>М</label><input id="s2-month" type="number" style="width:60px"></div>
+          <div class="fld"><label>Год</label><input id="s2-year" type="number" style="width:80px"></div>
+          <div class="fld"><label>Ч</label><input id="s2-hour" type="number" style="width:55px"></div>
+          <div class="fld"><label>Мин</label><input id="s2-min" type="number" style="width:55px"></div>
+        </div>
+        <div class="row">
+          <div class="fld"><label>Город</label>
+            <select class="city-preset" data-target="#s2">
+              <option value="">— вручную —</option>
+              <option value="53.9006,27.5590">Минск</option>
+              <option value="55.7558,37.6173">Москва</option>
+              <option value="50.4501,30.5234">Киев</option>
+            </select></div>
+          <div class="fld"><label>Шир</label><input id="s2-lat" type="text" style="width:75px"></div>
+          <div class="fld"><label>Долг</label><input id="s2-lon" type="text" style="width:75px"></div>
+        </div>
+      </div>
+    </div>
+    <button class="go" id="s-build" style="margin-top:6px">Сравнить карты</button>
+
+    <div id="syn-result" class="hidden">
+      <p class="result-head" id="syn-count"></p>
+      <div id="syn-aspects"></div>
+    </div>
+  </div>
+
+  <!-- РЕЗУЛЬТАТ (лайт / натал) -->
+  <div id="result" class="hidden">
+    <p class="result-head">Режим: <span id="result-mode"></span></p>
+    <p id="asc-line"></p>
+    <div class="planet-grid" id="planet-grid"></div>
+    <div id="reading"><p class="muted">Кликни планету, чтобы прочитать её положение.</p></div>
+    <div id="wheel"></div>
+    <p class="card-title">Аспекты</p>
+    <div id="aspects"></div>
+  </div>
+</div>
+
+<!-- движки: astronomy-engine грузим сразу (лёгкий, ~116КБ), natal — лениво из astro.js -->
+<script src="vendor/astronomy.browser.min.js"></script>
+<script src="data/interpretations.js"></script>
+<script src="astro.js"></script>
+</body>
+</html>

@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Здороваться с ИИ</title>
+  <link rel="stylesheet" href="../../nodeai.css">
+  <script src="../../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 13% 16%, rgba(24, 226, 140, 0.15), transparent 28rem),
+        radial-gradient(circle at 82% 20%, rgba(69, 170, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(169, 139, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 25%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.38);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(24, 226, 140, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.66);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(255, 82, 108, 0.34);
+      color: #ffc7d1;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .build-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.09), transparent 34%, rgba(169, 139, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .build-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .assistant-grid,
+    .access-grid,
+    .interface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .assistant-grid,
+    .access-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .assistant-card,
+    .access-card,
+    .interface-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .assistant-card h3,
+    .access-card h3,
+    .interface-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .assistant-card h3 {
+      color: var(--green);
+    }
+
+    .card p,
+    .assistant-card p,
+    .access-card p,
+    .interface-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(24, 226, 140, 0.42);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c6ddd3;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .builder-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 24, 19, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .builder-controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.68);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .blueprint-output {
+      min-height: 348px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .assistant-grid,
+      .access-grid,
+      .flow-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .interface-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .assistant-grid,
+      .access-grid,
+      .interface-grid,
+      .flow-row,
+      .builder-grid,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .build-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      .blueprint-output {
+        min-height: 260px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .risk-lab {
+      border-color: rgba(255, 82, 108, 0.28);
+      background:
+        linear-gradient(145deg, rgba(26, 8, 12, 0.86), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(255, 82, 108, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(255, 82, 108, 0.08);
+    }
+    .risk-panel { display: flex; flex-direction: column; gap: 10px; }
+    .risk-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+    .risk-head strong { font-size: 0.9rem; color: var(--amber); }
+    .risk-meter { height: 12px; border: 1px solid rgba(96, 186, 255, 0.18); background: rgba(0, 0, 0, 0.32); border-radius: 3px; overflow: hidden; }
+    .risk-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); transition: width 220ms ease; }
+
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .ba-card { padding: 14px; border-radius: 7px; border: 1px solid; }
+    .ba-card.bad { border-color: rgba(255,82,108,0.32); background: rgba(255,82,108,0.05); }
+    .ba-card.good { border-color: rgba(24,226,140,0.4); background: rgba(24,226,140,0.06); }
+    .ba-tag { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ba-card.bad .ba-tag { color: var(--red); }
+    .ba-card.good .ba-tag { color: var(--green); }
+    .ba-req { margin: 8px 0 0; font-family: var(--mono); font-size: 0.9rem; line-height: 1.5; color: #dbe9ef; }
+    .ba-note { margin: 10px 0 0; font-size: 0.86rem; color: #9fb3bd; line-height: 1.55; }
+    .tone-pick { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+    .tone-say { padding: 12px 14px; border: 1px solid rgba(96,186,255,0.2); border-radius: 6px; background: rgba(0,0,0,0.24); margin-bottom: 12px; }
+    .tone-label { margin-bottom: 6px; font-family: var(--mono); font-size: 0.66rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .tone-text { font-family: var(--mono); font-size: 0.95rem; line-height: 1.5; color: #dbe9ef; }
+    .tone-text.harsh { color: #f0a6b0; }
+    .tone-text.human { color: #a9e9cf; }
+    .tone-verdicts { display: grid; gap: 8px; }
+    .tone-v { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 9px 12px; border-radius: 6px; border: 1px solid rgba(96,186,255,0.14); background: rgba(2,8,12,0.45); }
+    .tone-v .who { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; }
+    .tone-v .txt { min-width: 0; font-size: 0.88rem; color: #cfe0e7; line-height: 1.45; }
+    .tone-v.machine .who { color: var(--blue); }
+    .tone-v.you .who { color: var(--green); }
+    .tone-note { margin: 14px 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); line-height: 1.55; }
+    @media (max-width: 660px) { .ba { grid-template-columns: 1fr; } }
+    @media (max-width: 620px) { .tone-v { grid-template-columns: 1fr; gap: 3px; } }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_01 / HUMAN MODE</div>
+      <div class="status">DEEP DIVE // 05</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="topic-title">
+        <div class="kicker">LAYER_01 · 05 / HUMAN MODE</div>
+        <h1 id="topic-title">Здороваться и благодарить ИИ</h1>
+        <p class="lead">
+          Углублённый разбор пятой темы — самой человеческой. Нужно ли говорить
+          «привет» и «спасибо» программе, и почему честный ответ интереснее, чем
+          простое «да» или «нет».
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">В ЭТОЙ ТЕМЕ</p>
+          <p>
+            Разбираемся, обижается ли машина, зачем тогда вообще быть вежливым,
+            где здоровая середина между «поклоняться чату» и «командным криком»,
+            и почему то, как ты говоришь с ИИ, тихо влияет на тебя самого.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы темы">
+          <p class="nav-label">НА СТРАНИЦЕ</p>
+          <a href="#short"><span>01</span><span>короткий ответ</span></a>
+          <a href="#why"><span>02</span><span>зачем тогда вежливость</span></a>
+          <a href="#balance"><span>03</span><span>не человек, но и не робот</span></a>
+          <a href="#tone"><span>04</span><span>тон-микшер</span></a>
+          <a href="#dos"><span>05</span><span>можно и лучше не надо</span></a>
+          <a href="#habits"><span>06</span><span>это влияет на тебя</span></a>
+          <a href="#takeaway"><span>07</span><span>конец первого слоя</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../"><span>BACK</span><span>LAYER_01</span></a>
+          <a class="route-link home" href="../../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <section class="lesson" id="short">
+          <p class="lesson-kicker">01 / КОРОТКИЙ ОТВЕТ</p>
+          <h2>Честно: машине всё равно</h2>
+          <p>
+            Начнём с прямого ответа. Технически — здороваться и благодарить не
+            обязательно. Модель не обижается, если ты сразу к делу, не радуется
+            твоему «спасибо» и не ведёт тайный список невоспитанных
+            пользователей. Чувств у неё нет — а значит, на её стороне «привет»
+            и «пожалуйста» не меняют ровным счётом ничего.
+          </p>
+          <p>
+            Казалось бы, тема закрыта. Но это как раз тот случай, когда короткий
+            ответ верный и при этом совсем не полный. Потому что вопрос на самом
+            деле не про машину. Он про тебя.
+          </p>
+          <div class="quote-line">
+            Машина не заметит твою вежливость. Зато её заметишь ты сам — и в этом
+            вся соль.
+          </div>
+        </section>
+
+        <section class="lesson" id="why">
+          <p class="lesson-kicker">02 / ЗАЧЕМ ТОГДА ВЕЖЛИВОСТЬ</p>
+          <h2>Ты делаешь это не для неё, а для себя</h2>
+          <p>
+            Спокойный, человеческий тон помогает не модели, а тебе. Когда ты
+            пишешь ровно и по-доброму, ты и сам держишься спокойнее: мысль
+            яснее, раздражения меньше, диалог приятнее. Это маленькая, почти
+            незаметная гигиена настроения.
+          </p>
+          <p>
+            В этом и парадокс: «спасибо» бесполезно для программы и при этом
+            полезно для тебя. Ты не обслуживаешь машину любезностями — ты просто
+            не даёшь себе скатиться в режим раздражённого начальника, который
+            цедит команды сквозь зубы. С кем бы ты ни говорил.
+          </p>
+        </section>
+
+        <section class="lesson" id="balance">
+          <p class="lesson-kicker">03 / ЗДОРОВАЯ СЕРЕДИНА</p>
+          <h2>Не человек, но и не повод стать роботом</h2>
+          <p>
+            Тут легко свалиться в одну из двух крайностей, и обе так себе.
+            Рабочее правило простое: можно общаться по-человечески, но не забывай,
+            что перед тобой инструмент.
+          </p>
+          <div class="ba">
+            <div class="ba-card bad">
+              <div class="ba-tag">✗ перебор в одну сторону</div>
+              <p class="ba-req">Поклоняться чату</p>
+              <p class="ba-note">Видеть в модели живого мудреца, друга или оракула, привязываться и верить каждому слову. Это уже не помощник, а иллюзия — и она подводит.</p>
+            </div>
+            <div class="ba-card bad">
+              <div class="ba-tag">✗ перебор в другую</div>
+              <p class="ba-req">Командный крик</p>
+              <p class="ba-note">Превращать диалог в поток приказов капслоком и угроз. Модели не страшно, а вот тон входит в привычку и портит результат и настроение.</p>
+            </div>
+          </div>
+          <p>
+            Здоровая середина — говорить как нормальный спокойный человек с
+            толковым помощником. Помнить, что это инструмент, но не превращаться
+            ради этого в холодный пульт управления.
+          </p>
+        </section>
+
+        <section class="lesson" id="tone">
+          <p class="lesson-kicker">04 / ТОН-МИКШЕР</p>
+          <h2>Один запрос, три тона</h2>
+          <p>
+            Проще всего почувствовать разницу на одном примере. Вот один и тот
+            же запрос, сказанный тремя тонами. Переключай и смотри, что меняется
+            для модели, а что — для тебя.
+          </p>
+
+          <div class="builder-lab" aria-labelledby="tone-title">
+            <p class="tool-label" id="tone-title">TONE MIXER / ДЛЯ МАШИНЫ vs ДЛЯ ТЕБЯ</p>
+            <div class="tone-pick" id="tone-pick">
+              <button class="chip" type="button" data-t="harsh">командный крик</button>
+              <button class="chip is-active" type="button" data-t="neutral">нейтрально</button>
+              <button class="chip" type="button" data-t="human">по-человечески</button>
+            </div>
+            <div class="tone-say">
+              <div class="tone-label">как это звучит</div>
+              <div class="tone-text" id="tone-text"></div>
+            </div>
+            <div class="tone-verdicts" id="tone-verdicts"></div>
+            <p class="tone-note">Заметил? Для модели все три почти равны — она читает смысл, а не тон. А вот для тебя разница ощутимая.</p>
+          </div>
+        </section>
+
+        <section class="lesson" id="dos">
+          <p class="lesson-kicker">05 / ПРОСТЫЕ ОРИЕНТИРЫ</p>
+          <h2>Можно и лучше не надо</h2>
+          <p>
+            Если свести всё к паре коротких списков — вот они. Не правила, а
+            просто здоровые ориентиры.
+          </p>
+          <div class="ba">
+            <div class="ba-card good">
+              <div class="ba-tag">✓ можно</div>
+              <p class="ba-req">«Привет, помоги разобраться» · «спасибо» · «объясни, пожалуйста, проще»</p>
+              <p class="ba-note">Нормальный человеческий режим. Тебе спокойно, диалог приятный, ничего не теряется.</p>
+            </div>
+            <div class="ba-card bad">
+              <div class="ba-tag">✗ лучше не надо</div>
+              <p class="ba-req">«Ты обязан» · «сделай идеально» · «сам догадайся»</p>
+              <p class="ba-note">Тут страдает не модель, а результат и твой настрой. Давление и туман не делают ответ лучше.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="habits">
+          <p class="lesson-kicker">06 / ТИХОЕ ВЛИЯНИЕ</p>
+          <h2>Как ты говоришь с машиной — влияет на тебя</h2>
+          <p>
+            И вот здесь начинается самое интересное. Многие люди говорят ИИ
+            «спасибо» — не потому, что это нужно программе, а потому, что не
+            хотят приучать себя к грубости. Тон — штука прилипчивая: как
+            разговариваешь с одним «собеседником», так постепенно начинаешь и с
+            другими.
+          </p>
+          <p>
+            Особенно это заметно рядом с детьми, которые копируют всё подряд.
+            Если дом привык рявкать на голосового помощника, ребёнок легко
+            перенесёт это на живых людей. Так что вежливость с ИИ — это не про
+            машину и даже не про правила приличия. Это способ остаться тем
+            человеком, которым ты хочешь быть.
+          </p>
+          <div class="quote-line">
+            Можно сказать так: ты вежлив с ИИ не ради него, а чтобы не
+            разучиться быть вежливым вообще.
+          </div>
+        </section>
+
+        <section class="lesson" id="takeaway">
+          <p class="lesson-kicker">07 / КОНЕЦ ПЕРВОГО СЛОЯ</p>
+          <h2>Что забрать — и с чем ты уходишь</h2>
+          <div class="exit-panel">
+            <p>
+              Ответ на тему: здоровайся и благодари, если хочется — это для тебя,
+              не для машины. Будь спокойным человеком с толковым инструментом, без
+              поклонения и без крика. А ещё это финальная тема слоя: теперь ты
+              знаешь, что такое ИИ, чем он не является, зачем он нужен, как его
+              просить и как с ним говорить. Неплохой набор для «первого контакта».
+            </p>
+            <a class="route-link" href="../"><span>NEXT</span><span>ВЕРНУТЬСЯ В LAYER_01</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / DEEP DIVE</span>
+      <span>LAYER_01 · 05 // HUMAN MODE</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var N = window.NODEAI;
+      if (N) N.starfield(document.getElementById("starfield"));
+
+      var DATA = {
+        harsh: {
+          cls: "harsh",
+          text: "БЫСТРО ОБЪЯСНИ ЭТО И БЕЗ ВОДЫ. НЕ ТУПИ.",
+          machine: "Задачу поймёт и ответит. Капсом и напором её не запугать — чувств у неё нет.",
+          you: "Заводит тебя на пустом месте, портит настроение и потихоньку входит в привычку."
+        },
+        neutral: {
+          cls: "neutral",
+          text: "Объясни эту тему коротко и простыми словами.",
+          machine: "Всё понятно, спокойно сделает. По-деловому — всегда рабочий вариант.",
+          you: "Нормально. Ничего лишнего и никакого осадка."
+        },
+        human: {
+          cls: "human",
+          text: "Привет! Помоги, пожалуйста, разобраться в этой теме простыми словами. Спасибо!",
+          machine: "Ответит ровно так же хорошо. «Спасибо» её не радует, но и не мешает.",
+          you: "Спокойнее и приятнее. Ты остаёшься собой — человеком, а не пультом управления."
+        }
+      };
+
+      var pick = document.getElementById("tone-pick");
+      var textEl = document.getElementById("tone-text");
+      var verdicts = document.getElementById("tone-verdicts");
+      if (!pick) return;
+
+      function row(who, whoClass, txt) {
+        var r = document.createElement("div");
+        r.className = "tone-v " + whoClass;
+        var w = document.createElement("div");
+        w.className = "who";
+        w.textContent = who;
+        var t = document.createElement("div");
+        t.className = "txt";
+        t.textContent = txt;
+        r.appendChild(w); r.appendChild(t);
+        return r;
+      }
+
+      function render(key) {
+        var d = DATA[key];
+        textEl.textContent = "«" + d.text + "»";
+        textEl.className = "tone-text " + d.cls;
+        verdicts.innerHTML = "";
+        verdicts.appendChild(row("для модели", "machine", d.machine));
+        verdicts.appendChild(row("для тебя", "you", d.you));
+      }
+
+      pick.addEventListener("click", function (e) {
+        var b = e.target.closest(".chip");
+        if (!b) return;
+        pick.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("is-active", x === b); });
+        render(b.dataset.t);
+      });
+
+      render("neutral");
+    })();
+  </script>
+</body>
+</html>

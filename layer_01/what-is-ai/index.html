@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Что такое ИИ</title>
+  <link rel="stylesheet" href="../../nodeai.css">
+  <script src="../../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 13% 16%, rgba(24, 226, 140, 0.15), transparent 28rem),
+        radial-gradient(circle at 82% 20%, rgba(69, 170, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(169, 139, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 25%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.38);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(24, 226, 140, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.66);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(255, 82, 108, 0.34);
+      color: #ffc7d1;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .build-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.09), transparent 34%, rgba(169, 139, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .build-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .assistant-grid,
+    .access-grid,
+    .interface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .assistant-grid,
+    .access-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .assistant-card,
+    .access-card,
+    .interface-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .assistant-card h3,
+    .access-card h3,
+    .interface-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .assistant-card h3 {
+      color: var(--green);
+    }
+
+    .card p,
+    .assistant-card p,
+    .access-card p,
+    .interface-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(24, 226, 140, 0.42);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c6ddd3;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .builder-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 24, 19, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .builder-controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.68);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .blueprint-output {
+      min-height: 348px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .assistant-grid,
+      .access-grid,
+      .flow-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .interface-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .assistant-grid,
+      .access-grid,
+      .interface-grid,
+      .flow-row,
+      .builder-grid,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .build-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      .blueprint-output {
+        min-height: 260px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .risk-lab {
+      border-color: rgba(255, 82, 108, 0.28);
+      background:
+        linear-gradient(145deg, rgba(26, 8, 12, 0.86), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(255, 82, 108, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(255, 82, 108, 0.08);
+    }
+    .risk-panel { display: flex; flex-direction: column; gap: 10px; }
+    .risk-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+    .risk-head strong { font-size: 0.9rem; color: var(--amber); }
+    .risk-meter { height: 12px; border: 1px solid rgba(96, 186, 255, 0.18); background: rgba(0, 0, 0, 0.32); border-radius: 3px; overflow: hidden; }
+    .risk-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); transition: width 220ms ease; }
+
+    .timeline { margin-top: 18px; }
+    .tl-item { position: relative; padding: 0 0 20px 26px; border-left: 1px solid rgba(96, 186, 255, 0.22); }
+    .tl-item:last-child { border-left-color: transparent; padding-bottom: 0; }
+    .tl-item::before { content: ""; position: absolute; left: -5px; top: 3px; width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(24, 226, 140, 0.5); }
+    .tl-year { font-family: var(--mono); font-size: 0.78rem; color: var(--amber); }
+    .tl-item h3 { margin: 4px 0 6px; font-family: var(--mono); font-size: 0.98rem; color: #e9f8fc; text-transform: uppercase; }
+    .tl-item p { margin: 0; color: #9fb3bd; font-size: 0.92rem; line-height: 1.62; }
+    .pred { margin-top: 4px; }
+    .pred-starts { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+    .pred-phrase { margin: 0 0 14px; font-family: var(--mono); font-size: 0.98rem; color: #eaf7fb; }
+    .pred-phrase b { color: var(--green); }
+    .cand { display: grid; gap: 9px; }
+    .cand-row { display: grid; grid-template-columns: 168px 1fr 46px; align-items: center; gap: 10px; }
+    .cand-word { font-family: var(--mono); font-size: 0.82rem; color: #b7cad2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cand-bar { height: 10px; border-radius: 3px; background: rgba(0, 0, 0, 0.3); overflow: hidden; }
+    .cand-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--green)); transition: width 340ms ease; }
+    .cand-pct { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); text-align: right; }
+    .cand-row.top .cand-word { color: #eafff7; }
+    .cand-row.top .cand-fill { background: linear-gradient(90deg, var(--green), var(--amber)); }
+    .pred-note { margin: 14px 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); line-height: 1.55; }
+    @media (max-width: 620px) { .cand-row { grid-template-columns: 116px 1fr 40px; } }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_01 / BASIC SIGNAL</div>
+      <div class="status">DEEP DIVE // 01</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="topic-title">
+        <div class="kicker">LAYER_01 · 01 / BASIC SIGNAL</div>
+        <h1 id="topic-title">Что мы вообще называем ИИ</h1>
+        <p class="lead">
+          Углублённый разбор самой первой темы курса — спокойно и по делу.
+          Только один вопрос: что вообще стоит за словом «ИИ» и как удобнее
+          всего о нём думать.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">В ЭТОЙ ТЕМЕ</p>
+          <p>
+            Разбираем определение по частям, ловим одну ключевую идею, про
+            которую всё становится понятно, трогаем её на живом примере и
+            коротко смотрим, откуда вообще взялось слово «искусственный
+            интеллект».
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы темы">
+          <p class="nav-label">НА СТРАНИЦЕ</p>
+          <a href="#define"><span>01</span><span>что стоит за словом</span></a>
+          <a href="#core"><span>02</span><span>ключевая идея</span></a>
+          <a href="#demo"><span>03</span><span>потрогать идею</span></a>
+          <a href="#frame"><span>04</span><span>не оракул, а собеседник</span></a>
+          <a href="#history"><span>05</span><span>откуда слово</span></a>
+          <a href="#facts"><span>06</span><span>пара фактов</span></a>
+          <a href="#takeaway"><span>07</span><span>что забрать</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../"><span>BACK</span><span>LAYER_01</span></a>
+          <a class="route-link home" href="../../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <section class="lesson" id="define">
+          <p class="lesson-kicker">01 / ЧТО СТОИТ ЗА СЛОВОМ</p>
+          <h2>Разберём определение по частям</h2>
+          <p>
+            В этом курсе под «ИИ» мы имеем в виду очень конкретную вещь:
+            программу, которая научилась на огромном количестве примеров и
+            теперь умеет две вещи — замечать закономерности и на их основе
+            создавать ответ под твою задачу. Ответ может быть каким угодно:
+            текст, картинка, план, идея, код, звук или другое действие.
+          </p>
+          <p>
+            Важная деталь, которую легко упустить: ответ не достаётся готовым
+            из ящика. Модель не хранит каталог правильных ответов и не ищет в
+            нём подходящий. Она каждый раз собирает ответ заново, опираясь на
+            замеченные закономерности и на то, что ты написал.
+          </p>
+          <p>
+            Полезно даже само слово разобрать на две половинки.
+            «Искусственный» — то есть сделанный человеком, не живой и не
+            выросший сам по себе. «Интеллект» здесь — не сознание и не чувства,
+            а способность работать со смыслом: с языком, образами, структурой.
+            Так что «искусственный интеллект» — это про рукотворную систему,
+            которая ловко обращается со смыслом, а не про ожившую машину из
+            фильмов.
+          </p>
+          <div class="quote-line">
+            Короткая версия: ИИ — это программа, которая училась на примерах и
+            собирает под твой запрос новый, подходящий ответ. Не живая, не
+            всезнающая — но по-настоящему полезная.
+          </div>
+        </section>
+
+        <section class="lesson" id="core">
+          <p class="lesson-kicker">02 / КЛЮЧЕВАЯ ИДЕЯ</p>
+          <h2>Он достраивает самое вероятное продолжение</h2>
+          <p>
+            Если унести с этой страницы всего одну мысль — пусть будет эта. Что
+            бы ты ни дал модели, в глубине она решает одну и ту же задачу:
+            «что, скорее всего, идёт дальше?». Дал начало фразы — она достроит
+            вероятное продолжение словами. Описал картинку — достроит вероятное
+            изображение. Попросил план — достроит вероятные шаги.
+          </p>
+          <p>
+            Самая честная бытовая аналогия — автодополнение в телефоне. Только
+            вместо одного следующего слова модель достраивает целый ответ,
+            картинку или план. По сути это очень, очень сильный движок «что
+            дальше».
+          </p>
+          <p>
+            Из одной этой идеи вырастает почти всё поведение ИИ. Понятно,
+            почему один и тот же вопрос иногда даёт разные ответы: подходящих
+            продолжений бывает несколько, и модель выбирает из них. Понятно,
+            почему ответ звучит так гладко и уверенно: гладкий текст — это как
+            раз самый «вероятный» текст, он на то и обучен. И понятно, почему к
+            ответу стоит относиться как к черновику: «вероятное» и «истинное» —
+            не всегда одно и то же.
+          </p>
+          <div class="quote-line">
+            Держи в голове одну картинку: ИИ — это достраиватель вероятного.
+            Не «база всех ответов», а «угадыватель следующего шага», очень
+            натренированный.
+          </div>
+        </section>
+
+        <section class="lesson" id="demo">
+          <p class="lesson-kicker">03 / ПОТРОГАТЬ ИДЕЮ</p>
+          <h2>Демо: выбери начало — увидь продолжения</h2>
+          <p>
+            Маленькая иллюстрация той самой идеи. Выбери начало фразы и
+            посмотри, какие продолжения модель могла бы считать вероятными.
+            Верхнее — самое вероятное, его она обычно и выберет. Поменяешь
+            начало — поменяются и вероятности.
+          </p>
+
+          <div class="builder-lab" aria-labelledby="pred-title">
+            <p class="tool-label" id="pred-title">NEXT-PIECE / УПРОЩЁННАЯ ИЛЛЮСТРАЦИЯ</p>
+            <div class="pred">
+              <div class="pred-starts" id="pred-starts">
+                <button class="chip is-active" type="button" data-p="sky">Небо перед грозой становится…</button>
+                <button class="chip" type="button" data-p="tea">Чтобы заварить чай, сначала нужно…</button>
+                <button class="chip" type="button" data-p="tale">Жили-были…</button>
+                <button class="chip" type="button" data-p="trip">В отпуске я больше всего люблю…</button>
+              </div>
+              <p class="pred-phrase" id="pred-phrase"></p>
+              <div class="cand" id="pred-cand"></div>
+              <p class="pred-note">Числа здесь условные, для наглядности. Суть не в них, а в механике: модель прикидывает, что вероятнее идёт дальше, и берёт верхний вариант. Где вариантов много и они близкие — там ответы будут разными от раза к разу.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="frame">
+          <p class="lesson-kicker">04 / ПРАВИЛЬНАЯ РАМКА</p>
+          <h2>Не оракул, а мощный собеседник</h2>
+          <p>
+            Раз модель выдаёт вероятное, а не заведомо верное, из этого следует
+            здоровое отношение к ней. ИИ — это не оракул, у которого можно
+            спросить истину, и не начальник, который решает за тебя. Это
+            быстрый, неутомимый собеседник, которому ты даёшь задачу и рамки, а
+            он в ответ даёт скорость и варианты.
+          </p>
+          <p>
+            Отсюда и главная формула первой темы: ИИ не заменяет мышление, он
+            ускоряет черновую часть работы. Финальное слово, вкус, смысл и
+            ответственность остаются за тобой. Ты по-прежнему главный редактор
+            — просто теперь у тебя очень быстрый помощник для черновиков.
+          </p>
+          <div class="access-grid">
+            <article class="card">
+              <h3>Берёт на себя ИИ</h3>
+              <p>Скорость, перебор вариантов, черновик, объяснение на пальцах, «первый подход к снаряду».</p>
+            </article>
+            <article class="card">
+              <h3>Остаётся за тобой</h3>
+              <p>Цель, здравый смысл, вкус, финальное решение и ответственность за результат.</p>
+            </article>
+            <article class="card">
+              <h3>Общий режим</h3>
+              <p>Ты ставишь задачу и рамки, он предлагает, ты проверяешь реальностью и правишь. Партнёрство, а не оракул.</p>
+            </article>
+          </div>
+          <div class="quote-line">
+            Если совсем коротко: ИИ — это не оракул, а мощный собеседник,
+            которому надо давать задачу, рамки и проверку реальностью.
+          </div>
+        </section>
+
+        <section class="lesson" id="history">
+          <p class="lesson-kicker">05 / ОТКУДА СЛОВО</p>
+          <h2>Короткая история термина</h2>
+          <p>
+            Полезно знать, что само словосочетание совсем не новое — оно
+            старше, чем кажется почти всем. Вот три точки, которых достаточно,
+            чтобы почувствовать возраст идеи.
+          </p>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-year">1950</div>
+              <h3>Вопрос появляется раньше машин</h3>
+              <p>Математик Алан Тьюринг спрашивает: «может ли машина думать?» — и предлагает проверять это игрой в подражание (будущий «тест Тьюринга»). Нормальных компьютеров ещё почти нет, а вопрос уже сформулирован.</p>
+            </div>
+            <div class="tl-item">
+              <div class="tl-year">1956</div>
+              <h3>Рождается сам термин</h3>
+              <p>На научной встрече в Дартмуте Джон Маккарти вводит словосочетание «artificial intelligence» — «искусственный интеллект». Название выбрали в том числе за то, что оно звучит ярко и притягивает внимание. Маркетинг, как видишь, работал и тогда.</p>
+            </div>
+            <div class="tl-item">
+              <div class="tl-year">2022</div>
+              <h3>Слово входит в каждый дом</h3>
+              <p>С выходом ChatGPT «ИИ» перестаёт быть словом из лабораторий и оказывается у всех на слуху. При этом самому термину к тому моменту уже за шестьдесят — он старше цветного телевизора в большинстве домов.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="facts">
+          <p class="lesson-kicker">06 / ПАРА ФАКТОВ</p>
+          <h2>Чтобы уложилось приятнее</h2>
+          <div class="card-grid">
+            <article class="card">
+              <h3>Термин — почти пенсионер</h3>
+              <p>«Искусственному интеллекту» под семьдесят лет. Он старше высадки на Луну, домашнего интернета и большинства из нас.</p>
+            </article>
+            <article class="card">
+              <h3>«Интеллект» ≠ сознание</h3>
+              <p>В этом слове речь о работе со смыслом — языком, образами, структурой. Не о чувствах, желаниях или самоосознании.</p>
+            </article>
+            <article class="card">
+              <h3>ИИ — это зонтик</h3>
+              <p>Под одним словом живут и чат, и генератор картинок, и голосовой помощник. Общее у них одно: учились на примерах и достраивают вероятное.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lesson" id="takeaway">
+          <p class="lesson-kicker">07 / ЧТО ЗАБРАТЬ С СОБОЙ</p>
+          <h2>Главное в одном абзаце</h2>
+          <div class="exit-panel">
+            <p>
+              ИИ, как мы называем его здесь, — это рукотворная программа,
+              которая училась на примерах и достраивает под твою задачу самый
+              вероятный ответ. Не живая, не всезнающая и не оракул — а очень
+              сильный достраиватель, которого ты направляешь и проверяешь.
+              Одна фраза на память: он ускоряет черновик, а редактор — ты.
+            </p>
+            <a class="route-link" href="../"><span>NEXT</span><span>ВЕРНУТЬСЯ В LAYER_01</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / DEEP DIVE</span>
+      <span>LAYER_01 · 01 // BASIC SIGNAL</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var N = window.NODEAI;
+      if (N) N.starfield(document.getElementById("starfield"));
+
+      /* демо: одна и та же механика — «что вероятнее идёт дальше» */
+      var DATA = {
+        sky: {
+          phrase: "Небо перед грозой становится",
+          cands: [["тёмным", 61], ["тяжёлым", 20], ["зеленоватым", 12], ["фиолетовым", 7]]
+        },
+        tea: {
+          phrase: "Чтобы заварить чай, сначала нужно",
+          cands: [["вскипятить воду", 52], ["взять чашку", 24], ["достать заварку", 17], ["проснуться", 7]]
+        },
+        tale: {
+          phrase: "Жили-были",
+          cands: [["дед да баба", 46], ["старик со старухой", 30], ["в некотором царстве", 16], ["три поросёнка", 8]]
+        },
+        trip: {
+          phrase: "В отпуске я больше всего люблю",
+          cands: [["высыпаться", 33], ["гулять по новым местам", 29], ["ничего не делать", 24], ["читать у воды", 14]]
+        }
+      };
+
+      var starts = document.getElementById("pred-starts");
+      var phraseEl = document.getElementById("pred-phrase");
+      var candEl = document.getElementById("pred-cand");
+      if (!starts) return;
+
+      function render(key) {
+        var d = DATA[key];
+        phraseEl.innerHTML = "«" + d.phrase + " <b>___</b>»";
+        candEl.innerHTML = "";
+        d.cands.forEach(function (c, i) {
+          var row = document.createElement("div");
+          row.className = "cand-row" + (i === 0 ? " top" : "");
+          var word = document.createElement("div");
+          word.className = "cand-word";
+          word.textContent = (i === 0 ? "▸ " : "  ") + c[0];
+          var bar = document.createElement("div");
+          bar.className = "cand-bar";
+          var fill = document.createElement("div");
+          fill.className = "cand-fill";
+          fill.style.width = "0%";
+          bar.appendChild(fill);
+          var pct = document.createElement("div");
+          pct.className = "cand-pct";
+          pct.textContent = c[1] + "%";
+          row.appendChild(word); row.appendChild(bar); row.appendChild(pct);
+          candEl.appendChild(row);
+          requestAnimationFrame(function () { fill.style.width = c[1] + "%"; });
+        });
+      }
+
+      starts.addEventListener("click", function (e) {
+        var b = e.target.closest(".chip");
+        if (!b) return;
+        starts.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("is-active", x === b); });
+        render(b.dataset.p);
+      });
+
+      render("sky");
+    })();
+  </script>
+</body>
+</html>

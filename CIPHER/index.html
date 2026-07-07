@@ -77,6 +77,15 @@
   section.view.on{display:block;animation:fade .25s ease}
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
+  /* под-вкладки расшифровки */
+  .subtabs{display:flex;border:1px solid var(--line);margin-bottom:18px}
+  .subtab{flex:1;background:var(--panel);color:var(--steel);border:none;cursor:pointer;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;padding:12px 8px;transition:.15s}
+  .subtab + .subtab{border-left:1px solid var(--line)}
+  .subtab:hover{color:var(--paper);background:var(--panel-2)}
+  .subtab.on{background:var(--alert);color:#fff}
+  .hint{margin:10px 0 0;font-size:11.5px;line-height:1.55;color:var(--steel-dim);letter-spacing:.02em}
+
   .block{border:1px solid var(--line);background:var(--panel);margin-bottom:18px}
   .block > .cap{
     display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);
@@ -271,15 +280,43 @@
 
   <!-- ========== РАСШИФРОВКА ========== -->
   <section class="view" id="view-dec">
-    <div class="block">
-      <div class="cap dec"><span class="n">↺</span> Вставьте перехваченную передачу</div>
-      <div class="pad">
-        <textarea id="cipher" class="dec" placeholder="⟨ACEON:…⟩…"></textarea>
-      </div>
+    <div class="subtabs">
+      <button class="subtab on" id="sub-auto" onclick="setDecMode('auto')">По маркеру ⟨ACEON⟩</button>
+      <button class="subtab" id="sub-man" onclick="setDecMode('man')">Вручную · по фразе</button>
     </div>
 
-    <button class="run dec" id="decBtn" onclick="doDecode()">↺ Расшифровать</button>
+    <!-- АВТО: по маркеру -->
+    <div id="decAuto">
+      <div class="block">
+        <div class="cap dec"><span class="n">↺</span> Вставьте перехваченную передачу</div>
+        <div class="pad">
+          <textarea id="cipher" class="dec" placeholder="⟨ACEON:…⟩…"></textarea>
+        </div>
+      </div>
+      <button class="run dec" id="decBtn" onclick="doDecode()">↺ Расшифровать по маркеру</button>
+    </div>
 
+    <!-- ВРУЧНУЮ: по фразе + свой рецепт -->
+    <div id="decMan" hidden>
+      <div class="block">
+        <div class="cap dec"><span class="n">✎</span> Зашифрованная фраза</div>
+        <div class="pad">
+          <textarea id="cipherMan" class="dec" placeholder="Вставьте только зашифрованный текст, без метки ⟨ACEON…⟩"></textarea>
+          <p class="hint">Соберите ту же последовательность операций, что использовалась при шифровании — станция сама развернёт её в обратном порядке. Ключи и сдвиги введите вручную. Метку копировать не нужно.</p>
+        </div>
+      </div>
+      <div class="block">
+        <div class="cap dec"><span class="n">▤</span> Выберите операции</div>
+        <div class="pad"><div id="paletteMan" class="palette"></div></div>
+      </div>
+      <div class="block">
+        <div class="cap dec"><span class="n">▦</span> Последовательность (как при шифровании)</div>
+        <div class="pad"><div id="pipeMan" class="pipe"></div></div>
+      </div>
+      <button class="run dec" id="decBtnMan" onclick="doDecodeManual()">↺ Расшифровать вручную</button>
+    </div>
+
+    <!-- общий вывод -->
     <div class="block" style="margin-top:18px" id="decOutWrap" hidden>
       <div class="cap dec"><span class="n">✓</span> Восстановленный текст</div>
       <div class="pad">
@@ -298,285 +335,7 @@
   </footer>
 </div>
 
-<script>
-// ============================================================
-// A.C.EON // CIPHER ENGINE  (движок протестирован: 4156/0 обратимость)
-// ============================================================
-const SITE_KEY = "A.C.EON//SINGULARITY//KEY";
-const ALPH = {
-  latL:"abcdefghijklmnopqrstuvwxyz", latU:"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-  cyrL:"абвгдеёжзийклмнопрстуфхцчшщъыьэюя", cyrU:"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
-};
-const SETS=[ALPH.latL,ALPH.latU,ALPH.cyrL,ALPH.cyrU];
-function shiftChar(ch,n){for(const s of SETS){const i=s.indexOf(ch);if(i>=0){const L=s.length;return s[((i+n)%L+L)%L];}}return ch;}
-function atbashChar(ch){for(const s of SETS){const i=s.indexOf(ch);if(i>=0)return s[s.length-1-i];}return ch;}
-function isLetter(ch){for(const s of SETS)if(s.indexOf(ch)>=0)return true;return false;}
-function letterIndex(ch){for(const s of SETS){const i=s.indexOf(ch);if(i>=0)return i;}return null;}
-function utf8Bytes(str){return new TextEncoder().encode(str);}
-function bytesUtf8(b){return new TextDecoder().decode(b);}
-function bytesToB64(b){let s="";b.forEach(x=>s+=String.fromCharCode(x));return btoa(s);}
-function b64ToBytes(b64){const bin=atob(b64);return Uint8Array.from(bin,c=>c.charCodeAt(0));}
-function vigenere(str,key,dir){
-  const sh=Array.from(key||"").map(letterIndex).filter(x=>x!==null);
-  if(!sh.length)return str;let ki=0;
-  return Array.from(str).map(ch=>{if(!isLetter(ch))return ch;const v=sh[ki%sh.length]*dir;ki++;return shiftChar(ch,v);}).join("");
-}
-function reverseWordOrder(str){
-  const words=str.match(/\S+/g)||[];const gaps=str.split(/\S+/);const rw=words.slice().reverse();
-  let out=gaps[0]||"";for(let i=0;i<rw.length;i++)out+=rw[i]+(gaps[i+1]||"");return out;
-}
-const swap23=w=>{const a=Array.from(w);if(a.length>=3){const t=a[1];a[1]=a[2];a[2]=t;}return a.join("");};
-const swapfl=w=>{const a=Array.from(w);if(a.length>=2){const t=a[0];a[0]=a[a.length-1];a[a.length-1]=t;}return a.join("");};
-const caseChar=ch=>{let i=ALPH.latL.indexOf(ch);if(i>=0)return ALPH.latU[i];i=ALPH.latU.indexOf(ch);if(i>=0)return ALPH.latL[i];i=ALPH.cyrL.indexOf(ch);if(i>=0)return ALPH.cyrU[i];i=ALPH.cyrU.indexOf(ch);if(i>=0)return ALPH.cyrL[i];return ch;};
-const B32="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-function base32enc(bytes){let bits=0,val=0,out="";for(const b of bytes){val=(val<<8)|b;bits+=8;while(bits>=5){out+=B32[(val>>>(bits-5))&31];bits-=5;}}if(bits>0)out+=B32[(val<<(5-bits))&31];return out;}
-function base32dec(str){let bits=0,val=0;const out=[];for(const c of str){const i=B32.indexOf(c);if(i<0)continue;val=(val<<5)|i;bits+=5;if(bits>=8){out.push((val>>>(bits-8))&255);bits-=8;}}return Uint8Array.from(out);}
-function rot47(s){return Array.from(s).map(ch=>{const c=ch.codePointAt(0);return (c>=33&&c<=126)?String.fromCodePoint(33+((c-33+47)%94)):ch;}).join("");}
-function railEnc(str,rails){rails=Math.max(1,rails|0);if(rails===1)return str;const a=Array.from(str);const rows=Array.from({length:rails},()=>[]);let r=0,dir=1;for(const ch of a){rows[r].push(ch);if(r===0)dir=1;else if(r===rails-1)dir=-1;r+=dir;}return rows.map(x=>x.join("")).join("");}
-function railDec(str,rails){rails=Math.max(1,rails|0);if(rails===1)return str;const a=Array.from(str);const n=a.length;const pat=[];let r=0,dir=1;for(let i=0;i<n;i++){pat.push(r);if(r===0)dir=1;else if(r===rails-1)dir=-1;r+=dir;}const counts=Array(rails).fill(0);pat.forEach(p=>counts[p]++);const rows=[];let idx=0;for(let k=0;k<rails;k++){rows.push(a.slice(idx,idx+counts[k]));idx+=counts[k];}const pos=Array(rails).fill(0),out=[];for(let i=0;i<n;i++){const p=pat[i];out.push(rows[p][pos[p]++]);}return out.join("");}
-function xorGamma(s,key,dec){const k=utf8Bytes(key&&key.length?key:"eon");if(dec){const b=b64ToBytes(s);return bytesUtf8(b.map((x,i)=>x^k[i%k.length]));}const b=utf8Bytes(s);return bytesToB64(b.map((x,i)=>x^k[i%k.length]));}
-
-const OPS={
-  b64:{name:"Base64",grp:"Кодировки",desc:"Текст превращается в поток латинских букв, цифр и знаков +/=. Базовая маскировка — читается только машиной.",
-    fwd:s=>bytesToB64(utf8Bytes(s)), inv:s=>bytesUtf8(b64ToBytes(s))},
-  base32:{name:"Base32",grp:"Кодировки",desc:"Как Base64, но алфавит скромнее: только A–Z и 2–7. Длиннее, зато без спецсимволов.",
-    fwd:s=>base32enc(utf8Bytes(s)), inv:s=>bytesUtf8(base32dec(s))},
-  hex:{name:"HEX 16-ричный",grp:"Кодировки",desc:"Каждый символ становится парой шестнадцатеричных цифр (0–9, a–f). Текст выглядит как дамп памяти.",
-    fwd:s=>Array.from(utf8Bytes(s)).map(b=>b.toString(16).padStart(2,"0")).join(""),
-    inv:s=>s===""?"":bytesUtf8(Uint8Array.from(s.match(/.{1,2}/g)||[],x=>parseInt(x,16)))},
-  bin:{name:"Двоичный код",grp:"Кодировки",desc:"Каждый символ разворачивается в восьмёрку нулей и единиц. Самый «машинный» вид.",
-    fwd:s=>Array.from(utf8Bytes(s)).map(b=>b.toString(2).padStart(8,"0")).join(" "),
-    inv:s=>{const t=s.trim();return t===""?"":bytesUtf8(Uint8Array.from(t.split(/\s+/),x=>parseInt(x,2)));}},
-  url:{name:"URL-кодирование",grp:"Кодировки",desc:"Символы заменяются на %XX, как в адресах сайтов. Пробелы и кириллица прячутся за процентами.",
-    fwd:s=>encodeURIComponent(s), inv:s=>decodeURIComponent(s)},
-
-  revall:{name:"Перевернуть всё",grp:"Перестановки",desc:"Вся строка читается задом наперёд — от последнего символа к первому.",
-    fwd:s=>Array.from(s).reverse().join(""), inv:s=>Array.from(s).reverse().join("")},
-  revword:{name:"Слова наоборот",grp:"Перестановки",desc:"Каждое слово переворачивается по буквам, но порядок слов в строке сохраняется.",
-    fwd:s=>s.replace(/\S+/gu,w=>Array.from(w).reverse().join("")),
-    inv:s=>s.replace(/\S+/gu,w=>Array.from(w).reverse().join(""))},
-  wordorder:{name:"Порядок слов наоборот",grp:"Перестановки",desc:"Слова переставляются в обратном порядке. Буквы внутри слов остаются на месте.",
-    fwd:reverseWordOrder, inv:reverseWordOrder},
-  swap23:{name:"2-я ↔ 3-я буква",grp:"Перестановки",desc:"В каждом слове вторая и третья буквы меняются местами. Слова длиной меньше трёх не трогаем.",
-    fwd:s=>s.replace(/\S+/gu,swap23), inv:s=>s.replace(/\S+/gu,swap23)},
-  swapfl:{name:"1-я ↔ последняя",grp:"Перестановки",desc:"В каждом слове первая и последняя буквы обмениваются местами.",
-    fwd:s=>s.replace(/\S+/gu,swapfl), inv:s=>s.replace(/\S+/gu,swapfl)},
-  rail:{name:"Шифр забора",grp:"Перестановки",param:"num",pdefault:3,desc:"Текст пишется зигзагом по N строкам-рейкам, а читается построчно. Классическая шпионская перестановка. Параметр — число реек.",
-    fwd:(s,p)=>railEnc(s,p), inv:(s,p)=>railDec(s,p)},
-
-  caesar:{name:"Шифр Цезаря",grp:"Классика",param:"num",pdefault:3,desc:"Каждая буква сдвигается по алфавиту на N позиций вперёд. Параметр — величина сдвига.",
-    fwd:(s,p)=>Array.from(s).map(ch=>shiftChar(ch,(+p|0))).join(""),
-    inv:(s,p)=>Array.from(s).map(ch=>shiftChar(ch,-(p|0))).join("")},
-  vigenere:{name:"Виженер по ключу",grp:"Классика",param:"key",pdefault:"eon",desc:"Сдвиг каждой буквы задаётся буквами ключевого слова по кругу. Без ключа — шум. Параметр — ключ.",
-    fwd:(s,p)=>vigenere(s,p,+1), inv:(s,p)=>vigenere(s,p,-1)},
-  xor:{name:"XOR-гамма (ключ)",grp:"Классика",param:"key",pdefault:"eon",desc:"Байты текста складываются с байтами ключа по XOR, результат — в Base64. Жёстче Виженера. Параметр — ключ.",
-    fwd:(s,p)=>xorGamma(s,p,false), inv:(s,p)=>xorGamma(s,p,true)},
-  atbash:{name:"Атбаш (зеркало)",grp:"Классика",desc:"Алфавит отражается: А↔Я, Б↔Э, A↔Z. Древний шифр-перевёртыш.",
-    fwd:s=>Array.from(s).map(atbashChar).join(""), inv:s=>Array.from(s).map(atbashChar).join("")},
-  rot47:{name:"ROT47",grp:"Классика",desc:"Сдвиг на 47 по таблице видимых ASCII-знаков. Латиница, цифры и символы перемешиваются; кириллица остаётся как есть.",
-    fwd:s=>rot47(s), inv:s=>rot47(s)},
-  caseswap:{name:"Инверсия регистра",grp:"Классика",desc:"Строчные буквы становятся ЗАГЛАВНЫМИ и наоборот.",
-    fwd:s=>Array.from(s).map(caseChar).join(""), inv:s=>Array.from(s).map(caseChar).join("")},
-};
-
-function packRecipe(r){const b=utf8Bytes(JSON.stringify(r)),k=utf8Bytes(SITE_KEY);return bytesToB64(b.map((x,i)=>x^k[i%k.length]));}
-function unpackRecipe(b64){const b=b64ToBytes(b64),k=utf8Bytes(SITE_KEY);return JSON.parse(bytesUtf8(b.map((x,i)=>x^k[i%k.length])));}
-const PREFIX="⟨ACEON:",SEP="⟩";
-function encode(text,recipe){let s=text;for(const st of recipe)s=OPS[st.id].fwd(s,st.p);return PREFIX+packRecipe(recipe)+SEP+s;}
-function decode(t){
-  if(!t.startsWith(PREFIX))throw new Error("Это не передача A.C.EON — нет метки ⟨ACEON:…⟩");
-  const end=t.indexOf(SEP);if(end<0)throw new Error("Маркер повреждён — обрезан заголовок");
-  let recipe;try{recipe=unpackRecipe(t.slice(PREFIX.length,end));}catch(e){throw new Error("Не удалось прочитать рецепт — маркер испорчен");}
-  let s=t.slice(end+1);
-  for(let i=recipe.length-1;i>=0;i--)s=OPS[recipe[i].id].inv(s,recipe[i].p);
-  return s;
-}
-function decodeParts(t){
-  if(!t.startsWith(PREFIX))throw new Error("Это не передача A.C.EON — нет метки ⟨ACEON:…⟩");
-  const end=t.indexOf(SEP);if(end<0)throw new Error("Маркер повреждён — обрезан заголовок");
-  let recipe;try{recipe=unpackRecipe(t.slice(PREFIX.length,end));}catch(e){throw new Error("Не удалось прочитать рецепт — маркер испорчен");}
-  let s=t.slice(end+1);
-  for(let i=recipe.length-1;i>=0;i--)s=OPS[recipe[i].id].inv(s,recipe[i].p);
-  return {recipe,plain:s};
-}
-
-// ============================================================
-// UI
-// ============================================================
-let pipeline=[]; // [{id, p}]
-
-function buildPalette(){
-  const grps={};
-  for(const id in OPS){(grps[OPS[id].grp]=grps[OPS[id].grp]||[]).push(id);}
-  const el=document.getElementById("palette");el.innerHTML="";
-  for(const g in grps){
-    const lab=document.createElement("div");lab.className="grp-label";lab.textContent=g;el.appendChild(lab);
-    const row=document.createElement("div");row.className="palette";
-    grps[g].forEach(id=>{
-      const b=document.createElement("button");b.className="op";b.textContent=OPS[id].name;
-      if(OPS[id].desc)b.setAttribute("data-desc",OPS[id].desc);
-      b.onclick=()=>addStep(id);row.appendChild(b);
-    });
-    el.appendChild(row);
-  }
-}
-function addStep(id){
-  const op=OPS[id];const step={id};
-  if(op.param)step.p=op.pdefault;
-  pipeline.push(step);render();
-}
-function move(i,d){const j=i+d;if(j<0||j>=pipeline.length)return;[pipeline[i],pipeline[j]]=[pipeline[j],pipeline[i]];render();}
-function remove(i){pipeline.splice(i,1);render();}
-function setParam(i,val){const op=OPS[pipeline[i].id];pipeline[i].p=op.param==="num"?(parseInt(val,10)||0):val;render(false);}
-
-function render(refocus){
-  const pipe=document.getElementById("pipe");pipe.innerHTML="";
-  if(pipeline.length===0){
-    pipe.innerHTML='<div class="pipe-empty">Конвейер пуст. Нажимайте блоки выше — они выстроятся в цепочку по порядку.</div>';
-  } else {
-    pipeline.forEach((st,i)=>{
-      const op=OPS[st.id];
-      const row=document.createElement("div");row.className="step";
-      let paramHtml="";
-      if(op.param){
-        const ph=op.param==="num"?"сдвиг":"ключ";
-        paramHtml=`<input class="param" data-i="${i}" value="${String(st.p).replace(/"/g,'&quot;')}" placeholder="${ph}" ${op.param==="num"?'inputmode="numeric"':''}>`;
-      }
-      row.innerHTML=`
-        <div class="idx">${String(i+1).padStart(2,"0")}</div>
-        <div class="nm">${op.name}<small>${op.grp}</small></div>
-        ${paramHtml}
-        <div class="ctrl">
-          <button title="выше" onclick="move(${i},-1)">↑</button>
-          <button title="ниже" onclick="move(${i},1)">↓</button>
-          <button class="x" title="убрать" onclick="remove(${i})">✕</button>
-        </div>`;
-      pipe.appendChild(row);
-      if(i<pipeline.length-1){const f=document.createElement("div");f.className="flow";f.textContent="↓";pipe.appendChild(f);}
-    });
-    pipe.querySelectorAll("input.param").forEach(inp=>{
-      inp.addEventListener("input",e=>setParam(+e.target.dataset.i,e.target.value));
-    });
-  }
-}
-
-const GLYPHS="0123456789ABCDEF#%&$/\\<>*+=?~абвгдежзиклмнптфцшАБВГДЕЖЗ⟨⟩▓▒░";
-const REDUCE_MOTION=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-let animRAF=null;
-const rndGlyph=()=>GLYPHS[(Math.random()*GLYPHS.length)|0];
-const easeInOut=x=>x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
-
-function clearActive(){document.querySelectorAll(".step.active").forEach(s=>s.classList.remove("active"));}
-
-// --- общий движок «оседания» из шума в текст ---
-const ZONE=44;
-function playScramble(target,cfg){
-  const out=cfg.out,con=cfg.con,btn=cfg.btn,steps=cfg.steps;
-  const chars=Array.from(target),N=chars.length;
-  const noise=Array.from({length:N},rndGlyph);
-  out.className="transmission "+cfg.outClass;out.textContent="";
-  con.className="console on"+(cfg.conClass?(" "+cfg.conClass):"");con.innerHTML="";
-  btn.disabled=true;btn.dataset.lbl=btn.textContent;btn.textContent=cfg.busy;
-  let fired=0;const t0=performance.now();
-  function frame(now){
-    const p=Math.min(1,(now-t0)/cfg.dur);
-    const head=Math.floor(easeInOut(p)*N);
-    while(fired<cfg.events.length&&(now-t0)>=cfg.events[fired].t){
-      const ev=cfg.events[fired++];
-      const d=document.createElement("div");d.textContent="> "+ev.line;con.appendChild(d);
-      con.querySelectorAll("div").forEach(x=>x.classList.remove("hot"));d.classList.add("hot");
-      if(steps){clearActive();if(ev.step>=0&&steps[ev.step])steps[ev.step].classList.add("active");}
-    }
-    let buf="";
-    for(let i=0;i<N;i++){buf+= i<head?chars[i] : i<head+ZONE?rndGlyph() : noise[i];}
-    out.textContent=buf;
-    if(p<1){animRAF=requestAnimationFrame(frame);}
-    else{animRAF=null;if(steps)clearActive();con.querySelectorAll("div").forEach(x=>x.classList.remove("hot"));
-      btn.disabled=false;btn.textContent=btn.dataset.lbl;cfg.onDone();}
-  }
-  animRAF=requestAnimationFrame(frame);
-}
-
-function doEncode(){
-  if(animRAF)return;
-  const text=document.getElementById("plain").value;
-  const wrap=document.getElementById("encOutWrap");
-  const out=document.getElementById("transOut");
-  const con=document.getElementById("encConsole");
-  wrap.hidden=false;clearActive();
-  if(pipeline.length===0){
-    con.className="console";con.innerHTML="";
-    out.className="transmission err";out.textContent="Конвейер пуст — добавьте хотя бы одну операцию.";
-    return;
-  }
-  const transmission=encode(text,pipeline);
-  if(REDUCE_MOTION){con.className="console";con.innerHTML="";finishEncode(transmission);return;}
-  const DUR=Math.max(3000,Math.min(5000,2400+pipeline.length*300));
-  const win=DUR*0.60;
-  const events=[{t:0,line:"КЛЮЧ СТАНЦИИ · ПРИНЯТ",step:-1}];
-  pipeline.forEach((st,i)=>events.push({t:160+win*((i+1)/(pipeline.length+1)),line:`КОНВЕЙЕР ${String(i+1).padStart(2,"0")} · ${OPS[st.id].name.toUpperCase()}`,step:i}));
-  events.push({t:DUR*0.82,line:"МАРКИРОВКА ⟨ACEON⟩",step:-1});
-  events.push({t:DUR*0.97,line:"КАНАЛ ЗАПЕЧАТАН",step:-1});
-  playScramble(transmission,{out,con,btn:document.getElementById("encBtn"),steps:document.querySelectorAll("#pipe .step"),
-    dur:DUR,busy:"ШИФРОВАНИЕ…",outClass:"live",conClass:"",events,onDone:()=>finishEncode(transmission)});
-}
-function finishEncode(transmission){
-  const out=document.getElementById("transOut");
-  const end=transmission.indexOf(SEP);
-  out.className="transmission";
-  out.innerHTML=`<span class="marker">${escapeHtml(transmission.slice(0,end+1))}</span>${escapeHtml(transmission.slice(end+1))}`;
-}
-
-function doDecode(){
-  if(animRAF)return;
-  const t=document.getElementById("cipher").value.trim();
-  const wrap=document.getElementById("decOutWrap");
-  const out=document.getElementById("plainOut");
-  const con=document.getElementById("decConsole");
-  wrap.hidden=false;
-  let parts;
-  try{parts=decodeParts(t);}
-  catch(e){con.className="console";con.innerHTML="";out.className="transmission err";out.textContent="✕ "+e.message;return;}
-  const plain=parts.plain,rec=parts.recipe;
-  if(REDUCE_MOTION){con.className="console";con.innerHTML="";finishDecode(plain);return;}
-  const target=plain!==""?plain:"·пусто·";
-  const DUR=Math.max(3000,Math.min(5000,2400+rec.length*300));
-  const win=DUR*0.60;
-  const events=[{t:0,line:"ПЕРЕХВАТ ПРИНЯТ · ЧТЕНИЕ МАРКЕРА",step:-1}];
-  for(let k=0;k<rec.length;k++){
-    const i=rec.length-1-k; // разворачиваем конвейер в обратную сторону
-    events.push({t:160+win*((k+1)/(rec.length+1)),line:`СНЯТИЕ СЛОЯ ${String(i+1).padStart(2,"0")} · ${OPS[rec[i].id].name.toUpperCase()}`,step:-1});
-  }
-  events.push({t:DUR*0.82,line:"КЛЮЧ СТАНЦИИ ПОДОБРАН",step:-1});
-  events.push({t:DUR*0.97,line:"ТЕКСТ ВОССТАНОВЛЕН",step:-1});
-  playScramble(target,{out,con,btn:document.getElementById("decBtn"),steps:null,
-    dur:DUR,busy:"РАСШИФРОВКА…",outClass:"plain live-dec",conClass:"dec",events,onDone:()=>finishDecode(plain)});
-}
-function finishDecode(plain){
-  const out=document.getElementById("plainOut");
-  out.className="transmission plain";
-  out.textContent=plain!==""?plain:"·пустое сообщение·";
-}
-
-function copyOut(id,btn){
-  const el=document.getElementById(id);
-  navigator.clipboard.writeText(el.textContent).then(()=>{
-    const o=btn.textContent;btn.textContent="Скопировано";setTimeout(()=>btn.textContent=o,1400);
-  });
-}
-function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
-
-function setMode(m){
-  document.getElementById("view-enc").classList.toggle("on",m==="enc");
-  document.getElementById("view-dec").classList.toggle("on",m==="dec");
-  document.getElementById("tab-enc").classList.toggle("on",m==="enc");
-  document.getElementById("tab-dec").classList.toggle("on",m==="dec");
-}
-
-// демо-конвейер при загрузке
-["b64","swap23","revword","swapfl","caesar"].forEach(addStep);
-buildPalette();
-render();
-</script>
+<script src="cipher-engine.js"></script>
+<script src="cipher-ui.js"></script>
 </body>
 </html>

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FORGE · HTML · CSS · JS</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#12151a; --panel-2:#0f1216; --grid:#161b21;
+    --line:#232a32; --line-hi:#2f3a44; --text:#d7dde3; --muted:#6b7580;
+    --dim:#464f58; --run:#4fd6c8; --gen:#e0a54a; --glitch:#ff4d6d; --radius:2px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;
+    font-family:ui-monospace,"Cascadia Code","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:44px 44px;background-position:center top;
+    padding:clamp(16px,4vw,40px) clamp(14px,4vw,40px) 56px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  /* шапка */
+  .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;letter-spacing:.1em;color:var(--muted)}
+  .top a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent}
+  .top a:hover{color:var(--run);border-color:var(--run)}
+  .top .cur{color:var(--run)}
+  .top .sep{color:var(--dim)}
+  h1.h{margin:18px 0 4px;font-size:clamp(26px,5vw,40px);font-weight:700;letter-spacing:.02em}
+  h1.h b{color:var(--run)}
+  .sub{color:var(--muted);font-size:13px;max-width:64ch}
+
+  /* выбор блока */
+  .blocks{display:flex;gap:10px;flex-wrap:wrap;margin:26px 0 20px}
+  .blk{
+    display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:10px 14px;cursor:pointer;color:var(--muted);
+    font-size:13px;letter-spacing:.03em;transition:border-color .15s,color .15s,background .15s;
+  }
+  .blk .g{font-weight:700;color:var(--dim)}
+  .blk:hover{border-color:var(--line-hi);color:var(--text)}
+  .blk.sel{border-color:var(--run);color:var(--text);background:#141a1e}
+  .blk.sel .g{color:var(--run)}
+
+  /* сетка рабочей области */
+  .work{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+  @media (max-width:860px){.work{grid-template-columns:1fr}}
+
+  .panel{
+    position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;
+  }
+  .panel::before,.panel::after{content:"";position:absolute;width:9px;height:9px;border-color:var(--line-hi);border-style:solid}
+  .panel::before{top:6px;left:6px;border-width:1px 0 0 1px}
+  .panel::after{bottom:6px;right:6px;border-width:0 1px 1px 0}
+  .p-head{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+  .p-head .badge{color:var(--run);letter-spacing:.06em}
+
+  /* контролы */
+  .ctl{padding:9px 0;border-bottom:1px dashed var(--line);border-left:2px solid transparent;padding-left:8px;margin-left:-8px;transition:border-color .15s,background .15s}
+  .ctl:last-child{border-bottom:none}
+  .ctl.hot{border-left-color:var(--run);background:rgba(79,214,200,.05)}
+  .ctl .lab{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px;letter-spacing:.03em}
+  .ctl .lab .val{color:var(--run);font-size:11px}
+  .ctl input[type=text],.ctl input[type=number],.ctl select{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:13px;padding:8px 10px;border-radius:var(--radius);
+  }
+  .ctl input:focus,.ctl select:focus{outline:none;border-color:var(--run)}
+  .ctl input[type=range]{width:100%;accent-color:var(--run);cursor:pointer}
+  .ctl .colorrow{display:flex;align-items:center;gap:10px}
+  .ctl input[type=color]{width:44px;height:32px;padding:0;border:1px solid var(--line);border-radius:var(--radius);background:none;cursor:pointer}
+  .ctl .hex{font-size:12px;color:var(--muted)}
+  /* переключатель */
+  .sw{position:relative;display:inline-block;width:40px;height:22px;flex:none;cursor:pointer}
+  .sw input{opacity:0;width:0;height:0;position:absolute}
+  .sw .tr{position:absolute;inset:0;background:var(--line-hi);border-radius:11px;transition:background .15s}
+  .sw .kn{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#0b0d10;border-radius:50%;transition:transform .15s}
+  .sw input:checked + .tr{background:var(--run)}
+  .sw input:checked + .tr + .kn{transform:translateX(18px)}
+  .ctl.toggle .lab{margin-bottom:0}
+
+  /* правая колонка */
+  .out{display:grid;grid-template-rows:auto auto;gap:16px}
+
+  /* превью */
+  .preview-frame{width:100%;height:230px;border:none;background:#ececef;border-radius:var(--radius);display:block}
+  .canvas-note{font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.05em}
+
+  /* код */
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tab{background:var(--panel-2);border:1px solid var(--line);color:var(--muted);font-family:inherit;
+    font-size:12px;padding:6px 12px;border-radius:var(--radius);cursor:pointer;letter-spacing:.05em}
+  .tab.sel{border-color:var(--run);color:var(--run)}
+  .tab.hidden{display:none}
+  .code-scroll{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:auto;max-height:300px}
+  pre{margin:0;padding:14px;font-family:inherit;font-size:12.5px;line-height:1.6;white-space:pre;color:#c8d0d8;tab-size:2}
+  .cmt{color:var(--muted);font-style:italic}
+  .zone{background:rgba(79,214,200,.14);border-bottom:1px solid rgba(79,214,200,.5);border-radius:2px;padding:0 1px;transition:background .15s}
+  .zone.hot,.zone.pulse{background:rgba(79,214,200,.34)}
+  .zone.pulse{animation:zpulse .7s ease-out}
+  @keyframes zpulse{0%{background:rgba(79,214,200,.55)}100%{background:rgba(79,214,200,.14)}}
+
+  .codebar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .btn{background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-family:inherit;
+    font-size:12px;padding:8px 14px;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;transition:border-color .15s,color .15s}
+  .btn:hover{border-color:var(--run);color:var(--run)}
+  .btn.primary{border-color:var(--run);color:var(--run)}
+  .btn.ok{border-color:var(--gen);color:var(--gen)}
+
+  /* объяснение */
+  .explain{margin-top:16px}
+  .explain .lead{font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.6}
+  .legend{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-bottom:14px}
+  .legend .chip{width:26px;height:14px;background:rgba(79,214,200,.14);border-bottom:1px solid rgba(79,214,200,.5);border-radius:2px}
+  .hints{list-style:none;display:grid;gap:8px}
+  .hints li{font-size:12.5px;color:var(--muted);padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);cursor:default;transition:border-color .15s,background .15s}
+  .hints li.hot{border-color:var(--run);background:rgba(79,214,200,.05);color:var(--text)}
+  .hints li b{color:var(--text);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <a href="../">&larr; forge</a>
+    <span class="sep">/</span>
+    <span class="cur">HTML · CSS · JS</span>
+    <span class="sep">·</span>
+    <span>живое превью</span>
+  </div>
+
+  <h1 class="h">Собери <b>блок</b></h1>
+  <p class="sub">Выбери блок, покрути настройки слева. Справа сразу видно код и результат. Подсвеченное в коде — то, что можно менять руками.</p>
+
+  <div class="blocks" id="blocks"></div>
+
+  <div class="work">
+    <!-- левая колонка: настройки + объяснение -->
+    <div>
+      <div class="panel">
+        <div class="p-head"><span>настройки</span><span class="badge" id="blockName">—</span></div>
+        <div id="controls"></div>
+      </div>
+
+      <div class="panel explain">
+        <div class="p-head"><span>что можно менять</span></div>
+        <div class="lead" id="lead"></div>
+        <div class="legend"><span class="chip"></span> подсвеченное в коде можно менять</div>
+        <ul class="hints" id="hints"></ul>
+      </div>
+    </div>
+
+    <!-- правая колонка: превью + код -->
+    <div class="out">
+      <div class="panel">
+        <div class="p-head"><span>превью</span><span class="badge">live</span></div>
+        <iframe class="preview-frame" id="preview" sandbox="allow-scripts" title="превью"></iframe>
+        <div class="canvas-note">это отдельная песочница — код запускается по-настоящему</div>
+      </div>
+
+      <div class="panel">
+        <div class="p-head"><span>код</span></div>
+        <div class="tabs" id="tabs">
+          <button class="tab sel" data-pane="html">HTML</button>
+          <button class="tab" data-pane="css">CSS</button>
+          <button class="tab" data-pane="js">JS</button>
+        </div>
+        <div class="code-scroll"><pre><code id="code"></code></pre></div>
+        <div class="codebar">
+          <button class="btn" id="copyPane">скопировать эту вкладку</button>
+          <button class="btn primary" id="copyFile">скопировать готовый файл</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   FORGE · движок конструктора
+   Как это устроено:
+   1) RECIPES — список блоков. Каждый блок = настройки + генератор.
+   2) Генератор получает config и возвращает {html, css, js}.
+      Редактируемые куски он оборачивает через z('id', 'значение').
+   3) Движок рисует контролы из настроек, гоняет генератор,
+      подсвечивает зоны и обновляет живое превью.
+   Добавить блок = дописать запись в RECIPES. Движок трогать не надо.
+   ══════════════════════════════════════════════════════════════ */
+
+/* маркеры редактируемой зоны (спрятанные символы, в коде их не видно) */
+var Z0='\uE000', Z1='\uE001', Z2='\uE002';
+function z(opt, val){ return Z0+opt+Z1+val+Z2; }
+
+/* ─────────────── КАТАЛОГ БЛОКОВ ─────────────── */
+var RECIPES = [
+
+  /* ===== КНОПКА ===== */
+  {
+    id:"button", glyph:"</>", name:"Кнопка",
+    lead:"Обычная кнопка. Меняй текст, цвета, форму. JS не нужен — это чистые HTML и CSS.",
+    options:[
+      { id:"label",  type:"text",   label:"Текст",            def:"Нажми меня" },
+      { id:"bg",     type:"color",  label:"Цвет фона",        def:"#4fd6c8" },
+      { id:"fg",     type:"color",  label:"Цвет текста",      def:"#0b0d10" },
+      { id:"radius", type:"range",  label:"Скругление",       def:8,  min:0, max:40, unit:"px" },
+      { id:"padY",   type:"range",  label:"Высота (отступ)",  def:12, min:6, max:26, unit:"px" },
+      { id:"padX",   type:"range",  label:"Ширина (отступ)",  def:24, min:12,max:56, unit:"px" },
+      { id:"weight", type:"select", label:"Жирность",         def:"600", choices:[["400","обычный"],["600","средний"],["700","жирный"]] },
+      { id:"full",   type:"toggle", label:"Во всю ширину",    def:false },
+      { id:"hover",  type:"toggle", label:"Темнее при наведении", def:true },
+    ],
+    hints:[
+      {opt:"label", t:"<b>Текст</b> — между тегами &lt;button&gt;…&lt;/button&gt;"},
+      {opt:"bg",    t:"<b>Цвет фона</b> — свойство background в CSS"},
+      {opt:"radius",t:"<b>Скругление</b> — border-radius, чем больше, тем круглее"},
+    ],
+    gen:function(c){
+      var full  = c.full  ? "\n  "+z("full","width: 100%;") : "";
+      var hover = c.hover ? "\n.forge-btn:hover{ filter: brightness(0.9); }" : "";
+      return {
+        html:
+"<!-- \u270e поменяй текст между тегами -->\n"+
+'<button class="forge-btn">'+z("label",c.label)+"</button>",
+        css:
+".forge-btn{\n"+
+"  /* \u270e цвета — меняй значения */\n"+
+"  background: "+z("bg",c.bg)+";\n"+
+"  color: "+z("fg",c.fg)+";\n"+
+"  border: none;\n"+
+"  border-radius: "+z("radius",c.radius+"px")+";\n"+
+"  padding: "+z("padY",c.padY+"px")+" "+z("padX",c.padX+"px")+";\n"+
+"  font: "+c.weight+" 16px/1 ui-monospace, monospace;\n"+
+"  cursor: pointer;"+full+"\n"+
+"  transition: filter .15s;\n"+
+"}"+hover,
+        js:""
+      };
+    }
+  },
+
+  /* ===== КАРТОЧКА ===== */
+  {
+    id:"card", glyph:"▤", name:"Карточка",
+    lead:"Блок с заголовком и текстом — из таких собираются ленты, списки, галереи.",
+    options:[
+      { id:"title",  type:"text",  label:"Заголовок", def:"Заголовок" },
+      { id:"body",   type:"text",  label:"Текст",     def:"Короткое описание карточки." },
+      { id:"accent", type:"color", label:"Акцент",    def:"#4fd6c8" },
+      { id:"bg",     type:"color", label:"Фон",       def:"#12151a" },
+      { id:"fg",     type:"color", label:"Цвет текста", def:"#d7dde3" },
+      { id:"radius", type:"range", label:"Скругление", def:12, min:0, max:28, unit:"px" },
+      { id:"badge",  type:"toggle",label:"Показать метку", def:true },
+      { id:"badgeText", type:"text", label:"Текст метки", def:"НОВОЕ" },
+    ],
+    hints:[
+      {opt:"title", t:"<b>Заголовок</b> — в теге &lt;h3&gt;"},
+      {opt:"accent",t:"<b>Акцент</b> — цвет полоски слева и метки"},
+      {opt:"badge", t:"<b>Метка</b> — выключается переключателем, тогда строка уходит"},
+    ],
+    gen:function(c){
+      var badge = c.badge
+        ? "\n  <!-- \u270e метку можно убрать переключателем -->\n  "+
+          '<span class="fc-badge">'+z("badgeText",c.badgeText)+"</span>"
+        : "";
+      var badgeCss = c.badge
+        ? "\n.fc-badge{ display:inline-block; margin-bottom:10px; padding:3px 9px;\n"+
+          "  background: "+z("accent",c.accent)+"; color:#0b0d10; font-size:11px; border-radius:4px; }"
+        : "";
+      return {
+        html:
+'<article class="fcard">'+badge+"\n"+
+"  <!-- \u270e заголовок и текст -->\n"+
+"  <h3>"+z("title",c.title)+"</h3>\n"+
+"  <p>"+z("body",c.body)+"</p>\n"+
+"</article>",
+        css:
+".fcard{\n"+
+"  max-width: 320px;\n"+
+"  background: "+z("bg",c.bg)+";\n"+
+"  color: "+z("fg",c.fg)+";\n"+
+"  border-left: 3px solid "+z("accent",c.accent)+";\n"+
+"  border-radius: "+z("radius",c.radius+"px")+";\n"+
+"  padding: 18px 20px;\n"+
+"  font-family: ui-monospace, monospace;\n"+
+"}\n"+
+".fcard h3{ margin:0 0 8px; font-size:17px; }\n"+
+".fcard p{ margin:0; font-size:13px; opacity:.8; line-height:1.6; }"+badgeCss,
+        js:""
+      };
+    }
+  },
+
+  /* ===== СЧЁТЧИК (с JS) ===== */
+  {
+    id:"counter", glyph:"±", name:"Счётчик",
+    lead:"Здесь появляется JS — логика. Кнопки прибавляют и убавляют число. Смотри вкладку JS.",
+    options:[
+      { id:"start",  type:"number", label:"Начальное число", def:0,  step:1 },
+      { id:"step",   type:"number", label:"Шаг",             def:1,  step:1 },
+      { id:"accent", type:"color",  label:"Цвет кнопок",     def:"#4fd6c8" },
+      { id:"size",   type:"range",  label:"Размер числа",    def:28, min:18, max:48, unit:"px" },
+    ],
+    hints:[
+      {opt:"start", t:"<b>Начальное число</b> — переменная count в JS"},
+      {opt:"step",  t:"<b>Шаг</b> — на сколько меняется за клик"},
+      {opt:"accent",t:"<b>Цвет кнопок</b> — background в CSS"},
+    ],
+    gen:function(c){
+      return {
+        html:
+'<div class="fcount">\n'+
+'  <button id="dec">\u2212</button>\n'+
+'  <!-- \u270e сюда JS пишет число -->\n'+
+'  <span id="count">'+z("start",c.start)+"</span>\n"+
+'  <button id="inc">+</button>\n'+
+"</div>",
+        css:
+".fcount{ display:flex; align-items:center; gap:16px; font-family:ui-monospace,monospace; }\n"+
+".fcount button{\n"+
+"  width:46px; height:46px; border:none; border-radius:10px;\n"+
+"  background: "+z("accent",c.accent)+"; color:#0b0d10;\n"+
+"  font-size:24px; cursor:pointer;\n"+
+"}\n"+
+".fcount #count{ min-width:60px; text-align:center; font-weight:700;\n"+
+"  font-size: "+z("size",c.size+"px")+"; color:#1a1a1a; }",
+        js:
+"// \u270e начальное значение и шаг — меняй числа\n"+
+"let count = "+z("start",c.start)+";\n"+
+"const step = "+z("step",c.step)+";\n\n"+
+"const view = document.getElementById('count');\n"+
+"document.getElementById('inc').onclick = () => { count += step; view.textContent = count; };\n"+
+"document.getElementById('dec').onclick = () => { count -= step; view.textContent = count; };"
+      };
+    }
+  }
+
+];
+
+/* ─────────────── ДВИЖОК ─────────────── */
+var state = { block:null, cfg:{}, pane:"html" };
+var $ = function(s){ return document.querySelector(s); };
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* превратить помеченный код в подсвеченный HTML */
+function highlight(marked){
+  var s = esc(marked);
+  /* комментарии — приглушённо */
+  s = s.replace(/(&lt;!--[\s\S]*?--&gt;|\/\*[\s\S]*?\*\/|\/\/[^\n]*)/g, '<span class="cmt">$1</span>');
+  /* редактируемые зоны */
+  s = s.replace(new RegExp(Z0+"(.*?)"+Z1+"([\\s\\S]*?)"+Z2,"g"), function(m,opt,val){
+    return '<span class="zone" data-opt="'+opt+'">'+val+"</span>";
+  });
+  return s;
+}
+/* убрать маркеры, оставить чистый код (для превью и копирования) */
+function plain(marked){
+  return marked.replace(new RegExp(Z0+".*?"+Z1+"([\\s\\S]*?)"+Z2,"g"), "$1");
+}
+
+/* собрать готовый документ для превью / файла */
+function assemble(parts){
+  var css = plain(parts.css), html = plain(parts.html), js = plain(parts.js);
+  var base = "*{box-sizing:border-box}html,body{margin:0;height:100%}"+
+             "body{display:flex;align-items:center;justify-content:center;min-height:100%;padding:24px;background:#ececef}";
+  return "<!doctype html>\n<html lang=\"ru\">\n<head>\n<meta charset=\"UTF-8\">\n"+
+         "<style>\n"+base+"\n"+css+"\n</style>\n</head>\n<body>\n"+html+"\n"+
+         (js ? "<script>\n"+js+"\n<\/script>\n" : "")+"</body>\n</html>";
+}
+
+var lastParts=null, previewTimer=null;
+
+function regen(){
+  var r = state.block;
+  var parts = r.gen(state.cfg);
+  lastParts = parts;
+  renderCode();
+  schedulePreview(parts);
+}
+
+function renderCode(){
+  var marked = lastParts[state.pane] || "";
+  var code = $("#code");
+  if(!marked){ code.textContent = "// в этом блоке "+state.pane.toUpperCase()+" не используется"; return; }
+  code.innerHTML = highlight(marked);
+  /* скрыть вкладку JS, если её нет */
+  var jsTab = document.querySelector('.tab[data-pane="js"]');
+  jsTab.classList.toggle("hidden", !lastParts.js);
+}
+
+function schedulePreview(parts){
+  if(previewTimer) clearTimeout(previewTimer);
+  previewTimer = setTimeout(function(){
+    $("#preview").srcdoc = assemble(parts);
+  }, 90);
+}
+
+/* подсветка связи «настройка ↔ зона в коде» */
+function setHot(opt, on){
+  document.querySelectorAll('.zone[data-opt="'+opt+'"]').forEach(function(el){ el.classList.toggle("hot", on); });
+  var ctl = document.querySelector('.ctl[data-opt="'+opt+'"]'); if(ctl) ctl.classList.toggle("hot", on);
+  var hint = document.querySelector('.hints li[data-opt="'+opt+'"]'); if(hint) hint.classList.toggle("hot", on);
+}
+function pulseZone(opt){
+  document.querySelectorAll('.zone[data-opt="'+opt+'"]').forEach(function(el){
+    el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+  });
+}
+
+/* ─── контролы ─── */
+function buildControls(){
+  var r = state.block, box = $("#controls");
+  box.innerHTML = "";
+  r.options.forEach(function(o){
+    var v = state.cfg[o.id];
+    var row = document.createElement("div");
+    row.className = "ctl" + (o.type==="toggle" ? " toggle" : "");
+    row.setAttribute("data-opt", o.id);
+    row.setAttribute("data-type", o.type);
+
+    var inner = "";
+    if(o.type==="text"){
+      inner = '<div class="lab"><span>'+o.label+'</span></div>'+
+              '<input type="text" value="'+esc(v)+'">';
+    } else if(o.type==="number"){
+      inner = '<div class="lab"><span>'+o.label+'</span></div>'+
+              '<input type="number" step="'+(o.step||1)+'" value="'+esc(v)+'">';
+    } else if(o.type==="range"){
+      inner = '<div class="lab"><span>'+o.label+'</span><span class="val">'+v+(o.unit||"")+'</span></div>'+
+              '<input type="range" min="'+o.min+'" max="'+o.max+'" value="'+v+'">';
+    } else if(o.type==="color"){
+      inner = '<div class="lab"><span>'+o.label+'</span></div>'+
+              '<div class="colorrow"><input type="color" value="'+v+'"><span class="hex">'+v+'</span></div>';
+    } else if(o.type==="select"){
+      var opts = o.choices.map(function(ch){
+        return '<option value="'+ch[0]+'"'+(ch[0]===v?" selected":"")+'>'+ch[1]+'</option>';
+      }).join("");
+      inner = '<div class="lab"><span>'+o.label+'</span></div><select>'+opts+'</select>';
+    } else if(o.type==="toggle"){
+      inner = '<div class="lab"><span>'+o.label+'</span>'+
+              '<label class="sw"><input type="checkbox"'+(v?" checked":"")+'><span class="tr"></span><span class="kn"></span></label></div>';
+    }
+    row.innerHTML = inner;
+    box.appendChild(row);
+  });
+}
+
+/* чтение значения контрола по типу */
+function readVal(row){
+  var type = row.getAttribute("data-type");
+  var el = row.querySelector("input,select");
+  if(type==="toggle") return el.checked;
+  if(type==="range"||type==="number") return Number(el.value);
+  return el.value;
+}
+
+/* объяснение */
+function buildExplain(){
+  var r = state.block;
+  $("#lead").textContent = r.lead;
+  var ul = $("#hints"); ul.innerHTML = "";
+  (r.hints||[]).forEach(function(h){
+    var li = document.createElement("li");
+    li.setAttribute("data-opt", h.opt);
+    li.innerHTML = h.t;
+    ul.appendChild(li);
+  });
+}
+
+/* выбрать блок */
+function selectBlock(id){
+  var r = RECIPES.filter(function(x){return x.id===id;})[0];
+  state.block = r; state.pane = "html"; state.cfg = {};
+  r.options.forEach(function(o){ state.cfg[o.id] = o.def; });
+  $("#blockName").textContent = r.name;
+  document.querySelectorAll(".blk").forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-id")===id); });
+  document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("sel", t.getAttribute("data-pane")==="html"); });
+  buildControls();
+  buildExplain();
+  regen();
+}
+
+/* ─── табы блоков ─── */
+var blocksBox = $("#blocks");
+RECIPES.forEach(function(r){
+  var b = document.createElement("div");
+  b.className = "blk"; b.setAttribute("data-id", r.id);
+  b.innerHTML = '<span class="g">'+r.glyph+'</span>'+r.name;
+  b.onclick = function(){ selectBlock(r.id); };
+  blocksBox.appendChild(b);
+});
+
+/* ─── события контролов (делегирование) ─── */
+var controlsBox = $("#controls");
+controlsBox.addEventListener("input", function(e){
+  var row = e.target.closest(".ctl"); if(!row) return;
+  var opt = row.getAttribute("data-opt");
+  var val = readVal(row);
+  state.cfg[opt] = val;
+  /* обновить подпись у ползунка / цвета */
+  var o = state.block.options.filter(function(x){return x.id===opt;})[0];
+  if(o.type==="range"){ row.querySelector(".val").textContent = val+(o.unit||""); }
+  if(o.type==="color"){ row.querySelector(".hex").textContent = val; }
+  regen();
+  pulseZone(opt);
+});
+controlsBox.addEventListener("mouseover", function(e){ var row=e.target.closest(".ctl"); if(row) setHot(row.getAttribute("data-opt"), true); });
+controlsBox.addEventListener("mouseout",  function(e){ var row=e.target.closest(".ctl"); if(row) setHot(row.getAttribute("data-opt"), false); });
+controlsBox.addEventListener("focusin",   function(e){ var row=e.target.closest(".ctl"); if(row) setHot(row.getAttribute("data-opt"), true); });
+controlsBox.addEventListener("focusout",  function(e){ var row=e.target.closest(".ctl"); if(row) setHot(row.getAttribute("data-opt"), false); });
+
+/* ─── наведение на зону в коде подсвечивает настройку ─── */
+$("#code").addEventListener("mouseover", function(e){ if(e.target.classList.contains("zone")) setHot(e.target.getAttribute("data-opt"), true); });
+$("#code").addEventListener("mouseout",  function(e){ if(e.target.classList.contains("zone")) setHot(e.target.getAttribute("data-opt"), false); });
+/* и на пункт объяснения */
+$("#hints").addEventListener("mouseover", function(e){ var li=e.target.closest("li"); if(li) setHot(li.getAttribute("data-opt"), true); });
+$("#hints").addEventListener("mouseout",  function(e){ var li=e.target.closest("li"); if(li) setHot(li.getAttribute("data-opt"), false); });
+
+/* ─── переключение вкладок кода ─── */
+$("#tabs").addEventListener("click", function(e){
+  var t = e.target.closest(".tab"); if(!t) return;
+  state.pane = t.getAttribute("data-pane");
+  document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("sel", x===t); });
+  renderCode();
+});
+
+/* ─── копирование ─── */
+function copyText(text, btn, label){
+  var done = function(){ var old=btn.textContent; btn.textContent="✓ скопировано"; btn.classList.add("ok");
+    setTimeout(function(){ btn.textContent=old; btn.classList.remove("ok"); },1400); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); done(); });
+  } else { fallbackCopy(text); done(); }
+}
+function fallbackCopy(text){
+  var ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta);
+}
+$("#copyPane").onclick = function(){ copyText(plain(lastParts[state.pane]||""), this); };
+$("#copyFile").onclick = function(){ copyText(assemble(lastParts), this); };
+
+/* ─── старт ─── */
+selectBlock(RECIPES[0].id);
+</script>
+</body>
+</html>

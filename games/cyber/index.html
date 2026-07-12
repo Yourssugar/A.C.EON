@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>БРЕШЬ — кибер-полигон</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cyber.css">
+</head>
+<body>
+<!-- ambient background -->
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+
+<!-- ============ MENU ============ -->
+<main id="menu" class="screen active">
+  <header class="masthead">
+    <div class="eyebrow">A.C.EON // TRAINING GROUND</div>
+    <h1 class="wordmark"><span class="glyph-sword">МЕЧ</span><span class="slash">/</span><span class="glyph-shield">ЩИТ</span></h1>
+    <p class="tagline">Ломай, смотри что сломалось, чини. Полигон кибер-атаки и защиты для тех, кто хочет понять — а не зубрить.</p>
+  </header>
+
+  <section class="mode-select" aria-label="Режим">
+    <div class="section-label">01 — Режим</div>
+    <div class="mode-grid" id="mode-grid"></div>
+  </section>
+
+  <section class="diff-select" aria-label="Сложность">
+    <div class="section-label">02 — Сложность</div>
+    <div class="diff-grid" id="diff-grid"></div>
+  </section>
+
+  <section class="scenario-select" aria-label="Сценарий">
+    <div class="section-label">03 — Вектор</div>
+    <div class="scenario-grid" id="scenario-grid"></div>
+  </section>
+
+  <footer class="menu-foot">
+    <span id="selection-readout" class="readout">выбери режим, сложность и вектор</span>
+  </footer>
+</main>
+
+<!-- ============ ARENA ============ -->
+<main id="arena" class="screen">
+  <div class="arena-top">
+    <button class="btn-ghost" id="btn-back">‹ выход</button>
+    <div class="arena-meta">
+      <span class="meta-scenario" id="meta-scenario">—</span>
+      <span class="meta-sep">/</span>
+      <span class="meta-mode" id="meta-mode">—</span>
+      <span class="meta-sep">/</span>
+      <span class="meta-diff" id="meta-diff">—</span>
+    </div>
+    <div class="role-badge" id="role-badge"></div>
+  </div>
+
+  <div class="objective" id="objective"></div>
+
+  <div class="integrity-wrap">
+    <span class="integrity-label">ЦЕЛОСТНОСТЬ СИСТЕМЫ</span>
+    <div class="integrity-bar"><div class="integrity-fill" id="integrity-fill"></div></div>
+    <span class="integrity-pct" id="integrity-pct">100%</span>
+  </div>
+
+  <div class="panels">
+    <!-- ATTACK -->
+    <section class="panel panel-attack" id="panel-attack">
+      <div class="panel-head">
+        <span class="panel-title">⚔ АТАКА</span>
+        <span class="turn-flag" id="attack-turn"></span>
+      </div>
+      <div class="block-list" id="attack-blocks"></div>
+      <div class="console" id="attack-console" aria-live="polite"></div>
+    </section>
+
+    <!-- SYSTEM VIEW + DEFENSE -->
+    <section class="panel panel-defense" id="panel-defense">
+      <div class="panel-head">
+        <span class="panel-title">⛨ ЗАЩИТА</span>
+        <span class="turn-flag" id="defense-turn"></span>
+      </div>
+      <canvas id="graph-canvas" class="graph"></canvas>
+      <div class="block-list" id="defense-blocks"></div>
+      <div class="console" id="defense-console" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <!-- result overlay -->
+  <div class="verdict" id="verdict" hidden>
+    <div class="verdict-card">
+      <div class="verdict-title" id="verdict-title"></div>
+      <div class="verdict-body" id="verdict-body"></div>
+      <div class="verdict-actions">
+        <button class="btn-primary" id="btn-retry">ещё раз</button>
+        <button class="btn-ghost" id="btn-menu">в меню</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="cyber.js"></script>
+</body>
+</html>

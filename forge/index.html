@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FORGE · КУЗНЯ · A.C.EON</title>
+<style>
+  :root{
+    --bg:#0b0d10;
+    --panel:#12151a;
+    --panel-2:#0f1216;
+    --grid:#161b21;
+    --line:#232a32;
+    --line-hi:#2f3a44;
+    --text:#d7dde3;
+    --muted:#6b7580;
+    --dim:#464f58;
+    --run:#4fd6c8;      /* живое превью */
+    --gen:#e0a54a;      /* генерация кода */
+    --glitch:#ff4d6d;
+    --radius:2px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  html{-webkit-text-size-adjust:100%}
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:ui-monospace,"Cascadia Code","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+    line-height:1.5;
+    min-height:100vh;
+    /* чертёжная сетка */
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:44px 44px;
+    background-position:center top;
+    padding:clamp(20px,5vw,56px) clamp(16px,5vw,56px) 48px;
+  }
+
+  .wrap{max-width:1000px;margin:0 auto}
+
+  /* ── шапка ── */
+  .eyebrow{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    font-size:12px;letter-spacing:.14em;color:var(--muted);
+    text-transform:uppercase;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    padding:8px 12px;border-radius:var(--radius);
+    min-height:35px;
+  }
+  .eyebrow .cur{color:var(--run)}
+  .blink{animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .title{
+    position:relative;
+    font-size:clamp(48px,13vw,116px);
+    font-weight:700;
+    letter-spacing:.02em;
+    line-height:.92;
+    margin:26px 0 0;
+    color:var(--text);
+  }
+  .title::before,.title::after{
+    content:attr(data-text);
+    position:absolute;left:0;top:0;
+    clip-path:inset(0 0 0 0);
+    opacity:.0;pointer-events:none;
+  }
+  .title::before{color:var(--run);transform:translate(-2px,0)}
+  .title::after{color:var(--glitch);transform:translate(2px,0)}
+
+  .subname{margin-top:14px;font-size:clamp(13px,1.7vw,16px);letter-spacing:.06em;color:var(--muted)}
+  .subname .sl{color:var(--dim)}
+  .subname b{color:var(--run);font-weight:700;letter-spacing:.16em}
+
+  .tagline{
+    margin-top:14px;max-width:60ch;
+    color:var(--muted);font-size:clamp(13px,1.6vw,15px);
+  }
+  .tagline b{color:var(--text);font-weight:600}
+
+  /* ── секция выбора ── */
+  .section-mark{
+    display:flex;align-items:baseline;gap:12px;
+    margin:44px 0 18px;
+    color:var(--text);
+  }
+  .section-mark .arrow{color:var(--run)}
+  .section-mark .lbl{font-size:14px;letter-spacing:.06em}
+  .section-mark .note{margin-left:auto;font-size:12px;color:var(--dim);letter-spacing:.08em}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(238px,1fr));
+    gap:14px;
+  }
+
+  /* ── карточка-модуль ── */
+  .mod{
+    position:relative;
+    display:flex;flex-direction:column;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 16px 14px;
+    min-height:172px;
+    text-decoration:none;color:inherit;
+    transition:border-color .16s,background .16s,transform .16s;
+  }
+  .mod.on{cursor:pointer}
+  .mod.on:hover,.mod.on:focus-visible{
+    border-color:var(--run);
+    background:#141a1e;
+    transform:translateY(-2px);
+    outline:none;
+  }
+  .mod.soon{opacity:.62}
+  .mod:focus-visible{outline:1px solid var(--run);outline-offset:2px}
+
+  /* уголки-скобки */
+  .mod::before,.mod::after{
+    content:"";position:absolute;width:9px;height:9px;
+    border-color:var(--line-hi);border-style:solid;
+    transition:border-color .16s;
+  }
+  .mod::before{top:6px;left:6px;border-width:1px 0 0 1px}
+  .mod::after{bottom:6px;right:6px;border-width:0 1px 1px 0}
+  .mod.on:hover::before,.mod.on:hover::after,
+  .mod.on:focus-visible::before,.mod.on:focus-visible::after{border-color:var(--run)}
+
+  .mod-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .glyph{
+    font-size:15px;font-weight:700;letter-spacing:.02em;
+    color:var(--text);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:3px 8px;background:var(--panel-2);
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .badge .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .badge.run{color:var(--run)}
+  .badge.run .dot{background:var(--run)}
+  .badge.gen .dot{border:1px solid var(--gen)}
+  .badge.gen{color:var(--gen)}
+
+  .mod-name{margin-top:16px;font-size:19px;font-weight:600;letter-spacing:.01em;color:var(--text)}
+  .mod-desc{margin-top:7px;font-size:12.5px;color:var(--muted);line-height:1.55;flex:1}
+
+  .mod-foot{
+    margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:12px;letter-spacing:.04em;
+  }
+  .mod-foot .go{color:var(--run)}
+  .mod-foot .soon-tag{color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-size:11px}
+  .mod-foot .id{color:var(--dim)}
+
+  /* ── подвал: как это работает ── */
+  .how{
+    margin-top:52px;
+    border-top:1px solid var(--line);
+    padding-top:28px;
+  }
+  .how-h{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px}
+  .step{display:flex;gap:12px}
+  .step .n{color:var(--run);font-size:13px;font-weight:700;flex:none;padding-top:1px}
+  .step .b{font-size:13px}
+  .step .b .st{color:var(--text);font-weight:600}
+  .step .b .sd{color:var(--muted);margin-top:4px;line-height:1.5;font-size:12.5px}
+
+  footer{margin-top:40px;font-size:11.5px;color:var(--dim);letter-spacing:.08em}
+
+  @media (prefers-reduced-motion:no-preference){
+    .title.gl::before{animation:g1 3.6s infinite}
+    .title.gl::after{animation:g2 3.6s infinite}
+  }
+  @keyframes g1{
+    0%,92%,100%{opacity:0;clip-path:inset(0 0 100% 0)}
+    93%{opacity:.7;clip-path:inset(12% 0 62% 0);transform:translate(-3px,0)}
+    96%{opacity:.7;clip-path:inset(48% 0 20% 0);transform:translate(3px,0)}
+    98%{opacity:0}
+  }
+  @keyframes g2{
+    0%,92%,100%{opacity:0}
+    93%{opacity:.6;clip-path:inset(30% 0 40% 0);transform:translate(2px,0)}
+    97%{opacity:.6;clip-path:inset(70% 0 8% 0);transform:translate(-2px,0)}
+    99%{opacity:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow" id="eyebrow">
+    <span class="cur">A.C.EON</span> // модуль · загрузка<span class="blink">_</span>
+  </div>
+
+  <h1 class="title gl" data-text="FORGE">FORGE</h1>
+  <div class="subname"><span class="sl">//</span> <b>КУЗНЯ</b> · конструктор кода</div>
+
+  <p class="tagline">
+    Конструктор кода. Выбираешь язык, собираешь программу из готовых блоков и
+    <b>сразу видишь, как она устроена</b> — с подсказками, что можно менять руками.
+  </p>
+
+  <div class="section-mark">
+    <span class="arrow">&gt;</span>
+    <span class="lbl">выбери язык</span>
+    <span class="note" id="modcount">модулей: —</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="how">
+    <div class="how-h">как это работает</div>
+    <div class="steps">
+      <div class="step"><span class="n">01</span><div class="b">
+        <div class="st">Выбери язык</div>
+        <div class="sd">Начни с того, что подходит под задачу — сайт, скрипт, программа.</div>
+      </div></div>
+      <div class="step"><span class="n">02</span><div class="b">
+        <div class="st">Собери блок</div>
+        <div class="sd">Крути опции: размер, цвет, функционал. Код меняется на глазах.</div>
+      </div></div>
+      <div class="step"><span class="n">03</span><div class="b">
+        <div class="st">Забери код</div>
+        <div class="sd">Готовый, с комментариями и подсвеченными зонами, что можно править.</div>
+      </div></div>
+    </div>
+  </div>
+
+  <footer>A.C.EON STUDIO · FORGE · КУЗНЯ v0.1 · собрано вручную, без фреймворков</footer>
+
+</div>
+
+<script>
+  /* ── каталог языков ──
+     чтобы добавить язык — добавь запись сюда.
+     mode: "run" = живое превью в браузере · "gen" = генерация кода
+     on:   true = страница готова, false = «скоро»                    */
+  const LANGS = [
+    { id:"html", glyph:"</>", name:"HTML · CSS · JS",
+      desc:"Сайты, страницы, интерфейсы. Логика на JS живёт прямо внутри.",
+      mode:"run", on:true, href:"HTML-CSS-JS/" },
+
+    { id:"py", glyph:"PY", name:"Python",
+      desc:"Автоматизация, обработка данных, скрипты, машинное обучение.",
+      mode:"gen", on:false, href:"Python/" },
+
+    { id:"cs", glyph:"C#", name:"C#",
+      desc:"Настольные приложения, игры на Unity, инструменты под Windows.",
+      mode:"gen", on:false, href:"CSharp/" },
+
+    { id:"cpp", glyph:"C++", name:"C++",
+      desc:"Скорость и контроль: игры, движки, системные и требовательные вещи.",
+      mode:"gen", on:false, href:"C++/" },
+
+    { id:"java", glyph:"JV", name:"Java",
+      desc:"Android-приложения и крупные системы, которым нужна надёжность.",
+      mode:"gen", on:false, href:"Java/" },
+
+    { id:"sql", glyph:"SQL", name:"SQL",
+      desc:"Базы данных: хранить, искать и доставать нужное запросами.",
+      mode:"gen", on:false, href:"SQL/" },
+  ];
+
+  const grid = document.getElementById("grid");
+
+  LANGS.forEach(function(l){
+    const badge = l.mode === "run"
+      ? '<span class="badge run"><span class="dot"></span>живое превью</span>'
+      : '<span class="badge gen"><span class="dot"></span>генерация кода</span>';
+
+    const foot = l.on
+      ? '<span class="go">открыть &rarr;</span>'
+      : '<span class="soon-tag">скоро</span>';
+
+    const inner =
+      '<div class="mod-top"><span class="glyph">'+l.glyph+'</span>'+badge+'</div>'+
+      '<div class="mod-name">'+l.name+'</div>'+
+      '<div class="mod-desc">'+l.desc+'</div>'+
+      '<div class="mod-foot">'+foot+'<span class="id">['+l.id+']</span></div>';
+
+    let el;
+    if(l.on){
+      el = document.createElement("a");
+      el.href = l.href;
+      el.className = "mod on";
+    } else {
+      el = document.createElement("div");
+      el.className = "mod soon";
+      el.setAttribute("aria-disabled","true");
+    }
+    el.innerHTML = inner;
+    grid.appendChild(el);
+  });
+
+  const ready = LANGS.filter(function(l){return l.on}).length;
+  document.getElementById("modcount").textContent =
+    "модулей: "+LANGS.length+" · готово: "+ready;
+
+  /* короткая «загрузка» в шапке, без нагрузки на слабое железо */
+  const eb = document.getElementById("eyebrow");
+  const line = "A.C.EON // модуль FORGE · v0.1 · инициализация ок";
+  if(window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches){
+    eb.innerHTML = '<span class="cur">A.C.EON</span> // модуль FORGE · v0.1 <span class="blink">_</span>';
+  } else {
+    let i = 0;
+    eb.innerHTML = '';
+    (function type(){
+      if(i <= line.length){
+        eb.innerHTML = line.slice(0,i).replace("A.C.EON",'<span class="cur">A.C.EON</span>')
+                       + '<span class="blink">_</span>';
+        i++;
+        setTimeout(type, 22);
+      }
+    })();
+  }
+</script>
+</body>
+</html>

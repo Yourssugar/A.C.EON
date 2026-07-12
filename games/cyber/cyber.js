@@ -180,7 +180,7 @@ function buildMenu(){
       <span class="scn-name">${s.name}</span>
       <span class="scn-sub">${s.sub}</span>
       <span class="scn-tags">${tags}</span>`;
-    t.onclick = ()=>{ sel.scenario=s.id; markSel(sg,t); updateReadout(); tryLaunch(); };
+    t.onclick = ()=>{ sel.scenario=s.id; markSel(sg,t); updateReadout(); };
     sg.appendChild(t);
   });
 }
@@ -191,10 +191,12 @@ function updateReadout(){
   if(sel.diff)   parts.push(DIFFS.find(d=>d.id===sel.diff).name);
   if(sel.scenario) parts.push(SCN_BY_ID[sel.scenario].name);
   $('selection-readout').textContent = parts.length ? parts.join(' · ') : 'выбери режим, сложность и вектор';
+  const ready = !!(sel.mode && sel.diff && sel.scenario);
+  const bs=$('btn-start'); if(bs) bs.disabled = !ready;
 }
-function tryLaunch(){
-  if(sel.mode && sel.diff && sel.scenario) setTimeout(startGame, 180);
-  else toast('Выбери режим и сложность, затем вектор.');
+function launch(){
+  if(sel.mode && sel.diff && sel.scenario) startGame();
+  else toast('Выбери режим, сложность и вектор.');
 }
 
 /* ---------------------------------------------------------
@@ -605,6 +607,7 @@ function toast(msg){
 }
 
 function wire(){
+  $('btn-start').onclick = launch;
   $('btn-back').onclick = ()=>{ _hardenedToasted=false; show('menu'); };
   $('btn-menu').onclick = ()=>{ $('verdict').hidden=true; _hardenedToasted=false; show('menu'); };
   $('btn-retry').onclick = ()=>{ $('verdict').hidden=true; _hardenedToasted=false; startGame(); };

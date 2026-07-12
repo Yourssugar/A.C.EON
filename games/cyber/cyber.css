@@ -145,8 +145,10 @@ section{margin-bottom:2.6rem}
 .scn-tile .scn-tags{display:flex;gap:.4rem;flex-wrap:wrap}
 .scn-tag{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border:1px solid var(--line);border-radius:99px;color:var(--ink-faint)}
 
-.menu-foot{margin-top:1rem;padding-top:1.4rem;border-top:1px solid var(--line-soft)}
+.menu-foot{margin-top:1rem;padding-top:1.4rem;border-top:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .readout{font-size:.8rem;color:var(--ink-faint);letter-spacing:.05em}
+.btn-start{transition:.15s}
+.btn-start:disabled{opacity:.3;cursor:not-allowed;background:var(--panel-2);color:var(--ink-faint)}
 
 /* =========================================================
    ARENA

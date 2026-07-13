@@ -10,7 +10,6 @@
 <link rel="stylesheet" href="cyber.css">
 </head>
 <body>
-<!-- ambient background -->
 <canvas id="bg-canvas" aria-hidden="true"></canvas>
 <div class="scanlines" aria-hidden="true"></div>
 
@@ -19,7 +18,7 @@
   <header class="masthead">
     <div class="eyebrow">A.C.EON // TRAINING GROUND</div>
     <h1 class="wordmark"><span class="glyph-sword">МЕЧ</span><span class="slash">/</span><span class="glyph-shield">ЩИТ</span></h1>
-    <p class="tagline">Ломай, смотри что сломалось, чини. Полигон кибер-атаки и защиты для тех, кто хочет понять — а не зубрить.</p>
+    <p class="tagline">Ломай, смотри что сломалось, чини по-настоящему. Полигон кибер-атаки и защиты для тех, кто хочет понять — а не зубрить.</p>
   </header>
 
   <section class="mode-select" aria-label="Режим">
@@ -43,64 +42,103 @@
   </footer>
 </main>
 
-<!-- ============ ARENA ============ -->
+<!-- ============ ARENA (block engine — fallback) ============ -->
 <main id="arena" class="screen">
   <div class="arena-top">
     <button class="btn-ghost" id="btn-back">‹ выход</button>
     <div class="arena-meta">
       <span class="meta-scenario" id="meta-scenario">—</span>
-      <span class="meta-sep">/</span>
-      <span class="meta-mode" id="meta-mode">—</span>
-      <span class="meta-sep">/</span>
-      <span class="meta-diff" id="meta-diff">—</span>
+      <span class="meta-sep">/</span><span class="meta-mode" id="meta-mode">—</span>
+      <span class="meta-sep">/</span><span class="meta-diff" id="meta-diff">—</span>
     </div>
     <div class="role-badge" id="role-badge"></div>
   </div>
-
   <div class="objective" id="objective"></div>
-
   <div class="integrity-wrap">
     <span class="integrity-label">ЦЕЛОСТНОСТЬ СИСТЕМЫ</span>
     <div class="integrity-bar"><div class="integrity-fill" id="integrity-fill"></div></div>
     <span class="integrity-pct" id="integrity-pct">100%</span>
   </div>
-
   <div class="panels">
-    <!-- ATTACK -->
     <section class="panel panel-attack" id="panel-attack">
-      <div class="panel-head">
-        <span class="panel-title">⚔ АТАКА</span>
-        <span class="turn-flag" id="attack-turn"></span>
-      </div>
+      <div class="panel-head"><span class="panel-title">⚔ АТАКА</span><span class="turn-flag" id="attack-turn"></span></div>
       <div class="block-list" id="attack-blocks"></div>
       <div class="console" id="attack-console" aria-live="polite"></div>
     </section>
-
-    <!-- SYSTEM VIEW + DEFENSE -->
     <section class="panel panel-defense" id="panel-defense">
-      <div class="panel-head">
-        <span class="panel-title">⛨ ЗАЩИТА</span>
-        <span class="turn-flag" id="defense-turn"></span>
-      </div>
+      <div class="panel-head"><span class="panel-title">⛨ ЗАЩИТА</span><span class="turn-flag" id="defense-turn"></span></div>
       <canvas id="graph-canvas" class="graph"></canvas>
       <div class="block-list" id="defense-blocks"></div>
       <div class="console" id="defense-console" aria-live="polite"></div>
     </section>
   </div>
+</main>
 
-  <!-- result overlay -->
-  <div class="verdict" id="verdict" hidden>
-    <div class="verdict-card">
-      <div class="verdict-title" id="verdict-title"></div>
-      <div class="verdict-body" id="verdict-body"></div>
-      <div class="verdict-actions">
-        <button class="btn-primary" id="btn-retry">ещё раз</button>
-        <button class="btn-ghost" id="btn-menu">в меню</button>
-      </div>
+<!-- ============ GAME (deep interactive engine) ============ -->
+<main id="game" class="screen">
+  <div class="game-hud">
+    <button class="btn-ghost" id="g-back">‹ выход</button>
+    <div class="game-titles">
+      <span class="game-title" id="g-title">—</span>
+      <span class="game-meta" id="g-meta">—</span>
     </div>
+    <div class="phase-chip" id="g-phase">АТАКА</div>
+  </div>
+
+  <div class="integrity-wrap">
+    <span class="integrity-label">ЦЕЛОСТНОСТЬ ЦЕЛИ</span>
+    <div class="integrity-bar"><div class="integrity-fill" id="g-integrity"></div></div>
+    <span class="integrity-pct" id="g-integrity-pct">100%</span>
+  </div>
+
+  <div class="g-brief" id="g-brief"></div>
+
+  <div class="g-stage">
+    <!-- LEFT: TARGET SYSTEM -->
+    <section class="g-panel g-target">
+      <div class="g-panel-head"><span class="gp-name">ЦЕЛЬ · NEO-BANK</span><span class="g-badge" id="g-target-state">онлайн</span></div>
+      <div class="sim-window">
+        <div class="sim-chrome"><i></i><i></i><i></i><span>neobank.io/login</span></div>
+        <div class="sim-body">
+          <div class="sim-field">
+            <label>Логин</label>
+            <input id="sim-login-input" class="sim-input" autocomplete="off" spellcheck="false" placeholder="имя пользователя">
+          </div>
+          <div class="sim-field">
+            <label>Пароль</label>
+            <input id="sim-pass-input" class="sim-input" value="••••••••" disabled>
+          </div>
+          <button class="sim-submit" id="sim-submit">Войти →</button>
+          <div class="sim-verdict" id="sim-verdict"></div>
+        </div>
+      </div>
+      <div class="query-view">
+        <div class="query-label">SQL-запрос на сервере <span id="query-note"></span></div>
+        <pre class="query-code" id="query-code"></pre>
+      </div>
+      <div class="db-result" id="db-result"></div>
+    </section>
+
+    <!-- RIGHT: WORKBENCH -->
+    <section class="g-panel g-bench" id="g-bench">
+      <div class="g-panel-head"><span class="gp-name" id="bench-title">АРСЕНАЛ</span><span class="g-badge" id="bench-tier"></span></div>
+      <div class="bench-body" id="bench-body"></div>
+      <div class="console" id="g-console" aria-live="polite"></div>
+    </section>
   </div>
 </main>
 
+<!-- global overlays -->
+<div class="verdict" id="verdict" hidden>
+  <div class="verdict-card">
+    <div class="verdict-title" id="verdict-title"></div>
+    <div class="verdict-body" id="verdict-body"></div>
+    <div class="verdict-actions">
+      <button class="btn-primary" id="btn-retry">ещё раз</button>
+      <button class="btn-ghost" id="btn-menu">в меню</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 
 <script src="cyber.js"></script>

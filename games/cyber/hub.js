@@ -10,7 +10,7 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 const COURSES=[
   {id:'sqli', code:'ДЕЛО #01', icon:'⌘', name:'SQL-инъекция',
    desc:'Форма входа доверяет вводу. Вскрой NEO-BANK четырьмя приёмами, обойди три патча — и закрой дыру настоящим кодом.',
-   folder:'courses/sqli/index.html', levels:4, status:'avail'},
+   folder:'courses/sqli/index.html', levels:7, status:'avail'},
   {id:'brute', code:'ДЕЛО #02', icon:'⧉', name:'Брутфорс паролей',
    desc:'Пароли, которые ломаются за секунды. Подбор, словари, rate-limit, 2FA. В разработке.',
    folder:null, levels:4, status:'soon'},

@@ -7,26 +7,86 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="hub.css">
+<link rel="stylesheet" href="engine.css">
 </head>
 <body>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="scan" aria-hidden="true"></div>
 
-<header class="hub-head">
-  <div class="eyebrow">A.C.EON // CYBER RANGE</div>
-  <h1 class="wordmark">БРЕШЬ</h1>
-  <p class="tagline">Полигон кибер-атаки и защиты. Каждое «дело» — отдельная игра-курс: сюжет, уровни, нарастающая сложность. На верхних уровнях — реальный код, который движок исполняет. Всё в песочнице, никаких настоящих систем.</p>
-  <div class="rank" id="rank"></div>
-</header>
+<!-- ======= PORTAL (view) ======= -->
+<div id="hub">
+  <header class="hub-head">
+    <div class="eyebrow">A.C.EON // CYBER RANGE</div>
+    <h1 class="wordmark">БРЕШЬ</h1>
+    <p class="tagline">Полигон кибер-атаки и защиты. Каждое «дело» — игра-курс: сюжет, уровни, нарастающая сложность. На верхних уровнях — реальный код, который движок исполняет. Всё в песочнице, никаких настоящих систем.</p>
+    <div class="rank" id="rank"></div>
+  </header>
+  <main class="catalog" id="catalog"></main>
+  <footer class="hub-foot">
+    <span>A.C.EON Studio · vanilla · оффлайн</span>
+    <span id="reset-all" class="reset-all">сбросить прогресс</span>
+  </footer>
+</div>
 
-<main class="catalog" id="catalog"></main>
+<!-- ======= COURSE APP (view) ======= -->
+<div id="app" style="display:none"></div>
 
-<footer class="hub-foot">
-  <span>A.C.EON Studio · vanilla · оффлайн</span>
-  <span id="reset-all" class="reset-all">сбросить прогресс</span>
-</footer>
+<script src="engine.js"></script>
+<script src="sqli.js"></script>
+<script>
+/* ---- catalog (add a course = add a *.js + one line here) ---- */
+var COURSES=[
+  {id:'sqli', code:'ДОСЬЕ · SQLI', icon:'⌘', name:'SQL-инъекция',
+   desc:'Два дела: обход входа в NEO-BANK и кража данных из ARCHIVE-7. Обход, UNION, слепая инъекция — и защита настоящим кодом.',
+   data:(typeof SQLI_COURSE!=='undefined'?SQLI_COURSE:null), levels:7, status:'avail'},
+  {id:'brute', code:'ДЕЛО · BRUTE', icon:'⧉', name:'Брутфорс паролей', desc:'Подбор, словари, rate-limit, 2FA. В разработке.', data:null, levels:4, status:'soon'},
+  {id:'xss', code:'ДЕЛО · XSS', icon:'❰❱', name:'XSS', desc:'Внедрение скрипта, угон сессии, экранирование, CSP. В разработке.', data:null, levels:4, status:'soon'},
+];
+var store={get:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
+  del:function(k){try{localStorage.removeItem(k);}catch(e){}}};
 
-<script src="hub.js"></script>
+function renderCatalog(){
+  var cat=document.getElementById('catalog');cat.innerHTML='';var totalDone=0,totalLevels=0;
+  COURSES.forEach(function(c){
+    var done=store.get('bresh:progress:'+c.id,0);totalDone+=done;totalLevels+=c.levels;
+    var pct=Math.round(done/c.levels*100),avail=c.status==='avail';
+    var node=document.createElement(avail?'a':'div');
+    node.className='course '+(avail?'avail':'locked');if(avail)node.href='javascript:void(0)';
+    node.innerHTML='<div class="c-top"><span class="c-icon">'+c.icon+'</span><span class="c-status '+(avail?'on':'')+'">'+(avail?'доступно':'скоро')+'</span></div>'+
+      '<div class="c-code">'+c.code+'</div><h2 class="c-name">'+c.name+'</h2><p class="c-desc">'+c.desc+'</p>'+
+      '<div class="c-foot"><div class="c-prog"><div class="c-bar"><i style="width:'+pct+'%"></i></div><span class="c-pct">'+done+'/'+c.levels+'</span></div>'+
+      '<span class="c-go">'+(avail?(done>0?'продолжить ▸':'начать ▸'):'🔒')+'</span></div>';
+    if(avail&&c.data)node.onclick=function(){enterCourse(c);};
+    cat.appendChild(node);
+  });
+  var title=totalDone===0?'НОВОБРАНЕЦ':totalDone<3?'ОПЕРАТИВНИК':totalDone<7?'АНАЛИТИК':'ПРИЗРАК';
+  document.getElementById('rank').innerHTML='ранг: <b>'+title+'</b> · пройдено уровней: <b>'+totalDone+'</b> / '+totalLevels;
+}
+function enterCourse(c){
+  document.getElementById('hub').style.display='none';
+  var app=document.getElementById('app');app.style.display='block';app.innerHTML='';
+  window.scrollTo(0,0);
+  CyberEngine.boot(c.data);
+}
+/* engine calls this to return to the portal (no page navigation) */
+window.CYBER_HOME=function(){
+  var app=document.getElementById('app');app.style.display='none';app.innerHTML='';
+  document.getElementById('hub').style.display='';window.scrollTo(0,0);renderCatalog();
+};
+
+document.getElementById('reset-all').onclick=function(){
+  if(confirm('Сбросить весь прогресс и выбранные сложности?')){
+    COURSES.forEach(function(c){store.del('bresh:progress:'+c.id);store.del('bresh:diff:'+c.id);});renderCatalog();
+  }
+};
+
+/* ambient starfield */
+(function(){var c=document.getElementById('bg');if(!c)return;var x=c.getContext('2d'),w,h,st,mx=0,my=0;
+ function sz(){w=c.width=innerWidth;h=c.height=innerHeight;st=Array.from({length:Math.min(90,Math.floor(w*h/16000))},function(){return{x:Math.random()*w,y:Math.random()*h,z:Math.random()*.8+.2,t:Math.random()*6};});}
+ sz();addEventListener('resize',sz);addEventListener('mousemove',function(e){mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;});
+ (function loop(t){requestAnimationFrame(loop);x.clearRect(0,0,w,h);st.forEach(function(s){var px=s.x+mx*22*s.z,py=s.y+my*22*s.z,a=.2+Math.abs(Math.sin(t/900+s.t))*.5*s.z;x.fillStyle='rgba(120,150,170,'+a+')';x.fillRect(px,py,s.z*1.6,s.z*1.6);});})(0);})();
+
+renderCatalog();
+</script>
 </body>
 </html>

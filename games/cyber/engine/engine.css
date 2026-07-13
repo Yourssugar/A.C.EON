@@ -187,3 +187,101 @@ code i{color:var(--atk-hi);font-style:normal}
 .ce-toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:30;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:.7rem 1.2rem;font-size:.82rem;color:var(--ink);animation:rise .25s ease}
 @keyframes rise{from{opacity:0;transform:translate(-50%,10px)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}#bg{display:none}}
+
+/* ---- canvas DB graph ---- */
+.tg-graph{width:100%;height:120px;display:block;background:#05070B;border:1px solid var(--line2);border-radius:var(--r);margin-bottom:1rem}
+/* breach glitch on target panel */
+.ce-target.glitch{animation:glitch .45s steps(2) both}
+@keyframes glitch{0%{transform:translate(0)}20%{transform:translate(-2px,1px);box-shadow:0 0 0 100vmax rgba(255,59,84,.06) inset}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-1px)}80%{transform:translate(1px,1px)}100%{transform:translate(0)}}
+
+/* ---- case dividers in ladder ---- */
+.ce-case-div{display:flex;flex-direction:column;gap:.1rem;padding:.3rem .8rem .3rem 0;margin-right:.3rem;border-left:0;flex:0 0 auto}
+.ccd-code{font-family:var(--disp);font-weight:700;font-size:.7rem;letter-spacing:.16em;color:var(--atk)}
+.ccd-title{font-size:.64rem;color:var(--faint);letter-spacing:.04em;max-width:130px}
+.ce-ladder{align-items:stretch}
+.ce-case-div+.ce-step{border-left:2px solid var(--atk-dk)}
+
+/* ---- story skip ---- */
+.ce-skip{align-self:flex-start;padding:.4rem .9rem;border:1px solid var(--line);color:var(--faint);border-radius:var(--r);font-size:.76rem;transition:.15s;margin-bottom:.4rem}
+.ce-skip:hover{color:var(--ink);border-color:var(--dim)}
+
+/* ---- blind extractor ---- */
+.blind-orb{font-family:var(--disp);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:1.1rem;text-align:center;padding:1.4rem;color:var(--dim);border:1px dashed var(--line);border-radius:var(--r)}
+.blind-orb.ok{color:var(--bad);border-color:var(--bad);border-style:solid}
+.blind-orb.no{color:var(--dim)}
+.blind-slots{display:flex;gap:.6rem;margin:1rem 0}
+.blind-slot{width:52px;height:60px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.6rem;background:#05070B;border:1px solid var(--line);border-radius:var(--r);color:var(--faint)}
+.blind-slot.got{color:var(--good);border-color:var(--good);box-shadow:0 0 14px rgba(52,227,138,.25)}
+.blind-pad{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;margin-top:.5rem}
+.blind-key{padding:.7rem;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);font-family:var(--mono);font-size:1rem;color:var(--ink);transition:.12s}
+.blind-key:hover{border-color:var(--atk);transform:translateY(-1px)}
+.blind-key:active{background:var(--atk-dk)}
+
+/* =========================================================
+   HACKER FX LAYER — CRT, Kali terminal, breach animations
+   ========================================================= */
+/* stage boot-in + CRT phosphor */
+.ce-grid{animation:bootin .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes bootin{from{opacity:0;transform:translateY(10px) scale(.995);filter:brightness(1.4)}}
+.ce-panel{position:relative;overflow:hidden}
+.ce-panel::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px);mix-blend-mode:overlay;opacity:.6}
+.ce-target::before{content:"";position:absolute;left:0;right:0;top:0;height:40px;pointer-events:none;background:linear-gradient(180deg,rgba(53,224,214,.06),transparent);animation:sweep 5s linear infinite}
+@keyframes sweep{0%{transform:translateY(-40px)}100%{transform:translateY(600px)}}
+.cp-name{text-shadow:0 0 8px currentColor}
+
+/* server-response typing cursor */
+.typing::after{content:"▋";margin-left:1px;animation:blink 1s steps(1) infinite;opacity:.9}
+@keyframes blink{50%{opacity:0}}
+
+/* ---- Kali-style terminal ---- */
+.kterm{background:#05070B;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-family:var(--mono);font-size:.8rem}
+.kterm-bar{display:flex;align-items:center;gap:.4rem;padding:.45rem .7rem;background:linear-gradient(180deg,#12202a,#0b1620);border-bottom:1px solid var(--line)}
+.kterm-bar i{width:9px;height:9px;border-radius:50%}
+.kterm-bar i:nth-child(1){background:#ff5f57}.kterm-bar i:nth-child(2){background:#febc2e}.kterm-bar i:nth-child(3){background:#28c840}
+.kterm-bar span{margin-left:.5rem;font-size:.7rem;color:#7fd7cf;letter-spacing:.03em}
+.kterm .term-out{padding:.6rem .8rem 0;max-height:190px;overflow-y:auto;color:var(--dim)}
+.kterm-line,.kterm-line2{padding:0 .8rem;line-height:1.7}
+.kterm-line{padding-top:.3rem}
+.kterm-line2{display:flex;align-items:center;padding-bottom:.7rem}
+.kp-1{color:#3f6d78}.kp-u{color:var(--good);font-weight:700}.kp-h{color:#5fb0ff;font-weight:700}.kp-p{color:#c98bff}.kp-d{color:var(--good);font-weight:700;margin-right:.1rem}
+.kterm .term-in{flex:1;background:none;border:0;color:#d7ffe9;font-family:var(--mono);font-size:.8rem;outline:none;caret-color:var(--good)}
+.kterm .term-out .t{display:block;white-space:pre-wrap;word-break:break-word;text-shadow:0 0 6px rgba(0,0,0,.4)}
+.kterm .t.you{color:#d7ffe9}.kterm .t.sys{color:#5a7d86}.kterm .t.ok{color:var(--good);text-shadow:0 0 8px rgba(52,227,138,.4)}.kterm .t.warn{color:var(--bad)}.kterm .t.info{color:#5fb0ff}
+
+/* ---- ACCESS GRANTED / DENIED overlay ---- */
+.access-flash{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:afwrap 1.1s ease both}
+@keyframes afwrap{0%{opacity:0}10%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.access-flash.grant{background:radial-gradient(circle,rgba(52,227,138,.12),rgba(4,6,10,.55))}
+.access-flash.deny{background:radial-gradient(circle,rgba(255,59,84,.12),rgba(4,6,10,.55))}
+.af-text{font-family:var(--disp);font-weight:700;font-size:clamp(1.8rem,7vw,4rem);letter-spacing:.12em;position:relative;animation:afglitch .12s steps(2) infinite}
+.access-flash.grant .af-text{color:var(--good);text-shadow:0 0 30px rgba(52,227,138,.6)}
+.access-flash.deny .af-text{color:var(--bad);text-shadow:0 0 30px rgba(255,59,84,.6)}
+.af-text::before,.af-text::after{content:attr(data-t);position:absolute;left:0;top:0;width:100%;clip-path:inset(0 0 50% 0);opacity:.8}
+.af-text::before{color:#5fb0ff;transform:translate(-3px,-1px)}
+.af-text::after{color:#ff5f57;transform:translate(3px,1px);clip-path:inset(50% 0 0 0)}
+@keyframes afglitch{0%{transform:translate(0)}50%{transform:translate(-2px,1px)}100%{transform:translate(2px,-1px)}}
+
+/* ---- hex rain burst over target on breach ---- */
+.hexrain{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hexrain .hx{position:absolute;top:-1.2em;font-family:var(--mono);font-size:.8rem;color:var(--bad);text-shadow:0 0 8px rgba(255,59,84,.7);animation:hxfall linear forwards}
+@keyframes hxfall{to{transform:translateY(120%);opacity:0}}
+
+/* stronger breach glitch on target */
+.ce-target.glitch{animation:glitch2 .45s steps(2) both}
+@keyframes glitch2{0%{transform:translate(0);filter:none}15%{transform:translate(-3px,1px);filter:hue-rotate(-20deg) saturate(1.6)}30%{transform:translate(3px,-2px) skewX(1deg)}45%{transform:translate(-2px,1px);box-shadow:0 0 0 100vmax rgba(255,59,84,.05) inset}70%{transform:translate(2px,1px) skewX(-1deg)}100%{transform:translate(0)}}
+
+/* ---- code patch animation (defense) ---- */
+.code-vuln.patching{animation:redpulse .5s;text-decoration:line-through;text-decoration-color:var(--bad);opacity:.6}
+@keyframes redpulse{50%{box-shadow:0 0 24px rgba(255,59,84,.35)}}
+.code-vuln.patched{background:#0c1d12;border-color:rgba(52,227,138,.4);color:#b8ffd4;text-decoration:none;opacity:1}
+.patch-stamp{display:inline-block;margin-top:.5rem;font-family:var(--disp);font-weight:700;letter-spacing:.14em;color:var(--good);border:1px solid var(--good);border-radius:var(--r);padding:.2rem .6rem;font-size:.72rem;animation:stampin .3s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes stampin{from{opacity:0;transform:scale(1.5) rotate(-4deg)}}
+
+/* secured flash */
+.access-flash.secured{background:radial-gradient(circle,rgba(52,227,138,.14),rgba(4,6,10,.55))}
+.access-flash.secured .af-text{color:var(--good);text-shadow:0 0 30px rgba(52,227,138,.6)}
+
+/* blind orb pulse */
+.blind-orb.ok{animation:orbhit .4s}
+@keyframes orbhit{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.ce-grid,.af-text,.ce-target::before,.ce-panel::after,.hexrain{animation:none!important}.typing::after{animation:none}}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ДЕЛО #01 — SQL-инъекция · БРЕШЬ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/engine.css">
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="scan" aria-hidden="true"></div>
+<div id="app"></div>
+<script src="../../engine/engine.js"></script>
+<script src="course.js"></script>
+<script>
+  // ambient starfield (shared look)
+  (function(){var c=document.getElementById('bg');if(!c)return;var x=c.getContext('2d'),w,h,st,mx=0,my=0;
+   function sz(){w=c.width=innerWidth;h=c.height=innerHeight;st=Array.from({length:Math.min(80,Math.floor(w*h/17000))},function(){return{x:Math.random()*w,y:Math.random()*h,z:Math.random()*.8+.2,t:Math.random()*6};});}
+   sz();addEventListener('resize',sz);addEventListener('mousemove',function(e){mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;});
+   (function loop(t){requestAnimationFrame(loop);x.clearRect(0,0,w,h);st.forEach(function(s){var px=s.x+mx*20*s.z,py=s.y+my*20*s.z,a=.2+Math.abs(Math.sin(t/900+s.t))*.5*s.z;x.fillStyle='rgba(120,150,170,'+a+')';x.fillRect(px,py,s.z*1.6,s.z*1.6);});})(0);})();
+  CyberEngine.boot(SQLI_COURSE);
+</script>
+</body>
+</html>

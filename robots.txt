@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yourssugar.github.io/A.C.EON/sitemap.xml

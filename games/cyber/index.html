@@ -37,24 +37,29 @@
 /* ---- catalog (add a course = add a *.js + one line here) ---- */
 var COURSES=[
   {id:'sqli', code:'ДОСЬЕ · SQLI', icon:'⌘', name:'SQL-инъекция',
-   desc:'Два дела: обход входа в NEO-BANK и кража данных из ARCHIVE-7. Обход, UNION, слепая инъекция — и защита настоящим кодом.',
-   data:(typeof SQLI_COURSE!=='undefined'?SQLI_COURSE:null), levels:7, status:'avail'},
+   desc:'Три дела: обход входа, разведка структуры и UNION-извлечение всей базы. Терминал, куратор и защита реальным кодом.',
+   data:(typeof SQLI_COURSE!=='undefined'?SQLI_COURSE:null), status:'avail'},
   {id:'brute', code:'ДЕЛО · BRUTE', icon:'⧉', name:'Брутфорс паролей', desc:'Подбор, словари, rate-limit, 2FA. В разработке.', data:null, levels:4, status:'soon'},
   {id:'xss', code:'ДЕЛО · XSS', icon:'❰❱', name:'XSS', desc:'Внедрение скрипта, угон сессии, экранирование, CSP. В разработке.', data:null, levels:4, status:'soon'},
 ];
 var store={get:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
   del:function(k){try{localStorage.removeItem(k);}catch(e){}}};
 
+function courseLevels(c){
+  if(c.data&&c.data.cases)return c.data.cases.reduce(function(n,cs){return n+cs.lessons.length;},0);
+  return c.levels||4;
+}
 function renderCatalog(){
   var cat=document.getElementById('catalog');cat.innerHTML='';var totalDone=0,totalLevels=0;
   COURSES.forEach(function(c){
-    var done=store.get('bresh:progress:'+c.id,0);totalDone+=done;totalLevels+=c.levels;
-    var pct=Math.round(done/c.levels*100),avail=c.status==='avail';
+    var lv=courseLevels(c);
+    var done=(store.get('bresh:'+c.id+':done',[])||[]).length;totalDone+=done;totalLevels+=lv;
+    var pct=Math.round(done/lv*100),avail=c.status==='avail';
     var node=document.createElement(avail?'a':'div');
     node.className='course '+(avail?'avail':'locked');if(avail)node.href='javascript:void(0)';
     node.innerHTML='<div class="c-top"><span class="c-icon">'+c.icon+'</span><span class="c-status '+(avail?'on':'')+'">'+(avail?'доступно':'скоро')+'</span></div>'+
       '<div class="c-code">'+c.code+'</div><h2 class="c-name">'+c.name+'</h2><p class="c-desc">'+c.desc+'</p>'+
-      '<div class="c-foot"><div class="c-prog"><div class="c-bar"><i style="width:'+pct+'%"></i></div><span class="c-pct">'+done+'/'+c.levels+'</span></div>'+
+      '<div class="c-foot"><div class="c-prog"><div class="c-bar"><i style="width:'+pct+'%"></i></div><span class="c-pct">'+done+'/'+lv+'</span></div>'+
       '<span class="c-go">'+(avail?(done>0?'продолжить ▸':'начать ▸'):'🔒')+'</span></div>';
     if(avail&&c.data)node.onclick=function(){enterCourse(c);};
     cat.appendChild(node);
@@ -75,8 +80,8 @@ window.CYBER_HOME=function(){
 };
 
 document.getElementById('reset-all').onclick=function(){
-  if(confirm('Сбросить весь прогресс и выбранные сложности?')){
-    COURSES.forEach(function(c){store.del('bresh:progress:'+c.id);store.del('bresh:diff:'+c.id);});renderCatalog();
+  if(confirm('Сбросить весь прогресс по всем делам?')){
+    COURSES.forEach(function(c){store.del('bresh:'+c.id+':done');});renderCatalog();
   }
 };
 

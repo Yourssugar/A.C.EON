@@ -831,6 +831,21 @@
         animation-iteration-count: 1 !important;
       }
     }
+
+    .lesson-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .lesson-head .lesson-kicker { margin: 0; }
+    .deep-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px;
+      border: 1px solid rgba(69, 170, 255, 0.42); border-radius: 4px;
+      background: rgba(69, 170, 255, 0.07);
+      color: #a9d8f0; font-family: var(--mono); font-size: 0.7rem;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    }
+    .deep-link:hover, .deep-link:focus-visible {
+      border-color: rgba(69, 170, 255, 0.8); background: rgba(69, 170, 255, 0.14);
+      color: #eef9ff; outline: none; transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -894,7 +909,10 @@
         </div>
 
         <section class="lesson" id="interfaces">
-          <p class="lesson-kicker">01 / DOORS TO THE MACHINE</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">01 / DOORS TO THE MACHINE</p>
+            <a class="deep-link" href="interfaces/">разобрать подробнее →</a>
+          </div>
           <h2>Интерфейс — это дверь, а не весь ИИ</h2>
           <p>
             Один и тот же человек может зайти в здание через главный вход,
@@ -924,7 +942,10 @@
         </section>
 
         <section class="lesson" id="models">
-          <p class="lesson-kicker">02 / MODEL TYPES</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">02 / MODEL TYPES</p>
+            <a class="deep-link" href="model-types/">разобрать подробнее →</a>
+          </div>
           <h2>Разные модели понимают разные сигналы</h2>
           <p>
             “ИИ” — слишком общее слово. Одни модели сильны в тексте, другие
@@ -960,7 +981,10 @@
         </section>
 
         <section class="lesson" id="anatomy">
-          <p class="lesson-kicker">03 / PROMPT ANATOMY</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">03 / PROMPT ANATOMY</p>
+            <a class="deep-link" href="anatomy/">разобрать подробнее →</a>
+          </div>
           <h2>Анатомия нормального запроса</h2>
           <p>
             Хороший запрос похож на короткое техзадание, только без мраморного

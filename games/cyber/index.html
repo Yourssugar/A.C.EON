@@ -37,7 +37,7 @@
 /* ---- catalog (add a course = add a *.js + one line here) ---- */
 var COURSES=[
   {id:'sqli', code:'ДОСЬЕ · SQLI', icon:'⌘', name:'SQL-инъекция',
-   desc:'Три дела: обход входа, разведка структуры и UNION-извлечение всей базы. Терминал, куратор и защита реальным кодом.',
+   desc:'Пять дел: обход входа, разведка, UNION-извлечение, обход WAF и error-based. Терминал, куратор, защита реальным кодом.',
    data:(typeof SQLI_COURSE!=='undefined'?SQLI_COURSE:null), status:'avail'},
   {id:'brute', code:'ДЕЛО · BRUTE', icon:'⧉', name:'Брутфорс паролей', desc:'Подбор, словари, rate-limit, 2FA. В разработке.', data:null, levels:4, status:'soon'},
   {id:'xss', code:'ДЕЛО · XSS', icon:'❰❱', name:'XSS', desc:'Внедрение скрипта, угон сессии, экранирование, CSP. В разработке.', data:null, levels:4, status:'soon'},
@@ -81,7 +81,7 @@ window.CYBER_HOME=function(){
 
 document.getElementById('reset-all').onclick=function(){
   if(confirm('Сбросить весь прогресс по всем делам?')){
-    COURSES.forEach(function(c){store.del('bresh:'+c.id+':done');});renderCatalog();
+    COURSES.forEach(function(c){store.del('bresh:'+c.id+':done');store.del('bresh:'+c.id+':wins');});renderCatalog();
   }
 };
 

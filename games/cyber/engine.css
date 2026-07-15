@@ -189,3 +189,4 @@ button{font-family:inherit;cursor:pointer;color:inherit;background:none;border:n
 .rail-step.cur{border-color:var(--atk);color:var(--ink)}
 .rail-step.cur .rs-n{color:var(--atk)}
 .rail-step.cur.done .rs-n{color:var(--good)}
+.leak-val{color:var(--bad);font-weight:700;text-shadow:0 0 10px rgba(255,59,84,.5);background:rgba(255,59,84,.1);padding:0 4px;border-radius:3px}

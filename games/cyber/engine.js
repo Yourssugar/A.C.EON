@@ -15,18 +15,23 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 /* ============ SQL SIMULATION CORE (validated) ============ */
 let DB=null,SCHEMA=null,TABLES=null;const BASECOLS=3;
 function loadDB(course){DB=course.db;SCHEMA=course.schema||{};TABLES=Object.keys(SCHEMA);}
-const stripBlock=s=>s.replace(/\/\*.*?\*\//g,' ');
+const stripComments=s=>s.replace(/\/\*!\d*([\s\S]*?)\*\//g,'$1').replace(/\/\*[\s\S]*?\*\//g,' ');
 const cutLine=s=>{const i=s.search(/--\s|#/);return i>=0?s.slice(0,i):s;};
 const balanced=s=>((s.match(/'/g)||[]).length%2===0);
+function hexDecode(h){h=h.replace(/^0x/i,'');let o='';for(let i=0;i<h.length;i+=2)o+=String.fromCharCode(parseInt(h.substr(i,2),16));return o;}
+function litVal(t){t=t.trim();const s=/^'([^']*)'$/.exec(t);if(s)return s[1];if(/^0x[0-9a-f]+$/i.test(t))return hexDecode(t);if(/^\d+$/.test(t))return +t;return t;}
 function applyFilter(p,f){
   if(!f)return {p,blocked:null};
   if(f.blockUpperOR&&/\bOR\b/.test(p))return {p,blocked:'WAF: обнаружено ключевое слово OR (верхний регистр)'};
+  if(f.blockSpace&&/\s/.test(p))return {p,blocked:'WAF: пробелы в запросе запрещены'};
+  if(f.blockQuote&&/'/.test(p))return {p,blocked:'WAF: одинарная кавычка запрещена'};
+  if(f.blockKeywords){const inspect=p.replace(/\/\*![\s\S]*?\*\//g,' ');if(/\b(union|select)\b/i.test(inspect))return {p,blocked:'WAF: ключевое слово union/select'};}
   if(f.stripDashDash)p=p.replace(/--\s.*$/,'');
   return {p,blocked:null};
 }
 function evalAuth(payload,filters){
   const af=applyFilter(payload,filters);if(af.blocked)return {kind:'blocked',msg:af.blocked};payload=af.p;
-  let cond=`login='${payload}' AND pass='__x__'`;cond=cutLine(stripBlock(cond));
+  let cond=`login='${payload}' AND pass='__x__'`;cond=cutLine(stripComments(cond));
   if(!balanced(cond))return {kind:'error',msg:"You have an error in your SQL syntax near \"'\""};
   let ev=cond.replace(/login\s*=\s*'([^']*)'/gi,(m,v)=>`LOGIN==${JSON.stringify(v)}`)
     .replace(/pass\s*=\s*'([^']*)'/gi,'false')
@@ -42,7 +47,8 @@ function evalAuth(payload,filters){
 }
 function evalSearch(payload,filters){
   const af=applyFilter(payload,filters);if(af.blocked)return {kind:'blocked',msg:af.blocked};payload=af.p;
-  let raw=`name LIKE '%${payload}%'`;raw=cutLine(stripBlock(raw));
+  let raw=`name LIKE '%${payload}%'`;raw=cutLine(stripComments(raw));
+  const eb=evalErrorBased(raw);if(eb)return eb;
   const ob=/order\s+by\s+(\d+)/i.exec(raw);
   if(ob){const n=+ob[1];if(!balanced(raw.replace(/order\s+by\s+\d+/i,'')))return sqlErr();
     return n>BASECOLS?{kind:'orderby',n,ok:false,msg:`Unknown column '${n}' in 'order clause'`}:{kind:'orderby',n,ok:true};}
@@ -52,6 +58,65 @@ function evalSearch(payload,filters){
   const term=payload.replace(/%/g,'').toLowerCase();
   const rows=DB.products.filter(p=>!term||p.name.toLowerCase().includes(term)).map(p=>[p.id,p.name,p.price]);
   return {kind:'rows',cols:['id','name','price'],rows,note:rows.length+' результат(ов)'};
+}
+/* numeric injection point: WHERE id = <input>  (no surrounding quotes) */
+function evalSearchNum(payload,filters){
+  const af=applyFilter(payload,filters);if(af.blocked)return {kind:'blocked',msg:af.blocked};payload=af.p;
+  let raw=cutLine(stripComments(`id = ${payload}`));
+  const eb=evalErrorBased(raw);if(eb)return eb;
+  const ob=/order\s+by\s+(\d+)/i.exec(raw);
+  if(ob){const n=+ob[1];return n>BASECOLS?{kind:'orderby',n,ok:false,msg:`Unknown column '${n}' in 'order clause'`}:{kind:'orderby',n,ok:true};}
+  const um=/union\s+(?:all\s+)?select\s+([\s\S]+)$/i.exec(raw);
+  if(um)return evalUnion(um[1]);
+  const id=parseInt(payload,10);
+  const rows=DB.products.filter(p=>p.id===id).map(p=>[p.id,p.name,p.price]);
+  return {kind:'rows',cols:['id','name','price'],rows,note:rows.length+' результат(ов)'};
+}
+/* ---- error-based extraction (extractvalue / updatexml) ---- */
+function evalErrorBased(raw){
+  const fn=/\b(extractvalue|updatexml)\s*\(/i.exec(raw);if(!fn)return null;
+  let value;
+  const cc=/concat\s*\(/i.exec(raw);
+  if(cc){
+    const open=raw.indexOf('(',cc.index);
+    const inner=extractParens(raw,open);
+    value=splitTop(inner).map(a=>{a=a.trim();
+      if(/^0x[0-9a-f]+$/i.test(a))return hexDecode(a);
+      const sub=extractSelectSubquery(a);if(sub){const v=evalScalarSelect(sub);return v==null?'NULL':String(v);}
+      const v=scalarExpr(a,[]);return v==null?'NULL':String(v);
+    }).join('');
+  } else {
+    const sub=extractSelectSubquery(raw);const v=sub?evalScalarSelect(sub):null;value=(v==null?'NULL':String(v));
+  }
+  return {kind:'errorleak',fn:fn[1].toLowerCase(),value,msg:`XPATH syntax error: '${value.slice(0,32)}'`,leaked:'через ошибку: '+String(value).replace(/^~/,'')};
+}
+function extractParens(s,open){let depth=0;for(let j=open;j<s.length;j++){if(s[j]==='(')depth++;else if(s[j]===')'){depth--;if(depth===0)return s.slice(open+1,j);}}return s.slice(open+1);}
+function extractSelectSubquery(s){
+  const i=s.toLowerCase().indexOf('select');if(i<0)return null;
+  let depth=1,j=i;for(;j<s.length;j++){if(s[j]==='(')depth++;else if(s[j]===')'){depth--;if(depth===0)break;}}
+  return s.slice(i,j);
+}
+function evalScalarSelect(sql){
+  let m=/select\s+([\s\S]+?)\s+from\s+([a-z_.]+)(?:\s+where\s+([a-z_]+)\s*=\s*('[^']*'|0x[0-9a-f]+|\d+))?/i.exec(sql);
+  if(!m){const f=/select\s+([\s\S]+)/i.exec(sql);return f?scalarExpr(f[1].trim(),{}):null;}
+  const expr=m[1].trim(),table=m[2].toLowerCase(),wcol=m[3],wval=m[4];
+  let src;
+  if(table==='information_schema.columns')src=(SCHEMA[wval?String(litVal(wval)):'users']||[]).map(c=>({column_name:c}));
+  else if(table==='information_schema.tables')src=TABLES.map(t=>({table_name:t}));
+  else src=(DB[table]||[]).slice();
+  if(wcol&&wval!=null&&DB[table]){const v=String(litVal(wval));src=src.filter(r=>String(r[wcol.toLowerCase()])===v);}
+  return scalarExpr(expr,src);
+}
+function scalarExpr(expr,src){
+  if(/version\s*\(\s*\)/i.test(expr))return '8.0.36-0ubuntu';
+  if(/database\s*\(\s*\)/i.test(expr))return 'neobank';
+  if(/\buser\s*\(\s*\)/i.test(expr))return 'app@localhost';
+  const gc=/group_concat\s*\(\s*([a-z_]+)\s*\)/i.exec(expr);
+  if(gc){const c=gc[1].toLowerCase();return (src||[]).map(r=>r[c]).join(',');}
+  const cc=/^concat\s*\(([\s\S]+)\)$/i.exec(expr);
+  if(cc)return splitTop(cc[1]).map(p=>{const v=litVal(p);return (src&&src[0]&&src[0][String(p).toLowerCase()]!=null)?src[0][String(p).toLowerCase()]:v;}).join('');
+  const row=(src&&src[0])||{};const k=expr.toLowerCase();
+  return row[k]!=null?row[k]:litVal(expr);
 }
 function sqlErr(){return {kind:'error',msg:"You have an error in your SQL syntax; check the manual near '%''"};}
 function evalUnion(sel){
@@ -82,8 +147,14 @@ function describeLeak(from,where){if(from==='information_schema.tables')return '
 let E=null,root=null;
 function goHome(){if(window.CYBER_HOME)window.CYBER_HOME();else location.href='../../index.html';}
 function boot(course){root=$('#app')||document.body;loadDB(course);
-  E={course,done:new Set(store.get('bresh:'+course.id+':done',[])),ci:0,li:0,sess:null};renderMap();}
+  E={course,done:new Set(store.get('bresh:'+course.id+':done',[])),wins:store.get('bresh:'+course.id+':wins',{})||{},ci:0,li:0,sess:null};renderMap();}
 function saveDone(){store.set('bresh:'+E.course.id+':done',[...E.done]);}
+function saveWins(){store.set('bresh:'+E.course.id+':wins',E.wins);}
+/* battery = payloads the player actually used to solve this case's attacks (fallback: lesson defaults) */
+function caseBattery(ci){const cs=E.course.cases[ci];const list=[];let own=false;
+  cs.lessons.forEach((l,li)=>{if(l.kind!=='attack')return;const w=E.wins[key(ci,li)];
+    if(w){own=true;list.push(w);}else if(l.solutionPayload)list.push(l.solutionPayload);});
+  return {list:list.filter(Boolean),own};}
 const key=(ci,li)=>ci+':'+li;
 const lessonDone=(ci,li)=>E.done.has(key(ci,li));
 function caseDone(ci){return E.course.cases[ci].lessons.every((_,li)=>lessonDone(ci,li));}
@@ -165,23 +236,26 @@ function runCmd(raw,cs,lv){
   return kout('warn','неизвестная команда: '+cmd+' (help)');
 }
 function doTry(payload,cs,lv){
-  const r=(lv.endpoint==='auth'?evalAuth(payload,lv.filters):evalSearch(payload,lv.filters));
+  const r=(lv.endpoint==='auth'?evalAuth(payload,lv.filters):lv.endpoint==='search-num'?evalSearchNum(payload,lv.filters):evalSearch(payload,lv.filters));
   showQuery(payload,lv);
   const s=E.sess;
   if(r.kind==='orderby')(r.ok?s.obOK:s.obErr).add(r.n);
   if(r.kind==='union'){if(r.leaked)s.leaks.add(r.leaked);if(r.gc)s.usedGC=true;}
+  if(r.kind==='errorleak'){s.leaks.add(r.leaked);s.lastLeak=r.value;}
   s.last=r;respond(r);
   let won=false;try{won=lv.win(r,s);}catch(e){}
-  if(won)setTimeout(()=>lessonSolved(cs,lv),650);
+  if(won){if(lv.kind!=='defense'){E.wins[key(E.ci,E.li)]=payload;saveWins();}setTimeout(()=>lessonSolved(cs,lv),650);}
 }
 function showQuery(payload,lv){const q=$('#q-code');if(!q)return;
-  const inj=/['"]|--|#|union|select|\bor\b/i.test(payload);
+  const inj=/['"]|--|#|union|select|\bor\b|extractvalue|updatexml/i.test(payload);
   const shown=`<span class="${inj?'q-inj':'q-str'}">${esc(payload)}</span>`;
   if(lv.endpoint==='auth')q.innerHTML=`<span class="q-kw">SELECT</span> * <span class="q-kw">FROM</span> users\n<span class="q-kw">WHERE</span> login='${shown}' <span class="q-kw">AND</span> pass='••••'`;
+  else if(lv.endpoint==='search-num')q.innerHTML=`<span class="q-kw">SELECT</span> id, name, price <span class="q-kw">FROM</span> products\n<span class="q-kw">WHERE</span> id = ${shown}`;
   else q.innerHTML=`<span class="q-kw">SELECT</span> id, name, price <span class="q-kw">FROM</span> products\n<span class="q-kw">WHERE</span> name <span class="q-kw">LIKE</span> '%${shown}%'`;}
 function respond(r){const resp=$('#resp'),dump=$('#dump');dump.innerHTML='';
   const say=(cls,txt)=>{resp.innerHTML='';const l=el('div','resp-line '+cls);resp.appendChild(l);typeInto(l,txt,10);};
   if(r.kind==='blocked')say('bad','403 Forbidden — '+r.msg);
+  else if(r.kind==='errorleak'){resp.innerHTML='';const l=el('div','resp-line bad');resp.appendChild(l);typeInto(l,'500 Internal Server Error\n'+r.msg,10,()=>{const d=el('div','dcap');d.innerHTML='утечка через ошибку → <span class="leak-val">'+esc(r.value)+'</span>';dump.appendChild(d);});fx();}
   else if(r.kind==='error')say('bad','500 Internal Server Error\n'+r.msg);
   else if(r.kind==='deny')say('warn','200 OK — неверные учётные данные');
   else if(r.kind==='orderby')r.ok?say('ok','200 OK — сортировка по столбцу '+r.n+' сработала'):say('bad','500 — '+r.msg);
@@ -220,30 +294,34 @@ function defenseView(cs,lv){
     <div class="ed-fb" id="ed-fb"></div>
     <div class="ed-actions"><button class="run-def" id="run-def">▸ прогнать защиту</button><button class="cur-btn ghost" id="ed-hint">подсказка</button></div>`;
   left.appendChild(ed);
+  // battery = payloads the player used to break in (fallback: defaults)
+  const derived=caseBattery(E.ci);
+  E.sess.battery=(derived.list.length?derived.list:(lv.battery||[]));
+  E.sess.usedOwn=derived.own;
   const bat=el('div','tgt');
   bat.innerHTML=`<div class="tgt-head"><span>БАТАРЕЯ АТАК</span><span class="tgt-badge" id="def-badge">не проверено</span></div>
-    <div class="q-label">боевые пейлоады дела прогоняются по твоему коду</div><div class="battery" id="battery"></div>`;
+    <div class="q-label">${E.sess.usedOwn?'твои пейлоады из этого дела прогоняются по коду':'боевые пейлоады дела прогоняются по коду'}</div><div class="battery" id="battery"></div>`;
   right.appendChild(bat);right.appendChild(curatorPanel(lv));
   grid.append(left,right);root.appendChild(grid);
   $('#to-map').onclick=renderMap;$('#ed-area').value=lv.starter||'';renderBattery(lv,null);
   $('#run-def').onclick=()=>checkDefense(cs,lv);$('#ed-hint').onclick=()=>curatorHint(lv);
 }
-function renderBattery(lv,res){const b=$('#battery');if(!b)return;
-  b.innerHTML=lv.battery.map((p,i)=>{const st=res?res[i]:'?';const cls=st==='blocked'?'ok':(st==='pass'?'bad':'idle');
+function renderBattery(lv,res){const b=$('#battery');if(!b)return;const bat=(E.sess&&E.sess.battery)||lv.battery||[];
+  b.innerHTML=bat.map((p,i)=>{const st=res?res[i]:'?';const cls=st==='blocked'?'ok':(st==='pass'?'bad':'idle');
     return `<div class="bat ${cls}"><code>${esc(p)}</code><span>${st==='blocked'?'отбито ✓':st==='pass'?'ПРОШЛО ✕':'—'}</span></div>`;}).join('')+
     `<div class="bat-legit">легитимные запросы: ${lv.legit.map(x=>`<code>${esc(x)}</code>`).join(' ')}</div>`;}
 function checkDefense(cs,lv){
-  const code=$('#ed-area').value,fb=$('#ed-fb');const v=validateFix(code,lv);
+  const code=$('#ed-area').value,fb=$('#ed-fb');const v=validateFix(code,lv);const bat=(E.sess&&E.sess.battery)||lv.battery||[];
   fb.className='ed-fb '+(v.ok?'ok':'err');fb.textContent=v.msg;
   if(!v.ok){renderBattery(lv,null);return;}
   if(v.mode==='guard'){let fn;try{fn=new Function('input',v.body);fn('t');}catch(e){fb.className='ed-fb err';fb.textContent='✕ ошибка в коде: '+e.message;return;}
-    const res=lv.battery.map(p=>{try{return fn(p)===false?'blocked':'pass';}catch(e){return 'pass';}});
+    const res=bat.map(p=>{try{return fn(p)===false?'blocked':'pass';}catch(e){return 'pass';}});
     const legitOk=lv.legit.every(x=>{try{return fn(x)===true;}catch(e){return false;}});
     renderBattery(lv,res);
     if(res.every(r=>r==='blocked')&&legitOk)defenseWin(cs,lv);
     else if(!res.every(r=>r==='blocked')){fb.className='ed-fb err';fb.textContent='✕ часть атак прошла — ужесточи проверку (см. батарею).';}
     else{fb.className='ed-fb err';fb.textContent='✕ ты блокируешь и легитимные запросы. Так нельзя.';}
-  } else {renderBattery(lv,lv.battery.map(()=>'blocked'));defenseWin(cs,lv);}
+  } else {renderBattery(lv,bat.map(()=>'blocked'));defenseWin(cs,lv);}
 }
 function validateFix(code,lv){const c=code.toLowerCase();
   if(lv.defenseMode==='guard'){if(!/return/.test(c))return {ok:false,msg:'✕ функция должна возвращать true/false.'};return {ok:true,mode:'guard',body:code};}
@@ -289,5 +367,5 @@ function accessFlash(kind,text){const o=el('div','aflash '+kind);const t=el('div
 function securedFlash(){accessFlash('secured','SYSTEM SECURED');}
 function fx(){const t=$('.tgt');if(t){t.classList.add('glitch');setTimeout(()=>t.classList.remove('glitch'),450);}}
 
-return {boot,_auth:evalAuth,_search:evalSearch,_union:evalUnion};
+return {boot,_auth:evalAuth,_search:evalSearch,_searchNum:evalSearchNum,_union:evalUnion,_err:evalErrorBased,_setDB:loadDB};
 })();

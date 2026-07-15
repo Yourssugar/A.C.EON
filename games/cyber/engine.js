@@ -91,6 +91,34 @@ function evalErrorBased(raw){
   return {kind:'errorleak',fn:fn[1].toLowerCase(),value,msg:`XPATH syntax error: '${value.slice(0,32)}'`,leaked:'через ошибку: '+String(value).replace(/^~/,'')};
 }
 function extractParens(s,open){let depth=0;for(let j=open;j<s.length;j++){if(s[j]==='(')depth++;else if(s[j]===')'){depth--;if(depth===0)return s.slice(open+1,j);}}return s.slice(open+1);}
+/* ---- blind injection: boolean + time-based oracle ---- */
+function resolveInner(x){x=x.trim();const sub=extractSelectSubquery(x);if(sub){const v=evalScalarSelect(sub);return v==null?'':v;}return litVal(x);}
+function cmp(a,op,b){const na=/^\d+$/.test(String(a)),nb=/^\d+$/.test(String(b));if(na&&nb){a=+a;b=+b;}else{a=String(a);b=String(b);}switch(op){case'=':return a===b;case'>':return a>b;case'<':return a<b;case'>=':return a>=b;case'<=':return a<=b;}return false;}
+function atomTruth(c){c=c.trim().replace(/^\(([\s\S]*)\)$/,'$1').trim();
+  let m=/subs(?:tr|tring)\s*\(([\s\S]+?),\s*(\d+)\s*,\s*(\d+)\s*\)\s*(>=|<=|=|>|<)\s*('[^']*'|0x[0-9a-f]+|\w+)/i.exec(c);
+  if(m){const val=String(resolveInner(m[1])).substr(+m[2]-1,+m[3]);return cmp(val,m[4],String(litVal(m[5])));}
+  let a=/ascii\s*\(\s*subs(?:tr|tring)\s*\(([\s\S]+?),\s*(\d+)\s*,\s*1\s*\)\s*\)\s*(>=|<=|=|>|<)\s*(\d+)/i.exec(c);
+  if(a){return cmp(String(resolveInner(a[1])).charCodeAt(+a[2]-1)||0,a[3],+a[4]);}
+  let l=/length\s*\(([\s\S]+?)\)\s*(>=|<=|=|>|<)\s*(\d+)/i.exec(c);
+  if(l){return cmp(String(resolveInner(l[1])).length,l[2],+l[3]);}
+  let e=/^(\d+)\s*=\s*(\d+)$/.exec(c);if(e)return e[1]===e[2];
+  return false;}
+function blindTruth(expr){expr=expr.trim();const m=/^\d+\s*(?:and|&&)\s*([\s\S]+)$/i.exec(expr);if(m)return atomTruth(m[1]);if(/^\d+$/.test(expr))return true;return atomTruth(expr);}
+function evalBlind(payload,filters,mode){
+  const af=applyFilter(payload,filters);if(af.blocked)return {kind:'blocked',msg:af.blocked};
+  let raw=cutLine(stripComments(`id = ${af.p}`)).replace(/^id\s*=\s*/i,'').trim();
+  let probe=null;const pm=/subs(?:tr|tring)\s*\([\s\S]+?,\s*(\d+)\s*,\s*1\s*\)\s*=\s*'?([0-9A-Za-z])'?/i.exec(raw);
+  if(pm)probe={pos:+pm[1],char:pm[2]};
+  const ifM=/if\s*\(([\s\S]+?),\s*sleep\s*\(\s*([\d.]+)\s*\)\s*,\s*[^()]*\)/i.exec(raw);
+  const bare=/(?:^|and|&&|\s)sleep\s*\(\s*([\d.]+)\s*\)/i.exec(raw);
+  if(mode==='time'){
+    let seconds=0,truth=false;
+    if(ifM){truth=atomTruth(ifM[1]);seconds=truth?parseFloat(ifM[2]):0;}
+    else if(bare){truth=true;seconds=parseFloat(bare[1]);}
+    return {kind:'blindtime',delayed:seconds>0,seconds,truth:seconds>0,probe};
+  }
+  return {kind:'blindbool',truth:blindTruth(raw),probe};
+}
 function extractSelectSubquery(s){
   const i=s.toLowerCase().indexOf('select');if(i<0)return null;
   let depth=1,j=i;for(;j<s.length;j++){if(s[j]==='(')depth++;else if(s[j]===')'){depth--;if(depth===0)break;}}
@@ -236,6 +264,7 @@ function runCmd(raw,cs,lv){
   return kout('warn','неизвестная команда: '+cmd+' (help)');
 }
 function doTry(payload,cs,lv){
+  if(lv.endpoint==='blind-bool'||lv.endpoint==='blind-time')return doTryBlind(payload,cs,lv);
   const r=(lv.endpoint==='auth'?evalAuth(payload,lv.filters):lv.endpoint==='search-num'?evalSearchNum(payload,lv.filters):evalSearch(payload,lv.filters));
   showQuery(payload,lv);
   const s=E.sess;
@@ -246,11 +275,33 @@ function doTry(payload,cs,lv){
   let won=false;try{won=lv.win(r,s);}catch(e){}
   if(won){if(lv.kind!=='defense'){E.wins[key(E.ci,E.li)]=payload;saveWins();}setTimeout(()=>lessonSolved(cs,lv),650);}
 }
+function doTryBlind(payload,cs,lv){
+  const mode=lv.endpoint==='blind-time'?'time':'bool';
+  const r=evalBlind(payload,lv.filters,mode);showQuery(payload,lv);
+  const finish=()=>{const s=E.sess;
+    if(r.probe&&r.truth){s.blind=s.blind||{};s.blind[r.probe.pos]=r.probe.char;}
+    s.last=r;respondBlind(r,mode);renderBlindProgress(lv);
+    let won=false;try{won=lv.win(r,s);}catch(e){}
+    if(won){E.wins[key(E.ci,E.li)]=payload;saveWins();setTimeout(()=>lessonSolved(cs,lv),650);}};
+  if(mode==='time'&&r.kind==='blindtime'&&r.seconds>0){respondPending();setTimeout(finish,Math.min(r.seconds,2)*1000);}
+  else finish();
+}
+function respondPending(){const resp=$('#resp');if(!resp)return;resp.innerHTML='';const l=el('div','resp-line');l.textContent='… ждём ответ сервера …';resp.appendChild(l);}
+function respondBlind(r,mode){const resp=$('#resp');if(!resp)return;const say=(cls,txt)=>{resp.innerHTML='';const l=el('div','resp-line '+cls);resp.appendChild(l);typeInto(l,txt,10);};
+  if(r.kind==='blocked')return say('bad','403 Forbidden — '+r.msg);
+  if(mode==='time')r.delayed?say('ok','200 OK · ответ за '+r.seconds.toFixed(1)+'s ⏱ ЗАДЕРЖКА → условие ИСТИННО'):say('warn','200 OK · ответ за 0.0s (мгновенно) → условие ложно');
+  else r.truth?say('ok','200 OK · запись НАЙДЕНА → условие ИСТИННО'):say('warn','200 OK · записей нет → условие ложно');
+  if(r.truth)fx();}
+function renderBlindProgress(lv){const dump=$('#dump');if(!dump||!lv.blind)return;const len=lv.blind.secret.length;const b=(E.sess&&E.sess.blind)||{};let cells='';
+  for(let i=1;i<=len;i++)cells+='<span class="blind-cell'+(b[i]?' got':'')+'">'+(b[i]?esc(b[i]):'·')+'</span>';
+  dump.innerHTML='<div class="dcap">извлечено по символам ('+Object.keys(b).length+'/'+len+')</div><div class="blind-row">'+cells+'</div>';}
 function showQuery(payload,lv){const q=$('#q-code');if(!q)return;
-  const inj=/['"]|--|#|union|select|\bor\b|extractvalue|updatexml/i.test(payload);
+  const inj=/['"]|--|#|union|select|\bor\b|extractvalue|updatexml|substr|sleep/i.test(payload);
   const shown=`<span class="${inj?'q-inj':'q-str'}">${esc(payload)}</span>`;
   if(lv.endpoint==='auth')q.innerHTML=`<span class="q-kw">SELECT</span> * <span class="q-kw">FROM</span> users\n<span class="q-kw">WHERE</span> login='${shown}' <span class="q-kw">AND</span> pass='••••'`;
   else if(lv.endpoint==='search-num')q.innerHTML=`<span class="q-kw">SELECT</span> id, name, price <span class="q-kw">FROM</span> products\n<span class="q-kw">WHERE</span> id = ${shown}`;
+  else if(lv.endpoint==='blind-bool')q.innerHTML=`<span class="q-kw">SELECT</span> name <span class="q-kw">FROM</span> products\n<span class="q-kw">WHERE</span> id = ${shown}\n<span class="q-param">-- наружу: есть запись / нет</span>`;
+  else if(lv.endpoint==='blind-time')q.innerHTML=`<span class="q-kw">SELECT</span> name <span class="q-kw">FROM</span> products\n<span class="q-kw">WHERE</span> id = ${shown}\n<span class="q-param">-- наружу: только время ответа</span>`;
   else q.innerHTML=`<span class="q-kw">SELECT</span> id, name, price <span class="q-kw">FROM</span> products\n<span class="q-kw">WHERE</span> name <span class="q-kw">LIKE</span> '%${shown}%'`;}
 function respond(r){const resp=$('#resp'),dump=$('#dump');dump.innerHTML='';
   const say=(cls,txt)=>{resp.innerHTML='';const l=el('div','resp-line '+cls);resp.appendChild(l);typeInto(l,txt,10);};
@@ -367,5 +418,5 @@ function accessFlash(kind,text){const o=el('div','aflash '+kind);const t=el('div
 function securedFlash(){accessFlash('secured','SYSTEM SECURED');}
 function fx(){const t=$('.tgt');if(t){t.classList.add('glitch');setTimeout(()=>t.classList.remove('glitch'),450);}}
 
-return {boot,_auth:evalAuth,_search:evalSearch,_searchNum:evalSearchNum,_union:evalUnion,_err:evalErrorBased,_setDB:loadDB};
+return {boot,_auth:evalAuth,_search:evalSearch,_searchNum:evalSearchNum,_union:evalUnion,_err:evalErrorBased,_blind:evalBlind,_setDB:loadDB};
 })();

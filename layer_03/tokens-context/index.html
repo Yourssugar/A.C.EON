@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Токены и контекст</title>
+  <link rel="stylesheet" href="../../nodeai.css">
+  <script src="../../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 13% 16%, rgba(24, 226, 140, 0.15), transparent 28rem),
+        radial-gradient(circle at 82% 20%, rgba(69, 170, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(169, 139, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 25%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.38);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(24, 226, 140, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.66);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(255, 82, 108, 0.34);
+      color: #ffc7d1;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .build-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.09), transparent 34%, rgba(169, 139, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .build-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .assistant-grid,
+    .access-grid,
+    .interface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .assistant-grid,
+    .access-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .assistant-card,
+    .access-card,
+    .interface-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .assistant-card h3,
+    .access-card h3,
+    .interface-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .assistant-card h3 {
+      color: var(--green);
+    }
+
+    .card p,
+    .assistant-card p,
+    .access-card p,
+    .interface-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(24, 226, 140, 0.42);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c6ddd3;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .builder-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 24, 19, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .builder-controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.68);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .blueprint-output {
+      min-height: 348px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .assistant-grid,
+      .access-grid,
+      .flow-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .interface-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .assistant-grid,
+      .access-grid,
+      .interface-grid,
+      .flow-row,
+      .builder-grid,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .build-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      .blueprint-output {
+        min-height: 260px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .risk-lab {
+      border-color: rgba(255, 82, 108, 0.28);
+      background:
+        linear-gradient(145deg, rgba(26, 8, 12, 0.86), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(255, 82, 108, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(255, 82, 108, 0.08);
+    }
+    .risk-panel { display: flex; flex-direction: column; gap: 10px; }
+    .risk-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+    .risk-head strong { font-size: 0.9rem; color: var(--amber); }
+    .risk-meter { height: 12px; border: 1px solid rgba(96, 186, 255, 0.18); background: rgba(0, 0, 0, 0.32); border-radius: 3px; overflow: hidden; }
+    .risk-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); transition: width 220ms ease; }
+
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .ba-card { padding: 14px; border-radius: 7px; border: 1px solid rgba(255,82,108,0.32); background: rgba(255,82,108,0.05); }
+    .ba-tag { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--red); }
+    .ba-note { margin: 8px 0 0; font-size: 0.86rem; color: #9fb3bd; line-height: 1.55; }
+    .saw-pick { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+    .saw-stage { padding: 13px 14px; border: 1px solid rgba(96,186,255,0.2); border-radius: 6px; background: rgba(0,0,0,0.24); }
+    .saw-label { margin-bottom: 6px; font-family: var(--mono); font-size: 0.64rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .saw-src { font-family: var(--mono); font-size: 0.95rem; color: #eaf7fb; word-break: break-all; }
+    .saw-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tok { padding: 5px 8px; border: 1px solid rgba(242,207,98,0.5); border-radius: 4px; background: rgba(242,207,98,0.08); color: #f7e6b4; font-family: var(--mono); font-size: 0.8rem; white-space: pre; }
+    .tok.ws { border-color: rgba(96,186,255,0.3); background: rgba(96,186,255,0.06); color: var(--faint); }
+    .saw-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .saw-stat { display: grid; gap: 3px; padding: 9px 11px; border: 1px solid rgba(96,186,255,0.14); border-radius: 5px; background: rgba(2,8,12,0.5); }
+    .saw-stat span { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); text-transform: uppercase; }
+    .saw-stat strong { font-family: var(--mono); font-size: 1.05rem; color: #eaf7fb; }
+    .saw-why { margin: 14px 0 0; padding: 10px 12px; border-left: 2px solid var(--amber); background: rgba(242,207,98,0.05); border-radius: 0 5px 5px 0; font-size: 0.87rem; color: #cfe0e7; line-height: 1.6; }
+    .saw-note { margin: 14px 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); line-height: 1.5; }
+    .desk-list, .facts { display: grid; gap: 8px; margin-top: 18px; }
+    .desk-row, .fact-row { display: grid; grid-template-columns: 152px minmax(0,1fr); gap: 12px; align-items: baseline; padding: 11px 13px; border: 1px solid rgba(96,186,255,0.16); border-radius: 6px; background: rgba(2,8,12,0.45); }
+    .desk-k, .fact-k { font-family: var(--mono); font-size: 0.78rem; color: var(--amber); text-transform: uppercase; }
+    .desk-v, .fact-v { min-width: 0; font-size: 0.88rem; color: #b7cad2; line-height: 1.55; }
+    .win-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-family: var(--mono); font-size: 0.68rem; color: var(--muted); text-transform: uppercase; }
+    .win-head strong { font-size: 0.82rem; color: var(--green); }
+    .win-meter { height: 9px; border: 1px solid rgba(96,186,255,0.18); border-radius: 3px; background: rgba(0,0,0,0.32); overflow: hidden; margin-bottom: 14px; }
+    .win-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--green), var(--amber) 70%, var(--red)); transition: width 240ms ease; }
+    .win-desk { display: grid; gap: 5px; padding: 11px; border: 1px solid rgba(96,186,255,0.2); border-radius: 6px; background: rgba(0,0,0,0.26); }
+    .win-row { display: grid; grid-template-columns: 116px minmax(0,1fr) 34px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 5px; border: 1px solid rgba(96,186,255,0.14); background: rgba(2,8,12,0.5); }
+    .win-tag { font-family: var(--mono); font-size: 0.6rem; color: var(--faint); text-transform: uppercase; }
+    .win-label { min-width: 0; font-size: 0.84rem; color: #cfe0e7; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .win-t { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); text-align: right; }
+    .win-row.sys { border-color: rgba(169,139,255,0.4); background: rgba(169,139,255,0.06); }
+    .win-row.sys .win-tag { color: #a98bff; }
+    .win-row.res { border-color: rgba(24,226,140,0.35); background: rgba(24,226,140,0.05); }
+    .win-row.res .win-tag { color: var(--green); }
+    .win-row.out { border-color: rgba(255,82,108,0.3); background: rgba(255,82,108,0.04); opacity: 0.5; }
+    .win-row.out .win-tag { color: var(--red); }
+    .win-row.out .win-label { text-decoration: line-through; color: #8a9aa2; }
+    .win-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .win-hint { font-family: var(--mono); font-size: 0.72rem; color: var(--amber); line-height: 1.45; flex: 1 1 240px; }
+    .primary-btn:disabled { opacity: 0.4; cursor: default; }
+    @media (max-width: 660px) { .ba { grid-template-columns: 1fr; } .desk-row, .fact-row { grid-template-columns: 1fr; gap: 4px; } .saw-stats { grid-template-columns: 1fr; } .win-row { grid-template-columns: 92px 1fr 30px; } }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_03 / TOKENS + CONTEXT</div>
+      <div class="status">DEEP DIVE // 02–03</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="topic-title">
+        <div class="kicker">LAYER_03 · 02–03 / TOKENS + CONTEXT</div>
+        <h1 id="topic-title">Токены и окно контекста</h1>
+        <p class="lead">
+          Углублённый разбор двух тем сразу — они про одно и то же. Токены это
+          линейка, окно контекста — стол, который этой линейкой меряют. Порознь
+          рассказывать бессмысленно.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">В ЭТОЙ ТЕМЕ</p>
+          <p>
+            Сначала коротко: почему текст режут на кусочки и почему русский
+            дороже. Потом главное: что лежит на рабочем столе модели, почему он
+            переполняется и почему она забывает начало разговора.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы темы">
+          <p class="nav-label">НА СТРАНИЦЕ</p>
+          <a href="#why"><span>01</span><span>почему куски</span></a>
+          <a href="#saw"><span>02</span><span>витрина распила</span></a>
+          <a href="#window"><span>03</span><span>стол не резиновый</span></a>
+          <a href="#desk"><span>04</span><span>что лежит на столе</span></a>
+          <a href="#forget"><span>05</span><span>почему забывает</span></a>
+          <a href="#money"><span>06</span><span>на практике</span></a>
+          <a href="#takeaway"><span>07</span><span>что забрать</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../"><span>BACK</span><span>LAYER_03</span></a>
+          <a class="route-link home" href="../../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <section class="lesson" id="why">
+          <p class="lesson-kicker">01 / ПОЧЕМУ КУСКИ</p>
+          <h2>Не слова и не буквы, а компромисс</h2>
+          <p>
+            Модель работает с числами, значит текст надо в числа превратить.
+            Напрашиваются два очевидных способа — и оба разваливаются.
+          </p>
+          <div class="ba">
+            <div class="ba-card bad">
+              <div class="ba-tag">✗ по словам</div>
+              <p class="ba-note">Словарь огромный и всё равно конечный. Опечатка, имя, сленг — номера нет, модель ослепла.</p>
+            </div>
+            <div class="ba-card bad">
+              <div class="ba-tag">✗ по буквам</div>
+              <p class="ba-note">Словарь крошечный, зато цепочки кошмарно длинные. Смысл приходится собирать из букв каждый раз.</p>
+            </div>
+          </div>
+          <p>
+            Отсюда компромисс посередине — <em>токены</em>: обрывки разной длины.
+            Частое слово получает номер целиком, редкое собирается из кусков.
+            Словарь не разбухает, но записать можно что угодно, хоть «кхм».
+            Правило одно: <strong>чем чаще сочетание встречалось при обучении, тем
+            больше шансов, что оно стало отдельным токеном</strong>. Отсюда и
+            главное следствие — длина в символах и длина в токенах это разные вещи.
+          </p>
+        </section>
+
+        <section class="lesson" id="saw">
+          <p class="lesson-kicker">02 / ВИТРИНА РАСПИЛА</p>
+          <h2>Посмотри, как режется</h2>
+          <p>
+            Выбирай образец и смотри, на что он распадается и почему.
+          </p>
+
+          <div class="builder-lab" aria-labelledby="saw-title">
+            <p class="tool-label" id="saw-title">TOKEN SAW / КАК РЕЖЕТСЯ</p>
+            <div class="saw-pick" id="saw-pick">
+              <button class="chip is-active" type="button" data-k="common">частое слово</button>
+              <button class="chip" type="button" data-k="rare">редкое слово</button>
+              <button class="chip" type="button" data-k="ru">русское слово</button>
+              <button class="chip" type="button" data-k="typo">опечатка</button>
+              <button class="chip" type="button" data-k="num">число</button>
+              <button class="chip" type="button" data-k="space">пробелы</button>
+            </div>
+            <div class="saw-stage">
+              <div class="saw-label">образец</div>
+              <div class="saw-src" id="saw-src"></div>
+              <div class="saw-label" style="margin-top:14px">распил на токены</div>
+              <div class="saw-chips" id="saw-chips"></div>
+              <div class="saw-stats">
+                <div class="saw-stat"><span>символов</span><strong id="saw-chars">0</strong></div>
+                <div class="saw-stat"><span>токенов</span><strong id="saw-toks">0</strong></div>
+                <div class="saw-stat"><span>символов на токен</span><strong id="saw-ratio">0</strong></div>
+              </div>
+              <p class="saw-why" id="saw-why"></p>
+            </div>
+            <p class="saw-note">Распил показан приблизительно: у каждой модели свой словарь. Принцип — именно такой.</p>
+          </div>
+
+          <p>
+            Заодно виден ответ на частый вопрос — <strong>почему русский дороже
+            английского примерно вдвое</strong>. Словарь собирали по корпусу, где
+            английского исторически больше всего: его сочетаниям щедро раздали
+            целые токены, а кириллице места досталось меньше, и она крошится
+            мельче. Дело не в языке, а в арифметике обучения.
+          </p>
+        </section>
+
+        <section class="lesson" id="window">
+          <p class="lesson-kicker">03 / СТОЛ НЕ РЕЗИНОВЫЙ</p>
+          <h2>Окно контекста — рабочий стол модели</h2>
+          <p>
+            А теперь то, ради чего вся эта арифметика. Токены — это линейка. А
+            меряют ей вполне конкретную вещь: <em>окно контекста</em> — рабочий
+            стол, на который выкладывают всё, что модель увидит перед ответом.
+          </p>
+          <p>
+            Ключевое свойство стола: он <strong>конечный</strong>. У него есть
+            размер, и меряется он в тех самых токенах. Что поместилось — модель
+            видит. Что не поместилось — для неё просто не существует. Не «забыла»,
+            не «проигнорировала» — не существует, как страницы, вырванной из книги.
+          </p>
+          <div class="quote-line">
+            Вот зачем нужны были токены: окно контекста меряется не в словах и не
+            в сообщениях, а в кусочках. Линейка одна на всё.
+          </div>
+        </section>
+
+        <section class="lesson" id="desk">
+          <p class="lesson-kicker">04 / ЧТО ЛЕЖИТ НА СТОЛЕ</p>
+          <h2>Там не только твоё сообщение</h2>
+          <p>
+            Главное открытие для новичка: твой запрос занимает на столе далеко не
+            всё место. Рядом с ним лежит ещё несколько вещей, и все они едят те же
+            токены.
+          </p>
+          <div class="desk-list">
+            <div class="desk-row">
+              <div class="desk-k">Служебные инструкции</div>
+              <div class="desk-v">Правила поведения, которые задал не ты, а тот, кто собрал приложение. Лежат всегда, обычно первыми, и ты их не видишь.</div>
+            </div>
+            <div class="desk-row">
+              <div class="desk-k">История диалога</div>
+              <div class="desk-v">Весь ваш разговор целиком — и твои реплики, и её ответы. Каждый новый круг делает стопку толще.</div>
+            </div>
+            <div class="desk-row">
+              <div class="desk-k">Твой запрос</div>
+              <div class="desk-v">Собственно то, что ты сейчас написал. Часто самая маленькая часть стола.</div>
+            </div>
+            <div class="desk-row">
+              <div class="desk-k">Внешние куски</div>
+              <div class="desk-v">Файл, который ты приложил, или фрагменты, которые система нашла и подложила сама.</div>
+            </div>
+            <div class="desk-row">
+              <div class="desk-k">Место под ответ</div>
+              <div class="desk-v">О чём забывают все: ответу тоже нужно место на этом же столе. Он не появляется из воздуха.</div>
+            </div>
+          </div>
+          <p>
+            И вот здесь — момент, который переворачивает понимание диалога.
+            Модель <em>не помнит</em> ваш разговор в человеческом смысле. Каждый
+            раз, когда ты пишешь новое сообщение, ей заново выкладывают на стол
+            всю историю целиком и просят ответить. Никакой памяти между ответами
+            у неё нет — есть только стол, который каждый раз пересобирают.
+          </p>
+          <div class="quote-line">
+            Ощущение непрерывной беседы создаёшь не ты и не она — его создаёт
+            система, каждый раз заново подкладывая ей всю переписку.
+          </div>
+        </section>
+
+        <section class="lesson" id="forget">
+          <p class="lesson-kicker">05 / ПОЧЕМУ ЗАБЫВАЕТ</p>
+          <h2>Симулятор: набей стол и посмотри</h2>
+          <p>
+            Раз стол конечный, а стопка растёт с каждым кругом — рано или поздно
+            всё не влезет. Добавляй сообщения и смотри, что происходит.
+          </p>
+
+          <div class="builder-lab" aria-labelledby="win-title">
+            <p class="tool-label" id="win-title">CONTEXT WINDOW / ЧТО ВЫПАДЕТ ПЕРВЫМ</p>
+
+            <div class="win-head">
+              <span>СТОЛ ЗАПОЛНЕН</span>
+              <strong id="win-level">—</strong>
+            </div>
+            <div class="win-meter" aria-hidden="true"><div class="win-fill" id="win-fill"></div></div>
+
+            <div class="win-desk" id="win-desk"></div>
+
+            <div class="win-foot">
+              <button class="primary-btn" type="button" id="win-add">+ сообщение</button>
+              <button class="ghost-btn" type="button" id="win-reset">заново ↻</button>
+              <span class="win-hint" id="win-hint"></span>
+            </div>
+            <p class="saw-note">Окно здесь крошечное (200 токенов) — чтобы переполнение было видно за пару кликов. У реальных моделей столы куда больше, но принцип тот же.</p>
+          </div>
+        </section>
+
+        <section class="lesson" id="money">
+          <p class="lesson-kicker">06 / НА ПРАКТИКЕ</p>
+          <h2>Что из этого следует</h2>
+          <div class="facts">
+            <div class="fact-row">
+              <div class="fact-k">Цена</div>
+              <div class="fact-v">Платят за токены, а не за сообщения. Вход и выход считаются <em>отдельно</em>, ответ обычно дороже запроса. И платишь ты за <em>весь стол</em> каждый раз — длинный диалог дорожает с каждым кругом, даже если ты пишешь «ага».</div>
+            </div>
+            <div class="fact-row">
+              <div class="fact-k">Длинный диалог</div>
+              <div class="fact-v">Чем дольше беседа, тем выше шанс, что начало выпало. Если разговор ушёл далеко — важное проще повторить, чем надеяться, что оно ещё на столе.</div>
+            </div>
+            <div class="fact-row">
+              <div class="fact-k">Новый чат</div>
+              <div class="fact-v">Сменил тему — начни новый диалог. Старая стопка не помогает, а только ест место и путает.</div>
+            </div>
+            <div class="fact-row">
+              <div class="fact-k">Хитрости не работают</div>
+              <div class="fact-v">Убирать пробелы ради экономии бессмысленно: кривой текст часто режется на <em>больше</em> токенов и понимается хуже. Пиши нормально.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="takeaway">
+          <p class="lesson-kicker">07 / ЧТО ЗАБРАТЬ С СОБОЙ</p>
+          <h2>Главное в одном абзаце</h2>
+          <div class="exit-panel">
+            <p>
+              Токен — кусочек текста, компромисс между словом и буквой: частое
+              целиком, редкое из мелочи, русский вдвое дороже английского. Этой
+              линейкой меряют рабочий стол — окно контекста, куда перед каждым
+              ответом заново выкладывают инструкции, всю историю, твой запрос и
+              место под ответ. Стол конечный: что не влезло, того для модели не
+              существует. Она не забывает — ей просто не показали.
+            </p>
+            <a class="route-link" href="../"><span>NEXT</span><span>ВЕРНУТЬСЯ В LAYER_03</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / DEEP DIVE</span>
+      <span>LAYER_03 · 02–03 // TOKENS + CONTEXT</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var N = window.NODEAI;
+      if (N) N.starfield(document.getElementById("starfield"));
+
+      /* ── 1. витрина распила ────────────────────────────── */
+      var SAMPLES = {
+        common: {
+          src: "the cat sat",
+          toks: ["the", " cat", " sat"],
+          why: "Три ходовых слова — каждому свой целый токен. Заметь: пробел прилипает к следующему слову, отдельно не живёт."
+        },
+        rare: {
+          src: "antidisestablishmentarianism",
+          toks: ["anti", "dis", "establish", "ment", "arian", "ism"],
+          why: "Целиком в словарь такое не берут — зато собирается из знакомых приставок и суффиксов. Символьный монстр, а токенов всего шесть."
+        },
+        ru: {
+          src: "достопримечательности",
+          toks: ["дост", "опр", "и", "меч", "ат", "ель", "ности"],
+          why: "Кириллице в словаре досталось меньше места, поэтому крошится мельче. Границы кусков выглядят бессмысленно для человека — модели всё равно, она видит числа."
+        },
+        typo: {
+          src: "превед медвед",
+          toks: ["прев", "ед", " мед", "вед"],
+          why: "Таких слов в словаре нет — и не надо. Ради этого кусочки и придумали: опечатку, сленг, выдуманное слово можно собрать из деталек."
+        },
+        num: {
+          src: "1234567",
+          toks: ["123", "45", "67"],
+          why: "Числа режутся не по цифрам и не целиком, а по своей логике. Поэтому с арифметикой тяжело: это для неё не одно число, а три обрывка подряд."
+        },
+        space: {
+          src: "с   л   о   в   о",
+          toks: ["с", " ", " ", " л", " ", " ", " о", " ", " в", " ", " о"],
+          why: "Вот почему «ужимать» текст бессмысленно: лишние пробелы сами становятся токенами. Изуродованный текст дороже нормального и понимается хуже."
+        }
+      };
+
+      var pick = document.getElementById("saw-pick");
+      if (pick) {
+        var srcEl = document.getElementById("saw-src");
+        var chipsEl = document.getElementById("saw-chips");
+        var charsEl = document.getElementById("saw-chars");
+        var toksEl = document.getElementById("saw-toks");
+        var ratioEl = document.getElementById("saw-ratio");
+        var whyEl = document.getElementById("saw-why");
+
+        var drawSaw = function (k) {
+          var d = SAMPLES[k];
+          srcEl.textContent = "«" + d.src + "»";
+          chipsEl.innerHTML = "";
+          d.toks.forEach(function (t, i) {
+            var c = document.createElement("span");
+            c.className = "tok" + (t.trim() === "" ? " ws" : "");
+            c.textContent = t.replace(/ /g, "␣");
+            c.title = "токен " + (i + 1);
+            chipsEl.appendChild(c);
+          });
+          var chars = d.src.length, toks = d.toks.length, ratio = chars / toks;
+          charsEl.textContent = chars;
+          toksEl.textContent = toks;
+          ratioEl.textContent = ratio.toFixed(1);
+          ratioEl.style.color = ratio >= 3.5 ? "var(--green)" : ratio >= 2.5 ? "var(--amber)" : "var(--red)";
+          whyEl.textContent = d.why;
+        };
+
+        pick.addEventListener("click", function (e) {
+          var b = e.target.closest(".chip");
+          if (!b) return;
+          pick.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("is-active", x === b); });
+          drawSaw(b.dataset.k);
+        });
+        drawSaw("common");
+      }
+
+      /* ── 2. симулятор окна контекста ───────────────────── */
+      var LIMIT = 200;
+      var SYS = { kind: "sys", label: "служебные инструкции", t: 40, pin: true };
+      var RESERVE = { kind: "res", label: "место под ответ", t: 60, pin: true };
+      var TALK = [
+        { u: "Привет! Помоги выбрать ноутбук", t: 22 },
+        { u: "Бюджет до 60 тысяч, нужен для учёбы", t: 26 },
+        { u: "Ещё важно, чтобы батарея долго держала", t: 28 },
+        { u: "А что насчёт веса? Ношу в рюкзаке каждый день", t: 32 },
+        { u: "Матовый экран обязательно", t: 20 },
+        { u: "Так, а какой у меня был бюджет?", t: 24 }
+      ];
+
+      var deskEl = document.getElementById("win-desk");
+      if (!deskEl) return;
+      var fill = document.getElementById("win-fill");
+      var level = document.getElementById("win-level");
+      var hint = document.getElementById("win-hint");
+      var addBtn = document.getElementById("win-add");
+      var resetBtn = document.getElementById("win-reset");
+
+      var n = 1;
+
+      function build() {
+        var msgs = TALK.slice(0, n).map(function (m, i) {
+          return { kind: "msg", label: m.u, t: m.t, idx: i };
+        });
+        // всё, что лежит на столе: инструкции + история + резерв под ответ
+        var used = SYS.t + RESERVE.t + msgs.reduce(function (a, m) { return a + m.t; }, 0);
+        var dropped = [];
+        // переполнение: выпадают самые старые сообщения (инструкции и резерв закреплены)
+        while (used > LIMIT && msgs.length > 1) {
+          var out = msgs.shift();
+          out.dropped = true;
+          dropped.push(out);
+          used -= out.t;
+        }
+        return { msgs: msgs, dropped: dropped, used: used };
+      }
+
+      function render() {
+        var st = build();
+        var pct = Math.min(100, Math.round((st.used / LIMIT) * 100));
+        fill.style.width = pct + "%";
+        level.textContent = st.used + " / " + LIMIT + " токенов";
+        level.style.color = pct > 92 ? "var(--red)" : pct > 70 ? "var(--amber)" : "var(--green)";
+
+        deskEl.innerHTML = "";
+
+        st.dropped.forEach(function (m) {
+          deskEl.appendChild(row("msg out", "✂ выпало из окна", m.label, m.t));
+        });
+        deskEl.appendChild(row("sys", "закреплено", SYS.label, SYS.t));
+        st.msgs.forEach(function (m) {
+          deskEl.appendChild(row("msg", "круг " + (m.idx + 1), m.label, m.t));
+        });
+        deskEl.appendChild(row("res", "закреплено", RESERVE.label, RESERVE.t));
+
+        addBtn.disabled = n >= TALK.length;
+
+        if (st.dropped.length === 0) {
+          hint.textContent = n < TALK.length ? "Стол пока свободен. Добавляй ещё." : "";
+        } else {
+          var lost = st.dropped.map(function (m) { return "«" + m.label + "»"; }).join(", ");
+          hint.textContent = "Выпало: " + lost + " — для модели этого больше нет.";
+        }
+        if (n >= TALK.length && st.dropped.length > 0) {
+          hint.textContent = "Последний вопрос — про бюджет. А сообщение с бюджетом уже выпало со стола: ответить она не сможет, хотя ты это писал.";
+        }
+      }
+
+      function row(cls, tag, label, t) {
+        var d = document.createElement("div");
+        d.className = "win-row " + cls;
+        var a = document.createElement("div");
+        a.className = "win-tag";
+        a.textContent = tag;
+        var b = document.createElement("div");
+        b.className = "win-label";
+        b.textContent = label;
+        var c = document.createElement("div");
+        c.className = "win-t";
+        c.textContent = t;
+        d.appendChild(a); d.appendChild(b); d.appendChild(c);
+        return d;
+      }
+
+      addBtn.addEventListener("click", function () {
+        if (n < TALK.length) { n += 1; render(); }
+      });
+      resetBtn.addEventListener("click", function () { n = 1; render(); });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1353 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / API</title>
+  <link rel="stylesheet" href="../../nodeai.css">
+  <script src="../../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 13% 16%, rgba(24, 226, 140, 0.15), transparent 28rem),
+        radial-gradient(circle at 82% 20%, rgba(69, 170, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(169, 139, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 25%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.38);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(24, 226, 140, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.66);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(255, 82, 108, 0.34);
+      color: #ffc7d1;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .build-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.09), transparent 34%, rgba(169, 139, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .build-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .assistant-grid,
+    .access-grid,
+    .interface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .assistant-grid,
+    .access-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .assistant-card,
+    .access-card,
+    .interface-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .assistant-card h3,
+    .access-card h3,
+    .interface-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .assistant-card h3 {
+      color: var(--green);
+    }
+
+    .card p,
+    .assistant-card p,
+    .access-card p,
+    .interface-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(24, 226, 140, 0.42);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c6ddd3;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .builder-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 24, 19, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .builder-controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.68);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .blueprint-output {
+      min-height: 348px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .assistant-grid,
+      .access-grid,
+      .flow-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .interface-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .assistant-grid,
+      .access-grid,
+      .interface-grid,
+      .flow-row,
+      .builder-grid,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .build-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      .blueprint-output {
+        min-height: 260px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .risk-lab {
+      border-color: rgba(255, 82, 108, 0.28);
+      background:
+        linear-gradient(145deg, rgba(26, 8, 12, 0.86), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(255, 82, 108, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(255, 82, 108, 0.08);
+    }
+    .risk-panel { display: flex; flex-direction: column; gap: 10px; }
+    .risk-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+    .risk-head strong { font-size: 0.9rem; color: var(--amber); }
+    .risk-meter { height: 12px; border: 1px solid rgba(96, 186, 255, 0.18); background: rgba(0, 0, 0, 0.32); border-radius: 3px; overflow: hidden; }
+    .risk-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); transition: width 220ms ease; }
+
+    .api-parts, .roles, .ctrl { display: grid; gap: 8px; margin-top: 18px; }
+    .ap-row, .role-row, .ctrl-row { display: grid; grid-template-columns: 132px minmax(0,1fr); gap: 12px; align-items: baseline; padding: 11px 13px; border: 1px solid rgba(96,186,255,0.16); border-radius: 6px; background: rgba(2,8,12,0.45); }
+    .ap-k, .ctrl-k { font-family: var(--mono); font-size: 0.8rem; color: var(--amber); }
+    .ap-v, .role-v, .ctrl-v { min-width: 0; font-size: 0.88rem; color: #b7cad2; line-height: 1.55; }
+    .role-k { font-family: var(--mono); font-size: 0.8rem; }
+    .role-row.sys { border-left: 2px solid #a98bff; } .role-row.sys .role-k { color: #a98bff; }
+    .role-row.usr { border-left: 2px solid var(--green); } .role-row.usr .role-k { color: var(--green); }
+    .role-row.ast { border-left: 2px solid var(--blue); } .role-row.ast .role-k { color: var(--blue); }
+    .knobs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .knob-card { padding: 14px; border: 1px solid rgba(242,207,98,0.28); border-radius: 7px; background: rgba(242,207,98,0.04); }
+    .knob-card h3 { margin: 0 0 8px; font-family: var(--mono); font-size: 0.88rem; color: var(--amber); }
+    .knob-card p { margin: 0 0 8px; font-size: 0.86rem; color: #a9bdc6; line-height: 1.55; }
+    .knob-lo, .knob-hi { margin: 8px 0 0 !important; font-size: 0.82rem !important; }
+    .knob-lo span, .knob-hi span { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; }
+    .knob-lo span { color: var(--blue); } .knob-hi span { color: var(--red); }
+    .live-status { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 11px; border: 1px solid rgba(96,186,255,0.2); border-radius: 5px; background: rgba(0,0,0,0.26); font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+    .dot.on { background: var(--green); box-shadow: 0 0 8px rgba(24,226,140,0.6); }
+    .dot.off { background: var(--amber); }
+    .live-label { display: block; margin-bottom: 6px; font-family: var(--mono); font-size: 0.66rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .live-input { width: 100%; padding: 10px 12px; border: 1px solid rgba(96,186,255,0.28); border-radius: 5px; background: rgba(0,0,0,0.3); color: #eaf7fb; font-family: var(--mono); font-size: 0.86rem; line-height: 1.5; resize: vertical; }
+    .live-input:focus { border-color: rgba(24,226,140,0.6); outline: none; }
+    .live-count { margin-top: 5px; font-family: var(--mono); font-size: 0.66rem; color: var(--faint); text-align: right; }
+    .live-knobs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0; }
+    .lk label { display: block; margin-bottom: 6px; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+    .lk label b { color: var(--amber); }
+    .lk input[type=range] { width: 100%; accent-color: #18e28c; }
+    .lk-hint { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.6rem; color: var(--faint); }
+    .live-send { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .live-note { font-family: var(--mono); font-size: 0.72rem; color: var(--amber); flex: 1 1 220px; line-height: 1.45; }
+    .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .live-h { margin-bottom: 5px; font-family: var(--mono); font-size: 0.66rem; color: var(--muted); text-transform: uppercase; }
+    .live-json { margin: 0; padding: 11px; border: 1px solid rgba(96,186,255,0.18); border-radius: 5px; background: rgba(0,0,0,0.32); color: #b9dfd0; font-family: var(--mono); font-size: 0.7rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; }
+    .live-usage { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 12px; }
+    .lu { display: grid; gap: 3px; padding: 9px 11px; border: 1px solid rgba(242,207,98,0.28); border-radius: 5px; background: rgba(242,207,98,0.05); }
+    .lu span { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); text-transform: uppercase; }
+    .lu strong { font-family: var(--mono); font-size: 1rem; color: var(--amber); }
+    .primary-btn:disabled { opacity: 0.5; cursor: default; }
+    @media (max-width: 700px) { .knobs, .live-knobs, .live-grid { grid-template-columns: 1fr; } .ap-row, .role-row, .ctrl-row { grid-template-columns: 1fr; gap: 4px; } .live-usage { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_03 / API</div>
+      <div class="status">DEEP DIVE // 04</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="topic-title">
+        <div class="kicker">LAYER_03 · 04 / API WITHOUT CODE</div>
+        <h1 id="topic-title">API: машинный вход к модели</h1>
+        <p class="lead">
+          Углублённый разбор четвёртой темы. Здесь мы впервые не рассказываем про
+          модель, а разговариваем с настоящей — прямо на этой странице, через тот
+          самый служебный вход.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">В ЭТОЙ ТЕМЕ</p>
+          <p>
+            Понимаем, чем служебный вход отличается от парадного, разбираем, что
+            именно улетает к модели, крутим ручки параметров на живом запросе,
+            смотрим на настоящий ответ вместе с чеком за токены и разбираемся,
+            зачем всему этому нужен присмотр.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы темы">
+          <p class="nav-label">НА СТРАНИЦЕ</p>
+          <a href="#door"><span>01</span><span>служебный вход</span></a>
+          <a href="#what"><span>02</span><span>что улетает</span></a>
+          <a href="#knobs"><span>03</span><span>ручки параметров</span></a>
+          <a href="#live"><span>04</span><span>живой запрос</span></a>
+          <a href="#back"><span>05</span><span>что приходит обратно</span></a>
+          <a href="#control"><span>06</span><span>зачем присмотр</span></a>
+          <a href="#takeaway"><span>07</span><span>что забрать</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../"><span>BACK</span><span>LAYER_03</span></a>
+          <a class="route-link home" href="../../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <section class="lesson" id="door">
+          <p class="lesson-kicker">01 / СЛУЖЕБНЫЙ ВХОД</p>
+          <h2>Не так уютно, зато можно привезти грузовик</h2>
+          <p>
+            Чат — это парадный вход: красиво, удобно, за тебя всё оформили.
+            API — служебный: голая дверь, без ковров, зато через неё ходят не
+            люди, а программы. Сайт, бот, скрипт, автоматизация отправляют запрос
+            в машинно-понятной форме, забирают ответ и делают с ним что-то дальше.
+          </p>
+          <p>
+            Разница не в модели — она за обеими дверями одна и та же. Разница в
+            том, кто заходит. Человеку нужен уют: кнопки, история, красивое
+            оформление. Программе всё это мешает, ей нужен голый предсказуемый
+            формат: отправил структуру — получил структуру.
+          </p>
+          <div class="quote-line">
+            Всё, что ты видишь в чате — окошко, история, кнопка «отправить» —
+            надстройка над этим служебным входом. Внизу у всех одно и то же.
+          </div>
+        </section>
+
+        <section class="lesson" id="what">
+          <p class="lesson-kicker">02 / ЧТО УЛЕТАЕТ</p>
+          <h2>Запрос — это просто структура</h2>
+          <p>
+            Никакой магии: улетает обычный текстовый свёрток с полями. Вот его
+            анатомия — с этим приложение и обращается к модели.
+          </p>
+          <div class="api-parts">
+            <div class="ap-row">
+              <div class="ap-k">model</div>
+              <div class="ap-v">какую именно модель зовём. Их много, они разные по цене и повадкам.</div>
+            </div>
+            <div class="ap-row">
+              <div class="ap-k">messages</div>
+              <div class="ap-v">сам разговор — списком. Не одна фраза, а вся стопка реплик, которую модель увидит.</div>
+            </div>
+            <div class="ap-row">
+              <div class="ap-k">temperature</div>
+              <div class="ap-v">насколько разрешено чудить: держаться самого вероятного или разрешить себе неожиданное.</div>
+            </div>
+            <div class="ap-row">
+              <div class="ap-k">max_tokens</div>
+              <div class="ap-v">потолок длины ответа. Больше этого модель не выдаст — оборвётся на полуслове.</div>
+            </div>
+          </div>
+          <p>
+            Отдельного внимания стоит <strong>messages</strong>. Реплики там не
+            равны — у каждой есть роль:
+          </p>
+          <div class="roles">
+            <div class="role-row sys">
+              <div class="role-k">system</div>
+              <div class="role-v">инструкция от того, кто собрал приложение: кто ты, как себя вести. Пользователь её не пишет и обычно не видит.</div>
+            </div>
+            <div class="role-row usr">
+              <div class="role-k">user</div>
+              <div class="role-v">то, что написал человек.</div>
+            </div>
+            <div class="role-row ast">
+              <div class="role-k">assistant</div>
+              <div class="role-v">то, что модель отвечала раньше. Да, её собственные прошлые ответы кладут обратно — иначе она не помнит, что говорила.</div>
+            </div>
+          </div>
+          <p>
+            Вот и разгадка «личности» ассистента в разных приложениях. Один и тот
+            же движок ведёт себя как строгий юрист или как весёлый помощник —
+            потому что в поле <em>system</em> лежит разный текст. Больше там ничего
+            и нет.
+          </p>
+        </section>
+
+        <section class="lesson" id="knobs">
+          <p class="lesson-kicker">03 / РУЧКИ</p>
+          <h2>Две ручки, которые правда меняют ответ</h2>
+          <p>
+            В чате их за тебя выставили. Здесь — можно крутить самому, и это
+            первое настоящее отличие служебного входа.
+          </p>
+          <div class="knobs">
+            <div class="knob-card">
+              <h3>temperature · 0 … 1.5</h3>
+              <p>Помнишь, модель достраивает вероятное продолжение? Эта ручка решает, насколько строго держаться самого вероятного.</p>
+              <p class="knob-lo"><span>ближе к 0:</span> предсказуемо, суховато, почти одинаково от раза к разу. Для фактов и структуры.</p>
+              <p class="knob-hi"><span>ближе к 1.5:</span> живее и неожиданнее, но может занести. Для идей и текстов.</p>
+            </div>
+            <div class="knob-card">
+              <h3>max_tokens · потолок</h3>
+              <p>Жёсткий предел длины ответа в тех самых кусочках. Не «пиши покороче» — а «дальше рубим».</p>
+              <p class="knob-lo"><span>важно:</span> это не просьба, а нож. Упрётся в потолок — оборвёт фразу на середине слова, без всякой вежливости.</p>
+              <p class="knob-hi"><span>зачем:</span> страховка от кошелька: длинный ответ не только медленнее, но и дороже.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="live">
+          <p class="lesson-kicker">04 / ЖИВОЙ ЗАПРОС</p>
+          <h2>Хватит теории — спроси сам</h2>
+          <p>
+            Всё, что выше, проще один раз увидеть. Напиши короткий вопрос, покрути
+            ручки и отправь — запрос уйдёт через служебный вход к настоящей
+            модели. Слева видно, что именно улетает, справа — что вернулось.
+          </p>
+
+          <div class="builder-lab" aria-labelledby="live-title">
+            <p class="tool-label" id="live-title">LIVE API / НАСТОЯЩИЙ ЗАПРОС</p>
+
+            <div class="live-status" id="live-status">
+              <span class="dot" id="live-dot"></span>
+              <span id="live-mode">проверяю связь…</span>
+            </div>
+
+            <label class="live-label" for="live-input">твой вопрос (коротко)</label>
+            <textarea id="live-input" class="live-input" rows="2" maxlength="300"
+              placeholder="Например: объясни в двух предложениях, что такое кэш">Объясни в двух предложениях, что такое кэш</textarea>
+            <div class="live-count"><span id="live-chars">0</span> / 300 символов</div>
+
+            <div class="live-knobs">
+              <div class="lk">
+                <label for="live-temp">temperature · <b id="live-temp-v">0.7</b></label>
+                <input type="range" id="live-temp" min="0" max="1.5" step="0.1" value="0.7">
+                <div class="lk-hint"><span>точно</span><span>вольно</span></div>
+              </div>
+              <div class="lk">
+                <label for="live-max">max_tokens · <b id="live-max-v">120</b></label>
+                <input type="range" id="live-max" min="16" max="150" step="8" value="120">
+                <div class="lk-hint"><span>обрубит</span><span>подлиннее</span></div>
+              </div>
+            </div>
+
+            <div class="live-send">
+              <button class="primary-btn" type="button" id="live-go">▸ отправить в модель</button>
+              <span class="live-note" id="live-note"></span>
+            </div>
+
+            <div class="live-grid">
+              <div class="live-col">
+                <div class="live-h">→ улетает</div>
+                <pre class="live-json" id="live-req"></pre>
+              </div>
+              <div class="live-col">
+                <div class="live-h">← возвращается</div>
+                <pre class="live-json" id="live-res">жди ответа…</pre>
+              </div>
+            </div>
+
+            <div class="live-usage" id="live-usage" hidden>
+              <div class="lu"><span>токенов на вход</span><strong id="lu-in">—</strong></div>
+              <div class="lu"><span>токенов на ответ</span><strong id="lu-out">—</strong></div>
+              <div class="lu"><span>всего</span><strong id="lu-all">—</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="back">
+          <p class="lesson-kicker">05 / ЧТО ПРИХОДИТ ОБРАТНО</p>
+          <h2>Ответ и чек за него</h2>
+          <p>
+            Обратно прилетает не просто текст, а структура — и в ней есть
+            любопытная часть, которой в чате ты никогда не видишь: <strong>usage</strong>.
+            Это счётчик: сколько кусочков ушло на твой запрос, сколько на ответ,
+            сколько всего.
+          </p>
+          <p>
+            По сути — чек. В чате его прячут, потому что он портит уют. А здесь
+            он приходит с каждым ответом, и по нему сразу видно то, о чём мы
+            говорили раньше: платишь ты не за сообщение, а за кусочки, причём вход
+            и выход считаются отдельно. Отправь пару запросов подряд в демо выше
+            и посмотри, как растёт число на входе, хотя вопрос ты писал короткий.
+          </p>
+          <div class="quote-line">
+            Служебный вход честнее парадного: он сразу показывает, во что тебе
+            обошёлся ответ. Чат этот чек просто не печатает.
+          </div>
+        </section>
+
+        <section class="lesson" id="control">
+          <p class="lesson-kicker">06 / ЗАЧЕМ ПРИСМОТР</p>
+          <h2>Открытая дверь требует замка</h2>
+          <p>
+            Служебный вход даёт свободу, и вместе с ней — обязанности. Демо выше
+            работает не «просто так»: за ним стоит несколько скучных, но
+            необходимых вещей.
+          </p>
+          <div class="ctrl">
+            <div class="ctrl-row">
+              <div class="ctrl-k">Ключ</div>
+              <div class="ctrl-v">Пропуск от служебной двери. Он <em>никогда</em> не лежит на странице — иначе им воспользуется любой, кто нажмёт «посмотреть код», и платить будешь ты. Ключ живёт на отдельном сервере, а страница просит уже его.</div>
+            </div>
+            <div class="ctrl-row">
+              <div class="ctrl-k">Лимиты</div>
+              <div class="ctrl-v">Сколько запросов в час с одного человека и сколько всего в сутки. Без этого один скучающий гость за ночь оставит тебя без бюджета.</div>
+            </div>
+            <div class="ctrl-row">
+              <div class="ctrl-k">Рамки</div>
+              <div class="ctrl-v">Потолок ответа и длины вопроса. Причём проверять надо на сервере: всё, что решает страница, легко переписать в браузере.</div>
+            </div>
+            <div class="ctrl-row">
+              <div class="ctrl-k">Рубильник</div>
+              <div class="ctrl-v">Возможность выключить всё разом. Дневной лимит — это он и есть: упёрлось, и до завтра тишина. Дороже потолка не будет.</div>
+            </div>
+          </div>
+          <p>
+            Правило одно и простое: <strong>всё, что происходит в браузере, можно
+            подделать</strong>. Поэтому настоящая защита живёт только на сервере,
+            а страница — витрина. Тот, кто про это забывает, узнаёт о своей
+            ошибке из счёта.
+          </p>
+        </section>
+
+        <section class="lesson" id="takeaway">
+          <p class="lesson-kicker">07 / ЧТО ЗАБРАТЬ С СОБОЙ</p>
+          <h2>Главное в одном абзаце</h2>
+          <div class="exit-panel">
+            <p>
+              API — служебный вход к той же самой модели: вместо окошка с
+              кнопками улетает структура с полями. Внутри — какую модель зовём,
+              стопка реплик с ролями (в system прячется вся «личность»
+              ассистента) и ручки: temperature решает, насколько чудить, max_tokens
+              рубит длину. Обратно приходит текст и чек за токены, который чат тебе
+              не показывает. А раз дверь служебная — на ней нужен замок: ключ на
+              сервере, лимиты, рубильник.
+            </p>
+            <a class="route-link" href="../"><span>NEXT</span><span>ВЕРНУТЬСЯ В LAYER_03</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / DEEP DIVE</span>
+      <span>LAYER_03 · 04 // API WITHOUT CODE</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var N = window.NODEAI;
+      if (N) N.starfield(document.getElementById("starfield"));
+
+      /* ═══════════════════════════════════════════════════════════
+         Адрес прокси не вписан руками: его публикует gptappio.py
+         в api.json (рядом, в layer_03) при каждом запуске (туннель ведь каждый раз новый).
+         Страница читает файл и подхватывает адрес сама.
+         ═══════════════════════════════════════════════════════════ */
+      var API_CONFIG = "../api.json";
+      var API_URL = "";   // заполнится из api.json
+
+      var input   = document.getElementById("live-input");
+      var chars   = document.getElementById("live-chars");
+      var temp    = document.getElementById("live-temp");
+      var tempV   = document.getElementById("live-temp-v");
+      var maxT    = document.getElementById("live-max");
+      var maxV    = document.getElementById("live-max-v");
+      var go      = document.getElementById("live-go");
+      var reqEl   = document.getElementById("live-req");
+      var resEl   = document.getElementById("live-res");
+      var noteEl  = document.getElementById("live-note");
+      var modeEl  = document.getElementById("live-mode");
+      var dotEl   = document.getElementById("live-dot");
+      var usage   = document.getElementById("live-usage");
+      if (!input) return;
+
+      var LIVE = false;
+
+      /* ── что улетело бы: показываем настоящую структуру ── */
+      function buildPayload() {
+        return {
+          model: LIVE ? "(модель сервера)" : "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "Ты — тьютор в курсе про ИИ. Отвечай по-русски, коротко." },
+            { role: "user", content: input.value.trim() || "…" }
+          ],
+          temperature: parseFloat(temp.value),
+          max_tokens: parseInt(maxT.value, 10)
+        };
+      }
+
+      function paintReq() {
+        reqEl.textContent = JSON.stringify(buildPayload(), null, 2);
+      }
+
+      /* ── демо-ответы: ручки должны работать и без сервера ── */
+      var DEMO = {
+        low:  "Кэш — это временное хранилище часто используемых данных. Он ускоряет доступ, избавляя от повторного вычисления или загрузки.",
+        mid:  "Кэш — это место, где система держит то, что может понадобиться снова. Проще один раз отложить под руку, чем каждый раз бегать за одним и тем же.",
+        high: "Кэш — это карман запасливого человека: суёшь туда то, что вечно нужно, чтобы не лезть каждый раз в шкаф. Система поступает так же — и оттого шустрее."
+      };
+
+      function demoAnswer() {
+        var t = parseFloat(temp.value);
+        var text = t < 0.5 ? DEMO.low : t <= 1.0 ? DEMO.mid : DEMO.high;
+        // max_tokens — это нож, а не просьба: показываем обрыв честно
+        var budget = parseInt(maxT.value, 10);
+        var allowedChars = Math.round(budget * 2.2); // грубо: токен ≈ 2.2 символа кириллицы
+        var cut = false;
+        if (text.length > allowedChars) {
+          text = text.slice(0, allowedChars);
+          cut = true;
+        }
+        var inTok = Math.max(1, Math.round((input.value.trim().length + 60) / 2.2));
+        var outTok = Math.round(text.length / 2.2);
+        return {
+          text: text,
+          cut: cut,
+          usage: { prompt_tokens: inTok, completion_tokens: outTok, total_tokens: inTok + outTok }
+        };
+      }
+
+      function showUsage(u) {
+        document.getElementById("lu-in").textContent = u.prompt_tokens != null ? u.prompt_tokens : "—";
+        document.getElementById("lu-out").textContent = u.completion_tokens != null ? u.completion_tokens : "—";
+        document.getElementById("lu-all").textContent = u.total_tokens != null ? u.total_tokens : "—";
+        usage.hidden = false;
+      }
+
+      function setMode(live, msg) {
+        LIVE = live;
+        dotEl.className = "dot " + (live ? "on" : "off");
+        modeEl.textContent = msg;
+        paintReq();
+      }
+
+      /* ── проверяем сервер при загрузке ── */
+      /* ── шаг 1: узнаём адрес из api.json, шаг 2: стучимся к прокси ── */
+      function probe() {
+        if (typeof fetch !== "function") {
+          setMode(false, "демо-режим · браузер не умеет в связь, показываю заготовку");
+          return;
+        }
+        try {
+          probeFetch();
+        } catch (e) {
+          setMode(false, "демо-режим · связаться не вышло, показываю заготовку");
+        }
+      }
+
+      function probeFetch() {
+        // ?t= — чтобы не подсунули вчерашний адрес из кэша
+        fetch(API_CONFIG + "?t=" + Date.now(), { cache: "no-store" })
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+          .then(function (cfg) {
+            if (!cfg || !cfg.enabled || !cfg.url) {
+              setMode(false, "демо-режим · сервер сейчас выключен, ответы заготовлены заранее");
+              return;
+            }
+            API_URL = cfg.url.replace(/\/$/, "");
+            return checkHealth();
+          })
+          .catch(function () {
+            setMode(false, "демо-режим · сервер не подключён, ответы заготовлены заранее");
+          });
+      }
+
+      function checkHealth() {
+        return fetch(API_URL + "/health")
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+          .then(function (d) {
+            if (d && d.ok && d.key_loaded) {
+              setMode(true, "живой режим · запросы уходят в настоящую модель (" + (d.model || "?") + ")");
+            } else {
+              setMode(false, "демо-режим · сервер отвечает, но ключ не заряжен");
+            }
+          })
+          .catch(function () {
+            setMode(false, "демо-режим · сервер не отвечает, показываю заготовку");
+          });
+      }
+
+      /* ── отправка ── */
+      function send() {
+        var q = input.value.trim();
+        if (!q) { noteEl.textContent = "Сначала напиши вопрос."; return; }
+
+        go.disabled = true;
+        noteEl.textContent = "";
+        resEl.textContent = "…";
+        usage.hidden = true;
+        paintReq();
+
+        if (!LIVE) {
+          setTimeout(function () {
+            var d = demoAnswer();
+            resEl.textContent = JSON.stringify({
+              text: d.text + (d.cut ? " ▮" : ""),
+              usage: d.usage,
+              note: "демо-ответ, настоящая модель не вызывалась"
+            }, null, 2);
+            showUsage(d.usage);
+            noteEl.textContent = d.cut
+              ? "Заметил обрыв? max_tokens упёрся — фраза оборвана на полуслове."
+              : "Это заготовка. Покрути temperature — ответ поменяется.";
+            go.disabled = false;
+          }, 500);
+          return;
+        }
+
+        fetch(API_URL + "/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: q,
+            temperature: parseFloat(temp.value),
+            max_tokens: parseInt(maxT.value, 10)
+          })
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              resEl.textContent = JSON.stringify(res.d, null, 2);
+              noteEl.textContent = res.d.message || "Сервер отказал.";
+              go.disabled = false;
+              return;
+            }
+            resEl.textContent = JSON.stringify({
+              text: res.d.text,
+              model: res.d.model,
+              usage: res.d.usage
+            }, null, 2);
+            if (res.d.usage) showUsage(res.d.usage);
+            noteEl.textContent = "Это настоящий ответ модели. Посмотри на usage — вот твой чек.";
+            go.disabled = false;
+          })
+          .catch(function () {
+            var d = demoAnswer();
+            resEl.textContent = JSON.stringify({ text: d.text, usage: d.usage, note: "связь оборвалась, показываю заготовку" }, null, 2);
+            showUsage(d.usage);
+            noteEl.textContent = "Сервер не ответил — перешёл в демо.";
+            setMode(false, "демо-режим · связь потеряна");
+            go.disabled = false;
+          });
+      }
+
+      /* ── обвязка ── */
+      function count() { chars.textContent = input.value.length; paintReq(); }
+      input.addEventListener("input", count);
+      temp.addEventListener("input", function () { tempV.textContent = parseFloat(temp.value).toFixed(1); paintReq(); });
+      maxT.addEventListener("input", function () { maxV.textContent = maxT.value; paintReq(); });
+      go.addEventListener("click", send);
+
+      count();
+      probe();
+    })();
+  </script>
+</body>
+</html>

@@ -219,6 +219,11 @@ body{display:flex;flex-direction:column;}
       <span>АНТОН</span>
       <span class="bot-state" id="botAntonState">SOON</span>
     </a>
+    <a class="bot-link" id="botNode" href="https://yourssugar.github.io/A.C.EON/node-chat/">
+      <span class="bot-dot" id="botNodeDot"></span>
+      <span>NODE AI</span>
+      <span class="bot-state" id="botNodeState">&mdash;</span>
+    </a>
   </div>
 </div>
 
@@ -330,6 +335,7 @@ body{display:flex;flex-direction:column;}
   /* ── BOT STATUS ── */
   var KAI_CFG   = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/kai-chat/config.json';
   var ANTON_CFG = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/anton-chat/config.json';
+  var NODE_CFG  = 'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/node-chat/config.json';
 
   function setBotStatus(prefix, state){
     var dot=document.getElementById(prefix+'Dot'), txt=document.getElementById(prefix+'State');
@@ -349,9 +355,10 @@ body{display:flex;flex-direction:column;}
       .then(function(st){setBotStatus(prefix,st.busy?'busy':'online');})
       .catch(function(){setBotStatus(prefix,'offline');});
   }
-  checkBot(KAI_CFG,'botKai'); checkBot(ANTON_CFG,'botAnton');
+  checkBot(KAI_CFG,'botKai'); checkBot(ANTON_CFG,'botAnton'); checkBot(NODE_CFG,'botNode');
   setInterval(function(){checkBot(KAI_CFG,'botKai');},15000);
   setInterval(function(){checkBot(ANTON_CFG,'botAnton');},15000);
+  setInterval(function(){checkBot(NODE_CFG,'botNode');},15000);
 
   /* ── PSEUDO-CODE ENGINE ── */
   var SYS_POOL = [

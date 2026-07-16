@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>A.C.EON — NODE AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#040b16; --bg2:rgba(3,10,20,.97);
+  --acc:#2fe3ff; --acc-d:#0f3a4e; --acc-g:rgba(47,227,255,.14);
+  --grn:#34e6a0; --red:#ff5d6c; --amb:#ffb830;
+  --txt:#bfe9f5; --dim:#1b4a64; --dim2:#0f2c3e;
+}
+html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;
+  font-family:'JetBrains Mono','Courier New',monospace;color:var(--txt);}
+body{display:flex;flex-direction:column;}
+
+/* ── BG FX ── */
+#bg-fx{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.orb{position:absolute;border-radius:50%;filter:blur(60px);}
+.orb1{width:46vw;height:46vw;top:-14%;left:-10%;opacity:.15;
+  background:radial-gradient(circle,#2fe3ff 0%,transparent 70%);
+  animation:dA 26s ease-in-out infinite alternate;}
+.orb2{width:40vw;height:40vw;bottom:-18%;right:-12%;opacity:.11;
+  background:radial-gradient(circle,#1d6fff 0%,transparent 70%);
+  animation:dB 32s ease-in-out infinite alternate;}
+@keyframes dA{0%{transform:translate(0,0)scale(1);}100%{transform:translate(6%,8%)scale(1.12);}}
+@keyframes dB{0%{transform:translate(0,0)scale(1);}100%{transform:translate(-7%,-6%)scale(1.08);}}
+.grid{position:absolute;inset:0;opacity:.04;
+  background-image:linear-gradient(to right,#2fe3ff 1px,transparent 1px),linear-gradient(to bottom,#2fe3ff 1px,transparent 1px);
+  background-size:42px 42px;}
+.scan{position:absolute;left:0;right:0;height:140px;
+  background:linear-gradient(to bottom,transparent,rgba(47,227,255,.04),transparent);
+  animation:sc 9s linear infinite;}
+@keyframes sc{0%{top:-140px;}100%{top:100%;}}
+
+/* ── HEADER ── */
+#hd{position:relative;z-index:10;flex-shrink:0;
+  background:rgba(4,11,22,.97);border-bottom:1px solid var(--dim2);}
+#hd-top{display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:10px;padding:15px 24px 13px;}
+.back-lnk{font-size:10px;letter-spacing:3px;color:#3a6072;text-decoration:none;transition:.2s;}
+.back-lnk:hover{color:var(--acc);}
+#hd-title{font-size:12px;letter-spacing:4px;color:var(--acc);font-weight:700;
+  text-shadow:0 0 18px rgba(47,227,255,.5);}
+#hd-right{display:flex;align-items:center;gap:16px;}
+#hd-status{display:flex;align-items:center;gap:14px;font-size:9px;letter-spacing:2px;color:#3a6072;}
+.hd-dot{font-size:8px;transition:.3s;}
+.hd-dot.online{color:var(--grn);text-shadow:0 0 8px var(--grn);}
+.hd-dot.busy{color:var(--amb);text-shadow:0 0 8px var(--amb);animation:bp .9s infinite;}
+.hd-dot.offline{color:var(--red);text-shadow:0 0 8px var(--red);}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:.4}}
+#hd-div{padding:0 24px 10px;font-size:8px;color:var(--dim2);overflow:hidden;white-space:nowrap;}
+
+/* ── CHAT ── */
+#content{flex:1;position:relative;z-index:5;display:flex;flex-direction:column;
+  min-height:0;padding:0 24px;}
+#chat{flex:1;overflow-y:auto;padding:20px 0 12px;display:flex;flex-direction:column;gap:16px;}
+#chat::-webkit-scrollbar{width:5px;}
+#chat::-webkit-scrollbar-track{background:transparent;}
+#chat::-webkit-scrollbar-thumb{background:var(--dim2);border-radius:3px;}
+
+.msg{max-width:min(760px,92%);animation:in .3s ease;}
+@keyframes in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.msg-lbl{font-size:8px;letter-spacing:3px;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.msg-body{font-size:13px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+
+.msg.node .msg-lbl{color:var(--acc);}
+.msg.node .msg-body{color:var(--txt);border-left:2px solid var(--acc-d);
+  padding:10px 14px;background:rgba(47,227,255,.04);border-radius:0 4px 4px 0;}
+.msg.me{align-self:flex-end;}
+.msg.me .msg-lbl{color:#3a6072;justify-content:flex-end;}
+.msg.me .msg-body{color:#8fb8c8;border-right:2px solid var(--dim2);
+  padding:10px 14px;background:rgba(255,255,255,.02);border-radius:4px 0 0 4px;text-align:right;}
+.msg.sys .msg-lbl{color:var(--amb);}
+.msg.sys .msg-body{color:#b58a3c;font-size:12px;border-left:2px solid rgba(255,184,48,.3);
+  padding:8px 14px;background:rgba(255,184,48,.04);}
+.msg.err .msg-lbl{color:var(--red);}
+.msg.err .msg-body{color:#c8737e;font-size:12px;border-left:2px solid rgba(255,93,108,.35);
+  padding:8px 14px;background:rgba(255,93,108,.04);}
+.cur::after{content:'▋';animation:blink .7s step-end infinite;color:var(--acc);margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── BAR ── */
+#bar{flex-shrink:0;border-top:1px solid var(--dim2);padding:12px 0 16px;background:rgba(4,11,22,.6);}
+.bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+#bar-label{font-size:9px;letter-spacing:3px;color:var(--dim);}
+#bar-count{font-size:9px;color:#2a4a5c;}
+#bar-row{display:flex;align-items:center;gap:10px;
+  border:1px solid var(--dim2);background:rgba(0,0,0,.35);padding:10px 12px;
+  transition:border-color .25s,box-shadow .25s;}
+#bar-row:focus-within{border-color:var(--acc-d);box-shadow:0 0 22px -6px var(--acc-g);}
+#bar-row.off{opacity:.45;}
+#bar-pr{color:var(--acc);font-size:12px;flex-shrink:0;}
+#bar-input{flex:1;background:none;border:none;outline:none;color:var(--txt);
+  font-family:inherit;font-size:13px;}
+#bar-input::placeholder{color:#2a4a5c;}
+#bar-input:disabled{cursor:not-allowed;}
+#bar-btn{background:rgba(47,227,255,.1);border:1px solid var(--acc-d);color:var(--acc);
+  font-family:inherit;font-size:9px;letter-spacing:2px;padding:8px 16px;cursor:pointer;
+  transition:.2s;flex-shrink:0;}
+#bar-btn:hover:not(:disabled){background:rgba(47,227,255,.2);box-shadow:0 0 16px -4px var(--acc-g);}
+#bar-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+@media(max-width:640px){
+  #hd-top{padding:12px 14px 10px;} #hd-div{padding:0 14px 8px;}
+  #content{padding:0 14px;} #hd-title{font-size:10px;letter-spacing:2px;}
+  .msg{max-width:100%;}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="bg-fx">
+  <div class="grid"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="scan"></div>
+</div>
+
+<div id="hd">
+  <div id="hd-top">
+    <a href="../" class="back-lnk">&#8592; MAIN</a>
+    <div id="hd-title">NODE AI &mdash; DIRECT LINK</div>
+    <div id="hd-right">
+      <div id="hd-status">
+        <span><span class="hd-dot" id="dot">&#9679;</span> <span id="state">CONNECTING</span></span>
+        <span id="obs">OBS: &mdash;</span>
+      </div>
+    </div>
+  </div>
+  <div id="hd-div">────────────────────────────────────────────────────────────────────────────────</div>
+</div>
+
+<div id="content">
+  <div id="chat"></div>
+  <div id="bar">
+    <div class="bar-top">
+      <div id="bar-label">[ TRANSMIT MESSAGE ]</div>
+      <div id="bar-count">0 / 1000</div>
+    </div>
+    <div id="bar-row" class="off">
+      <span id="bar-pr">&#8250;_</span>
+      <input id="bar-input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="устанавливаю связь..." maxlength="1000" disabled>
+      <button id="bar-btn" disabled>SEND</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* адрес берётся из config.json рядом — его пишет gptappio при запуске */
+  var CFG = "config.json";
+  var API = "";
+  var READY = false;
+
+  var chat  = document.getElementById("chat");
+  var input = document.getElementById("bar-input");
+  var btn   = document.getElementById("bar-btn");
+  var row   = document.getElementById("bar-row");
+  var dot   = document.getElementById("dot");
+  var stEl  = document.getElementById("state");
+  var cntEl = document.getElementById("bar-count");
+
+  /* ── наблюдатель: тот же ID, что на странице связи ── */
+  var obs = localStorage.getItem("aceon_obs");
+  if(!obs){
+    obs = "OBS_" + Math.random().toString(36).substring(2,8).toUpperCase();
+    localStorage.setItem("aceon_obs", obs);
+  }
+  document.getElementById("obs").textContent = "OBS: " + obs;
+
+  /* ── сообщения ── */
+  function add(kind, label, text){
+    var m = document.createElement("div");
+    m.className = "msg " + kind;
+    var l = document.createElement("div");
+    l.className = "msg-lbl";
+    l.textContent = label;
+    var b = document.createElement("div");
+    b.className = "msg-body";
+    b.textContent = text;
+    m.appendChild(l); m.appendChild(b);
+    chat.appendChild(m);
+    chat.scrollTop = chat.scrollHeight;
+    return b;
+  }
+
+  function type(el, text){
+    el.textContent = "";
+    el.classList.add("cur");
+    var i = 0;
+    (function step(){
+      if(i >= text.length){ el.classList.remove("cur"); return; }
+      el.textContent += text.charAt(i++);
+      chat.scrollTop = chat.scrollHeight;
+      setTimeout(step, 12);
+    })();
+  }
+
+  function setState(s){
+    dot.className = "hd-dot " + s;
+    stEl.textContent = s === "online" ? "ONLINE" : s === "busy" ? "BUSY" : "OFFLINE";
+    READY = (s === "online" || s === "busy");
+    input.disabled = !READY;
+    btn.disabled = !READY;
+    row.classList.toggle("off", !READY);
+    input.placeholder = READY ? "спроси NODE" : "канал недоступен";
+  }
+
+  function fetchTO(url, ms, opt){
+    var c = new AbortController(), id = setTimeout(function(){ c.abort(); }, ms);
+    opt = opt || {}; opt.signal = c.signal;
+    return fetch(url, opt).finally(function(){ clearTimeout(id); });
+  }
+
+  /* ── связь: config.json -> api_url -> /api/state ── */
+  function connect(first){
+    fetchTO(CFG + "?t=" + Date.now(), 6000, {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(c){
+        if(!c.api_url || c.enabled === false) throw 0;
+        API = c.api_url.replace(/\/$/, "");
+        return fetchTO(API + "/api/state", 5000);
+      })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(st){
+        var was = READY;
+        setState(st.busy ? "busy" : "online");
+        if(first) hello();
+        else if(!was) add("sys","// SYSTEM","Канал восстановлен. NODE снова на связи.");
+      })
+      .catch(function(){
+        var was = READY;
+        setState("offline");
+        if(first) add("err","// NO SIGNAL",
+          "NODE вне сети. Ядро не отвечает — узел выключен или канал связи оборван.\nСтраница продолжит попытки подключения.");
+        else if(was) add("err","// SIGNAL LOST","Связь с NODE потеряна.");
+      });
+  }
+
+  function hello(){
+    var b = add("node","NODE","");
+    type(b, "Канал открыт. Наблюдатель " + obs + " опознан.\nЗадавай вопрос — отвечу в пределах доступных сегментов памяти.");
+  }
+
+  /* ── отправка ── */
+  function send(){
+    var q = input.value.trim();
+    if(!q || !READY) return;
+
+    add("me", obs, q);
+    input.value = "";
+    cntEl.textContent = "0 / 1000";
+    input.disabled = true; btn.disabled = true;
+
+    var b = add("node","NODE","");
+    b.classList.add("cur");
+    b.textContent = "обработка";
+
+    fetchTO(API + "/api/chat", 70000, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({prompt: q})
+    })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+      .then(function(res){
+        b.classList.remove("cur");
+        if(!res.ok){
+          b.parentNode.className = "msg err";
+          b.parentNode.querySelector(".msg-lbl").textContent = "// ОТКАЗ";
+          b.textContent = res.d.message || "Ядро отклонило запрос.";
+        } else {
+          type(b, res.d.text);
+        }
+      })
+      .catch(function(e){
+        b.classList.remove("cur");
+        b.parentNode.className = "msg err";
+        b.parentNode.querySelector(".msg-lbl").textContent = "// СБОЙ";
+        b.textContent = "Ответ не получен: канал оборвался.";
+        console.warn("[NODE] запрос не прошёл:", e);
+        connect(false);
+      })
+      .finally(function(){
+        if(READY){ input.disabled = false; btn.disabled = false; input.focus(); }
+      });
+  }
+
+  input.addEventListener("input", function(){
+    cntEl.textContent = input.value.length + " / 1000";
+  });
+  input.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); send(); }
+  });
+  btn.addEventListener("click", send);
+
+  connect(true);
+  setInterval(function(){ connect(false); }, 15000);
+})();
+</script>
+</body>
+</html>

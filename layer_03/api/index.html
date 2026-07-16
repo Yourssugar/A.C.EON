@@ -1018,9 +1018,9 @@
             </div>
 
             <label class="live-label" for="live-input">твой вопрос (коротко)</label>
-            <textarea id="live-input" class="live-input" rows="2" maxlength="300"
+            <textarea id="live-input" class="live-input" rows="2" maxlength="1000"
               placeholder="Например: объясни в двух предложениях, что такое кэш">Объясни в двух предложениях, что такое кэш</textarea>
-            <div class="live-count"><span id="live-chars">0</span> / 300 символов</div>
+            <div class="live-count"><span id="live-chars">0</span> / 1000 символов</div>
 
             <div class="live-knobs">
               <div class="lk">
@@ -1029,8 +1029,8 @@
                 <div class="lk-hint"><span>точно</span><span>вольно</span></div>
               </div>
               <div class="lk">
-                <label for="live-max">max_tokens · <b id="live-max-v">120</b></label>
-                <input type="range" id="live-max" min="16" max="150" step="8" value="120">
+                <label for="live-max">max_tokens · <b id="live-max-v">480</b></label>
+                <input type="range" id="live-max" min="64" max="1500" step="32" value="480">
                 <div class="lk-hint"><span>обрубит</span><span>подлиннее</span></div>
               </div>
             </div>
@@ -1173,9 +1173,9 @@
       /* ── что улетело бы: показываем настоящую структуру ── */
       function buildPayload() {
         return {
-          model: LIVE ? "(модель сервера)" : "gpt-5.4-mini",
+          model: LIVE ? "(модель сервера)" : "gpt-4o-mini",
           messages: [
-            { role: "system", content: "Ты — тьютор в курсе про ИИ. Отвечай на языке пользователя, коротко." },
+            { role: "system", content: "Ты — тьютор в курсе про ИИ. Отвечай по-русски, коротко." },
             { role: "user", content: input.value.trim() || "…" }
           ],
           temperature: parseFloat(temp.value),
@@ -1315,7 +1315,9 @@
           .then(function (res) {
             if (!res.ok) {
               resEl.textContent = JSON.stringify(res.d, null, 2);
-              noteEl.textContent = res.d.message || "Сервер отказал.";
+              noteEl.textContent = (res.d.message || "Сервер отказал.") +
+                (res.d.error === "upstream" ? " Загляни в консоль сервера — там причина." : "");
+              console.warn("[NODE AI] сервер отказал:", res.d);
               go.disabled = false;
               return;
             }
@@ -1328,11 +1330,24 @@
             noteEl.textContent = "Это настоящий ответ модели. Посмотри на usage — вот твой чек.";
             go.disabled = false;
           })
-          .catch(function () {
+          .catch(function (e) {
+            var why = String(e && e.message || e);
+            var human = /Failed to fetch|NetworkError|Load failed/i.test(why)
+              ? "браузер не смог достучаться (упал туннель или не пустил CORS)"
+              : /JSON|Unexpected token/i.test(why)
+              ? "сервер прислал не JSON — скорее всего страницу ошибки"
+              : why;
             var d = demoAnswer();
-            resEl.textContent = JSON.stringify({ text: d.text, usage: d.usage, note: "связь оборвалась, показываю заготовку" }, null, 2);
+            resEl.textContent = JSON.stringify({
+              error: "связь оборвалась",
+              why: human,
+              text: d.text,
+              usage: d.usage,
+              note: "показываю заготовку"
+            }, null, 2);
             showUsage(d.usage);
-            noteEl.textContent = "Сервер не ответил — перешёл в демо.";
+            noteEl.textContent = "Не дошло: " + human + ". Подробности — в консоли (F12).";
+            console.warn("[NODE AI] запрос не прошёл:", e);
             setMode(false, "демо-режим · связь потеряна");
             go.disabled = false;
           });

@@ -1,7 +1,7 @@
 {
-  "api_url": "",
+  "api_url": "https://additional-dos-releases-positioning.trycloudflare.com",
   "name": "NODE",
-  "model": "",
-  "enabled": false,
-  "updated": "ещё не запускался"
+  "model": "gpt-5.4-mini",
+  "enabled": true,
+  "updated": "2026-07-16 18:09:09"
 }

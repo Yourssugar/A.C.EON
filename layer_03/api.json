@@ -1,6 +1,6 @@
 {
-  "url": "https://rand-ciao-lightweight-shepherd.trycloudflare.com",
+  "url": "",
   "model": "gpt-5.4-mini",
-  "enabled": true,
-  "updated": "2026-07-16 10:44:15"
+  "enabled": false,
+  "updated": "2026-07-16 16:43:24"
 }

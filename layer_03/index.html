@@ -911,6 +911,21 @@
     .rag-mode-btn { flex:1; min-height:32px; border:1px solid rgba(96,186,255,0.22); border-radius:4px; background:rgba(2,8,12,0.6); color:#a9c6d2; cursor:pointer; font-family:var(--mono); font-size:0.7rem; transition:border-color 150ms ease, background 150ms ease, color 150ms ease; }
     .rag-mode-btn:hover, .rag-mode-btn:focus-visible { border-color:rgba(242,207,98,0.5); color:#fff4c7; outline:none; }
     .rag-mode-btn.is-active { border-color:rgba(24,226,140,0.7); background:rgba(24,226,140,0.1); color:#d9fff0; }
+
+    .lesson-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .lesson-head .lesson-kicker { margin: 0; }
+    .deep-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px;
+      border: 1px solid rgba(242, 207, 98, 0.42); border-radius: 4px;
+      background: rgba(242, 207, 98, 0.07);
+      color: #f0dfae; font-family: var(--mono); font-size: 0.7rem;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    }
+    .deep-link:hover, .deep-link:focus-visible {
+      border-color: rgba(242, 207, 98, 0.8); background: rgba(242, 207, 98, 0.14);
+      color: #fff6d9; outline: none; transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -975,7 +990,10 @@
         </div>
 
         <section class="lesson" id="pipeline">
-          <p class="lesson-kicker">01 / REQUEST PIPELINE</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">01 / REQUEST PIPELINE</p>
+            <a class="deep-link" href="pipeline/">разобрать подробнее →</a>
+          </div>
           <h2>Что происходит после твоего сообщения</h2>
           <p>
             Снаружи всё выглядит просто: написал запрос, получил ответ.
@@ -1053,7 +1071,10 @@
         </section>
 
         <section class="lesson" id="context">
-          <p class="lesson-kicker">03 / CONTEXT WINDOW</p>
+          <div class="lesson-head">
+            <p class="lesson-kicker">03 / CONTEXT WINDOW</p>
+            <a class="deep-link" href="tokens-context/">разобрать: токены и контекст →</a>
+          </div>
           <h2>Контекст: почему модель забывает</h2>
           <p>
             Окно контекста — это рабочий стол модели. На нём лежит история

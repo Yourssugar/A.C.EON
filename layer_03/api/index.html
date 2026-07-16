@@ -1173,9 +1173,9 @@
       /* ── что улетело бы: показываем настоящую структуру ── */
       function buildPayload() {
         return {
-          model: LIVE ? "(модель сервера)" : "gpt-4o-mini",
+          model: LIVE ? "(модель сервера)" : "gpt-5.4-mini",
           messages: [
-            { role: "system", content: "Ты — тьютор в курсе про ИИ. Отвечай по-русски, коротко." },
+            { role: "system", content: "Ты — тьютор в курсе про ИИ. Отвечай на языке пользователя, коротко." },
             { role: "user", content: input.value.trim() || "…" }
           ],
           temperature: parseFloat(temp.value),

@@ -1,6 +1,6 @@
 {
-  "url": "",
-  "model": "",
-  "enabled": false,
-  "updated": "ещё не запускался"
+  "url": "https://bomb-never-accept-licensed.trycloudflare.com",
+  "model": "gpt-5.1-mini",
+  "enabled": true,
+  "updated": "2026-07-16 10:09:08"
 }

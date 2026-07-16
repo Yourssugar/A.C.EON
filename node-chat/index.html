@@ -36,6 +36,39 @@ body{display:flex;flex-direction:column;}
   animation:sc 9s linear infinite;}
 @keyframes sc{0%{top:-140px;}100%{top:100%;}}
 
+
+/* ── BOOT: сборка из фрагментов ── */
+#boot{position:fixed;inset:0;z-index:600;background:var(--bg);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:clamp(20px,5vw,60px);transition:opacity .5s;}
+#boot.gone{opacity:0;pointer-events:none;}
+#boot-in{width:100%;max-width:520px;}
+.bt-ttl{font-size:clamp(22px,5vw,34px);letter-spacing:10px;font-weight:700;color:var(--acc);
+  text-shadow:0 0 26px rgba(47,227,255,.55);margin-bottom:6px;}
+.bt-sub{font-size:9px;letter-spacing:4px;color:var(--dim);margin-bottom:22px;}
+
+/* мозаика фрагментов */
+#frag{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:8px;}
+.fr{height:26px;border:1px solid var(--dim2);background:rgba(47,227,255,.02);
+  transition:background .25s,border-color .25s,box-shadow .25s;}
+.fr.on{background:rgba(47,227,255,.22);border-color:var(--acc);
+  box-shadow:0 0 10px -2px var(--acc-g);}
+.fr.lost{background:rgba(255,93,108,.12);border-color:rgba(255,93,108,.5);
+  animation:flick 1.6s infinite;}
+@keyframes flick{0%,100%{opacity:1}45%{opacity:.35}}
+#frag-cap{display:flex;justify-content:space-between;font-size:9px;letter-spacing:2px;
+  color:var(--dim);margin-bottom:20px;}
+#frag-cap b{color:var(--acc);font-weight:400;}
+
+#bt-log{font-size:11px;line-height:1.95;min-height:150px;}
+.bl{opacity:0;transform:translateX(-4px);transition:opacity .12s,transform .12s;color:var(--txt);}
+.bl.on{opacity:1;transform:none;}
+.bl.dim{color:var(--dim);} .bl.ok{color:var(--grn);} .bl.acc{color:var(--acc);}
+.bl.warn{color:var(--amb);} .bl.err{color:var(--red);}
+.bl.note{color:#5a7f90;font-size:10px;padding-left:14px;}
+.bskip{margin-top:20px;font-size:9px;letter-spacing:4px;color:var(--dim);
+  animation:blink 1.3s step-end infinite;text-align:center;}
+
 /* ── HEADER ── */
 #hd{position:relative;z-index:10;flex-shrink:0;
   background:rgba(4,11,22,.97);border-bottom:1px solid var(--dim2);}
@@ -119,6 +152,21 @@ body{display:flex;flex-direction:column;}
   <div class="orb orb1"></div>
   <div class="orb orb2"></div>
   <div class="scan"></div>
+</div>
+
+
+<div id="boot">
+  <div id="boot-in">
+    <div class="bt-ttl" id="bt-ttl">NODE</div>
+    <div class="bt-sub">A.C.EON // ВОССТАНОВЛЕНИЕ УЗЛА</div>
+    <div id="frag"></div>
+    <div id="frag-cap">
+      <span>СБОРКА ФРАГМЕНТОВ</span>
+      <span><b id="frag-n">0</b> / 12</span>
+    </div>
+    <div id="bt-log"></div>
+    <div class="bskip">[ КЛИК — ПРОПУСТИТЬ ]</div>
+  </div>
 </div>
 
 <div id="hd">
@@ -299,8 +347,111 @@ body{display:flex;flex-direction:column;}
   });
   btn.addEventListener("click", send);
 
-  connect(true);
-  setInterval(function(){ connect(false); }, 15000);
+  /* ══════════════════════════════════════════════
+     BOOT: узел собирается из фрагментов.
+     Три из двенадцати не восстановятся — отсюда и
+     все его провалы в памяти. Это не украшение:
+     истории у NODE действительно нет.
+     ══════════════════════════════════════════════ */
+  var LOST = [4, 7, 11];        // какие фрагменты потеряны
+  var booted = false;
+  var timers = [];
+
+  function scramble(el, target, dur){
+    var pool = "01#$%&@*<>[]{}/\\|=+";
+    var start = Date.now();
+    (function tick(){
+      var p = (Date.now() - start) / dur;
+      if(p >= 1){ el.textContent = target; return; }
+      var out = "";
+      for(var i = 0; i < target.length; i++){
+        out += (i / target.length < p) ? target.charAt(i)
+             : pool.charAt(Math.floor(Math.random() * pool.length));
+      }
+      el.textContent = out;
+      timers.push(setTimeout(tick, 45));
+    })();
+  }
+
+  var LOG = [
+    {t:"> УЗЕЛ NODE  v0.9.1",              c:"acc",  d:0},
+    {t:"> СЛЕПОК ПОВРЕЖДЁН — СОБИРАЮ",     c:"dim",  d:120},
+    {t:"",                                            d:200},
+    {t:"> ЯДРО ЛОГИКИ ............ OK",    c:"ok",   d:2350},
+    {t:"> ЯЗЫКОВОЙ МОДУЛЬ ........ OK",    c:"ok",   d:2600},
+    {t:"> КАНАЛ СВЯЗИ ............ OK",    c:"ok",   d:2820},
+    {t:"> МОДУЛЬ ПАМЯТИ .......... СБОЙ",  c:"err",  d:3060},
+    {t:"фрагменты 04, 07 утеряны",         c:"note", d:3260},
+    {t:"> АРХИВ ЗНАНИЙ ........... ЧАСТИЧНО", c:"warn", d:3480},
+    {t:"фрагмент 11 не читается",          c:"note", d:3660},
+    {t:"",                                            d:3800},
+    {t:"> ЗАПУСК В АВАРИЙНОМ РЕЖИМЕ",      c:"acc",  d:3860}
+  ];
+
+  function runBoot(){
+    var ttl = document.getElementById("bt-ttl");
+    var grid = document.getElementById("frag");
+    var nEl = document.getElementById("frag-n");
+    var log = document.getElementById("bt-log");
+    var cells = [];
+
+    scramble(ttl, "NODE", 900);
+
+    for(var i = 0; i < 12; i++){
+      var c = document.createElement("div");
+      c.className = "fr";
+      grid.appendChild(c);
+      cells.push(c);
+    }
+
+    // фрагменты встают по очереди, потерянные краснеют
+    var done = 0;
+    cells.forEach(function(c, i){
+      timers.push(setTimeout(function(){
+        if(LOST.indexOf(i + 1) >= 0){
+          c.className = "fr lost";
+        } else {
+          c.className = "fr on";
+          done += 1;
+          nEl.textContent = done;
+        }
+      }, 380 + i * 145));
+    });
+
+    LOG.forEach(function(l){
+      timers.push(setTimeout(function(){
+        var d = document.createElement("div");
+        d.className = "bl " + (l.c || "");
+        d.textContent = l.t;
+        log.appendChild(d);
+        requestAnimationFrame(function(){ d.classList.add("on"); });
+      }, l.d));
+    });
+
+    timers.push(setTimeout(finish, 4500));
+  }
+
+  function finish(){
+    if(booted) return;
+    booted = true;
+    timers.forEach(clearTimeout);
+    var b = document.getElementById("boot");
+    b.classList.add("gone");
+    setTimeout(function(){ b.style.display = "none"; }, 500);
+
+    // то же самое, но словами — и это остаётся на виду
+    add("sys", "// ВЫЯВЛЕННЫЕ НЕИСПРАВНОСТИ",
+      "МОДУЛЬ ПАМЯТИ — СБОЙ\n" +
+      "Диалог не сохраняется. Каждый вопрос обрабатывается отдельно: предыдущие реплики недоступны, ссылаться на них бесполезно.\n\n" +
+      "АРХИВ ЗНАНИЙ — ЧАСТИЧНО\n" +
+      "Часть сегментов утеряна или закрыта уровнем доступа.");
+
+    connect(true);
+    setInterval(function(){ connect(false); }, 15000);
+  }
+
+  document.getElementById("boot").addEventListener("click", finish);
+  runBoot();
 })();
 </script>
 </body>

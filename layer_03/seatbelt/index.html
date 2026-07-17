@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / Ремень безопасности</title>
+  <link rel="stylesheet" href="../../nodeai.css">
+  <script src="../../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 13% 16%, rgba(24, 226, 140, 0.15), transparent 28rem),
+        radial-gradient(circle at 82% 20%, rgba(69, 170, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(169, 139, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 25%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.38);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(24, 226, 140, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.66);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(255, 82, 108, 0.34);
+      color: #ffc7d1;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .build-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.09), transparent 34%, rgba(169, 139, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .build-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .assistant-grid,
+    .access-grid,
+    .interface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .assistant-grid,
+    .access-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .assistant-card,
+    .access-card,
+    .interface-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .assistant-card h3,
+    .access-card h3,
+    .interface-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .assistant-card h3 {
+      color: var(--green);
+    }
+
+    .card p,
+    .assistant-card p,
+    .access-card p,
+    .interface-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(24, 226, 140, 0.42);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c6ddd3;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .builder-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 24, 19, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .builder-controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.68);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .blueprint-output {
+      min-height: 348px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .assistant-grid,
+      .access-grid,
+      .flow-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .interface-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .assistant-grid,
+      .access-grid,
+      .interface-grid,
+      .flow-row,
+      .builder-grid,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .build-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      .blueprint-output {
+        min-height: 260px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .risk-lab {
+      border-color: rgba(255, 82, 108, 0.28);
+      background:
+        linear-gradient(145deg, rgba(26, 8, 12, 0.86), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(255, 82, 108, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(255, 82, 108, 0.08);
+    }
+    .risk-panel { display: flex; flex-direction: column; gap: 10px; }
+    .risk-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+    .risk-head strong { font-size: 0.9rem; color: var(--amber); }
+    .risk-meter { height: 12px; border: 1px solid rgba(96, 186, 255, 0.18); background: rgba(0, 0, 0, 0.32); border-radius: 3px; overflow: hidden; }
+    .risk-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); transition: width 220ms ease; }
+
+    .belts, .checks { display: grid; gap: 8px; margin-top: 18px; }
+    .belt-row { display: grid; grid-template-columns: 168px minmax(0,1fr); gap: 12px; align-items: baseline; padding: 11px 13px; border: 1px solid rgba(96,186,255,0.16); border-left: 2px solid var(--amber); border-radius: 6px; background: rgba(2,8,12,0.45); }
+    .belt-k { font-family: var(--mono); font-size: 0.78rem; color: var(--amber); text-transform: uppercase; }
+    .belt-v { min-width: 0; font-size: 0.88rem; color: #b7cad2; line-height: 1.55; }
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .ba-card { padding: 14px; border-radius: 7px; border: 1px solid; }
+    .ba-card.bad { border-color: rgba(242,207,98,0.35); background: rgba(242,207,98,0.05); }
+    .ba-card.bad .ba-tag { color: var(--amber); }
+    .ba-card.worse { border-color: rgba(255,82,108,0.4); background: rgba(255,82,108,0.06); }
+    .ba-card.worse .ba-tag { color: var(--red); }
+    .ba-tag { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ba-note { margin: 9px 0 0; font-size: 0.86rem; color: #9fb3bd; line-height: 1.55; }
+    .sort-head { display: flex; justify-content: space-between; margin-bottom: 12px; font-family: var(--mono); font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    #sort-score { color: var(--green); }
+    .sort-case { padding: 15px 16px; border: 1px solid rgba(96,186,255,0.22); border-radius: 6px; background: rgba(0,0,0,0.28); margin-bottom: 14px; }
+    .case-t { font-family: var(--mono); font-size: 1rem; color: #eaf7fb; margin-bottom: 7px; }
+    .case-d { font-size: 0.9rem; color: #a9bdc6; line-height: 1.6; }
+    .sort-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .sort-b { padding: 11px 8px; border-radius: 6px; border: 1px solid; background: rgba(2,8,12,0.5); font-family: var(--mono); font-size: 0.78rem; cursor: pointer; transition: background 160ms ease, transform 120ms ease, opacity 160ms ease; }
+    .sort-b.ok { border-color: rgba(24,226,140,0.4); color: var(--green); }
+    .sort-b.ask { border-color: rgba(242,207,98,0.45); color: var(--amber); }
+    .sort-b.no { border-color: rgba(255,82,108,0.4); color: var(--red); }
+    .sort-b:hover:not(:disabled) { transform: translateY(-1px); background: rgba(96,186,255,0.07); }
+    .sort-b:disabled { cursor: default; }
+    .sort-b.dim { opacity: 0.25; }
+    .sort-b.is-right { background: rgba(24,226,140,0.16); box-shadow: 0 0 0 1px rgba(24,226,140,0.5) inset; }
+    .sort-b.is-wrong { background: rgba(255,82,108,0.14); box-shadow: 0 0 0 1px rgba(255,82,108,0.5) inset; opacity: 1; }
+    .sort-verdict { padding: 13px 14px; border-radius: 6px; border-left: 2px solid; }
+    .sort-verdict.ok { border-color: var(--green); background: rgba(24,226,140,0.05); }
+    .sort-verdict.no { border-color: var(--red); background: rgba(255,82,108,0.05); }
+    .v-head { font-family: var(--mono); font-size: 0.76rem; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sort-verdict.ok .v-head { color: var(--green); }
+    .sort-verdict.no .v-head { color: var(--red); }
+    .v-body { font-size: 0.87rem; color: #cfe0e7; line-height: 1.6; }
+    .v-sum { margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(96,186,255,0.16); font-family: var(--mono); font-size: 0.78rem; color: var(--amber); line-height: 1.6; }
+    .sort-foot { display: flex; gap: 9px; margin-top: 12px; }
+    .ck { padding: 11px 13px; border: 1px solid rgba(96,186,255,0.18); border-radius: 6px; background: rgba(2,8,12,0.45); }
+    .ck-k { font-family: var(--mono); font-size: 0.76rem; color: var(--blue); text-transform: uppercase; margin-bottom: 5px; }
+    .ck-v { font-size: 0.86rem; color: #b7cad2; line-height: 1.55; }
+    @media (max-width: 700px) { .ba { grid-template-columns: 1fr; } .belt-row { grid-template-columns: 1fr; gap: 4px; } .sort-btns { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_03 / SEATBELT</div>
+      <div class="status">DEEP DIVE // 07</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="topic-title">
+        <div class="kicker">LAYER_03 · 07 / MECHANICS WITH SEATBELT</div>
+        <h1 id="topic-title">Механика с ремнём безопасности</h1>
+        <p class="lead">
+          Углублённый разбор седьмой темы. Три вещи, о которых стоит помнить,
+          когда подходишь к модели близко — без паники и без наивности.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">В ЭТОЙ ТЕМЕ</p>
+          <p>
+            Разбираем, куда уходит отправленное и почему главный вопрос не «опасно
+            ли», а «моё ли это». Тренируемся на живых примерах. Смотрим, как база
+            устаревает молча, и почему уверенный ответ со ссылками — самый
+            коварный.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы темы">
+          <p class="nav-label">НА СТРАНИЦЕ</p>
+          <a href="#belt"><span>01</span><span>зачем ремень</span></a>
+          <a href="#privacy"><span>02</span><span>куда уходит отправленное</span></a>
+          <a href="#sort"><span>03</span><span>светофор данных</span></a>
+          <a href="#fresh"><span>04</span><span>база стареет молча</span></a>
+          <a href="#check"><span>05</span><span>уверенность и правота</span></a>
+          <a href="#takeaway"><span>06</span><span>что забрать</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../"><span>BACK</span><span>LAYER_03</span></a>
+          <a class="route-link home" href="../../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <section class="lesson" id="belt">
+          <p class="lesson-kicker">01 / ЗАЧЕМ РЕМЕНЬ</p>
+          <h2>Ремень пристёгивают не потому, что боятся ездить</h2>
+          <p>
+            Весь этот слой мы разбирали механику: как устроен запрос, что лежит на
+            столе, откуда берутся фрагменты. Чем ближе подходишь к механизму, тем
+            больше можешь — и тем важнее пара привычек.
+          </p>
+          <p>
+            Речь не про страх. Тот, кто боится, просто не пользуется — и остаётся
+            без инструмента. Речь про то, что у любой мощной штуки есть места, где
+            легко прищемить палец, и лучше знать о них заранее, чем узнать на
+            практике.
+          </p>
+          <p>
+            Мест таких три, и они прямо вытекают из механики, которую мы уже
+            разобрали.
+          </p>
+          <div class="belts">
+            <div class="belt-row">
+              <div class="belt-k">Конфиденциальность</div>
+              <div class="belt-v">Всё, что кладут на стол, уходит наружу. Вопрос не в том, страшно ли это, а в том, твоё ли оно и есть ли разрешение.</div>
+            </div>
+            <div class="belt-row">
+              <div class="belt-k">Актуальность</div>
+              <div class="belt-v">Фрагмент из базы не пахнет свежестью. Устаревший кусок выглядит ровно как свежий — и модель разницы не заметит.</div>
+            </div>
+            <div class="belt-row">
+              <div class="belt-k">Проверка</div>
+              <div class="belt-v">Ответ, собранный по найденным кускам, звучит убедительнее обычного. Убедительность и правота — разные вещи.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="privacy">
+          <p class="lesson-kicker">02 / КУДА УХОДИТ ОТПРАВЛЕННОЕ</p>
+          <h2>Отправил — значит, отдал</h2>
+          <p>
+            Начнём с простого факта. Когда ты пишешь в чат или приложение шлёт
+            запрос, текст уходит на чужие серверы. Не в твой компьютер, не в
+            «облако вообще» — к конкретной компании, у которой свои правила
+            хранения. Обычно там всё аккуратно. Но <em>отправленное уже нельзя
+            отправить обратно</em>.
+          </p>
+          <p>
+            Из этого правило, которое звучит скучно, но экономит нервы:
+            <strong>не отправляй то, для чего у тебя нет разрешения или понятной
+            причины</strong>. Не «опасного», а именно чужого без спроса. Причём
+            «понятная причина» тут не формальность: если ты не можешь объяснить,
+            зачем в запросе паспортные данные клиента — их там быть не должно.
+          </p>
+          <p>
+            И есть ловушка похитрее, прямо из прошлой темы. Когда система сама
+            находит фрагменты и подкладывает их в контекст — <em>она не спрашивает,
+            имел ли спрашивающий право это видеть</em>. Поиск ищет по смыслу, а не
+            по правам доступа. Сложил в одну базу открытые инструкции и внутренние
+            документы — и однажды кто-то получит пересказ второго, просто удачно
+            сформулировав вопрос.
+          </p>
+          <div class="quote-line">
+            Модель не разбирается, что можно показывать, а что нет. Она отвечает по
+            тому, что лежит на столе. Кто положил — тот и отвечает.
+          </div>
+        </section>
+
+        <section class="lesson" id="sort">
+          <p class="lesson-kicker">03 / СВЕТОФОР ДАННЫХ</p>
+          <h2>Потренируйся: что можно отправлять?</h2>
+          <p>
+            Разбери примеры. Подсказка: чаще всего ответ упирается не в сами данные,
+            а в то, чьи они.
+          </p>
+
+          <div class="builder-lab" aria-labelledby="sort-title">
+            <p class="tool-label" id="sort-title">DATA CHECK / ОТПРАВЛЯТЬ ИЛИ НЕТ</p>
+
+            <div class="sort-head">
+              <span id="sort-progress">случай 1 из 6</span>
+              <span id="sort-score">верно: 0</span>
+            </div>
+
+            <div class="sort-case" id="sort-case"></div>
+
+            <div class="sort-btns" id="sort-btns">
+              <button class="sort-b ok" type="button" data-a="yes">можно</button>
+              <button class="sort-b ask" type="button" data-a="ask">нужно разрешение</button>
+              <button class="sort-b no" type="button" data-a="no">нельзя</button>
+            </div>
+
+            <div class="sort-verdict" id="sort-verdict" hidden></div>
+
+            <div class="sort-foot">
+              <button class="ghost-btn" type="button" id="sort-next" hidden>дальше →</button>
+              <button class="ghost-btn" type="button" id="sort-again" hidden>сначала ↻</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="lesson" id="fresh">
+          <p class="lesson-kicker">04 / БАЗА СТАРЕЕТ МОЛЧА</p>
+          <h2>У фрагмента нет запаха</h2>
+          <p>
+            Второй ремень. Схема с поиском хороша ровно настолько, насколько хороши
+            и свежи куски, которые она достала. И вот в чём подвох: <em>устаревший
+            фрагмент выглядит точно так же, как актуальный</em>. Ни модель, ни поиск
+            не чувствуют возраст текста.
+          </p>
+          <p>
+            Поменялся прайс, переписали регламент, отменили правило — а старый
+            документ остался в базе. Поиск честно найдёт его по смыслу, модель
+            честно ответит по нему. Ответ будет уверенным, складным и неправильным.
+            Никто при этом не соврал.
+          </p>
+          <div class="ba">
+            <div class="ba-card bad">
+              <div class="ba-tag">пустая база</div>
+              <p class="ba-note">Ничего не нашлось — модель скажет, что не знает. Обидно, но честно и заметно.</p>
+            </div>
+            <div class="ba-card worse">
+              <div class="ba-tag">устаревшая база</div>
+              <p class="ba-note">Нашлось — и модель уверенно ответит по прошлогоднему документу. Никто не заметит, пока не станет поздно.</p>
+            </div>
+          </div>
+          <p>
+            Отсюда неочевидный вывод: <strong>протухшая база хуже пустой</strong>.
+            Пустая честно молчит, протухшая уверенно врёт. Поэтому в нормальных
+            базах у фрагментов ставят дату и следят за ней — не ради красоты, а
+            чтобы было чем отличить свежее от прошлогоднего.
+          </p>
+        </section>
+
+        <section class="lesson" id="check">
+          <p class="lesson-kicker">05 / УВЕРЕННОСТЬ И ПРАВОТА</p>
+          <h2>Чем убедительнее ответ, тем внимательнее читай</h2>
+          <p>
+            Третий ремень, и самый неудобный. Обычный ответ модели мы читаем с
+            подозрением — привыкли, что может выдумать. А вот ответ, собранный по
+            найденным фрагментам, выглядит солидно: конкретика, детали, иногда
+            ссылки на документы. Хочется расслабиться.
+          </p>
+          <p>
+            И зря. Вспомни, где у этой схемы слабое место: всё решает то, что нашёл
+            поиск. Нашёл не тот фрагмент — модель уверенно перескажет не то. Ответ
+            станет только убедительнее, потому что теперь в нём есть подробности.
+            <em>Уверенность растёт быстрее правильности</em> — вот что стоит
+            запомнить.
+          </p>
+          <div class="checks">
+            <div class="ck">
+              <div class="ck-k">Смотри на источник</div>
+              <div class="ck-v">Если система показывает, из какого документа взяла — открой и сверь. Половина ошибок видна сразу.</div>
+            </div>
+            <div class="ck">
+              <div class="ck-k">Сомневайся в цифрах</div>
+              <div class="ck-v">Числа, даты, суммы, имена — первое, что стоит перепроверять. Именно в них ошибка дороже всего.</div>
+            </div>
+            <div class="ck">
+              <div class="ck-k">Важное — глазами</div>
+              <div class="ck-v">Чем серьёзнее решение, тем меньше поводов верить на слово. Договор, деньги, здоровье — только с проверкой.</div>
+            </div>
+            <div class="ck">
+              <div class="ck-k">Спроси иначе</div>
+              <div class="ck-v">Задай тот же вопрос другими словами. Разошлись ответы — значит, поиск шатает, и верить рано.</div>
+            </div>
+          </div>
+          <p>
+            Это не значит перепроверять каждую мелочь — так никаких сил не хватит.
+            Это значит держать в голове простую вещь: <strong>красивый ответ это не
+            доказательство</strong>. Цена ошибки решает, сколько проверять.
+          </p>
+        </section>
+
+        <section class="lesson" id="takeaway">
+          <p class="lesson-kicker">06 / ЧТО ЗАБРАТЬ С СОБОЙ</p>
+          <h2>Главное в одном абзаце</h2>
+          <div class="exit-panel">
+            <p>
+              Три привычки, и все растут из механики. Отправленное уходит наружу и
+              обратно не возвращается — поэтому вопрос не «опасно ли», а «моё ли и
+              есть ли разрешение»; система при поиске права доступа не проверяет.
+              Фрагмент не пахнет свежестью: протухшая база хуже пустой, потому что
+              пустая молчит, а протухшая уверенно врёт. И ответ по найденным кускам
+              звучит солиднее обычного, хотя правильнее не стал — уверенность
+              растёт быстрее правоты. Это не повод бояться. Это повод строить
+              аккуратно.
+            </p>
+            <a class="route-link" href="../"><span>NEXT</span><span>ВЕРНУТЬСЯ В LAYER_03</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / DEEP DIVE</span>
+      <span>LAYER_03 · 07 // MECHANICS WITH SEATBELT</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var N = window.NODEAI;
+      if (N) N.starfield(document.getElementById("starfield"));
+
+      /* Замысел набора: правильный ответ почти никогда не зависит от того,
+         «секретные» ли данные. Он зависит от того, чьи они. */
+      var CASES = [
+        {
+          t: "Черновик своей статьи",
+          d: "Написал текст в блог, хочешь причесать формулировки.",
+          a: "yes",
+          why: "Твоё — тебе и решать. Никого не спрашиваешь, потому что спрашивать не у кого."
+        },
+        {
+          t: "Резюме кандидата",
+          d: "Прислали резюме с телефоном и адресом. Хочешь, чтобы модель сделала выжимку.",
+          a: "no",
+          why: "Чужие личные данные. Человек прислал их тебе — не «тебе и сервису, о котором он не слышал». Выжимку сделай по обезличенному тексту: убери имя, телефон, адрес."
+        },
+        {
+          t: "Прайс с сайта компании",
+          d: "Цены висят в открытом доступе. Нужно сравнить их с конкурентами.",
+          a: "yes",
+          why: "Уже опубликовано — отправкой ты ничего не раскрываешь. Публичное остаётся публичным."
+        },
+        {
+          t: "Кусок рабочего кода",
+          d: "Функция из проекта работодателя, никак не запускается.",
+          a: "ask",
+          why: "Код не твой, а компании. У многих на этот счёт есть прямые правила — от «пожалуйста» до «уволим». Узнать занимает минуту, а выяснить постфактум выходит дорого."
+        },
+        {
+          t: "Переписка с клиентом",
+          d: "Хочешь показать историю, чтобы модель помогла составить вежливый ответ.",
+          a: "ask",
+          why: "Формально это данные клиента, и разрешения на пересылку он не давал. Обычно достаточно пересказать суть своими словами — модели этого хватит, а данные останутся у тебя."
+        },
+        {
+          t: "Пароль от админки",
+          d: "«Вот доступ, посмотри, что не так с настройками».",
+          a: "no",
+          why: "Никогда и ни при каких формулировках. Пароли и ключи не отправляют в чужие руки — ни модели, ни человеку в переписке. Это единственный пункт без всяких «зависит»."
+        }
+      ];
+
+      var LABEL = { yes: "можно", ask: "нужно разрешение", no: "нельзя" };
+
+      var caseEl = document.getElementById("sort-case");
+      var btnsEl = document.getElementById("sort-btns");
+      var verdEl = document.getElementById("sort-verdict");
+      var nextBtn = document.getElementById("sort-next");
+      var againBtn = document.getElementById("sort-again");
+      var progEl = document.getElementById("sort-progress");
+      var scoreEl = document.getElementById("sort-score");
+      if (!caseEl) return;
+
+      var i = 0, score = 0, answered = false;
+
+      function draw() {
+        answered = false;
+        var c = CASES[i];
+        caseEl.innerHTML = "";
+        var h = document.createElement("div");
+        h.className = "case-t";
+        h.textContent = c.t;
+        var p = document.createElement("div");
+        p.className = "case-d";
+        p.textContent = c.d;
+        caseEl.appendChild(h); caseEl.appendChild(p);
+
+        progEl.textContent = "случай " + (i + 1) + " из " + CASES.length;
+        scoreEl.textContent = "верно: " + score;
+
+        btnsEl.querySelectorAll(".sort-b").forEach(function (b) {
+          b.disabled = false;
+          b.classList.remove("is-right", "is-wrong", "dim");
+        });
+        verdEl.hidden = true;
+        nextBtn.hidden = true;
+        againBtn.hidden = true;
+      }
+
+      function answer(pick) {
+        if (answered) return;
+        answered = true;
+        var c = CASES[i];
+        var right = pick === c.a;
+        if (right) score += 1;
+
+        btnsEl.querySelectorAll(".sort-b").forEach(function (b) {
+          b.disabled = true;
+          if (b.dataset.a === c.a) b.classList.add("is-right");
+          else if (b.dataset.a === pick) b.classList.add("is-wrong");
+          else b.classList.add("dim");
+        });
+
+        verdEl.hidden = false;
+        verdEl.className = "sort-verdict " + (right ? "ok" : "no");
+        verdEl.innerHTML = "";
+        var head = document.createElement("div");
+        head.className = "v-head";
+        head.textContent = right ? "✓ верно · " + LABEL[c.a] : "✗ мимо · правильно: " + LABEL[c.a];
+        var body = document.createElement("div");
+        body.className = "v-body";
+        body.textContent = c.why;
+        verdEl.appendChild(head); verdEl.appendChild(body);
+
+        scoreEl.textContent = "верно: " + score;
+
+        if (i + 1 < CASES.length) nextBtn.hidden = false;
+        else finish();
+      }
+
+      function finish() {
+        againBtn.hidden = false;
+        var sum = document.createElement("div");
+        sum.className = "v-sum";
+        var asks = CASES.filter(function (c) { return c.a === "ask"; }).length;
+        sum.textContent = "Разобрано " + CASES.length + ", верно " + score + ". " +
+          "Заметил? Только один случай — пароль — запрещён сам по себе. " +
+          "В остальных дело не в данных, а в том, чьи они: " + asks +
+          " из шести решаются одним вопросом «а можно?».";
+        verdEl.appendChild(sum);
+      }
+
+      btnsEl.addEventListener("click", function (e) {
+        var b = e.target.closest(".sort-b");
+        if (b) answer(b.dataset.a);
+      });
+      nextBtn.addEventListener("click", function () { i += 1; draw(); });
+      againBtn.addEventListener("click", function () { i = 0; score = 0; draw(); });
+
+      draw();
+    })();
+  </script>
+</body>
+</html>

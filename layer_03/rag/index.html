@@ -1,0 +1,1309 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.C.EON Studio / NODE AI / RAG</title>
+  <link rel="stylesheet" href="../../nodeai.css">
+  <script src="../../nodeai.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020609;
+      --text: #dcecf1;
+      --muted: #8ba0aa;
+      --faint: #465a63;
+      --blue: #45aaff;
+      --green: #18e28c;
+      --amber: #f2cf62;
+      --red: #ff526c;
+      --violet: #a98bff;
+      --max: 1180px;
+      --mono: "Consolas", "Lucida Console", "Courier New", monospace;
+      --sans: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 13% 16%, rgba(24, 226, 140, 0.15), transparent 28rem),
+        radial-gradient(circle at 82% 20%, rgba(69, 170, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 54% 88%, rgba(169, 139, 255, 0.10), transparent 26rem),
+        linear-gradient(180deg, #020508 0%, #031017 48%, #020609 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      background:
+        linear-gradient(rgba(69, 170, 255, 0.044) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 170, 255, 0.033) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 50% 25%, black 0, black 36rem, transparent 74rem);
+    }
+
+    body::after {
+      background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.033) 0, rgba(255, 255, 255, 0.033) 1px, transparent 1px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 82, 108, 0.045), transparent 28%, transparent 78%, rgba(24, 226, 140, 0.07));
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-frame {
+      position: fixed;
+      inset: 10px;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(69, 170, 255, 0.11);
+    }
+
+    .hud-frame::before,
+    .hud-frame::after {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      content: "";
+      border-color: rgba(24, 226, 140, 0.42);
+    }
+
+    .hud-frame::before {
+      top: -1px;
+      left: -1px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .hud-frame::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 38px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .brand {
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .path {
+      justify-self: center;
+      color: var(--faint);
+      text-align: center;
+    }
+
+    .path strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status {
+      justify-self: end;
+      color: var(--green);
+      text-align: right;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 54px 0 32px;
+    }
+
+    .side {
+      position: sticky;
+      top: 26px;
+      align-self: start;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(24, 226, 140, 0.38);
+      background: rgba(24, 226, 140, 0.055);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: var(--mono);
+      font-size: 3rem;
+      line-height: 0.98;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(24, 226, 140, 0.18);
+    }
+
+    .lead {
+      max-width: 34rem;
+      margin: 0;
+      color: #e9f7fb;
+      font-size: 1.08rem;
+      line-height: 1.58;
+    }
+
+    .mission {
+      margin-top: 26px;
+      padding: 18px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(5, 17, 23, 0.84), rgba(3, 8, 12, 0.68));
+      box-shadow: 0 0 42px rgba(24, 226, 140, 0.10);
+    }
+
+    .mission-label,
+    .nav-label,
+    .tool-label {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+    }
+
+    .mission p {
+      margin: 0;
+      color: #a9bdc6;
+      font-size: 0.94rem;
+      line-height: 1.68;
+    }
+
+    .lesson-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .lesson-nav a,
+    .route-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.22);
+      border-radius: 4px;
+      background: rgba(4, 16, 22, 0.56);
+      color: #b9d5df;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-nav a:hover,
+    .lesson-nav a:focus-visible,
+    .route-link:hover,
+    .route-link:focus-visible {
+      border-color: rgba(24, 226, 140, 0.66);
+      background: rgba(10, 38, 33, 0.72);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .route-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .route-link.next {
+      border-color: rgba(255, 82, 108, 0.34);
+      color: #ffc7d1;
+    }
+
+    .route-link.home {
+      grid-column: 1 / -1;
+      border-color: rgba(69, 170, 255, 0.28);
+      color: #bddff5;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .build-scan {
+      position: relative;
+      min-height: 226px;
+      margin-bottom: 38px;
+      overflow: hidden;
+      border-top: 1px solid rgba(96, 186, 255, 0.22);
+      border-bottom: 1px solid rgba(96, 186, 255, 0.18);
+      background:
+        linear-gradient(90deg, rgba(24, 226, 140, 0.09), transparent 34%, rgba(169, 139, 255, 0.08)),
+        radial-gradient(circle at 50% 50%, rgba(69, 170, 255, 0.13), transparent 17rem);
+    }
+
+    .build-scan::before {
+      position: absolute;
+      inset: 16px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.13);
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(96, 186, 255, 0.16) 50%, transparent 50.2%),
+        linear-gradient(180deg, transparent 49.8%, rgba(96, 186, 255, 0.12) 50%, transparent 50.2%);
+    }
+
+    .scan-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      align-items: center;
+      gap: 10px;
+      min-height: 226px;
+      padding: 28px;
+    }
+
+    .scan-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 102px;
+      padding: 12px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.42;
+      color: #e8f8ff;
+      text-transform: uppercase;
+    }
+
+    .scan-node::before {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 82px;
+      height: 82px;
+      content: "";
+      border: 1px solid rgba(96, 186, 255, 0.34);
+      border-radius: 50%;
+      box-shadow: 0 0 28px rgba(69, 170, 255, 0.13);
+      transform: translate(-50%, -50%);
+    }
+
+    .scan-node::after {
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 28px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, rgba(96, 186, 255, 0.62), transparent);
+    }
+
+    .scan-node:last-child::after {
+      display: none;
+    }
+
+    .scan-node strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.8rem;
+    }
+
+    .lesson {
+      padding: 0 0 34px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+    }
+
+    .lesson:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: #f2fbff;
+      font-family: var(--mono);
+      font-size: 1.58rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .lesson > p {
+      max-width: 50rem;
+      margin: 0 0 16px;
+      color: #aebfc7;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+
+    .card-grid,
+    .assistant-grid,
+    .access-grid,
+    .interface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .assistant-grid,
+    .access-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .assistant-card,
+    .access-card,
+    .interface-card,
+    .flow-card {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 7px;
+      background: rgba(5, 16, 22, 0.68);
+    }
+
+    .card h3,
+    .assistant-card h3,
+    .access-card h3,
+    .interface-card h3,
+    .flow-card h3 {
+      margin: 0 0 8px;
+      color: #e9f8fc;
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .assistant-card h3 {
+      color: var(--green);
+    }
+
+    .card p,
+    .assistant-card p,
+    .access-card p,
+    .interface-card p,
+    .flow-card p {
+      margin: 0;
+      color: #9fb3bd;
+      font-size: 0.9rem;
+      line-height: 1.62;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(24, 226, 140, 0.42);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .quote-line {
+      margin: 22px 0 0;
+      padding: 14px 16px;
+      border-left: 2px solid var(--green);
+      background: rgba(24, 226, 140, 0.055);
+      color: #c6ddd3;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+    }
+
+    .builder-lab,
+    .quiz-tool {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(24, 226, 140, 0.25);
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, rgba(5, 24, 19, 0.84), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(24, 226, 140, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(24, 226, 140, 0.08);
+    }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .builder-controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .builder-group p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip,
+    .answer {
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid rgba(96, 186, 255, 0.24);
+      border-radius: 4px;
+      background: rgba(2, 8, 12, 0.74);
+      color: #bcd3dc;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .answer:hover,
+    .answer:focus-visible {
+      border-color: rgba(24, 226, 140, 0.68);
+      color: #eafff7;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .chip.is-active,
+    .answer.is-selected {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.13);
+      color: #eafff7;
+    }
+
+    .answer.is-correct {
+      border-color: rgba(24, 226, 140, 0.82);
+      background: rgba(24, 226, 140, 0.12);
+    }
+
+    .answer.is-wrong {
+      border-color: rgba(255, 82, 108, 0.82);
+      background: rgba(255, 82, 108, 0.10);
+    }
+
+    .blueprint-output {
+      min-height: 348px;
+      padding: 15px;
+      border: 1px solid rgba(96, 186, 255, 0.18);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #d9ecf2;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.68;
+      white-space: pre-wrap;
+    }
+
+    .quiz-question {
+      padding: 0 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(96, 186, 255, 0.13);
+    }
+
+    .quiz-question:last-of-type {
+      border-bottom: 0;
+    }
+
+    .quiz-question h3 {
+      margin: 0 0 10px;
+      color: #edf8fc;
+      font-family: var(--mono);
+      font-size: 0.98rem;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .primary-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(24, 226, 140, 0.58);
+      border-radius: 4px;
+      background: rgba(24, 226, 140, 0.12);
+      color: #eafff7;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      transition: background 150ms ease, transform 150ms ease;
+    }
+
+    .primary-btn:hover,
+    .primary-btn:focus-visible {
+      background: rgba(24, 226, 140, 0.19);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .quiz-result {
+      min-height: 24px;
+      color: #c7dbe2;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .exit-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 0 0;
+    }
+
+    .exit-panel p {
+      margin: 0;
+      color: #b8cbd3;
+      line-height: 1.65;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0 0;
+      border-top: 1px solid rgba(96, 186, 255, 0.14);
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 1100px) {
+      .scan-row,
+      .assistant-grid,
+      .access-grid,
+      .flow-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        padding: 16px 18px 24px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .path,
+      .status {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .page-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 36px;
+      }
+
+      .side {
+        position: relative;
+        top: auto;
+      }
+
+      h1 {
+        max-width: none;
+        font-size: 2.55rem;
+      }
+
+      .card-grid,
+      .interface-grid,
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 660px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hud-frame {
+        inset: 6px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+
+      .route-links,
+      .scan-row,
+      .card-grid,
+      .assistant-grid,
+      .access-grid,
+      .interface-grid,
+      .flow-row,
+      .builder-grid,
+      .answers,
+      .exit-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .build-scan {
+        min-height: 0;
+      }
+
+      .scan-row {
+        min-height: 0;
+        padding: 24px 18px;
+      }
+
+      .scan-node {
+        min-height: 86px;
+      }
+
+      .scan-node::after {
+        top: auto;
+        right: auto;
+        bottom: -15px;
+        left: 50%;
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(96, 186, 255, 0.62), transparent);
+      }
+
+      .scan-node:nth-child(3)::after {
+        display: block;
+      }
+
+      .scan-node:last-child::after {
+        display: none;
+      }
+
+      h2 {
+        font-size: 1.28rem;
+      }
+
+      .blueprint-output {
+        min-height: 260px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    .risk-lab {
+      border-color: rgba(255, 82, 108, 0.28);
+      background:
+        linear-gradient(145deg, rgba(26, 8, 12, 0.86), rgba(3, 9, 13, 0.72)),
+        radial-gradient(circle at 84% 10%, rgba(255, 82, 108, 0.10), transparent 16rem);
+      box-shadow: 0 0 34px rgba(255, 82, 108, 0.08);
+    }
+    .risk-panel { display: flex; flex-direction: column; gap: 10px; }
+    .risk-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+    .risk-head strong { font-size: 0.9rem; color: var(--amber); }
+    .risk-meter { height: 12px; border: 1px solid rgba(96, 186, 255, 0.18); background: rgba(0, 0, 0, 0.32); border-radius: 3px; overflow: hidden; }
+    .risk-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); transition: width 220ms ease; }
+
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .ba-card { padding: 14px; border-radius: 7px; border: 1px solid; }
+    .ba-card.bad { border-color: rgba(255,82,108,0.32); background: rgba(255,82,108,0.05); }
+    .ba-card.good { border-color: rgba(24,226,140,0.4); background: rgba(24,226,140,0.06); }
+    .ba-tag { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ba-card.bad .ba-tag { color: var(--red); }
+    .ba-card.good .ba-tag { color: var(--green); }
+    .ba-req { margin: 8px 0 0; font-family: var(--mono); font-size: 0.88rem; line-height: 1.5; color: #dbe9ef; }
+    .ba-note { margin: 10px 0 0; font-size: 0.86rem; color: #9fb3bd; line-height: 1.55; }
+    .rag-flow { display: grid; gap: 9px; margin-top: 18px; }
+    .rf { display: grid; grid-template-columns: 40px minmax(0,1fr); gap: 12px; padding: 12px 13px; border: 1px solid rgba(96,186,255,0.18); border-left: 2px solid var(--amber); border-radius: 6px; background: rgba(2,8,12,0.5); }
+    .rf-n { font-family: var(--mono); font-size: 0.88rem; font-weight: 700; color: var(--amber); }
+    .rf-b { min-width: 0; }
+    .rf-b h3 { margin: 0 0 5px; font-family: var(--mono); font-size: 0.88rem; color: #eaf7fb; text-transform: uppercase; }
+    .rf-b p { margin: 0; font-size: 0.87rem; color: #a9bdc6; line-height: 1.55; }
+    .live-status { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 11px; border: 1px solid rgba(96,186,255,0.2); border-radius: 5px; background: rgba(0,0,0,0.26); font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+    .dot.on { background: var(--green); box-shadow: 0 0 8px rgba(24,226,140,0.6); }
+    .dot.off { background: var(--amber); }
+    .rag-label { margin-bottom: 7px; font-family: var(--mono); font-size: 0.64rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .rag-hint { text-transform: none; letter-spacing: 0; color: var(--faint); }
+    .rag-qs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+    .rag-found { padding: 12px 13px; border: 1px solid rgba(24,226,140,0.28); border-radius: 6px; background: rgba(24,226,140,0.04); margin-bottom: 16px; }
+    .hit { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 10px; align-items: start; padding: 8px 10px; border-radius: 4px; background: rgba(2,8,12,0.5); margin-bottom: 5px; }
+    .hit:last-child { margin-bottom: 0; }
+    .hit.zero { opacity: 0.4; }
+    .hit-s { font-family: var(--mono); font-size: 0.7rem; color: var(--green); }
+    .hit.zero .hit-s { color: var(--faint); }
+    .hit-t { font-size: 0.82rem; color: #b7cad2; line-height: 1.5; }
+    .rag-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .rag-col { display: flex; flex-direction: column; gap: 9px; }
+    .rag-h { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 7px; border-bottom: 1px solid rgba(96,186,255,0.14); }
+    .rag-h.bad { color: var(--red); }
+    .rag-h.good { color: var(--green); }
+    .rag-go { width: 100%; }
+    .rag-ans { flex: 1; padding: 11px 12px; border-radius: 5px; background: rgba(0,0,0,0.3); border-left: 2px solid rgba(96,186,255,0.2); font-size: 0.85rem; line-height: 1.6; color: #9fb3bd; min-height: 84px; }
+    .rag-ans.no { border-left-color: var(--red); color: #d9b3b8; background: rgba(255,82,108,0.04); }
+    .rag-ans.ok { border-left-color: var(--green); color: #d3ece1; background: rgba(24,226,140,0.05); }
+    .rag-ans.err { border-left-color: var(--amber); color: #d9c8a0; }
+    .rag-note { margin: 14px 0 0; font-family: var(--mono); font-size: 0.73rem; color: var(--faint); line-height: 1.55; }
+    .weaks { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 18px; }
+    .wk { padding: 11px 13px; border: 1px solid rgba(255,82,108,0.22); border-radius: 6px; background: rgba(20,8,11,0.4); }
+    .wk-k { font-family: var(--mono); font-size: 0.76rem; color: var(--red); text-transform: uppercase; margin-bottom: 5px; }
+    .wk-v { font-size: 0.85rem; color: #b7cad2; line-height: 1.5; }
+    .primary-btn:disabled, .ghost-btn:disabled { opacity: 0.45; cursor: default; }
+    @media (max-width: 700px) { .ba, .rag-cols, .weaks { grid-template-columns: 1fr; } .rf { grid-template-columns: 1fr; gap: 5px; } }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="hud-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar" aria-label="Системная строка">
+      <div class="brand">A.C.EON Studio</div>
+      <div class="path"><strong>MAIN</strong> / NODE AI / LAYER_03 / RAG</div>
+      <div class="status">DEEP DIVE // 06</div>
+    </header>
+
+    <main class="page-grid">
+      <aside class="side" aria-labelledby="topic-title">
+        <div class="kicker">LAYER_03 · 06 / RETRIEVAL AUGMENTED GENERATION</div>
+        <h1 id="topic-title">RAG: внешняя память</h1>
+        <p class="lead">
+          Углублённый разбор шестой темы. Как заставить модель отвечать по твоим
+          документам, ничему её не переучивая — и почему это работает.
+        </p>
+
+        <div class="mission">
+          <p class="mission-label">В ЭТОЙ ТЕМЕ</p>
+          <p>
+            Начинаем с простой беды: модель не знает твоего. Разбираем два выхода
+            и почему выбирают второй, проходим схему по шагам, проверяем на живой
+            модели — сначала без базы, потом с базой — и смотрим, где эта схема
+            спотыкается.
+          </p>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Разделы темы">
+          <p class="nav-label">НА СТРАНИЦЕ</p>
+          <a href="#gap"><span>01</span><span>модель не знает твоего</span></a>
+          <a href="#two"><span>02</span><span>доучить или подложить</span></a>
+          <a href="#how"><span>03</span><span>схема по шагам</span></a>
+          <a href="#live"><span>04</span><span>проверь на живой модели</span></a>
+          <a href="#weak"><span>05</span><span>где спотыкается</span></a>
+          <a href="#takeaway"><span>06</span><span>что забрать</span></a>
+        </nav>
+
+        <div class="route-links">
+          <a class="route-link" href="../"><span>BACK</span><span>LAYER_03</span></a>
+          <a class="route-link home" href="../../layer_00/"><span>INDEX</span><span>LAYER_00</span></a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <section class="lesson" id="gap">
+          <p class="lesson-kicker">01 / МОДЕЛЬ НЕ ЗНАЕТ ТВОЕГО</p>
+          <h2>Она читала интернет, но не читала тебя</h2>
+          <p>
+            Модель обучилась на огромной куче текстов и знает поразительно много.
+            Но есть вещи, которых там не было и быть не могло: твои рабочие
+            документы, правила твоего проекта, переписка команды, вчерашний
+            прайс. Для неё этого просто не существует.
+          </p>
+          <p>
+            Беда в том, что на прямой вопрос она редко говорит «не знаю». Она же
+            достраивает вероятное — и достроит что-нибудь правдоподобное. Получится
+            уверенный, гладкий и полностью выдуманный ответ. Хуже, чем молчание.
+          </p>
+          <div class="quote-line">
+            Вежливость не помогает. Сколько ни проси «отвечай точно», модель не
+            может рассказать о том, чего не видела. Значит, надо дать ей увидеть.
+          </div>
+        </section>
+
+        <section class="lesson" id="two">
+          <p class="lesson-kicker">02 / ДОУЧИТЬ ИЛИ ПОДЛОЖИТЬ</p>
+          <h2>Два выхода, и один из них разумный</h2>
+          <p>
+            Раз модель не знает твоего — есть два пути это исправить.
+          </p>
+          <div class="ba">
+            <div class="ba-card bad">
+              <div class="ba-tag">✗ доучить модель</div>
+              <p class="ba-req">впихнуть свои данные ей в голову</p>
+              <p class="ba-note">Дорого, долго и требует умения. А главное — данные меняются: поправил документ, и надо учить заново. Каждый раз.</p>
+            </div>
+            <div class="ba-card good">
+              <div class="ba-tag">✓ подложить нужное</div>
+              <p class="ba-req">найти подходящий кусок и дать его вместе с вопросом</p>
+              <p class="ba-note">Дёшево, быстро, работает сразу. Поправил документ — модель уже отвечает по-новому, потому что ничего не запоминала.</p>
+            </div>
+          </div>
+          <p>
+            Второй путь и называется RAG. Идея почти обидно простая: <em>не учить
+            модель, а подсовывать ей нужную страницу под нос ровно в тот момент,
+            когда задаём вопрос</em>. Как студенту на экзамене, которому разрешили
+            заглянуть в конспект — думать он умеет, ему бы только факты.
+          </p>
+        </section>
+
+        <section class="lesson" id="how">
+          <p class="lesson-kicker">03 / СХЕМА ПО ШАГАМ</p>
+          <h2>Что происходит, пока ты ждёшь ответ</h2>
+          <p>
+            Всё это проворачивается за секунду, между твоим Enter и ответом.
+          </p>
+          <div class="rag-flow">
+            <div class="rf">
+              <div class="rf-n">01</div>
+              <div class="rf-b">
+                <h3>Заранее: базу режут на куски</h3>
+                <p>Документы рубят на фрагменты по абзацу-другому и каждому считают координаты смысла — те самые, из прошлой темы. Это делается один раз, до всяких вопросов.</p>
+              </div>
+            </div>
+            <div class="rf">
+              <div class="rf-n">02</div>
+              <div class="rf-b">
+                <h3>Вопрос тоже получает координаты</h3>
+                <p>Пришёл вопрос — ему считают точку на той же карте. Теперь вопрос и все фрагменты живут в одном пространстве.</p>
+              </div>
+            </div>
+            <div class="rf">
+              <div class="rf-n">03</div>
+              <div class="rf-b">
+                <h3>Ищем ближайших соседей</h3>
+                <p>Берём несколько фрагментов, чьи точки ближе всего к точке вопроса. Не по совпадению слов — по смыслу. Вот зачем нужны были координаты.</p>
+              </div>
+            </div>
+            <div class="rf">
+              <div class="rf-n">04</div>
+              <div class="rf-b">
+                <h3>Кладём находки на стол</h3>
+                <p>Найденные куски подкладывают в контекст рядом с вопросом: «вот тебе материал, отвечай по нему». Модель об этом даже не знает — для неё это просто часть запроса.</p>
+              </div>
+            </div>
+            <div class="rf">
+              <div class="rf-n">05</div>
+              <div class="rf-b">
+                <h3>Модель отвечает</h3>
+                <p>Дальше обычная работа: смотрит на всё, что лежит на столе, и достраивает ответ. Только теперь на столе есть факты.</p>
+              </div>
+            </div>
+          </div>
+          <p>
+            Обрати внимание на главное: <strong>модель ничему не научилась</strong>.
+            Она по-прежнему не знает твоих документов. Просто в этот раз ей выдали
+            нужную страницу вместе с вопросом — и ответ получился точным.
+          </p>
+        </section>
+
+        <section class="lesson" id="live">
+          <p class="lesson-kicker">04 / ПРОВЕРЬ САМ</p>
+          <h2>Один вопрос, два ответа</h2>
+          <p>
+            Разговоры кончились. Ниже настоящая модель и крошечная база фактов про
+            A.C.EON — их она видеть не могла, мы их придумали для этой страницы.
+            Спроси одно и то же дважды: сначала без базы, потом с базой.
+          </p>
+
+          <div class="builder-lab" aria-labelledby="rag-title">
+            <p class="tool-label" id="rag-title">RAG LIVE / С БАЗОЙ И БЕЗ</p>
+
+            <div class="live-status" id="rag-status">
+              <span class="dot" id="rag-dot"></span>
+              <span id="rag-mode">проверяю связь…</span>
+            </div>
+
+            <div class="rag-label">вопрос про A.C.EON</div>
+            <div class="rag-qs" id="rag-qs">
+              <button class="chip is-active" type="button" data-q="0">сколько слоёв в курсе?</button>
+              <button class="chip" type="button" data-q="1">почему без фреймворков?</button>
+              <button class="chip" type="button" data-q="2">сколько фрагментов у NODE?</button>
+            </div>
+
+            <div class="rag-found">
+              <div class="rag-label">что нашлось в базе <span class="rag-hint">— поиск идёт прямо здесь, модель пока не в курсе</span></div>
+              <div id="rag-hits"></div>
+            </div>
+
+            <div class="rag-cols">
+              <div class="rag-col">
+                <div class="rag-h bad">без базы</div>
+                <button class="ghost-btn rag-go" type="button" id="rag-plain">спросить как есть</button>
+                <div class="rag-ans" id="rag-ans-plain">—</div>
+              </div>
+              <div class="rag-col">
+                <div class="rag-h good">с базой</div>
+                <button class="primary-btn rag-go" type="button" id="rag-aug">спросить с фрагментами</button>
+                <div class="rag-ans" id="rag-ans-aug">—</div>
+              </div>
+            </div>
+            <p class="rag-note" id="rag-note">Слева модель отвечает из головы. Справа — по подложенным фрагментам. Вопрос один и тот же.</p>
+          </div>
+        </section>
+
+        <section class="lesson" id="weak">
+          <p class="lesson-kicker">05 / ГДЕ СПОТЫКАЕТСЯ</p>
+          <h2>Ответ не лучше, чем найденное</h2>
+          <p>
+            У схемы есть слабое место, и оно ровно там, где не ждут. Все смотрят
+            на модель, а всё решает <em>поиск</em>. Модель отвечает по тому, что ей
+            положили на стол. Положили не то — она честно и уверенно ответит не по
+            делу, потому что других фактов у неё нет.
+          </p>
+          <div class="weaks">
+            <div class="wk">
+              <div class="wk-k">Не нашлось</div>
+              <div class="wk-v">Нужного куска в базе нет — модель либо признается, либо начнёт достраивать. Второе хуже.</div>
+            </div>
+            <div class="wk">
+              <div class="wk-k">Нашлось лишнее</div>
+              <div class="wk-v">Похожий по смыслу, но не тот фрагмент. Ответ будет складным и мимо.</div>
+            </div>
+            <div class="wk">
+              <div class="wk-k">Куски порезаны плохо</div>
+              <div class="wk-v">Мысль разорвана пополам — нашли половину, вторая осталась в соседнем фрагменте.</div>
+            </div>
+            <div class="wk">
+              <div class="wk-k">Всё не влезло</div>
+              <div class="wk-v">Стол не резиновый: слишком много найденного просто не поместится рядом с вопросом.</div>
+            </div>
+          </div>
+          <p>
+            Отсюда практический вывод: когда RAG отвечает ерунду, дело обычно не в
+            «тупой модели», а в том, что ей нашли и подложили. Чинить надо поиск и
+            нарезку, а не просить модель постараться.
+          </p>
+        </section>
+
+        <section class="lesson" id="takeaway">
+          <p class="lesson-kicker">06 / ЧТО ЗАБРАТЬ С СОБОЙ</p>
+          <h2>Главное в одном абзаце</h2>
+          <div class="exit-panel">
+            <p>
+              Модель не знает твоих данных и на прямой вопрос скорее выдумает, чем
+              промолчит. RAG чинит это без переобучения: базу заранее режут на
+              куски и раскладывают по координатам смысла, вопросу считают его
+              точку, берут ближайшие фрагменты и подкладывают их в контекст рядом
+              с вопросом. Модель ничему не научилась — ей просто дали нужную
+              страницу. Поэтому и качество ответа упирается не в модель, а в то,
+              что нашёл поиск.
+            </p>
+            <a class="route-link" href="../"><span>NEXT</span><span>ВЕРНУТЬСЯ В LAYER_03</span></a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>A.C.EON / NODE AI / DEEP DIVE</span>
+      <span>LAYER_03 · 06 // RETRIEVAL AUGMENTED GENERATION</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var N = window.NODEAI;
+      if (N) N.starfield(document.getElementById("starfield"));
+
+      /* адрес прокси публикует gptappio при запуске — тот же файл, что у темы про API */
+      var API_CONFIG = "../api.json";
+      var API_URL = "";
+      var LIVE = false;
+
+      /* ── база знаний: этого модель знать не может, мы это выдумали ── */
+      var BASE = [
+        "Курс NODE AI состоит из шести слоёв: 00 — хаб, 01 — основы, 02 — диалог, 03 — под капотом, 04 — практика, 05 — итог.",
+        "A.C.EON собран на чистом HTML, CSS и JavaScript: ни фреймворков, ни сборщиков — чтобы страницы открывались даже на старых машинах.",
+        "NODE AI поднимается в аварийном режиме: собираются 9 фрагментов из 12, фрагменты 04, 07 и 11 утеряны безвозвратно.",
+        "Окно контекста в тренажёре курса урезано до 200 токенов, чтобы переполнение было видно за пару кликов.",
+        "Карта смыслов в теме про embeddings содержит 16 точек в четырёх кластерах: животные, еда, техника, чувства.",
+        "FORGE — визуальный конструктор сайтов A.C.EON, в нём 26 типов блоков.",
+        "Глубокие разборы тем лежат отдельными страницами внутри слоя: из урока в них ведёт кнопка «разобрать подробнее».",
+        "В A.C.EON три собеседника: Кай, Антон и NODE. У NODE повреждена память, поэтому он не помнит прошлые реплики."
+      ];
+
+      var QS = [
+        {
+          q: "Сколько слоёв в курсе NODE AI и как они называются?",
+          demoPlain: "Обычно образовательные курсы по ИИ включают 8–12 модулей: введение, основы машинного обучения, работа с промптами, практические задания и итоговый проект.",
+          demoAug: "Шесть слоёв: 00 — хаб, 01 — основы, 02 — диалог, 03 — под капотом, 04 — практика, 05 — итог."
+        },
+        {
+          q: "Почему сайты A.C.EON собраны без фреймворков?",
+          demoPlain: "Мне неизвестен этот проект. Обычно отказ от фреймворков объясняют желанием уменьшить размер бандла или изучить основы веб-разработки.",
+          demoAug: "На чистом HTML, CSS и JavaScript — без фреймворков и сборщиков, чтобы страницы открывались даже на старых машинах."
+        },
+        {
+          q: "Сколько фрагментов собирается у NODE при запуске?",
+          demoPlain: "Мне неизвестна система с таким названием. Если речь о загрузке ПО, количество компонентов зависит от конкретной архитектуры.",
+          demoAug: "Девять из двенадцати. Фрагменты 04, 07 и 11 утеряны — поэтому NODE и работает в аварийном режиме."
+        }
+      ];
+
+      var STOP = ["что", "как", "где", "когда", "почему", "сколько", "какой", "какие", "этой", "этого", "для", "при", "они", "него"];
+
+      function words(s) {
+        return s.toLowerCase().replace(/[^а-яёa-z0-9\s]/g, " ").split(/\s+/)
+          .filter(function (w) { return w.length > 3 && STOP.indexOf(w) < 0; });
+      }
+
+      /* поиск: грубый, по общим словам. Настоящий RAG ищет по координатам смысла,
+         но суть та же — вернуть ближайшие куски. */
+      function search(q) {
+        var qw = words(q);
+        return BASE.map(function (frag, i) {
+          var fw = words(frag), hit = 0;
+          qw.forEach(function (w) {
+            fw.forEach(function (f) {
+              if (f === w || f.indexOf(w) === 0 || w.indexOf(f) === 0) hit += 1;
+            });
+          });
+          return { i: i, frag: frag, score: hit };
+        }).sort(function (a, b) { return b.score - a.score; }).slice(0, 2);
+      }
+
+      var qsBox   = document.getElementById("rag-qs");
+      var hitsEl  = document.getElementById("rag-hits");
+      var plainBtn = document.getElementById("rag-plain");
+      var augBtn  = document.getElementById("rag-aug");
+      var plainEl = document.getElementById("rag-ans-plain");
+      var augEl   = document.getElementById("rag-ans-aug");
+      var noteEl  = document.getElementById("rag-note");
+      var modeEl  = document.getElementById("rag-mode");
+      var dotEl   = document.getElementById("rag-dot");
+      if (!qsBox) return;
+
+      var cur = 0;
+      var hits = [];
+
+      function showHits() {
+        hits = search(QS[cur].q);
+        hitsEl.innerHTML = "";
+        hits.forEach(function (h) {
+          var d = document.createElement("div");
+          d.className = "hit" + (h.score === 0 ? " zero" : "");
+          var s = document.createElement("span");
+          s.className = "hit-s";
+          s.textContent = h.score > 0 ? "≈ " + h.score : "—";
+          var t = document.createElement("span");
+          t.className = "hit-t";
+          t.textContent = h.frag;
+          d.appendChild(s); d.appendChild(t);
+          hitsEl.appendChild(d);
+        });
+      }
+
+      function setMode(live, msg) {
+        LIVE = live;
+        dotEl.className = "dot " + (live ? "on" : "off");
+        modeEl.textContent = msg;
+      }
+
+      function probe() {
+        if (typeof fetch !== "function") {
+          setMode(false, "демо-режим · ответы заготовлены заранее");
+          return;
+        }
+        fetch(API_CONFIG + "?t=" + Date.now(), { cache: "no-store" })
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+          .then(function (cfg) {
+            if (!cfg || !cfg.enabled || !cfg.url) {
+              setMode(false, "демо-режим · сервер выключен, ответы заготовлены заранее");
+              return;
+            }
+            API_URL = cfg.url.replace(/\/$/, "");
+            return fetch(API_URL + "/health")
+              .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+              .then(function (d) {
+                if (d && d.ok && d.key_loaded) setMode(true, "живой режим · отвечает настоящая модель (" + (d.model || "?") + ")");
+                else setMode(false, "демо-режим · сервер без ключа");
+              });
+          })
+          .catch(function () {
+            setMode(false, "демо-режим · сервер не подключён, ответы заготовлены заранее");
+          });
+      }
+
+      function ask(withBase) {
+        var box = withBase ? augEl : plainEl;
+        var btn = withBase ? augBtn : plainBtn;
+        box.textContent = "…";
+        box.className = "rag-ans";
+        btn.disabled = true;
+
+        if (!LIVE) {
+          setTimeout(function () {
+            box.textContent = withBase ? QS[cur].demoAug : QS[cur].demoPlain;
+            box.className = "rag-ans " + (withBase ? "ok" : "no");
+            noteEl.textContent = withBase
+              ? "Заготовка. Заметь: ответ собран из подложенных фрагментов, слово в слово по базе."
+              : "Заготовка. Так модель отвечает, когда фактов нет: правдоподобно и мимо.";
+            btn.disabled = false;
+          }, 450);
+          return;
+        }
+
+        // с базой — подкладываем найденное прямо в запрос
+        var prompt = withBase
+          ? "Отвечай только по этим данным, без домыслов:\n" +
+            hits.map(function (h, i) { return "[" + (i + 1) + "] " + h.frag; }).join("\n") +
+            "\n\nВопрос: " + QS[cur].q
+          : QS[cur].q;
+
+        fetch(API_URL + "/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: prompt, temperature: 0.4, max_tokens: 220 })
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              box.textContent = res.d.message || "Сервер отказал.";
+              box.className = "rag-ans err";
+            } else {
+              box.textContent = res.d.text;
+              box.className = "rag-ans " + (withBase ? "ok" : "no");
+              noteEl.textContent = withBase
+                ? "Это настоящий ответ. Модель ничего не выучила — просто прочитала подложенные фрагменты."
+                : "Настоящий ответ без базы. Фактов у неё нет — смотри, что она делает вместо «не знаю».";
+            }
+          })
+          .catch(function (e) {
+            box.textContent = "Связь оборвалась — показываю заготовку: " +
+              (withBase ? QS[cur].demoAug : QS[cur].demoPlain);
+            box.className = "rag-ans err";
+            console.warn("[RAG] запрос не прошёл:", e);
+          })
+          .finally(function () { btn.disabled = false; });
+      }
+
+      qsBox.addEventListener("click", function (e) {
+        var b = e.target.closest(".chip");
+        if (!b) return;
+        cur = parseInt(b.dataset.q, 10);
+        qsBox.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("is-active", x === b); });
+        plainEl.textContent = "—"; plainEl.className = "rag-ans";
+        augEl.textContent = "—"; augEl.className = "rag-ans";
+        noteEl.textContent = "Слева модель отвечает из головы. Справа — по подложенным фрагментам. Вопрос один и тот же.";
+        showHits();
+      });
+
+      plainBtn.addEventListener("click", function () { ask(false); });
+      augBtn.addEventListener("click", function () { ask(true); });
+
+      showHits();
+      probe();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FORGE · Python</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#12151a; --panel-2:#0f1216; --grid:#161b21;
+    --line:#232a32; --line-hi:#2f3a44; --text:#d7dde3; --muted:#6b7580;
+    --dim:#464f58; --run:#4fd6c8; --gen:#e0a54a; --glitch:#ff4d6d; --radius:2px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;
+    font-family:ui-monospace,"Cascadia Code","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:44px 44px;
+    padding:clamp(14px,3.5vw,36px) clamp(12px,3.5vw,36px) 60px;
+  }
+  .wrap{max-width:1280px;margin:0 auto}
+
+  .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;letter-spacing:.1em;color:var(--muted)}
+  .top a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent}
+  .top a:hover{color:var(--gen);border-color:var(--gen)}
+  .top .cur{color:var(--gen)} .top .sep{color:var(--dim)}
+  h1.h{margin:16px 0 4px;font-size:clamp(24px,4.5vw,36px);font-weight:700;letter-spacing:.02em}
+  h1.h b{color:var(--gen)}
+  .sub{color:var(--muted);font-size:13px;max-width:74ch}
+
+  .panel{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .panel::before,.panel::after{content:"";position:absolute;width:9px;height:9px;border-color:var(--line-hi);border-style:solid}
+  .panel::before{top:6px;left:6px;border-width:1px 0 0 1px}
+  .panel::after{bottom:6px;right:6px;border-width:0 1px 1px 0}
+  .p-head{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .p-head .badge{color:var(--gen);letter-spacing:.06em}
+
+  .work{display:grid;grid-template-columns:300px 320px 1fr;gap:16px;align-items:start;margin-top:22px}
+  @media (max-width:1100px){.work{grid-template-columns:300px 1fr}}
+  @media (max-width:820px){.work{grid-template-columns:1fr}}
+
+  /* каталог */
+  .cat{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:16px 0 7px;padding-top:12px;border-top:1px solid var(--line)}
+  .cat:first-child{margin-top:0;padding-top:0;border-top:none}
+  .item{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);
+    margin-bottom:6px;cursor:pointer;transition:border-color .14s,background .14s;color:var(--muted)}
+  .item:hover{border-color:var(--line-hi);color:var(--text)}
+  .item.sel{border-color:var(--gen);background:#191510;color:var(--text)}
+  .item .g{color:var(--dim);width:16px;text-align:center;flex:none;font-weight:700}
+  .item.sel .g{color:var(--gen)}
+  .item .n{font-size:12.5px;flex:1}
+  .item .rb{font-size:9px;letter-spacing:.06em;color:var(--run);border:1px solid var(--run);border-radius:3px;padding:1px 4px;flex:none;opacity:.75}
+
+  /* настройки */
+  .ctl{padding:9px 0;border-bottom:1px dashed var(--line)}
+  .ctl:last-child{border-bottom:none}
+  .ctl .lab{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}
+  .ctl .lab .val{color:var(--gen);font-size:11px}
+  .ctl input[type=text],.ctl input[type=number],.ctl select,.ctl textarea{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:13px;padding:8px 10px;border-radius:var(--radius)}
+  .ctl textarea{resize:vertical;min-height:58px;line-height:1.5}
+  .ctl input:focus,.ctl select:focus,.ctl textarea:focus{outline:none;border-color:var(--gen)}
+  .ctl input[type=range]{width:100%;accent-color:var(--gen);cursor:pointer}
+  .sw{position:relative;display:inline-block;width:40px;height:22px;flex:none;cursor:pointer}
+  .sw input{opacity:0;width:0;height:0;position:absolute}
+  .sw .tr{position:absolute;inset:0;background:var(--line-hi);border-radius:11px;transition:background .15s}
+  .sw .kn{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#0b0d10;border-radius:50%;transition:transform .15s}
+  .sw input:checked + .tr{background:var(--gen)}
+  .sw input:checked + .tr + .kn{transform:translateX(18px)}
+  .ctl.toggle .lab{margin-bottom:0}
+  .hint{font-size:11.5px;color:var(--dim);line-height:1.55;margin-top:8px}
+
+  /* описание */
+  .lead{font-size:12.5px;color:var(--text);line-height:1.65}
+  .needs{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .needs .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+  .cmdline{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:9px 11px;font-size:12px;color:var(--gen);overflow:auto;white-space:nowrap}
+  .cmdline .cp{margin-left:auto;flex:none;border:1px solid var(--line);background:none;color:var(--muted);
+    font-family:inherit;font-size:10px;padding:3px 7px;border-radius:2px;cursor:pointer}
+  .cmdline .cp:hover{border-color:var(--gen);color:var(--gen)}
+  .stdlib{font-size:12px;color:var(--muted)}
+
+  /* код */
+  .code-scroll{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);overflow:auto;max-height:600px}
+  pre{margin:0;padding:14px;font-family:inherit;font-size:12px;line-height:1.65;white-space:pre;color:#c8d0d8;tab-size:4}
+  .cmt{color:var(--muted);font-style:italic}
+  .str{color:#9ccf7a} .kw{color:#c78ce0} .num{color:#e0a54a} .fn{color:#7fb8f0}
+  .codebar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  .btn{background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:12px;
+    padding:8px 14px;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;transition:border-color .15s,color .15s}
+  .btn:hover{border-color:var(--gen);color:var(--gen)}
+  .btn.primary{border-color:var(--gen);color:var(--gen)}
+  .btn.ok{border-color:var(--run);color:var(--run)}
+  .btn.play{border-color:var(--run);color:var(--run)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .metric{font-size:11px;color:var(--dim);letter-spacing:.05em;margin-left:auto}
+
+  /* консоль */
+  .console{margin-top:14px;display:none}
+  .console.on{display:block}
+  .console .out{background:#05080a;border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px;font-size:12px;line-height:1.6;color:#b8f5c0;max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+  .console .out .err{color:var(--glitch)}
+  .console .out .sys{color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <a href="../">&larr; forge</a><span class="sep">/</span>
+    <span class="cur">Python</span><span class="sep">·</span><span>генерация кода</span>
+  </div>
+  <h1 class="h">Собери <b>скрипт</b></h1>
+  <p class="sub">Выбери задачу, задай параметры — получишь готовый файл с комментариями. Скопируй или скачай и запусти у себя. Скрипты на чистом Python можно запустить прямо здесь.</p>
+
+  <div class="work">
+    <div class="panel">
+      <div class="p-head"><span>что сделать</span><span class="badge" id="count">—</span></div>
+      <div id="catalog"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="p-head"><span>параметры</span><span class="badge" id="selName">—</span></div>
+        <div id="controls"></div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="p-head"><span>о скрипте</span></div>
+        <div class="lead" id="lead"></div>
+        <div class="needs">
+          <div class="t">что нужно установить</div>
+          <div id="needs"></div>
+        </div>
+        <div class="needs">
+          <div class="t">как запустить</div>
+          <div class="cmdline"><span id="runcmd">python script.py</span></div>
+          <div class="hint">Сохрани файл и выполни эту команду в терминале, в той же папке.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="p-head"><span>код · <span id="fname">script.py</span></span></div>
+      <div class="code-scroll"><pre><code id="code"></code></pre></div>
+      <div class="codebar">
+        <button class="btn primary" id="copyBtn" data-label="скопировать код">скопировать код</button>
+        <button class="btn" id="dlBtn">скачать .py</button>
+        <button class="btn play" id="runBtn">▶ запустить здесь</button>
+        <span class="metric" id="metric"></span>
+      </div>
+      <div class="console" id="console">
+        <div class="out" id="out"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   FORGE · Python — генератор скриптов
+   RECIPES: каждая запись — задача. gen(cfg) -> строка кода.
+   pip: список библиотек (пусто = только стандартный Python).
+   run: true — скрипт можно выполнить прямо в браузере (Pyodide).
+   Добавить скрипт = дописать запись в RECIPES.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function q(s){ return JSON.stringify(String(s)); }   /* безопасная строка для Python */
+
+var RECIPES = [
+
+/* ─────────── ФАЙЛЫ И ПАПКИ ─────────── */
+{
+  id:"rename", cat:"Файлы и папки", glyph:"▸", name:"Массовое переименование",
+  file:"rename.py",
+  lead:"Переименовывает все файлы в папке по шаблону: имя_001, имя_002 и так далее. Сначала показывает, что будет сделано, и только потом переименовывает.",
+  pip:[],
+  options:[
+    { id:"folder", type:"text", label:"Папка с файлами", def:"C:/Users/Имя/Downloads" },
+    { id:"prefix", type:"text", label:"Новое имя (без номера)", def:"фото" },
+    { id:"ext",    type:"text", label:"Только эти расширения (через запятую, пусто = все)", def:"jpg, png" },
+    { id:"start",  type:"number", label:"Начать нумерацию с", def:1, step:1 },
+    { id:"digits", type:"range", label:"Знаков в номере", def:3, min:1, max:5, unit:"" },
+    { id:"dry",    type:"toggle", label:"Сначала показать без переименования", def:true },
+  ],
+  gen:function(c){
+    var exts = c.ext.split(",").map(function(s){return s.trim().toLowerCase().replace(/^\./,"");}).filter(Boolean);
+    return "" +
+"# Массовое переименование файлов в папке\n" +
+"from pathlib import Path\n\n" +
+"# ✎ настройки\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"ИМЯ = " + q(c.prefix) + "\n" +
+"РАСШИРЕНИЯ = " + (exts.length ? "[" + exts.map(q).join(", ") + "]" : "[]  # пусто = все файлы") + "\n" +
+"НАЧАЛО = " + c.start + "\n" +
+"ЗНАКОВ = " + c.digits + "\n" +
+"ПРОБНЫЙ_ЗАПУСК = " + (c.dry ? "True" : "False") + "  # True — только показать, ничего не менять\n\n" +
+"def нужный(файл):\n" +
+"    if not файл.is_file():\n" +
+"        return False\n" +
+"    if not РАСШИРЕНИЯ:\n" +
+"        return True\n" +
+"    return файл.suffix.lower().lstrip('.') in РАСШИРЕНИЯ\n\n" +
+"файлы = sorted(f for f in ПАПКА.iterdir() if нужный(f))\n" +
+"print(f'Найдено файлов: {len(файлы)}')\n\n" +
+"номер = НАЧАЛО\n" +
+"for файл in файлы:\n" +
+"    новое_имя = f'{ИМЯ}_{номер:0{ЗНАКОВ}d}{файл.suffix.lower()}'\n" +
+"    новый_путь = файл.with_name(новое_имя)\n" +
+"    if новый_путь.exists():\n" +
+"        print(f'! пропуск, уже есть: {новое_имя}')\n" +
+"        continue\n" +
+"    print(f'{файл.name}  ->  {новое_имя}')\n" +
+"    if not ПРОБНЫЙ_ЗАПУСК:\n" +
+"        файл.rename(новый_путь)\n" +
+"    номер += 1\n\n" +
+"if ПРОБНЫЙ_ЗАПУСК:\n" +
+"    print('\\nЭто был пробный запуск. Поставь ПРОБНЫЙ_ЗАПУСК = False, чтобы переименовать.')\n" +
+"else:\n" +
+"    print('\\nГотово.')\n";
+  }
+},
+{
+  id:"sortfiles", cat:"Файлы и папки", glyph:"▸", name:"Разложить файлы по папкам",
+  file:"sort_files.py",
+  lead:"Раскладывает свалку файлов по папкам — по типу (картинки, документы, видео) или по дате. Удобно для папки «Загрузки».",
+  pip:[],
+  options:[
+    { id:"folder", type:"text", label:"Папка", def:"C:/Users/Имя/Downloads" },
+    { id:"mode",   type:"select", label:"Раскладывать по", def:"type", choices:[["type","типу файла"],["date","дате (год-месяц)"],["ext","расширению"]] },
+    { id:"move",   type:"toggle", label:"Переносить (иначе копировать)", def:true },
+    { id:"dry",    type:"toggle", label:"Сначала показать без изменений", def:true },
+  ],
+  gen:function(c){
+    var body = "";
+    if(c.mode==="type"){
+      body =
+"ГРУППЫ = {\n" +
+"    'Картинки': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'],\n" +
+"    'Документы': ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.ppt', '.pptx'],\n" +
+"    'Видео': ['.mp4', '.avi', '.mkv', '.mov', '.webm'],\n" +
+"    'Музыка': ['.mp3', '.wav', '.flac', '.ogg'],\n" +
+"    'Архивы': ['.zip', '.rar', '.7z', '.tar', '.gz'],\n" +
+"    'Программы': ['.exe', '.msi', '.deb', '.appimage'],\n" +
+"}\n\n" +
+"def куда(файл):\n" +
+"    расш = файл.suffix.lower()\n" +
+"    for папка, список in ГРУППЫ.items():\n" +
+"        if расш in список:\n" +
+"            return папка\n" +
+"    return 'Разное'\n";
+    } else if(c.mode==="date"){
+      body =
+"from datetime import datetime\n\n" +
+"def куда(файл):\n" +
+"    д = datetime.fromtimestamp(файл.stat().st_mtime)\n" +
+"    return д.strftime('%Y-%m')\n";
+    } else {
+      body =
+"def куда(файл):\n" +
+"    расш = файл.suffix.lower().lstrip('.')\n" +
+"    return расш.upper() if расш else 'Без расширения'\n";
+    }
+    return "" +
+"# Разложить файлы по папкам\n" +
+"import shutil\n" +
+"from pathlib import Path\n\n" +
+"# ✎ настройки\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"ПЕРЕНОСИТЬ = " + (c.move ? "True" : "False") + "  # False — копировать, оригиналы останутся\n" +
+"ПРОБНЫЙ_ЗАПУСК = " + (c.dry ? "True" : "False") + "\n\n" +
+body + "\n" +
+"файлы = [f for f in ПАПКА.iterdir() if f.is_file()]\n" +
+"print(f'Файлов: {len(файлы)}')\n\n" +
+"for файл in файлы:\n" +
+"    цель = ПАПКА / куда(файл)\n" +
+"    print(f'{файл.name}  ->  {цель.name}/')\n" +
+"    if ПРОБНЫЙ_ЗАПУСК:\n" +
+"        continue\n" +
+"    цель.mkdir(exist_ok=True)\n" +
+"    назначение = цель / файл.name\n" +
+"    n = 1\n" +
+"    while назначение.exists():           # не затираем, если имя занято\n" +
+"        назначение = цель / f'{файл.stem}_{n}{файл.suffix}'\n" +
+"        n += 1\n" +
+"    if ПЕРЕНОСИТЬ:\n" +
+"        shutil.move(str(файл), назначение)\n" +
+"    else:\n" +
+"        shutil.copy2(файл, назначение)\n\n" +
+"print('\\nПробный запуск.' if ПРОБНЫЙ_ЗАПУСК else '\\nГотово.')\n";
+  }
+},
+{
+  id:"findfiles", cat:"Файлы и папки", glyph:"▸", name:"Найти файлы / дубликаты",
+  file:"find_files.py",
+  lead:"Ищет файлы по маске во всех вложенных папках. Может найти одинаковые файлы (дубликаты) — сравнивает по содержимому, а не по имени.",
+  pip:[],
+  options:[
+    { id:"folder", type:"text", label:"Где искать", def:"C:/Users/Имя/Documents" },
+    { id:"mode",   type:"select", label:"Режим", def:"mask", choices:[["mask","по маске имени"],["dup","найти дубликаты"],["big","самые большие"]] },
+    { id:"mask",   type:"text", label:"Маска (для поиска по имени)", def:"*.pdf" },
+    { id:"top",    type:"number", label:"Сколько показать (для «больших»)", def:20, step:5 },
+  ],
+  gen:function(c){
+    if(c.mode==="dup"){
+      return "" +
+"# Поиск дубликатов — сравнение по содержимому файла\n" +
+"import hashlib\n" +
+"from pathlib import Path\n" +
+"from collections import defaultdict\n\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n\n" +
+"def хеш(путь, блок=65536):\n" +
+"    h = hashlib.md5()\n" +
+"    with open(путь, 'rb') as f:\n" +
+"        while кусок := f.read(блок):\n" +
+"            h.update(кусок)\n" +
+"    return h.hexdigest()\n\n" +
+"по_хешу = defaultdict(list)\n" +
+"for файл in ПАПКА.rglob('*'):\n" +
+"    if файл.is_file():\n" +
+"        try:\n" +
+"            по_хешу[хеш(файл)].append(файл)\n" +
+"        except OSError:\n" +
+"            pass\n\n" +
+"найдено = 0\n" +
+"for h, список in по_хешу.items():\n" +
+"    if len(список) > 1:\n" +
+"        найдено += 1\n" +
+"        print(f'\\nОдинаковые ({len(список)} шт., {список[0].stat().st_size / 1024:.0f} КБ):')\n" +
+"        for f in список:\n" +
+"            print(f'   {f}')\n\n" +
+"print(f'\\nГрупп дубликатов: {найдено}')\n" +
+"print('Скрипт только показывает. Удаляй вручную — так безопаснее.')\n";
+    }
+    if(c.mode==="big"){
+      return "" +
+"# Самые большие файлы\n" +
+"from pathlib import Path\n\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"СКОЛЬКО = " + c.top + "\n\n" +
+"файлы = []\n" +
+"for f in ПАПКА.rglob('*'):\n" +
+"    if f.is_file():\n" +
+"        try:\n" +
+"            файлы.append((f.stat().st_size, f))\n" +
+"        except OSError:\n" +
+"            pass\n\n" +
+"файлы.sort(reverse=True)\n" +
+"print(f'Топ-{СКОЛЬКО} самых больших:\\n')\n" +
+"for размер, f in файлы[:СКОЛЬКО]:\n" +
+"    print(f'{размер / 1024 / 1024:8.1f} МБ   {f}')\n\n" +
+"всего = sum(р for р, _ in файлы)\n" +
+"print(f'\\nВсего файлов: {len(файлы)}, общий объём: {всего / 1024 / 1024 / 1024:.2f} ГБ')\n";
+    }
+    return "" +
+"# Поиск файлов по маске (во всех вложенных папках)\n" +
+"from pathlib import Path\n\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"МАСКА = " + q(c.mask) + "   # ✎ например: *.pdf, отчёт*.xlsx, *2024*\n\n" +
+"найдено = list(ПАПКА.rglob(МАСКА))\n" +
+"for f in найдено:\n" +
+"    размер = f.stat().st_size / 1024\n" +
+"    print(f'{размер:8.0f} КБ   {f}')\n\n" +
+"print(f'\\nВсего: {len(найдено)}')\n";
+  }
+},
+{
+  id:"backup", cat:"Файлы и папки", glyph:"▸", name:"Резервная копия в архив",
+  file:"backup.py",
+  lead:"Собирает папку в zip-архив с датой в имени. Можно исключить лишнее и удалять старые копии.",
+  pip:[],
+  options:[
+    { id:"src",  type:"text", label:"Что архивировать", def:"C:/Users/Имя/Documents/Проект" },
+    { id:"dst",  type:"text", label:"Куда класть архивы", def:"C:/Backups" },
+    { id:"skip", type:"text", label:"Пропускать (через запятую)", def:".git, node_modules, __pycache__" },
+    { id:"keep", type:"number", label:"Сколько копий хранить (0 = все)", def:5, step:1 },
+  ],
+  gen:function(c){
+    var skips = c.skip.split(",").map(function(s){return s.trim();}).filter(Boolean);
+    return "" +
+"# Резервная копия папки в zip с датой\n" +
+"import zipfile\n" +
+"from pathlib import Path\n" +
+"from datetime import datetime\n\n" +
+"# ✎ настройки\n" +
+"ИСТОЧНИК = Path(" + q(c.src) + ")\n" +
+"КУДА = Path(" + q(c.dst) + ")\n" +
+"ПРОПУСКАТЬ = [" + skips.map(q).join(", ") + "]\n" +
+"ХРАНИТЬ_КОПИЙ = " + c.keep + "   # 0 = хранить все\n\n" +
+"КУДА.mkdir(parents=True, exist_ok=True)\n" +
+"метка = datetime.now().strftime('%Y-%m-%d_%H%M')\n" +
+"архив = КУДА / f'{ИСТОЧНИК.name}_{метка}.zip'\n\n" +
+"def пропустить(путь):\n" +
+"    return any(часть in ПРОПУСКАТЬ for часть in путь.parts)\n\n" +
+"добавлено = 0\n" +
+"with zipfile.ZipFile(архив, 'w', zipfile.ZIP_DEFLATED) as z:\n" +
+"    for файл in ИСТОЧНИК.rglob('*'):\n" +
+"        if файл.is_file() and not пропустить(файл.relative_to(ИСТОЧНИК)):\n" +
+"            z.write(файл, файл.relative_to(ИСТОЧНИК))\n" +
+"            добавлено += 1\n\n" +
+"print(f'Готово: {архив}')\n" +
+"print(f'Файлов: {добавлено}, размер: {архив.stat().st_size / 1024 / 1024:.1f} МБ')\n\n" +
+"# чистка старых копий\n" +
+"if ХРАНИТЬ_КОПИЙ > 0:\n" +
+"    копии = sorted(КУДА.glob(f'{ИСТОЧНИК.name}_*.zip'), key=lambda p: p.stat().st_mtime, reverse=True)\n" +
+"    for старый in копии[ХРАНИТЬ_КОПИЙ:]:\n" +
+"        старый.unlink()\n" +
+"        print(f'Удалена старая копия: {старый.name}')\n";
+  }
+},
+
+/* ─────────── ТАБЛИЦЫ ─────────── */
+{
+  id:"csvread", cat:"Таблицы и данные", glyph:"▤", name:"Читать и фильтровать таблицу",
+  file:"table.py",
+  lead:"Открывает CSV или Excel, показывает содержимое, фильтрует строки по условию и сохраняет результат в новый файл.",
+  pip:["pandas","openpyxl"],
+  options:[
+    { id:"path",   type:"text", label:"Файл таблицы", def:"data.xlsx" },
+    { id:"col",    type:"text", label:"Столбец для фильтра", def:"Город" },
+    { id:"op",     type:"select", label:"Условие", def:"eq", choices:[["eq","равно"],["contains","содержит"],["gt","больше"],["lt","меньше"]] },
+    { id:"val",    type:"text", label:"Значение", def:"Минск" },
+    { id:"sort",   type:"text", label:"Сортировать по столбцу (пусто = нет)", def:"" },
+    { id:"out",    type:"text", label:"Сохранить результат в", def:"результат.xlsx" },
+  ],
+  gen:function(c){
+    var cond = {
+      eq:"df[КОЛОНКА] == ЗНАЧЕНИЕ",
+      contains:"df[КОЛОНКА].astype(str).str.contains(str(ЗНАЧЕНИЕ), case=False, na=False)",
+      gt:"pd.to_numeric(df[КОЛОНКА], errors='coerce') > float(ЗНАЧЕНИЕ)",
+      lt:"pd.to_numeric(df[КОЛОНКА], errors='coerce') < float(ЗНАЧЕНИЕ)"
+    }[c.op];
+    var read = /\.csv$/i.test(c.path) ? "pd.read_csv(ФАЙЛ)" : "pd.read_excel(ФАЙЛ)";
+    var write = /\.csv$/i.test(c.out) ? "итог.to_csv(КУДА, index=False)" : "итог.to_excel(КУДА, index=False)";
+    return "" +
+"# Чтение таблицы, фильтр, сохранение\n" +
+"import pandas as pd\n\n" +
+"# ✎ настройки\n" +
+"ФАЙЛ = " + q(c.path) + "\n" +
+"КОЛОНКА = " + q(c.col) + "\n" +
+"ЗНАЧЕНИЕ = " + q(c.val) + "\n" +
+"КУДА = " + q(c.out) + "\n\n" +
+"df = " + read + "\n" +
+"print('Столбцы:', list(df.columns))\n" +
+"print(f'Всего строк: {len(df)}')\n" +
+"print('\\nПервые 5 строк:')\n" +
+"print(df.head())\n\n" +
+"# фильтр\n" +
+"итог = df[" + cond + "]\n" +
+"print(f'\\nПодошло строк: {len(итог)}')\n" +
+(c.sort ? "\n# сортировка\nитог = итог.sort_values(" + q(c.sort) + ")\n" : "") +
+"\nprint(итог.head(20))\n\n" +
+write + "\n" +
+"print(f'\\nСохранено: {КУДА}')\n";
+  }
+},
+{
+  id:"csvstats", cat:"Таблицы и данные", glyph:"▤", name:"Посчитать итоги по таблице",
+  file:"stats.py",
+  lead:"Группирует таблицу по столбцу и считает суммы, средние, количество. Это то, что в Excel делают сводной таблицей.",
+  pip:["pandas","openpyxl"],
+  options:[
+    { id:"path",  type:"text", label:"Файл таблицы", def:"data.xlsx" },
+    { id:"group", type:"text", label:"Группировать по столбцу", def:"Город" },
+    { id:"value", type:"text", label:"Считать по столбцу", def:"Сумма" },
+    { id:"out",   type:"text", label:"Сохранить в (пусто = только показать)", def:"итоги.xlsx" },
+  ],
+  gen:function(c){
+    var read = /\.csv$/i.test(c.path) ? "pd.read_csv(ФАЙЛ)" : "pd.read_excel(ФАЙЛ)";
+    return "" +
+"# Сводка по таблице: суммы и средние по группам\n" +
+"import pandas as pd\n\n" +
+"ФАЙЛ = " + q(c.path) + "\n" +
+"ГРУППА = " + q(c.group) + "\n" +
+"ЗНАЧЕНИЕ = " + q(c.value) + "\n\n" +
+"df = " + read + "\n" +
+"df[ЗНАЧЕНИЕ] = pd.to_numeric(df[ЗНАЧЕНИЕ], errors='coerce')\n\n" +
+"итог = df.groupby(ГРУППА)[ЗНАЧЕНИЕ].agg(\n" +
+"    количество='count',\n" +
+"    сумма='sum',\n" +
+"    среднее='mean',\n" +
+"    минимум='min',\n" +
+"    максимум='max',\n" +
+").round(2).sort_values('сумма', ascending=False)\n\n" +
+"print(итог)\n" +
+"print(f'\\nВсего по всем: {df[ЗНАЧЕНИЕ].sum():,.2f}')\n" +
+(c.out ? "\nитог.to_excel(" + q(c.out) + ")\nprint('Сохранено: " + c.out + "')\n" : "");
+  }
+},
+{
+  id:"mergecsv", cat:"Таблицы и данные", glyph:"▤", name:"Склеить много таблиц в одну",
+  file:"merge.py",
+  lead:"Берёт все таблицы из папки и объединяет в один файл. Добавляет столбец с именем исходного файла, чтобы было видно, откуда строка.",
+  pip:["pandas","openpyxl"],
+  options:[
+    { id:"folder", type:"text", label:"Папка с таблицами", def:"C:/Отчёты" },
+    { id:"kind",   type:"select", label:"Формат", def:"xlsx", choices:[["xlsx","Excel (.xlsx)"],["csv","CSV (.csv)"]] },
+    { id:"out",    type:"text", label:"Сохранить в", def:"всё_вместе.xlsx" },
+  ],
+  gen:function(c){
+    var read = c.kind==="csv" ? "pd.read_csv(файл)" : "pd.read_excel(файл)";
+    var write = /\.csv$/i.test(c.out) ? "итог.to_csv(КУДА, index=False)" : "итог.to_excel(КУДА, index=False)";
+    return "" +
+"# Склеить все таблицы из папки в одну\n" +
+"import pandas as pd\n" +
+"from pathlib import Path\n\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"КУДА = " + q(c.out) + "\n\n" +
+"файлы = sorted(ПАПКА.glob('*." + c.kind + "'))\n" +
+"print(f'Найдено таблиц: {len(файлы)}')\n\n" +
+"куски = []\n" +
+"for файл in файлы:\n" +
+"    df = " + read + "\n" +
+"    df['источник'] = файл.name        # видно, из какого файла строка\n" +
+"    куски.append(df)\n" +
+"    print(f'  {файл.name}: {len(df)} строк')\n\n" +
+"if not куски:\n" +
+"    raise SystemExit('Таблиц не нашлось — проверь путь и формат.')\n\n" +
+"итог = pd.concat(куски, ignore_index=True)\n" +
+"print(f'\\nВсего строк: {len(итог)}')\n" +
+write + "\n" +
+"print(f'Сохранено: {КУДА}')\n";
+  }
+},
+{
+  id:"chart", cat:"Таблицы и данные", glyph:"▤", name:"Построить график по таблице",
+  file:"chart.py",
+  lead:"Рисует график по данным из таблицы и сохраняет картинкой. Тип графика на выбор.",
+  pip:["pandas","matplotlib","openpyxl"],
+  options:[
+    { id:"path", type:"text", label:"Файл таблицы", def:"data.xlsx" },
+    { id:"x",    type:"text", label:"Столбец по горизонтали", def:"Месяц" },
+    { id:"y",    type:"text", label:"Столбец по вертикали", def:"Продажи" },
+    { id:"kind", type:"select", label:"Тип графика", def:"bar", choices:[["bar","столбцы"],["line","линия"],["pie","круговая"],["barh","полосы"]] },
+    { id:"title",type:"text", label:"Заголовок", def:"Продажи по месяцам" },
+    { id:"out",  type:"text", label:"Сохранить картинку в", def:"график.png" },
+  ],
+  gen:function(c){
+    var read = /\.csv$/i.test(c.path) ? "pd.read_csv(ФАЙЛ)" : "pd.read_excel(ФАЙЛ)";
+    var plot = c.kind==="pie"
+      ? "df.set_index(X)[Y].plot(kind='pie', autopct='%1.1f%%', ylabel='')"
+      : "df.plot(x=X, y=Y, kind=" + q(c.kind) + ", legend=False)";
+    return "" +
+"# График по таблице\n" +
+"import pandas as pd\n" +
+"import matplotlib.pyplot as plt\n\n" +
+"ФАЙЛ = " + q(c.path) + "\n" +
+"X = " + q(c.x) + "\n" +
+"Y = " + q(c.y) + "\n" +
+"КУДА = " + q(c.out) + "\n\n" +
+"df = " + read + "\n" +
+"df[Y] = pd.to_numeric(df[Y], errors='coerce')\n\n" +
+"plt.figure(figsize=(10, 5))\n" +
+plot + "\n" +
+"plt.title(" + q(c.title) + ")\n" +
+"plt.tight_layout()\n" +
+"plt.savefig(КУДА, dpi=150)\n" +
+"print(f'График сохранён: {КУДА}')\n" +
+"plt.show()\n";
+  }
+},
+
+/* ─────────── ИНТЕРНЕТ ─────────── */
+{
+  id:"scrape", cat:"Интернет", glyph:"◈", name:"Собрать данные с сайта",
+  file:"scrape.py",
+  lead:"Заходит на страницу и вытаскивает нужные куски по CSS-селектору. Результат складывает в таблицу. Селектор можно подсмотреть в браузере через «Просмотреть код».",
+  pip:["requests","beautifulsoup4","pandas"],
+  options:[
+    { id:"url",  type:"text", label:"Адрес страницы", def:"https://example.com" },
+    { id:"sel",  type:"text", label:"CSS-селектор элементов", def:"h2.title" },
+    { id:"attr", type:"select", label:"Что брать", def:"text", choices:[["text","текст"],["href","ссылку (href)"],["src","картинку (src)"]] },
+    { id:"out",  type:"text", label:"Сохранить в", def:"результат.csv" },
+    { id:"pause",type:"range", label:"Пауза между запросами, сек", def:1, min:0, max:5, unit:"с" },
+  ],
+  gen:function(c){
+    var take = c.attr==="text" ? "э.get_text(strip=True)" : "э.get(" + q(c.attr) + ", '')";
+    return "" +
+"# Сбор данных со страницы\n" +
+"import time\n" +
+"import requests\n" +
+"import pandas as pd\n" +
+"from bs4 import BeautifulSoup\n\n" +
+"# ✎ настройки\n" +
+"АДРЕС = " + q(c.url) + "\n" +
+"СЕЛЕКТОР = " + q(c.sel) + "   # ✎ подсмотри в браузере: ПКМ -> Просмотреть код\n" +
+"КУДА = " + q(c.out) + "\n" +
+"ПАУЗА = " + c.pause + "        # вежливость к сайту\n\n" +
+"# представляемся браузером — иначе некоторые сайты не отвечают\n" +
+"ЗАГОЛОВКИ = {'User-Agent': 'Mozilla/5.0'}\n\n" +
+"ответ = requests.get(АДРЕС, headers=ЗАГОЛОВКИ, timeout=15)\n" +
+"ответ.raise_for_status()\n" +
+"print(f'Статус: {ответ.status_code}')\n\n" +
+"суп = BeautifulSoup(ответ.text, 'html.parser')\n" +
+"элементы = суп.select(СЕЛЕКТОР)\n" +
+"print(f'Найдено элементов: {len(элементы)}')\n\n" +
+"данные = []\n" +
+"for э in элементы:\n" +
+"    значение = " + take + "\n" +
+"    if значение:\n" +
+"        данные.append({'значение': значение})\n" +
+"        print(' ', значение[:80])\n\n" +
+"time.sleep(ПАУЗА)\n\n" +
+"if данные:\n" +
+"    pd.DataFrame(данные).to_csv(КУДА, index=False, encoding='utf-8-sig')\n" +
+"    print(f'\\nСохранено: {КУДА} ({len(данные)} строк)')\n" +
+"else:\n" +
+"    print('Ничего не нашлось — проверь селектор.')\n";
+  }
+},
+{
+  id:"api", cat:"Интернет", glyph:"◈", name:"Запрос к API",
+  file:"api.py",
+  lead:"Отправляет запрос к API и разбирает ответ в JSON. Основа для работы с любым сервисом — от погоды до курсов валют.",
+  pip:["requests"],
+  options:[
+    { id:"url",    type:"text", label:"Адрес API", def:"https://api.github.com/users/torvalds" },
+    { id:"method", type:"select", label:"Метод", def:"GET", choices:[["GET","GET (получить)"],["POST","POST (отправить)"]] },
+    { id:"token",  type:"text", label:"Токен (если нужен, иначе пусто)", def:"" },
+    { id:"save",   type:"toggle", label:"Сохранить ответ в файл", def:false },
+  ],
+  gen:function(c){
+    var head = c.token
+      ? "ЗАГОЛОВКИ = {'Authorization': f'Bearer {ТОКЕН}'}\n"
+      : "ЗАГОЛОВКИ = {}\n";
+    var call = c.method==="GET"
+      ? "ответ = requests.get(АДРЕС, headers=ЗАГОЛОВКИ, timeout=15)"
+      : "ответ = requests.post(АДРЕС, headers=ЗАГОЛОВКИ, json=ДАННЫЕ, timeout=15)";
+    return "" +
+"# Запрос к API\n" +
+"import json\n" +
+"import requests\n\n" +
+"АДРЕС = " + q(c.url) + "\n" +
+(c.token ? "ТОКЕН = " + q(c.token) + "   # ✎ не выкладывай токен в открытый доступ\n" : "") +
+(c.method==="POST" ? "ДАННЫЕ = {'ключ': 'значение'}   # ✎ что отправляем\n" : "") +
+"\n" + head + "\n" +
+call + "\n" +
+"ответ.raise_for_status()\n" +
+"print(f'Статус: {ответ.status_code}')\n\n" +
+"данные = ответ.json()\n" +
+"print(json.dumps(данные, ensure_ascii=False, indent=2)[:2000])\n\n" +
+"# ✎ достаём нужное поле, например:\n" +
+"# print(данные['name'])\n" +
+(c.save ?
+"\nwith open('ответ.json', 'w', encoding='utf-8') as f:\n" +
+"    json.dump(данные, f, ensure_ascii=False, indent=2)\n" +
+"print('Сохранено: ответ.json')\n" : "");
+  }
+},
+{
+  id:"download", cat:"Интернет", glyph:"◈", name:"Скачать файлы по списку",
+  file:"download.py",
+  lead:"Скачивает файлы по списку ссылок, показывает прогресс и пропускает уже скачанное. Удобно для картинок или документов.",
+  pip:["requests"],
+  options:[
+    { id:"urls",   type:"textarea", label:"Ссылки (по одной на строку)", def:"https://example.com/file1.pdf\nhttps://example.com/file2.pdf" },
+    { id:"folder", type:"text", label:"Куда скачивать", def:"downloads" },
+    { id:"pause",  type:"range", label:"Пауза между файлами, сек", def:1, min:0, max:5, unit:"с" },
+  ],
+  gen:function(c){
+    var list = c.urls.split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    return "" +
+"# Скачивание файлов по списку\n" +
+"import time\n" +
+"import requests\n" +
+"from pathlib import Path\n" +
+"from urllib.parse import urlparse, unquote\n\n" +
+"# ✎ список ссылок\n" +
+"ССЫЛКИ = [\n" + list.map(function(u){return "    " + q(u) + ",";}).join("\n") + "\n]\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"ПАУЗА = " + c.pause + "\n\n" +
+"ПАПКА.mkdir(parents=True, exist_ok=True)\n\n" +
+"for i, ссылка in enumerate(ССЫЛКИ, 1):\n" +
+"    имя = unquote(Path(urlparse(ссылка).path).name) or f'файл_{i}'\n" +
+"    путь = ПАПКА / имя\n" +
+"    if путь.exists():\n" +
+"        print(f'[{i}/{len(ССЫЛКИ)}] уже есть: {имя}')\n" +
+"        continue\n" +
+"    try:\n" +
+"        ответ = requests.get(ссылка, timeout=30, stream=True)\n" +
+"        ответ.raise_for_status()\n" +
+"        with open(путь, 'wb') as f:\n" +
+"            for кусок in ответ.iter_content(8192):\n" +
+"                f.write(кусок)\n" +
+"        print(f'[{i}/{len(ССЫЛКИ)}] скачано: {имя} ({путь.stat().st_size / 1024:.0f} КБ)')\n" +
+"    except Exception as e:\n" +
+"        print(f'[{i}/{len(ССЫЛКИ)}] ошибка: {имя} — {e}')\n" +
+"    time.sleep(ПАУЗА)\n\n" +
+"print('\\nГотово.')\n";
+  }
+},
+{
+  id:"tgbot", cat:"Интернет", glyph:"◈", name:"Телеграм-бот",
+  file:"bot.py",
+  lead:"Заготовка бота: отвечает на команды и на обычные сообщения. Токен берётся у @BotFather в телеграме.",
+  pip:["pyTelegramBotAPI"],
+  options:[
+    { id:"token", type:"text", label:"Токен от @BotFather", def:"12345:ABC-DEF..." },
+    { id:"hello", type:"text", label:"Ответ на /start", def:"Привет! Я бот. Напиши мне что-нибудь." },
+    { id:"echo",  type:"toggle", label:"Повторять сообщения (эхо)", def:true },
+    { id:"btns",  type:"text", label:"Кнопки (через запятую, пусто = нет)", def:"Помощь, О боте" },
+  ],
+  gen:function(c){
+    var btns = c.btns.split(",").map(function(s){return s.trim();}).filter(Boolean);
+    var kb = btns.length ?
+"def клавиатура():\n" +
+"    кб = types.ReplyKeyboardMarkup(resize_keyboard=True)\n" +
+"    кб.add(" + btns.map(q).join(", ") + ")\n" +
+"    return кб\n\n" : "";
+    return "" +
+"# Телеграм-бот\n" +
+"import telebot\n" +
+(btns.length ? "from telebot import types\n" : "") +
+"\n# ✎ токен от @BotFather. Не выкладывай его в открытый доступ!\n" +
+"ТОКЕН = " + q(c.token) + "\n\n" +
+"бот = telebot.TeleBot(ТОКЕН)\n\n" +
+kb +
+"@бот.message_handler(commands=['start'])\n" +
+"def старт(сообщение):\n" +
+"    бот.send_message(сообщение.chat.id, " + q(c.hello) + (btns.length ? ", reply_markup=клавиатура()" : "") + ")\n\n" +
+"@бот.message_handler(commands=['help'])\n" +
+"def помощь(сообщение):\n" +
+"    бот.reply_to(сообщение, 'Команды:\\n/start — начать\\n/help — помощь')\n\n" +
+(btns.length ?
+"@бот.message_handler(func=lambda с: с.text in [" + btns.map(q).join(", ") + "])\n" +
+"def кнопки(сообщение):\n" +
+"    # ✎ что делать по нажатию кнопки\n" +
+"    бот.reply_to(сообщение, f'Нажато: {сообщение.text}')\n\n" : "") +
+(c.echo ?
+"@бот.message_handler(func=lambda с: True)\n" +
+"def эхо(сообщение):\n" +
+"    # ✎ сюда пиши свою логику ответа\n" +
+"    бот.reply_to(сообщение, f'Ты написал: {сообщение.text}')\n\n" : "") +
+"print('Бот запущен. Останови через Ctrl+C.')\n" +
+"бот.infinity_polling()\n";
+  }
+},
+
+/* ─────────── КАРТИНКИ И PDF ─────────── */
+{
+  id:"resize", cat:"Картинки и PDF", glyph:"▧", name:"Обработать картинки пачкой",
+  file:"images.py",
+  lead:"Проходит по всем картинкам в папке: уменьшает, конвертирует формат, может добавить водяной знак. Оригиналы не трогает.",
+  pip:["Pillow"],
+  options:[
+    { id:"src",    type:"text", label:"Папка с картинками", def:"C:/Фото" },
+    { id:"dst",    type:"text", label:"Куда сохранять", def:"C:/Фото/готовые" },
+    { id:"width",  type:"number", label:"Ширина, px (0 = не менять)", def:1200, step:100 },
+    { id:"fmt",    type:"select", label:"Формат", def:"keep", choices:[["keep","оставить как есть"],["JPEG","JPEG"],["PNG","PNG"],["WEBP","WEBP"]] },
+    { id:"quality",type:"range", label:"Качество", def:85, min:40, max:100, unit:"%" },
+    { id:"wm",     type:"text", label:"Водяной знак (пусто = нет)", def:"" },
+  ],
+  gen:function(c){
+    return "" +
+"# Пакетная обработка картинок\n" +
+"from pathlib import Path\n" +
+"from PIL import Image" + (c.wm ? ", ImageDraw, ImageFont" : "") + "\n\n" +
+"# ✎ настройки\n" +
+"ОТКУДА = Path(" + q(c.src) + ")\n" +
+"КУДА = Path(" + q(c.dst) + ")\n" +
+"ШИРИНА = " + c.width + "        # 0 = не менять размер\n" +
+"КАЧЕСТВО = " + c.quality + "\n" +
+(c.wm ? "ВОДЯНОЙ_ЗНАК = " + q(c.wm) + "\n" : "") +
+"РАСШИРЕНИЯ = ['.jpg', '.jpeg', '.png', '.webp', '.bmp']\n\n" +
+"КУДА.mkdir(parents=True, exist_ok=True)\n\n" +
+"картинки = [f for f in ОТКУДА.iterdir() if f.suffix.lower() in РАСШИРЕНИЯ]\n" +
+"print(f'Картинок: {len(картинки)}')\n\n" +
+"for файл in картинки:\n" +
+"    img = Image.open(файл)\n" +
+"    print(f'{файл.name}: {img.width}x{img.height}', end='')\n\n" +
+"    # уменьшение с сохранением пропорций\n" +
+"    if ШИРИНА and img.width > ШИРИНА:\n" +
+"        высота = int(img.height * ШИРИНА / img.width)\n" +
+"        img = img.resize((ШИРИНА, высота), Image.LANCZOS)\n" +
+"        print(f'  ->  {img.width}x{img.height}', end='')\n\n" +
+(c.wm ?
+"    # водяной знак в правом нижнем углу\n" +
+"    рисунок = ImageDraw.Draw(img)\n" +
+"    размер = max(14, img.width // 30)\n" +
+"    try:\n" +
+"        шрифт = ImageFont.truetype('arial.ttf', размер)\n" +
+"    except OSError:\n" +
+"        шрифт = ImageFont.load_default()\n" +
+"    рисунок.text((img.width - размер * 8, img.height - размер * 2),\n" +
+"                 ВОДЯНОЙ_ЗНАК, fill=(255, 255, 255), font=шрифт)\n\n" : "") +
+"    имя = файл.stem + " + (c.fmt==="keep" ? "файл.suffix" : q("." + String(c.fmt).toLowerCase())) + "\n" +
+"    if img.mode in ('RGBA', 'P') and имя.lower().endswith(('.jpg', '.jpeg')):\n" +
+"        img = img.convert('RGB')          # JPEG не умеет прозрачность\n" +
+"    img.save(КУДА / имя, quality=КАЧЕСТВО, optimize=True)\n" +
+"    print(' — готово')\n\n" +
+"print(f'\\nСохранено в: {КУДА}')\n";
+  }
+},
+{
+  id:"pdf", cat:"Картинки и PDF", glyph:"▧", name:"Склеить / разделить PDF",
+  file:"pdf_tool.py",
+  lead:"Объединяет несколько PDF в один, либо разбирает один PDF на отдельные страницы, либо достаёт из него текст.",
+  pip:["pypdf"],
+  options:[
+    { id:"mode",   type:"select", label:"Что сделать", def:"merge", choices:[["merge","склеить все PDF из папки"],["split","разделить на страницы"],["text","достать текст"]] },
+    { id:"folder", type:"text", label:"Папка с PDF (для склейки)", def:"C:/Документы" },
+    { id:"file",   type:"text", label:"Файл PDF (для разделения/текста)", def:"документ.pdf" },
+    { id:"out",    type:"text", label:"Результат", def:"итог.pdf" },
+  ],
+  gen:function(c){
+    if(c.mode==="merge") return "" +
+"# Склейка всех PDF из папки в один файл\n" +
+"from pathlib import Path\n" +
+"from pypdf import PdfWriter\n\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"КУДА = " + q(c.out) + "\n\n" +
+"файлы = sorted(ПАПКА.glob('*.pdf'))\n" +
+"print(f'Найдено PDF: {len(файлы)}')\n\n" +
+"writer = PdfWriter()\n" +
+"for файл in файлы:\n" +
+"    writer.append(str(файл))\n" +
+"    print(f'  + {файл.name}')\n\n" +
+"writer.write(КУДА)\n" +
+"writer.close()\n" +
+"print(f'\\nГотово: {КУДА}')\n";
+    if(c.mode==="split") return "" +
+"# Разделить PDF на отдельные страницы\n" +
+"from pathlib import Path\n" +
+"from pypdf import PdfReader, PdfWriter\n\n" +
+"ФАЙЛ = Path(" + q(c.file) + ")\n" +
+"ПАПКА = ФАЙЛ.parent / f'{ФАЙЛ.stem}_страницы'\n" +
+"ПАПКА.mkdir(exist_ok=True)\n\n" +
+"reader = PdfReader(ФАЙЛ)\n" +
+"print(f'Страниц: {len(reader.pages)}')\n\n" +
+"for i, страница in enumerate(reader.pages, 1):\n" +
+"    writer = PdfWriter()\n" +
+"    writer.add_page(страница)\n" +
+"    путь = ПАПКА / f'{ФАЙЛ.stem}_{i:03d}.pdf'\n" +
+"    writer.write(путь)\n" +
+"    print(f'  {путь.name}')\n\n" +
+"print(f'\\nГотово: {ПАПКА}')\n";
+    return "" +
+"# Достать текст из PDF\n" +
+"from pathlib import Path\n" +
+"from pypdf import PdfReader\n\n" +
+"ФАЙЛ = Path(" + q(c.file) + ")\n\n" +
+"reader = PdfReader(ФАЙЛ)\n" +
+"print(f'Страниц: {len(reader.pages)}')\n\n" +
+"куски = []\n" +
+"for i, страница in enumerate(reader.pages, 1):\n" +
+"    текст = страница.extract_text() or ''\n" +
+"    куски.append(f'--- Страница {i} ---\\n{текст}')\n\n" +
+"весь = '\\n\\n'.join(куски)\n" +
+"файл_txt = ФАЙЛ.with_suffix('.txt')\n" +
+"файл_txt.write_text(весь, encoding='utf-8')\n" +
+"print(весь[:1000])\n" +
+"print(f'\\nСохранено: {файл_txt}')\n" +
+"# Если текст пустой — PDF сделан из сканов, нужен OCR (распознавание).\n";
+  }
+},
+{
+  id:"qr", cat:"Картинки и PDF", glyph:"▧", name:"QR-код",
+  file:"qr.py",
+  lead:"Делает QR-код из ссылки или текста и сохраняет картинкой. Можно сгенерировать сразу пачку.",
+  pip:["qrcode[pil]"],
+  options:[
+    { id:"data", type:"textarea", label:"Что закодировать (строка = один QR)", def:"https://example.com" },
+    { id:"size", type:"range", label:"Размер точки", def:10, min:4, max:20, unit:"" },
+    { id:"out",  type:"text", label:"Куда сохранять", def:"qr" },
+  ],
+  gen:function(c){
+    var list = c.data.split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    return "" +
+"# Генерация QR-кодов\n" +
+"import qrcode\n" +
+"from pathlib import Path\n\n" +
+"# ✎ что кодируем — по одной строке на QR\n" +
+"ДАННЫЕ = [\n" + list.map(function(s){return "    " + q(s) + ",";}).join("\n") + "\n]\n" +
+"ПАПКА = Path(" + q(c.out) + ")\n" +
+"РАЗМЕР = " + c.size + "\n\n" +
+"ПАПКА.mkdir(parents=True, exist_ok=True)\n\n" +
+"for i, текст in enumerate(ДАННЫЕ, 1):\n" +
+"    qr = qrcode.QRCode(box_size=РАЗМЕР, border=2)\n" +
+"    qr.add_data(текст)\n" +
+"    qr.make(fit=True)\n" +
+"    картинка = qr.make_image(fill_color='black', back_color='white')\n" +
+"    путь = ПАПКА / f'qr_{i:02d}.png'\n" +
+"    картинка.save(путь)\n" +
+"    print(f'{путь}  <-  {текст[:50]}')\n\n" +
+"print(f'\\nГотово: {len(ДАННЫЕ)} шт. в папке {ПАПКА}')\n";
+  }
+},
+
+/* ─────────── ТЕКСТ И УТИЛИТЫ (запускаются здесь) ─────────── */
+{
+  id:"password", cat:"Утилиты", glyph:"✳", name:"Генератор паролей", run:true,
+  file:"password.py",
+  lead:"Создаёт надёжные пароли. Работает на чистом Python — можно запустить прямо на этой странице.",
+  pip:[],
+  options:[
+    { id:"length", type:"range", label:"Длина", def:16, min:6, max:48, unit:"" },
+    { id:"count",  type:"number", label:"Сколько паролей", def:5, step:1 },
+    { id:"digits", type:"toggle", label:"Цифры", def:true },
+    { id:"upper",  type:"toggle", label:"Заглавные буквы", def:true },
+    { id:"symbols",type:"toggle", label:"Спецсимволы", def:true },
+    { id:"nosim",  type:"toggle", label:"Убрать похожие (0 O l 1 I)", def:true },
+  ],
+  gen:function(c){
+    return "" +
+"# Генератор надёжных паролей\n" +
+"import secrets     # secrets, а не random — он криптостойкий\n" +
+"import string\n\n" +
+"# ✎ настройки\n" +
+"ДЛИНА = " + c.length + "\n" +
+"СКОЛЬКО = " + c.count + "\n\n" +
+"алфавит = string.ascii_lowercase\n" +
+(c.upper   ? "алфавит += string.ascii_uppercase\n" : "") +
+(c.digits  ? "алфавит += string.digits\n" : "") +
+(c.symbols ? "алфавит += '!@#$%^&*-_=+?'\n" : "") +
+(c.nosim   ? "\n# убираем символы, которые легко перепутать\nfor плохой in '0Ol1I':\n    алфавит = алфавит.replace(плохой, '')\n" : "") +
+"\ndef пароль(длина):\n" +
+"    return ''.join(secrets.choice(алфавит) for _ in range(длина))\n\n" +
+"print(f'Пароли по {ДЛИНА} символов:\\n')\n" +
+"for i in range(СКОЛЬКО):\n" +
+"    print(f'  {i + 1}. {пароль(ДЛИНА)}')\n\n" +
+"print(f'\\nВариантов на символ: {len(алфавит)}')\n";
+  }
+},
+{
+  id:"textstats", cat:"Утилиты", glyph:"✳", name:"Анализ текста", run:true,
+  file:"text_stats.py",
+  lead:"Считает слова, символы, находит самые частые слова. Работает на чистом Python — запускается прямо здесь.",
+  pip:[],
+  options:[
+    { id:"source", type:"select", label:"Откуда текст", def:"inline", choices:[["inline","вписать сюда"],["file","из файла"]] },
+    { id:"text",   type:"textarea", label:"Текст", def:"Привет мир. Это пример текста. Текст нужен для примера, а пример нужен для текста." },
+    { id:"file",   type:"text", label:"Файл (если из файла)", def:"текст.txt" },
+    { id:"top",    type:"range", label:"Сколько частых слов показать", def:10, min:3, max:30, unit:"" },
+    { id:"minlen", type:"range", label:"Игнорировать слова короче", def:3, min:1, max:8, unit:" букв" },
+  ],
+  gen:function(c){
+    var src = c.source==="file"
+      ? "from pathlib import Path\n\nтекст = Path(" + q(c.file) + ").read_text(encoding='utf-8')\n"
+      : "текст = " + q(c.text) + "\n";
+    return "" +
+"# Анализ текста: слова, символы, частота\n" +
+"import re\n" +
+"from collections import Counter\n\n" +
+src +
+"\nМИН_ДЛИНА = " + c.minlen + "\n" +
+"СКОЛЬКО = " + c.top + "\n\n" +
+"# режем текст на слова (буквы любого языка)\n" +
+"слова = re.findall(r'\\w+', текст.lower())\n" +
+"длинные = [с for с in слова if len(с) >= МИН_ДЛИНА]\n\n" +
+"print(f'Символов:        {len(текст)}')\n" +
+"print(f'Без пробелов:    {len(текст.replace(\" \", \"\"))}')\n" +
+"print(f'Слов:            {len(слова)}')\n" +
+"print(f'Уникальных слов: {len(set(слова))}')\n" +
+"print(f'Предложений:     {len(re.findall(r\"[.!?]+\", текст))}')\n" +
+"print(f'Абзацев:         {len([а for а in текст.split(chr(10)) if а.strip()])}')\n\n" +
+"print(f'\\nСамые частые слова (от {МИН_ДЛИНА} букв):\\n')\n" +
+"for слово, сколько in Counter(длинные).most_common(СКОЛЬКО):\n" +
+"    полоса = '#' * min(сколько, 30)\n" +
+"    print(f'  {слово:<15} {сколько:>3}  {полоса}')\n";
+  }
+},
+{
+  id:"jsontool", cat:"Утилиты", glyph:"✳", name:"Разобрать JSON", run:true,
+  file:"json_tool.py",
+  lead:"Красиво раскладывает JSON, показывает структуру и достаёт нужные поля. Запускается прямо здесь.",
+  pip:[],
+  options:[
+    { id:"source", type:"select", label:"Откуда", def:"inline", choices:[["inline","вписать сюда"],["file","из файла"]] },
+    { id:"data",   type:"textarea", label:"JSON", def:'{"имя": "Тест", "теги": ["a", "b"], "адрес": {"город": "Минск"}}' },
+    { id:"file",   type:"text", label:"Файл (если из файла)", def:"data.json" },
+  ],
+  gen:function(c){
+    var src = c.source==="file"
+      ? "from pathlib import Path\n\nданные = json.loads(Path(" + q(c.file) + ").read_text(encoding='utf-8'))\n"
+      : "сырой = '''" + c.data.replace(/'''/g,"\\'\\'\\'") + "'''\nданные = json.loads(сырой)\n";
+    return "" +
+"# Разбор JSON: структура и красивый вывод\n" +
+"import json\n\n" +
+src +
+"\nprint('Красивый вид:\\n')\n" +
+"print(json.dumps(данные, ensure_ascii=False, indent=2))\n\n" +
+"def показать(объект, отступ=0, путь=''):\n" +
+"    \"\"\"Рекурсивно печатает структуру: где что лежит.\"\"\"\n" +
+"    пробелы = '  ' * отступ\n" +
+"    if isinstance(объект, dict):\n" +
+"        for ключ, значение in объект.items():\n" +
+"            новый_путь = f'{путь}[{ключ!r}]'\n" +
+"            if isinstance(значение, (dict, list)):\n" +
+"                print(f'{пробелы}{ключ}:')\n" +
+"                показать(значение, отступ + 1, новый_путь)\n" +
+"            else:\n" +
+"                print(f'{пробелы}{ключ} = {значение!r}   ->  данные{новый_путь}')\n" +
+"    elif isinstance(объект, list):\n" +
+"        print(f'{пробелы}список из {len(объект)} шт.')\n" +
+"        for i, элемент in enumerate(объект[:3]):\n" +
+"            показать(элемент, отступ + 1, f'{путь}[{i}]')\n\n" +
+"print('\\nСтруктура — справа готовый путь до значения:\\n')\n" +
+"показать(данные)\n";
+  }
+},
+{
+  id:"dates", cat:"Утилиты", glyph:"✳", name:"Работа с датами", run:true,
+  file:"dates.py",
+  lead:"Считает разницу между датами, добавляет дни, форматирует. Вечная головная боль, решается один раз. Запускается здесь.",
+  pip:[],
+  options:[
+    { id:"mode", type:"select", label:"Что нужно", def:"diff", choices:[["diff","разница между датами"],["add","прибавить/отнять"],["fmt","переформатировать"]] },
+    { id:"d1",   type:"text", label:"Дата 1 (ДД.ММ.ГГГГ)", def:"01.01.2025" },
+    { id:"d2",   type:"text", label:"Дата 2 (для разницы)", def:"31.12.2025" },
+    { id:"days", type:"number", label:"Сколько дней (для прибавить)", def:30, step:1 },
+  ],
+  gen:function(c){
+    if(c.mode==="diff") return "" +
+"# Разница между датами\n" +
+"from datetime import datetime\n\n" +
+"ФОРМАТ = '%d.%m.%Y'\n" +
+"дата1 = datetime.strptime(" + q(c.d1) + ", ФОРМАТ)\n" +
+"дата2 = datetime.strptime(" + q(c.d2) + ", ФОРМАТ)\n\n" +
+"разница = дата2 - дата1\n" +
+"print(f'С {дата1:%d.%m.%Y} по {дата2:%d.%m.%Y}')\n" +
+"print(f'Дней:    {разница.days}')\n" +
+"print(f'Недель:  {разница.days / 7:.1f}')\n" +
+"print(f'Месяцев: ~{разница.days / 30.44:.1f}')\n" +
+"print(f'Лет:     ~{разница.days / 365.25:.2f}')\n\n" +
+"# сколько прошло от сегодня\n" +
+"сегодня = datetime.now()\n" +
+"print(f'\\nОт сегодня до {дата2:%d.%m.%Y}: {(дата2 - сегодня).days} дней')\n";
+    if(c.mode==="add") return "" +
+"# Прибавить или отнять дни\n" +
+"from datetime import datetime, timedelta\n\n" +
+"ФОРМАТ = '%d.%m.%Y'\n" +
+"дата = datetime.strptime(" + q(c.d1) + ", ФОРМАТ)\n" +
+"ДНЕЙ = " + c.days + "     # ✎ отрицательное число = отнять\n\n" +
+"новая = дата + timedelta(days=ДНЕЙ)\n" +
+"print(f'{дата:%d.%m.%Y}  +{ДНЕЙ} дн.  =  {новая:%d.%m.%Y}')\n\n" +
+"дни_недели = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']\n" +
+"print(f'Это {дни_недели[новая.weekday()]}')\n\n" +
+"# только рабочие дни\n" +
+"д, добавлено = дата, 0\n" +
+"while добавлено < abs(ДНЕЙ):\n" +
+"    д += timedelta(days=1 if ДНЕЙ > 0 else -1)\n" +
+"    if д.weekday() < 5:          # 5 и 6 — суббота и воскресенье\n" +
+"        добавлено += 1\n" +
+"print(f'Если считать только рабочие дни: {д:%d.%m.%Y}')\n";
+    return "" +
+"# Переформатирование даты\n" +
+"from datetime import datetime\n\n" +
+"дата = datetime.strptime(" + q(c.d1) + ", '%d.%m.%Y')\n\n" +
+"print('Один и тот же день в разных форматах:\\n')\n" +
+"print(f'  ДД.ММ.ГГГГ     {дата:%d.%m.%Y}')\n" +
+"print(f'  ГГГГ-ММ-ДД     {дата:%Y-%m-%d}   (для баз данных)')\n" +
+"print(f'  ДД/ММ/ГГ       {дата:%d/%m/%y}')\n" +
+"print(f'  для файла      {дата:%Y%m%d}')\n" +
+"print(f'  ISO            {дата.isoformat()}')\n" +
+"print(f'  метка времени  {int(дата.timestamp())}')\n\n" +
+"месяцы = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',\n" +
+"          'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']\n" +
+"print(f'  словами        {дата.day} {месяцы[дата.month - 1]} {дата.year} г.')\n";
+  }
+},
+
+/* ─────────── АВТОМАТИЗАЦИЯ ─────────── */
+{
+  id:"email", cat:"Автоматизация", glyph:"⟳", name:"Отправка почты",
+  file:"send_mail.py",
+  lead:"Отправляет письмо с вложением через SMTP. Для Gmail нужен «пароль приложения», обычный пароль не подойдёт.",
+  pip:[],
+  options:[
+    { id:"smtp",   type:"select", label:"Почта", def:"gmail", choices:[["gmail","Gmail"],["yandex","Яндекс"],["mail","Mail.ru"],["custom","свой сервер"]] },
+    { id:"from",   type:"text", label:"От кого (адрес)", def:"me@gmail.com" },
+    { id:"to",     type:"text", label:"Кому (через запятую)", def:"you@example.com" },
+    { id:"subj",   type:"text", label:"Тема", def:"Отчёт" },
+    { id:"body",   type:"textarea", label:"Текст письма", def:"Привет!\nВо вложении отчёт." },
+    { id:"attach", type:"text", label:"Вложение (пусто = без)", def:"отчёт.pdf" },
+  ],
+  gen:function(c){
+    var host = {gmail:["smtp.gmail.com",465], yandex:["smtp.yandex.ru",465], mail:["smtp.mail.ru",465], custom:["smtp.example.com",465]}[c.smtp];
+    var tos = c.to.split(",").map(function(s){return s.trim();}).filter(Boolean);
+    return "" +
+"# Отправка письма через SMTP\n" +
+"import smtplib\n" +
+"from email.message import EmailMessage\n" +
+(c.attach ? "from pathlib import Path\n" : "") +
+"\n# ✎ настройки\n" +
+"СЕРВЕР = " + q(host[0]) + "\n" +
+"ПОРТ = " + host[1] + "\n" +
+"ОТ_КОГО = " + q(c["from"]) + "\n" +
+"ПАРОЛЬ = 'пароль-приложения'   # ✎ для Gmail/Яндекс нужен пароль приложения, не обычный!\n" +
+"КОМУ = [" + tos.map(q).join(", ") + "]\n\n" +
+"письмо = EmailMessage()\n" +
+"письмо['From'] = ОТ_КОГО\n" +
+"письмо['To'] = ', '.join(КОМУ)\n" +
+"письмо['Subject'] = " + q(c.subj) + "\n" +
+"письмо.set_content(" + q(c.body) + ")\n\n" +
+(c.attach ?
+"# вложение\n" +
+"файл = Path(" + q(c.attach) + ")\n" +
+"if файл.exists():\n" +
+"    письмо.add_attachment(файл.read_bytes(),\n" +
+"                          maintype='application', subtype='octet-stream',\n" +
+"                          filename=файл.name)\n" +
+"    print(f'Вложение: {файл.name}')\n" +
+"else:\n" +
+"    print(f'Внимание: файл не найден — {файл}')\n\n" : "") +
+"with smtplib.SMTP_SSL(СЕРВЕР, ПОРТ) as smtp:\n" +
+"    smtp.login(ОТ_КОГО, ПАРОЛЬ)\n" +
+"    smtp.send_message(письмо)\n\n" +
+"print(f'Отправлено: {len(КОМУ)} получателям')\n";
+  }
+},
+{
+  id:"schedule", cat:"Автоматизация", glyph:"⟳", name:"Задача по расписанию",
+  file:"scheduler.py",
+  lead:"Запускает вашу функцию по расписанию: каждые N минут или в определённое время. Скрипт должен работать постоянно.",
+  pip:["schedule"],
+  options:[
+    { id:"mode", type:"select", label:"Когда запускать", def:"every", choices:[["every","каждые N минут"],["daily","каждый день в время"],["weekly","раз в неделю"]] },
+    { id:"mins", type:"number", label:"Каждые N минут", def:30, step:5 },
+    { id:"time", type:"text", label:"Время (ЧЧ:ММ)", def:"09:00" },
+    { id:"day",  type:"select", label:"День недели", def:"monday", choices:[["monday","понедельник"],["tuesday","вторник"],["wednesday","среда"],["thursday","четверг"],["friday","пятница"],["saturday","суббота"],["sunday","воскресенье"]] },
+  ],
+  gen:function(c){
+    var line = c.mode==="every" ? "schedule.every(" + c.mins + ").minutes.do(задача)"
+      : c.mode==="daily" ? "schedule.every().day.at(" + q(c.time) + ").do(задача)"
+      : "schedule.every()." + c.day + ".at(" + q(c.time) + ").do(задача)";
+    return "" +
+"# Запуск задачи по расписанию\n" +
+"import time\n" +
+"import schedule\n" +
+"from datetime import datetime\n\n" +
+"def задача():\n" +
+"    \"\"\"✎ Сюда пиши, что нужно делать.\"\"\"\n" +
+"    print(f'[{datetime.now():%d.%m.%Y %H:%M:%S}] Задача выполняется...')\n" +
+"    # например: сделать бэкап, отправить отчёт, проверить сайт\n" +
+"    print('  готово')\n\n" +
+"# ✎ расписание\n" +
+line + "\n\n" +
+"print('Планировщик запущен. Останови через Ctrl+C.')\n" +
+"задача()   # первый запуск сразу, чтобы проверить\n\n" +
+"while True:\n" +
+"    schedule.run_pending()\n" +
+"    time.sleep(30)\n\n" +
+"# Чтобы работало без открытого терминала:\n" +
+"#   Windows — Планировщик заданий\n" +
+"#   Linux   — cron или systemd timer\n";
+  }
+},
+{
+  id:"watch", cat:"Автоматизация", glyph:"⟳", name:"Следить за папкой",
+  file:"watch.py",
+  lead:"Следит за папкой и реагирует, когда появляются новые файлы. Например, автоматически раскладывает загрузки.",
+  pip:[],
+  options:[
+    { id:"folder", type:"text", label:"За какой папкой следить", def:"C:/Users/Имя/Downloads" },
+    { id:"period", type:"number", label:"Проверять каждые N секунд", def:5, step:1 },
+    { id:"ext",    type:"text", label:"Только эти расширения (пусто = все)", def:"pdf, jpg" },
+  ],
+  gen:function(c){
+    var exts = c.ext.split(",").map(function(s){return s.trim().toLowerCase().replace(/^\./,"");}).filter(Boolean);
+    return "" +
+"# Слежение за папкой: реагируем на новые файлы\n" +
+"import time\n" +
+"from pathlib import Path\n\n" +
+"# ✎ настройки\n" +
+"ПАПКА = Path(" + q(c.folder) + ")\n" +
+"ПЕРИОД = " + c.period + "        # секунд между проверками\n" +
+"РАСШИРЕНИЯ = " + (exts.length ? "[" + exts.map(q).join(", ") + "]" : "[]  # пусто = все") + "\n\n" +
+"def подходит(файл):\n" +
+"    if not файл.is_file():\n" +
+"        return False\n" +
+"    if not РАСШИРЕНИЯ:\n" +
+"        return True\n" +
+"    return файл.suffix.lower().lstrip('.') in РАСШИРЕНИЯ\n\n" +
+"def новый_файл(файл):\n" +
+"    \"\"\"✎ Что делать с новым файлом.\"\"\"\n" +
+"    print(f'  Новый файл: {файл.name} ({файл.stat().st_size / 1024:.0f} КБ)')\n" +
+"    # например: переместить, обработать, отправить\n\n" +
+"известные = {f for f in ПАПКА.iterdir() if подходит(f)}\n" +
+"print(f'Слежу за: {ПАПКА}')\n" +
+"print(f'Сейчас файлов: {len(известные)}. Останови через Ctrl+C.\\n')\n\n" +
+"try:\n" +
+"    while True:\n" +
+"        сейчас = {f for f in ПАПКА.iterdir() if подходит(f)}\n" +
+"        for файл in сейчас - известные:\n" +
+"            time.sleep(1)          # ждём, пока файл дозапишется\n" +
+"            новый_файл(файл)\n" +
+"        известные = сейчас\n" +
+"        time.sleep(ПЕРИОД)\n" +
+"except KeyboardInterrupt:\n" +
+"    print('\\nОстановлено.')\n";
+  }
+}
+
+];
+
+/* ═══════════════ ДВИЖОК ═══════════════ */
+var state = { sel:null, cfg:{} };
+var $ = function(s){ return document.querySelector(s); };
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function defaults(opts){ var c={}; opts.forEach(function(o){ c[o.id]=o.def; }); return c; }
+function recipe(id){ return RECIPES.filter(function(r){return r.id===id;})[0]; }
+
+/* подсветка Python */
+function highlight(code){
+  var s = esc(code);
+  var KW = ["import","from","for","in","if","else","elif","while","def","return","with","as","try","except","print","not","and","or","None","True","False","break","continue","lambda","raise","class","pass","global"];
+  s = s.replace(/('''[\s\S]*?'''|"[^"\n]*"|'[^'\n]*')/g, '<span class="str">$1</span>');
+  s = s.replace(/(#[^\n]*)/g, '<span class="cmt">$1</span>');
+  s = s.replace(new RegExp("\\b("+KW.join("|")+")\\b","g"), '<span class="kw">$1</span>');
+  s = s.replace(/\b(\d+\.?\d*)\b/g, '<span class="num">$1</span>');
+  return s;
+}
+
+var lastCode = "";
+function render(){
+  var r = recipe(state.sel); if(!r) return;
+  lastCode = r.gen(state.cfg);
+  $("#code").innerHTML = highlight(lastCode);
+  $("#fname").textContent = r.file;
+  $("#metric").textContent = lastCode.split("\n").length + " строк · " + lastCode.length + " симв.";
+  $("#lead").textContent = r.lead;
+
+  /* что установить */
+  var needs = $("#needs");
+  if(r.pip && r.pip.length){
+    var cmd = "pip install " + r.pip.join(" ");
+    needs.innerHTML = '<div class="cmdline"><span id="pipcmd">'+esc(cmd)+'</span><button class="cp" id="pipCopy">копировать</button></div>'+
+      '<div class="hint">Выполни один раз в терминале, потом библиотеки останутся в системе.</div>';
+    $("#pipCopy").onclick = function(){ copyText(cmd, this, "готово"); };
+  } else {
+    needs.innerHTML = '<div class="stdlib">Ничего ставить не нужно — только стандартный Python.</div>';
+  }
+  $("#runcmd").textContent = "python " + r.file;
+
+  /* кнопка запуска */
+  var rb = $("#runBtn");
+  if(r.run){ rb.style.display=""; rb.disabled=false; rb.title="Выполнить прямо в браузере"; }
+  else { rb.style.display="none"; }
+  $("#console").classList.remove("on");
+}
+
+function renderControls(){
+  var r = recipe(state.sel), box = $("#controls"); box.innerHTML = "";
+  $("#selName").textContent = r.name;
+  r.options.forEach(function(o){
+    var v = state.cfg[o.id];
+    var row = document.createElement("div");
+    row.className = "ctl" + (o.type==="toggle" ? " toggle" : "");
+    row.setAttribute("data-opt", o.id); row.setAttribute("data-type", o.type);
+    var inner = "";
+    if(o.type==="text")
+      inner='<div class="lab"><span>'+o.label+'</span></div><input type="text" value="'+esc(v)+'">';
+    else if(o.type==="textarea")
+      inner='<div class="lab"><span>'+o.label+'</span></div><textarea>'+esc(v)+'</textarea>';
+    else if(o.type==="number")
+      inner='<div class="lab"><span>'+o.label+'</span></div><input type="number" step="'+(o.step||1)+'" value="'+esc(v)+'">';
+    else if(o.type==="range")
+      inner='<div class="lab"><span>'+o.label+'</span><span class="val">'+v+(o.unit||"")+'</span></div><input type="range" min="'+o.min+'" max="'+o.max+'" value="'+v+'">';
+    else if(o.type==="select"){
+      var op=o.choices.map(function(ch){return '<option value="'+ch[0]+'"'+(ch[0]===v?" selected":"")+'>'+ch[1]+'</option>';}).join("");
+      inner='<div class="lab"><span>'+o.label+'</span></div><select>'+op+'</select>';
+    } else if(o.type==="toggle")
+      inner='<div class="lab"><span>'+o.label+'</span><label class="sw"><input type="checkbox"'+(v?" checked":"")+'><span class="tr"></span><span class="kn"></span></label></div>';
+    row.innerHTML = inner;
+    box.appendChild(row);
+  });
+}
+function readVal(row){
+  var type=row.getAttribute("data-type"), el=row.querySelector("input,select,textarea");
+  if(type==="toggle") return el.checked;
+  if(type==="range"||type==="number") return Number(el.value);
+  return el.value;
+}
+
+function select(id){
+  state.sel = id;
+  state.cfg = defaults(recipe(id).options);
+  document.querySelectorAll(".item").forEach(function(el){ el.classList.toggle("sel", el.getAttribute("data-id")===id); });
+  renderControls(); render();
+}
+
+/* каталог по категориям */
+var cat = $("#catalog"), seen = {};
+RECIPES.forEach(function(r){
+  if(!seen[r.cat]){
+    seen[r.cat]=1;
+    var h=document.createElement("div"); h.className="cat"; h.textContent=r.cat; cat.appendChild(h);
+  }
+  var el=document.createElement("div");
+  el.className="item"; el.setAttribute("data-id", r.id);
+  el.innerHTML='<span class="g">'+r.glyph+'</span><span class="n">'+r.name+'</span>'+(r.run?'<span class="rb">▶ запуск</span>':'');
+  el.onclick=function(){ select(r.id); };
+  cat.appendChild(el);
+});
+$("#count").textContent = RECIPES.length + " шт.";
+
+$("#controls").addEventListener("input", function(e){
+  var row=e.target.closest(".ctl"); if(!row) return;
+  var opt=row.getAttribute("data-opt"), val=readVal(row);
+  state.cfg[opt]=val;
+  var o=recipe(state.sel).options.filter(function(x){return x.id===opt;})[0];
+  if(o.type==="range"){ var vl=row.querySelector(".val"); if(vl) vl.textContent=val+(o.unit||""); }
+  render();
+});
+
+/* копирование / скачивание */
+function copyText(text, btn, label){
+  var back = btn.getAttribute("data-label") || btn.textContent;
+  var done=function(){ btn.textContent="✓ "+(label||"скопировано"); btn.classList.add("ok");
+    setTimeout(function(){ btn.textContent=back; btn.classList.remove("ok"); },1400); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(function(){ fb(); done(); });
+  else { fb(); done(); }
+  function fb(){ var ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); }
+}
+$("#copyBtn").onclick=function(){ copyText(lastCode, this); };
+$("#dlBtn").onclick=function(){
+  var r=recipe(state.sel);
+  var blob=new Blob([lastCode],{type:"text/x-python"}), a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=r.file;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); },1000);
+};
+
+/* ─── запуск в браузере (Pyodide грузится только по клику) ─── */
+var pyodide=null, pyLoading=false;
+function log(text, cls){
+  var out=$("#out"), span=document.createElement("span");
+  if(cls) span.className=cls;
+  span.textContent=text+"\n"; out.appendChild(span); out.scrollTop=out.scrollHeight;
+}
+$("#runBtn").onclick=async function(){
+  var btn=this;
+  $("#console").classList.add("on");
+  $("#out").innerHTML="";
+  btn.disabled=true;
+  try{
+    if(!pyodide){
+      log("Загружаю Python в браузер (первый раз — несколько секунд)...","sys");
+      if(!window.loadPyodide){
+        await new Promise(function(res,rej){
+          var s=document.createElement("script");
+          s.src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js";
+          s.onload=res; s.onerror=function(){ rej(new Error("не удалось загрузить Pyodide")); };
+          document.head.appendChild(s);
+        });
+      }
+      pyodide=await loadPyodide({ indexURL:"https://cdn.jsdelivr.net/pyodide/v0.26.2/full/" });
+      $("#out").innerHTML="";
+    }
+    pyodide.setStdout({ batched:function(s){ log(s); } });
+    pyodide.setStderr({ batched:function(s){ log(s,"err"); } });
+    await pyodide.runPythonAsync(lastCode);
+  }catch(e){
+    log(String(e.message||e).split("\n").slice(-6).join("\n"),"err");
+  }
+  btn.disabled=false;
+};
+
+/* старт */
+select(RECIPES[0].id);
+</script>
+</body>
+</html>

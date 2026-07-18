@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A.C.EON Coin. Реестр эмиссии</title>
+<link rel="stylesheet" href="coin-fonts.css">
 <link rel="stylesheet" href="coin-info.css">
 </head>
 <body>
@@ -13,8 +14,18 @@
 <header class="head">
     <div class="head-left">
         <a class="back" href="../index.html">&lt; A.C.EON</a>
-        <h1 class="glitch" data-text="A.C.EON COIN">A.C.EON COIN</h1>
-        <p class="sub">Реестр эмиссии</p>
+        <div class="brand">
+            <svg class="emblem" viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="orbit" cx="50" cy="50" r="46" fill="none"
+                        stroke-width="1.5" stroke-dasharray="4 7"/>
+                <circle cx="50" cy="50" r="34" fill="none" stroke-width="1"/>
+                <text x="50" y="63" text-anchor="middle">A</text>
+            </svg>
+            <div>
+                <h1 class="glitch" data-text="A.C.EON COIN">A.C.EON COIN</h1>
+                <p class="sub">Реестр эмиссии</p>
+            </div>
+        </div>
     </div>
     <dl class="head-meta">
         <div><dt>Тикер</dt><dd id="m-ticker">...</dd></div>
@@ -33,24 +44,28 @@
 </section>
 
 <section class="cards">
-    <article class="card">
+    <article class="card cut">
         <h2>В обращении</h2>
         <p class="card-value" id="v-circulating">0</p>
+        <p class="card-full" id="f-circulating"></p>
         <p class="card-note" id="v-listing-note"></p>
     </article>
-    <article class="card">
+    <article class="card cut">
         <h2>Резерв проекта</h2>
         <p class="card-value" id="v-reserved">0</p>
+        <p class="card-full" id="f-reserved"></p>
         <p class="card-note">Токены на кошельках разработчиков до запуска</p>
     </article>
-    <article class="card card-burn">
+    <article class="card cut card-burn">
         <h2>Сожжено</h2>
         <p class="card-value" id="v-burned">0</p>
+        <p class="card-full" id="f-burned"></p>
         <p class="card-note">Списывается из общего выпуска без возврата</p>
     </article>
-    <article class="card card-nft">
+    <article class="card cut card-nft">
         <h2>NFT выпущено</h2>
         <p class="card-value" id="v-nft">0</p>
+        <p class="card-full"></p>
         <p class="card-note" id="v-nft-note"></p>
     </article>
 </section>
@@ -64,13 +79,29 @@
     </div>
     <ul class="legend">
         <li><i class="dot dot-dev"></i><b id="l-dev">20%</b> команда проекта, два кошелька по 10%</li>
-        <li><i class="dot dot-exchange"></i><b id="l-exchange">50%</b> продажа на бирже после запуска</li>
+        <li><i class="dot dot-exchange"></i><b id="l-exchange">50%</b> продажа на бирже, выход траншами</li>
         <li><i class="dot dot-rewards"></i><b id="l-rewards">30%</b> награды и покупки на сайте</li>
     </ul>
 </section>
 
+<section class="tranche">
+    <h2 class="section-title">Выход на биржу</h2>
+    <p class="tranche-text">Токены не выбрасываются на рынок разом.
+    <b id="v-tranche">10 000 000</b> из биржевой доли в
+    <b id="v-pool">500 000 000</b> выходят первым траншем при открытии
+    проекта: <b id="v-tranche-pct">2%</b> от всей доли.</p>
+    <div class="tranche-bar" role="img" aria-label="Первый транш относительно биржевой доли">
+        <div class="tranche-fill" id="tranche-fill"></div>
+    </div>
+    <div class="tranche-scale">
+        <span>0</span><span id="v-pool-scale">500 000 000</span>
+    </div>
+    <p class="tranche-note" id="v-tranche-note"></p>
+    <p class="tranche-note" id="v-activity-note"></p>
+</section>
+
 <section class="two-col">
-    <article class="panel panel-burn">
+    <article class="panel cut panel-burn">
         <h2 class="section-title">Механика сжигания</h2>
         <p>При каждой покупке на сайте от <b id="v-burn-min">5</b>% до
         <b id="v-burn-max">20</b>% потраченных токенов уничтожается.
@@ -79,7 +110,7 @@
         <p class="panel-formula">осталось = выпуск - сожжено =
         <b id="v-remaining">...</b></p>
     </article>
-    <article class="panel panel-frag">
+    <article class="panel cut panel-frag">
         <h2 class="section-title">Фрагменты данных</h2>
         <p>Внутри A.C.EON активность оплачивается фрагментами данных:
         ежедневный вход, курсы, игры. Фрагменты обмениваются на ACEON

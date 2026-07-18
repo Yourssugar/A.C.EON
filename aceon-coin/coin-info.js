@@ -12,6 +12,26 @@
         return Number(n).toLocaleString('ru-RU');
     }
 
+    // короткая форма для карточек: 1 млрд, 10 млн, 250 тыс
+    function fmtShort(n) {
+        n = Number(n);
+        if (n >= 1e9) return trim(n / 1e9) + ' млрд';
+        if (n >= 1e6) return trim(n / 1e6) + ' млн';
+        if (n >= 1e3) return trim(n / 1e3) + ' тыс';
+        return fmt(n);
+    }
+    function trim(x) {
+        return (Math.round(x * 10) / 10).toLocaleString('ru-RU');
+    }
+
+    // карточка: короткое число крупно, полное мелкой строкой (если отличается)
+    function putCard(id, value) {
+        var short = fmtShort(value);
+        put(id, short);
+        var full = document.getElementById('f-' + id.slice(2));
+        if (full) full.textContent = (value >= 1000) ? fmt(value) : '';
+    }
+
     function put(id, text) {
         var el = document.getElementById(id);
         if (el) el.textContent = text;
@@ -43,10 +63,10 @@
         put('m-network', info.network);
 
         countUp('v-total', info.total_supply);
-        countUp('v-circulating', info.circulating);
-        countUp('v-reserved', info.reserved);
-        countUp('v-burned', info.burned);
-        countUp('v-nft', info.nft_minted);
+        putCard('v-circulating', info.circulating);
+        putCard('v-reserved', info.reserved);
+        putCard('v-burned', info.burned);
+        put('v-nft', fmt(info.nft_minted));
 
         put('v-listing-note', info.listing_note);
         put('v-nft-note', info.nft_note);
@@ -59,6 +79,8 @@
         put('l-exchange', d.exchange_percent + '%');
         put('l-rewards', d.rewards_percent + '%');
 
+        renderTranche(info);
+
         // полоса распределения выезжает после отрисовки
         setTimeout(function () {
             setPart('bar-dev', d.developers_percent);
@@ -67,6 +89,23 @@
         }, 100);
 
         renderContract(info);
+    }
+
+    // биржевая доля и первый транш
+    function renderTranche(info) {
+        var pool = info.total_supply * info.distribution.exchange_percent / 100;
+        var pct = info.first_tranche / pool * 100;
+        put('v-tranche', fmt(info.first_tranche));
+        put('v-pool', fmt(pool));
+        put('v-pool-scale', fmt(pool));
+        put('v-tranche-pct', trim(pct) + '%');
+        put('v-tranche-note', info.tranche_note);
+        put('v-activity-note', info.activity_note);
+        setTimeout(function () {
+            var fill = document.getElementById('tranche-fill');
+            // маленький транш всё равно должен быть виден на полосе
+            fill.style.width = Math.max(pct, 1.2) + '%';
+        }, 100);
     }
 
     function setPart(id, percent) {

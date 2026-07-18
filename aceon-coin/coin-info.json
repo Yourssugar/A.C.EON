@@ -1,0 +1,25 @@
+{
+    "ticker": "ACEON",
+    "network": "Sepolia, тестовая сеть Ethereum",
+    "standard": "ERC-20",
+    "contract": "",
+    "decimals": 18,
+
+    "total_supply": 1000000000,
+    "circulating": 0,
+    "reserved": 1000000000,
+    "burned": 0,
+    "nft_minted": 1,
+
+    "distribution": {
+        "developers_percent": 20,
+        "exchange_percent": 50,
+        "rewards_percent": 30
+    },
+
+    "burn_min_percent": 5,
+    "burn_max_percent": 20,
+
+    "listing_note": "Выход на биржу назначен на запуск проекта: середина января 2027",
+    "nft_note": "Первый NFT приурочен к открытию проекта"
+}

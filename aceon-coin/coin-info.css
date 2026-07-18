@@ -1,18 +1,26 @@
 /* coin-info.css
    Реестр эмиссии A.C.EON Coin.
-   Палитра: фон #07080d, панели #0d1017, золото эмиссии #e8b64c,
-   циан фрагментов #57d7d4, сожжение #e05545, текст #e9edf5 и #8a93a6. */
+   Шрифты: Unbounded для заголовков и чисел, JetBrains Mono для текста.
+   Крупные блоки со срезанными углами, кнопки со скруглением.
+   Палитра: фон #07080d, панели #0d1017, золото #e8b64c,
+   циан #57d7d4, сожжение #e05545. */
 
 :root {
     --bg: #07080d;
     --panel: #0d1017;
-    --line: #1c2230;
+    --line: #232b3d;
     --gold: #e8b64c;
     --cyan: #57d7d4;
     --burn: #e05545;
     --text: #e9edf5;
     --dim: #8a93a6;
-    --mono: "Courier New", Courier, monospace;
+    --display: 'Unbounded', sans-serif;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    /* срез углов: правый верхний и левый нижний */
+    --cut: polygon(0 0, calc(100% - 16px) 0, 100% 16px,
+                   100% 100%, 16px 100%, 0 calc(100% - 16px));
+    --cut-in: polygon(0 0, calc(100% - 15px) 0, 100% 15px,
+                      100% 100%, 15px 100%, 0 calc(100% - 15px));
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,17 +29,33 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--mono);
-    line-height: 1.55;
+    line-height: 1.6;
     min-height: 100vh;
     padding-bottom: 40px;
 }
 
-/* тонкая бегущая полоса сверху вниз, единственный фоновый эффект */
+/* панель со срезами: фон элемента рисует рамку, слой ::before рисует заливку */
+.cut {
+    position: relative;
+    background: var(--line);
+    clip-path: var(--cut);
+    border: none;
+}
+.cut::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    background: var(--panel);
+    clip-path: var(--cut-in);
+}
+.cut > * { position: relative; }
+
+/* бегущая полоса, единственный фоновый эффект поверх страницы */
 .scanline {
     position: fixed;
     left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(232, 182, 76, 0.25), transparent);
+    background: linear-gradient(90deg, transparent, rgba(232, 182, 76, 0.22), transparent);
     animation: scan 9s linear infinite;
     pointer-events: none;
     z-index: 5;
@@ -54,7 +78,7 @@ main, .head, .foot {
     align-items: flex-end;
     gap: 20px;
     flex-wrap: wrap;
-    padding-top: 34px;
+    padding-top: 30px;
     padding-bottom: 26px;
     border-bottom: 1px solid var(--line);
 }
@@ -66,14 +90,43 @@ main, .head, .foot {
 }
 .back:hover, .back:focus { color: var(--cyan); }
 
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+/* эмблема: пунктирная орбита медленно вращается вокруг литеры */
+.emblem {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+}
+.emblem circle { stroke: var(--gold); }
+.emblem .orbit {
+    stroke: var(--dim);
+    transform-origin: 50% 50%;
+    animation: orbit 24s linear infinite;
+}
+.emblem text {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 38px;
+    fill: var(--gold);
+}
+@keyframes orbit {
+    to { transform: rotate(360deg); }
+}
+
 h1.glitch {
-    font-size: clamp(26px, 5vw, 44px);
-    letter-spacing: 4px;
-    margin-top: 10px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(20px, 4vw, 34px);
+    letter-spacing: 2px;
     position: relative;
     color: var(--gold);
 }
-/* сдвоенный контур заголовка, дрожит раз в несколько секунд */
 h1.glitch::before, h1.glitch::after {
     content: attr(data-text);
     position: absolute;
@@ -91,8 +144,8 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
 
 .sub {
     color: var(--dim);
-    letter-spacing: 3px;
-    font-size: 13px;
+    letter-spacing: 4px;
+    font-size: 12px;
     text-transform: uppercase;
     margin-top: 4px;
 }
@@ -105,12 +158,29 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
 .head-meta dt { color: var(--dim); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
 .head-meta dd { color: var(--text); margin-top: 2px; }
 
-/* общий выпуск */
+/* общий выпуск с золотой подсветкой из глубины */
 .supply {
+    position: relative;
     text-align: center;
-    padding: 46px 0 36px;
+    padding: 52px 0 42px;
     border-bottom: 1px solid var(--line);
+    overflow: hidden;
 }
+.supply::before {
+    content: "";
+    position: absolute;
+    left: 50%; top: 55%;
+    width: 560px; height: 280px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse, rgba(232, 182, 76, 0.13), transparent 65%);
+    animation: breathe 7s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes breathe {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+.supply > * { position: relative; }
 .supply-label {
     color: var(--dim);
     letter-spacing: 3px;
@@ -118,11 +188,13 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
     font-size: 13px;
 }
 .supply-value {
-    font-size: clamp(34px, 8vw, 72px);
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(30px, 6.5vw, 62px);
     color: var(--gold);
-    letter-spacing: 3px;
-    margin: 10px 0 12px;
-    text-shadow: 0 0 26px rgba(232, 182, 76, 0.25);
+    letter-spacing: 2px;
+    margin: 12px 0 14px;
+    text-shadow: 0 0 30px rgba(232, 182, 76, 0.3);
     font-variant-numeric: tabular-nums;
 }
 .supply-note {
@@ -139,45 +211,53 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
     gap: 14px;
     padding: 28px 0;
 }
-.card {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    padding: 18px 16px 16px;
-}
+.card { padding: 18px 16px 16px; }
 .card h2 {
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--dim);
-    font-weight: normal;
+    font-weight: 400;
 }
 .card-value {
-    font-size: 30px;
-    margin: 8px 0 6px;
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 26px;
+    margin: 10px 0 2px;
     color: var(--text);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
-.card-note { font-size: 12px; color: var(--dim); }
+.card-full {
+    font-size: 12px;
+    color: var(--dim);
+    min-height: 18px;
+    font-variant-numeric: tabular-nums;
+}
+.card-note { font-size: 12px; color: var(--dim); margin-top: 6px; }
 .card-burn .card-value { color: var(--burn); }
 .card-nft .card-value { color: var(--cyan); }
 
-/* распределение */
+/* заголовки секций */
 .section-title {
+    font-family: var(--display);
+    font-weight: 500;
     font-size: 14px;
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--text);
-    font-weight: normal;
     margin-bottom: 16px;
 }
-.dist { padding: 22px 0 30px; border-top: 1px solid var(--line); }
+
+/* распределение */
+.dist { padding: 22px 0 26px; border-top: 1px solid var(--line); }
 
 .bar {
     display: flex;
     height: 46px;
-    border: 1px solid var(--line);
     background: var(--panel);
     overflow: hidden;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
 }
 .bar-part {
     display: flex;
@@ -187,6 +267,7 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
     transition: width 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
     white-space: nowrap;
     font-size: 13px;
+    font-weight: 700;
     color: #07080d;
 }
 .bar-dev      { background: var(--gold); }
@@ -207,10 +288,48 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
     display: inline-block;
     width: 10px; height: 10px;
     margin-right: 8px;
+    border-radius: 50%;
 }
 .dot-dev      { background: var(--gold); }
 .dot-exchange { background: #b9c3d6; }
 .dot-rewards  { background: var(--cyan); }
+
+/* выход на биржу траншами */
+.tranche { padding-bottom: 30px; }
+.tranche-text {
+    font-size: 14px;
+    max-width: 640px;
+    margin-bottom: 14px;
+}
+.tranche-text b { color: var(--gold); }
+.tranche-bar {
+    height: 26px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    overflow: hidden;
+}
+.tranche-fill {
+    height: 100%;
+    width: 0;
+    min-width: 0;
+    background: linear-gradient(90deg, var(--gold), #f5d78a);
+    box-shadow: 0 0 14px rgba(232, 182, 76, 0.5);
+    transition: width 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.tranche-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 4px;
+}
+.tranche-note {
+    font-size: 13px;
+    color: var(--dim);
+    margin-top: 10px;
+    max-width: 640px;
+}
 
 /* две панели */
 .two-col {
@@ -221,15 +340,10 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
 }
 @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
 
-.panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    padding: 20px 18px;
-    font-size: 14px;
-}
+.panel { padding: 20px 18px; font-size: 14px; }
 .panel p + p { margin-top: 10px; }
-.panel-burn { border-top: 2px solid var(--burn); }
-.panel-frag { border-top: 2px solid var(--cyan); }
+.panel-burn::before { box-shadow: inset 0 2px 0 var(--burn); }
+.panel-frag::before { box-shadow: inset 0 2px 0 var(--cyan); }
 .panel-burn b { color: var(--burn); }
 .panel-frag b { color: var(--cyan); }
 .panel-formula {
@@ -253,10 +367,11 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
 .timeline li::before {
     content: "";
     position: absolute;
-    left: -5px; top: 4px;
+    left: -5px; top: 5px;
     width: 9px; height: 9px;
     background: var(--bg);
     border: 1px solid var(--dim);
+    transform: rotate(45deg);
 }
 .timeline li.tl-done::before {
     background: var(--gold);
@@ -264,9 +379,12 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
 }
 .timeline b {
     display: block;
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 13px;
     color: var(--gold);
     letter-spacing: 1px;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
 }
 .timeline span { color: var(--dim); }
 
@@ -284,15 +402,18 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
     padding: 8px 12px;
     font-size: 13px;
     word-break: break-all;
+    border-radius: 6px;
 }
 .contract-row button {
     background: none;
     border: 1px solid var(--gold);
+    border-radius: 999px;
     color: var(--gold);
     font-family: var(--mono);
     font-size: 13px;
-    padding: 8px 14px;
+    padding: 8px 18px;
     cursor: pointer;
+    transition: background 0.15s, color 0.15s;
 }
 .contract-row button:hover, .contract-row button:focus {
     background: var(--gold);
@@ -311,5 +432,7 @@ h1.glitch::after  { color: var(--burn); animation: gl 6s 3s infinite; }
 @media (prefers-reduced-motion: reduce) {
     .scanline { display: none; }
     h1.glitch::before, h1.glitch::after { animation: none; }
-    .bar-part { transition: none; }
+    .emblem .orbit { animation: none; }
+    .supply::before { animation: none; }
+    .bar-part, .tranche-fill { transition: none; }
 }

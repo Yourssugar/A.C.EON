@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.C.EON Coin. Реестр эмиссии</title>
+<link rel="stylesheet" href="coin-info.css">
+</head>
+<body>
+
+<div class="scanline" aria-hidden="true"></div>
+
+<header class="head">
+    <div class="head-left">
+        <a class="back" href="../index.html">&lt; A.C.EON</a>
+        <h1 class="glitch" data-text="A.C.EON COIN">A.C.EON COIN</h1>
+        <p class="sub">Реестр эмиссии</p>
+    </div>
+    <dl class="head-meta">
+        <div><dt>Тикер</dt><dd id="m-ticker">...</dd></div>
+        <div><dt>Стандарт</dt><dd id="m-standard">...</dd></div>
+        <div><dt>Сеть</dt><dd id="m-network">...</dd></div>
+    </dl>
+</header>
+
+<main>
+
+<section class="supply">
+    <p class="supply-label">Общий выпуск токенов</p>
+    <p class="supply-value" id="v-total">0</p>
+    <p class="supply-note">Максимум зафиксирован при выпуске. Допечатка не предусмотрена,
+    сжигание уменьшает это число навсегда.</p>
+</section>
+
+<section class="cards">
+    <article class="card">
+        <h2>В обращении</h2>
+        <p class="card-value" id="v-circulating">0</p>
+        <p class="card-note" id="v-listing-note"></p>
+    </article>
+    <article class="card">
+        <h2>Резерв проекта</h2>
+        <p class="card-value" id="v-reserved">0</p>
+        <p class="card-note">Токены на кошельках разработчиков до запуска</p>
+    </article>
+    <article class="card card-burn">
+        <h2>Сожжено</h2>
+        <p class="card-value" id="v-burned">0</p>
+        <p class="card-note">Списывается из общего выпуска без возврата</p>
+    </article>
+    <article class="card card-nft">
+        <h2>NFT выпущено</h2>
+        <p class="card-value" id="v-nft">0</p>
+        <p class="card-note" id="v-nft-note"></p>
+    </article>
+</section>
+
+<section class="dist">
+    <h2 class="section-title">Распределение выпуска</h2>
+    <div class="bar" id="dist-bar" role="img" aria-label="Полоса распределения токенов">
+        <div class="bar-part bar-dev" id="bar-dev"><span></span></div>
+        <div class="bar-part bar-exchange" id="bar-exchange"><span></span></div>
+        <div class="bar-part bar-rewards" id="bar-rewards"><span></span></div>
+    </div>
+    <ul class="legend">
+        <li><i class="dot dot-dev"></i><b id="l-dev">20%</b> команда проекта, два кошелька по 10%</li>
+        <li><i class="dot dot-exchange"></i><b id="l-exchange">50%</b> продажа на бирже после запуска</li>
+        <li><i class="dot dot-rewards"></i><b id="l-rewards">30%</b> награды и покупки на сайте</li>
+    </ul>
+</section>
+
+<section class="two-col">
+    <article class="panel panel-burn">
+        <h2 class="section-title">Механика сжигания</h2>
+        <p>При каждой покупке на сайте от <b id="v-burn-min">5</b>% до
+        <b id="v-burn-max">20</b>% потраченных токенов уничтожается.
+        Сожжённые токены вычитаются из общего выпуска: чем активнее
+        покупки, тем меньше монет существует.</p>
+        <p class="panel-formula">осталось = выпуск - сожжено =
+        <b id="v-remaining">...</b></p>
+    </article>
+    <article class="panel panel-frag">
+        <h2 class="section-title">Фрагменты данных</h2>
+        <p>Внутри A.C.EON активность оплачивается фрагментами данных:
+        ежедневный вход, курсы, игры. Фрагменты обмениваются на ACEON
+        по курсу хранилища.</p>
+        <p>Окно синхронизации открывается в нечётные дни на 666-й минуте
+        суток, 11:06 UTC. В этот момент система обрабатывает все заявки
+        на вывод разом.</p>
+    </article>
+</section>
+
+<section class="roadmap">
+    <h2 class="section-title">Хронология</h2>
+    <ol class="timeline">
+        <li class="tl-done">
+            <b>2026</b>
+            <span>Тестовая эмиссия в Sepolia. Отладка хранилища фрагментов
+            и механики вывода без реальных денег.</span>
+        </li>
+        <li class="tl-done">
+            <b>Открытие</b>
+            <span>Первый NFT коллекции, приуроченный к запуску проекта.</span>
+        </li>
+        <li>
+            <b>Январь 2027</b>
+            <span>Запуск проекта. Выпуск боевого контракта и выход ACEON
+            на биржу, ориентир: середина месяца.</span>
+        </li>
+    </ol>
+</section>
+
+<section class="contract">
+    <h2 class="section-title">Контракт</h2>
+    <div class="contract-row" id="contract-row" hidden>
+        <code id="v-contract"></code>
+        <button type="button" id="btn-copy">Скопировать адрес</button>
+        <button type="button" id="btn-metamask">Добавить в MetaMask</button>
+    </div>
+    <p class="contract-empty" id="contract-empty">Адрес контракта будет
+    опубликован здесь после выпуска боевой версии токена.</p>
+</section>
+
+</main>
+
+<footer class="foot">
+    <p>A.C.EON Studio. Тестовая монета, не имеет денежной ценности.</p>
+</footer>
+
+<script src="coin-info.js"></script>
+</body>
+</html>

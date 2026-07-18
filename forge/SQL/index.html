@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FORGE · SQL</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#12151a; --panel-2:#0f1216; --grid:#161b21;
+    --line:#232a32; --line-hi:#2f3a44; --text:#d7dde3; --muted:#6b7580;
+    --dim:#464f58; --acc:#5b9df9; --run:#4fd6c8; --glitch:#ff4d6d; --radius:2px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;
+    font-family:ui-monospace,"Cascadia Code","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:44px 44px;
+    padding:clamp(14px,3.5vw,36px) clamp(12px,3.5vw,36px) 60px;
+  }
+  .wrap{max-width:1280px;margin:0 auto}
+
+  .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;letter-spacing:.1em;color:var(--muted)}
+  .top a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent}
+  .top a:hover{color:var(--acc);border-color:var(--acc)}
+  .top .cur{color:var(--acc)} .top .sep{color:var(--dim)}
+  h1.h{margin:16px 0 4px;font-size:clamp(24px,4.5vw,36px);font-weight:700;letter-spacing:.02em}
+  h1.h b{color:var(--acc)}
+  .sub{color:var(--muted);font-size:13px;max-width:74ch}
+
+  .dialbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:20px 0 6px}
+  .dialbar .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .dial{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:12px;
+    padding:7px 13px;border-radius:var(--radius);cursor:pointer;transition:border-color .14s,color .14s,background .14s}
+  .dial:hover{border-color:var(--line-hi);color:var(--text)}
+  .dial.sel{border-color:var(--acc);color:var(--text);background:#111722}
+
+  .panel{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .panel::before,.panel::after{content:"";position:absolute;width:9px;height:9px;border-color:var(--line-hi);border-style:solid}
+  .panel::before{top:6px;left:6px;border-width:1px 0 0 1px}
+  .panel::after{bottom:6px;right:6px;border-width:0 1px 1px 0}
+  .p-head{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .p-head .badge{color:var(--acc);letter-spacing:.06em}
+
+  .work{display:grid;grid-template-columns:280px 320px 1fr;gap:16px;align-items:start;margin-top:14px}
+  @media (max-width:1100px){.work{grid-template-columns:280px 1fr}}
+  @media (max-width:820px){.work{grid-template-columns:1fr}}
+
+  .cat{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:16px 0 7px;padding-top:12px;border-top:1px solid var(--line)}
+  .cat:first-child{margin-top:0;padding-top:0;border-top:none}
+  .item{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);
+    margin-bottom:6px;cursor:pointer;transition:border-color .14s,background .14s;color:var(--muted)}
+  .item:hover{border-color:var(--line-hi);color:var(--text)}
+  .item.sel{border-color:var(--acc);background:#0f1622;color:var(--text)}
+  .item .g{color:var(--dim);width:16px;text-align:center;flex:none;font-weight:700}
+  .item.sel .g{color:var(--acc)}
+  .item .n{font-size:12.5px;flex:1}
+  .item .rb{font-size:9px;letter-spacing:.06em;color:var(--run);border:1px solid var(--run);border-radius:3px;padding:1px 4px;flex:none;opacity:.75}
+
+  .ctl{padding:9px 0;border-bottom:1px dashed var(--line)}
+  .ctl:last-child{border-bottom:none}
+  .ctl .lab{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}
+  .ctl .lab .val{color:var(--acc);font-size:11px}
+  .ctl input[type=text],.ctl input[type=number],.ctl select,.ctl textarea{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:13px;padding:8px 10px;border-radius:var(--radius)}
+  .ctl textarea{resize:vertical;min-height:54px;line-height:1.5}
+  .ctl input:focus,.ctl select:focus,.ctl textarea:focus{outline:none;border-color:var(--acc)}
+  .ctl input[type=range]{width:100%;accent-color:var(--acc);cursor:pointer}
+  .sw{position:relative;display:inline-block;width:40px;height:22px;flex:none;cursor:pointer}
+  .sw input{opacity:0;width:0;height:0;position:absolute}
+  .sw .tr{position:absolute;inset:0;background:var(--line-hi);border-radius:11px;transition:background .15s}
+  .sw .kn{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#0b0d10;border-radius:50%;transition:transform .15s}
+  .sw input:checked + .tr{background:var(--acc)}
+  .sw input:checked + .tr + .kn{transform:translateX(18px)}
+  .ctl.toggle .lab{margin-bottom:0}
+
+  .lead{font-size:12.5px;color:var(--text);line-height:1.65}
+  .demo{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim);line-height:1.6}
+  .demo b{color:var(--muted)}
+
+  .code-scroll{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);overflow:auto;max-height:340px}
+  pre{margin:0;padding:14px;font-family:inherit;font-size:12.5px;line-height:1.65;white-space:pre;color:#c8d0d8;tab-size:2}
+  .cmt{color:var(--muted);font-style:italic}
+  .kw{color:#7fb0f0;font-weight:600} .str{color:#9ccf7a} .num{color:#e0a54a} .fnc{color:#c78ce0}
+  .codebar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  .btn{background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:12px;
+    padding:8px 14px;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;transition:border-color .15s,color .15s}
+  .btn:hover{border-color:var(--acc);color:var(--acc)}
+  .btn.primary{border-color:var(--acc);color:var(--acc)}
+  .btn.ok{border-color:var(--run);color:var(--run)}
+  .btn.play{border-color:var(--run);color:var(--run)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .metric{font-size:11px;color:var(--dim);letter-spacing:.05em;margin-left:auto}
+
+  .result{margin-top:14px;display:none}
+  .result.on{display:block}
+  .result .rhead{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+  .result .msg{font-size:12.5px;color:var(--run)}
+  .result .msg.err{color:var(--glitch);white-space:pre-wrap}
+  .result .msg.sys{color:var(--dim)}
+  .rtable-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);max-height:280px}
+  table.rtable{border-collapse:collapse;width:100%;font-size:12px}
+  table.rtable th,table.rtable td{border:1px solid var(--line);padding:6px 10px;text-align:left;white-space:nowrap}
+  table.rtable th{background:var(--panel-2);color:var(--acc);position:sticky;top:0}
+  table.rtable td{color:var(--text)}
+  table.rtable tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <a href="../">&larr; forge</a><span class="sep">/</span>
+    <span class="cur">SQL</span><span class="sep">·</span><span>генерация запросов</span>
+  </div>
+  <h1 class="h">Собери <b>запрос</b></h1>
+  <p class="sub">Выбери операцию, задай таблицу и условия — получишь готовый SQL под выбранную СУБД. Запросы можно выполнить прямо здесь, на демо-базе.</p>
+
+  <div class="dialbar">
+    <span class="lbl">диалект</span>
+    <div id="dialects"></div>
+  </div>
+
+  <div class="work">
+    <div class="panel">
+      <div class="p-head"><span>что сделать</span><span class="badge" id="count">—</span></div>
+      <div id="catalog"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="p-head"><span>параметры</span><span class="badge" id="selName">—</span></div>
+        <div id="controls"></div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="p-head"><span>о запросе</span></div>
+        <div class="lead" id="lead"></div>
+        <div class="demo">
+          <b>Демо-база для запуска:</b><br>
+          <b>users</b>(id, name, city, age, created)<br>
+          <b>orders</b>(id, user_id, product, amount, created)
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="p-head"><span>SQL · <span id="dialName">SQLite</span></span></div>
+      <div class="code-scroll"><pre><code id="code"></code></pre></div>
+      <div class="codebar">
+        <button class="btn primary" id="copyBtn" data-label="скопировать">скопировать</button>
+        <button class="btn" id="dlBtn">скачать .sql</button>
+        <button class="btn play" id="runBtn">▶ выполнить на демо-базе</button>
+        <span class="metric" id="metric"></span>
+      </div>
+      <div class="result" id="result">
+        <div class="rhead">результат</div>
+        <div id="rbody"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   FORGE · SQL — генератор запросов
+   gen(cfg, d) -> строка SQL, где d — диалект (mysql/postgres/sqlite/sqlserver).
+   run:true — запрос можно выполнить на демо-базе (SQLite через sql.js).
+   Для выполнения всегда берётся SQLite-вариант, показывается — выбранный.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* диалекты и их отличия */
+var DIA = {
+  sqlite:    { name:"SQLite",     ai:"INTEGER PRIMARY KEY AUTOINCREMENT", now:"CURRENT_TIMESTAMP" },
+  mysql:     { name:"MySQL",      ai:"INT AUTO_INCREMENT PRIMARY KEY",    now:"NOW()" },
+  postgres:  { name:"PostgreSQL", ai:"SERIAL PRIMARY KEY",                now:"NOW()" },
+  sqlserver: { name:"SQL Server", ai:"INT IDENTITY(1,1) PRIMARY KEY",     now:"GETDATE()" },
+};
+var DIAL_ORDER = ["sqlite","mysql","postgres","sqlserver"];
+
+/* значение: число оставляем как есть, текст — в кавычки */
+function val(v){ v=String(v).trim(); return /^-?\d+(\.\d+)?$/.test(v) ? v : "'"+v.replace(/'/g,"''")+"'"; }
+/* LIMIT / TOP по диалекту */
+function limPre(d,n){ return d==="sqlserver" ? "TOP "+n+" " : ""; }
+function limTail(d,n){ return d==="sqlserver" ? "" : "\nLIMIT "+n; }
+/* дата -> строка периода */
+function dateExpr(d, col, period){
+  var f = { day:{my:"%Y-%m-%d",lt:"%Y-%m-%d",pg:"YYYY-MM-DD",ss:"yyyy-MM-dd"},
+            month:{my:"%Y-%m",lt:"%Y-%m",pg:"YYYY-MM",ss:"yyyy-MM"},
+            year:{my:"%Y",lt:"%Y",pg:"YYYY",ss:"yyyy"} }[period];
+  if(d==="mysql")    return "DATE_FORMAT("+col+", '"+f.my+"')";
+  if(d==="sqlite")   return "strftime('"+f.lt+"', "+col+")";
+  if(d==="postgres") return "TO_CHAR("+col+"::date, '"+f.pg+"')";
+  return "FORMAT("+col+", '"+f.ss+"')";
+}
+
+var RECIPES = [
+
+/* ─────────── ТАБЛИЦЫ ─────────── */
+{
+  id:"create", cat:"Таблицы", glyph:"▤", name:"Создать таблицу",
+  lead:"Создаёт таблицу с нужными столбцами. Автоматический id и синтаксис автоинкремента подставляются под выбранную СУБД.",
+  options:[
+    { id:"table", type:"text", label:"Имя таблицы", def:"products" },
+    { id:"cols",  type:"textarea", label:"Столбцы (строка: имя тип)", def:"name TEXT\nprice REAL\nqty INTEGER\ncreated TEXT" },
+    { id:"autoid",type:"toggle", label:"Добавить авто-id (первичный ключ)", def:true },
+    { id:"ine",   type:"toggle", label:"Не создавать, если уже есть", def:true },
+  ],
+  gen:function(c,d){
+    var lines = c.cols.split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    var body = [];
+    if(c.autoid) body.push("  id " + DIA[d].ai);
+    lines.forEach(function(l){ body.push("  " + l); });
+    var ine = c.ine ? (d==="sqlserver" ? "" : "IF NOT EXISTS ") : "";
+    var head = "CREATE TABLE " + ine + c.table + " (\n" + body.join(",\n") + "\n);";
+    if(c.ine && d==="sqlserver")
+      head = "-- SQL Server: проверка существования делается отдельно\nIF OBJECT_ID('" + c.table + "', 'U') IS NULL\n" + head;
+    return head;
+  }
+},
+{
+  id:"alter", cat:"Таблицы", glyph:"▤", name:"Изменить таблицу",
+  lead:"Добавляет или удаляет столбец в существующей таблице.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"users" },
+    { id:"action", type:"select", label:"Действие", def:"add", choices:[["add","добавить столбец"],["drop","удалить столбец"]] },
+    { id:"column", type:"text", label:"Столбец", def:"phone" },
+    { id:"type",   type:"text", label:"Тип (для добавления)", def:"TEXT" },
+  ],
+  gen:function(c,d){
+    if(c.action==="add") return "ALTER TABLE " + c.table + "\n  ADD COLUMN " + c.column + " " + c.type + ";";
+    return "ALTER TABLE " + c.table + "\n  DROP COLUMN " + c.column + ";";
+  }
+},
+{
+  id:"drop", cat:"Таблицы", glyph:"▤", name:"Удалить таблицу",
+  lead:"Удаляет таблицу целиком. С проверкой «если существует», чтобы не было ошибки.",
+  options:[
+    { id:"table", type:"text", label:"Таблица", def:"temp_table" },
+    { id:"ine",   type:"toggle", label:"Только если существует", def:true },
+  ],
+  gen:function(c,d){ return "-- удаляет таблицу вместе со всеми данными\nDROP TABLE " + (c.ine?"IF EXISTS ":"") + c.table + ";"; }
+},
+
+/* ─────────── ВЫБОРКА ─────────── */
+{
+  id:"select", cat:"Выборка", glyph:"◈", name:"Выбрать строки", run:true,
+  lead:"Основа основ: достать нужные столбцы, отфильтровать, отсортировать, ограничить количество.",
+  options:[
+    { id:"table",   type:"text", label:"Таблица", def:"users" },
+    { id:"columns", type:"text", label:"Столбцы (* = все)", def:"name, city, age" },
+    { id:"useWhere",type:"toggle", label:"Фильтр (WHERE)", def:true },
+    { id:"wCol",    type:"text", label:"Столбец фильтра", def:"city" },
+    { id:"wOp",     type:"select", label:"Условие", def:"=", choices:[["=","="],["!=","не равно"],[">","больше"],["<","меньше"],[">=","≥"],["<=","≤"]] },
+    { id:"wVal",    type:"text", label:"Значение", def:"Минск" },
+    { id:"useOrder",type:"toggle", label:"Сортировка", def:true },
+    { id:"oCol",    type:"text", label:"Сортировать по", def:"age" },
+    { id:"oDir",    type:"select", label:"Порядок", def:"DESC", choices:[["ASC","по возрастанию"],["DESC","по убыванию"]] },
+    { id:"useLimit",type:"toggle", label:"Ограничить количество", def:true },
+    { id:"limit",   type:"number", label:"Сколько строк", def:10, step:1 },
+  ],
+  gen:function(c,d){
+    var pre = c.useLimit ? limPre(d,c.limit) : "";
+    var s = "SELECT " + pre + c.columns + "\nFROM " + c.table;
+    if(c.useWhere) s += "\nWHERE " + c.wCol + " " + c.wOp + " " + val(c.wVal);
+    if(c.useOrder) s += "\nORDER BY " + c.oCol + " " + c.oDir;
+    if(c.useLimit) s += limTail(d,c.limit);
+    return s + ";";
+  }
+},
+{
+  id:"search", cat:"Выборка", glyph:"◈", name:"Поиск по тексту", run:true,
+  lead:"Находит строки, где текст содержит / начинается / заканчивается на нужное. Это оператор LIKE.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"users" },
+    { id:"column", type:"text", label:"Где искать", def:"name" },
+    { id:"mode",   type:"select", label:"Как", def:"contains", choices:[["contains","содержит"],["starts","начинается с"],["ends","заканчивается на"]] },
+    { id:"value",  type:"text", label:"Что искать", def:"ан" },
+  ],
+  gen:function(c,d){
+    var pat = { contains:"%"+c.value+"%", starts:c.value+"%", ends:"%"+c.value }[c.mode];
+    return "-- регистр: в некоторых СУБД LIKE чувствителен к регистру\nSELECT *\nFROM " + c.table + "\nWHERE " + c.column + " LIKE '" + pat.replace(/'/g,"''") + "';";
+  }
+},
+{
+  id:"distinct", cat:"Выборка", glyph:"◈", name:"Уникальные значения", run:true,
+  lead:"Показывает список уникальных значений столбца. Можно сразу посчитать, сколько раз встречается каждое.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"users" },
+    { id:"column", type:"text", label:"Столбец", def:"city" },
+    { id:"withCount", type:"toggle", label:"Показать количество каждого", def:true },
+  ],
+  gen:function(c,d){
+    if(c.withCount) return "SELECT " + c.column + ", COUNT(*) AS сколько\nFROM " + c.table + "\nGROUP BY " + c.column + "\nORDER BY сколько DESC;";
+    return "SELECT DISTINCT " + c.column + "\nFROM " + c.table + "\nORDER BY " + c.column + ";";
+  }
+},
+{
+  id:"aggregate", cat:"Выборка", glyph:"◈", name:"Итоги по группам", run:true,
+  lead:"Группирует строки и считает сумму / среднее / количество по каждой группе. Это то же, что сводная таблица в Excel.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"orders" },
+    { id:"group",  type:"text", label:"Группировать по", def:"product" },
+    { id:"func",   type:"select", label:"Функция", def:"SUM", choices:[["SUM","сумма"],["AVG","среднее"],["COUNT","количество"],["MIN","минимум"],["MAX","максимум"]] },
+    { id:"column", type:"text", label:"По какому столбцу", def:"amount" },
+    { id:"having", type:"toggle", label:"Фильтр по итогу (HAVING)", def:false },
+    { id:"hOp",    type:"select", label:"Итог", def:">", choices:[[">","больше"],["<","меньше"],[">=","≥"]] },
+    { id:"hVal",   type:"number", label:"Значение", def:100, step:1 },
+  ],
+  gen:function(c,d){
+    var agg = c.func + "(" + c.column + ")";
+    var s = "SELECT " + c.group + ", " + agg + " AS итог\nFROM " + c.table + "\nGROUP BY " + c.group;
+    if(c.having) s += "\nHAVING " + agg + " " + c.hOp + " " + c.hVal;
+    s += "\nORDER BY итог DESC;";
+    return s;
+  }
+},
+{
+  id:"join", cat:"Выборка", glyph:"◈", name:"Соединить таблицы (JOIN)", run:true,
+  lead:"Собирает данные из двух таблиц по общему ключу. Например, к заказам подтянуть имя клиента.",
+  options:[
+    { id:"lt",   type:"text", label:"Левая таблица", def:"users" },
+    { id:"la",   type:"text", label:"Псевдоним", def:"u" },
+    { id:"rt",   type:"text", label:"Правая таблица", def:"orders" },
+    { id:"ra",   type:"text", label:"Псевдоним", def:"o" },
+    { id:"lk",   type:"text", label:"Ключ слева", def:"id" },
+    { id:"rk",   type:"text", label:"Ключ справа", def:"user_id" },
+    { id:"type", type:"select", label:"Тип соединения", def:"INNER", choices:[["INNER","только совпадения (INNER)"],["LEFT","все из левой (LEFT)"]] },
+    { id:"cols", type:"text", label:"Какие столбцы", def:"u.name, o.product, o.amount" },
+  ],
+  gen:function(c,d){
+    return "SELECT " + c.cols + "\nFROM " + c.lt + " " + c.la + "\n" + c.type + " JOIN " + c.rt + " " + c.ra +
+           "\n  ON " + c.la + "." + c.lk + " = " + c.ra + "." + c.rk + ";";
+  }
+},
+{
+  id:"topn", cat:"Выборка", glyph:"◈", name:"Топ-N в каждой группе", run:true,
+  lead:"Например, самый дорогой заказ каждого клиента. Использует оконную функцию ROW_NUMBER — приём, который экономит кучу времени.",
+  options:[
+    { id:"table", type:"text", label:"Таблица", def:"orders" },
+    { id:"part",  type:"text", label:"Группировать по", def:"user_id" },
+    { id:"order", type:"text", label:"Сортировать по", def:"amount" },
+    { id:"dir",   type:"select", label:"Порядок", def:"DESC", choices:[["DESC","по убыванию (топ больших)"],["ASC","по возрастанию (топ малых)"]] },
+    { id:"n",     type:"number", label:"Сколько из каждой группы", def:1, step:1 },
+  ],
+  gen:function(c,d){
+    return "-- оконная функция: нумеруем строки внутри каждой группы\nSELECT * FROM (\n" +
+           "  SELECT *,\n         ROW_NUMBER() OVER (\n           PARTITION BY " + c.part + "\n           ORDER BY " + c.order + " " + c.dir + "\n         ) AS позиция\n" +
+           "  FROM " + c.table + "\n) t\nWHERE позиция <= " + c.n + ";";
+  }
+},
+{
+  id:"between", cat:"Выборка", glyph:"◈", name:"В диапазоне", run:true,
+  lead:"Строки, где значение попадает между двумя границами — числа или даты.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"orders" },
+    { id:"column", type:"text", label:"Столбец", def:"amount" },
+    { id:"from",   type:"text", label:"От", def:"100" },
+    { id:"to",     type:"text", label:"До", def:"1000" },
+  ],
+  gen:function(c,d){
+    return "SELECT *\nFROM " + c.table + "\nWHERE " + c.column + " BETWEEN " + val(c.from) + " AND " + val(c.to) + "\nORDER BY " + c.column + ";";
+  }
+},
+{
+  id:"subquery", cat:"Выборка", glyph:"◈", name:"Сравнить со средним (подзапрос)", run:true,
+  lead:"Строки выше или ниже среднего/максимума. Внутри одного запроса считается ориентир, и по нему фильтруется.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"users" },
+    { id:"column", type:"text", label:"Столбец", def:"age" },
+    { id:"op",     type:"select", label:"Отобрать", def:">", choices:[[">","больше, чем"],["<","меньше, чем"]] },
+    { id:"agg",    type:"select", label:"Ориентир", def:"AVG", choices:[["AVG","среднее"],["MAX","максимум"],["MIN","минимум"]] },
+  ],
+  gen:function(c,d){
+    return "SELECT *\nFROM " + c.table + "\nWHERE " + c.column + " " + c.op + " (\n  SELECT " + c.agg + "(" + c.column + ") FROM " + c.table + "\n);";
+  }
+},
+{
+  id:"count", cat:"Выборка", glyph:"◈", name:"Посчитать количество", run:true,
+  lead:"Сколько всего строк — с условием или без.",
+  options:[
+    { id:"table",   type:"text", label:"Таблица", def:"users" },
+    { id:"useWhere",type:"toggle", label:"С условием", def:true },
+    { id:"wCol",    type:"text", label:"Столбец", def:"city" },
+    { id:"wOp",     type:"select", label:"Условие", def:"=", choices:[["=","="],["!=","не равно"],[">","больше"],["<","меньше"]] },
+    { id:"wVal",    type:"text", label:"Значение", def:"Минск" },
+  ],
+  gen:function(c,d){
+    var s = "SELECT COUNT(*) AS всего\nFROM " + c.table;
+    if(c.useWhere) s += "\nWHERE " + c.wCol + " " + c.wOp + " " + val(c.wVal);
+    return s + ";";
+  }
+},
+{
+  id:"duplicates", cat:"Выборка", glyph:"◈", name:"Найти дубликаты", run:true,
+  lead:"Показывает значения, которые встречаются больше одного раза — частая проверка перед чисткой данных.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"users" },
+    { id:"column", type:"text", label:"По какому столбцу", def:"name" },
+  ],
+  gen:function(c,d){
+    return "SELECT " + c.column + ", COUNT(*) AS повторов\nFROM " + c.table + "\nGROUP BY " + c.column + "\nHAVING COUNT(*) > 1\nORDER BY повторов DESC;";
+  }
+},
+{
+  id:"dategroup", cat:"Выборка", glyph:"◈", name:"Итоги по периодам", run:true,
+  lead:"Группирует по дню / месяцу / году. Функции работы с датами у каждой СУБД свои — подставляются автоматически.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"orders" },
+    { id:"dateCol",type:"text", label:"Столбец с датой", def:"created" },
+    { id:"period", type:"select", label:"Период", def:"month", choices:[["day","по дням"],["month","по месяцам"],["year","по годам"]] },
+    { id:"func",   type:"select", label:"Функция", def:"SUM", choices:[["SUM","сумма"],["COUNT","количество"],["AVG","среднее"]] },
+    { id:"valCol", type:"text", label:"По столбцу", def:"amount" },
+  ],
+  gen:function(c,d){
+    var per = dateExpr(d, c.dateCol, c.period);
+    return "SELECT " + per + " AS период,\n       " + c.func + "(" + c.valCol + ") AS итог\nFROM " + c.table + "\nGROUP BY " + per + "\nORDER BY период;";
+  }
+},
+
+/* ─────────── ИЗМЕНЕНИЕ ─────────── */
+{
+  id:"insert", cat:"Изменение данных", glyph:"✎", name:"Добавить строки", run:true,
+  lead:"Вставляет одну или несколько строк. Каждая строка — на новой линии, значения через запятую (текст сам обернётся в кавычки).",
+  options:[
+    { id:"table",   type:"text", label:"Таблица", def:"users" },
+    { id:"columns", type:"text", label:"Столбцы", def:"name, city, age" },
+    { id:"rows",    type:"textarea", label:"Строки (значения через запятую)", def:"Сергей, Гомель, 27\nДарья, Брест, 33" },
+  ],
+  gen:function(c,d){
+    var rows = c.rows.split("\n").map(function(s){return s.trim();}).filter(Boolean).map(function(line){
+      var cells = line.split(",").map(function(x){return val(x);});
+      return "  (" + cells.join(", ") + ")";
+    });
+    return "INSERT INTO " + c.table + " (" + c.columns + ")\nVALUES\n" + rows.join(",\n") + ";";
+  }
+},
+{
+  id:"update", cat:"Изменение данных", glyph:"✎", name:"Обновить строки", run:true,
+  lead:"Меняет значение в строках, подходящих под условие. WHERE обязателен — без него обновятся ВСЕ строки.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"users" },
+    { id:"setCol", type:"text", label:"Что менять", def:"city" },
+    { id:"setVal", type:"text", label:"Новое значение", def:"Минск" },
+    { id:"wCol",   type:"text", label:"Условие: столбец", def:"id" },
+    { id:"wOp",    type:"select", label:"Условие", def:"=", choices:[["=","="],[">","больше"],["<","меньше"]] },
+    { id:"wVal",   type:"text", label:"Значение", def:"3" },
+  ],
+  gen:function(c,d){
+    return "-- без WHERE обновятся ВСЕ строки. Проверь условие!\nUPDATE " + c.table + "\nSET " + c.setCol + " = " + val(c.setVal) + "\nWHERE " + c.wCol + " " + c.wOp + " " + val(c.wVal) + ";";
+  }
+},
+{
+  id:"delete", cat:"Изменение данных", glyph:"✎", name:"Удалить строки", run:true,
+  lead:"Удаляет строки по условию. Сначала лучше выполнить SELECT с тем же WHERE — увидеть, что удалится.",
+  options:[
+    { id:"table", type:"text", label:"Таблица", def:"orders" },
+    { id:"wCol",  type:"text", label:"Условие: столбец", def:"amount" },
+    { id:"wOp",   type:"select", label:"Условие", def:"<", choices:[["=","="],["!=","не равно"],[">","больше"],["<","меньше"]] },
+    { id:"wVal",  type:"text", label:"Значение", def:"50" },
+  ],
+  gen:function(c,d){
+    var cond = c.wCol + " " + c.wOp + " " + val(c.wVal);
+    return "-- сначала посмотри, что удалится:\n-- SELECT * FROM " + c.table + " WHERE " + cond + ";\n\nDELETE FROM " + c.table + "\nWHERE " + cond + ";";
+  }
+},
+{
+  id:"upsert", cat:"Изменение данных", glyph:"✎", name:"Вставить или обновить",
+  lead:"Если строка с таким ключом есть — обновить, если нет — вставить. Синтаксис у каждой СУБД свой, поэтому запуск здесь недоступен.",
+  options:[
+    { id:"table", type:"text", label:"Таблица", def:"users" },
+    { id:"key",   type:"text", label:"Уникальный ключ", def:"id" },
+    { id:"cols",  type:"text", label:"Столбцы", def:"id, name, city" },
+    { id:"vals",  type:"text", label:"Значения", def:"3, Мария, Гомель" },
+  ],
+  gen:function(c,d){
+    var cols = c.cols.split(",").map(function(s){return s.trim();});
+    var vals = c.vals.split(",").map(function(s){return val(s);});
+    var upd = cols.filter(function(x){return x!==c.key;});
+    if(d==="mysql")
+      return "INSERT INTO " + c.table + " (" + cols.join(", ") + ")\nVALUES (" + vals.join(", ") + ")\nON DUPLICATE KEY UPDATE\n  " +
+             upd.map(function(x){return x+" = VALUES("+x+")";}).join(",\n  ") + ";";
+    if(d==="postgres" || d==="sqlite")
+      return "INSERT INTO " + c.table + " (" + cols.join(", ") + ")\nVALUES (" + vals.join(", ") + ")\nON CONFLICT (" + c.key + ") DO UPDATE SET\n  " +
+             upd.map(function(x){return x+" = EXCLUDED."+x;}).join(",\n  ") + ";";
+    return "-- SQL Server использует MERGE\nMERGE " + c.table + " AS ц\nUSING (SELECT " + vals.map(function(v,i){return v+" AS "+cols[i];}).join(", ") + ") AS и\n" +
+           "  ON ц." + c.key + " = и." + c.key + "\nWHEN MATCHED THEN UPDATE SET " + upd.map(function(x){return "ц."+x+" = и."+x;}).join(", ") + "\n" +
+           "WHEN NOT MATCHED THEN INSERT (" + cols.join(", ") + ") VALUES (" + cols.map(function(x){return "и."+x;}).join(", ") + ");";
+  }
+},
+
+/* ─────────── ОПТИМИЗАЦИЯ ─────────── */
+{
+  id:"index", cat:"Оптимизация", glyph:"⚡", name:"Создать индекс", run:true,
+  lead:"Индекс ускоряет поиск и сортировку по столбцу — как оглавление в книге. Ставится на столбцы, по которым часто фильтруют.",
+  options:[
+    { id:"table",  type:"text", label:"Таблица", def:"users" },
+    { id:"columns",type:"text", label:"Столбцы (через запятую)", def:"city" },
+    { id:"unique", type:"toggle", label:"Уникальный (запрет дублей)", def:false },
+    { id:"name",   type:"text", label:"Имя индекса", def:"idx_users_city" },
+  ],
+  gen:function(c,d){
+    return "-- ускоряет WHERE и ORDER BY по этим столбцам\nCREATE " + (c.unique?"UNIQUE ":"") + "INDEX " + c.name + "\n  ON " + c.table + " (" + c.columns + ");";
+  }
+},
+{
+  id:"explain", cat:"Оптимизация", glyph:"⚡", name:"Разобрать план запроса",
+  lead:"Показывает, как СУБД выполняет запрос: использует ли индексы, где узкое место. Ключевое слово отличается по диалектам.",
+  options:[
+    { id:"query", type:"textarea", label:"Запрос для анализа", def:"SELECT * FROM users WHERE city = 'Минск'" },
+  ],
+  gen:function(c,d){
+    var q = c.query.trim().replace(/;$/,"");
+    if(d==="mysql")     return "EXPLAIN " + q + ";";
+    if(d==="postgres")  return "EXPLAIN ANALYZE " + q + ";";
+    if(d==="sqlite")    return "EXPLAIN QUERY PLAN " + q + ";";
+    return "SET SHOWPLAN_ALL ON;\nGO\n" + q + ";\nGO\nSET SHOWPLAN_ALL OFF;";
+  }
+}
+
+];
+
+/* ═══════════════ ДЕМО-БАЗА (для запуска) ═══════════════ */
+var DEMO_SQL =
+"DROP TABLE IF EXISTS orders; DROP TABLE IF EXISTS users;" +
+"CREATE TABLE users(id INTEGER PRIMARY KEY, name TEXT, city TEXT, age INTEGER, created TEXT);" +
+"INSERT INTO users VALUES" +
+" (1,'Анна','Минск',28,'2025-01-05'),(2,'Иван','Москва',34,'2025-02-11')," +
+" (3,'Мария','Минск',22,'2025-02-20'),(4,'Пётр','Киев',41,'2025-03-02')," +
+" (5,'Анна','Варшава',30,'2025-03-15'),(6,'Олег','Минск',19,'2025-04-01');" +
+"CREATE TABLE orders(id INTEGER PRIMARY KEY, user_id INTEGER, product TEXT, amount REAL, created TEXT);" +
+"INSERT INTO orders VALUES" +
+" (1,1,'Книга',450,'2025-01-10'),(2,1,'Ручка',30,'2025-01-12')," +
+" (3,2,'Ноутбук',3200,'2025-02-15'),(4,3,'Книга',450,'2025-02-22')," +
+" (5,4,'Кофе',120,'2025-03-05'),(6,2,'Мышь',80,'2025-03-06')," +
+" (7,5,'Книга',450,'2025-03-20'),(8,1,'Монитор',1500,'2025-04-02');";
+
+/* ═══════════════ ДВИЖОК ═══════════════ */
+var state = { sel:null, dialect:"sqlite", cfg:{} };
+var $ = function(s){ return document.querySelector(s); };
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function defaults(opts){ var c={}; opts.forEach(function(o){ c[o.id]=o.def; }); return c; }
+function recipe(id){ return RECIPES.filter(function(r){return r.id===id;})[0]; }
+
+/* подсветка SQL */
+var SQL_KW = ["SELECT","FROM","WHERE","GROUP BY","ORDER BY","HAVING","LIMIT","INSERT INTO","VALUES","UPDATE","SET","DELETE","CREATE TABLE","CREATE","ALTER TABLE","DROP TABLE","ADD COLUMN","DROP COLUMN","INNER JOIN","LEFT JOIN","JOIN","ON","AS","AND","OR","NOT","LIKE","BETWEEN","DISTINCT","COUNT","SUM","AVG","MIN","MAX","INDEX","UNIQUE","PARTITION BY","OVER","ROW_NUMBER","IF NOT EXISTS","IF EXISTS","ON CONFLICT","DO UPDATE","ON DUPLICATE KEY UPDATE","MERGE","EXPLAIN","PRIMARY KEY","TOP","DESC","ASC","INTO"];
+function highlight(code){
+  var s = esc(code);
+  s = s.replace(/(--[^\n]*)/g, '<span class="cmt">$1</span>');
+  s = s.replace(/('[^'\n]*')/g, '<span class="str">$1</span>');
+  var kw = SQL_KW.slice().sort(function(a,b){return b.length-a.length;}).map(function(k){return k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");});
+  s = s.replace(new RegExp("\\b("+kw.join("|")+")\\b","g"), '<span class="kw">$1</span>');
+  s = s.replace(/\b(\d+\.?\d*)\b/g, '<span class="num">$1</span>');
+  return s;
+}
+
+var lastCode="";
+function render(){
+  var r=recipe(state.sel); if(!r) return;
+  lastCode = r.gen(state.cfg, state.dialect);
+  $("#code").innerHTML = highlight(lastCode);
+  $("#dialName").textContent = DIA[state.dialect].name;
+  $("#metric").textContent = lastCode.split("\n").length + " строк";
+  $("#lead").textContent = r.lead;
+  var rb=$("#runBtn");
+  if(r.run){ rb.style.display=""; rb.disabled=false; }
+  else { rb.style.display="none"; }
+  $("#result").classList.remove("on");
+}
+
+function renderControls(){
+  var r=recipe(state.sel), box=$("#controls"); box.innerHTML="";
+  $("#selName").textContent=r.name;
+  r.options.forEach(function(o){
+    var v=state.cfg[o.id];
+    var row=document.createElement("div");
+    row.className="ctl"+(o.type==="toggle"?" toggle":"");
+    row.setAttribute("data-opt", o.id); row.setAttribute("data-type", o.type);
+    var inner="";
+    if(o.type==="text")
+      inner='<div class="lab"><span>'+o.label+'</span></div><input type="text" value="'+esc(v)+'">';
+    else if(o.type==="textarea")
+      inner='<div class="lab"><span>'+o.label+'</span></div><textarea>'+esc(v)+'</textarea>';
+    else if(o.type==="number")
+      inner='<div class="lab"><span>'+o.label+'</span></div><input type="number" step="'+(o.step||1)+'" value="'+esc(v)+'">';
+    else if(o.type==="select"){
+      var op=o.choices.map(function(ch){return '<option value="'+esc(ch[0])+'"'+(ch[0]===v?" selected":"")+'>'+ch[1]+'</option>';}).join("");
+      inner='<div class="lab"><span>'+o.label+'</span></div><select>'+op+'</select>';
+    } else if(o.type==="toggle")
+      inner='<div class="lab"><span>'+o.label+'</span><label class="sw"><input type="checkbox"'+(v?" checked":"")+'><span class="tr"></span><span class="kn"></span></label></div>';
+    row.innerHTML=inner;
+    box.appendChild(row);
+  });
+}
+function readVal(row){
+  var type=row.getAttribute("data-type"), el=row.querySelector("input,select,textarea");
+  if(type==="toggle") return el.checked;
+  if(type==="number") return Number(el.value);
+  return el.value;
+}
+function select(id){
+  state.sel=id; state.cfg=defaults(recipe(id).options);
+  document.querySelectorAll(".item").forEach(function(el){ el.classList.toggle("sel", el.getAttribute("data-id")===id); });
+  renderControls(); render();
+}
+
+/* диалекты */
+var db=$("#dialects");
+DIAL_ORDER.forEach(function(k){
+  var b=document.createElement("button");
+  b.className="dial"+(k==="sqlite"?" sel":""); b.setAttribute("data-d",k); b.textContent=DIA[k].name;
+  b.onclick=function(){ state.dialect=k; document.querySelectorAll(".dial").forEach(function(x){x.classList.toggle("sel",x===b);}); render(); };
+  db.appendChild(b);
+});
+
+/* каталог */
+var cat=$("#catalog"), seen={};
+RECIPES.forEach(function(r){
+  if(!seen[r.cat]){ seen[r.cat]=1; var h=document.createElement("div"); h.className="cat"; h.textContent=r.cat; cat.appendChild(h); }
+  var el=document.createElement("div");
+  el.className="item"; el.setAttribute("data-id", r.id);
+  el.innerHTML='<span class="g">'+r.glyph+'</span><span class="n">'+r.name+'</span>'+(r.run?'<span class="rb">▶</span>':'');
+  el.onclick=function(){ select(r.id); };
+  cat.appendChild(el);
+});
+$("#count").textContent = RECIPES.length + " шт.";
+
+$("#controls").addEventListener("input", function(e){
+  var row=e.target.closest(".ctl"); if(!row) return;
+  var opt=row.getAttribute("data-opt");
+  state.cfg[opt]=readVal(row);
+  render();
+});
+
+/* копирование / скачивание */
+function copyText(text, btn, label){
+  var back=btn.getAttribute("data-label")||btn.textContent;
+  var done=function(){ btn.textContent="✓ "+(label||"скопировано"); btn.classList.add("ok");
+    setTimeout(function(){ btn.textContent=back; btn.classList.remove("ok"); },1400); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(function(){ fb(); done(); });
+  else { fb(); done(); }
+  function fb(){ var ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); }
+}
+$("#copyBtn").onclick=function(){ copyText(lastCode, this); };
+$("#dlBtn").onclick=function(){
+  var blob=new Blob([lastCode],{type:"text/plain"}), a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=(state.sel||"query")+".sql";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); },1000);
+};
+
+/* ─── запуск на демо-базе (sql.js грузится по клику) ─── */
+var SQL=null;
+function showMsg(html, cls){ $("#rbody").innerHTML='<div class="msg'+(cls?" "+cls:"")+'">'+html+'</div>'; }
+function showTable(res){
+  var html="";
+  res.forEach(function(r){
+    html+='<div class="rtable-wrap"><table class="rtable"><thead><tr>'+
+      r.columns.map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+'</tr></thead><tbody>'+
+      r.values.map(function(row){ return "<tr>"+row.map(function(v){return "<td>"+esc(v===null?"NULL":v)+"</td>";}).join("")+"</tr>"; }).join("")+
+      "</tbody></table></div>";
+  });
+  $("#rbody").innerHTML=html;
+}
+$("#runBtn").onclick=async function(){
+  var btn=this, r=recipe(state.sel);
+  $("#result").classList.add("on");
+  showMsg("Готовлю базу...","sys"); btn.disabled=true;
+  try{
+    if(!SQL){
+      showMsg("Загружаю SQLite в браузер (первый раз — пару секунд)...","sys");
+      if(!window.initSqlJs){
+        await new Promise(function(res,rej){
+          var s=document.createElement("script");
+          s.src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js";
+          s.onload=res; s.onerror=function(){ rej(new Error("не удалось загрузить sql.js")); };
+          document.head.appendChild(s);
+        });
+      }
+      SQL=await initSqlJs({ locateFile:function(f){ return "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/"+f; } });
+    }
+    var база=new SQL.Database();
+    база.run(DEMO_SQL);
+    var код=r.gen(state.cfg, "sqlite");   /* выполняем SQLite-вариант */
+    var res=база.exec(код);
+    if(res.length && res[0].values.length){
+      showTable(res);
+    } else if(res.length){
+      showMsg("Запрос выполнен — строк не найдено.","sys");
+    } else {
+      var n=база.getRowsModified();
+      showMsg("Выполнено успешно." + (n?(" Затронуто строк: "+n):""));
+    }
+    база.close();
+  }catch(e){
+    showMsg(esc(String(e.message||e)), "err");
+  }
+  btn.disabled=false;
+};
+
+/* старт */
+select(RECIPES[0].id);
+</script>
+</body>
+</html>

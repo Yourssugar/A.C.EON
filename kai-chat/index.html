@@ -285,9 +285,32 @@
   button#send:disabled{opacity:.38;cursor:default;}
 
   @media(max-width:820px){.anim-panel{display:none;}}
+
+/* ── BOOT ── */
+#kboot{position:fixed;inset:0;z-index:900;
+  background:linear-gradient(160deg,#FFF0F8,#FFE4F2 60%,#FCDDEE);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .48s ease;}
+#kboot.gone{opacity:0;pointer-events:none;}
+#kboot-in{text-align:center;padding:24px;}
+#kboot-bloom{width:120px;height:120px;filter:drop-shadow(0 6px 14px rgba(255,107,174,.3));}
+#kboot-line{margin-top:14px;font-size:17px;color:#C8356E;font-weight:600;
+  transition:opacity .16s ease;min-height:24px;
+  font-family:'Comic Sans MS','Segoe UI',sans-serif;}
+#kboot-dots{margin-top:2px;font-size:20px;color:#FF6BAE;letter-spacing:3px;height:22px;}
+#kboot-skip{margin-top:20px;font-size:11px;color:#BF86A8;opacity:.75;}
+@media(prefers-reduced-motion:reduce){#kboot *{transition:none;}}
 </style>
 </head>
 <body>
+<div id="kboot">
+  <div id="kboot-in">
+    <canvas id="kboot-bloom"></canvas>
+    <div id="kboot-line">просыпаюсь…</div>
+    <div id="kboot-dots">·</div>
+    <div id="kboot-skip">нажми, чтобы пропустить</div>
+  </div>
+</div>
 <div class="page">
 
   <header>
@@ -355,86 +378,319 @@
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════
-   NEURAL SPIRAL — candy palette, dark background
-═══════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════
+   KAI'S GARDEN
+   Небо с облаками и солнышком сверху, сад с цветами снизу,
+   бабочки порхают между. Кай думает → сад расцветает, всё искрится.
+   Наружу торчит тот же window.neuralSetActive(on)
+═══════════════════════════════════════════════════ */
 (function(){
-  const cv=document.getElementById('nc'),ctx=cv.getContext('2d');
-  const nnD=document.getElementById('nnDot'),nnL=document.getElementById('nnLbl');
+  const cv  = document.getElementById('nc');
+  const ctx = cv.getContext('2d');
+  const nnD = document.getElementById('nnDot');
+  const nnL = document.getElementById('nnLbl');
 
-  const COLS=['#FF6BAE','#FF9DE2','#C77DFF','#9D4EDD','#FFD93D','#FF6B6B','#4CC9F0','#06D6A0','#FF9F1C','#F72585'];
-  const N=140,NH=10,DAMP=0.87,JIT=0.022;
-  let W,H,CX,CY,nodes=[],impulses=[],activity=0,targetActivity=0,T=0;
-  let sRot=Math.random()*Math.PI*2,cRot=Math.random()*Math.PI*2;
+  const PETAL = ['#FF6BAE','#FF9DE2','#C77DFF','#FFB3D9','#FF8FCF','#FFC2E2'];
+  const CORE  = ['#FFD93D','#FFE479','#FFCB47'];
 
-  function rgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+  let W, H, T = 0;
+  let activity = 0, target = 0;
+  let flowers = [], clouds = [], butterflies = [], sparkles = [], petals = [];
 
-  function resize(){const p=cv.parentElement;W=cv.width=p.clientWidth;H=cv.height=p.clientHeight-50;CX=W*.5;CY=H*.5;build();}
+  function rgba(hex, a){
+    const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  const rand = (a,b) => a + Math.random()*(b-a);
+  const pick = arr => arr[(Math.random()*arr.length)|0];
 
-  function build(){
-    nodes=[];impulses=[];
-    const dTheta=0.28,maxR=Math.min(W,H)*0.44,spiralA=maxR/(N*dTheta);
-    for(let i=0;i<N;i++){
-      const hub=i<NH,group=Math.floor(i*COLS.length/N),col=COLS[group];
-      const sTheta=i*dTheta,sR=spiralA*sTheta;
-      const sx=CX+Math.cos(sTheta+sRot)*sR,sy=CY+Math.sin(sTheta+sRot)*sR*.88;
-      nodes.push({x:sx,y:sy,vx:0,vy:0,px:sx,py:sy,sTheta,sR,cAng:Math.random()*Math.PI*2,cR:hub?18+Math.random()*55:25+Math.random()*145,nOff:Math.random()*200,hub,group,col,r:hub?2.4+Math.random()*1.6:.65+Math.random()*1.2,ph:Math.random()*Math.PI*2,phS:.007+Math.random()*.013,dim:.28+Math.random()*.28,en:0,burst:0});
+  function seed(){
+    const skyH = H*0.42;             // граница неба и сада
+
+    /* цветы: рядами по низу, ближние крупнее */
+    flowers = [];
+    const rows = 3;
+    for(let r = 0; r < rows; r++){
+      const y = H - 22 - r*40 + rand(-6,6);
+      const scale = 0.7 + r*0.22;
+      const count = 3 - Math.floor(r*0.4);
+      for(let i = 0; i < count + 2; i++){
+        flowers.push({
+          x: rand(20, W-20), y,
+          s: (7 + rand(-1,3)) * scale,
+          petal: pick(PETAL), core: pick(CORE),
+          bloom: rand(0.5, 1),          // насколько раскрыт
+          tbloom: rand(0.5, 1),
+          sway: rand(0, Math.PI*2),
+          swaySpd: rand(0.008, 0.02),
+          petals: 5 + (Math.random()<0.3?1:0),
+          depth: r
+        });
+      }
     }
+    flowers.sort((a,b) => a.y - b.y);
+
+    /* облака */
+    clouds = [];
+    for(let i = 0; i < 4; i++){
+      clouds.push({
+        x: rand(0, W), y: rand(18, skyH-30),
+        s: rand(14, 26), spd: rand(0.08, 0.22),
+        puffs: 3 + (Math.random()<0.5?1:0)
+      });
+    }
+
+    /* бабочки */
+    butterflies = [];
+    for(let i = 0; i < 3; i++) butterflies.push(newBfly());
+
+    sparkles = [];
+    petals = [];
   }
 
-  window.neuralSetActive=function(on){targetActivity=on?1:0;if(on){nnD.classList.add('on');nnL.classList.add('on');nnL.textContent='ОБРАБОТКА...';}else{nnD.classList.remove('on');nnL.classList.remove('on');nnL.textContent='РЕЖИМ ОЖИДАНИЯ';}};
-
-  function oNoise(n,sc,to){return Math.sin(n.nOff*1.3+T*sc)*.4+Math.sin(n.nOff*.7+T*sc*1.4+to)*.3+Math.cos(n.nOff*2.1+T*sc*.8)*.2;}
-
-  function getTarget(n){
-    const theta=n.sTheta+sRot,sx=CX+Math.cos(theta)*n.sR,sy=CY+Math.sin(theta)*n.sR*.88;
-    const breath=1+.13*Math.sin(T*.021),angDr=oNoise(n,.007,0)*.75,radDr=oNoise(n,.006,100)*.38;
-    const ang=n.cAng+cRot+angDr,r=n.cR*breath*(1+radDr),cx=CX+Math.cos(ang)*r,cy=CY+Math.sin(ang)*r*.88;
-    const a=activity;return{tx:sx+(cx-sx)*a,ty:sy+(cy-sy)*a};
+  function newBfly(){
+    return {
+      x: rand(20, W-20), y: rand(H*0.3, H-40),
+      col: pick(PETAL),
+      wing: rand(0, Math.PI*2), wingSpd: rand(0.25, 0.4),
+      ang: rand(0, Math.PI*2),
+      spd: rand(0.3, 0.7),
+      turn: rand(-0.04, 0.04),
+      size: rand(4, 6.5)
+    };
   }
 
-  function rebind(frac){for(const n of nodes)if(!n.hub&&Math.random()<frac){n.cAng=Math.random()*Math.PI*2;n.cR=25+Math.random()*145;}}
+  function resize(){
+    const p = cv.parentElement;
+    W = cv.width  = p.clientWidth;
+    H = cv.height = p.clientHeight - 44;
+    seed();
+  }
 
+  /* ── обновление ── */
   function update(){
-    T++;activity+=(targetActivity-activity)*(targetActivity>activity?.024:.011);
-    const act=activity;sRot+=.0006+act*.0005;cRot+=.0012+act*.003;
-    if(act>.35&&T%180===0)rebind(.18);
-    for(const n of nodes){
-      n.px=n.x;n.py=n.y;const{tx,ty}=getTarget(n);let bx=0,by=0;
-      if(n.burst>0){n.burst--;const dx=n.x-CX,dy=n.y-CY,len=Math.sqrt(dx*dx+dy*dy)||1,push=(n.burst/55)*1.4;bx=(dx/len)*push;by=(dy/len)*push;}
-      const k=n.burst>0?.003:.017+act*.019;
-      n.vx=(n.vx+(tx-n.x)*k+bx)*DAMP+(Math.random()-.5)*JIT;n.vy=(n.vy+(ty-n.y)*k+by)*DAMP+(Math.random()-.5)*JIT;
-      n.x+=n.vx;n.y+=n.vy;n.ph+=n.phS;n.en=Math.max(0,n.en-.014);
+    T++;
+    activity += (target - activity) * (target > activity ? 0.06 : 0.02);
+    const busy = activity;
+
+    /* цветы дышат; под нагрузкой раскрываются шире */
+    flowers.forEach(f => {
+      f.sway += f.swaySpd;
+      const want = Math.min(1, f.tbloom + busy*0.5);
+      f.bloom += (want - f.bloom) * 0.05;
+      if(busy > 0.5 && Math.random() < 0.01*busy){
+        // сдувает лепесток на радость
+        petals.push({ x: f.x, y: f.y - f.s, vx: rand(-0.4,0.4), vy: rand(-0.3,0.2),
+                      rot: rand(0,Math.PI*2), vr: rand(-0.1,0.1), col: f.petal, life: 1, s: f.s*0.5 });
+      }
+    });
+
+    clouds.forEach(c => {
+      c.x += c.spd * (0.5 + busy);
+      if(c.x - c.s*2.4 > W) c.x = -c.s*2.4;
+    });
+
+    /* бабочки: под нагрузкой их больше и летают живее */
+    const wantB = 3 + Math.round(busy*3);
+    while(butterflies.length < wantB) butterflies.push(newBfly());
+    while(butterflies.length > wantB) butterflies.pop();
+    butterflies.forEach(b => {
+      b.wing += b.wingSpd;
+      b.ang += b.turn + Math.sin(T*0.02 + b.x)*0.01;
+      const sp = b.spd * (0.6 + busy*0.9);
+      b.x += Math.cos(b.ang)*sp;
+      b.y += Math.sin(b.ang)*sp*0.6;
+      if(b.x < 12){ b.x = 12; b.ang = Math.PI - b.ang; }
+      if(b.x > W-12){ b.x = W-12; b.ang = Math.PI - b.ang; }
+      if(b.y < H*0.24){ b.y = H*0.24; b.ang = -b.ang; }
+      if(b.y > H-24){ b.y = H-24; b.ang = -b.ang; }
+      if(Math.random() < 0.01) b.turn = rand(-0.05, 0.05);
+    });
+
+    /* искорки — в покое редко, под нагрузкой сыплются */
+    const rate = 0.04 + busy*0.5;
+    if(Math.random() < rate){
+      sparkles.push({ x: rand(0,W), y: rand(0,H), r: rand(1,2.6),
+                      life: 1, spd: rand(0.01,0.03), tw: rand(0,Math.PI*2), col: Math.random()<0.5?pick(CORE):pick(PETAL) });
     }
-    if(act>.4&&T%95===0){const pivot=nodes[Math.floor(Math.random()*nodes.length)];let c=0;for(const n of nodes){const dx=n.x-pivot.x,dy=n.y-pivot.y;if(dx*dx+dy*dy<58*58&&c<20){n.burst=50+Math.floor(Math.random()*35);c++;}}}
-    if(act>.25&&T%42===0){const h=nodes.filter(n=>n.hub);h[Math.floor(Math.random()*h.length)].en=.85;}
-    const hubs=nodes.filter(n=>n.hub);
-    if(act>.2&&T%68===0&&hubs.length>=2){let i=Math.floor(Math.random()*hubs.length),j;do{j=Math.floor(Math.random()*hubs.length);}while(j===i);hubs[i].en=.9;hubs[j].en=.4;impulses.push({a:hubs[i],b:hubs[j],p:0,spd:.016+Math.random()*.014,col:hubs[i].col});}
-    for(let i=impulses.length-1;i>=0;i--){impulses[i].p+=impulses[i].spd;if(impulses[i].p>=1){impulses[i].b.en=1;impulses.splice(i,1);}}
+    sparkles.forEach(s => { s.life -= s.spd; s.tw += 0.2; });
+    sparkles = sparkles.filter(s => s.life > 0);
+
+    petals.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.006; p.rot += p.vr; p.life -= 0.012; });
+    petals = petals.filter(p => p.life > 0);
+
+    if(activity > 0.5){
+      nnD.classList.add('on'); nnL.classList.add('on');
+      nnL.textContent = 'КАЙ ФАНТАЗИРУЕТ ✨';
+    } else {
+      nnD.classList.remove('on'); nnL.classList.remove('on');
+      nnL.textContent = 'САД ЦВЕТЁТ 🌸';
+    }
+  }
+
+  /* ── рисование ── */
+  function sky(){
+    const busy = activity;
+    const skyH = H*0.42;
+    const g = ctx.createLinearGradient(0, 0, 0, skyH);
+    g.addColorStop(0, rgba('#FFF0F8', 1));
+    g.addColorStop(1, rgba('#FFE4F2', 1));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, skyH);
+    const g2 = ctx.createLinearGradient(0, skyH, 0, H);
+    g2.addColorStop(0, rgba('#FFE9F4', 1));
+    g2.addColorStop(1, rgba('#FCDDEE', 1));
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, skyH, W, H - skyH);
+
+    /* солнышко в углу, под нагрузкой ярче и с лучами */
+    const sx = W - 34, sy = 32, sr = 15;
+    const rays = 8 + Math.round(busy*4);
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(T*0.004);
+    for(let i = 0; i < rays; i++){
+      ctx.rotate(Math.PI*2/rays);
+      ctx.beginPath();
+      ctx.moveTo(0, sr+3);
+      ctx.lineTo(0, sr + 7 + busy*5 + Math.sin(T*0.05+i)*2);
+      ctx.strokeStyle = rgba('#FFD93D', 0.35 + busy*0.35);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.restore();
+    const sg = ctx.createRadialGradient(sx, sy, 2, sx, sy, sr);
+    sg.addColorStop(0, rgba('#FFE479', 0.95));
+    sg.addColorStop(1, rgba('#FFD93D', 0.8));
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2); ctx.fill();
+  }
+
+  function cloud(c){
+    ctx.fillStyle = rgba('#FFFFFF', 0.85);
+    for(let i = 0; i < c.puffs; i++){
+      const px = c.x + i*c.s*0.9 - c.s;
+      const py = c.y + (i%2?-c.s*0.2:0);
+      ctx.beginPath(); ctx.arc(px, py, c.s*(0.7+ (i%2?0.2:0)), 0, Math.PI*2); ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y + c.s*0.4, c.s*1.7, c.s*0.7, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function flower(f){
+    const sway = Math.sin(f.sway) * (2 + activity*3);
+    const cx = f.x + sway, cy = f.y;
+    const s = f.s * f.bloom;
+
+    /* стебель */
+    ctx.beginPath();
+    ctx.moveTo(f.x, f.y + f.s);
+    ctx.quadraticCurveTo(f.x + sway*0.5, cy, cx, cy);
+    ctx.strokeStyle = rgba('#7FC97F', 0.7);
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    /* лепестки */
+    for(let i = 0; i < f.petals; i++){
+      const a = (Math.PI*2/f.petals)*i + f.sway*0.3;
+      const px = cx + Math.cos(a)*s;
+      const py = cy + Math.sin(a)*s;
+      ctx.beginPath();
+      ctx.ellipse(px, py, s*0.62, s*0.42, a, 0, Math.PI*2);
+      ctx.fillStyle = rgba(f.petal, 0.9);
+      ctx.fill();
+    }
+    /* серединка */
+    ctx.beginPath();
+    ctx.arc(cx, cy, s*0.5, 0, Math.PI*2);
+    ctx.fillStyle = rgba(f.core, 1);
+    ctx.fill();
+    if(activity > 0.4){
+      ctx.shadowColor = rgba(f.core, activity*0.6); ctx.shadowBlur = 6;
+      ctx.fill(); ctx.shadowBlur = 0;
+    }
+  }
+
+  function butterfly(b){
+    const flap = Math.abs(Math.sin(b.wing));
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(Math.sin(b.ang)*0.2);
+    const ws = b.size * (0.5 + flap*0.9);
+    /* крылья */
+    [-1, 1].forEach(side => {
+      ctx.beginPath();
+      ctx.ellipse(side*ws*0.7, -b.size*0.3, ws*0.7, b.size*0.9, side*0.5, 0, Math.PI*2);
+      ctx.fillStyle = rgba(b.col, 0.85);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(side*ws*0.6, b.size*0.5, ws*0.55, b.size*0.6, -side*0.4, 0, Math.PI*2);
+      ctx.fillStyle = rgba(b.col, 0.7);
+      ctx.fill();
+    });
+    /* тельце */
+    ctx.beginPath();
+    ctx.ellipse(0, 0, b.size*0.18, b.size*1.1, 0, 0, Math.PI*2);
+    ctx.fillStyle = rgba('#8C4D6E', 0.9);
+    ctx.fill();
+    ctx.restore();
   }
 
   function draw(){
-    ctx.clearRect(0,0,W,H);const act=activity;
-    /* central glow */
-    if(act>.08){const aR=95+25*Math.sin(T*.022),ag=ctx.createRadialGradient(CX,CY,0,CX,CY,aR);ag.addColorStop(0,`rgba(255,107,174,${.055*act})`);ag.addColorStop(.45,`rgba(199,125,255,${.02*act})`);ag.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(CX,CY,aR,0,Math.PI*2);ctx.fillStyle=ag;ctx.fill();}
-    /* trails */
-    for(const n of nodes){const spd=Math.abs(n.vx)+Math.abs(n.vy);if(spd>.75){ctx.strokeStyle=rgba(n.col,Math.min(spd*.035,.22));ctx.lineWidth=n.r*.7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(n.px,n.py);ctx.lineTo(n.x,n.y);ctx.stroke();}}
-    /* same-group links */
-    const maxD=72,maxD2=72*72;
-    for(let i=0;i<nodes.length;i++){const a=nodes[i];for(let j=i+1;j<nodes.length;j++){const b=nodes[j];if(a.group!==b.group)continue;const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;if(d2>maxD2)continue;const norm=1-Math.sqrt(d2)/maxD;ctx.strokeStyle=rgba(a.col,norm*(.032+act*.1));ctx.lineWidth=.35;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
-    /* hub web (white works on dark) */
-    if(act>.15){const hubs=nodes.filter(n=>n.hub);for(let i=0;i<hubs.length;i++)for(let j=i+1;j<hubs.length;j++){const a=hubs[i],b=hubs[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.sqrt(dx*dx+dy*dy);if(d>240)continue;const op=(.012+act*.022)*(1-d/240);ctx.strokeStyle=`rgba(255,255,255,${op})`;ctx.lineWidth=.3;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
-    /* impulses */
-    for(const imp of impulses){const px=imp.a.x+(imp.b.x-imp.a.x)*imp.p,py=imp.a.y+(imp.b.y-imp.a.y)*imp.p,fade=Math.sin(imp.p*Math.PI);const lg=ctx.createLinearGradient(imp.a.x,imp.a.y,imp.b.x,imp.b.y);lg.addColorStop(Math.max(0,imp.p-.18),'rgba(0,0,0,0)');lg.addColorStop(imp.p,rgba(imp.col,.32*fade));lg.addColorStop(Math.min(1,imp.p+.18),'rgba(0,0,0,0)');ctx.strokeStyle=lg;ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(imp.a.x,imp.a.y);ctx.lineTo(imp.b.x,imp.b.y);ctx.stroke();const pg=ctx.createRadialGradient(px,py,0,px,py,13);pg.addColorStop(0,rgba(imp.col,.8*fade));pg.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(px,py,13,0,Math.PI*2);ctx.fillStyle=pg;ctx.fill();ctx.beginPath();ctx.arc(px,py,2.2,0,Math.PI*2);ctx.fillStyle=rgba(imp.col,.95*fade);ctx.fill();}
-    /* nodes */
-    for(const n of nodes){const breath=Math.sin(n.ph)*.14,bright=n.dim+breath+act*.15+n.en*.52,r=n.r+(n.hub?act*1.8:0)+n.en*.65;if(n.hub||n.en>.1){const gR=r*(n.hub?8.5:5),gO=(.04+n.en*.1+act*.028)*(n.hub?1.5:1),g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,gR);g.addColorStop(0,rgba(n.col,gO));g.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(n.x,n.y,gR,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();}ctx.beginPath();ctx.arc(n.x,n.y,Math.max(.4,r),0,Math.PI*2);ctx.fillStyle=rgba(n.col,Math.min(bright,1));ctx.fill();}
+    ctx.clearRect(0, 0, W, H);
+    sky();
+    clouds.forEach(cloud);
+
+    /* искорки за цветами */
+    sparkles.forEach(s => {
+      const a = Math.sin(s.life*Math.PI) * (0.5 + Math.sin(s.tw)*0.5);
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.fillStyle = rgba(s.col, a);
+      ctx.shadowColor = rgba(s.col, a); ctx.shadowBlur = 5;
+      /* маленькая четырёхлучевая звёздочка */
+      ctx.beginPath();
+      for(let i = 0; i < 4; i++){
+        const ang = Math.PI/2*i;
+        ctx.lineTo(Math.cos(ang)*s.r*2, Math.sin(ang)*s.r*2);
+        ctx.lineTo(Math.cos(ang+Math.PI/4)*s.r*0.6, Math.sin(ang+Math.PI/4)*s.r*0.6);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
+    ctx.shadowBlur = 0;
+
+    flowers.forEach(flower);
+
+    /* летящие лепестки */
+    petals.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.s*0.6, p.s*0.4, 0, 0, Math.PI*2);
+      ctx.fillStyle = rgba(p.col, p.life*0.85);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    butterflies.forEach(butterfly);
+
+    /* подпись */
+    ctx.font = '9px "Comic Sans MS", "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = rgba('#BF86A8', 0.6);
+    ctx.fillText('KAI · GARDEN', 12, 16);
   }
 
-  function loop(){update();draw();requestAnimationFrame(loop);}
-  resize();loop();
-  window.addEventListener('resize',()=>resize());
-})();
+  window.neuralSetActive = function(on){ target = on ? 1 : 0; };
 
+  function loop(){ update(); draw(); requestAnimationFrame(loop); }
+  resize();
+  loop();
+  window.addEventListener('resize', resize);
+})();
 /* ═══════════════════════════════════════════════
    CHAT
 ═══════════════════════════════════════════════ */
@@ -663,6 +919,128 @@ clearBtn.addEventListener('click',async()=>{
 
 setInterval(checkImageJobs,5000);
 loadConfig();
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   BOOT для Кая — тёплая заставка.
+   Он тебя ждал и рад: сад просыпается, распускается цветок.
+═══════════════════════════════════════════════════ */
+(function(){
+  const ov = document.getElementById('kboot');
+  if(!ov) return;
+  const bloomEl = document.getElementById('kboot-bloom');
+  const lineEl  = document.getElementById('kboot-line');
+  const dotsEl  = document.getElementById('kboot-dots');
+
+  let done = false;
+  const timers = [];
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+
+  /* коротенькие тёплые строчки — Кай именно рад, а не грузится */
+  const LINES = [
+    { t: 'просыпаюсь…',            d: 300  },
+    { t: 'поливаю цветы 🌸',        d: 1250 },
+    { t: 'ой, к нам гости!',        d: 2200 },
+    { t: 'привет-привет 💗',         d: 3050 }
+  ];
+
+  /* рисуем распускающийся цветок на маленьком канвасе */
+  const c = bloomEl, cx = c.getContext('2d');
+  const CS = 120; c.width = CS; c.height = CS;
+  const PETAL = ['#FF6BAE','#FF9DE2','#C77DFF','#FFB3D9','#FF8FCF'];
+  const petalCols = Array.from({length:6}, () => PETAL[(Math.random()*PETAL.length)|0]);
+  let bloom = 0, t = 0, raf;
+
+  function drawFlower(){
+    t++;
+    cx.clearRect(0,0,CS,CS);
+    const mx = CS/2, my = CS/2 + 6;
+
+    /* стебель растёт снизу */
+    const stemH = Math.min(1, bloom*1.4);
+    cx.beginPath();
+    cx.moveTo(mx, CS);
+    cx.quadraticCurveTo(mx+6, my + (1-stemH)*30, mx, my + (1-bloom)*10);
+    cx.strokeStyle = 'rgba(127,201,127,.85)';
+    cx.lineWidth = 4;
+    cx.lineCap = 'round';
+    cx.stroke();
+
+    /* листик */
+    if(bloom > 0.3){
+      const la = (bloom-0.3)*1.4;
+      cx.save(); cx.translate(mx, my+22); cx.rotate(-0.5);
+      cx.beginPath();
+      cx.ellipse(-8*la, 0, 9*la, 4*la, 0, 0, Math.PI*2);
+      cx.fillStyle = 'rgba(127,201,127,.8)';
+      cx.fill(); cx.restore();
+    }
+
+    /* лепестки раскрываются */
+    const s = 26 * Math.min(1, bloom);
+    const sway = Math.sin(t*0.05)*0.05;
+    for(let i = 0; i < 6; i++){
+      const a = (Math.PI*2/6)*i + t*0.006 + sway;
+      const px = mx + Math.cos(a)*s;
+      const py = my + Math.sin(a)*s;
+      cx.beginPath();
+      cx.ellipse(px, py, s*0.62, s*0.4, a, 0, Math.PI*2);
+      cx.fillStyle = petalCols[i];
+      cx.globalAlpha = Math.min(1, bloom*1.2);
+      cx.fill();
+    }
+    cx.globalAlpha = 1;
+
+    /* серединка */
+    if(bloom > 0.2){
+      cx.beginPath();
+      cx.arc(mx, my, s*0.42, 0, Math.PI*2);
+      cx.fillStyle = '#FFD93D';
+      cx.fill();
+      cx.shadowColor = 'rgba(255,217,61,.7)';
+      cx.shadowBlur = bloom*12;
+      cx.fill();
+      cx.shadowBlur = 0;
+    }
+
+    raf = requestAnimationFrame(drawFlower);
+  }
+
+  function run(){
+    drawFlower();
+    /* цветок распускается за ~2.2с */
+    const iv = setInterval(() => {
+      bloom = Math.min(1, bloom + 0.014);
+      if(bloom >= 1) clearInterval(iv);
+    }, 24);
+    timers.push({ clear: () => clearInterval(iv) });
+
+    LINES.forEach(l => at(l.d, () => {
+      lineEl.style.opacity = 0;
+      setTimeout(() => { lineEl.textContent = l.t; lineEl.style.opacity = 1; }, 160);
+    }));
+
+    /* три прыгающие точки для тепла */
+    let d = 0;
+    const dv = setInterval(() => { d = (d+1)%4; dotsEl.textContent = '·'.repeat(d); }, 300);
+    timers.push({ clear: () => clearInterval(dv) });
+
+    at(3900, finish);
+  }
+
+  function finish(){
+    if(done) return;
+    done = true;
+    timers.forEach(t => (t && t.clear) ? t.clear() : clearTimeout(t));
+    cancelAnimationFrame(raf);
+    ov.classList.add('gone');
+    setTimeout(() => { ov.style.display = 'none'; }, 480);
+  }
+
+  ov.addEventListener('click', finish);
+  run();
+})();
 </script>
 </body>
 </html>

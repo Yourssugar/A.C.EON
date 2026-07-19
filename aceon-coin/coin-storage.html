@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.C.EON. Хранилище фрагментов</title>
+<link rel="stylesheet" href="coin-fonts.css">
+<link rel="stylesheet" href="coin-storage.css">
+</head>
+<body>
+
+<div class="scanline" aria-hidden="true"></div>
+
+<header class="head">
+    <div>
+        <a class="back" href="coin-info.html">&lt; Реестр эмиссии</a>
+        <h1>Хранилище фрагментов</h1>
+    </div>
+    <div class="status" id="status">
+        <i class="status-dot"></i><span id="status-text">соединение</span>
+    </div>
+</header>
+
+<main>
+
+<!-- подключение -->
+<section class="screen" id="scr-loading">
+    <p class="loading-text">Установка канала с хранилищем<span class="blink">_</span></p>
+</section>
+
+<!-- хранилище недоступно -->
+<section class="screen" id="scr-offline" hidden>
+    <div class="offline cut">
+        <h2>Хранилище оффлайн</h2>
+        <p>Канал связи не отвечает. Сервер может быть выключен
+        или переподключается к сети.</p>
+        <p class="offline-retry">Повтор через <b id="retry-sec">15</b> с</p>
+        <button type="button" class="btn" id="btn-retry">Проверить сейчас</button>
+    </div>
+</section>
+
+<!-- вход и регистрация -->
+<section class="screen" id="scr-auth" hidden>
+    <div class="auth cut">
+        <div class="tabs" role="tablist">
+            <button type="button" class="tab active" id="tab-login">Вход</button>
+            <button type="button" class="tab" id="tab-register">Регистрация</button>
+        </div>
+
+        <form id="form-login" autocomplete="on">
+            <label>Логин
+                <input type="text" id="login-name" autocomplete="username" required>
+            </label>
+            <label>Пароль
+                <input type="password" id="login-pass" autocomplete="current-password" required>
+            </label>
+            <button type="submit" class="btn btn-main">Открыть хранилище</button>
+            <button type="button" class="linklike" id="show-recover">Забыл пароль</button>
+        </form>
+
+        <form id="form-register" hidden>
+            <label>Логин
+                <input type="text" id="reg-name" autocomplete="username"
+                       pattern="[A-Za-z0-9_.\-]{3,32}" required>
+                <small>3-32 символа: латиница, цифры, точка, дефис, подчёркивание</small>
+            </label>
+            <label>Email
+                <input type="email" id="reg-email" autocomplete="email" required>
+                <small>Понадобится для восстановления доступа</small>
+            </label>
+            <label>Пароль
+                <input type="password" id="reg-pass" autocomplete="new-password"
+                       minlength="6" required>
+                <small>Не короче 6 символов</small>
+            </label>
+            <button type="submit" class="btn btn-main">Создать аккаунт</button>
+        </form>
+
+        <form id="form-recover" hidden>
+            <p class="form-note">Введи логин, код восстановления и новый пароль.
+            Код выдавался при регистрации.</p>
+            <label>Логин
+                <input type="text" id="rec-name" required>
+            </label>
+            <label>Код восстановления
+                <input type="text" id="rec-code" placeholder="0000-0000-0000-0000" required>
+            </label>
+            <label>Новый пароль
+                <input type="password" id="rec-pass" minlength="6" required>
+            </label>
+            <button type="submit" class="btn btn-main">Сменить пароль</button>
+            <button type="button" class="linklike" id="hide-recover">Назад ко входу</button>
+        </form>
+
+        <p class="form-error" id="auth-error" hidden></p>
+    </div>
+</section>
+
+<!-- код восстановления, показывается один раз -->
+<section class="screen" id="scr-recovery" hidden>
+    <div class="recovery cut">
+        <h2>Код восстановления</h2>
+        <p>Единственный способ вернуть аккаунт, если пароль будет утерян.
+        Показывается один раз и нигде больше не хранится.</p>
+        <p class="recovery-code" id="recovery-code">....-....-....-....</p>
+        <div class="recovery-actions">
+            <button type="button" class="btn" id="btn-copy-code">Скопировать</button>
+            <button type="button" class="btn btn-main" id="btn-code-saved">Код сохранён, войти</button>
+        </div>
+    </div>
+</section>
+
+<!-- кабинет -->
+<section class="screen" id="scr-cabinet" hidden>
+    <div class="cab-top">
+        <p>Оператор: <b id="cab-login"></b></p>
+        <button type="button" class="linklike" id="btn-logout">Закрыть сеанс</button>
+    </div>
+
+    <div class="cab-grid">
+        <div class="balance cut">
+            <p class="label">Фрагменты данных</p>
+            <p class="balance-value" id="cab-balance">0</p>
+            <p class="balance-streak" id="cab-streak"></p>
+        </div>
+
+        <div class="daily cut">
+            <p class="label">Ежедневный сбор</p>
+            <p class="daily-note" id="daily-note">За вход начисляется
+            <b id="daily-reward">1</b> фрагмент</p>
+            <button type="button" class="btn btn-main" id="btn-daily">Собрать фрагмент</button>
+            <p class="daily-done" id="daily-done" hidden>Собрано. Следующий фрагмент
+            после 00:00 UTC</p>
+        </div>
+    </div>
+
+    <div class="withdraw cut">
+        <p class="label">Вывод в A.C.EON Coin</p>
+        <p class="withdraw-rates">Курс: <b id="w-rate">1</b> фрагмент = 1 ACEON.
+        Вывод от <b id="w-min">10</b> до <b id="w-max">1000</b> фрагментов.</p>
+        <p class="withdraw-window">Окно синхронизации через
+        <b id="w-countdown">--:--:--</b><br>
+        <small>нечётные дни, 666-я минута суток, 11:06 UTC</small></p>
+
+        <form id="form-withdraw">
+            <label>Сколько фрагментов
+                <input type="number" id="w-amount" min="1" step="1" required>
+            </label>
+            <label>Адрес кошелька Sepolia
+                <input type="text" id="w-wallet" placeholder="0x..."
+                       pattern="0x[0-9a-fA-F]{40}" required>
+                <small>MetaMask, сеть Sepolia. Адрес начинается с 0x, 42 символа</small>
+            </label>
+            <button type="submit" class="btn btn-main" id="w-submit">Оставить заявку</button>
+        </form>
+
+        <div class="withdraw-active" id="withdraw-active" hidden>
+            <p>Заявка в очереди: <b id="wa-fragments">0</b> фрагментов на адрес</p>
+            <code id="wa-wallet"></code>
+            <p class="withdraw-when">Будет обработана в ближайшее окно синхронизации</p>
+            <div class="withdraw-actions">
+                <button type="button" class="btn" id="btn-w-edit">Изменить</button>
+                <button type="button" class="btn btn-danger" id="btn-w-cancel">Отменить</button>
+            </div>
+        </div>
+        <p class="form-error" id="w-error" hidden></p>
+        <p class="form-ok" id="w-ok" hidden></p>
+    </div>
+
+    <div class="history cut">
+        <p class="label">Журнал операций</p>
+        <ul id="history-list"></ul>
+        <p class="history-empty" id="history-empty" hidden>Операций пока нет.
+        Начни с ежедневного сбора.</p>
+    </div>
+</section>
+
+</main>
+
+<footer class="foot">
+    <p>A.C.EON Studio. Тестовый контур: фрагменты и монеты не имеют денежной ценности.</p>
+</footer>
+
+<script src="coin-storage.js"></script>
+</body>
+</html>

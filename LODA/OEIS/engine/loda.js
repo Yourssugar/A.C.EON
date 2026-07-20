@@ -48,6 +48,7 @@ function digitalRootBig(x, base){
 function binomProd(n, k){
   // C(n,k) через падающий факториал для k >= 0 и любого целого n
   if(k < ZERO) return ZERO;
+  if(k > 100000n) throw runtimeError('слишком большой аргумент bin');
   let num = ONE;
   for(let i = ZERO; i < k; i++) num *= (n - i);
   let den = ONE;
@@ -68,6 +69,7 @@ function binomBig(n, k){
 function fallingRising(a, b){
   const count = absBig(b);
   if(count === ZERO) return ONE;
+  if(count > 100000n) throw runtimeError('слишком большой аргумент fac');
   let r = ONE, x = a;
   const stepDown = b < ZERO; // b<0 падающий, b>0 восходящий
   for(let i = ZERO; i < count; i++){
@@ -323,6 +325,14 @@ function makeMachine(instrs, options){
   return { run };
 }
 
+function machine(program, options){
+  // строим машину один раз и берём термы по одному; майнер так отбраковывает
+  // кандидата на первом же расхождении, не считая остальные термы впустую
+  const prog = typeof program === 'string' ? parse(program) : program;
+  const m = makeMachine(prog.instrs, options || {});
+  return { offset: prog.offset, term(i){ return m.run(i); } };
+}
+
 function run(program, n, options){
   const prog = typeof program === 'string' ? parse(program) : program;
   return makeMachine(prog.instrs, options || {}).run(n);
@@ -347,7 +357,7 @@ function tryTerms(program, count, options){
   return { ok:true, terms };
 }
 
-const LODA = { parse, run, evaluate, tryTerms };
+const LODA = { parse, machine, run, evaluate, tryTerms };
 global.LODA = LODA;
 if(typeof module !== 'undefined' && module.exports) module.exports = LODA;
 

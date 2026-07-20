@@ -68,6 +68,8 @@ a:hover{text-decoration:underline}
 .code .cm{color:var(--dim)}
 .seqline{font-family:var(--mono);color:var(--pulse);background:var(--panel);border:1px solid var(--line);padding:14px 18px;overflow-x:auto;white-space:nowrap;letter-spacing:.05em}
 .seqline .lbl{color:var(--dim);margin-right:14px}
+.seqline a.lbl{text-decoration:none}
+.seqline a.lbl:hover{color:var(--pulse);text-decoration:underline}
 .more-head{background:transparent;border:1px solid var(--line);color:var(--pulse);font-family:var(--mono);font-size:13px;letter-spacing:.06em;padding:9px 18px;cursor:pointer;margin-top:6px;transition:border-color .15s}
 .more-head:hover{border-color:var(--pulse)}
 .more-head.open{color:var(--dim)}
@@ -205,8 +207,8 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
   <div class="wrap">
     <span class="eyebrow">консоль</span>
     <h2>Попробовать</h2>
-    <p>Это тренировочная задача: ответ у неё уже известен, поэтому ты увидишь весь ход от начала до конца. Браузер подбирает короткую программу, которая выдаёт вот эти числа:</p>
-    <div class="seqline"><span class="lbl">задание</span><span id="target-strip"></span></div>
+    <p>Ниже настоящая последовательность из OEIS. Формула у неё уже известна, поэтому это показ механизма: браузер подберёт программу и совпадёт, но такое совпадение будет повтором, а не новым открытием. Каждый запуск берёт другую последовательность.</p>
+    <div class="seqline"><a class="lbl" id="target-id" href="https://oeis.org/" target="_blank" rel="noopener">A000000</a><span id="target-strip"></span></div>
 
     <div class="console" id="console">
       <div class="head">
@@ -248,6 +250,8 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
 
 <script src="../engine/loda.js"></script>
 <script src="../engine/miner.js"></script>
+<script src="../engine/targets.js"></script>
+<script src="../data/oeis-sample.js"></script>
 <script>
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -295,9 +299,28 @@ document.querySelectorAll('.more-head').forEach(btn=>{
 
 /* настоящий майнер LODA вместо игрушечного перебора.
    Модули loda.js и miner.js подключены выше как ../engine/*.js */
-const TARGET = [1,2,5,10,17,26,37,50]; // тренировочная цель n*n+1, ответ известен
-const NEED = TARGET.length;
-document.getElementById('target-strip').textContent = TARGET.join(',  ');
+/* демо-набор: реальные последовательности OEIS, которые майнер v0 надёжно
+   берёт с зерном 1. Формула у них известна, находка это повтор, не открытие. */
+const DEMO_IDS = ['A000290','A000578','A000027','A005843','A005408','A000012'];
+const MINE_TERMS = 8;
+const NEED = MINE_TERMS;
+
+const modulesReady = !!(window.LodaMiner && window.LodaTargets && window.LODA_BUNDLE);
+const loader = modulesReady ? LodaTargets.Loader(window.LODA_BUNDLE) : null;
+const targetStrip = document.getElementById('target-strip');
+const targetId = document.getElementById('target-id');
+let current = null;
+
+function pickTarget(){
+  // случайная последовательность из демо-набора, только те, что есть в бандле
+  const ids = DEMO_IDS.filter(id => loader.get(id));
+  const id = ids[(Math.random() * ids.length) | 0];
+  const s = loader.get(id);
+  current = { id: id, offset: s.offset, terms: s.terms.slice(0, MINE_TERMS) };
+  targetId.textContent = id;
+  targetId.href = 'https://oeis.org/' + id;
+  targetStrip.textContent = current.terms.map(String).join(',  ');
+}
 
 const consoleEl = document.getElementById('console');
 const stateEl = document.getElementById('console-state');
@@ -348,7 +371,8 @@ function scheduleStep(){
 function clearSchedule(){ cancelAnimationFrame(rafId); clearTimeout(timerId); }
 
 function resetSearch(){
-  miner = LodaMiner.mine(TARGET, {seed: 1});
+  pickTarget();
+  miner = LodaMiner.mine(current, {seed: 1});
   shownDepth = 0;
   consoleEl.classList.remove('done');
   logEl.innerHTML = '<div class="empty">Совпадения будут появляться здесь по мере роста глубины.</div>';
@@ -416,7 +440,15 @@ function stopSearch(){
   nowEl.textContent = 'Поиск остановлен. Можно запустить заново.';
   runBtn.textContent = 'Запустить заново'; runBtn.classList.remove('stop');
 }
-runBtn.addEventListener('click', ()=>{ running ? stopSearch() : startSearch(); });
+if(modulesReady){
+  pickTarget();
+  runBtn.addEventListener('click', ()=>{ running ? stopSearch() : startSearch(); });
+}else{
+  nowEl.textContent = 'Модули движка не загрузились. На рабочем сайте консоль оживёт, когда loda.js, miner.js, targets.js и данные лежат рядом по своим папкам.';
+  runBtn.disabled = true;
+  runBtn.style.opacity = '0.5';
+  runBtn.style.cursor = 'not-allowed';
+}
 </script>
 </body>
 </html>

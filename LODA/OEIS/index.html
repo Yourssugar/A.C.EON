@@ -211,7 +211,7 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
     <div class="console" id="console">
       <div class="head">
         <span><span class="dot"></span><span id="console-state">ожидание</span></span>
-        <span>toy-loda v0</span>
+        <span>loda-miner v0</span>
       </div>
       <div class="screen">
         <div class="now" id="now">Нажми «Запустить поиск», чтобы начать перебор.</div>
@@ -246,6 +246,8 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
   <div class="wrap">A.C.EON. Каркас превью. Перебор настоящий, задача тренировочная.</div>
 </footer>
 
+<script src="../engine/loda.js"></script>
+<script src="../engine/miner.js"></script>
 <script>
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -291,62 +293,11 @@ document.querySelectorAll('.more-head').forEach(btn=>{
   bindCollapsible(btn, body, {open:'Подробнее', close:'Свернуть'});
 });
 
-/* toy-loda: крошечная модель вычислений в духе LODA.
-   Прямолинейные программы без циклов: три ячейки, $0 это вход и выход. */
-const CELLS = 3;
-const OPS = ['mov','add','sub','mul'];
-const CONSTS = [0,1,2,3];
-const SOURCES = CELLS + CONSTS.length;
-const INSTR_SPACE = OPS.length * CELLS * SOURCES;
-
-const TERMS = 8;
-const target = [];
-for(let n=0;n<TERMS;n++) target.push(n*n + 1);
-document.getElementById('target-strip').textContent = target.join(',  ');
-
-function decodeInstruction(code){
-  const src = code % SOURCES; code = (code - src) / SOURCES | 0;
-  const tgt = code % CELLS;   code = (code - tgt) / CELLS | 0;
-  const op  = code % OPS.length;
-  const source = src < CELLS ? {cell:src} : {konst:CONSTS[src-CELLS]};
-  return {op:OPS[op], tgt, source};
-}
-function programFromIndex(len, index){
-  const prog = [];
-  for(let i=0;i<len;i++){
-    prog.push(decodeInstruction(index % INSTR_SPACE));
-    index = (index - (index % INSTR_SPACE)) / INSTR_SPACE | 0;
-  }
-  return prog;
-}
-function runProgram(prog, n){
-  const cells = [n,0,0];
-  for(const inst of prog){
-    const s = inst.source.cell !== undefined ? cells[inst.source.cell] : inst.source.konst;
-    const t = inst.tgt;
-    switch(inst.op){
-      case 'mov': cells[t] = s; break;
-      case 'add': cells[t] = cells[t] + s; break;
-      case 'sub': cells[t] = Math.max(0, cells[t] - s); break; // LODA обрезает вычитание по нулю
-      case 'mul': cells[t] = cells[t] * s; break;
-    }
-    if(!Number.isFinite(cells[t]) || cells[t] > 1e15) return null; // большие значения бесполезны, обрываем
-  }
-  return cells[0];
-}
-function matchDepth(prog){
-  for(let n=0;n<TERMS;n++){ if(runProgram(prog, n) !== target[n]) return n; }
-  return TERMS;
-}
-function formatProgram(prog){
-  return prog.map(inst=>{
-    const s = inst.source.cell !== undefined ? '$'+inst.source.cell : inst.source.konst;
-    return inst.op + ' $' + inst.tgt + ',' + s;
-  });
-}
-
-const MAX_LEN = 3;
-let curLen, curIndex, lenTotal, attempts, bestDepth, running, startTime, rafId, timerId;
+/* настоящий майнер LODA вместо игрушечного перебора.
+   Модули loda.js и miner.js подключены выше как ../engine/*.js */
+const TARGET = [1,2,5,10,17,26,37,50]; // тренировочная цель n*n+1, ответ известен
+const NEED = TARGET.length;
+document.getElementById('target-strip').textContent = TARGET.join(',  ');
 
 const consoleEl = document.getElementById('console');
 const stateEl = document.getElementById('console-state');
@@ -387,7 +338,9 @@ if(coresDetected){
 updateLoadLabel();
 loadRange.addEventListener('input', updateLoadLabel);
 
-const BASE_CHUNK = 700;
+let miner, running, startTime, rafId, timerId, shownDepth;
+const SAFETY_CAP = 400000; // если вдруг не находит, не крутим бесконечно
+
 function scheduleStep(){
   if(loadFraction >= 0.99){ rafId = requestAnimationFrame(step); }
   else { const gap = Math.round((1/loadFraction - 1) * 14); timerId = setTimeout(step, gap); }
@@ -395,63 +348,56 @@ function scheduleStep(){
 function clearSchedule(){ cancelAnimationFrame(rafId); clearTimeout(timerId); }
 
 function resetSearch(){
-  curLen = 1; curIndex = 0; lenTotal = INSTR_SPACE;
-  attempts = 0; bestDepth = 0;
+  miner = LodaMiner.mine(TARGET, {seed: 1});
+  shownDepth = 0;
   consoleEl.classList.remove('done');
   logEl.innerHTML = '<div class="empty">Совпадения будут появляться здесь по мере роста глубины.</div>';
   attemptsEl.textContent = '0';
-  bestEl.textContent = '0 / ' + TERMS;
+  bestEl.textContent = '0 / ' + NEED;
   timeEl.textContent = '0.0 с';
 }
-function pushDiscovery(prog, depth){
+function pushDiscovery(text, depth){
   if(logEl.querySelector('.empty')) logEl.innerHTML = '';
   const row = document.createElement('div');
   row.className = 'row';
-  row.innerHTML = '<span class="depth">' + depth + '/' + TERMS + '</span> <span class="prog">' + formatProgram(prog).join('  |  ') + '</span>';
+  row.innerHTML = '<span class="depth">' + depth + '/' + NEED + '</span> <span class="prog">' + text.replace(/\n/g, '  |  ') + '</span>';
   logEl.prepend(row);
   while(logEl.children.length > 7) logEl.removeChild(logEl.lastChild);
 }
-function finish(prog){
+function finish(found){
   running = false; clearSchedule();
   consoleEl.classList.remove('run'); consoleEl.classList.add('done');
   stateEl.textContent = 'готово';
   nowEl.textContent = '';
-  attemptsEl.textContent = attempts.toLocaleString('ru-RU');
-  bestEl.textContent = TERMS + ' / ' + TERMS;
-  foundProg.innerHTML = formatProgram(prog).map(line=>'<div class="prog-line">'+line+'</div>').join('');
+  bestEl.textContent = NEED + ' / ' + NEED;
+  foundProg.innerHTML = found.text.split('\n').map(line => '<div class="prog-line">' + line + '</div>').join('');
   foundVerdict.textContent = 'У этой последовательности формула известна, поэтому в реальном проекте это повтор: счётчик наверху не сдвинется. Но весь ход ты увидел, от перебора до совпадения на всех числах.';
   runBtn.textContent = 'Запустить заново';
   runBtn.classList.remove('stop');
 }
 function step(){
   if(!running) return;
-  const chunk = Math.max(60, Math.round(BASE_CHUNK * loadFraction));
-  let lastProg = null;
-  for(let k=0;k<chunk;k++){
-    if(curIndex >= lenTotal){
-      curLen++;
-      if(curLen > MAX_LEN){
-        running = false; clearSchedule();
-        consoleEl.classList.remove('run');
-        stateEl.textContent = 'перебор закончен';
-        nowEl.textContent = 'Короткой программы в заданной длине не нашлось.';
-        runBtn.textContent = 'Запустить заново'; runBtn.classList.remove('stop');
-        return;
-      }
-      curIndex = 0; lenTotal = Math.pow(INSTR_SPACE, curLen);
-    }
-    const prog = programFromIndex(curLen, curIndex);
-    curIndex++; attempts++;
-    const depth = matchDepth(prog);
-    lastProg = prog;
-    if(depth === TERMS){ finish(prog); return; }
-    if(depth > bestDepth){ bestDepth = depth; pushDiscovery(prog, depth); }
+  const budget = Math.max(40, Math.round(500 * loadFraction));
+  const r = miner.step(budget);
+  attemptsEl.textContent = r.attempts.toLocaleString('ru-RU');
+  timeEl.textContent = ((performance.now() - startTime) / 1000).toFixed(1) + ' с';
+  const bd = r.best.depth < 0 ? 0 : r.best.depth;
+  bestEl.textContent = bd + ' / ' + NEED;
+  if(r.best.depth > shownDepth && r.best.text){
+    shownDepth = r.best.depth;
+    pushDiscovery(r.best.text, r.best.depth);
   }
-  attemptsEl.textContent = attempts.toLocaleString('ru-RU');
-  bestEl.textContent = bestDepth + ' / ' + TERMS;
-  timeEl.textContent = ((performance.now() - startTime)/1000).toFixed(1) + ' с';
-  if(!reduceMotion && lastProg){
-    nowEl.innerHTML = '<b>проверяю</b> <span class="d">' + formatProgram(lastProg).join('  ') + '</span>';
+  if(!reduceMotion && r.best.text){
+    nowEl.innerHTML = '<b>лучшее пока</b> <span class="d">' + r.best.text.replace(/\n/g, '  ') + '</span>';
+  }
+  if(r.found){ finish(r.found); return; }
+  if(r.attempts >= SAFETY_CAP){
+    running = false; clearSchedule();
+    consoleEl.classList.remove('run');
+    stateEl.textContent = 'остановлено';
+    nowEl.textContent = 'За отведённый бюджет короткой программы не нашлось. Можно запустить заново.';
+    runBtn.textContent = 'Запустить заново'; runBtn.classList.remove('stop');
+    return;
   }
   scheduleStep();
 }

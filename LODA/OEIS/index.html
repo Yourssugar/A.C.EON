@@ -76,6 +76,9 @@ a:hover{text-decoration:underline}
 .more-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
 .more-inner{padding-top:20px}
 .more-inner p{max-width:640px;margin:0 0 16px}
+.area{margin:0 0 22px}
+.area-name{font-family:var(--mono);color:var(--pulse);font-size:15px;display:block;margin-bottom:6px}
+.area p{margin:0;max-width:640px}
 
 .console-section{padding:64px 0 8px;border-top:1px solid var(--line)}
 .console-section h2{font-family:var(--mono);font-weight:600;font-size:24px;margin:14px 0 18px}
@@ -143,7 +146,7 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
     <h1>У этих чисел<br>нет формулы</h1>
     <p class="lede">Есть числовые ряды, которые идут по какому-то правилу, но само правило пока никто не записал. Твой браузер может его искать. Прямо здесь, пока открыта вкладка.</p>
     <div class="ticker" id="ticker" aria-hidden="true"></div>
-    <p class="note">Ниже коротко о том, как это работает и зачем. Кнопка запуска в конце страницы.</p>
+    <p class="note">Подключиться может любой, с компьютера или телефона. Ниже коротко о том, как это работает, где применяется и зачем. Кнопка запуска в конце страницы.</p>
   </div>
 </header>
 
@@ -180,6 +183,40 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
   </div>
 </section>
 
+<section class="fold" id="fold-apply">
+  <div class="wrap">
+    <button class="fold-head" aria-expanded="false" aria-controls="body-apply">
+      <span><span class="fold-hint">раздел</span><br><span class="fold-title">Где это применяется</span></span>
+      <span class="chev">+</span>
+    </button>
+    <div class="fold-body" id="body-apply">
+      <div class="fold-inner">
+        <p>Искать формулу для ряда чисел может показаться чистой абстракцией. Но целочисленные последовательности выходят в очень разных областях, и общий справочник, который мы пополняем, работает сразу на все из них.</p>
+
+        <div class="area"><span class="area-name">Теория чисел и комбинаторика</span>
+        <p>Целочисленные ряды это родной язык этих областей: сколькими способами можно разбить число на слагаемые, замостить фигуру, обойти граф. Короткая программа для ряда показывает, как он устроен изнутри, и даёт посчитать сколько угодно следующих членов, даже если раньше их выводили вручную.</p></div>
+
+        <div class="area"><span class="area-name">Справочник, к которому обращаются каждый день</span>
+        <p>OEIS это первое место, куда идёт математик или программист, встретив незнакомый ряд. Часто именно там обнаруживается, что твоя задача связана с чьей-то чужой, решённой годы назад. Каждая добавленная формула делает справочник чуть полнее для всех, кто заглянет после.</p></div>
+
+        <div class="area"><span class="area-name">Проверяемая математика</span>
+        <p>Найденную программу можно перевести в доказательную систему Lean и проверить машиной. Тогда формула перестаёт быть догадкой и становится фактом, который подтвердил компьютер. Математика в последние годы движется именно туда: не поверить на слово, а проверить строго.</p></div>
+
+        <div class="area"><span class="area-name">Где эти числа всплывают ещё</span>
+        <p>Одни и те же ряды выходят в неожиданных местах. В физике ими считают состояния системы, в информатике то, сколько шагов делает алгоритм, в химии число возможных структур молекулы. Когда у ряда появляется формула, ей может воспользоваться любая из этих областей, не переоткрывая заново.</p></div>
+
+        <button class="more-head" aria-expanded="false" aria-controls="more-apply">Подробнее</button>
+        <div class="more-body" id="more-apply">
+          <div class="more-inner">
+            <p>Простой пример, как один ряд связывает разные задачи. Числа Каталана (1, 1, 2, 5, 14, 42, 132) считают сразу многое: сколькими способами расставить скобки в произведении, сколько существует двоичных деревьев с заданным числом узлов, на сколько треугольников можно разбить многоугольник. Это разные задачи из разных разделов, а за ними стоит один и тот же ряд.</p>
+            <p>Поэтому формула, найденная для одного ряда, это не находка в одной узкой точке. Один ряд часто оказывается ответом на несколько вопросов сразу, и запись его короткой программой помогает увидеть эту связь.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="fold" id="fold-why">
   <div class="wrap">
     <button class="fold-head" aria-expanded="false" aria-controls="body-why">
@@ -193,9 +230,7 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
         <button class="more-head" aria-expanded="false" aria-controls="more-why">Подробнее</button>
         <div class="more-body" id="more-why">
           <div class="more-inner">
-            <p>OEIS это справочник, которым математики пользуются каждый день. Когда в работе всплывает незнакомый ряд чисел, они ищут его там, чтобы понять, встречался ли он раньше и что про него известно. Такие ряды возникают в самых разных местах: в теории чисел, в комбинаторике, в физике, в информатике.</p>
-            <p>Когда для ряда находится короткая программа, из неё можно вывести формулу, а формулу проверить строго, через доказательную систему Lean, или разобрать в математическом пакете. То есть находка это не просто совпадение цифр, а новое знание о том, как ряд устроен.</p>
-            <p>Твой вклад тут не в том, что ты подарил чужому проекту процессорное время. Он в том, что перебор, который ты запустил, реально может наткнуться на программу, которой ни у кого ещё не было.</p>
+            <p>Важно, в чём именно твой вклад. Он не в том, что ты отдал проекту процессорное время. Он в том, что перебор, который ты запустил, реально может наткнуться на программу, которой ещё ни у кого не было. Большинство находок окажутся повторами уже известного, и это нормально: настоящее новое встречается редко, зато каждый такой случай попадает в общий справочник по-настоящему.</p>
           </div>
         </div>
       </div>
@@ -301,8 +336,8 @@ document.querySelectorAll('.more-head').forEach(btn=>{
    Модули loda.js и miner.js подключены выше как ../engine/*.js */
 /* демо-набор: реальные последовательности OEIS, которые майнер v0 надёжно
    берёт с зерном 1. Формула у них известна, находка это повтор, не открытие. */
-const DEMO_IDS = ['A000290','A000578','A000027','A005843','A005408','A000012'];
-const MINE_TERMS = 8;
+const DEMO_IDS = ['A000290','A000578','A005843','A005408'];
+const MINE_TERMS = 12;
 const NEED = MINE_TERMS;
 
 const modulesReady = !!(window.LodaMiner && window.LodaTargets && window.LODA_BUNDLE);
@@ -401,7 +436,7 @@ function finish(found){
 }
 function step(){
   if(!running) return;
-  const budget = Math.max(40, Math.round(500 * loadFraction));
+  const budget = Math.max(20, Math.round(60 * loadFraction));
   const r = miner.step(budget);
   attemptsEl.textContent = r.attempts.toLocaleString('ru-RU');
   timeEl.textContent = ((performance.now() - startTime) / 1000).toFixed(1) + ' с';

@@ -1,4 +1,5 @@
 {
-  "base": "https://REPLACE-WITH-CURRENT-TUNNEL.trycloudflare.com",
-  "note": "Этот файл ноут перезаписывает при старте текущим адресом туннеля и коммитит в репозиторий. Браузер читает его, чтобы найти бэкенд."
+  "base": "https://yoga-salem-eyes-continuing.trycloudflare.com",
+  "enabled": true,
+  "updated": "2026-07-20 12:02:39"
 }

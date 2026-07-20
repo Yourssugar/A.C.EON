@@ -242,13 +242,13 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
   <div class="wrap">
     <span class="eyebrow">консоль</span>
     <h2>Попробовать</h2>
-    <p>Ниже настоящая последовательность из OEIS. Формула у неё уже известна, поэтому это показ механизма: браузер подберёт программу и совпадёт, но такое совпадение будет повтором, а не новым открытием. Каждый запуск берёт другую последовательность.</p>
+    <p>Ниже последовательность из OEIS. Браузер подбирает короткую программу, которая выдаёт её числа. Каждый запуск берёт другую последовательность. Когда узел A.C.EON включён, задания приходят с него и находки уходят на проверку; когда выключен, страница работает на локальном наборе.</p>
     <div class="seqline"><a class="lbl" id="target-id" href="https://oeis.org/" target="_blank" rel="noopener">A000000</a><span id="target-strip"></span></div>
 
     <div class="console" id="console">
       <div class="head">
         <span><span class="dot"></span><span id="console-state">ожидание</span></span>
-        <span>loda-miner v0</span>
+        <span id="source-label">loda-miner v0</span>
       </div>
       <div class="screen">
         <div class="now" id="now">Нажми «Запустить поиск», чтобы начать перебор.</div>
@@ -286,6 +286,7 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
 <script src="../engine/loda.js"></script>
 <script src="../engine/miner.js"></script>
 <script src="../engine/targets.js"></script>
+<script src="../engine/protocol.js"></script>
 <script src="../data/oeis-sample.js"></script>
 <script>
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -332,30 +333,28 @@ document.querySelectorAll('.more-head').forEach(btn=>{
   bindCollapsible(btn, body, {open:'Подробнее', close:'Свернуть'});
 });
 
-/* настоящий майнер LODA вместо игрушечного перебора.
-   Модули loda.js и miner.js подключены выше как ../engine/*.js */
-/* демо-набор: реальные последовательности OEIS, которые майнер v0 надёжно
-   берёт с зерном 1. Формула у них известна, находка это повтор, не открытие. */
-const DEMO_IDS = ['A000290','A000578','A005843','A005408'];
+/* Консоль работает в двух режимах.
+   Узел A.C.EON включён: задания приходят с ноута, находки уходят к нему на
+   проверку, угловой счётчик тянется с сервера. Узел выключен или недоступен:
+   страница честно откатывается на локальный демо-набор, ничего не ломая. */
+
+const DEMO_IDS = ['A000290','A000578','A005843','A005408']; // локальный запас
 const MINE_TERMS = 12;
-const NEED = MINE_TERMS;
 
 const modulesReady = !!(window.LodaMiner && window.LodaTargets && window.LODA_BUNDLE);
+const hasProtocol = !!window.LodaProtocol;
 const loader = modulesReady ? LodaTargets.Loader(window.LODA_BUNDLE) : null;
+const ENDPOINT_CONFIG = '../data/endpoint.json';
+const USER_ID = 'web-' + Math.random().toString(36).slice(2, 10);
+
 const targetStrip = document.getElementById('target-strip');
 const targetId = document.getElementById('target-id');
-let current = null;
+const sourceLabel = document.getElementById('source-label');
+const countEl = document.getElementById('found-count');
 
-function pickTarget(){
-  // случайная последовательность из демо-набора, только те, что есть в бандле
-  const ids = DEMO_IDS.filter(id => loader.get(id));
-  const id = ids[(Math.random() * ids.length) | 0];
-  const s = loader.get(id);
-  current = { id: id, offset: s.offset, terms: s.terms.slice(0, MINE_TERMS) };
-  targetId.textContent = id;
-  targetId.href = 'https://oeis.org/' + id;
-  targetStrip.textContent = current.terms.map(String).join(',  ');
-}
+let SERVER = null;      // базовый адрес ноута, когда подключены
+let current = null;     // {id, offset, terms, seed?}
+let curNeed = MINE_TERMS;
 
 const consoleEl = document.getElementById('console');
 const stateEl = document.getElementById('console-state');
@@ -397,7 +396,7 @@ updateLoadLabel();
 loadRange.addEventListener('input', updateLoadLabel);
 
 let miner, running, startTime, rafId, timerId, shownDepth;
-const SAFETY_CAP = 400000; // если вдруг не находит, не крутим бесконечно
+const SAFETY_CAP = 400000;
 
 function scheduleStep(){
   if(loadFraction >= 0.99){ rafId = requestAnimationFrame(step); }
@@ -405,35 +404,68 @@ function scheduleStep(){
 }
 function clearSchedule(){ cancelAnimationFrame(rafId); clearTimeout(timerId); }
 
-function resetSearch(){
-  pickTarget();
-  miner = LodaMiner.mine(current, {seed: 1});
-  shownDepth = 0;
-  consoleEl.classList.remove('done');
-  logEl.innerHTML = '<div class="empty">Совпадения будут появляться здесь по мере роста глубины.</div>';
-  attemptsEl.textContent = '0';
-  bestEl.textContent = '0 / ' + NEED;
-  timeEl.textContent = '0.0 с';
+function showTarget(){
+  targetId.textContent = current.id;
+  targetId.href = 'https://oeis.org/' + current.id;
+  targetStrip.textContent = current.terms.map(String).join(',  ');
 }
+function pickLocalTarget(){
+  const ids = DEMO_IDS.filter(id => loader.get(id));
+  const id = ids[(Math.random() * ids.length) | 0];
+  const s = loader.get(id);
+  current = { id: id, offset: s.offset, terms: s.terms.slice(0, MINE_TERMS), seed: 1 };
+  showTarget();
+}
+async function fetchServerTarget(){
+  const task = await LodaProtocol.getTask(SERVER);
+  if(!task || !task.terms){ return false; }
+  current = { id: task.seq_id, offset: task.offset, terms: task.terms, seed: task.seed };
+  showTarget();
+  return true;
+}
+async function updateCountFromServer(){
+  if(!SERVER) return;
+  const c = await LodaProtocol.getCount(SERVER);
+  if(c && typeof c.found === 'number') countEl.textContent = c.found.toLocaleString('ru-RU');
+}
+
 function pushDiscovery(text, depth){
   if(logEl.querySelector('.empty')) logEl.innerHTML = '';
   const row = document.createElement('div');
   row.className = 'row';
-  row.innerHTML = '<span class="depth">' + depth + '/' + NEED + '</span> <span class="prog">' + text.replace(/\n/g, '  |  ') + '</span>';
+  row.innerHTML = '<span class="depth">' + depth + '/' + curNeed + '</span> <span class="prog">' + text.replace(/\n/g, '  |  ') + '</span>';
   logEl.prepend(row);
   while(logEl.children.length > 7) logEl.removeChild(logEl.lastChild);
 }
-function finish(found){
+
+async function finish(found){
   running = false; clearSchedule();
   consoleEl.classList.remove('run'); consoleEl.classList.add('done');
   stateEl.textContent = 'готово';
   nowEl.textContent = '';
-  bestEl.textContent = NEED + ' / ' + NEED;
+  bestEl.textContent = curNeed + ' / ' + curNeed;
   foundProg.innerHTML = found.text.split('\n').map(line => '<div class="prog-line">' + line + '</div>').join('');
-  foundVerdict.textContent = 'У этой последовательности формула известна, поэтому в реальном проекте это повтор: счётчик наверху не сдвинется. Но весь ход ты увидел, от перебора до совпадения на всех числах.';
   runBtn.textContent = 'Запустить заново';
   runBtn.classList.remove('stop');
+
+  if(SERVER){
+    foundVerdict.textContent = 'Отправляю находку ноуту на проверку...';
+    const res = await LodaProtocol.submitFinding(SERVER, { seq_id: current.id, program: found.text, seed: current.seed, user: USER_ID });
+    if(res && res.accepted && res.verified){
+      if(res.novel){
+        foundVerdict.textContent = 'Ноут проверил находку на ' + (res.checked || '') + ' числах: программа верная и НОВАЯ. Она пойдёт на проверку в LODA, счётчик наверху вырос.';
+      }else{
+        foundVerdict.textContent = 'Ноут проверил находку на ' + (res.checked || '') + ' числах: программа верная, но для этого ряда программа уже есть. Это повтор, счётчик наверху не двигается.';
+      }
+    }else{
+      foundVerdict.textContent = 'Ноут не подтвердил находку (' + ((res && res.reason) || 'нет связи') + '). Такое бывает при частичном совпадении: запусти заново.';
+    }
+    updateCountFromServer();
+  }else{
+    foundVerdict.textContent = 'Это локальный показ механизма: ряд из набора известен, находка это повтор. Когда включишь узел A.C.EON, находки пойдут на настоящую проверку.';
+  }
 }
+
 function step(){
   if(!running) return;
   const budget = Math.max(20, Math.round(60 * loadFraction));
@@ -441,7 +473,7 @@ function step(){
   attemptsEl.textContent = r.attempts.toLocaleString('ru-RU');
   timeEl.textContent = ((performance.now() - startTime) / 1000).toFixed(1) + ' с';
   const bd = r.best.depth < 0 ? 0 : r.best.depth;
-  bestEl.textContent = bd + ' / ' + NEED;
+  bestEl.textContent = bd + ' / ' + curNeed;
   if(r.best.depth > shownDepth && r.best.text){
     shownDepth = r.best.depth;
     pushDiscovery(r.best.text, r.best.depth);
@@ -454,20 +486,43 @@ function step(){
     running = false; clearSchedule();
     consoleEl.classList.remove('run');
     stateEl.textContent = 'остановлено';
-    nowEl.textContent = 'За отведённый бюджет короткой программы не нашлось. Можно запустить заново.';
+    nowEl.textContent = 'За отведённый бюджет короткой программы не нашлось. Это нормально: не всякий ряд берётся. Запусти заново.';
     runBtn.textContent = 'Запустить заново'; runBtn.classList.remove('stop');
     return;
   }
   scheduleStep();
 }
-function startSearch(){
-  resetSearch();
+
+async function startSearch(){
   running = true; startTime = performance.now();
   consoleEl.classList.add('run'); consoleEl.classList.remove('done');
-  stateEl.textContent = 'перебор идёт';
+  stateEl.textContent = SERVER ? 'беру задание с ноута' : 'перебор идёт';
   runBtn.textContent = 'Остановить'; runBtn.classList.add('stop');
+
+  if(SERVER){
+    const ok = await fetchServerTarget();
+    if(!ok){ // ноут отвалился на ходу — доигрываем локально
+      SERVER = null;
+      setSource();
+      pickLocalTarget();
+    }
+  }else{
+    pickLocalTarget();
+  }
+  if(!running) return; // вдруг остановили, пока ждали сеть
+
+  curNeed = current.terms.length;
+  miner = LodaMiner.mine({ offset: current.offset, terms: current.terms }, { seed: current.seed });
+  shownDepth = 0;
+  consoleEl.classList.remove('done');
+  logEl.innerHTML = '<div class="empty">Совпадения будут появляться здесь по мере роста глубины.</div>';
+  attemptsEl.textContent = '0';
+  bestEl.textContent = '0 / ' + curNeed;
+  timeEl.textContent = '0.0 с';
+  stateEl.textContent = 'перебор идёт';
   scheduleStep();
 }
+
 function stopSearch(){
   running = false; clearSchedule();
   consoleEl.classList.remove('run');
@@ -475,15 +530,41 @@ function stopSearch(){
   nowEl.textContent = 'Поиск остановлен. Можно запустить заново.';
   runBtn.textContent = 'Запустить заново'; runBtn.classList.remove('stop');
 }
-if(modulesReady){
-  pickTarget();
-  runBtn.addEventListener('click', ()=>{ running ? stopSearch() : startSearch(); });
-}else{
-  nowEl.textContent = 'Модули движка не загрузились. На рабочем сайте консоль оживёт, когда loda.js, miner.js, targets.js и данные лежат рядом по своим папкам.';
-  runBtn.disabled = true;
-  runBtn.style.opacity = '0.5';
-  runBtn.style.cursor = 'not-allowed';
+
+function setSource(){
+  sourceLabel.textContent = SERVER ? 'источник: узел A.C.EON' : 'источник: локально';
 }
+
+async function detectServer(){
+  if(!hasProtocol) return null;
+  const base = await LodaProtocol.discoverEndpoint(ENDPOINT_CONFIG);
+  if(!base) return null;                 // файла нет, enabled:false или file://
+  const c = await LodaProtocol.getCount(base);
+  if(c === null) return null;            // адрес есть, но ноут не отвечает
+  return base;
+}
+
+async function init(){
+  if(!modulesReady){
+    nowEl.textContent = 'Модули движка не загрузились. На рабочем сайте консоль оживёт, когда loda.js, miner.js, targets.js и данные лежат рядом по своим папкам.';
+    runBtn.disabled = true;
+    runBtn.style.opacity = '0.5';
+    runBtn.style.cursor = 'not-allowed';
+    return;
+  }
+  runBtn.addEventListener('click', () => { running ? stopSearch() : startSearch(); });
+
+  SERVER = await detectServer();
+  setSource();
+  if(SERVER){
+    updateCountFromServer();
+    const ok = await fetchServerTarget();
+    if(!ok){ SERVER = null; setSource(); pickLocalTarget(); }
+  }else{
+    pickLocalTarget();
+  }
+}
+init();
 </script>
 </body>
 </html>

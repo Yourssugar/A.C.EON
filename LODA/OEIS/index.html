@@ -288,6 +288,7 @@ footer{padding:44px 0 68px;color:var(--dim);font-size:14px;font-family:var(--mon
 <script src="../engine/targets.js"></script>
 <script src="../engine/protocol.js"></script>
 <script src="../data/oeis-sample.js"></script>
+<script src="../data/seqlib.js"></script>
 <script>
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -344,6 +345,7 @@ const MINE_TERMS = 12;
 const modulesReady = !!(window.LodaMiner && window.LodaTargets && window.LODA_BUNDLE);
 const hasProtocol = !!window.LodaProtocol;
 const loader = modulesReady ? LodaTargets.Loader(window.LODA_BUNDLE) : null;
+const SEQLIB = (modulesReady && window.LODA_SEQLIB) ? LodaMiner.buildSeqlib(window.LODA_SEQLIB) : null;
 const ENDPOINT_CONFIG = '../data/endpoint.json';
 const USER_ID = 'web-' + Math.random().toString(36).slice(2, 10);
 
@@ -512,7 +514,7 @@ async function startSearch(){
   if(!running) return; // вдруг остановили, пока ждали сеть
 
   curNeed = current.terms.length;
-  miner = LodaMiner.mine({ offset: current.offset, terms: current.terms }, { seed: current.seed });
+  miner = LodaMiner.mine({ offset: current.offset, terms: current.terms }, { seed: current.seed, seqlib: SEQLIB });
   shownDepth = 0;
   consoleEl.classList.remove('done');
   logEl.innerHTML = '<div class="empty">Совпадения будут появляться здесь по мере роста глубины.</div>';

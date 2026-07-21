@@ -43,6 +43,7 @@ const DEFAULTS = {
   freshBurst: 45,       // сколько случайных впрыснуть при застое
   loopChance: 0.28,     // доля программ с циклом
   seqChance: 0.15,      // доля инструкций seq, когда опорный набор подан
+  seenMax: 300000,      // потолок памяти дедупа: скользящее окно (полное окно ~55 МБ, не течёт на долгом счёте)
   runOptions: { maxSteps: 1500, maxBits: 256 } // на майнинге хватает: цели короткие, а тяжёлых кандидатов быстро отбраковываем
 };
 
@@ -235,7 +236,18 @@ function mine(target, options){
   const rng = seededRandom((options && options.seed) || 1);
 
   let beam = [];               // [{prog, depth, text, tries}]
-  const seen = new Set();      // дедуп по тексту программы
+  // дедуп по тексту программы со скользящим окном: два поколения множеств.
+  // когда свежее наполняется до потолка, оно становится старым, а старое
+  // выбрасывается. так память не растёт бесконечно на долгом счёте.
+  let seen = new Set();
+  let seenOld = new Set();
+  const seenMax = opts.seenMax;
+  function seenHasOrAdd(text){
+    if(seen.has(text) || seenOld.has(text)) return true;
+    if(seen.size >= seenMax){ seenOld = seen; seen = new Set(); }
+    seen.add(text);
+    return false;
+  }
   let attempts = 0;
   let best = { prog: null, depth: -1, text: '' };
   let found = null;
@@ -244,8 +256,7 @@ function mine(target, options){
   function consider(prog){
     prog.offset = offset; // найденная программа должна нести то же смещение, что и цель
     const text = serialize(prog);
-    if(seen.has(text)) return null;
-    seen.add(text);
+    if(seenHasOrAdd(text)) return null;
     attempts++;
     const depth = depthOf(prog, offset, seq, runOptions);
     if(depth < 0) return null;

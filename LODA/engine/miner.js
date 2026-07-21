@@ -299,7 +299,20 @@ function mine(target, options){
     return { attempts, best: { depth: best.depth, text: best.text, need }, found };
   }
 
-  return { step, get attempts(){ return attempts; }, get best(){ return best; }, get found(){ return found; } };
+  function addSeeds(texts){
+    // засев beam готовыми программами (затравками с сервера): развиваем чужое,
+    // а не начинаем с чистого листа. Кривую затравку молча пропускаем.
+    if(!texts || !texts.length) return;
+    for(const text of texts){
+      try {
+        const p = LODA.parse(text);
+        consider({ instrs: p.instrs, offset: offset });
+      } catch(e){ /* пропускаем */ }
+    }
+  }
+  addSeeds(opts.seeds);
+
+  return { step, addSeeds, get attempts(){ return attempts; }, get best(){ return best; }, get found(){ return found; } };
 }
 
 /* удобная обёртка для тестов и node: гонять до находки или до предела попыток */

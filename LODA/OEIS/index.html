@@ -342,16 +342,16 @@ document.querySelectorAll('.more-head').forEach(btn=>{
   bindCollapsible(btn, body, {open:'Подробнее', close:'Свернуть'});
 });
 
-/* Консоль: непрерывный счёт по таймеру с обменом с узлом между раундами.
-   Узел включён — задания и затравки приходят с него, лучшие недолёты уходят
-   обратно, счётчик тянется с сервера. Узел выключен — локальный демо-набор.
-   Поставил время и можешь уходить: майнер сам ходит на сервер и сам остановится. */
+/* Консоль: непрерывный счёт по таймеру, тяжёлый перебор в фоновом воркере.
+   Узел включён — задания и затравки с него, лучшие недолёты уходят обратно.
+   Узел выключен — локальный демо-набор. Поставил время и можешь уходить.
+   Воркер держит счёт в фоне; если браузер его не даёт (file://), откат на вкладку. */
 
 const DEMO_IDS = ['A000290','A000578','A005843','A005408'];
 const MINE_TERMS = 12;
-const ROUND_ATTEMPTS = 150000;   // сколько считать между обменами с узлом
-const LOCAL_ROUND = 150000;      // локально: через столько берём следующий демо-ряд
-const SUBMIT_COOLDOWN = 5000;    // не чаще раза в 5 секунд шлём недолёт
+const ROUND_ATTEMPTS = 150000;
+const LOCAL_ROUND = 150000;
+const SUBMIT_COOLDOWN = 5000;
 
 const modulesReady = !!(window.LodaMiner && window.LodaTargets && window.LODA_BUNDLE);
 const hasProtocol = !!window.LodaProtocol;
@@ -368,7 +368,6 @@ const consoleEl = document.getElementById('console');
 const stateEl = document.getElementById('console-state');
 const nowEl = document.getElementById('now');
 const logEl = document.getElementById('log');
-const foundVerdict = document.getElementById('found-verdict');
 const attemptsEl = document.getElementById('stat-attempts');
 const bestEl = document.getElementById('stat-best');
 const speedEl = document.getElementById('stat-speed');
@@ -376,12 +375,15 @@ const timeEl = document.getElementById('stat-time');
 const runBtn = document.getElementById('run-btn');
 
 let SERVER = null, current = null, curNeed = MINE_TERMS;
-let miner = null, running = false;
-let deadline = 0, timerMs = 15 * 60000;
+let running = false, deadline = 0, timerMs = 15 * 60000;
 let broughtDepth = 0, lastSubmit = 0, lastRoundAt = 0;
 let lastMinerAttempts = 0, sessionAttempts = 0, shownDepth = 0;
 let speedMark = { t: 0, n: 0 };
-let rafId = null, timerId = null;
+let syncing = false, solving = false, uiIntervalId = null;
+
+/* движок счёта: воркер (фон) или запасной цикл во вкладке */
+let useWorker = (typeof Worker !== 'undefined');
+let worker = null, pageMiner = null, pageLoopId = null;
 
 /* нагрузка на процессор */
 const coresDetected = (navigator.hardwareConcurrency && navigator.hardwareConcurrency > 0) ? navigator.hardwareConcurrency : null;
@@ -409,7 +411,7 @@ if(coresDetected){
   loadText.textContent = 'Поиск считает на процессоре. Число ядер определить автоматически не вышло, поэтому задай нагрузку вручную.';
 }
 updateLoadLabel();
-loadRange.addEventListener('input', updateLoadLabel);
+loadRange.addEventListener('input', function(){ updateLoadLabel(); engineSetLoad(); });
 
 /* таймер */
 const timeRange = document.getElementById('time-range');
@@ -426,7 +428,6 @@ function updateTimeLabel(){
   if(!running) runBtn.textContent = 'Запустить на ' + formatMinutes(min);
 }
 timeRange.addEventListener('input', updateTimeLabel);
-
 function formatRemaining(ms){
   if(ms < 0) ms = 0;
   const total = Math.round(ms / 1000);
@@ -434,12 +435,58 @@ function formatRemaining(ms){
   return m > 0 ? (m + ' м ' + s + ' с') : (s + ' с');
 }
 
-function scheduleTick(){
-  if(loadFraction >= 0.99) rafId = requestAnimationFrame(function(){ tick(); });
-  else timerId = setTimeout(function(){ tick(); }, Math.round((1/loadFraction - 1) * 14));
+/* ── движок: воркер с откатом на вкладку ── */
+function initWorker(){
+  if(!useWorker) return;
+  try {
+    worker = new Worker('../engine/miner-worker.js');
+    worker.onmessage = function(e){ if(e.data && e.data.type === 'progress') onProgress(e.data); };
+    worker.onerror = function(){
+      // воркер не завёлся (например, открыто через file://) — откат на счёт во вкладке
+      useWorker = false; worker = null;
+      if(running) startEngineForCurrent();
+    };
+    worker.postMessage({ type: 'init', seqlibText: window.LODA_SEQLIB || '' });
+    worker.postMessage({ type: 'load', fraction: loadFraction });
+  } catch(e){ useWorker = false; worker = null; }
 }
-function clearSchedule(){ cancelAnimationFrame(rafId); clearTimeout(timerId); }
+function engineSetLoad(){
+  if(useWorker && worker) worker.postMessage({ type: 'load', fraction: loadFraction });
+}
+function startEngineForCurrent(){
+  curNeed = current.terms.length;
+  lastMinerAttempts = 0; lastRoundAt = 0; shownDepth = 0;
+  logEl.innerHTML = '<div class="empty">Совпадения будут появляться здесь по мере роста глубины.</div>';
+  bestEl.textContent = '0 / ' + curNeed;
+  if(useWorker && worker){
+    worker.postMessage({ type: 'build', offset: current.offset, terms: current.terms, seed: current.seed, seeds: current.seeds || [] });
+  } else {
+    pageMiner = LodaMiner.mine({ offset: current.offset, terms: current.terms }, { seed: current.seed, seqlib: SEQLIB, seeds: current.seeds || [] });
+    bestEl.textContent = (pageMiner.best.depth > 0 ? pageMiner.best.depth : 0) + ' / ' + curNeed;
+    if(!pageLoopId) pageLoopRun();
+  }
+}
+function engineAddSeeds(seeds){
+  if(useWorker && worker) worker.postMessage({ type: 'addSeeds', seeds: seeds });
+  else if(pageMiner) pageMiner.addSeeds(seeds);
+}
+function engineStop(){
+  if(useWorker && worker) worker.postMessage({ type: 'stop' });
+  if(pageLoopId){ cancelAnimationFrame(pageLoopId); clearTimeout(pageLoopId); pageLoopId = null; }
+  pageMiner = null;
+}
+function pageLoopRun(){
+  if(!running || useWorker){ pageLoopId = null; return; }
+  if(pageMiner && !solving){
+    const budget = Math.max(20, Math.round(60 * loadFraction));
+    const r = pageMiner.step(budget);
+    onProgress({ attempts: r.attempts, depth: (r.best.depth < 0 ? 0 : r.best.depth), text: r.best.text, found: r.found ? r.found.text : null });
+  }
+  if(loadFraction >= 0.99) pageLoopId = requestAnimationFrame(pageLoopRun);
+  else pageLoopId = setTimeout(pageLoopRun, Math.round((1/loadFraction - 1) * 14));
+}
 
+/* ── цель ── */
 function showTarget(){
   targetId.textContent = current.id;
   targetId.href = 'https://oeis.org/' + current.id;
@@ -466,7 +513,7 @@ async function fetchServerTarget(){
 }
 async function switchServerTask(){
   const task = await LodaProtocol.getTask(SERVER);
-  if(task && task.seq_id){ applyServerTask(task); buildMinerForCurrent(); }
+  if(task && task.seq_id){ applyServerTask(task); startEngineForCurrent(); }
 }
 async function updateCountFromServer(){
   if(!SERVER) return;
@@ -474,17 +521,7 @@ async function updateCountFromServer(){
   if(c && typeof c.found === 'number') countEl.textContent = c.found.toLocaleString('ru-RU');
 }
 
-function buildMinerForCurrent(){
-  curNeed = current.terms.length;
-  miner = LodaMiner.mine({ offset: current.offset, terms: current.terms },
-                         { seed: current.seed, seqlib: SEQLIB, seeds: current.seeds || [] });
-  lastMinerAttempts = 0;
-  lastRoundAt = 0;
-  shownDepth = 0;
-  logEl.innerHTML = '<div class="empty">Совпадения будут появляться здесь по мере роста глубины.</div>';
-  bestEl.textContent = (miner.best.depth > 0 ? miner.best.depth : 0) + ' / ' + curNeed;
-}
-
+/* ── лог ── */
 function pushDiscovery(text, depth){
   if(logEl.querySelector('.empty')) logEl.innerHTML = '';
   const row = document.createElement('div');
@@ -502,112 +539,111 @@ function pushSolved(id, text){
   while(logEl.children.length > 8) logEl.removeChild(logEl.lastChild);
 }
 
-function renderStats(r){
-  sessionAttempts += (r.attempts - lastMinerAttempts);
-  lastMinerAttempts = r.attempts;
+/* ── прогресс от движка (воркер или вкладка) ── */
+function onProgress(msg){
+  sessionAttempts += Math.max(0, msg.attempts - lastMinerAttempts);
+  lastMinerAttempts = msg.attempts;
   attemptsEl.textContent = sessionAttempts.toLocaleString('ru-RU');
-  const bd = r.best.depth < 0 ? 0 : r.best.depth;
+  const bd = msg.depth || 0;
   bestEl.textContent = bd + ' / ' + curNeed;
-  if(r.best.depth > shownDepth && r.best.text){ shownDepth = r.best.depth; pushDiscovery(r.best.text, r.best.depth); }
-  if(!reduceMotion && r.best.text){ nowEl.innerHTML = '<b>лучшее пока</b> <span class="d">' + r.best.text.replace(/\n/g, '  ') + '</span>'; }
+  if(bd > shownDepth && msg.text){ shownDepth = bd; pushDiscovery(msg.text, bd); }
+  if(!reduceMotion && msg.text){ nowEl.innerHTML = '<b>лучшее пока</b> <span class="d">' + msg.text.replace(/\n/g, '  ') + '</span>'; }
   const now = performance.now();
   if(now - speedMark.t >= 500){
     const sp = (sessionAttempts - speedMark.n) / ((now - speedMark.t) / 1000);
     speedEl.textContent = Math.round(sp).toLocaleString('ru-RU') + '/с';
     speedMark = { t: now, n: sessionAttempts };
   }
-  timeEl.textContent = formatRemaining(deadline - now);
+
+  if(msg.found){
+    if(!solving){ solving = true; onSolved(msg.found).then(function(){ solving = false; }); }
+    return;
+  }
+  if(SERVER){
+    const improved = bd > broughtDepth;
+    if(!syncing && ((improved && now - lastSubmit >= SUBMIT_COOLDOWN) || (msg.attempts - lastRoundAt >= ROUND_ATTEMPTS))){
+      lastRoundAt = msg.attempts;
+      doServerSync(msg.text, bd);
+    }
+  } else if(msg.attempts - lastRoundAt >= LOCAL_ROUND){
+    lastRoundAt = msg.attempts;
+    pickLocalTarget(); startEngineForCurrent();
+  }
 }
 
-async function onSolved(found){
-  pushSolved(current.id, found.text);
+async function doServerSync(bestText, bd){
+  syncing = true;
+  try {
+    if(bd > broughtDepth && bestText){
+      lastSubmit = performance.now();
+      const res = await LodaProtocol.submitNearmiss(SERVER, { seq_id: current.id, program: bestText, seed: current.seed, user: USER_ID });
+      if(res){
+        if(res.solved){ updateCountFromServer(); await switchServerTask(); return; }
+        if(res.stale_task){ await switchServerTask(); return; }
+        if(typeof res.best_depth === 'number') broughtDepth = Math.max(broughtDepth, res.best_depth);
+      }
+    }
+    const task = await LodaProtocol.getTask(SERVER);
+    if(task && task.seq_id){
+      if(task.seq_id !== current.id){ applyServerTask(task); startEngineForCurrent(); }
+      else { if(task.seeds && task.seeds.length) engineAddSeeds(task.seeds); broughtDepth = Math.max(broughtDepth, task.best_depth || 0); }
+    }
+  } catch(e){ /* сетевой сбой глотаем, продолжаем считать */ }
+  finally { syncing = false; }
+}
+
+async function onSolved(foundText){
+  pushSolved(current.id, foundText);
   if(SERVER){
-    await LodaProtocol.submitNearmiss(SERVER, { seq_id: current.id, program: found.text, seed: current.seed, user: USER_ID });
+    await LodaProtocol.submitNearmiss(SERVER, { seq_id: current.id, program: foundText, seed: current.seed, user: USER_ID });
     updateCountFromServer();
     await switchServerTask();
-  }else{
-    pickLocalTarget(); buildMinerForCurrent();
+  } else {
+    pickLocalTarget(); startEngineForCurrent();
   }
 }
 
-async function doServerSync(r){
-  lastRoundAt = r.attempts;
-  // отправляем свой лучший недолёт, если он глубже принесённого с сервера
-  if(r.best.depth > broughtDepth && r.best.text){
-    lastSubmit = performance.now();
-    const res = await LodaProtocol.submitNearmiss(SERVER, { seq_id: current.id, program: r.best.text, seed: current.seed, user: USER_ID });
-    if(res){
-      if(res.solved){ updateCountFromServer(); await switchServerTask(); return; }
-      if(res.stale_task){ await switchServerTask(); return; }
-      if(typeof res.best_depth === 'number') broughtDepth = Math.max(broughtDepth, res.best_depth);
-    }
-  }
-  // забираем свежие затравки
-  const task = await LodaProtocol.getTask(SERVER);
-  if(task && task.seq_id){
-    if(task.seq_id !== current.id){ applyServerTask(task); buildMinerForCurrent(); }
-    else { if(task.seeds && task.seeds.length) miner.addSeeds(task.seeds); broughtDepth = Math.max(broughtDepth, task.best_depth || 0); }
-  }
-}
-
-async function tick(){
-  if(!running) return;
-  const budget = Math.max(20, Math.round(60 * loadFraction));
-  const r = miner.step(budget);
-  renderStats(r);
-
-  if(r.found){ await onSolved(r.found); if(!running) return; scheduleTick(); return; }
-
-  const now = performance.now();
-  if(SERVER){
-    const improved = r.best.depth > broughtDepth;
-    if((improved && now - lastSubmit >= SUBMIT_COOLDOWN) || (r.attempts - lastRoundAt >= ROUND_ATTEMPTS)){
-      await doServerSync(r);
-      if(!running) return;
-    }
-  }else if(r.attempts - lastRoundAt >= LOCAL_ROUND){
-    pickLocalTarget(); buildMinerForCurrent();
-  }
-
-  if(now >= deadline){ finishRun('время вышло', 'Счёт остановлен по таймеру. Можно запустить снова.'); return; }
-  scheduleTick();
-}
-
+/* ── запуск и остановка ── */
 async function startRun(){
   running = true;
   sessionAttempts = 0; lastMinerAttempts = 0; speedMark = { t: performance.now(), n: 0 };
-  lastSubmit = 0;
+  lastSubmit = 0; syncing = false; solving = false;
   deadline = performance.now() + timerMs;
   consoleEl.classList.add('run'); consoleEl.classList.remove('done');
   stateEl.textContent = SERVER ? 'беру задание с узла' : 'перебор идёт';
   runBtn.textContent = 'Остановить'; runBtn.classList.add('stop');
 
-  if(SERVER){
-    const ok = await fetchServerTarget();
-    if(!ok){ SERVER = null; setSource(); pickLocalTarget(); }
-  }else{
-    pickLocalTarget();
-  }
+  if(SERVER){ const ok = await fetchServerTarget(); if(!ok){ SERVER = null; setSource(); pickLocalTarget(); } }
+  else pickLocalTarget();
   if(!running) return;
-  buildMinerForCurrent();
   stateEl.textContent = 'перебор идёт';
   attemptsEl.textContent = '0'; speedEl.textContent = '0/с'; timeEl.textContent = formatRemaining(timerMs);
-  scheduleTick();
+  startEngineForCurrent();
+  startUiTimer();
 }
-
+function startUiTimer(){
+  clearInterval(uiIntervalId);
+  uiIntervalId = setInterval(function(){
+    if(!running){ clearInterval(uiIntervalId); return; }
+    const now = performance.now();
+    timeEl.textContent = formatRemaining(deadline - now);
+    if(now >= deadline) finishRun('время вышло', 'Счёт остановлен по таймеру. Можно запустить снова.');
+  }, 250);
+}
 function finishRun(state, note){
-  running = false; clearSchedule();
+  running = false;
+  engineStop();
+  clearInterval(uiIntervalId);
   consoleEl.classList.remove('run');
   stateEl.textContent = state;
   nowEl.textContent = note;
-  updateTimeLabel(); // вернуть кнопке подпись "Запустить на ..."
+  updateTimeLabel();
   runBtn.classList.remove('stop');
 }
 
 function setSource(){
   sourceLabel.textContent = SERVER ? 'источник: узел A.C.EON' : 'источник: локально';
 }
-
 async function detectServer(){
   if(!hasProtocol) return null;
   const base = await LodaProtocol.discoverEndpoint(ENDPOINT_CONFIG);
@@ -624,6 +660,7 @@ async function init(){
     return;
   }
   updateTimeLabel();
+  initWorker();
   runBtn.addEventListener('click', function(){ running ? finishRun('остановлено', 'Поиск остановлен. Можно запустить снова.') : startRun(); });
 
   SERVER = await detectServer();

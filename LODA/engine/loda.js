@@ -168,12 +168,15 @@ function makeMachine(instrs, options){
   const maxBits = options.maxBits || 4096; // предел величины значения, дальше считаем переполнением
   const seqResolver = options.seq || null;
   const mem = new Map();
+  const MAXV = ONE << BigInt(maxBits); // 2^maxBits: значение с модулем не меньше этого считаем переполнением
 
   function get(i){ const v = mem.get(i); return v === undefined ? ZERO : v; }
   function set(i, v){
-    if(v > ZERO && v.toString(2).length > maxBits) throw runtimeError('переполнение');
-    if(v < ZERO && (-v).toString(2).length > maxBits) throw runtimeError('переполнение');
-    if(v === ZERO) mem.delete(i); else mem.set(i, v);
+    if(v === ZERO){ mem.delete(i); return; }
+    // дешёвая проверка переполнения: сравнение с порогом, без построения двоичной строки на каждую запись
+    const av = v < ZERO ? -v : v;
+    if(av >= MAXV) throw runtimeError('переполнение');
+    mem.set(i, v);
   }
   function address(op){
     let addr = op.base;

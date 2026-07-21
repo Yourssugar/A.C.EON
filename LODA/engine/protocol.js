@@ -50,7 +50,18 @@ async function getCount(base){
   } catch(e){ return null; }
 }
 
-const P = { discoverEndpoint, getTask, submitFinding, getCount };
+async function submitNearmiss(base, nearmiss){
+  try {
+    const res = await fetch(trim(base) + '/nearmiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nearmiss)
+    });
+    return await res.json();
+  } catch(e){ return null; }
+}
+
+const P = { discoverEndpoint, getTask, submitFinding, submitNearmiss, getCount };
 root.LodaProtocol = P;
 if(typeof module !== 'undefined' && module.exports) module.exports = P;
 

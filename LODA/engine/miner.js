@@ -36,9 +36,11 @@ const DEFAULTS = {
   maxCells: 4,          // ячейки $0..$3
   maxLen: 6,            // длина случайной программы
   consts: [-2n, -1n, 1n, 2n, 3n, 5n, 10n],
-  beamSize: 16,         // сколько лучших частичных совпадений держим
-  mutantsPer: 4,        // мутантов на одного члена beam за шаг
-  freshPer: 10,         // свежих случайных программ за шаг
+  beamSize: 24,         // сколько лучших частичных совпадений держим
+  freshPer: 6,          // свежих случайных программ за внешний цикл
+  exploitPer: 26,       // мутаций за цикл, распределяются в пользу глубоких
+  staleReset: 4000,     // попыток без роста глубины до впрыска свежей крови
+  freshBurst: 45,       // сколько случайных впрыснуть при застое
   loopChance: 0.28,     // доля программ с циклом
   seqChance: 0.15,      // доля инструкций seq, когда опорный набор подан
   runOptions: { maxSteps: 1500, maxBits: 256 } // на майнинге хватает: цели короткие, а тяжёлых кандидатов быстро отбраковываем
@@ -164,6 +166,13 @@ function mutateProgram(prog, rng, opts){
   return p;
 }
 
+function mutateProgramN(prog, rng, opts, k){
+  // несколько мелких мутаций подряд дают более крупный прыжок, помогает уйти с плато
+  let p = prog;
+  for(let i = 0; i < k; i++) p = mutateProgram(p, rng, opts);
+  return p;
+}
+
 function linkLoops(prog){
   // проставляем lpb.lpeIp и проверяем баланс скобок; кривые программы отбрасываем
   const stack = [];
@@ -225,37 +234,66 @@ function mine(target, options){
   const need = seq.length;
   const rng = seededRandom((options && options.seed) || 1);
 
-  let beam = [];               // [{prog, depth, text}]
+  let beam = [];               // [{prog, depth, text, tries}]
   const seen = new Set();      // дедуп по тексту программы
   let attempts = 0;
   let best = { prog: null, depth: -1, text: '' };
   let found = null;
+  let lastImprove = 0;         // на какой попытке в последний раз росла глубина
 
   function consider(prog){
     prog.offset = offset; // найденная программа должна нести то же смещение, что и цель
     const text = serialize(prog);
-    if(seen.has(text)) return;
+    if(seen.has(text)) return null;
     seen.add(text);
     attempts++;
     const depth = depthOf(prog, offset, seq, runOptions);
-    if(depth < 0) return;
-    if(depth > best.depth){ best = { prog, depth, text }; }
-    if(depth === need){ found = { prog, text, terms: need }; return; }
+    if(depth < 0) return null;
+    if(depth > best.depth){ best = { prog, depth, text }; lastImprove = attempts; }
+    if(depth === need){ found = { prog, text, terms: need }; return null; }
     if(depth > 0){
-      beam.push({ prog, depth, text });
+      const entry = { prog, depth, text, tries: 0 };
+      beam.push(entry);
       beam.sort((a, b) => b.depth - a.depth);
       if(beam.length > opts.beamSize) beam.length = opts.beamSize;
+      return entry;
     }
+    return null;
+  }
+
+  function weightedPick(){
+    // выбираем кандидата с уклоном к глубоким: вес это квадрат глубины
+    let total = 0;
+    for(const e of beam) total += e.depth * e.depth;
+    let r = rng() * total;
+    for(const e of beam){ r -= e.depth * e.depth; if(r <= 0) return e; }
+    return beam[0];
   }
 
   function step(budget){
     const stopAt = attempts + (budget || 300);
     while(attempts < stopAt && !found){
+      // немного свежей крови для разнообразия
       for(let i = 0; i < opts.freshPer && !found; i++) consider(randomProgram(rng, opts));
-      for(let b = 0; b < beam.length && !found; b++){
-        for(let m = 0; m < opts.mutantsPer && !found; m++){
-          consider(mutateProgram(beam[b].prog, rng, opts));
-        }
+      if(found) break;
+
+      // застой: давно нет роста глубины — впрыскиваем случайных и чистим самых застоявшихся
+      if(attempts - lastImprove > opts.staleReset){
+        for(let i = 0; i < opts.freshBurst && !found; i++) consider(randomProgram(rng, opts));
+        beam.sort((a, b) => (b.depth - a.depth) || (a.tries - b.tries));
+        beam.length = Math.min(beam.length, Math.max(3, opts.beamSize >> 1));
+        lastImprove = attempts; // чтобы не впрыскивать каждый шаг подряд
+      }
+      if(!beam.length || found) continue;
+
+      // направленная эксплуатация: мутируем, отдавая предпочтение глубоким кандидатам
+      for(let e = 0; e < opts.exploitPer && !found; e++){
+        const parent = weightedPick();
+        parent.tries++;
+        // глубокий кандидат иногда получает крупную мутацию, чтобы выпрыгнуть с плато
+        const big = parent.depth >= 4 && chance(rng, 0.3);
+        const k = big ? (2 + ((rng() * 2) | 0)) : 1;
+        consider(mutateProgramN(parent.prog, rng, opts, k));
       }
     }
     return { attempts, best: { depth: best.depth, text: best.text, need }, found };

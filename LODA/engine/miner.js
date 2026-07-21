@@ -174,6 +174,30 @@ function mutateProgramN(prog, rng, opts, k){
   return p;
 }
 
+const OP_INDEX = (function(){
+  const list = ['mov','add','sub','trn','mul','div','dif','dir','mod','pow','bin','fac','gcd','lex','log','nrt','dgs','dgr','equ','neq','leq','geq','min','max','ban','bor','bxo','clr','fil','rol','ror','seq','lpb','lpe'];
+  const m = {}; for(let i = 0; i < list.length; i++) m[list[i]] = i + 1; return m;
+})();
+function hashMix(h, x){ h ^= (x | 0); h = Math.imul(h, 0x01000193); return h >>> 0; }
+function hashOperand(h, o){
+  if(!o) return hashMix(h, 0);
+  if(o.kind === 'const'){ h = hashMix(h, 1); return hashMix(h, Number(o.value) | 0); }
+  h = hashMix(h, 2 + (o.deref || 1)); return hashMix(h, o.base || 0);
+}
+function hashProg(instrs){
+  // дешёвый структурный хэш вместо построения текста на каждого кандидата.
+  // редкие коллизии просто пропускают одного кандидата, это безвредно.
+  let h = 0x811c9dc5;
+  for(let k = 0; k < instrs.length; k++){
+    const inst = instrs[k];
+    h = hashMix(h, OP_INDEX[inst.op] || 0);
+    h = hashOperand(h, inst.target);
+    h = hashOperand(h, inst.source);
+    if(inst.op === 'lpb') h = hashOperand(h, inst.lenOp);
+  }
+  return h >>> 0;
+}
+
 function linkLoops(prog){
   // проставляем lpb.lpeIp и проверяем баланс скобок; кривые программы отбрасываем
   const stack = [];
@@ -255,15 +279,16 @@ function mine(target, options){
 
   function consider(prog){
     prog.offset = offset; // найденная программа должна нести то же смещение, что и цель
-    const text = serialize(prog);
-    if(seenHasOrAdd(text)) return null;
+    if(seenHasOrAdd(hashProg(prog.instrs))) return null;
     attempts++;
     const depth = depthOf(prog, offset, seq, runOptions);
     if(depth < 0) return null;
-    if(depth > best.depth){ best = { prog, depth, text }; lastImprove = attempts; }
-    if(depth === need){ found = { prog, text, terms: need }; return null; }
+    let text = null;
+    const textOf = function(){ if(text === null) text = serialize(prog); return text; };
+    if(depth > best.depth){ best = { prog, depth, text: textOf() }; lastImprove = attempts; }
+    if(depth === need){ found = { prog, text: textOf(), terms: need }; return null; }
     if(depth > 0){
-      const entry = { prog, depth, text, tries: 0 };
+      const entry = { prog, depth, text: textOf(), tries: 0 };
       beam.push(entry);
       beam.sort((a, b) => b.depth - a.depth);
       if(beam.length > opts.beamSize) beam.length = opts.beamSize;

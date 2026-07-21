@@ -40,6 +40,7 @@ const DEFAULTS = {
   mutantsPer: 4,        // мутантов на одного члена beam за шаг
   freshPer: 10,         // свежих случайных программ за шаг
   loopChance: 0.28,     // доля программ с циклом
+  seqChance: 0.15,      // доля инструкций seq, когда опорный набор подан
   runOptions: { maxSteps: 1500, maxBits: 256 } // на майнинге хватает: цели короткие, а тяжёлых кандидатов быстро отбраковываем
 };
 
@@ -63,7 +64,37 @@ function sourceOperand(rng, opts){
     ? { kind:'const', value: pick(rng, opts.consts) }
     : cellOperand(rng, opts);
 }
+function buildSeqlib(bundleText){
+  // разбираем опорные ряды и строим резолвер для операции seq.
+  // seq A,arg отдаёт arg-й член ряда A из этого набора; вне диапазона — ошибка,
+  // такой кандидат считается негодным (это правильно: мы не можем его проверить).
+  const map = {};
+  const ids = [];
+  String(bundleText).split('\n').forEach(function(raw){
+    const line = raw.trim();
+    if(line === '' || line[0] === '#') return;
+    const parts = line.split(/\s+/);
+    if(parts.length < 3) return;
+    const num = parseInt(parts[0].replace(/^A/, ''), 10);
+    const offset = parseInt(parts[1], 10);
+    const terms = parts[2].split(',').filter(function(x){ return x !== ''; }).map(function(x){ return BigInt(x); });
+    if(terms.length){ map[num] = { offset: offset, terms: terms }; ids.push(num); }
+  });
+  function resolve(id, arg){
+    const e = map[id];
+    if(!e) throw new Error('нет опорного ряда ' + id);
+    const idx = Number(arg) - e.offset;
+    if(idx < 0 || idx >= e.terms.length) throw new Error('индекс seq вне диапазона');
+    return e.terms[idx];
+  }
+  return { resolve: resolve, ids: ids };
+}
+
 function bodyInstruction(rng, opts){
+  // если подан опорный набор, иногда генерируем seq A,$x как готовый кирпич
+  if(opts.seqIds && opts.seqIds.length && chance(rng, opts.seqChance)){
+    return { op:'seq', target: cellOperand(rng, opts), source: { kind:'const', value: BigInt(pick(rng, opts.seqIds)) } };
+  }
   return { op: pick(rng, BODY_OPS), target: cellOperand(rng, opts), source: sourceOperand(rng, opts) };
 }
 
@@ -113,7 +144,7 @@ function mutateProgram(prog, rng, opts){
     else t.source = sourceOperand(rng, opts);
   } else if(roll < 0.75 && body.length){
     // подправить константу на единицу
-    const cands = body.filter(x => x.inst.source && x.inst.source.kind === 'const');
+    const cands = body.filter(x => x.inst.source && x.inst.source.kind === 'const' && x.inst.op !== 'seq');
     if(cands.length){
       const s = pick(rng, cands).inst.source;
       s.value = s.value + (chance(rng, 0.5) ? 1n : -1n);
@@ -185,7 +216,9 @@ function matchDepth(prog, target, runOptions){
 
 function mine(target, options){
   const opts = Object.assign({}, DEFAULTS, options || {});
-  const runOptions = opts.runOptions;
+  const seqlib = opts.seqlib || null;
+  if(seqlib) opts.seqIds = seqlib.ids;                       // из чего генерировать seq
+  const runOptions = Object.assign({}, opts.runOptions, seqlib ? { seq: seqlib.resolve } : {});
   const t = normalizeTarget(target);
   const offset = t.offset;
   const seq = t.terms;
@@ -240,7 +273,7 @@ function search(target, options){
   return r;
 }
 
-const Miner = { mine, search, serialize, matchDepth, randomProgram, mutateProgram };
+const Miner = { mine, search, serialize, matchDepth, randomProgram, mutateProgram, buildSeqlib };
 global.LodaMiner = Miner;
 if(typeof module !== 'undefined' && module.exports) module.exports = Miner;
 

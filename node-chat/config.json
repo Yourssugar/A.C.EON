@@ -1,7 +1,7 @@
 {
-  "api_url": "https://assessing-asn-discharge-dayton.trycloudflare.com",
+  "api_url": "",
   "name": "NODE",
   "model": "gpt-5.4-mini",
-  "enabled": true,
-  "updated": "2026-07-19 10:23:27"
+  "enabled": false,
+  "updated": "2026-08-01 06:08:59"
 }

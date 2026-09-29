@@ -1,7 +1,7 @@
 {
-  "api_url": "https://consultancy-moore-plants-bikes.trycloudflare.com",
+  "api_url": "",
   "name": "NODE",
   "model": "gpt-5.4-mini",
-  "enabled": true,
-  "updated": "2026-09-29 16:43:09"
+  "enabled": false,
+  "updated": "2026-09-29 16:43:46"
 }

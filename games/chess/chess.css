@@ -1,0 +1,239 @@
+/* A.C.EON CHESS: раскладка страницы, доска, панели */
+
+body{display:flex;flex-direction:column;}
+
+.ch-layout{
+  flex:1;min-height:0;display:grid;gap:14px;padding:12px;
+  grid-template-columns:minmax(200px,250px) minmax(0,1fr) minmax(200px,250px);
+  grid-template-areas:"left center right";
+  height:calc(100dvh - var(--top-h));
+}
+.ch-left{grid-area:left;display:flex;flex-direction:column;gap:12px;min-height:0;}
+.ch-center{grid-area:center;display:flex;flex-direction:column;align-items:center;gap:10px;min-height:0;min-width:0;}
+.ch-right{grid-area:right;display:flex;flex-direction:column;align-items:center;gap:14px;min-height:0;}
+
+.panel{
+  background:linear-gradient(160deg,#04101e,#020810);
+  border:2px solid var(--bdr);border-left:3px solid var(--pri);
+  box-shadow:0 0 22px rgba(0,229,255,.12),inset 0 0 26px rgba(0,0,0,.5);
+}
+.panel-title{font-size:8px;letter-spacing:3px;color:var(--pri);text-shadow:0 0 8px rgba(0,229,255,.6);
+  padding:11px 10px 9px;text-align:center;border-bottom:1px solid #002a44;}
+.panel-body{padding:10px;display:flex;flex-direction:column;gap:7px;}
+.mode-btn{width:100%;text-align:left;}
+.mode-btn.aceon{border-color:var(--pink);color:var(--pink);}
+.mode-btn.aceon.sel,.mode-btn.aceon:hover{background:#200010;border-color:var(--pink);color:#ff7095;box-shadow:0 0 12px rgba(255,45,120,.35);}
+.side-info{font-size:7px;letter-spacing:1px;color:#6a93a8;text-align:center;line-height:1.8;}
+.btn-row{display:flex;gap:7px;}
+.btn-row .btn{flex:1;}
+
+/* статус над доской */
+#ch-msg{
+  width:100%;max-width:calc(100dvh - var(--top-h) - 80px);
+  padding:8px 12px;background:#001020;border:1px solid var(--bdr);border-left:3px solid var(--pri);
+  font-size:clamp(7px,1.4vw,9px);letter-spacing:1px;color:var(--pri);text-align:center;
+  text-shadow:0 0 6px rgba(0,229,255,.5);min-height:30px;
+}
+#ch-msg.check{color:var(--err);border-left-color:var(--err);}
+
+/* доска: размер считается CSS, без JS */
+.board-wrap{flex:1;min-height:0;width:100%;display:flex;align-items:flex-start;justify-content:center;container-type:size;}
+#ch-board{
+  width:min(100cqw,100cqh);aspect-ratio:1;
+  display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  border:5px solid #3a281a;box-shadow:0 8px 34px rgba(0,0,0,.6),0 0 0 2px #5a4128 inset;
+  container-type:inline-size;user-select:none;
+}
+.ch-cell{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.ch-light{background:#d4b87a;}
+.ch-dark{background:#8b5e3c;}
+.ch-sel{box-shadow:inset 0 0 0 3px #ffd23a,inset 0 0 14px rgba(255,210,58,.35);}
+.ch-hint::before{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,229,255,.45);z-index:3;}
+.ch-hint.ch-cap::before{width:86%;height:86%;background:transparent;box-sizing:border-box;border:3px solid rgba(0,229,255,.6);}
+.ch-check{background:radial-gradient(circle,rgba(255,51,68,.85) 0%,rgba(255,51,68,.35) 55%,transparent 75%);}
+.ch-cell.ch-last-h::after{content:'';position:absolute;inset:0;background:rgba(0,229,255,.32);pointer-events:none;}
+.ch-cell.ch-last-a::after{content:'';position:absolute;inset:0;background:rgba(255,45,120,.34);pointer-events:none;}
+.ch-cell.ch-last-h.ch-last-a::after{background:linear-gradient(135deg,rgba(0,229,255,.32) 0 50%,rgba(255,45,120,.34) 50% 100%);}
+.ch-piece{font-family:"Segoe UI Symbol","DejaVu Sans","Noto Sans Symbols 2",serif;font-size:10cqw;line-height:1;position:relative;z-index:2;pointer-events:none;}
+.ch-white{color:#fff;text-shadow:0 0 2px #000,0 1px 3px rgba(0,0,0,.8);}
+.ch-black{color:#111;text-shadow:0 0 2px rgba(255,255,255,.35);}
+.ch-lbl{position:absolute;font-family:Tahoma,Arial,sans-serif;font-size:2cqw;font-weight:bold;pointer-events:none;z-index:2;}
+.ch-lbl-r{top:3%;left:5%;}
+.ch-lbl-c{bottom:3%;right:6%;}
+.ch-light .ch-lbl{color:rgba(0,0,0,.45);}
+.ch-dark .ch-lbl{color:rgba(255,255,255,.45);}
+
+/* журнал ходов */
+#ch-movelog{flex:1;min-height:120px;display:flex;flex-direction:column;overflow:hidden;}
+.mlog-head{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;padding:7px 12px;font-size:6px;letter-spacing:1px;color:#4a7a90;border-bottom:1px solid #001a2e;}
+.mlog-body{flex:1;overflow-y:auto;padding:7px 12px 11px;scrollbar-width:thin;scrollbar-color:#003355 transparent;}
+.mlog-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;font-size:7px;line-height:2.2;letter-spacing:.5px;}
+.mlog-n{color:#3a6a80;}
+.mlog-w{color:#e6f2ff;}
+.mlog-b{color:#8fa6bb;}
+.mlog-last{color:#fff;text-shadow:0 0 8px #00e5ff;}
+.mlog-empty{font-size:7px;color:#2a5a70;letter-spacing:1px;text-align:center;padding-top:18px;line-height:2.2;}
+
+/* взятые фигуры */
+.captured{width:100%;}
+.cap-row{display:flex;flex-wrap:wrap;gap:2px;min-height:26px;padding:6px 10px;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:20px;line-height:1;}
+.cap-lbl{font-size:6px;letter-spacing:1px;color:#4a7a90;padding:8px 10px 0;}
+.cap-adv{font-family:var(--font);font-size:7px;color:var(--ok);align-self:center;margin-left:4px;}
+
+/* персонаж */
+#aceon-bot{display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;user-select:none;--bot-accent:#ff2d78;}
+.bot-sub{color:#9fb6c4;font-size:7px;letter-spacing:3px;}
+
+/* превращение пешки */
+#ch-promo-row{display:flex;gap:10px;justify-content:center;}
+.ch-promo-btn{width:clamp(54px,9vw,74px);height:clamp(54px,9vw,74px);background:#001020;border:2px solid var(--bdr);border-bottom:3px solid var(--pri-d);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,border-color .12s,transform .12s;}
+.ch-promo-btn:hover{background:var(--bdr);border-color:var(--pri);transform:translateY(-3px);box-shadow:0 0 16px rgba(0,229,255,.45);}
+.ch-promo-pc{font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:clamp(30px,5vw,46px);line-height:1;}
+.ch-promo-pc.ch-white{color:#fff;text-shadow:0 1px 2px #000,0 0 2px #000;}
+.ch-promo-pc.ch-black{color:#1a1a1a;text-shadow:0 0 7px rgba(255,255,255,.6);}
+
+/* выбор режима A.C.EON */
+.ai-title{font-size:clamp(11px,2.5vw,16px);color:var(--pink);text-shadow:0 0 20px var(--pink);margin-bottom:14px;letter-spacing:3px;}
+.ai-text{font-size:clamp(7px,1.5vw,10px);color:#aee9ff;line-height:2.1;margin-bottom:20px;letter-spacing:1px;}
+.ai-opts{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.ai-opt{padding:12px;text-align:left;white-space:normal;}
+.ai-opt-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:clamp(8px,1.5vw,10px);}
+.ai-opt-head small{font-size:clamp(6px,1.1vw,7px);opacity:.8;}
+.ai-opt-desc{font-size:clamp(6px,1.2vw,8px);color:#9fb6c4;line-height:1.7;}
+.ai-opt.pro{border-color:#00e5ff;color:#00e5ff;}
+.ai-opt.exp{border-color:#ff8800;color:#ff8800;}
+.ai-opt.gm{border-color:var(--pink);color:var(--pink);}
+.btn-ghost{color:#557;border-color:#1a0010;}
+#gm-modal .arc-box{border-color:#f00;background:#080000;box-shadow:0 0 80px rgba(255,0,0,.4);}
+.gm-title{font-size:clamp(9px,2vw,13px);color:#f00;text-shadow:0 0 24px #f00;margin-bottom:14px;letter-spacing:2px;animation:blink .5s step-end infinite;}
+.gm-text{font-size:clamp(7px,1.5vw,10px);color:#ffb3b3;line-height:2;margin-bottom:22px;letter-spacing:1px;}
+
+/* итоги партии */
+.ch-report-box{max-width:440px;}
+.ch-report-title{font-size:clamp(20px,5vw,34px);letter-spacing:5px;margin-bottom:8px;animation:repPulse 1.6s ease-in-out infinite;}
+.ch-report-title.win{color:var(--ok);text-shadow:0 0 18px var(--ok),0 0 44px rgba(0,255,136,.5);}
+.ch-report-title.lose{color:var(--err);text-shadow:0 0 18px var(--err),0 0 44px rgba(255,51,68,.5);}
+.ch-report-title.draw{color:var(--warn);text-shadow:0 0 18px var(--warn),0 0 44px rgba(255,184,48,.5);}
+@keyframes repPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);}}
+.ch-report-sub{font-size:clamp(7px,1.4vw,9px);letter-spacing:3px;color:#5a8aa0;margin-bottom:20px;}
+.ch-report-stats{display:flex;flex-direction:column;gap:7px;max-width:320px;margin:0 auto 22px;text-align:left;}
+.ch-rep-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 11px;background:#081420;border:1px solid #002a44;border-left:3px solid #00557a;}
+.ch-rep-k{font-size:7px;letter-spacing:1px;color:#6a93a8;}
+.ch-rep-v{font-size:8px;letter-spacing:1px;color:#cfeaff;text-align:right;}
+.ch-report-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+/* планшет: соперник и взятые фигуры уходят в левую колонку под журнал */
+@media (max-width:1100px){
+  .ch-layout{grid-template-columns:minmax(190px,240px) minmax(0,1fr);grid-template-areas:"left center" "right center";grid-template-rows:minmax(0,1fr) auto;}
+  #aceon-bot{zoom:.7;}
+  .ch-right{gap:8px;}
+}
+/* телефон: всё в одну колонку, доска сверху */
+@media (max-width:760px){
+  .ch-layout{display:flex;flex-direction:column;height:auto;padding:8px;gap:10px;}
+  .ch-layout>*{flex-shrink:0;}
+  .ch-center{order:1;}
+  .board-wrap{flex:none;height:auto;container-type:inline-size;}
+  #ch-board{width:100cqw;}
+  #ch-msg{max-width:none;}
+  .ch-left{order:2;}
+  .ch-right{order:3;}
+  #aceon-bot{display:none;}
+  #ch-movelog{max-height:200px;}
+  .mode-panel .panel-body{display:grid;grid-template-columns:1fr 1fr 1fr;}
+  .mode-panel .side-info,.mode-panel .btn-row{grid-column:1/-1;}
+}
+
+/* персонаж A.C.EON: перенесено из старого лаунчера без изменений */
+.bot-stage{position:relative;width:190px;height:178px;display:flex;align-items:center;justify-content:center;}
+.bot-core{position:relative;width:150px;height:165px;display:flex;align-items:center;justify-content:center;animation:botFloat 3.6s ease-in-out infinite;}
+@keyframes botFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+.bot-core::before{content:'';position:absolute;width:130%;height:130%;border-radius:50%;
+  background:radial-gradient(circle,var(--bot-accent) 0%,transparent 62%);
+  opacity:.18;filter:blur(6px);z-index:0;animation:botHalo 3.2s ease-in-out infinite;}
+@keyframes botHalo{0%,100%{opacity:.14;transform:scale(1);}50%{opacity:.30;transform:scale(1.06);}}
+
+.bot-ring{position:absolute;width:142px;height:142px;border-radius:50%;
+  border:2px dashed var(--bot-accent);opacity:0;z-index:0;}
+#aceon-bot.mood-thinking .bot-ring{opacity:.55;animation:botSpin 2.4s linear infinite;}
+@keyframes botSpin{to{transform:rotate(360deg);}}
+
+.bot-antenna{position:absolute;top:4px;left:50%;width:2px;height:18px;background:var(--bot-accent);
+  transform:translateX(-50%);box-shadow:0 0 6px var(--bot-accent);z-index:2;}
+.bot-antenna-dot{position:absolute;top:-7px;left:50%;width:9px;height:9px;border-radius:50%;
+  background:var(--bot-accent);transform:translateX(-50%);box-shadow:0 0 10px var(--bot-accent);
+  animation:botPulse 1.4s ease-in-out infinite;}
+@keyframes botPulse{0%,100%{opacity:1;transform:translateX(-50%) scale(1);}50%{opacity:.4;transform:translateX(-50%) scale(.7);}}
+
+.bot-face{position:relative;width:118px;height:112px;margin-top:14px;z-index:1;
+  background:linear-gradient(160deg,#0b0b1c,#020208);
+  border:2px solid var(--bot-accent);border-radius:20px 20px 26px 26px;
+  box-shadow:0 0 16px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  transition:box-shadow .2s,filter .2s;overflow:hidden;}
+.bot-face::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.18) 3px,rgba(0,0,0,.18) 4px);}
+
+.bot-eyes{display:flex;gap:24px;z-index:1;}
+.bot-eye{width:20px;height:20px;border-radius:50%;background:var(--bot-accent);
+  box-shadow:0 0 12px var(--bot-accent);animation:botBlink 4.5s infinite;}
+@keyframes botBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.12);}}
+
+.bot-mouth{display:flex;gap:4px;align-items:center;height:16px;z-index:1;}
+.bot-mouth span{width:5px;height:5px;border-radius:1px;background:var(--bot-accent);
+  box-shadow:0 0 6px var(--bot-accent);transition:height .15s;}
+
+.bot-name{color:var(--bot-accent);font-size:11px;letter-spacing:3px;text-shadow:0 0 10px var(--bot-accent);}
+.bot-sub{color:#9fb6c4;font-size:7px;letter-spacing:3px;}
+.bot-status{color:#d4ecff;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(0,229,255,.4);}
+
+.bot-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--bot-accent);
+  box-shadow:0 0 8px var(--bot-accent);opacity:.5;}
+.bot-particle.p1{top:16%;left:12%;animation:botDrift1 5s ease-in-out infinite;}
+.bot-particle.p2{top:30%;right:10%;animation:botDrift2 6.5s ease-in-out infinite;}
+.bot-particle.p3{bottom:20%;left:16%;animation:botDrift2 5.8s ease-in-out infinite;}
+.bot-particle.p4{bottom:28%;right:14%;animation:botDrift1 7s ease-in-out infinite;}
+@keyframes botDrift1{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(6px,-10px);opacity:.8;}}
+@keyframes botDrift2{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(-7px,-8px);opacity:.8;}}
+
+/* ── moods ── */
+#aceon-bot.mood-thinking .bot-eye{animation:botScan 1.1s ease-in-out infinite;}
+@keyframes botScan{0%,100%{transform:translateX(-3px) scaleY(.8);}50%{transform:translateX(3px) scaleY(.8);}}
+#aceon-bot.mood-thinking .bot-mouth span{animation:botEq .6s ease-in-out infinite;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(1){animation-delay:0s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(2){animation-delay:.1s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(3){animation-delay:.2s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(4){animation-delay:.15s;}
+#aceon-bot.mood-thinking .bot-mouth span:nth-child(5){animation-delay:.05s;}
+@keyframes botEq{0%,100%{height:4px;}50%{height:15px;}}
+#aceon-bot.mood-thinking #aceon-bot-status::after{content:'';animation:botDots 1.3s steps(1) infinite;}
+@keyframes botDots{0%{content:'';}25%{content:'.';}50%{content:'..';}75%{content:'...';}}
+
+#aceon-bot.mood-attack .bot-face{animation:botChomp .45s ease;box-shadow:0 0 30px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}
+#aceon-bot.mood-attack .bot-eye{height:7px;border-radius:2px;}
+#aceon-bot.mood-attack .bot-mouth span{height:13px;}
+@keyframes botChomp{0%,100%{transform:scale(1);}40%{transform:scale(1.12);}}
+
+#aceon-bot.mood-hurt .bot-core{animation:botShake .45s;}
+#aceon-bot.mood-hurt .bot-face{filter:brightness(.6);}
+@keyframes botShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
+
+#aceon-bot.mood-check .bot-face{animation:botMenace .7s ease infinite;}
+@keyframes botMenace{0%,100%{box-shadow:0 0 16px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}50%{box-shadow:0 0 40px var(--bot-accent),0 0 72px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}}
+#aceon-bot.mood-check .bot-eye{height:24px;border-radius:3px;}
+
+#aceon-bot.mood-aiChecked .bot-core{animation:botShake .35s 2;}
+
+#aceon-bot.mood-win .bot-core{animation:botWin .7s ease;}
+@keyframes botWin{0%{transform:translateY(0);}30%{transform:translateY(-22px) scale(1.06);}60%{transform:translateY(0);}80%{transform:translateY(-9px);}100%{transform:translateY(0);}}
+#aceon-bot.mood-win .bot-face{box-shadow:0 0 34px var(--bot-accent),inset 0 0 22px rgba(0,0,0,.7);}
+#aceon-bot.mood-win .bot-mouth span{height:13px;}
+
+#aceon-bot.mood-lose .bot-core{animation:botGlitch .12s steps(2) 6;}
+@keyframes botGlitch{0%{transform:translate(0,0);}25%{transform:translate(-4px,2px);}50%{transform:translate(3px,-2px);opacity:.7;}75%{transform:translate(-2px,-1px);}100%{transform:translate(0,0);}}
+#aceon-bot.mood-lose .bot-face{filter:hue-rotate(40deg) brightness(.8);}
+#aceon-bot.mood-lose .bot-eye{height:5px;border-radius:2px;}
+
+/* чёрные фигуры в блоке взятых: светлый контур, чтобы не терялись на тёмном фоне */
+.cap-row .ch-black{color:#0a0a0a;text-shadow:0 0 1px #cfe9ff,0 0 1px #cfe9ff,0 0 4px rgba(207,233,255,.5);}

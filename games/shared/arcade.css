@@ -79,3 +79,4 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 #arc-splash .sp-game{margin-top:16px;font-size:clamp(9px,2vw,12px);letter-spacing:10px;color:var(--pri-m);}
 #arc-splash .sp-start{margin-top:48px;font-size:clamp(9px,2.5vw,14px);color:#ffe600;
   text-shadow:0 0 10px #ffe600,0 0 22px #ff8800;letter-spacing:2px;animation:blink .9s step-end infinite;}
+.arc-icon-btn[data-k="sfx"]{font-size:7px;letter-spacing:0;}

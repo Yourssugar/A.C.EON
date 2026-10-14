@@ -1,0 +1,81 @@
+/* A.C.EON ARCADE: общие стили для отдельных страниц игр */
+
+:root{
+  --bg:#050510; --bg2:#08081a; --bg3:#0d0d22; --bg4:#12122c;
+  --pri:#00e5ff; --pri-b:#80f0ff; --pri-m:#00ccee; --pri-d:#007799;
+  --txt:#b0e0ff; --txt-d:#00e5ff; --bdr:#003355; --bdr-d:#001a33;
+  --sel:#001833; --err:#ff3344; --ok:#00ff88; --warn:#ffb830; --pink:#ff2d78;
+  --font:'Press Start 2P',monospace;
+  --top-h:44px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  background:var(--bg);color:var(--pri);
+  font-family:var(--font);font-size:10px;
+  min-height:100dvh;overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;}
+.hidden{display:none!important;}
+
+/* CRT */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.09) 2px,rgba(0,0,0,.09) 4px);}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.65) 100%);}
+
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+@keyframes arcGlow{0%,100%{text-shadow:0 0 8px currentColor;}50%{text-shadow:0 0 18px currentColor,0 0 36px currentColor;}}
+
+/* верхняя панель */
+.arc-top{
+  height:var(--top-h);display:flex;align-items:center;gap:10px;
+  padding:0 10px;background:linear-gradient(90deg,#001833,#002244,#001833);
+  border-bottom:2px solid var(--pri);position:relative;z-index:10;
+}
+.arc-back{
+  display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;
+  background:#001020;border:1px solid var(--bdr);border-bottom:2px solid var(--pri-d);
+  color:var(--pri-b);font-size:8px;letter-spacing:1px;text-decoration:none;cursor:pointer;
+}
+.arc-back:hover{background:var(--bdr);border-color:var(--pri);color:#fff;}
+.arc-title{
+  flex:1;text-align:center;color:var(--pri);font-size:clamp(9px,2vw,13px);
+  letter-spacing:3px;text-shadow:0 0 8px rgba(0,229,255,.7);
+}
+.arc-icon-btn{
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  background:#001020;border:1px solid var(--bdr);color:var(--pri-b);font-size:11px;cursor:pointer;
+}
+.arc-icon-btn:hover{border-color:var(--pri);color:#fff;}
+.arc-icon-btn.off{color:#335566;}
+
+/* кнопки */
+.btn{
+  padding:7px 11px;background:#001020;border:1px solid var(--bdr);border-bottom:2px solid var(--pri-d);
+  color:var(--pri-b);cursor:pointer;font-size:clamp(6px,1.3vw,8px);letter-spacing:1px;white-space:nowrap;
+  transition:background .1s,border-color .1s,color .1s;
+}
+.btn:hover{background:var(--bdr);border-color:var(--pri);color:#fff;box-shadow:0 0 10px rgba(0,229,255,.35);}
+.btn.sel{background:var(--bdr);border-color:var(--pri);color:#fff;box-shadow:0 0 10px rgba(0,229,255,.3);}
+.btn:disabled{opacity:.35;cursor:default;}
+
+/* модальные окна */
+.arc-modal{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:12px;}
+.arc-modal.hidden{display:none;}
+.arc-box{
+  max-width:520px;width:100%;max-height:92vh;overflow-y:auto;background:var(--bg);
+  border:2px solid var(--pri);padding:clamp(16px,4vw,28px);text-align:center;
+  box-shadow:0 0 50px rgba(0,229,255,.25);
+}
+
+/* заставка PRESS START */
+#arc-splash{position:fixed;inset:0;z-index:9500;background:#000;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;cursor:pointer;transition:opacity .3s;}
+#arc-splash .sp-ac{font-size:clamp(22px,6vw,40px);letter-spacing:8px;color:var(--pri);
+  text-shadow:0 0 28px var(--pri),0 0 55px var(--pri-d);}
+#arc-splash .sp-game{margin-top:16px;font-size:clamp(9px,2vw,12px);letter-spacing:10px;color:var(--pri-m);}
+#arc-splash .sp-start{margin-top:48px;font-size:clamp(9px,2.5vw,14px);color:#ffe600;
+  text-shadow:0 0 10px #ffe600,0 0 22px #ff8800;letter-spacing:2px;animation:blink .9s step-end infinite;}

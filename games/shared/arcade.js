@@ -47,6 +47,44 @@ function musicToggle(){
 window.addEventListener('pagehide',musicSave);
 document.addEventListener('pointerdown',musicStart,{once:true});
 
+/* звуковые эффекты: синтез через WebAudio, без файлов */
+var sfxState={ctx:null,off:lsGet('aceon_sfx_off','0')==='1'};
+function sfxCtx(){
+  if(!sfxState.ctx){var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;sfxState.ctx=new AC();}
+  if(sfxState.ctx.state==='suspended')sfxState.ctx.resume();
+  return sfxState.ctx;
+}
+function tone(ctx,t,freq,dur,type,vol,slideTo){
+  var o=ctx.createOscillator(),g=ctx.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,t);
+  if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur+0.02);
+}
+function noise(ctx,t,dur,vol,freq){
+  var len=Math.floor(ctx.sampleRate*dur),buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+  var s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();
+  f.type='bandpass';f.frequency.value=freq||1800;f.Q.value=0.8;g.gain.value=vol;
+  s.buffer=buf;s.connect(f);f.connect(g);g.connect(ctx.destination);s.start(t);
+}
+var SFX={
+  move:function(c,t){noise(c,t,0.05,0.5,2200);tone(c,t,190,0.07,'sine',0.25,120);},
+  capture:function(c,t){noise(c,t,0.09,0.7,1200);tone(c,t,140,0.12,'triangle',0.35,70);},
+  check:function(c,t){tone(c,t,880,0.09,'square',0.06);tone(c,t+0.1,1175,0.14,'square',0.06);},
+  select:function(c,t){tone(c,t,1400,0.03,'sine',0.05);},
+  win:function(c,t){[523,659,784,1047].forEach(function(f,i){tone(c,t+i*0.11,f,0.18,'square',0.06);});},
+  lose:function(c,t){[392,330,262,196].forEach(function(f,i){tone(c,t+i*0.14,f,0.22,'triangle',0.12);});},
+  draw:function(c,t){tone(c,t,440,0.18,'triangle',0.1);tone(c,t+0.2,440,0.18,'triangle',0.1);}
+};
+function sfx(name){
+  if(sfxState.off||!SFX[name])return;
+  var c=sfxCtx();if(!c)return;
+  try{SFX[name](c,c.currentTime+0.01);}catch(e){}
+}
+function sfxToggle(){sfxState.off=!sfxState.off;lsSet('aceon_sfx_off',sfxState.off?'1':'0');return !sfxState.off;}
+
 /* заставка перед игрой; клик по ней заодно разрешает звук */
 function splash(title,onStart){
   var sp=document.createElement('div');
@@ -70,15 +108,18 @@ function topbar(title){
   bar.className='arc-top';
   bar.innerHTML='<a class="arc-back" href="'+new URL('../',BASE).href+'">&#9664; ARCADE</a>'+
                 '<div class="arc-title"></div>'+
-                '<button class="arc-icon-btn" type="button" title="Music">&#9835;</button>';
+                '<button class="arc-icon-btn" type="button" title="Sound effects" data-k="sfx">FX</button>'+
+                '<button class="arc-icon-btn" type="button" title="Music" data-k="music">&#9835;</button>';
   bar.querySelector('.arc-title').textContent=title;
-  var mb=bar.querySelector('.arc-icon-btn');
+  var mb=bar.querySelector('[data-k="music"]'),sb=bar.querySelector('[data-k="sfx"]');
   mb.classList.toggle('off',music.off);
+  sb.classList.toggle('off',sfxState.off);
   mb.addEventListener('click',function(){mb.classList.toggle('off',!musicToggle());});
+  sb.addEventListener('click',function(){sb.classList.toggle('off',!sfxToggle());});
   document.body.insertBefore(bar,document.body.firstChild);
   return bar;
 }
 
-window.Arcade={getHi:getHi,setHi:setHi,trackPlay:trackPlay,splash:splash,topbar:topbar,
+window.Arcade={getHi:getHi,setHi:setHi,trackPlay:trackPlay,splash:splash,topbar:topbar,sfx:sfx,
   lsGet:lsGet,lsSet:lsSet,music:{toggle:musicToggle,save:musicSave}};
 })();

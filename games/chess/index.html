@@ -11,6 +11,12 @@
 </head>
 <body>
 
+<!-- градиенты для фигур (pieces.js) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="pc-grad-w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--pw-a)"/><stop offset="1" style="stop-color:var(--pw-b)"/></linearGradient>
+  <linearGradient id="pc-grad-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--pb-a)"/><stop offset="1" style="stop-color:var(--pb-b)"/></linearGradient>
+</defs></svg>
+
 <main class="ch-layout">
 
   <!-- левая колонка: режимы и журнал -->
@@ -21,6 +27,7 @@
         <button class="btn mode-btn" id="chb-beginner" data-diff="beginner">BEGINNER</button>
         <button class="btn mode-btn" id="chb-professional" data-diff="professional">PROFESSIONAL</button>
         <button class="btn mode-btn aceon" id="chb-aceon" data-diff="aceon">A.C.EON AI</button>
+        <button class="btn mode-btn" id="ch-theme">BOARD: WOOD</button>
         <div class="side-info" id="ch-side">WHITE = YOU</div>
         <div class="btn-row">
           <button class="btn" id="ch-new">&#9654; NEW</button>
@@ -128,6 +135,7 @@
 </div>
 
 <script src="../shared/arcade.js"></script>
+<script src="pieces.js"></script>
 <script src="rules.js"></script>
 <script src="engine.js"></script>
 <script src="chess.js"></script>

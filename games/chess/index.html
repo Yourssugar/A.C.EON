@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>A.C.EON CHESS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="../shared/arcade.css">
+<link rel="stylesheet" href="chess.css">
+</head>
+<body>
+
+<main class="ch-layout">
+
+  <!-- левая колонка: режимы и журнал -->
+  <aside class="ch-left">
+    <section class="panel mode-panel">
+      <div class="panel-title">MODE</div>
+      <div class="panel-body">
+        <button class="btn mode-btn" id="chb-beginner" data-diff="beginner">BEGINNER</button>
+        <button class="btn mode-btn" id="chb-professional" data-diff="professional">PROFESSIONAL</button>
+        <button class="btn mode-btn aceon" id="chb-aceon" data-diff="aceon">A.C.EON AI</button>
+        <div class="side-info" id="ch-side">WHITE = YOU</div>
+        <div class="btn-row">
+          <button class="btn" id="ch-new">&#9654; NEW</button>
+          <button class="btn" id="ch-resign">RESIGN</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ch-movelog">
+      <div class="panel-title">MOVE LOG</div>
+      <div class="mlog-head"><span></span><span>WHITE</span><span>BLACK</span></div>
+      <div class="mlog-body" id="ch-movelog-body"><div class="mlog-empty">NO MOVES YET</div></div>
+    </section>
+  </aside>
+
+  <!-- центр: статус и доска -->
+  <section class="ch-center">
+    <div id="ch-msg">YOUR TURN</div>
+    <div class="board-wrap"><div id="ch-board"></div></div>
+  </section>
+
+  <!-- правая колонка: соперник и взятые фигуры -->
+  <aside class="ch-right">
+    <div id="aceon-bot" aria-hidden="true">
+      <div class="bot-stage">
+        <span class="bot-particle p1"></span><span class="bot-particle p2"></span>
+        <span class="bot-particle p3"></span><span class="bot-particle p4"></span>
+        <div class="bot-core">
+          <div class="bot-ring"></div>
+          <div class="bot-antenna"><span class="bot-antenna-dot"></span></div>
+          <div class="bot-face">
+            <div class="bot-eyes"><span class="bot-eye"></span><span class="bot-eye"></span></div>
+            <div class="bot-mouth"><span></span><span></span><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="bot-name">A.C.EON</div>
+      <div class="bot-sub" id="aceon-bot-sub">BEGINNER</div>
+      <div class="bot-status" id="aceon-bot-status">READY.</div>
+    </div>
+
+    <section class="panel captured">
+      <div class="panel-title">CAPTURED</div>
+      <div class="cap-lbl">BY YOU</div>
+      <div class="cap-row" id="cap-human"></div>
+      <div class="cap-lbl">BY AI</div>
+      <div class="cap-row" id="cap-ai"></div>
+    </section>
+  </aside>
+</main>
+
+<!-- выбор уровня A.C.EON -->
+<div class="arc-modal hidden" id="ai-modal">
+  <div class="arc-box" style="border-color:var(--pink);box-shadow:0 0 60px rgba(255,45,120,.3);">
+    <div class="ai-title">&#9888; A.C.EON AI</div>
+    <div class="ai-text">POWERED BY STOCKFISH.<br>THIS IS NOT A SIMULATED AI.<br>IT CALCULATES. IT DOES NOT FORGIVE.<br><br>CHOOSE YOUR DOOM:</div>
+    <div class="ai-opts">
+      <button class="btn ai-opt pro" data-sub="professional">
+        <div class="ai-opt-head"><span>&#9817; PROFESSIONAL</span><small>DEPTH 10</small></div>
+        <div class="ai-opt-desc">STRONG. MOST PLAYERS WILL LOSE.</div>
+      </button>
+      <button class="btn ai-opt exp" data-sub="expert">
+        <div class="ai-opt-head"><span>&#9822; EXPERT</span><small>DEPTH 14</small></div>
+        <div class="ai-opt-desc">ONLY FOR EXPERIENCED PLAYERS.</div>
+      </button>
+      <button class="btn ai-opt gm" data-sub="grandmaster">
+        <div class="ai-opt-head"><span>&#9819; GRANDMASTER</span><small>DEPTH 20</small></div>
+        <div class="ai-opt-desc">GRANDMASTER LEVEL. YOU WILL NOT WIN.</div>
+      </button>
+    </div>
+    <button class="btn btn-ghost" id="ai-cancel">&#10005; CANCEL</button>
+  </div>
+</div>
+
+<div class="arc-modal hidden" id="gm-modal">
+  <div class="arc-box">
+    <div class="gm-title">&#9888;&#9888; GRANDMASTER MODE &#9888;&#9888;</div>
+    <div class="gm-text">DEPTH 20. NO RESTRICTIONS.<br><br>A.C.EON AI WILL PLAY WITH<br>MAXIMUM AGGRESSION.<br>IT WILL NOT SHOW MERCY.<br><br>VICTORY IS STATISTICALLY POSSIBLE.<br>VICTORY IS PRACTICALLY IMPOSSIBLE.<br><br>ARE YOU SURE?</div>
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn" id="gm-accept" style="border-color:#f00;color:#f00;flex:none;">I ACCEPT MY FATE</button>
+      <button class="btn btn-ghost" id="gm-back" style="flex:none;">BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- превращение пешки -->
+<div class="arc-modal hidden" id="promo-modal">
+  <div class="arc-box" style="max-width:420px;">
+    <div class="panel-title" style="border:0;margin-bottom:14px;">PROMOTE PAWN</div>
+    <div id="ch-promo-row"></div>
+  </div>
+</div>
+
+<!-- итоги партии -->
+<div class="arc-modal hidden" id="report-modal">
+  <div class="arc-box ch-report-box">
+    <div id="ch-report-title" class="ch-report-title draw">DRAW</div>
+    <div id="ch-report-sub" class="ch-report-sub">STALEMATE</div>
+    <div id="ch-report-stats" class="ch-report-stats"></div>
+    <div class="ch-report-btns">
+      <button class="btn" id="rep-new">&#9654; NEW GAME</button>
+      <button class="btn" id="rep-close">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/arcade.js"></script>
+<script src="rules.js"></script>
+<script src="engine.js"></script>
+<script src="chess.js"></script>
+</body>
+</html>

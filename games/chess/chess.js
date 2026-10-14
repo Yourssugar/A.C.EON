@@ -6,8 +6,8 @@
 var R=window.ChessRules,E=window.Engine,A=window.Arcade;
 var $=function(id){return document.getElementById(id);};
 
-var UNI={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',
-         bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+var PC=window.ChessPieces;
+function pieceSvg(p){return PC.svg(p[1],p[0]);}
 var VAL={P:1,N:3,B:3,R:5,Q:9,K:0};
 
 /* уровни: что получает Stockfish */
@@ -32,6 +32,14 @@ function loadMode(){
   try{var m=JSON.parse(A.lsGet('aceon_chess_mode','null'));if(m&&LEVELS[m.diff==='aceon'?'aceon_'+m.sub:m.diff]){G.diff=m.diff;G.sub=m.sub||'professional';}}catch(e){}
 }
 function saveMode(){A.lsSet('aceon_chess_mode',JSON.stringify({diff:G.diff,sub:G.sub}));}
+
+/* ── тема доски ── */
+function setTheme(t){
+  G.theme=t;A.lsSet('aceon_chess_theme',t);
+  document.body.classList.remove('theme-wood','theme-neon');
+  document.body.classList.add('theme-'+t);
+  $('ch-theme').textContent='BOARD: '+t.toUpperCase();
+}
 
 /* ── статус ── */
 function msg(t,isCheck){var el=$('ch-msg');el.textContent=t;el.classList.toggle('check',!!isCheck);}
@@ -97,7 +105,7 @@ function newGame(){
 }
 
 /* ── ход (любой стороны) ── */
-function play(mv){
+function play(mv,opts){
   var before=G.st,mover=before.turn,captured=before.board[mv.tr][mv.tc];
   if(mv.enPassant)captured=before.board[mv.r][mv.tc];
   var after=R.applyMove(before,mv);
@@ -110,8 +118,12 @@ function play(mv){
   var last={r:mv.r,c:mv.c,tr:mv.tr,tc:mv.tc};
   if(mover===G.human)G.lastH=last;else G.lastA=last;
   G.sel=null;
-  render();
-  return {captured:!!captured,check:R.inCheck(after.board,after.turn)};
+  var slides=opts&&opts.noSlide?[]:[[mv.r,mv.c,mv.tr,mv.tc]];
+  if(mv.castle){var home=mv.r;slides.push(mv.castle==='K'?[home,7,home,5]:[home,0,home,3]);}
+  var check=R.inCheck(after.board,after.turn);
+  render({slides:slides,burst:captured?[mv.tr,mv.tc]:null});
+  A.sfx(check?'check':captured?'capture':'move');
+  return {captured:!!captured,check:check};
 }
 
 /* ── конец партии ── */
@@ -133,46 +145,101 @@ function finish(res){
   var text={win:'YOU WIN! ',lose:'AI WINS. ',draw:'DRAW. '}[res.result]+res.reason;
   msg(text,res.result==='lose');
   Bot.react(res.result==='win'?'lose':res.result==='lose'?'win':'draw');
-  render();
+  setTimeout(function(){A.sfx(res.result);},350);
   setTimeout(function(){showReport(res);},650);
 }
 
-/* ── ход игрока ── */
-function onCell(r,c){
-  if(G.dead||G.promo||G.st.turn!==G.human||!G.started)return;
-  var p=G.st.board[r][c];
-  if(G.sel){
-    var mv=R.legal(G.st,G.sel.r,G.sel.c).filter(function(m){return m.tr===r&&m.tc===c;})[0];
-    if(mv){
-      if(R.isPromotion(G.st,mv)){askPromotion(mv);return;}
-      humanMove(mv);return;
-    }
-    if(p&&p[0]===G.human&&!(G.sel.r===r&&G.sel.c===c)){G.sel={r:r,c:c};render();return;}
-    G.sel=null;render();return;
-  }
-  if(p&&p[0]===G.human&&R.legal(G.st,r,c).length){G.sel={r:r,c:c};render();}
+/* ── ход игрока: клик или перетаскивание ── */
+function canAct(){return !G.dead&&!G.promo&&G.started&&G.st.turn===G.human;}
+function legalTo(r,c,tr,tc){
+  return R.legal(G.st,r,c).filter(function(m){return m.tr===tr&&m.tc===tc;})[0]||null;
 }
-function humanMove(mv){
-  var info=play(mv);
+function ownMovable(r,c){
+  var p=G.st.board[r][c];
+  return !!p&&p[0]===G.human&&R.legal(G.st,r,c).length>0;
+}
+/* opts.noSlide: фигуру уже перенесли рукой, ехать ей не нужно */
+function tryHumanMove(r,c,tr,tc,opts){
+  var mv=legalTo(r,c,tr,tc);if(!mv)return false;
+  G.sel=null;
+  if(R.isPromotion(G.st,mv)){render();askPromotion(mv,opts);return true;}
+  humanMove(mv,opts);return true;
+}
+function humanMove(mv,opts){
+  var info=play(mv,opts);
   var res=gameResult();
   if(res){finish(res);return;}
   if(info.check)Bot.react('aiChecked');else if(info.captured)Bot.react('hurt');
   setTimeout(aiMove,(info.captured||info.check)?600:250);
 }
 
+var drag=null;   // {r,c,x,y,wasSel,moving,ghost,size,over}
+function cellFromPoint(x,y){
+  var el=document.elementFromPoint(x,y);
+  el=el&&el.closest&&el.closest('#ch-board .ch-cell');
+  return el?{r:+el.dataset.r,c:+el.dataset.c,el:el}:null;
+}
+function onDown(e){
+  if(e.button!==undefined&&e.button!==0)return;
+  var cell=e.target.closest('.ch-cell');if(!cell||!canAct())return;
+  var r=+cell.dataset.r,c=+cell.dataset.c;
+  if(G.sel&&!(G.sel.r===r&&G.sel.c===c)&&tryHumanMove(G.sel.r,G.sel.c,r,c))return;
+  if(ownMovable(r,c)){
+    var wasSel=!!(G.sel&&G.sel.r===r&&G.sel.c===c);
+    if(!wasSel){G.sel={r:r,c:c};render();A.sfx('select');}
+    drag={r:r,c:c,x:e.clientX,y:e.clientY,wasSel:wasSel,moving:false,ghost:null,over:null};
+    $('ch-board').setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
+  if(G.sel){G.sel=null;render();}
+}
+function onMove(e){
+  if(!drag)return;
+  if(!drag.moving){
+    if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;
+    drag.moving=true;
+    var src=cellEl(drag.r,drag.c),pw=src&&src.querySelector('.ch-pw');
+    var size=src.getBoundingClientRect().width;
+    var g=document.createElement('div');g.id='ch-drag';
+    g.style.width=g.style.height=size+'px';
+    g.innerHTML=pieceSvg(G.st.board[drag.r][drag.c]);
+    document.body.appendChild(g);
+    drag.ghost=g;drag.size=size;
+    if(pw)pw.classList.add('lifted');
+  }
+  drag.ghost.style.transform='translate('+(e.clientX-drag.size/2)+'px,'+(e.clientY-drag.size/2)+'px)';
+  var t=cellFromPoint(e.clientX,e.clientY);
+  var over=t&&t.el.classList.contains('ch-hint')?t.el:null;
+  if(over!==drag.over){if(drag.over)drag.over.classList.remove('ch-over');if(over)over.classList.add('ch-over');drag.over=over;}
+}
+function onUp(e){
+  if(!drag)return;
+  var d=drag;drag=null;
+  if(d.ghost)d.ghost.remove();
+  if(d.moving){
+    var t=cellFromPoint(e.clientX,e.clientY);
+    if(t&&!(t.r===d.r&&t.c===d.c)&&tryHumanMove(d.r,d.c,t.r,t.c,{noSlide:true}))return;
+    render();   // вернуть фигуру на место, выбор остаётся
+    return;
+  }
+  if(d.wasSel){G.sel=null;render();}   // повторный клик по выбранной фигуре снимает выбор
+}
+function onCancel(){if(!drag)return;if(drag.ghost)drag.ghost.remove();drag=null;render();}
+
 /* ── превращение пешки ── */
-function askPromotion(mv){
+function askPromotion(mv,opts){
   G.promo=mv;
   var row=$('ch-promo-row');row.innerHTML='';
   [['q','Q'],['r','R'],['b','B'],['n','N']].forEach(function(d){
     var b=document.createElement('button');
     b.className='ch-promo-btn';
-    b.innerHTML='<span class="ch-promo-pc '+(G.human==='w'?'ch-white':'ch-black')+'">'+UNI[G.human+d[1]]+'</span>';
+    b.innerHTML=PC.svg(d[1],G.human);
     b.addEventListener('click',function(){
       hide('promo-modal');
       var m=G.promo;G.promo=null;
       if(!m)return;
-      m.promo=d[0];humanMove(m);
+      m.promo=d[0];humanMove(m,opts);
     });
     row.appendChild(b);
   });
@@ -258,7 +325,8 @@ function onResign(){
 }
 
 /* ── отрисовка ── */
-function render(){
+/* anim: {slides:[[r,c,tr,tc],...], burst:[r,c]} */
+function render(anim){
   var el=$('ch-board'),st=G.st,flip=G.human==='b',html='';
   var hints={};
   if(G.sel)R.legal(st,G.sel.r,G.sel.c).forEach(function(m){hints[m.tr*8+m.tc]=st.board[m.tr][m.tc]||m.enPassant?'cap':'go';});
@@ -274,13 +342,44 @@ function render(){
     if(on(G.lastA,r,c))cls+=' ch-last-a';
     if(i===checkSq)cls+=' ch-check';
     html+='<div class="'+cls+'" data-r="'+r+'" data-c="'+c+'">';
-    if(p)html+='<span class="ch-piece '+(p[0]==='w'?'ch-white':'ch-black')+'">'+UNI[p]+'</span>';
+    if(p)html+='<div class="ch-pw">'+pieceSvg(p)+'</div>';
     if(vc===0)html+='<span class="ch-lbl ch-lbl-r">'+(8-r)+'</span>';
     if(vr===7)html+='<span class="ch-lbl ch-lbl-c">'+'abcdefgh'[c]+'</span>';
     html+='</div>';
   }
   el.innerHTML=html;
+  if(anim&&!reducedMotion()){
+    (anim.slides||[]).forEach(function(s){slide(s[0],s[1],s[2],s[3]);});
+    if(anim.burst)burst(anim.burst[0],anim.burst[1]);
+  }
   renderLog();renderCaptured();
+}
+function reducedMotion(){return window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;}
+function cellEl(r,c){return $('ch-board').querySelector('.ch-cell[data-r="'+r+'"][data-c="'+c+'"]');}
+
+/* фигура стартует со старой клетки и доезжает до новой */
+function slide(r,c,tr,tc){
+  var cell=cellEl(tr,tc),pw=cell&&cell.querySelector('.ch-pw');if(!pw)return;
+  var k=G.human==='b'?-1:1;
+  pw.style.transform='translate('+((c-tc)*k*100)+'%,'+((r-tr)*k*100)+'%)';
+  pw.getBoundingClientRect();
+  pw.classList.add('moving');
+  pw.style.transform='';
+  pw.addEventListener('transitionend',function(){pw.classList.remove('moving');},{once:true});
+}
+
+/* вспышка на клетке взятия */
+function burst(r,c){
+  var cell=cellEl(r,c);if(!cell)return;
+  var wrap=document.createElement('div');wrap.className='ch-burst';
+  var html='<span class="ch-ring"></span>';
+  for(var i=0;i<12;i++){
+    var a=i/12*Math.PI*2+Math.random()*0.4,d=6+Math.random()*5;   // в cqw, клетка = 12.5cqw
+    html+='<i style="--dx:'+(Math.cos(a)*d).toFixed(1)+'cqw;--dy:'+(Math.sin(a)*d).toFixed(1)+'cqw"></i>';
+  }
+  wrap.innerHTML=html;
+  setTimeout(function(){cell.appendChild(wrap);},180);
+  setTimeout(function(){wrap.remove();},900);
 }
 function renderLog(){
   var body=$('ch-movelog-body'),h=G.history;
@@ -296,7 +395,7 @@ function renderLog(){
 function renderCaptured(){
   function row(list){
     return list.slice().sort(function(a,b){return VAL[b[1]]-VAL[a[1]];})
-      .map(function(p){return '<span class="'+(p[0]==='w'?'ch-white':'ch-black')+'">'+UNI[p]+'</span>';}).join('');
+      .map(pieceSvg).join('');
   }
   var sum=function(l){return l.reduce(function(s,p){return s+VAL[p[1]];},0);};
   var d=sum(G.capByHuman)-sum(G.capByAi);
@@ -331,11 +430,15 @@ function showReport(res){
 function boot(){
   A.topbar('CHESS');
   Bot.init();loadMode();paintModeButtons();
+  setTheme(A.lsGet('aceon_chess_theme','wood')==='neon'?'neon':'wood');
 
-  $('ch-board').addEventListener('click',function(e){
-    var cell=e.target.closest('.ch-cell');if(!cell)return;
-    onCell(+cell.dataset.r,+cell.dataset.c);
-  });
+  var board=$('ch-board');
+  board.addEventListener('pointerdown',onDown);
+  board.addEventListener('pointermove',onMove);
+  board.addEventListener('pointerup',onUp);
+  board.addEventListener('pointercancel',onCancel);
+  board.addEventListener('contextmenu',function(e){e.preventDefault();});
+  $('ch-theme').addEventListener('click',function(){setTheme(G.theme==='wood'?'neon':'wood');});
   $('chb-beginner').addEventListener('click',function(){setMode('beginner');});
   $('chb-professional').addEventListener('click',function(){setMode('professional');});
   $('chb-aceon').addEventListener('click',function(){show('ai-modal');});
@@ -363,6 +466,6 @@ function boot(){
   });
 }
 
-window.AceonChess={state:G,newGame:newGame,setMode:setMode,play:play,click:onCell};
+window.AceonChess={state:G,newGame:newGame,setMode:setMode,play:play,tryMove:tryHumanMove,setTheme:setTheme};
 boot();
 })();

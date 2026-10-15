@@ -16,7 +16,9 @@ var MODES={
   blitz:             {kind:'blitz',   undo:0, clock:true, offset:-2,   accent:'#ffd23a',think:'msg.think'},
   aceon_professional:{kind:'fixed',   depth:10,skill:20,movetime:60,contempt:0, undo:0,accent:'#4fb8ff',think:'msg.thinkAceon',bars:3},
   aceon_expert:      {kind:'fixed',   depth:14,skill:20,movetime:60,contempt:0, undo:0,accent:'#ff8800',think:'msg.thinkExpert',bars:4},
-  aceon_grandmaster: {kind:'fixed',   depth:20,skill:20,movetime:60,contempt:50,undo:0,accent:'#ff2d55',think:'msg.thinkGm',bars:5}
+  aceon_grandmaster: {kind:'fixed',   depth:20,skill:20,movetime:60,contempt:50,undo:0,accent:'#ff2d55',think:'msg.thinkGm',bars:5},
+  /* вдвоём на одном устройстве: без ИИ, ходят обе стороны по очереди */
+  local:             {kind:'local',   undo:Infinity,friend:true,         accent:'#ff2d78'}
 };
 MODES.beginner.bars=1;
 
@@ -50,6 +52,6 @@ function nextLevel(L,result,recent){
 
 function score(result){return result==='win'?1:result==='draw'?0.5:0;}
 
-window.ChessModes={MODES:MODES,KEYS:Object.keys(MODES),MIN:MIN,MAX:MAX,START:START,
+window.ChessModes={MODES:MODES,KEYS:Object.keys(MODES).filter(function(k){return !MODES[k].friend;}),MIN:MIN,MAX:MAX,START:START,
   clamp:clamp,levelParams:levelParams,levelBars:levelBars,nextLevel:nextLevel,score:score};
 })();

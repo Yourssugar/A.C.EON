@@ -419,3 +419,101 @@ body.theme-neon{
   .menu-title{font-size:24px;gap:8px;}
   .menu-sub{margin-top:6px;}
 }
+
+/* ── режимы: уровень в карточке ── */
+.lvl-name small{display:block;margin-top:6px;font-size:6px;letter-spacing:2px;color:color-mix(in srgb,var(--acc) 80%,#fff);opacity:.85;}
+.opt-row.hidden{display:none;}
+
+/* ── отмена хода и подсказка ── */
+.btn-undo:disabled{opacity:.35;cursor:default;}
+.btn-hint{border-color:#b18cff;color:#d6c4ff;}
+.btn-hint:hover{background:#1c1236;border-color:#b18cff;box-shadow:0 0 12px rgba(177,140,255,.4);}
+
+/* ── статус: оценка хода в обучении ── */
+#ch-msg.q-good{color:#00ff88;border-left-color:#00ff88;}
+#ch-msg.q-inacc{color:#ffd23a;border-left-color:#ffd23a;}
+#ch-msg.q-mistake{color:#ff8800;border-left-color:#ff8800;}
+#ch-msg.q-blunder{color:#ff3344;border-left-color:#ff3344;animation:qShake .35s;}
+#ch-msg.q-hint{color:#d6c4ff;border-left-color:#b18cff;}
+@keyframes qShake{25%{transform:translateX(-4px);}50%{transform:translateX(4px);}75%{transform:translateX(-2px);}}
+.mlog-row i{font-style:normal;margin-left:3px;}
+.mq-inacc{color:#ffd23a;}
+.mq-mistake{color:#ff8800;}
+.mq-blunder{color:#ff3344;}
+
+/* ── подсказка на доске ── */
+.ch-coach-from,.ch-coach-to{box-shadow:inset 0 0 0 4px #b18cff,inset 0 0 22px rgba(177,140,255,.55);}
+.ch-coach-to::before{content:'';position:absolute;width:34%;height:34%;border-radius:50%;background:#b18cff;opacity:.85;z-index:3;
+  box-shadow:0 0 12px #b18cff;animation:coachPulse 1s ease-in-out infinite;pointer-events:none;}
+@keyframes coachPulse{50%{transform:scale(1.25);opacity:.5;}}
+
+/* ── часы блица ── */
+.ch-clocks{display:flex;gap:8px;width:100%;max-width:calc(100dvh - var(--top-h) - 80px);}
+.ch-clocks.hidden{display:none;}
+.clk{flex:1;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:#020c18;border:1px solid var(--bdr);
+  font-size:7px;letter-spacing:2px;color:#6a93a8;transition:border-color .15s,box-shadow .15s;}
+.clk b{font-weight:normal;font-size:clamp(11px,1.8vw,15px);letter-spacing:1px;color:#cfe9ff;}
+.clk.on{border-color:#ffd23a;box-shadow:0 0 12px rgba(255,210,58,.35);}
+.clk.on b{color:#fff;}
+.clk.low b{color:#ff3344;}
+.clk.low.on{border-color:#ff3344;animation:clkLow .8s ease-in-out infinite;}
+@keyframes clkLow{50%{box-shadow:0 0 18px rgba(255,51,68,.6);}}
+
+/* ── полоска перевеса (обучение): слева белые, справа чёрные ── */
+.ch-eval{display:flex;align-items:center;gap:10px;width:100%;max-width:calc(100dvh - var(--top-h) - 80px);}
+.ch-eval.hidden{display:none;}
+.ev-bar{flex:1;height:10px;background:#11131a;border:1px solid var(--bdr);position:relative;overflow:hidden;}
+.ev-bar i{position:absolute;left:0;top:0;bottom:0;width:var(--w,50%);background:linear-gradient(90deg,#f2efe6,#cfc6b0);transition:width .4s ease;}
+.ev-bar::after{content:'';position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:#b18cff;}
+.ch-eval b{font-weight:normal;font-size:8px;color:#d6c4ff;min-width:5ch;text-align:right;}
+
+@media (max-width:760px){.ch-clocks,.ch-eval{max-width:none;}}
+
+/* ── с другом: на одном устройстве и по сети ── */
+.menu-cols>.menu-friend{grid-column:1/-1;z-index:4;}
+.friend-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
+.fr-tag{flex-shrink:0;font-size:7px;letter-spacing:1px;padding:5px 7px;border:1px solid var(--acc);color:var(--acc);}
+.soon-tag{border-color:var(--pink);color:var(--pink);font-size:6px;}
+.friend-card.is-soon{opacity:.75;}
+.friend-card.is-soon:hover{opacity:1;}
+@media (hover:hover) and (min-width:761px){
+  /* описание открывается вверх, справа места нет */
+  .friend-card .lvl-pop{left:0;top:auto;bottom:calc(100% + 12px);transform:translateY(8px);}
+  .friend-card:hover .lvl-pop,.friend-card:focus-visible .lvl-pop{transform:translateY(0);}
+  .friend-card .lvl-pop::before{display:none;}
+}
+@media (max-width:760px){.friend-list{grid-template-columns:1fr;}}
+body.mode-local #aceon-bot{display:none;}
+
+/* ── окно PIN ── */
+.pin-box{max-width:440px;display:flex;flex-direction:column;gap:12px;text-align:center;}
+.pin-soon{align-self:center;font-size:7px;letter-spacing:2px;color:var(--pink);border:1px solid var(--pink);padding:6px 10px;}
+.pin-text{font-family:Tahoma,Arial,sans-serif;font-size:13px;line-height:1.5;color:#bcd6e4;}
+.pin-input{width:100%;padding:14px 10px;background:#020c18;border:2px solid var(--bdr);color:#fff;text-align:center;
+  font-family:var(--font);font-size:clamp(18px,6vw,26px);letter-spacing:.45em;padding-left:calc(10px + .45em);outline:none;}
+.pin-input:focus{border-color:var(--pri);box-shadow:0 0 14px rgba(0,229,255,.35);}
+.pin-input::placeholder{color:#1d3a52;}
+.pin-note{min-height:12px;font-size:7px;letter-spacing:1px;color:#ffd23a;}
+.pin-note.shake{animation:segShake .35s;}
+.pin-box .btn:disabled{opacity:.35;cursor:default;}
+.pin-box #pin-close{align-self:center;}
+
+/* ── 3D-доска ── */
+.board-wrap{position:relative;}
+body.view-3d #ch-board{visibility:hidden;}
+#ch-board3d{position:absolute;inset:0;touch-action:none;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(ellipse at 50% 60%,rgba(0,229,255,.10),transparent 65%);}
+#ch-board3d.hidden{display:none;}
+#ch-board3d canvas{display:block;cursor:grab;touch-action:none;}
+#ch-board3d.orbiting canvas{cursor:grabbing;}
+#ch-board3d.dragging canvas{cursor:grabbing;}
+.b3-btn{position:absolute;right:6px;top:6px;z-index:2;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  background:rgba(2,12,24,.8);border:1px solid var(--bdr);color:var(--pri);font-size:18px;cursor:pointer;}
+.b3-btn:hover{border-color:var(--pri);box-shadow:0 0 10px rgba(0,229,255,.4);}
+.b3-load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;background:rgba(2,10,20,.9);
+  border:1px solid var(--pri);font-size:8px;letter-spacing:2px;color:var(--pri);white-space:nowrap;pointer-events:none;}
+.b3-load.hidden{display:none;}
+.btn-view{flex:0 0 auto !important;min-width:56px;}
+.btn-view:disabled{opacity:.35;cursor:default;}
+/* телефон в 3D: доска наклонена, квадратное окно не нужно, панель поднимается выше */
+@media (max-width:760px){body.view-3d #ch-board{aspect-ratio:10/8.6;}}

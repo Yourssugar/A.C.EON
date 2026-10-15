@@ -1,69 +1,70 @@
-/* A.C.EON CHESS: партия, интерфейс, персонаж A.C.EON, итоги.
-   Правила в rules.js, движок в engine.js. */
+/* A.C.EON CHESS: меню, партия, интерфейс, персонаж A.C.EON, итоги.
+   Правила в rules.js, движок в engine.js, фигуры в pieces.js, тексты в lang.js. */
 (function(){
 'use strict';
 
-var R=window.ChessRules,E=window.Engine,A=window.Arcade;
+var R=window.ChessRules,E=window.Engine,A=window.Arcade,PC=window.ChessPieces;
+var t=I18n.t,pick=I18n.pick;
 var $=function(id){return document.getElementById(id);};
-
-var PC=window.ChessPieces;
 function pieceSvg(p){return PC.svg(p[1],p[0]);}
 var VAL={P:1,N:3,B:3,R:5,Q:9,K:0};
 
-/* уровни: что получает Stockfish */
+/* уровни: что получает Stockfish и как уровень выглядит в меню */
 var LEVELS={
-  beginner:    {name:'BEGINNER',     depth:2, skill:2,  accent:'#00ff88',think:'AI THINKING'},
-  professional:{name:'PROFESSIONAL', depth:6, skill:10, accent:'#00e5ff',think:'AI THINKING'},
-  aceon_professional:{name:'A.C.EON / PRO', depth:10,movetime:60,skill:20,contempt:0, accent:'#00e5ff',think:'A.C.EON THINKING'},
-  aceon_expert:      {name:'A.C.EON / EXPERT',depth:14,movetime:60,skill:20,contempt:0,accent:'#ff8800',think:'EXPERT CALCULATING'},
-  aceon_grandmaster: {name:'A.C.EON / GM', depth:20,movetime:60,skill:20,contempt:50,accent:'#ff0000',think:'GRANDMASTER CALCULATING'}
+  beginner:          {bars:1,depth:2, skill:2, accent:'#00ff88',think:'msg.think'},
+  professional:      {bars:2,depth:6, skill:10,accent:'#00e5ff',think:'msg.think'},
+  aceon_professional:{bars:3,depth:10,skill:20,movetime:60,contempt:0, accent:'#4fb8ff',think:'msg.thinkAceon'},
+  aceon_expert:      {bars:4,depth:14,skill:20,movetime:60,contempt:0, accent:'#ff8800',think:'msg.thinkExpert'},
+  aceon_grandmaster: {bars:5,depth:20,skill:20,movetime:60,contempt:50,accent:'#ff2d55',think:'msg.thinkGm'}
 };
+var LEVEL_KEYS=Object.keys(LEVELS);
+
+/* настройки меню, запоминаются между заходами */
+var S={level:'beginner',theme:'wood',view:'2d',side:'r'};
 
 var G={
-  diff:'beginner',sub:'professional',
-  st:null,human:'w',ai:'b',dead:false,sel:null,
+  st:R.startState(),human:'w',ai:'b',dead:true,sel:null,
   history:[],keys:[],uci:[],lastH:null,lastA:null,
-  capByHuman:[],capByAi:[],start:0,gameId:0,thinking:false,promo:null,started:false
+  capByHuman:[],capByAi:[],start:0,gameId:0,thinking:false,promo:null,started:false,
+  level:'beginner',result:null,msg:null
 };
-function level(){return LEVELS[G.diff==='aceon'?'aceon_'+G.sub:G.diff];}
+function level(){return LEVELS[G.level];}
+function sideName(c){return t(c==='w'?'side.w':'side.b');}
+function show(id){$(id).classList.remove('hidden');}
+function hide(id){$(id).classList.add('hidden');}
 
-/* ── режим запоминается между заходами ── */
-function loadMode(){
-  try{var m=JSON.parse(A.lsGet('aceon_chess_mode','null'));if(m&&LEVELS[m.diff==='aceon'?'aceon_'+m.sub:m.diff]){G.diff=m.diff;G.sub=m.sub||'professional';}}catch(e){}
+function loadSettings(){
+  try{
+    var s=JSON.parse(A.lsGet('aceon_chess_settings','null'))||{};
+    if(LEVELS[s.level])S.level=s.level;
+    if(s.theme==='wood'||s.theme==='neon')S.theme=s.theme;
+    if(s.side==='w'||s.side==='b'||s.side==='r')S.side=s.side;
+  }catch(e){}
 }
-function saveMode(){A.lsSet('aceon_chess_mode',JSON.stringify({diff:G.diff,sub:G.sub}));}
+function saveSettings(){A.lsSet('aceon_chess_settings',JSON.stringify(S));}
 
-/* ── тема доски ── */
-function setTheme(t){
-  G.theme=t;A.lsSet('aceon_chess_theme',t);
-  document.body.classList.remove('theme-wood','theme-neon');
-  document.body.classList.add('theme-'+t);
-  $('ch-theme').textContent='BOARD: '+t.toUpperCase();
+/* ── статус над доской: хранится ключами, чтобы переводиться при смене языка ── */
+function msg(parts,isCheck){
+  if(!Array.isArray(parts[0]))parts=[parts];
+  G.msg={parts:parts,check:!!isCheck};
+  paintMsg();
 }
-
-/* ── статус ── */
-function msg(t,isCheck){var el=$('ch-msg');el.textContent=t;el.classList.toggle('check',!!isCheck);}
+function paintMsg(){
+  if(!G.msg)return;
+  var el=$('ch-msg');
+  el.textContent=G.msg.parts.map(function(p){return t(p[0],p[1]);}).join(' / ');
+  el.classList.toggle('check',G.msg.check);
+}
+function turnMsg(){msg(['msg.turnSide',{side:sideName(G.human)}]);}
 
 /* ── персонаж ── */
 var Bot=(function(){
   var root,statusEl,subEl,cur='idle',revert=null;
-  var SAY={
-    idle:['READY.','BEGIN.','YOUR MOVE.'],
-    thinking:['CALCULATING','PROCESSING','HMMMM','ANALYSING'],
-    moved:['YOUR MOVE.','GO ON.','YOUR TURN.'],
-    attack:['MINE.','TAKEN.','THANK YOU.','DELICIOUS.'],
-    hurt:['...OW.','LUCKY.','NOTED.','HOW RUDE.'],
-    check:['CHECK.','TICK TOCK.','NO ESCAPE.'],
-    aiChecked:['TSK.','CUTE.','POINTLESS.'],
-    win:['I WIN.','INEVITABLE.','GG.'],
-    lose:['...IMPOSSIBLE.','HOW?!','REMATCH.'],
-    draw:['A DRAW.','STALEMATE.','...ACCEPTABLE.']
-  };
-  function pick(a){return a[Math.random()*a.length|0];}
-  function set(m){cur=m;root.className='mood-'+m;statusEl.textContent=pick(SAY[m]||['...']);}
+  function set(m){cur=m;root.className='mood-'+m;statusEl.textContent=pick('bot.'+m);}
   return{
     init:function(){root=$('aceon-bot');statusEl=$('aceon-bot-status');subEl=$('aceon-bot-sub');},
-    mode:function(){var L=level();root.style.setProperty('--bot-accent',L.accent);subEl.textContent=L.name.replace('A.C.EON / ','');},
+    mode:function(){root.style.setProperty('--bot-accent',level().accent);subEl.textContent=t('lvl.'+G.level);},
+    repaint:function(){set(cur);subEl.textContent=t('lvl.'+G.level);},
     react:function(m){
       if(revert){clearTimeout(revert);revert=null;}
       set(m);
@@ -74,37 +75,101 @@ var Bot=(function(){
   };
 })();
 
-/* ── кнопки режимов ── */
-function paintModeButtons(){
-  ['beginner','professional','aceon'].forEach(function(d){$('chb-'+d).classList.toggle('sel',G.diff===d);});
-  var L=level();
-  $('chb-aceon').textContent=G.diff==='aceon'?L.name:'A.C.EON AI';
-}
-function show(id){$(id).classList.remove('hidden');}
-function hide(id){$(id).classList.add('hidden');}
-function setMode(diff,sub){
-  G.diff=diff;if(sub)G.sub=sub;
-  saveMode();paintModeButtons();Bot.mode();newGame();
+/* ════════ МЕНЮ ════════ */
+function barsHtml(n){var h='';for(var i=0;i<5;i++)h+='<i class="'+(i<n?'on':'')+'"></i>';return h;}
+
+function buildLevels(){
+  var list=$('lvl-list');list.innerHTML='';
+  LEVEL_KEYS.forEach(function(k){
+    var L=LEVELS[k];
+    var b=document.createElement('button');
+    b.type='button';b.className='lvl-card';b.dataset.lvl=k;
+    b.style.setProperty('--acc',L.accent);
+    b.innerHTML=
+      '<span class="lvl-name" data-i18n="lvl.'+k+'"></span>'+
+      '<span class="bars">'+barsHtml(L.bars)+'</span>'+
+      '<span class="lvl-pop" role="tooltip">'+
+        '<span class="pop-name" data-i18n="lvl.'+k+'"></span>'+
+        '<span class="pop-desc" data-i18n="desc.'+k+'"></span>'+
+        '<span class="pop-row"><span data-i18n="pop.depth"></span><b>'+L.depth+'</b></span>'+
+        '<span class="pop-row"><span data-i18n="pop.time"></span><b data-i18n="'+(L.movetime?'pop.long':'pop.fast')+'"></b></span>'+
+        '<span class="pop-row"><span data-i18n="pop.strength"></span><span class="bars">'+barsHtml(L.bars)+'</span></span>'+
+      '</span>';
+    b.addEventListener('click',function(){S.level=k;saveSettings();paintMenu();A.sfx('select');});
+    list.appendChild(b);
+  });
 }
 
-/* ── новая партия ── */
+/* превью: кусок доски в выбранной теме */
+var PREVIEW=[['bR',null,'bK',null],['bP','bP',null,'bN'],[null,'wB',null,null],['wP',null,'wQ','wK']];
+function buildPreview(){
+  var h='';
+  for(var r=0;r<4;r++)for(var c=0;c<4;c++){
+    var p=PREVIEW[r][c];
+    h+='<div class="ch-cell '+((r+c)%2===0?'ch-light':'ch-dark')+'">'+(p?'<div class="ch-pw">'+pieceSvg(p)+'</div>':'')+'</div>';
+  }
+  $('preview-board').innerHTML=h;
+  $('ico-w').innerHTML=PC.svg('K','w');
+  $('ico-b').innerHTML=PC.svg('K','b');
+}
+
+function paintMenu(){
+  document.querySelectorAll('.lvl-card').forEach(function(b){b.classList.toggle('sel',b.dataset.lvl===S.level);});
+  ['view','theme','side'].forEach(function(k){
+    document.querySelectorAll('#seg-'+k+' .seg-btn').forEach(function(b){b.classList.toggle('sel',b.dataset.v===S[k]);});
+  });
+  setTheme(S.theme);
+  $('tag-view').textContent=S.view.toUpperCase();
+  $('tag-theme').textContent=t('theme.'+S.theme);
+  $('btn-continue').classList.toggle('hidden',!(G.started&&!G.dead&&G.history.length));
+}
+function setTheme(th){
+  document.body.classList.remove('theme-wood','theme-neon');
+  document.body.classList.add('theme-'+th);
+}
+function bindSeg(key){
+  document.querySelectorAll('#seg-'+key+' .seg-btn').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(b.classList.contains('soon')){b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return;}
+      S[key]=b.dataset.v;saveSettings();paintMenu();A.sfx('select');
+    });
+  });
+}
+
+function showScreen(name){
+  document.body.classList.toggle('screen-menu',name==='menu');
+  document.body.classList.toggle('screen-game',name==='game');
+  if(name==='menu')paintMenu();
+  window.scrollTo(0,0);
+}
+
+/* ════════ ПАРТИЯ ════════ */
 function newGame(){
   E.newGame();
   G.gameId++;
-  G.st=R.startState();G.dead=false;G.sel=null;G.promo=null;G.thinking=false;
+  G.level=S.level;
+  G.st=R.startState();G.dead=false;G.sel=null;G.promo=null;G.thinking=false;G.result=null;G.endTime=null;
   G.history=[];G.keys=[R.positionKey(G.st)];G.uci=[];
   G.lastH=G.lastA=null;G.capByHuman=[];G.capByAi=[];G.start=Date.now();
-  G.human=Math.random()<0.5?'w':'b';G.ai=R.opp(G.human);
+  G.human=S.side==='r'?(Math.random()<0.5?'w':'b'):S.side;G.ai=R.opp(G.human);
+  G.started=true;
   hide('report-modal');hide('promo-modal');resetResign();
-  $('ch-side').textContent=(G.human==='w'?'WHITE':'BLACK')+' = YOU';
+  paintGamePanel();
   Bot.mode();Bot.react('idle');
   render();
-  if(!G.started)return;              // ждём PRESS START
-  if(G.st.turn===G.ai){msg('AI MOVES FIRST');setTimeout(aiMove,500);}
-  else msg('YOUR TURN ('+(G.human==='w'?'WHITE':'BLACK')+')');
+  showScreen('game');
+  A.trackPlay();
+  if(G.st.turn===G.ai){msg(['msg.aiFirst']);setTimeout(aiMove,500);}
+  else turnMsg();
+}
+function paintGamePanel(){
+  $('game-lvl-name').textContent=t('lvl.'+G.level);
+  $('game-lvl-bars').innerHTML=barsHtml(level().bars);
+  $('game-lvl-bars').style.setProperty('--acc',level().accent);
+  $('ch-side').textContent=t('game.you',{side:sideName(G.human)});
 }
 
-/* ── ход (любой стороны) ── */
+/* ход любой стороны */
 function play(mv,opts){
   var before=G.st,mover=before.turn,captured=before.board[mv.tr][mv.tc];
   if(mv.enPassant)captured=before.board[mv.r][mv.tc];
@@ -126,27 +191,26 @@ function play(mv,opts){
   return {captured:!!captured,check:check};
 }
 
-/* ── конец партии ── */
+/* конец партии */
 function gameResult(){
   var st=G.st,moves=R.allLegal(st);
   if(!moves.length){
-    if(R.inCheck(st.board,st.turn))return{result:st.turn===G.human?'lose':'win',reason:'CHECKMATE'};
-    return{result:'draw',reason:'STALEMATE'};
+    if(R.inCheck(st.board,st.turn))return{result:st.turn===G.human?'lose':'win',reason:'reason.mate'};
+    return{result:'draw',reason:'reason.stalemate'};
   }
-  if(R.insufficient(st.board))return{result:'draw',reason:'INSUFFICIENT MATERIAL'};
-  if(st.halfmove>=100)return{result:'draw',reason:'50-MOVE RULE'};
+  if(R.insufficient(st.board))return{result:'draw',reason:'reason.insufficient'};
+  if(st.halfmove>=100)return{result:'draw',reason:'reason.fifty'};
   var key=G.keys[G.keys.length-1],n=0;
   for(var i=0;i<G.keys.length;i++)if(G.keys[i]===key)n++;
-  if(n>=3)return{result:'draw',reason:'THREEFOLD REPETITION'};
+  if(n>=3)return{result:'draw',reason:'reason.repetition'};
   return null;
 }
 function finish(res){
-  G.dead=true;G.thinking=false;E.cancel();
-  var text={win:'YOU WIN! ',lose:'AI WINS. ',draw:'DRAW. '}[res.result]+res.reason;
-  msg(text,res.result==='lose');
+  G.dead=true;G.thinking=false;G.result=res;G.endTime=Date.now();E.cancel();
+  msg([['res.'+res.result],[res.reason]],res.result==='lose');
   Bot.react(res.result==='win'?'lose':res.result==='lose'?'win':'draw');
   setTimeout(function(){A.sfx(res.result);},350);
-  setTimeout(function(){showReport(res);},650);
+  setTimeout(function(){showReport();},650);
 }
 
 /* ── ход игрока: клик или перетаскивание ── */
@@ -173,7 +237,7 @@ function humanMove(mv,opts){
   setTimeout(aiMove,(info.captured||info.check)?600:250);
 }
 
-var drag=null;   // {r,c,x,y,wasSel,moving,ghost,size,over}
+var drag=null;
 function cellFromPoint(x,y){
   var el=document.elementFromPoint(x,y);
   el=el&&el.closest&&el.closest('#ch-board .ch-cell');
@@ -209,8 +273,8 @@ function onMove(e){
     if(pw)pw.classList.add('lifted');
   }
   drag.ghost.style.transform='translate('+(e.clientX-drag.size/2)+'px,'+(e.clientY-drag.size/2)+'px)';
-  var t=cellFromPoint(e.clientX,e.clientY);
-  var over=t&&t.el.classList.contains('ch-hint')?t.el:null;
+  var tc=cellFromPoint(e.clientX,e.clientY);
+  var over=tc&&tc.el.classList.contains('ch-hint')?tc.el:null;
   if(over!==drag.over){if(drag.over)drag.over.classList.remove('ch-over');if(over)over.classList.add('ch-over');drag.over=over;}
 }
 function onUp(e){
@@ -218,16 +282,16 @@ function onUp(e){
   var d=drag;drag=null;
   if(d.ghost)d.ghost.remove();
   if(d.moving){
-    var t=cellFromPoint(e.clientX,e.clientY);
-    if(t&&!(t.r===d.r&&t.c===d.c)&&tryHumanMove(d.r,d.c,t.r,t.c,{noSlide:true}))return;
-    render();   // вернуть фигуру на место, выбор остаётся
+    var tc=cellFromPoint(e.clientX,e.clientY);
+    if(tc&&!(tc.r===d.r&&tc.c===d.c)&&tryHumanMove(d.r,d.c,tc.r,tc.c,{noSlide:true}))return;
+    render();
     return;
   }
-  if(d.wasSel){G.sel=null;render();}   // повторный клик по выбранной фигуре снимает выбор
+  if(d.wasSel){G.sel=null;render();}
 }
 function onCancel(){if(!drag)return;if(drag.ghost)drag.ghost.remove();drag=null;render();}
 
-/* ── превращение пешки ── */
+/* превращение пешки */
 function askPromotion(mv,opts){
   G.promo=mv;
   var row=$('ch-promo-row');row.innerHTML='';
@@ -252,41 +316,43 @@ function aiMove(){
   var id=G.gameId,L=level();
   G.thinking=true;Bot.react('thinking');
   function stillValid(){return id===G.gameId&&!G.dead&&G.st.turn===G.ai;}
-  function apply(mv,note){
+  function apply(mv,local){
     if(!stillValid())return;
     G.thinking=false;
     var info=play(mv);
     var res=gameResult();
     if(res){finish(res);return;}
-    msg(info.check?'CHECK! YOUR TURN':(note||'YOUR TURN'),info.check);
+    if(info.check)msg(['msg.check'],true);
+    else if(local)msg(['msg.local']);
+    else turnMsg();
     Bot.react(info.check?'check':info.captured?'attack':'moved');
   }
   function onBest(uci){
     if(!stillValid())return;
     var mv=R.fromUCI(G.st,uci);
-    if(!mv){apply(localMove(),'LOCAL AI MOVE');return;}
+    if(!mv){apply(localMove(),true);return;}
     apply(mv);
   }
   function search(){
     if(!stillValid())return;
-    msg(L.think+'...');
+    msg([L.think]);
     var ok=E.go({moves:G.uci,depth:L.depth,movetime:L.movetime,skill:L.skill,contempt:L.contempt,
-      onDepth:function(d){if(stillValid())msg(L.think+' [DEPTH '+d+']');}},onBest);
-    if(!ok)fallback(E.lastError()||'ENGINE BUSY');
+      onDepth:function(d){if(stillValid())msg([[L.think],['msg.depth',{d:d}]]);}},onBest);
+    if(!ok)fallback();
   }
-  function fallback(err){
+  function fallback(){
     if(!stillValid())return;
-    msg(err+'. LOCAL AI...');
-    setTimeout(function(){apply(localMove(),'LOCAL AI. YOUR TURN');},300);
+    msg(['msg.offline']);
+    setTimeout(function(){apply(localMove(),true);},300);
   }
   if(E.isReady())search();
-  else{msg('LOADING ENGINE...');E.load(search,fallback);}
+  else{msg(['msg.loading']);E.load(search,fallback);}
 }
 
 /* запасной ИИ, если Stockfish не загрузился */
 function localMove(){
   var st=G.st,all=R.allLegal(st);
-  if(G.diff==='beginner'){
+  if(G.level==='beginner'){
     var caps=all.filter(function(m){return st.board[m.tr][m.tc];});
     return (caps.length&&Math.random()<0.7)?caps[Math.random()*caps.length|0]:all[Math.random()*all.length|0];
   }
@@ -310,21 +376,21 @@ function localMove(){
   return best[Math.random()*best.length|0];
 }
 
-/* ── сдаться (второе нажатие подтверждает) ── */
+/* сдаться: второе нажатие подтверждает */
 var resignTimer=null;
-function resetResign(){clearTimeout(resignTimer);$('ch-resign').textContent='RESIGN';$('ch-resign').classList.remove('sel');}
+function resetResign(){clearTimeout(resignTimer);var b=$('ch-resign');b.dataset.i18n='game.resign';b.textContent=t('game.resign');b.classList.remove('sel');}
 function onResign(){
   if(G.dead||!G.history.length)return;
   var b=$('ch-resign');
   if(!b.classList.contains('sel')){
-    b.textContent='SURE?';b.classList.add('sel');
+    b.dataset.i18n='game.sure';b.textContent=t('game.sure');b.classList.add('sel');
     resignTimer=setTimeout(resetResign,3000);return;
   }
   resetResign();
-  finish({result:'lose',reason:'RESIGNED'});
+  finish({result:'lose',reason:'reason.resigned'});
 }
 
-/* ── отрисовка ── */
+/* ── отрисовка доски ── */
 /* anim: {slides:[[r,c,tr,tc],...], burst:[r,c]} */
 function render(anim){
   var el=$('ch-board'),st=G.st,flip=G.human==='b',html='';
@@ -383,7 +449,7 @@ function burst(r,c){
 }
 function renderLog(){
   var body=$('ch-movelog-body'),h=G.history;
-  if(!h.length){body.innerHTML='<div class="mlog-empty">NO MOVES YET</div>';return;}
+  if(!h.length){body.innerHTML='<div class="mlog-empty">'+t('log.empty')+'</div>';return;}
   var out='',n=h.length;
   for(var i=0;i<n;i+=2){
     out+='<div class="mlog-row"><span class="mlog-n">'+(i/2+1)+'.</span>'+
@@ -394,8 +460,7 @@ function renderLog(){
 }
 function renderCaptured(){
   function row(list){
-    return list.slice().sort(function(a,b){return VAL[b[1]]-VAL[a[1]];})
-      .map(pieceSvg).join('');
+    return list.slice().sort(function(a,b){return VAL[b[1]]-VAL[a[1]];}).map(pieceSvg).join('');
   }
   var sum=function(l){return l.reduce(function(s,p){return s+VAL[p[1]];},0);};
   var d=sum(G.capByHuman)-sum(G.capByAi);
@@ -404,33 +469,49 @@ function renderCaptured(){
 }
 
 /* ── итоги ── */
-function showReport(res){
-  if(!G.dead)return;
-  var t=$('ch-report-title');
-  t.textContent={win:'VICTORY',lose:'DEFEAT',draw:'DRAW'}[res.result];
-  t.className='ch-report-title '+res.result;
-  $('ch-report-sub').textContent=res.reason;
-  var secs=Math.round((Date.now()-G.start)/1000);
-  function rowH(k,v){return '<div class="ch-rep-row"><span class="ch-rep-k">'+k+'</span><span class="ch-rep-v">'+v+'</span></div>';}
+function showReport(){
+  var res=G.result;if(!res||!G.dead)return;
+  var title=$('ch-report-title');
+  title.textContent=t('rep.'+res.result);
+  title.className='ch-report-title '+res.result;
+  $('ch-report-sub').textContent=t(res.reason);
+  var secs=Math.round(((G.endTime||Date.now())-G.start)/1000);
+  function row(k,v){return '<div class="ch-rep-row"><span class="ch-rep-k">'+t(k)+'</span><span class="ch-rep-v">'+v+'</span></div>';}
   $('ch-report-stats').innerHTML=
-    rowH('YOU PLAYED',G.human==='w'?'WHITE':'BLACK')+
-    rowH('MODE',level().name)+
-    rowH('MOVES',Math.ceil(G.history.length/2))+
-    rowH('YOUR CAPTURES',G.capByHuman.length)+
-    rowH('AI CAPTURES',G.capByAi.length)+
-    rowH('TIME',Math.floor(secs/60)+':'+('0'+secs%60).slice(-2));
-  if(res.result==='win'){
-    var k='aceon_chess_wins_'+(G.diff==='aceon'?'aceon_'+G.sub:G.diff);
+    row('rep.played',sideName(G.human))+
+    row('rep.mode',t('lvl.'+G.level))+
+    row('rep.moves',Math.ceil(G.history.length/2))+
+    row('rep.capYou',G.capByHuman.length)+
+    row('rep.capAi',G.capByAi.length)+
+    row('rep.time',Math.floor(secs/60)+':'+('0'+secs%60).slice(-2));
+  if(res.result==='win'&&!res.counted){
+    res.counted=true;
+    var k='aceon_chess_wins_'+G.level;
     A.lsSet(k,(parseInt(A.lsGet(k,'0'),10)||0)+1);
   }
   show('report-modal');
 }
 
+/* смена языка: всё, что собрано из кода, перерисовать */
+function onLang(){
+  paintMsg();paintGamePanel();Bot.repaint();renderLog();paintMenu();resetResign();
+  if(!$('report-modal').classList.contains('hidden'))showReport();
+}
+
 /* ── запуск ── */
 function boot(){
-  A.topbar('CHESS');
-  Bot.init();loadMode();paintModeButtons();
-  setTheme(A.lsGet('aceon_chess_theme','wood')==='neon'?'neon':'wood');
+  A.topbar('ch.title');
+  loadSettings();
+  Bot.init();
+  buildLevels();buildPreview();
+  bindSeg('view');bindSeg('theme');bindSeg('side');
+  I18n.apply();
+  I18n.onChange(onLang);
+
+  /* наведение на 3D наклоняет превью: видно, что это будет объёмная доска */
+  var b3=document.querySelector('#seg-view [data-v="3d"]');
+  b3.addEventListener('mouseenter',function(){$('preview').classList.add('tilt');});
+  b3.addEventListener('mouseleave',function(){$('preview').classList.remove('tilt');});
 
   var board=$('ch-board');
   board.addEventListener('pointerdown',onDown);
@@ -438,34 +519,22 @@ function boot(){
   board.addEventListener('pointerup',onUp);
   board.addEventListener('pointercancel',onCancel);
   board.addEventListener('contextmenu',function(e){e.preventDefault();});
-  $('ch-theme').addEventListener('click',function(){setTheme(G.theme==='wood'?'neon':'wood');});
-  $('chb-beginner').addEventListener('click',function(){setMode('beginner');});
-  $('chb-professional').addEventListener('click',function(){setMode('professional');});
-  $('chb-aceon').addEventListener('click',function(){show('ai-modal');});
-  document.querySelectorAll('.ai-opt').forEach(function(b){
-    b.addEventListener('click',function(){
-      hide('ai-modal');
-      if(b.dataset.sub==='grandmaster'){show('gm-modal');return;}
-      setMode('aceon',b.dataset.sub);
-    });
-  });
-  $('ai-cancel').addEventListener('click',function(){hide('ai-modal');});
-  $('gm-accept').addEventListener('click',function(){hide('gm-modal');setMode('aceon','grandmaster');});
-  $('gm-back').addEventListener('click',function(){hide('gm-modal');show('ai-modal');});
+
+  $('btn-play').addEventListener('click',newGame);
+  $('btn-continue').addEventListener('click',function(){showScreen('game');});
   $('ch-new').addEventListener('click',newGame);
   $('ch-resign').addEventListener('click',onResign);
+  $('ch-menu').addEventListener('click',function(){showScreen('menu');});
   $('rep-new').addEventListener('click',newGame);
+  $('rep-menu').addEventListener('click',function(){hide('report-modal');showScreen('menu');});
   $('rep-close').addEventListener('click',function(){hide('report-modal');});
 
-  newGame();
-  E.load();   // движок грузится, пока игрок смотрит на заставку
-  A.splash('CHESS',function(){
-    G.started=true;A.trackPlay();
-    if(G.st.turn===G.ai){msg('AI MOVES FIRST');setTimeout(aiMove,400);}
-    else msg('YOUR TURN ('+(G.human==='w'?'WHITE':'BLACK')+')');
-  });
+  render();renderLog();
+  showScreen('menu');
+  E.load();   // движок грузится, пока игрок в меню
 }
 
-window.AceonChess={state:G,newGame:newGame,setMode:setMode,play:play,tryMove:tryHumanMove,setTheme:setTheme};
+window.AceonChess={state:G,settings:S,newGame:newGame,play:play,tryMove:tryHumanMove,showScreen:showScreen,
+  setLevel:function(k){S.level=k;paintMenu();}};
 boot();
 })();

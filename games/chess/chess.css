@@ -2,6 +2,10 @@
 
 body{display:flex;flex-direction:column;}
 
+/* экраны: меню или партия */
+body.screen-menu #game{display:none;}
+body.screen-game #menu{display:none;}
+
 .ch-layout{
   flex:1;min-height:0;display:grid;gap:14px;padding:12px;
   grid-template-columns:minmax(200px,250px) minmax(0,1fr) minmax(200px,250px);
@@ -20,9 +24,6 @@ body{display:flex;flex-direction:column;}
 .panel-title{font-size:8px;letter-spacing:3px;color:var(--pri);text-shadow:0 0 8px rgba(0,229,255,.6);
   padding:11px 10px 9px;text-align:center;border-bottom:1px solid #002a44;}
 .panel-body{padding:10px;display:flex;flex-direction:column;gap:7px;}
-.mode-btn{width:100%;text-align:left;}
-.mode-btn.aceon{border-color:var(--pink);color:var(--pink);}
-.mode-btn.aceon.sel,.mode-btn.aceon:hover{background:#200010;border-color:var(--pink);color:#ff7095;box-shadow:0 0 12px rgba(255,45,120,.35);}
 .side-info{font-size:7px;letter-spacing:1px;color:#6a93a8;text-align:center;line-height:1.8;}
 .btn-row{display:flex;gap:7px;}
 .btn-row .btn{flex:1;}
@@ -147,22 +148,6 @@ body.theme-neon{
 .ch-promo-btn:hover{background:var(--bdr);border-color:var(--pri);transform:translateY(-3px);box-shadow:0 0 16px rgba(0,229,255,.45);}
 .ch-promo-btn .pc{width:80%;height:80%;}
 
-/* выбор режима A.C.EON */
-.ai-title{font-size:clamp(11px,2.5vw,16px);color:var(--pink);text-shadow:0 0 20px var(--pink);margin-bottom:14px;letter-spacing:3px;}
-.ai-text{font-size:clamp(7px,1.5vw,10px);color:#aee9ff;line-height:2.1;margin-bottom:20px;letter-spacing:1px;}
-.ai-opts{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
-.ai-opt{padding:12px;text-align:left;white-space:normal;}
-.ai-opt-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:clamp(8px,1.5vw,10px);}
-.ai-opt-head small{font-size:clamp(6px,1.1vw,7px);opacity:.8;}
-.ai-opt-desc{font-size:clamp(6px,1.2vw,8px);color:#9fb6c4;line-height:1.7;}
-.ai-opt.pro{border-color:#00e5ff;color:#00e5ff;}
-.ai-opt.exp{border-color:#ff8800;color:#ff8800;}
-.ai-opt.gm{border-color:var(--pink);color:var(--pink);}
-.btn-ghost{color:#557;border-color:#1a0010;}
-#gm-modal .arc-box{border-color:#f00;background:#080000;box-shadow:0 0 80px rgba(255,0,0,.4);}
-.gm-title{font-size:clamp(9px,2vw,13px);color:#f00;text-shadow:0 0 24px #f00;margin-bottom:14px;letter-spacing:2px;animation:blink .5s step-end infinite;}
-.gm-text{font-size:clamp(7px,1.5vw,10px);color:#ffb3b3;line-height:2;margin-bottom:22px;letter-spacing:1px;}
-
 /* итоги партии */
 .ch-report-box{max-width:440px;}
 .ch-report-title{font-size:clamp(20px,5vw,34px);letter-spacing:5px;margin-bottom:8px;animation:repPulse 1.6s ease-in-out infinite;}
@@ -195,8 +180,6 @@ body.theme-neon{
   .ch-right{order:3;}
   #aceon-bot{display:none;}
   #ch-movelog{max-height:200px;}
-  .mode-panel .panel-body{display:grid;grid-template-columns:1fr 1fr 1fr;}
-  .mode-panel .side-info,.mode-panel .btn-row{grid-column:1/-1;}
 }
 
 /* персонаж A.C.EON: перенесено из старого лаунчера без изменений */
@@ -288,3 +271,125 @@ body.theme-neon{
 @keyframes botGlitch{0%{transform:translate(0,0);}25%{transform:translate(-4px,2px);}50%{transform:translate(3px,-2px);opacity:.7;}75%{transform:translate(-2px,-1px);}100%{transform:translate(0,0);}}
 #aceon-bot.mood-lose .bot-face{filter:hue-rotate(40deg) brightness(.8);}
 #aceon-bot.mood-lose .bot-eye{height:5px;border-radius:2px;}
+
+
+/* ════════ МЕНЮ ════════ */
+.menu{position:relative;flex:1;min-height:calc(100dvh - var(--top-h));display:flex;flex-direction:column;align-items:center;
+  gap:clamp(14px,2.6vh,26px);padding:clamp(14px,3vh,34px) 14px 28px;overflow:hidden;}
+
+/* фон: уходящий в перспективу пол из клеток */
+.menu-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 18%,rgba(0,229,255,.12),transparent 55%),radial-gradient(ellipse at 50% 110%,rgba(255,45,120,.16),transparent 60%);}
+.menu-bg::before{content:'';position:absolute;left:-50%;right:-50%;bottom:-10%;height:70%;
+  background:repeating-conic-gradient(rgba(0,229,255,.10) 0 25%,transparent 0 50%) 0 0/80px 80px;
+  transform:perspective(420px) rotateX(62deg);transform-origin:50% 100%;
+  -webkit-mask-image:linear-gradient(to top,#000 10%,transparent 85%);mask-image:linear-gradient(to top,#000 10%,transparent 85%);
+  animation:floorRun 6s linear infinite;}
+@keyframes floorRun{to{background-position:0 160px;}}
+@media (prefers-reduced-motion:reduce){.menu-bg::before{animation:none;}}
+
+.menu-head{text-align:center;}
+.menu-title{display:flex;flex-direction:column;align-items:center;gap:10px;font-weight:normal;
+  font-size:clamp(26px,6vw,56px);letter-spacing:.12em;color:var(--pri);
+  text-shadow:0 0 18px rgba(0,229,255,.8),0 0 46px rgba(0,229,255,.35);}
+.menu-brand{font-size:clamp(9px,1.5vw,12px);letter-spacing:.5em;color:var(--pink);text-shadow:0 0 12px var(--pink);padding-left:.5em;}
+.menu-sub{margin-top:14px;font-size:clamp(6px,1.2vw,8px);letter-spacing:.3em;color:#5f8fa6;}
+
+.menu-cols{width:100%;max-width:900px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;}
+.menu-card{background:linear-gradient(160deg,rgba(4,16,30,.92),rgba(2,8,16,.92));border:2px solid var(--bdr);border-top:3px solid var(--pri);
+  padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 30px rgba(0,229,255,.08),inset 0 0 30px rgba(0,0,0,.5);}
+.menu-h{font-weight:normal;font-size:9px;letter-spacing:.3em;color:var(--pri);text-shadow:0 0 8px rgba(0,229,255,.6);margin-bottom:2px;}
+
+/* уровни */
+.lvl-list{display:flex;flex-direction:column;gap:8px;}
+.lvl-card{--acc:#00e5ff;position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;padding:13px 12px;background:#020c18;border:1px solid var(--bdr);border-left:4px solid var(--acc);
+  color:#bfe3f2;font-size:clamp(7px,1.2vw,9px);letter-spacing:1px;text-align:left;cursor:pointer;
+  transition:background .12s,box-shadow .15s,transform .12s;}
+.lvl-card:hover{background:#06182b;transform:translateX(3px);}
+.lvl-card.sel{background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 22%,#020c18),#020c18 80%);color:#fff;
+  box-shadow:0 0 0 1px var(--acc),0 0 18px color-mix(in srgb,var(--acc) 45%,transparent);}
+.lvl-name{flex:1;line-height:1.5;}
+.bars{display:inline-flex;gap:3px;flex-shrink:0;}
+.bars i{width:7px;height:12px;background:#0d2236;border:1px solid #163650;}
+.bars i.on{background:var(--acc);border-color:var(--acc);box-shadow:0 0 6px var(--acc);}
+
+/* всплывающее описание уровня */
+.lvl-pop{position:absolute;left:calc(100% + 16px);top:50%;width:270px;z-index:50;
+  display:flex;flex-direction:column;gap:9px;padding:14px;text-align:left;
+  background:#020a14;border:1px solid var(--acc);box-shadow:0 0 26px color-mix(in srgb,var(--acc) 35%,transparent),0 12px 30px rgba(0,0,0,.6);
+  opacity:0;visibility:hidden;transform:translate(-8px,-50%);transition:opacity .15s,transform .15s,visibility .15s;pointer-events:none;}
+.lvl-pop::before{content:'';position:absolute;left:-7px;top:50%;width:12px;height:12px;background:#020a14;
+  border-left:1px solid var(--acc);border-bottom:1px solid var(--acc);transform:translateY(-50%) rotate(45deg);}
+.pop-name{color:var(--acc);font-size:9px;letter-spacing:2px;}
+.pop-desc{color:#cfe6f2;font-family:Tahoma,Arial,sans-serif;font-size:13px;line-height:1.5;letter-spacing:0;}
+.pop-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:7px;letter-spacing:1px;color:#6a93a8;
+  border-top:1px solid #0e2538;padding-top:8px;}
+.pop-row b{font-weight:normal;color:#fff;}
+@media (hover:hover) and (min-width:761px){
+  .lvl-card:hover .lvl-pop,.lvl-card:focus-visible .lvl-pop{opacity:1;visibility:visible;transform:translate(0,-50%);}
+}
+/* касание и узкий экран: описание выбранного уровня раскрывается прямо в карточке */
+@media (hover:none),(max-width:760px){
+  .lvl-card{flex-wrap:wrap;}
+  .lvl-pop{position:static;width:100%;transform:none;box-shadow:none;border:0;border-top:1px solid #0e2538;background:none;
+    padding:10px 0 0;margin-top:4px;display:none;opacity:1;visibility:visible;}
+  .lvl-pop::before,.lvl-pop .pop-name{display:none;}
+  .lvl-card.sel .lvl-pop{display:flex;}
+}
+
+/* превью доски */
+.preview{display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0 4px;}
+.preview-stage{perspective:520px;}
+.preview-board{width:clamp(120px,22vw,168px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);
+  border:var(--brd-w) solid var(--brd);box-shadow:var(--brd-shadow);container-type:inline-size;
+  transition:transform .5s cubic-bezier(.3,.7,.3,1);transform-origin:50% 60%;}
+.preview-board .pc{width:84%;height:84%;}
+.preview.tilt .preview-board{transform:rotateX(52deg) rotateZ(-10deg) translateY(-8px);}
+.preview-tags{display:flex;flex-direction:column;gap:6px;}
+.preview-tags span{font-size:7px;letter-spacing:2px;color:var(--pri);padding:6px 8px;border:1px solid var(--bdr);background:#020c18;text-align:center;}
+
+/* переключатели */
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.opt-lbl{font-size:7px;letter-spacing:2px;color:#6a93a8;min-width:60px;}
+.seg{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex:1;}
+.seg-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;background:#020c18;border:1px solid var(--bdr);
+  color:#8fb6c9;font-size:clamp(6px,1.1vw,8px);letter-spacing:1px;cursor:pointer;transition:background .1s,border-color .1s,color .1s;}
+.seg-btn:hover{border-color:var(--pri);color:#fff;}
+.seg-btn.sel{background:var(--bdr);border-color:var(--pri);color:#fff;box-shadow:0 0 10px rgba(0,229,255,.3);}
+.seg-btn.soon{opacity:.45;cursor:not-allowed;}
+.seg-btn small{font-size:5px;color:var(--pink);letter-spacing:1px;}
+.seg-btn.shake{animation:segShake .35s;}
+@keyframes segShake{20%{transform:translateX(-4px);}40%{transform:translateX(4px);}60%{transform:translateX(-3px);}80%{transform:translateX(2px);}}
+.sw{width:14px;height:14px;display:inline-block;flex-shrink:0;}
+.sw-wood{background:conic-gradient(#e3cd9a 0 25%,#9a6a42 0 50%,#e3cd9a 0 75%,#9a6a42 0) 0 0/14px 14px;border:1px solid #3a281a;}
+.sw-neon{background:conic-gradient(#10203a 0 25%,#070e1e 0 50%,#10203a 0 75%,#070e1e 0) 0 0/14px 14px;border:1px solid #00e5ff;box-shadow:0 0 6px rgba(0,229,255,.6);}
+.side-ico{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;}
+.side-ico .pc{width:100%;height:100%;filter:none;}
+.side-r{border:1px dashed #4a7a90;color:#8fb6c9;font-size:8px;}
+
+/* кнопки внизу меню */
+.menu-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.menu-play{padding:16px 40px;font-size:clamp(10px,2vw,14px);letter-spacing:3px;border-color:var(--pri);color:#fff;
+  background:linear-gradient(180deg,#003a55,#001a2a);animation:playGlow 2s ease-in-out infinite;}
+@keyframes playGlow{0%,100%{box-shadow:0 0 12px rgba(0,229,255,.35);}50%{box-shadow:0 0 28px rgba(0,229,255,.7);}}
+.menu-cont{padding:16px 24px;font-size:clamp(8px,1.5vw,10px);}
+
+/* панель партии */
+.game-lvl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:8px;letter-spacing:1px;color:#fff;
+  padding:8px 10px;background:#020c18;border:1px solid var(--bdr);}
+.game-lvl .bars{--acc:#00e5ff;}
+
+@media (max-width:760px){
+  .menu-cols{grid-template-columns:1fr;}
+  .menu{gap:16px;}
+  .preview-board{width:120px;}
+}
+
+/* описание уровня должно лежать поверх правой колонки */
+.menu-card{position:relative;z-index:1;}
+.menu-cols>.menu-card:first-child{z-index:3;}
+.lvl-card:hover,.lvl-card:focus-visible{z-index:5;}
+/* чёрный король на тёмной кнопке: светлый контур */
+.side-ico .pc-b .pc-body{stroke:#9fb6c4;}
+.side-ico .pc-b .pc-line{stroke:#9fb6c4;}

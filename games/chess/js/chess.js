@@ -332,6 +332,7 @@ function paintGamePanel(){
   label($('cap-lbl-you'),local?'cap.byW':'cap.you');
   label($('cap-lbl-ai'),local?'cap.byB':'cap.ai');
   paintUndo();paintClocks();paintViewBtn();
+  fitBoard();
 }
 function paintUndo(){
   var b=$('ch-undo');
@@ -801,18 +802,18 @@ function onResign(){
 var CSS_OK=!!(window.CSS&&CSS.supports&&CSS.supports('container-type','inline-size')&&CSS.supports('aspect-ratio','1/1'));
 function mq(q){return !!(window.matchMedia&&matchMedia(q).matches);}
 function fitBoard(){
-  if(CSS_OK)return;
-  var b=$('ch-board'),wrap=b.parentNode,col=wrap.parentNode;
+  var b=$('ch-board'),wrap=b.parentNode;
   if(mq('(orientation:landscape) and (max-height:520px)')){
-    /* телефон боком: доска во всю высоту колонки под строкой статуса */
-    var hh=Math.min(col.getBoundingClientRect().bottom,window.innerHeight-6)-wrap.getBoundingClientRect().top;
-    if(hh<=0)return;
-    var sz=Math.max(160,Math.floor(hh));
+    /* телефон боком: доска во всю высоту окна под строкой статуса, но справа остаётся место панелям */
+    if(!wrap.offsetParent)return;
+    var hh=window.innerHeight-wrap.getBoundingClientRect().top-6;
+    var sz=Math.floor(Math.max(160,Math.min(hh,window.innerWidth-230)));
     wrap.style.width=wrap.style.height=sz+'px';
-    b.style.width=b.style.height=sz+'px';
+    if(!CSS_OK)b.style.width=b.style.height=sz+'px';
     return;
   }
   wrap.style.width=wrap.style.height='';
+  if(CSS_OK){b.style.width=b.style.height='';return;}
   if(!wrap.clientWidth)return;
   var w=wrap.clientWidth,h=wrap.clientHeight,size;
   if(false){}

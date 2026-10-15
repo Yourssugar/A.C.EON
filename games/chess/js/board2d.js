@@ -11,7 +11,8 @@
    view.lift(r, c, on)        фигура поднята (её тащат)
    view.over(r, c)            подсветить клетку под пальцем (null снимает)
 
-   scene: {board, flip, sel:{r,c}|null, hints:{r*8+c:'go'|'cap'}, lastH, lastA, check:r*8+c|null}
+   scene: {board, flip, sel:{r,c}|null, hints:{r*8+c:'go'|'cap'}, lastH, lastA, check:r*8+c|null,
+           coach:{r,c,tr,tc}|null  подсказка: откуда и куда ходить}
    anim:  {slides:[[r,c,tr,tc],...], burst:[r,c]}  ход и вспышка взятия */
 (function(){
 'use strict';
@@ -36,6 +37,8 @@ window.Board2D=function(el){
       if(on(s.lastH,r,c))cls+=' ch-last-h';
       if(on(s.lastA,r,c))cls+=' ch-last-a';
       if(i===s.check)cls+=' ch-check';
+      if(s.coach&&s.coach.r===r&&s.coach.c===c)cls+=' ch-coach-from';
+      if(s.coach&&s.coach.tr===r&&s.coach.tc===c)cls+=' ch-coach-to';
       html+='<div class="'+cls+'" data-r="'+r+'" data-c="'+c+'">';
       if(p)html+='<div class="ch-pw">'+pieceSvg(p)+'</div>';
       if(vc===0)html+='<span class="ch-lbl ch-lbl-r">'+(8-r)+'</span>';

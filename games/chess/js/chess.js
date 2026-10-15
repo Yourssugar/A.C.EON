@@ -22,7 +22,7 @@ var LEVEL_KEYS=Object.keys(LEVELS);
 /* настройки, статистика и (позже) сохранённая партия: раздел 'chess' в Store */
 Store.define('chess',{
   version:1,
-  defaults:{settings:{level:'beginner',theme:'wood',view:'2d',side:'r'},wins:{}},
+  defaults:{settings:{level:'beginner',theme:'wood',view:'2d',side:'r'},wins:{},game:null},
   legacy:function(raw,json){
     var o={settings:{},wins:{}},s=json('aceon_chess_settings');
     if(s)['level','theme','side'].forEach(function(k){if(s[k])o.settings[k]=s[k];});
@@ -152,23 +152,52 @@ function showScreen(name){
 }
 
 /* ════════ ПАРТИЯ ════════ */
-function newGame(){
+function resetGame(levelKey,human){
   E.newGame();
   G.gameId++;
-  G.level=S.level;
+  G.level=levelKey;
   G.st=R.startState();G.dead=false;G.sel=null;G.promo=null;G.thinking=false;G.result=null;G.endTime=null;
   G.history=[];G.keys=[R.positionKey(G.st)];G.uci=[];
   G.lastH=G.lastA=null;G.capByHuman=[];G.capByAi=[];G.start=Date.now();
-  G.human=S.side==='r'?(Math.random()<0.5?'w':'b'):S.side;G.ai=R.opp(G.human);
+  G.human=human;G.ai=R.opp(human);
   G.started=true;
   hide('report-modal');hide('promo-modal');resetResign();
   paintGamePanel();
   Bot.mode();Bot.react('idle');
+}
+function newGame(){
+  resetGame(S.level,S.side==='r'?(Math.random()<0.5?'w':'b'):S.side);
+  saveGame();
   render();
   showScreen('game');
   A.trackPlay();
   if(G.st.turn===G.ai){msg(['msg.aiFirst']);setTimeout(aiMove,500);}
   else turnMsg();
+}
+
+/* ── сохранение партии: хватает списка ходов, всё остальное восстанавливается повтором ── */
+function saveGame(){
+  DB.game=G.dead||!G.started?null:{level:G.level,human:G.human,uci:G.uci.slice(),elapsed:Date.now()-G.start};
+  Store.save('chess');
+}
+function restoreGame(){
+  var sv=DB.game;
+  if(!sv||!LEVELS[sv.level]||(sv.human!=='w'&&sv.human!=='b')||!Array.isArray(sv.uci))return false;
+  resetGame(sv.level,sv.human);
+  for(var i=0;i<sv.uci.length;i++){
+    var mv=R.fromUCI(G.st,sv.uci[i]);
+    if(!mv){DB.game=null;Store.save('chess');G.started=false;G.dead=true;return false;}
+    record(mv);
+  }
+  if(gameResult()){DB.game=null;Store.save('chess');G.started=false;G.dead=true;return false;}
+  G.start=Date.now()-(sv.elapsed||0);
+  render();
+  if(G.st.turn===G.human)turnMsg();
+  return true;
+}
+function continueGame(){
+  showScreen('game');
+  if(!G.dead&&G.st.turn===G.ai&&!G.thinking)aiMove();
 }
 function paintGamePanel(){
   $('game-lvl-name').textContent=t('lvl.'+G.level);
@@ -177,26 +206,30 @@ function paintGamePanel(){
   $('ch-side').textContent=t('game.you',{side:sideName(G.human)});
 }
 
-/* ход любой стороны */
-function play(mv,opts){
+/* записать ход в партию (без картинки и звука; так же восстанавливается сохранение) */
+function record(mv){
   var before=G.st,mover=before.turn,captured=before.board[mv.tr][mv.tc];
   if(mv.enPassant)captured=before.board[mv.r][mv.tc];
   var after=R.applyMove(before,mv);
-  var text=R.moveText(before,mv,after);
   G.st=after;
-  G.history.push({text:text,side:mover});
+  G.history.push({text:R.moveText(before,mv,after),side:mover});
   G.uci.push(R.toUCI(mv));
   G.keys.push(R.positionKey(after));
   if(captured)(mover===G.human?G.capByHuman:G.capByAi).push(captured);
   var last={r:mv.r,c:mv.c,tr:mv.tr,tc:mv.tc};
   if(mover===G.human)G.lastH=last;else G.lastA=last;
   G.sel=null;
+  return {captured:captured,check:R.inCheck(after.board,after.turn)};
+}
+/* ход любой стороны: запись, сохранение, анимация, звук */
+function play(mv,opts){
+  var info=record(mv);
+  saveGame();
   var slides=opts&&opts.noSlide?[]:[[mv.r,mv.c,mv.tr,mv.tc]];
   if(mv.castle){var home=mv.r;slides.push(mv.castle==='K'?[home,7,home,5]:[home,0,home,3]);}
-  var check=R.inCheck(after.board,after.turn);
-  render({slides:slides,burst:captured?[mv.tr,mv.tc]:null});
-  Sound.sfx(check?'check':captured?'capture':'move');
-  return {captured:!!captured,check:check};
+  render({slides:slides,burst:info.captured?[mv.tr,mv.tc]:null});
+  Sound.sfx(info.check?'check':info.captured?'capture':'move');
+  return {captured:!!info.captured,check:info.check};
 }
 
 /* конец партии */
@@ -215,6 +248,7 @@ function gameResult(){
 }
 function finish(res){
   G.dead=true;G.thinking=false;G.result=res;G.endTime=Date.now();E.cancel();
+  saveGame();   // законченная партия из сохранения убирается
   msg([['res.'+res.result],[res.reason]],res.result==='lose');
   Bot.react(res.result==='win'?'lose':res.result==='lose'?'win':'draw');
   Sound.duck(0.25,2600);
@@ -246,22 +280,17 @@ function humanMove(mv,opts){
   setTimeout(aiMove,(info.captured||info.check)?600:250);
 }
 
-var drag=null;
-function cellFromPoint(x,y){
-  var el=document.elementFromPoint(x,y);
-  el=el&&el.closest&&el.closest('#ch-board .ch-cell');
-  return el?{r:+el.dataset.r,c:+el.dataset.c,el:el}:null;
-}
+var drag=null;   // {r,c,x,y,wasSel,moving,ghost,size}
 function onDown(e){
   if(e.button!==undefined&&e.button!==0)return;
-  var cell=e.target.closest('.ch-cell');if(!cell||!canAct())return;
-  var r=+cell.dataset.r,c=+cell.dataset.c;
+  var sq=view.squareAt(e.clientX,e.clientY);if(!sq||!canAct())return;
+  var r=sq.r,c=sq.c;
   if(G.sel&&!(G.sel.r===r&&G.sel.c===c)&&tryHumanMove(G.sel.r,G.sel.c,r,c))return;
   if(ownMovable(r,c)){
     var wasSel=!!(G.sel&&G.sel.r===r&&G.sel.c===c);
     if(!wasSel){G.sel={r:r,c:c};render();Sound.sfx('select');}
-    drag={r:r,c:c,x:e.clientX,y:e.clientY,wasSel:wasSel,moving:false,ghost:null,over:null};
-    $('ch-board').setPointerCapture(e.pointerId);
+    drag={r:r,c:c,x:e.clientX,y:e.clientY,wasSel:wasSel,moving:false,ghost:null,size:0};
+    view.el.setPointerCapture(e.pointerId);
     e.preventDefault();
     return;
   }
@@ -272,31 +301,29 @@ function onMove(e){
   if(!drag.moving){
     if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;
     drag.moving=true;
-    var src=cellEl(drag.r,drag.c),pw=src&&src.querySelector('.ch-pw');
-    var size=src.getBoundingClientRect().width;
+    var size=view.cellSize();
     var g=document.createElement('div');g.id='ch-drag';
     g.style.width=g.style.height=size+'px';
     g.innerHTML=pieceSvg(G.st.board[drag.r][drag.c]);
     document.body.appendChild(g);
     drag.ghost=g;drag.size=size;
-    if(pw)pw.classList.add('lifted');
+    view.lift(drag.r,drag.c,true);
   }
   drag.ghost.style.transform='translate('+(e.clientX-drag.size/2)+'px,'+(e.clientY-drag.size/2)+'px)';
-  var tc=cellFromPoint(e.clientX,e.clientY);
-  var over=tc&&tc.el.classList.contains('ch-hint')?tc.el:null;
-  if(over!==drag.over){if(drag.over)drag.over.classList.remove('ch-over');if(over)over.classList.add('ch-over');drag.over=over;}
+  var sq=view.squareAt(e.clientX,e.clientY);
+  view.over(sq?sq.r:null,sq?sq.c:null);
 }
 function onUp(e){
   if(!drag)return;
   var d=drag;drag=null;
   if(d.ghost)d.ghost.remove();
   if(d.moving){
-    var tc=cellFromPoint(e.clientX,e.clientY);
-    if(tc&&!(tc.r===d.r&&tc.c===d.c)&&tryHumanMove(d.r,d.c,tc.r,tc.c,{noSlide:true}))return;
-    render();
+    var sq=view.squareAt(e.clientX,e.clientY);
+    if(sq&&!(sq.r===d.r&&sq.c===d.c)&&tryHumanMove(d.r,d.c,sq.r,sq.c,{noSlide:true}))return;
+    render();   // вернуть фигуру на место, выбор остаётся
     return;
   }
-  if(d.wasSel){G.sel=null;render();}
+  if(d.wasSel){G.sel=null;render();}   // повторный клик по выбранной фигуре снимает выбор
 }
 function onCancel(){if(!drag)return;if(drag.ghost)drag.ghost.remove();drag=null;render();}
 
@@ -399,62 +426,18 @@ function onResign(){
   finish({result:'lose',reason:'reason.resigned'});
 }
 
-/* ── отрисовка доски ── */
+/* ── отрисовка: доску рисует сменный модуль (сейчас Board2D) ── */
+var view=null;
+function scene(){
+  var st=G.st,hints={},check=null;
+  if(G.sel)R.legal(st,G.sel.r,G.sel.c).forEach(function(m){hints[m.tr*8+m.tc]=st.board[m.tr][m.tc]||m.enPassant?'cap':'go';});
+  if(R.inCheck(st.board,st.turn)){var k=R.findKing(st.board,st.turn);check=k[0]*8+k[1];}
+  return {board:st.board,flip:G.human==='b',sel:G.sel,hints:hints,lastH:G.lastH,lastA:G.lastA,check:check};
+}
 /* anim: {slides:[[r,c,tr,tc],...], burst:[r,c]} */
 function render(anim){
-  var el=$('ch-board'),st=G.st,flip=G.human==='b',html='';
-  var hints={};
-  if(G.sel)R.legal(st,G.sel.r,G.sel.c).forEach(function(m){hints[m.tr*8+m.tc]=st.board[m.tr][m.tc]||m.enPassant?'cap':'go';});
-  var checkSq=null;
-  if(R.inCheck(st.board,st.turn)){var k=R.findKing(st.board,st.turn);checkSq=k[0]*8+k[1];}
-  function on(last,r,c){return last&&((last.r===r&&last.c===c)||(last.tr===r&&last.tc===c));}
-  for(var vr=0;vr<8;vr++)for(var vc=0;vc<8;vc++){
-    var r=flip?7-vr:vr,c=flip?7-vc:vc,i=r*8+c,p=st.board[r][c];
-    var cls='ch-cell '+((r+c)%2===0?'ch-light':'ch-dark');
-    if(G.sel&&G.sel.r===r&&G.sel.c===c)cls+=' ch-sel';
-    if(hints[i])cls+=' ch-hint'+(hints[i]==='cap'?' ch-cap':'');
-    if(on(G.lastH,r,c))cls+=' ch-last-h';
-    if(on(G.lastA,r,c))cls+=' ch-last-a';
-    if(i===checkSq)cls+=' ch-check';
-    html+='<div class="'+cls+'" data-r="'+r+'" data-c="'+c+'">';
-    if(p)html+='<div class="ch-pw">'+pieceSvg(p)+'</div>';
-    if(vc===0)html+='<span class="ch-lbl ch-lbl-r">'+(8-r)+'</span>';
-    if(vr===7)html+='<span class="ch-lbl ch-lbl-c">'+'abcdefgh'[c]+'</span>';
-    html+='</div>';
-  }
-  el.innerHTML=html;
-  if(anim&&!reducedMotion()){
-    (anim.slides||[]).forEach(function(s){slide(s[0],s[1],s[2],s[3]);});
-    if(anim.burst)burst(anim.burst[0],anim.burst[1]);
-  }
+  view.draw(scene(),anim);
   renderLog();renderCaptured();
-}
-function reducedMotion(){return window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;}
-function cellEl(r,c){return $('ch-board').querySelector('.ch-cell[data-r="'+r+'"][data-c="'+c+'"]');}
-
-/* фигура стартует со старой клетки и доезжает до новой */
-function slide(r,c,tr,tc){
-  var cell=cellEl(tr,tc),pw=cell&&cell.querySelector('.ch-pw');if(!pw)return;
-  var k=G.human==='b'?-1:1;
-  pw.style.transform='translate('+((c-tc)*k*100)+'%,'+((r-tr)*k*100)+'%)';
-  pw.getBoundingClientRect();
-  pw.classList.add('moving');
-  pw.style.transform='';
-  pw.addEventListener('transitionend',function(){pw.classList.remove('moving');},{once:true});
-}
-
-/* вспышка на клетке взятия */
-function burst(r,c){
-  var cell=cellEl(r,c);if(!cell)return;
-  var wrap=document.createElement('div');wrap.className='ch-burst';
-  var html='<span class="ch-ring"></span>';
-  for(var i=0;i<12;i++){
-    var a=i/12*Math.PI*2+Math.random()*0.4,d=6+Math.random()*5;   // в cqw, клетка = 12.5cqw
-    html+='<i style="--dx:'+(Math.cos(a)*d).toFixed(1)+'cqw;--dy:'+(Math.sin(a)*d).toFixed(1)+'cqw"></i>';
-  }
-  wrap.innerHTML=html;
-  setTimeout(function(){cell.appendChild(wrap);},180);
-  setTimeout(function(){wrap.remove();},900);
 }
 function renderLog(){
   var body=$('ch-movelog-body'),h=G.history;
@@ -520,23 +503,27 @@ function boot(){
   b3.addEventListener('mouseenter',function(){$('preview').classList.add('tilt');});
   b3.addEventListener('mouseleave',function(){$('preview').classList.remove('tilt');});
 
-  var board=$('ch-board');
-  board.addEventListener('pointerdown',onDown);
-  board.addEventListener('pointermove',onMove);
-  board.addEventListener('pointerup',onUp);
-  board.addEventListener('pointercancel',onCancel);
-  board.addEventListener('contextmenu',function(e){e.preventDefault();});
+  view=Board2D($('ch-board'));
+  view.el.addEventListener('pointerdown',onDown);
+  view.el.addEventListener('pointermove',onMove);
+  view.el.addEventListener('pointerup',onUp);
+  view.el.addEventListener('pointercancel',onCancel);
+  view.el.addEventListener('contextmenu',function(e){e.preventDefault();});
+  /* время партии дописывается при уходе со страницы */
+  window.addEventListener('pagehide',function(){if(G.started&&!G.dead)saveGame();});
 
   $('btn-play').addEventListener('click',newGame);
-  $('btn-continue').addEventListener('click',function(){showScreen('game');});
+  $('btn-continue').addEventListener('click',continueGame);
   $('ch-new').addEventListener('click',newGame);
   $('ch-resign').addEventListener('click',onResign);
   $('ch-menu').addEventListener('click',function(){showScreen('menu');});
   $('rep-new').addEventListener('click',newGame);
   $('rep-menu').addEventListener('click',function(){hide('report-modal');showScreen('menu');});
   $('rep-close').addEventListener('click',function(){hide('report-modal');});
+  $('btn-licenses').addEventListener('click',function(){show('lic-modal');});
+  $('lic-close').addEventListener('click',function(){hide('lic-modal');});
 
-  render();renderLog();
+  if(!restoreGame())render();
   showScreen('menu');
   E.load();   // движок грузится, пока игрок в меню
 }

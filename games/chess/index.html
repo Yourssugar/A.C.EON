@@ -7,16 +7,16 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="3" defer></script>
+<script src="../shared/boot.js" data-v="4" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
-  {"src":"css/chess.css","kb":26},
+  {"src":"css/chess.css","kb":34},
   {"src":"../shared/store.js","kb":3},
   {"src":"../shared/i18n.js","kb":3},
   {"src":"../shared/sound.js","kb":7},
   {"src":"../shared/arcade.js","kb":5},
-  {"src":"js/lang.js","kb":22},
+  {"src":"js/lang.js","kb":41},
   {"src":"js/pieces.js","kb":3},
   {"src":"js/rules.js","kb":10},
   {"src":"js/modes.js","kb":3},
@@ -24,7 +24,8 @@
   {"src":"js/coach.js","kb":2},
   {"src":"js/engine.js","kb":4},
   {"src":"js/board2d.js","kb":5},
-  {"src":"js/chess.js","kb":22},
+  {"src":"js/board3d.js","kb":31},
+  {"src":"js/chess.js","kb":41},
   {"src":"stockfish/stockfish.js","kb":95,"prefetch":true,"optional":true},
   {"src":"stockfish/stockfish.wasm","kb":546,"nov":true,"optional":true}
 ]}
@@ -92,7 +93,7 @@
         <span class="opt-lbl" data-i18n="menu.view"></span>
         <div class="seg" id="seg-view">
           <button class="seg-btn" data-v="2d">2D</button>
-          <button class="seg-btn soon" data-v="3d" aria-disabled="true">3D <small data-i18n="menu.soon"></small></button>
+          <button class="seg-btn" data-v="3d">3D</button>
         </div>
       </div>
       <div class="opt-row">
@@ -109,7 +110,22 @@
           <button class="seg-btn" data-v="600" data-i18n="time.10"></button>
         </div>
       </div>
-      <div class="opt-row">
+      <div class="opt-row hidden" id="opt-lclock">
+        <span class="opt-lbl" data-i18n="menu.time"></span>
+        <div class="seg" id="seg-lclock">
+          <button class="seg-btn" data-v="0" data-i18n="time.none"></button>
+          <button class="seg-btn" data-v="300" data-i18n="time.5"></button>
+          <button class="seg-btn" data-v="600" data-i18n="time.10"></button>
+        </div>
+      </div>
+      <div class="opt-row hidden" id="opt-rotate">
+        <span class="opt-lbl" data-i18n="menu.rotate"></span>
+        <div class="seg" id="seg-rotate">
+          <button class="seg-btn" data-v="auto" data-i18n="rotate.auto"></button>
+          <button class="seg-btn" data-v="off" data-i18n="rotate.off"></button>
+        </div>
+      </div>
+      <div class="opt-row" id="opt-side">
         <span class="opt-lbl" data-i18n="menu.side"></span>
         <div class="seg" id="seg-side">
           <button class="seg-btn" data-v="w"><i class="side-ico" id="ico-w"></i><span data-i18n="side.w"></span></button>
@@ -117,6 +133,12 @@
           <button class="seg-btn" data-v="b"><i class="side-ico" id="ico-b"></i><span data-i18n="side.b"></span></button>
         </div>
       </div>
+    </section>
+
+    <!-- с другом: на одном устройстве и по сети -->
+    <section class="menu-card menu-friend">
+      <h2 class="menu-h" data-i18n="menu.friend"></h2>
+      <div class="friend-list" id="friend-list"></div>
     </section>
   </div>
 
@@ -145,7 +167,10 @@
           <button class="btn btn-undo" id="ch-undo"></button>
           <button class="btn btn-hint" id="ch-hint" data-i18n="game.hint"></button>
         </div>
-        <button class="btn" id="ch-menu">&#9664; <span data-i18n="game.menu"></span></button>
+        <div class="btn-row">
+          <button class="btn btn-view" id="ch-view">3D</button>
+          <button class="btn" id="ch-menu">&#9664; <span data-i18n="game.menu"></span></button>
+        </div>
       </div>
     </section>
 
@@ -163,7 +188,11 @@
       <div class="clk clk-you"><span data-i18n="clock.you"></span><b>5:00</b></div>
     </div>
     <div class="ch-eval hidden" id="ch-eval"><span class="ev-bar"><i></i></span><b>0.0</b></div>
-    <div class="board-wrap"><div id="ch-board"></div></div>
+    <div class="board-wrap">
+      <div id="ch-board"></div>
+      <div id="ch-board3d" class="hidden"><button class="b3-btn" id="b3-reset" type="button" data-i18n-title="b3.reset" title="">&#10226;</button></div>
+      <div class="b3-load hidden" id="b3-load"></div>
+    </div>
   </section>
 
   <aside class="ch-right">
@@ -187,9 +216,9 @@
 
     <section class="panel captured">
       <div class="panel-title" data-i18n="cap.title"></div>
-      <div class="cap-lbl" data-i18n="cap.you"></div>
+      <div class="cap-lbl" id="cap-lbl-you" data-i18n="cap.you"></div>
       <div class="cap-row" id="cap-human"></div>
-      <div class="cap-lbl" data-i18n="cap.ai"></div>
+      <div class="cap-lbl" id="cap-lbl-ai" data-i18n="cap.ai"></div>
       <div class="cap-row" id="cap-ai"></div>
     </section>
   </aside>
@@ -207,6 +236,12 @@
       <span><a href="https://github.com/niklasf/stockfish.js" target="_blank" rel="noopener">github.com/niklasf/stockfish.js</a></span>
     </div>
     <div class="lic-item">
+      <b>three.js</b>
+      <span>Copyright 2010-2023 three.js authors</span>
+      <span>MIT License: <a href="three/LICENSE.txt" target="_blank" rel="noopener">LICENSE.txt</a></span>
+      <span><a href="https://github.com/mrdoob/three.js" target="_blank" rel="noopener">github.com/mrdoob/three.js</a></span>
+    </div>
+    <div class="lic-item">
       <b>Press Start 2P</b>
       <span>Copyright 2012 The Press Start 2P Project Authors (CodeMan38)</span>
       <span>SIL Open Font License 1.1: <a href="../shared/fonts/OFL.txt" target="_blank" rel="noopener">OFL.txt</a></span>
@@ -216,6 +251,22 @@
       <span data-i18n="lic.own"></span>
     </div>
     <button class="btn" id="lic-close" data-i18n="rep.close"></button>
+  </div>
+</div>
+
+<!-- игра по сети по PIN-коду: пока только окно, сервера ещё нет -->
+<div class="arc-modal hidden" id="pin-modal">
+  <div class="arc-box pin-box">
+    <div class="panel-title" style="border:0;margin-bottom:4px;" data-i18n="pin.title"></div>
+    <div class="pin-soon" data-i18n="pin.soon"></div>
+    <p class="pin-text" data-i18n="pin.text"></p>
+    <input class="pin-input" id="pin-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="000000" aria-label="PIN">
+    <div class="pin-note" id="pin-note"></div>
+    <div class="btn-row">
+      <button class="btn" id="pin-new" data-i18n="pin.create"></button>
+      <button class="btn" id="pin-join" data-i18n="pin.join"></button>
+    </div>
+    <button class="btn" id="pin-close" data-i18n="rep.close"></button>
   </div>
 </div>
 

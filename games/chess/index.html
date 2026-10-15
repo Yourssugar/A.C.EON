@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>A.C.EON CHESS</title>
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="1" defer></script>
+<script src="../shared/boot.js" data-v="2" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
@@ -20,6 +20,7 @@
   {"src":"js/pieces.js","kb":3},
   {"src":"js/rules.js","kb":10},
   {"src":"js/engine.js","kb":4},
+  {"src":"js/board2d.js","kb":5},
   {"src":"js/chess.js","kb":22},
   {"src":"stockfish/stockfish.js","kb":95,"prefetch":true,"optional":true},
   {"src":"stockfish/stockfish.wasm","kb":546,"nov":true,"optional":true}
@@ -113,6 +114,8 @@
     <button class="btn menu-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
     <button class="btn menu-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
   </div>
+
+  <button class="menu-foot" id="btn-licenses" type="button" data-i18n="lic.link"></button>
 </main>
 
 <!-- ════════ ПАРТИЯ ════════ -->
@@ -172,6 +175,30 @@
     </section>
   </aside>
 </main>
+
+<!-- лицензии -->
+<div class="arc-modal hidden" id="lic-modal">
+  <div class="arc-box lic-box">
+    <div class="panel-title" style="border:0;margin-bottom:6px;" data-i18n="lic.title"></div>
+    <div class="lic-item">
+      <b>Stockfish</b>
+      <span data-i18n="lic.stockfish"></span>
+      <span>GNU GPL v3: <a href="stockfish/Copying.txt" target="_blank" rel="noopener">Copying.txt</a></span>
+      <span><a href="https://github.com/ddugovic/Stockfish" target="_blank" rel="noopener">github.com/ddugovic/Stockfish</a></span>
+      <span><a href="https://github.com/niklasf/stockfish.js" target="_blank" rel="noopener">github.com/niklasf/stockfish.js</a></span>
+    </div>
+    <div class="lic-item">
+      <b>Press Start 2P</b>
+      <span>Copyright 2012 The Press Start 2P Project Authors (CodeMan38)</span>
+      <span>SIL Open Font License 1.1: <a href="../shared/fonts/OFL.txt" target="_blank" rel="noopener">OFL.txt</a></span>
+    </div>
+    <div class="lic-item">
+      <b>A.C.EON Chess</b>
+      <span data-i18n="lic.own"></span>
+    </div>
+    <button class="btn" id="lic-close" data-i18n="rep.close"></button>
+  </div>
+</div>
 
 <!-- превращение пешки -->
 <div class="arc-modal hidden" id="promo-modal">

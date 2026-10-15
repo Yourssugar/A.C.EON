@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="2" defer></script>
+<script src="../shared/boot.js" data-v="3" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
@@ -19,6 +19,9 @@
   {"src":"js/lang.js","kb":22},
   {"src":"js/pieces.js","kb":3},
   {"src":"js/rules.js","kb":10},
+  {"src":"js/modes.js","kb":3},
+  {"src":"js/clock.js","kb":2},
+  {"src":"js/coach.js","kb":2},
   {"src":"js/engine.js","kb":4},
   {"src":"js/board2d.js","kb":5},
   {"src":"js/chess.js","kb":22},
@@ -99,6 +102,13 @@
           <button class="seg-btn" data-v="neon"><i class="sw sw-neon"></i><span data-i18n="theme.neon"></span></button>
         </div>
       </div>
+      <div class="opt-row hidden" id="opt-blitz">
+        <span class="opt-lbl" data-i18n="menu.time"></span>
+        <div class="seg" id="seg-blitz">
+          <button class="seg-btn" data-v="300" data-i18n="time.5"></button>
+          <button class="seg-btn" data-v="600" data-i18n="time.10"></button>
+        </div>
+      </div>
       <div class="opt-row">
         <span class="opt-lbl" data-i18n="menu.side"></span>
         <div class="seg" id="seg-side">
@@ -131,6 +141,10 @@
           <button class="btn" id="ch-new" data-i18n="game.new"></button>
           <button class="btn" id="ch-resign" data-i18n="game.resign"></button>
         </div>
+        <div class="btn-row">
+          <button class="btn btn-undo" id="ch-undo"></button>
+          <button class="btn btn-hint" id="ch-hint" data-i18n="game.hint"></button>
+        </div>
         <button class="btn" id="ch-menu">&#9664; <span data-i18n="game.menu"></span></button>
       </div>
     </section>
@@ -144,6 +158,11 @@
 
   <section class="ch-center">
     <div id="ch-msg"></div>
+    <div class="ch-clocks hidden" id="ch-clocks">
+      <div class="clk clk-ai"><span data-i18n="clock.ai"></span><b>5:00</b></div>
+      <div class="clk clk-you"><span data-i18n="clock.you"></span><b>5:00</b></div>
+    </div>
+    <div class="ch-eval hidden" id="ch-eval"><span class="ev-bar"><i></i></span><b>0.0</b></div>
     <div class="board-wrap"><div id="ch-board"></div></div>
   </section>
 

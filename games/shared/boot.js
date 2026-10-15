@@ -53,10 +53,10 @@ var FONT=['latin','latin-ext','cyrillic','cyrillic-ext'].map(function(s,i){
 }).join('');
 var css=FONT+
   'html,body{background:#050510;margin:0;}html:not(.booted) body>*:not(#boot){visibility:hidden;}'+
-  '#boot{position:fixed;inset:0;z-index:99999;background:#050510;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;'+
+  '#boot{position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999;background:#050510;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;'+
   'font-family:"Press Start 2P",monospace;color:#00e5ff;opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s;--p:0;}'+
   '#boot.show{opacity:1;visibility:visible;}#boot.done{opacity:0;visibility:hidden;}'+
-  '#boot::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.18) 2px 4px);}'+
+  '#boot::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.18) 2px 4px);}'+
   '.boot-bar{width:min(320px,70vw);height:12px;border:1px solid #003355;padding:2px;box-sizing:border-box;}'+
   '.boot-fill{height:100%;width:calc(var(--p)*100%);background:repeating-linear-gradient(90deg,#00e5ff 0 6px,#007799 6px 8px);box-shadow:0 0 10px rgba(0,229,255,.6);transition:width .2s;}'+
   '.boot-txt{font-size:9px;letter-spacing:3px;color:#5f8fa6;display:flex;gap:16px;}'+

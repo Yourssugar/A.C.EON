@@ -4,8 +4,52 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>A.C.EON CHESS</title>
-<link rel="stylesheet" href="../shared/arcade.css">
-<link rel="stylesheet" href="chess.css">
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":6},
+  {"src":"css/chess.css","kb":26},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":7},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"js/lang.js","kb":22},
+  {"src":"js/pieces.js","kb":3},
+  {"src":"js/rules.js","kb":10},
+  {"src":"js/engine.js","kb":4},
+  {"src":"js/chess.js","kb":22},
+  {"src":"stockfish/stockfish.js","kb":95,"prefetch":true,"optional":true},
+  {"src":"stockfish/stockfish.wasm","kb":546,"nov":true,"optional":true}
+]}
+</script>
+
+<!-- Обложка загрузки шахмат: доска собирается по клеткам вместе с прогрессом (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .bs-board{display:grid;grid-template-columns:repeat(8,1fr);width:min(200px,50vw);aspect-ratio:1;border:2px solid #00e5ff;
+      box-shadow:0 0 24px rgba(0,229,255,.35);}
+    .bs-board i{--k:clamp(0,calc((var(--p) - var(--t)) * 25),1);opacity:var(--k);transform:scale(calc(.3 + .7 * var(--k)));
+      transition:opacity .25s,transform .25s;}
+    .bs-board i.l{background:#10203a;}
+    .bs-board i.d{background:#070e1e;box-shadow:inset 0 0 0 1px rgba(0,229,255,.15);}
+    .bs-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="bs-brand">A.C.EON</div>
+  <div class="bs-title">CHESS</div>
+  <div class="bs-board"></div>
+</template>
+<script>
+/* клетки обложки: 64 штуки, каждая появляется на своём проценте загрузки */
+(function(){
+  var tpl=document.getElementById('boot-skin'),b=tpl.content.querySelector('.bs-board'),h='';
+  for(var r=0;r<8;r++)for(var c=0;c<8;c++)h+='<i class="'+((r+c)%2?'d':'l')+'" style="--t:'+((r+c)/15*0.92).toFixed(3)+'"></i>';
+  b.innerHTML=h;
+})();
+</script>
 </head>
 <body class="screen-menu">
 
@@ -151,12 +195,5 @@
   </div>
 </div>
 
-<script src="../shared/i18n.js"></script>
-<script src="../shared/arcade.js"></script>
-<script src="lang.js"></script>
-<script src="pieces.js"></script>
-<script src="rules.js"></script>
-<script src="engine.js"></script>
-<script src="chess.js"></script>
 </body>
 </html>

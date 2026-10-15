@@ -45,7 +45,8 @@ if(S.blitz!==300&&S.blitz!==600)S.blitz=300;
 if(S.lclock!==0&&S.lclock!==300&&S.lclock!==600)S.lclock=0;
 if(S.rotate!=='auto'&&S.rotate!=='off')S.rotate='auto';
 if(S.view!=='2d'&&S.view!=='3d')S.view='2d';
-if(S.view==='3d'&&!Board3D.supported())S.view='2d';
+function has3d(){return !!(window.Board3D&&Board3D.supported());}
+if(S.view==='3d'&&!has3d())S.view='2d';
 if(!DB.rating.adaptive)DB.rating.adaptive=M.START;
 function saveDB(){Store.save('chess');}
 
@@ -253,7 +254,7 @@ function bindSeg(key){
     b.addEventListener('click',function(){
       if(b.classList.contains('soon')){b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return;}
       S[key]=key==='blitz'||key==='lclock'?parseInt(b.dataset.v,10):b.dataset.v;saveDB();paintMenu();Sound.sfx('select');
-      if(key==='view'&&S.view==='3d')Board3D.load().catch(function(){});   // three.js качается, пока игрок в меню
+      if(key==='view'&&S.view==='3d'&&has3d())Board3D.load().catch(function(){});   // three.js качается, пока игрок в меню
     });
   });
 }
@@ -552,7 +553,7 @@ function onDown(e){
       var wasSel=!!(G.sel&&G.sel.r===r&&G.sel.c===c);
       if(!wasSel){G.sel={r:r,c:c};render();Sound.sfx('select');}
       drag={r:r,c:c,x:e.clientX,y:e.clientY,wasSel:wasSel,moving:false,ghost:null,size:0};
-      view.el.setPointerCapture(e.pointerId);
+      if(window.PointerEvent&&view.el.setPointerCapture)view.el.setPointerCapture(e.pointerId);
       e.preventDefault();
       return;
     }
@@ -572,6 +573,7 @@ function onMove(e){
   if(!drag)return;
   if(!drag.moving){
     if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;
+    if(!G.st.board[drag.r][drag.c]){drag=null;return;}
     drag.moving=true;
     if(view.dragStart)view.dragStart(drag.r,drag.c);
     else{
@@ -795,15 +797,65 @@ function onResign(){
   finish({result:isLocal()&&G.st.turn==='b'?'win':'lose',reason:'reason.resigned'});
 }
 
+/* ── старые браузеры (без container queries или aspect-ratio): размер доски считает JS ── */
+var CSS_OK=!!(window.CSS&&CSS.supports&&CSS.supports('container-type','inline-size')&&CSS.supports('aspect-ratio','1/1'));
+function mq(q){return !!(window.matchMedia&&matchMedia(q).matches);}
+function fitBoard(){
+  if(CSS_OK)return;
+  var b=$('ch-board'),wrap=b.parentNode,col=wrap.parentNode;
+  if(mq('(orientation:landscape) and (max-height:520px)')){
+    /* телефон боком: доска во всю высоту колонки под строкой статуса */
+    var hh=Math.min(col.getBoundingClientRect().bottom,window.innerHeight-6)-wrap.getBoundingClientRect().top;
+    if(hh<=0)return;
+    var sz=Math.max(160,Math.floor(hh));
+    wrap.style.width=wrap.style.height=sz+'px';
+    b.style.width=b.style.height=sz+'px';
+    return;
+  }
+  wrap.style.width=wrap.style.height='';
+  if(!wrap.clientWidth)return;
+  var w=wrap.clientWidth,h=wrap.clientHeight,size;
+  if(false){}
+  else if(mq('(max-width:760px)'))size=w;          // телефон: высота обёртки зависит от доски, считаем по ширине
+  else size=Math.min(w,h||w);
+  size=Math.max(160,Math.floor(size));
+  b.style.width=b.style.height=size+'px';
+}
+window.addEventListener('resize',function(){setTimeout(fitBoard,50);});
+
 /* ── отрисовка: доску рисует сменный модуль, Board2D или Board3D ── */
 var view=null,view2d=null,view3d=null,v3state='none';   // none | loading | ready | failed
 
 function bindView(v){
+  if(!window.PointerEvent){bindLegacy(v.el);return;}
   v.el.addEventListener('pointerdown',onDown);
   v.el.addEventListener('pointermove',onMove);
   v.el.addEventListener('pointerup',onUp);
   v.el.addEventListener('pointercancel',onCancel);
   v.el.addEventListener('contextmenu',function(e){e.preventDefault();});
+}
+/* браузеры без Pointer Events (старый Safari): мышь и касания переводятся в тот же вид.
+   Движение и отпускание мыши ловим на всём окне, как при захвате указателя. */
+function bindLegacy(el){
+  function conv(fn){
+    return function(e){
+      var t=e.changedTouches?e.changedTouches[0]:e;if(!t)return;
+      fn({clientX:t.clientX,clientY:t.clientY,button:e.changedTouches?0:e.button,isPrimary:true,pointerId:1,
+          preventDefault:function(){if(e.cancelable)e.preventDefault();}});
+    };
+  }
+  var down=conv(onDown),move=conv(onMove),up=conv(onUp),lastTouch=0;
+  /* после касания браузер присылает ещё и мышиные события, их пропускаем */
+  function mouse(fn){return function(e){if(Date.now()-lastTouch>800)fn(e);};}
+  function touch(fn){return function(e){lastTouch=Date.now();fn(e);};}
+  el.addEventListener('mousedown',mouse(down));
+  window.addEventListener('mousemove',mouse(move));
+  window.addEventListener('mouseup',mouse(up));
+  el.addEventListener('touchstart',touch(down));
+  el.addEventListener('touchmove',touch(function(e){if(drag&&e.cancelable)e.preventDefault();move(e);}));
+  el.addEventListener('touchend',touch(function(e){if(e.cancelable)e.preventDefault();up(e);}));   // без этого после касания придёт ещё и щелчок мыши
+  el.addEventListener('touchcancel',onCancel);
+  el.addEventListener('contextmenu',function(e){e.preventDefault();});
 }
 function activate(v){
   if(view!==v){
@@ -816,7 +868,7 @@ function activate(v){
 }
 /* 3D: three.js качается при первом включении, пока что видна 2D-доска */
 function useView(kind){
-  if(kind!=='3d'||v3state==='failed'){activate(view2d);return;}
+  if(kind!=='3d'||v3state==='failed'||!has3d()){activate(view2d);return;}
   if(view3d){activate(view3d);return;}
   activate(view2d);
   if(v3state==='loading')return;
@@ -841,7 +893,7 @@ function paintViewBtn(){
   var b=$('ch-view');if(!b)return;
   var is3d=!!view3d&&view===view3d;
   b.textContent=is3d?'2D':'3D';
-  b.disabled=v3state==='failed'||!Board3D.supported();
+  b.disabled=v3state==='failed'||!has3d();
 }
 function toggleView(){
   S.view=S.view==='3d'?'2d':'3d';saveDB();
@@ -856,6 +908,7 @@ function scene(){
 }
 /* anim: {slides:[[r,c,tr,tc],...], burst:[r,c]} */
 function render(anim){
+  fitBoard();
   view.draw(scene(),anim);
   renderLog();renderCaptured();
 }
@@ -925,7 +978,7 @@ function boot(){
   Bot.init();
   buildPreview();
   bindSeg('view');bindSeg('theme');bindSeg('side');bindSeg('blitz');bindSeg('lclock');bindSeg('rotate');
-  if(!Board3D.supported()){var v3=document.querySelector('#seg-view [data-v="3d"]');v3.classList.add('soon');v3.title='WebGL';}
+  if(!has3d()){var v3=document.querySelector('#seg-view [data-v="3d"]');v3.classList.add('soon');v3.title='WebGL';}
   I18n.apply();
   I18n.onChange(onLang);
 

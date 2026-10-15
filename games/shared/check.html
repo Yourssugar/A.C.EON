@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>A.C.EON: проверка браузера</title>
+<!-- Служебная страница: что умеет браузер. Если игра где-то отображается неправильно,
+     открыть games/shared/check.html на том устройстве и прислать снимок экрана. -->
+<style>
+body{margin:0;padding:16px;background:#050510;color:#cfe6f2;font:14px/1.5 Tahoma,Arial,sans-serif;}
+h1{font-size:18px;color:#00e5ff;margin:0 0 12px;}
+table{border-collapse:collapse;width:100%;max-width:640px;}
+td{border:1px solid #163650;padding:6px 8px;vertical-align:top;}
+td:last-child{width:70px;text-align:center;font-weight:bold;}
+.ok{color:#00ff88;}.no{color:#ff3344;}
+#ua{word-break:break-all;color:#ffd23a;margin-bottom:12px;max-width:640px;}
+</style>
+</head>
+<body>
+<h1>A.C.EON: проверка браузера</h1>
+<div id="ua"></div>
+<table id="t"></table>
+<script>
+(function(){
+  var ua=document.getElementById('ua');
+  ua.textContent=navigator.userAgent+'  |  экран '+screen.width+'x'+screen.height+', окно '+window.innerWidth+'x'+window.innerHeight+', плотность '+(window.devicePixelRatio||1);
+  function css(p,v){try{return !!(window.CSS&&CSS.supports&&CSS.supports(p,v));}catch(e){return false;}}
+  function webgl(v){try{var c=document.createElement('canvas');return !!c.getContext(v);}catch(e){return false;}}
+  var dyn=false;try{new Function('u','return import(u)');dyn=true;}catch(e){}
+  var rows=[
+    ['CSS-переменные',css('--a','1')],
+    ['aspect-ratio (квадратная доска)',css('aspect-ratio','1/1')],
+    ['container queries (размер доски)',css('container-type','inline-size')],
+    ['inset',css('inset','0')],
+    ['clamp()',css('width','clamp(1px,2px,3px)')],
+    ['dvh',css('height','100dvh')],
+    ['color-mix()',css('color','color-mix(in srgb,red 50%,blue)')],
+    ['fetch',!!window.fetch],
+    ['Promise',!!window.Promise],
+    ['Web Audio',!!(window.AudioContext||window.webkitAudioContext)],
+    ['Web Worker (Stockfish)',!!window.Worker],
+    ['WebAssembly (Stockfish)',typeof WebAssembly==='object'],
+    ['localStorage',(function(){try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return true;}catch(e){return false;}})()],
+    ['WebGL (3D)',webgl('webgl')],
+    ['WebGL 2',webgl('webgl2')],
+    ['динамический import (3D)',dyn],
+    ['Pointer Events',!!window.PointerEvent]
+  ];
+  var t=document.getElementById('t'),h='';
+  for(var i=0;i<rows.length;i++)h+='<tr><td>'+rows[i][0]+'</td><td class="'+(rows[i][1]?'ok">да':'no">нет')+'</td></tr>';
+  t.innerHTML=h;
+})();
+</script>
+</body>
+</html>

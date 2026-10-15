@@ -1,7 +1,7 @@
 /* A.C.EON ARCADE: языки интерфейса.
    I18n.add(lang, {key: 'text'}) добавляет словарь, I18n.t(key, {var}) возвращает строку,
    элементы с data-i18n="key" обновляются сами при смене языка.
-   Выбор хранится в localStorage 'aceon_lang' и общий для всего сайта. */
+   Выбор хранится в Store('site').lang и общий для всего сайта (нужен store.js раньше этого файла). */
 (function(){
 'use strict';
 
@@ -18,7 +18,7 @@ var dict={},lang='en',listeners=[];
 
 function known(code){return LANGS.some(function(l){return l.code===code;});}
 function detect(){
-  var saved=null;try{saved=localStorage.getItem('aceon_lang');}catch(e){}
+  var saved=window.Store?Store.get('site').lang:null;
   if(saved&&known(saved))return saved;
   var nav=(navigator.languages||[navigator.language||'en']);
   for(var i=0;i<nav.length;i++){var c=String(nav[i]).slice(0,2).toLowerCase();if(known(c))return c;}
@@ -44,7 +44,7 @@ function apply(root){
 function set(code){
   if(!known(code))return;
   lang=code;
-  try{localStorage.setItem('aceon_lang',code);}catch(e){}
+  if(window.Store){Store.get('site').lang=code;Store.save('site');}
   document.documentElement.lang=code;
   apply();
   listeners.forEach(function(fn){try{fn(code);}catch(e){}});

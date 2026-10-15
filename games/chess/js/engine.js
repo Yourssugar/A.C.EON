@@ -9,6 +9,7 @@ var ENGINE_URL=window.Boot?Boot.url('stockfish/stockfish.js'):new URL('../stockf
 
 var worker=null,ready=false,loading=false,busy=false;
 var moveCb=null,depthCb=null,readyCbs=[],failCbs=[],timer=null,lastError='';
+var lastScore=null;   // оценка последней глубины: {cp:n} или {mate:n}, со стороны того, кто ходит
 var stale=0;   // сколько bestmove ещё придёт от прерванных поисков
 
 function clearTimer(){if(timer){clearTimeout(timer);timer=null;}}
@@ -35,15 +36,16 @@ function onLine(line){
   if(line==='readyok'){if(!ready)markReady();return;}
   if(line.indexOf('bestmove')===0&&stale>0){stale--;return;}
   if(stale>0)return;
-  if(line.indexOf('info depth')===0&&depthCb){
-    var m=line.match(/\bdepth\s+(\d+)/);
-    if(m)depthCb(parseInt(m[1],10));
+  if(line.indexOf('info depth')===0){
+    var m=line.match(/\bdepth\s+(\d+)/),sc=line.match(/\bscore\s+(cp|mate)\s+(-?\d+)/);
+    if(sc&&!/\b(lowerbound|upperbound)\b/.test(line))lastScore=sc[1]==='cp'?{cp:parseInt(sc[2],10)}:{mate:parseInt(sc[2],10)};
+    if(m&&depthCb)depthCb(parseInt(m[1],10),lastScore);
     return;
   }
   if(line.indexOf('bestmove')===0&&moveCb){
     var best=line.split(/\s+/)[1];
-    var cb=moveCb;moveCb=null;depthCb=null;busy=false;
-    cb(best&&best!=='(none)'?best:null);
+    var cb=moveCb,score=lastScore;moveCb=null;depthCb=null;busy=false;
+    cb(best&&best!=='(none)'?best:null,score);
   }
 }
 
@@ -60,10 +62,11 @@ function load(onReady,onFail){
   worker.postMessage('uci');
 }
 
-/* opts: {moves:[uci...], depth, movetime (сек), skill, contempt, onDepth} */
+/* opts: {moves:[uci...], depth, movetime (сек), skill, contempt, onDepth(depth,score)}
+   onMove(bestmove, score): score {cp} или {mate} со стороны того, кто ходил */
 function go(opts,onMove){
   if(!worker||!ready||busy)return false;
-  busy=true;moveCb=onMove;depthCb=opts.onDepth||null;
+  busy=true;moveCb=onMove;depthCb=opts.onDepth||null;lastScore=null;
   if(opts.skill!=null)worker.postMessage('setoption name Skill Level value '+opts.skill);
   if(opts.contempt!=null)worker.postMessage('setoption name Contempt value '+opts.contempt);
   worker.postMessage('position startpos'+(opts.moves&&opts.moves.length?' moves '+opts.moves.join(' '):''));

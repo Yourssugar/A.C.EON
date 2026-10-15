@@ -16,7 +16,7 @@ var HISTORY_MAX=200,HISTORY_FULL=30;
 Store.define('chess',{
   version:2,
   defaults:{
-    settings:{level:'beginner',theme:'wood',view:'2d',side:'r',blitz:300},
+    settings:{level:'beginner',theme:'wood',view:'2d',side:'r',blitz:300,lclock:0,rotate:'auto'},
     rating:{adaptive:M.START,blitz:null},
     wins:{},history:[],game:null
   },
@@ -42,7 +42,10 @@ if(!MODES[S.level])S.level='beginner';
 if(S.theme!=='wood'&&S.theme!=='neon')S.theme='wood';
 if(S.side!=='w'&&S.side!=='b'&&S.side!=='r')S.side='r';
 if(S.blitz!==300&&S.blitz!==600)S.blitz=300;
-S.view='2d';
+if(S.lclock!==0&&S.lclock!==300&&S.lclock!==600)S.lclock=0;
+if(S.rotate!=='auto'&&S.rotate!=='off')S.rotate='auto';
+if(S.view!=='2d'&&S.view!=='3d')S.view='2d';
+if(S.view==='3d'&&!Board3D.supported())S.view='2d';
 if(!DB.rating.adaptive)DB.rating.adaptive=M.START;
 function saveDB(){Store.save('chess');}
 
@@ -54,6 +57,9 @@ var G={
   result:null,lvlChange:null,msg:null
 };
 function mode(){return MODES[G.mode];}
+function isLocal(){return mode().kind==='local';}
+/* результат в режиме вдвоём хранится со стороны белых: win = победили белые */
+function resKey(r){return isLocal()&&r!=='draw'?(r==='win'?'wWin':'bWin'):r;}
 function sideName(c){return t(c==='w'?'side.w':'side.b');}
 function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
@@ -91,7 +97,10 @@ function paintMsg(){
   el.textContent=G.msg.parts.map(function(p){return t(p[0],p[1]);}).join(' / ');
   el.className=G.msg.cls;
 }
-function turnMsg(){msg(['msg.turnSide',{side:sideName(G.human)}]);}
+function turnMsg(){
+  if(isLocal()){msg(['msg.turn'+G.st.turn.toUpperCase()]);return;}
+  msg(['msg.turnSide',{side:sideName(G.human)}]);
+}
 
 /* ── персонаж ── */
 var Bot=(function(){
@@ -155,6 +164,56 @@ function buildLevels(){
   I18n.apply(list);
 }
 
+/* с другом: на одном устройстве и по сети (сеть пока не готова, только окно с PIN) */
+function buildFriends(){
+  var list=$('friend-list');list.innerHTML='';
+  var loc=document.createElement('button');
+  loc.type='button';loc.className='lvl-card friend-card';loc.dataset.lvl='local';
+  loc.style.setProperty('--acc',MODES.local.accent);
+  loc.innerHTML=
+    '<span class="lvl-name"><span data-i18n="lvl.local"></span><small data-i18n="sub.local"></small></span>'+
+    '<span class="fr-tag">2P</span>'+
+    '<span class="lvl-pop" role="tooltip">'+
+      '<span class="pop-name" data-i18n="lvl.local"></span>'+
+      '<span class="pop-desc" data-i18n="desc.local"></span>'+
+      popRow('pop.undo',i18nSpan('pop.unlimited'))+
+      popRow('pop.clock',i18nSpan(S.lclock?'pop.min':'pop.no',{n:S.lclock/60}))+
+    '</span>';
+  loc.addEventListener('click',function(){S.level='local';saveDB();paintMenu();Sound.sfx('select');});
+  var net=document.createElement('button');
+  net.type='button';net.className='lvl-card friend-card is-soon';
+  net.style.setProperty('--acc','#ffd23a');
+  net.innerHTML=
+    '<span class="lvl-name"><span data-i18n="lvl.online"></span><small data-i18n="sub.online"></small></span>'+
+    '<span class="fr-tag soon-tag" data-i18n="menu.soon"></span>';
+  net.addEventListener('click',openPin);
+  list.appendChild(loc);list.appendChild(net);
+  I18n.apply(list);
+}
+
+/* окно игры по сети: PIN только из цифр, сервер пока не подключён */
+var PIN_LEN=6;
+function openPin(){
+  Sound.sfx('select');
+  $('pin-input').value='';$('pin-note').textContent='';
+  paintPin();show('pin-modal');
+}
+function paintPin(){
+  var v=$('pin-input').value;
+  $('pin-join').disabled=v.length!==PIN_LEN;
+}
+function newPin(){
+  var a=new Uint32Array(1),n;
+  if(window.crypto&&crypto.getRandomValues){crypto.getRandomValues(a);n=a[0];}else n=Math.floor(Math.random()*4294967295);
+  $('pin-input').value=String(n%Math.pow(10,PIN_LEN)).padStart(PIN_LEN,'0');
+  paintPin();Sound.sfx('select');
+}
+function joinPin(){
+  var note=$('pin-note');
+  note.textContent=t('pin.notYet');
+  note.classList.remove('shake');void note.offsetWidth;note.classList.add('shake');
+}
+
 /* превью: кусок доски в выбранной теме */
 var PREVIEW=[['bR',null,'bK',null],['bP','bP',null,'bN'],[null,'wB',null,null],['wP',null,'wQ','wK']];
 function buildPreview(){
@@ -169,13 +228,18 @@ function buildPreview(){
 }
 
 function paintMenu(){
-  buildLevels();
+  buildLevels();buildFriends();
   document.querySelectorAll('.lvl-card').forEach(function(b){b.classList.toggle('sel',b.dataset.lvl===S.level);});
-  ['view','theme','side','blitz'].forEach(function(k){
+  ['view','theme','side','blitz','lclock','rotate'].forEach(function(k){
     document.querySelectorAll('#seg-'+k+' .seg-btn').forEach(function(b){b.classList.toggle('sel',b.dataset.v===String(S[k]));});
   });
+  var local=S.level==='local';
   $('opt-blitz').classList.toggle('hidden',S.level!=='blitz');
+  $('opt-lclock').classList.toggle('hidden',!local);
+  $('opt-rotate').classList.toggle('hidden',!local);
+  $('opt-side').classList.toggle('hidden',local);
   setTheme(S.theme);
+  $('preview').classList.toggle('tilt',S.view==='3d');
   $('tag-view').textContent=S.view.toUpperCase();
   $('tag-theme').textContent=t('theme.'+S.theme);
   $('btn-continue').classList.toggle('hidden',!(G.started&&!G.dead&&G.history.length));
@@ -188,7 +252,8 @@ function bindSeg(key){
   document.querySelectorAll('#seg-'+key+' .seg-btn').forEach(function(b){
     b.addEventListener('click',function(){
       if(b.classList.contains('soon')){b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return;}
-      S[key]=key==='blitz'?parseInt(b.dataset.v,10):b.dataset.v;saveDB();paintMenu();Sound.sfx('select');
+      S[key]=key==='blitz'||key==='lclock'?parseInt(b.dataset.v,10):b.dataset.v;saveDB();paintMenu();Sound.sfx('select');
+      if(key==='view'&&S.view==='3d')Board3D.load().catch(function(){});   // three.js качается, пока игрок в меню
     });
   });
 }
@@ -199,7 +264,7 @@ function showScreen(name){
   if(name==='menu'){
     if(G.clock&&G.clock.running())G.clock.stop();   // в меню часы стоят
     paintMenu();
-  }
+  }else useView(S.view);
   Sound.music(name==='menu'?'menu':'game');
   window.scrollTo(0,0);
 }
@@ -212,7 +277,7 @@ function resetGame(modeKey,human,lvl){
   G.st=R.startState();G.dead=false;G.sel=null;G.promo=null;G.thinking=false;G.result=null;G.endTime=null;G.lvlChange=null;
   G.history=[];G.keys=[R.positionKey(G.st)];G.uci=[];
   G.lastH=G.lastA=null;G.capByHuman=[];G.capByAi=[];G.start=Date.now();
-  G.human=human;G.ai=R.opp(human);
+  G.human=human;G.ai=R.opp(human);G.viewSide='w';clearTimeout(flipTimer);
   G.undoLeft=mode().undo;G.coach=null;G.hint=null;G.evalW=null;
   if(G.clock)G.clock.stop();
   G.clock=null;
@@ -223,15 +288,17 @@ function resetGame(modeKey,human,lvl){
 }
 function newGame(){
   abandonCheck();
-  var key=S.level;
-  resetGame(key,S.side==='r'?(Math.random()<0.5?'w':'b'):S.side,modeLevel(key));
+  var key=S.level,local=MODES[key].kind==='local';
+  resetGame(key,local?'w':S.side==='r'?(Math.random()<0.5?'w':'b'):S.side,modeLevel(key));
   if(mode().clock)G.clock=makeClock({w:S.blitz*1000,b:S.blitz*1000});
+  else if(local&&S.lclock)G.clock=makeClock({w:S.lclock*1000,b:S.lclock*1000});
+  paintGamePanel();
   saveGame();
   render();
   showScreen('game');
   A.trackPlay();
   if(G.clock)G.clock.start(G.st.turn);
-  if(G.st.turn===G.ai){msg(['msg.aiFirst']);setTimeout(aiMove,500);}
+  if(!local&&G.st.turn===G.ai){msg(['msg.aiFirst']);setTimeout(aiMove,500);}
   else{turnMsg();coachBefore();}
 }
 /* брошенная партия в адаптивных режимах засчитывается как поражение,
@@ -247,16 +314,23 @@ function abandonCheck(){
 }
 
 function paintGamePanel(){
-  var m=mode();
+  var m=mode(),local=isLocal();
+  document.body.classList.toggle('mode-local',local);
   $('game-lvl-name').textContent=t('lvl.'+G.mode)+(G.lvl!=null?' '+t('lvl.n',{n:G.lvl}):'');
-  $('game-lvl-bars').innerHTML=barsHtml(G.lvl!=null?M.levelBars(G.lvl):m.bars);
+  $('game-lvl-bars').innerHTML=local?'':barsHtml(G.lvl!=null?M.levelBars(G.lvl):m.bars);
   $('game-lvl-bars').style.setProperty('--acc',m.accent);
-  $('ch-side').textContent=t('game.you',{side:sideName(G.human)});
+  $('ch-side').textContent=local?t('game.local2p'):t('game.you',{side:sideName(G.human)});
   $('ch-undo').classList.toggle('hidden',!m.undo);
   $('ch-hint').classList.toggle('hidden',!m.coach);
-  $('ch-clocks').classList.toggle('hidden',!m.clock);
+  $('ch-clocks').classList.toggle('hidden',!G.clock);
   $('ch-eval').classList.toggle('hidden',!m.coach);
-  paintUndo();paintClocks();
+  /* подписи часов и взятых: в игре вдвоём белые и чёрные вместо «вы» и «ИИ» */
+  function label(el,key){el.dataset.i18n=key;el.textContent=t(key);}
+  label(document.querySelector('#ch-clocks .clk-you span'),local?'side.w':'clock.you');
+  label(document.querySelector('#ch-clocks .clk-ai span'),local?'side.b':'clock.ai');
+  label($('cap-lbl-you'),local?'cap.byW':'cap.you');
+  label($('cap-lbl-ai'),local?'cap.byB':'cap.ai');
+  paintUndo();paintClocks();paintViewBtn();
 }
 function paintUndo(){
   var b=$('ch-undo');
@@ -282,17 +356,20 @@ function restoreGame(){
   if(!replay(sv.uci)||gameResult()){DB.game=null;saveDB();G.started=false;G.dead=true;return false;}
   (sv.q||[]).forEach(function(q,i){if(q&&G.history[i])G.history[i].q=q;});
   if(sv.undoLeft!=null)G.undoLeft=sv.undoLeft<0?Infinity:sv.undoLeft;
-  if(mode().clock)G.clock=makeClock(sv.clock||{w:S.blitz*1000,b:S.blitz*1000});
+  if(sv.clock)G.clock=makeClock(sv.clock);
+  else if(mode().clock)G.clock=makeClock({w:S.blitz*1000,b:S.blitz*1000});
+  if(isLocal()&&S.rotate==='auto')G.viewSide=G.st.turn;
   G.start=Date.now()-(sv.elapsed||0);
   paintGamePanel();
   render();
-  if(G.st.turn===G.human)turnMsg();
+  if(isLocal()||G.st.turn===G.human)turnMsg();
   return true;
 }
 function continueGame(){
   showScreen('game');
   if(G.dead)return;
   if(G.clock)G.clock.start(G.st.turn);
+  if(isLocal())return;
   if(G.st.turn===G.ai&&!G.thinking)aiMove();
   else if(G.st.turn===G.human&&mode().coach&&!G.coach)coachBefore();
 }
@@ -374,7 +451,7 @@ function recordResult(res){
     DB.rating[k==='adaptive'?'adaptive':'blitz']=to;
     G.lvlChange={from:from,to:to};
   }
-  if(res.result==='win')DB.wins[G.mode]=(DB.wins[G.mode]||0)+1;
+  if(res.result==='win'&&!isLocal())DB.wins[G.mode]=(DB.wins[G.mode]||0)+1;
   DB.game=null;
   saveDB();
 }
@@ -383,10 +460,11 @@ function finish(res){
   G.dead=true;G.thinking=false;G.result=res;G.endTime=Date.now();G.hint=null;E.cancel();
   if(G.clock)G.clock.stop();
   recordResult(res);
-  msg([['res.'+res.result],[res.reason]],res.result==='lose');
+  var local=isLocal();
+  msg([['res.'+resKey(res.result)],[res.reason]],res.result==='lose'&&!local);
   Bot.react(res.result==='win'?'lose':res.result==='lose'?'win':'draw');
   Sound.duck(0.25,2600);
-  setTimeout(function(){Sound.sfx(res.result);},350);
+  setTimeout(function(){Sound.sfx(local&&res.result!=='draw'?'win':res.result);},350);
   setTimeout(function(){showReport();},650);
   paintUndo();
 }
@@ -412,13 +490,13 @@ function paintClocks(){
 }
 
 /* ── ход игрока: клик или перетаскивание ── */
-function canAct(){return !G.dead&&!G.promo&&G.started&&G.st.turn===G.human;}
+function canAct(){return !G.dead&&!G.promo&&G.started&&(isLocal()||G.st.turn===G.human);}
 function legalTo(r,c,tr,tc){
   return R.legal(G.st,r,c).filter(function(m){return m.tr===tr&&m.tc===tc;})[0]||null;
 }
 function ownMovable(r,c){
   var p=G.st.board[r][c];
-  return !!p&&p[0]===G.human&&R.legal(G.st,r,c).length>0;
+  return !!p&&p[0]===G.st.turn&&R.legal(G.st,r,c).length>0;
 }
 /* opts.noSlide: фигуру уже перенесли рукой, ехать ей не нужно */
 function tryHumanMove(r,c,tr,tc,opts){
@@ -433,57 +511,110 @@ function humanMove(mv,opts){
   paintUndo();
   var res=gameResult();
   if(res){finish(res);return;}
+  if(isLocal()){
+    if(info.check)msg([['msg.checkShort'],['msg.turn'+G.st.turn.toUpperCase()]],true);else turnMsg();
+    autoFlip();
+    return;
+  }
   if(info.check)Bot.react('aiChecked');else if(info.captured)Bot.react('hurt');
   if(mode().coach){coachAfter(before);return;}
   setTimeout(aiMove,(info.captured||info.check)?600:250);
 }
 
+/* вдвоём: доска поворачивается к тому, чей ход, после того как фигура доехала */
+var flipTimer=null;
+function autoFlip(){
+  clearTimeout(flipTimer);
+  if(!isLocal()||S.rotate!=='auto')return;
+  flipTimer=setTimeout(function(){
+    if(!isLocal()||G.viewSide===G.st.turn)return;
+    G.viewSide=G.st.turn;render();
+  },650);
+}
+
 var drag=null;   // {r,c,x,y,wasSel,moving,ghost,size}
+var orbitTap=null;   // 3D: касание пустого места, если палец не сдвинулся, это просто снятие выбора
+/* В 3D палец, поставленный не на свою фигуру и не на клетку хода, крутит камеру. */
 function onDown(e){
-  if(e.button!==undefined&&e.button!==0)return;
-  var sq=view.squareAt(e.clientX,e.clientY);if(!sq||!canAct())return;
-  var r=sq.r,c=sq.c;
-  if(G.sel&&!(G.sel.r===r&&G.sel.c===c)&&tryHumanMove(G.sel.r,G.sel.c,r,c))return;
-  if(ownMovable(r,c)){
-    var wasSel=!!(G.sel&&G.sel.r===r&&G.sel.c===c);
-    if(!wasSel){G.sel={r:r,c:c};render();Sound.sfx('select');}
-    drag={r:r,c:c,x:e.clientX,y:e.clientY,wasSel:wasSel,moving:false,ghost:null,size:0};
-    view.el.setPointerCapture(e.pointerId);
-    e.preventDefault();
+  if(e.isPrimary===false||(view.gesturing&&view.gesturing()))return;
+  if(e.button!==undefined&&e.button!==0){if(view.orbitStart)view.orbitStart(e);return;}
+  var list=view.squaresAt?view.squaresAt(e.clientX,e.clientY):[view.squareAt(e.clientX,e.clientY)].filter(Boolean);
+  if(list.length&&canAct()){
+    /* первая по лучу клетка, где можно сходить или взять свою фигуру */
+    var own=null;
+    for(var i=0;i<list.length&&!own;i++){
+      var q=list[i];
+      if(G.sel&&!(G.sel.r===q.r&&G.sel.c===q.c)&&legalTo(G.sel.r,G.sel.c,q.r,q.c)){tryHumanMove(G.sel.r,G.sel.c,q.r,q.c);return;}
+      if(ownMovable(q.r,q.c))own=q;
+    }
+    if(own){
+      var r=own.r,c=own.c;
+      var wasSel=!!(G.sel&&G.sel.r===r&&G.sel.c===c);
+      if(!wasSel){G.sel={r:r,c:c};render();Sound.sfx('select');}
+      drag={r:r,c:c,x:e.clientX,y:e.clientY,wasSel:wasSel,moving:false,ghost:null,size:0};
+      view.el.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+  }
+  if(view.orbitStart){
+    orbitTap={x:e.clientX,y:e.clientY};
+    view.orbitStart(e);e.preventDefault();
     return;
   }
   if(G.sel){G.sel=null;render();}
 }
 function onMove(e){
+  if(view.orbiting&&view.orbiting()){
+    if(orbitTap&&Math.hypot(e.clientX-orbitTap.x,e.clientY-orbitTap.y)>=5)orbitTap=null;
+    view.orbitMove(e);return;
+  }
   if(!drag)return;
   if(!drag.moving){
     if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;
     drag.moving=true;
-    var size=view.cellSize();
-    var g=document.createElement('div');g.id='ch-drag';
-    g.style.width=g.style.height=size+'px';
-    g.innerHTML=pieceSvg(G.st.board[drag.r][drag.c]);
-    document.body.appendChild(g);
-    drag.ghost=g;drag.size=size;
-    view.lift(drag.r,drag.c,true);
+    if(view.dragStart)view.dragStart(drag.r,drag.c);
+    else{
+      var size=view.cellSize();
+      var g=document.createElement('div');g.id='ch-drag';
+      g.style.width=g.style.height=size+'px';
+      g.innerHTML=pieceSvg(G.st.board[drag.r][drag.c]);
+      document.body.appendChild(g);
+      drag.ghost=g;drag.size=size;
+      view.lift(drag.r,drag.c,true);
+    }
   }
-  drag.ghost.style.transform='translate('+(e.clientX-drag.size/2)+'px,'+(e.clientY-drag.size/2)+'px)';
-  var sq=view.squareAt(e.clientX,e.clientY);
+  if(view.dragMove)view.dragMove(e.clientX,e.clientY);
+  else drag.ghost.style.transform='translate('+(e.clientX-drag.size/2)+'px,'+(e.clientY-drag.size/2)+'px)';
+  var sq=view.squareAt(e.clientX,e.clientY,true);
   view.over(sq?sq.r:null,sq?sq.c:null);
 }
 function onUp(e){
+  if(view.orbiting&&view.orbiting()){
+    view.orbitEnd();
+    if(orbitTap&&G.sel){G.sel=null;render();}
+    orbitTap=null;return;
+  }
   if(!drag)return;
   var d=drag;drag=null;
   if(d.ghost)d.ghost.remove();
+  if(view.dragEnd)view.dragEnd();
   if(d.moving){
-    var sq=view.squareAt(e.clientX,e.clientY);
+    var sq=view.squareAt(e.clientX,e.clientY,true);
     if(sq&&!(sq.r===d.r&&sq.c===d.c)&&tryHumanMove(d.r,d.c,sq.r,sq.c,{noSlide:true}))return;
     render();
     return;
   }
   if(d.wasSel){G.sel=null;render();}
 }
-function onCancel(){if(!drag)return;if(drag.ghost)drag.ghost.remove();drag=null;render();}
+function onCancel(){
+  if(view.orbiting&&view.orbiting())view.orbitEnd();
+  orbitTap=null;
+  if(!drag)return;
+  if(drag.ghost)drag.ghost.remove();
+  if(view.dragEnd)view.dragEnd();
+  drag=null;render();
+}
 
 /* превращение пешки */
 function askPromotion(mv,opts){
@@ -492,7 +623,7 @@ function askPromotion(mv,opts){
   [['q','Q'],['r','R'],['b','B'],['n','N']].forEach(function(d){
     var b=document.createElement('button');
     b.className='ch-promo-btn';
-    b.innerHTML=PC.svg(d[1],G.human);
+    b.innerHTML=PC.svg(d[1],G.st.turn);
     b.addEventListener('click',function(){
       hide('promo-modal');
       var m=G.promo;G.promo=null;
@@ -507,18 +638,20 @@ function askPromotion(mv,opts){
 /* ── отмена хода ── */
 function canUndo(){
   if(G.dead||!G.started||G.promo||!mode().undo||G.undoLeft<=0)return false;
+  if(isLocal())return G.history.length>0;
   return G.history.some(function(h){return h.side===G.human;});
 }
 function onUndo(){
   if(!canUndo())return;
   /* ход ИИ ещё не сделан: убрать только свой; иначе свой и ответ ИИ */
-  var n=G.st.turn===G.ai?1:2;
+  var n=isLocal()||G.st.turn===G.ai?1:2;
   G.gameId++;E.cancel();G.thinking=false;G.coach=null;G.hint=null;
   replay(G.uci.slice(0,G.uci.length-n));
   if(G.undoLeft!==Infinity)G.undoLeft--;
   saveGame();
   render();paintUndo();
   msg(['msg.undone']);
+  if(isLocal()){clearTimeout(flipTimer);if(S.rotate==='auto')G.viewSide=G.st.turn;render();}
   Bot.react('idle');
   Sound.sfx('select');
   coachBefore();
@@ -581,7 +714,7 @@ function onHint(){if(canAct()&&mode().coach)showHint();}
 
 /* ── ход ИИ ── */
 function aiMove(){
-  if(G.dead||G.st.turn!==G.ai)return;
+  if(G.dead||isLocal()||G.st.turn!==G.ai)return;
   var id=G.gameId,m=mode(),P=aiParams();
   G.thinking=true;Bot.react('thinking');
   function stillValid(){return id===G.gameId&&!G.dead&&G.st.turn===G.ai;}
@@ -658,16 +791,68 @@ function onResign(){
     resignTimer=setTimeout(resetResign,3000);return;
   }
   resetResign();
-  finish({result:'lose',reason:'reason.resigned'});
+  /* вдвоём сдаётся тот, чей сейчас ход */
+  finish({result:isLocal()&&G.st.turn==='b'?'win':'lose',reason:'reason.resigned'});
 }
 
-/* ── отрисовка: доску рисует сменный модуль (сейчас Board2D) ── */
-var view=null;
+/* ── отрисовка: доску рисует сменный модуль, Board2D или Board3D ── */
+var view=null,view2d=null,view3d=null,v3state='none';   // none | loading | ready | failed
+
+function bindView(v){
+  v.el.addEventListener('pointerdown',onDown);
+  v.el.addEventListener('pointermove',onMove);
+  v.el.addEventListener('pointerup',onUp);
+  v.el.addEventListener('pointercancel',onCancel);
+  v.el.addEventListener('contextmenu',function(e){e.preventDefault();});
+}
+function activate(v){
+  if(view!==v){
+    if(drag||orbitTap)onCancel();
+    view=v;
+    document.body.classList.toggle('view-3d',v===view3d);
+    if(view3d)view3d.show(v===view3d);
+  }
+  render();paintViewBtn();
+}
+/* 3D: three.js качается при первом включении, пока что видна 2D-доска */
+function useView(kind){
+  if(kind!=='3d'||v3state==='failed'){activate(view2d);return;}
+  if(view3d){activate(view3d);return;}
+  activate(view2d);
+  if(v3state==='loading')return;
+  v3state='loading';
+  var box=$('b3-load');box.textContent=t('b3.loading',{p:0});show('b3-load');
+  Board3D.load(function(p){box.textContent=t('b3.loading',{p:Math.round(p*100)});}).then(function(){
+    view3d=Board3D($('ch-board3d'),{onGesture:onCancel,onLost:fail3d});
+    if(!view3d)throw new Error('webgl');
+    bindView(view3d);
+    v3state='ready';hide('b3-load');
+    if(S.view==='3d')activate(view3d);
+  }).catch(fail3d);
+}
+function fail3d(){
+  v3state='failed';hide('b3-load');
+  if(view3d){view3d.show(false);}
+  S.view='2d';saveDB();
+  activate(view2d);
+  msg(['b3.failed']);
+}
+function paintViewBtn(){
+  var b=$('ch-view');if(!b)return;
+  var is3d=!!view3d&&view===view3d;
+  b.textContent=is3d?'2D':'3D';
+  b.disabled=v3state==='failed'||!Board3D.supported();
+}
+function toggleView(){
+  S.view=S.view==='3d'?'2d':'3d';saveDB();
+  useView(S.view);Sound.sfx('select');
+}
 function scene(){
   var st=G.st,hints={},check=null;
   if(G.sel)R.legal(st,G.sel.r,G.sel.c).forEach(function(m){hints[m.tr*8+m.tc]=st.board[m.tr][m.tc]||m.enPassant?'cap':'go';});
   if(R.inCheck(st.board,st.turn)){var k=R.findKing(st.board,st.turn);check=k[0]*8+k[1];}
-  return {board:st.board,flip:G.human==='b',sel:G.sel,hints:hints,lastH:G.lastH,lastA:G.lastA,check:check,coach:G.hint};
+  var flip=isLocal()?G.viewSide==='b':G.human==='b';
+  return {board:st.board,flip:flip,sel:G.sel,hints:hints,lastH:G.lastH,lastA:G.lastA,check:check,coach:G.hint,theme:S.theme};
 }
 /* anim: {slides:[[r,c,tr,tc],...], burst:[r,c]} */
 function render(anim){
@@ -704,19 +889,20 @@ function renderCaptured(){
 function showReport(){
   var res=G.result;if(!res||!G.dead)return;
   var title=$('ch-report-title');
-  title.textContent=t('rep.'+res.result);
-  title.className='ch-report-title '+res.result;
+  var local=isLocal();
+  title.textContent=t('rep.'+resKey(res.result));
+  title.className='ch-report-title '+(local&&res.result!=='draw'?'win':res.result);
   $('ch-report-sub').textContent=t(res.reason);
   var secs=Math.round(((G.endTime||Date.now())-G.start)/1000);
   function row(k,v){return '<div class="ch-rep-row"><span class="ch-rep-k">'+t(k)+'</span><span class="ch-rep-v">'+v+'</span></div>';}
-  var html=row('rep.played',sideName(G.human))+row('rep.mode',t('lvl.'+G.mode));
+  var html=(local?'':row('rep.played',sideName(G.human)))+row('rep.mode',t('lvl.'+G.mode));
   if(G.lvlChange){
     var c=G.lvlChange,arrow=c.to>c.from?' &#9650;':c.to<c.from?' &#9660;':'';
     html+=row('rep.level',c.from===c.to?String(c.to):c.from+' &gt; '+c.to+arrow);
   }else if(G.lvl!=null)html+=row('rep.level',String(G.lvl));
   html+=row('rep.moves',Math.ceil(G.history.length/2))+
-        row('rep.capYou',G.capByHuman.length)+
-        row('rep.capAi',G.capByAi.length)+
+        row(local?'rep.capW':'rep.capYou',G.capByHuman.length)+
+        row(local?'rep.capB':'rep.capAi',G.capByAi.length)+
         row('rep.time',Math.floor(secs/60)+':'+('0'+secs%60).slice(-2));
   if(mode().coach){
     var cnt={inacc:0,mistake:0,blunder:0};
@@ -738,21 +924,18 @@ function boot(){
   A.topbar('ch.title');
   Bot.init();
   buildPreview();
-  bindSeg('view');bindSeg('theme');bindSeg('side');bindSeg('blitz');
+  bindSeg('view');bindSeg('theme');bindSeg('side');bindSeg('blitz');bindSeg('lclock');bindSeg('rotate');
+  if(!Board3D.supported()){var v3=document.querySelector('#seg-view [data-v="3d"]');v3.classList.add('soon');v3.title='WebGL';}
   I18n.apply();
   I18n.onChange(onLang);
 
   /* наведение на 3D наклоняет превью: видно, что это будет объёмная доска */
   var b3=document.querySelector('#seg-view [data-v="3d"]');
   b3.addEventListener('mouseenter',function(){$('preview').classList.add('tilt');});
-  b3.addEventListener('mouseleave',function(){$('preview').classList.remove('tilt');});
+  b3.addEventListener('mouseleave',function(){$('preview').classList.toggle('tilt',S.view==='3d');});
 
-  view=Board2D($('ch-board'));
-  view.el.addEventListener('pointerdown',onDown);
-  view.el.addEventListener('pointermove',onMove);
-  view.el.addEventListener('pointerup',onUp);
-  view.el.addEventListener('pointercancel',onCancel);
-  view.el.addEventListener('contextmenu',function(e){e.preventDefault();});
+  view=view2d=Board2D($('ch-board'));
+  bindView(view2d);
   /* время партии и часы дописываются при уходе со страницы */
   window.addEventListener('pagehide',function(){if(G.started&&!G.dead)saveGame();});
 
@@ -767,6 +950,15 @@ function boot(){
   $('rep-menu').addEventListener('click',function(){hide('report-modal');showScreen('menu');});
   $('rep-close').addEventListener('click',function(){hide('report-modal');});
   $('btn-licenses').addEventListener('click',function(){show('lic-modal');});
+  $('ch-view').addEventListener('click',toggleView);
+  $('b3-reset').addEventListener('click',function(){if(view3d)view3d.resetCamera();Sound.sfx('select');});
+  $('pin-input').addEventListener('input',function(){
+    var v=this.value.replace(/\D+/g,'').slice(0,PIN_LEN);if(v!==this.value)this.value=v;
+    $('pin-note').textContent='';paintPin();
+  });
+  $('pin-new').addEventListener('click',newPin);
+  $('pin-join').addEventListener('click',joinPin);
+  $('pin-close').addEventListener('click',function(){hide('pin-modal');});
   $('lic-close').addEventListener('click',function(){hide('lic-modal');});
 
   if(!restoreGame()){paintGamePanel();render();}
@@ -775,6 +967,7 @@ function boot(){
 }
 
 window.AceonChess={state:G,settings:S,db:DB,newGame:newGame,play:play,tryMove:tryHumanMove,showScreen:showScreen,
-  undo:onUndo,hint:onHint,setLevel:function(k){S.level=k;paintMenu();}};
+  undo:onUndo,hint:onHint,setLevel:function(k){S.level=k;paintMenu();},
+  useView:function(k){S.view=k;useView(k);},view:function(){return view;}};
 boot();
 })();

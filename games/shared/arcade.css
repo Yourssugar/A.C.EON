@@ -1,5 +1,20 @@
 /* A.C.EON ARCADE: общие стили для отдельных страниц игр */
 
+/* Press Start 2P с сайта (OFL, fonts/OFL.txt): латиница, польский, кириллица */
+@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/ps2p-latin.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/ps2p-latin-ext.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/ps2p-cyrillic.woff2) format('woff2');
+  unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;}
+@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/ps2p-cyrillic-ext.woff2) format('woff2');
+  unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;}
+
+
 :root{
   --bg:#050510; --bg2:#08081a; --bg3:#0d0d22; --bg4:#12122c;
   --pri:#00e5ff; --pri-b:#80f0ff; --pri-m:#00ccee; --pri-d:#007799;
@@ -80,3 +95,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 #arc-splash .sp-start{margin-top:48px;font-size:clamp(9px,2.5vw,14px);color:#ffe600;
   text-shadow:0 0 10px #ffe600,0 0 22px #ff8800;letter-spacing:2px;animation:blink .9s step-end infinite;}
 .arc-icon-btn[data-k="sfx"]{font-size:7px;letter-spacing:0;}
+
+/* выбор языка */
+.arc-lang{position:relative;}
+.arc-lang-btn{width:auto;min-width:34px;padding:0 6px;font-size:8px;}
+.arc-lang-list{position:absolute;right:0;top:34px;z-index:700;min-width:170px;background:#020a16;border:1px solid var(--pri);
+  box-shadow:0 0 24px rgba(0,229,255,.25);display:flex;flex-direction:column;padding:4px;}
+.arc-lang-opt{display:flex;gap:10px;align-items:center;text-align:left;padding:9px 10px;background:none;border:0;
+  color:var(--pri-b);font-size:8px;letter-spacing:1px;cursor:pointer;}
+.arc-lang-opt b{color:var(--pri);font-weight:normal;min-width:20px;}
+.arc-lang-opt:hover,.arc-lang-opt.sel{background:var(--bdr);color:#fff;}

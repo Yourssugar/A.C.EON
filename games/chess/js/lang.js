@@ -5,6 +5,7 @@
 var L={};
 
 L.en={
+  'lic.link':'LICENSES','lic.title':'LICENSES','lic.stockfish':'Chess engine by T. Romstad, M. Costalba, J. Kiiski, G. Linscott and contributors. Browser build by Niklas Fiekas. Source code:','lic.own':'Game code, pieces and design: A.C.EON Studio.',
   'ch.title':'CHESS',
   'menu.sub':'STOCKFISH ENGINE / 5 LEVELS',
   'menu.opponent':'OPPONENT','menu.setup':'SETUP','menu.view':'VIEW','menu.board':'BOARD','menu.side':'SIDE',
@@ -46,6 +47,7 @@ L.en={
 };
 
 L.ru={
+  'lic.link':'ЛИЦЕНЗИИ','lic.title':'ЛИЦЕНЗИИ','lic.stockfish':'Шахматный движок: T. Romstad, M. Costalba, J. Kiiski, G. Linscott и другие авторы. Сборка для браузера: Niklas Fiekas. Исходный код:','lic.own':'Код игры, фигуры и оформление: A.C.EON Studio.',
   'ch.title':'ШАХМАТЫ',
   'menu.sub':'ДВИЖОК STOCKFISH / 5 УРОВНЕЙ',
   'menu.opponent':'СОПЕРНИК','menu.setup':'НАСТРОЙКИ','menu.view':'ВИД','menu.board':'ДОСКА','menu.side':'ЦВЕТ',
@@ -87,6 +89,7 @@ L.ru={
 };
 
 L.de={
+  'lic.link':'LIZENZEN','lic.title':'LIZENZEN','lic.stockfish':'Schach-Engine von T. Romstad, M. Costalba, J. Kiiski, G. Linscott und weiteren Autoren. Browser-Version von Niklas Fiekas. Quellcode:','lic.own':'Spielcode, Figuren und Design: A.C.EON Studio.',
   'ch.title':'SCHACH',
   'menu.sub':'STOCKFISH-ENGINE / 5 STUFEN',
   'menu.opponent':'GEGNER','menu.setup':'EINSTELLUNGEN','menu.view':'ANSICHT','menu.board':'BRETT','menu.side':'FARBE',
@@ -128,6 +131,7 @@ L.de={
 };
 
 L.fr={
+  'lic.link':'LICENCES','lic.title':'LICENCES','lic.stockfish':'Moteur d\'échecs de T. Romstad, M. Costalba, J. Kiiski, G. Linscott et contributeurs. Version navigateur par Niklas Fiekas. Code source :','lic.own':'Code du jeu, pièces et design : A.C.EON Studio.',
   'ch.title':'ÉCHECS',
   'menu.sub':'MOTEUR STOCKFISH / 5 NIVEAUX',
   'menu.opponent':'ADVERSAIRE','menu.setup':'RÉGLAGES','menu.view':'VUE','menu.board':'PLATEAU','menu.side':'COULEUR',
@@ -169,6 +173,7 @@ L.fr={
 };
 
 L.es={
+  'lic.link':'LICENCIAS','lic.title':'LICENCIAS','lic.stockfish':'Motor de ajedrez de T. Romstad, M. Costalba, J. Kiiski, G. Linscott y colaboradores. Versión para navegador de Niklas Fiekas. Código fuente:','lic.own':'Código del juego, piezas y diseño: A.C.EON Studio.',
   'ch.title':'AJEDREZ',
   'menu.sub':'MOTOR STOCKFISH / 5 NIVELES',
   'menu.opponent':'RIVAL','menu.setup':'AJUSTES','menu.view':'VISTA','menu.board':'TABLERO','menu.side':'COLOR',
@@ -210,6 +215,7 @@ L.es={
 };
 
 L.it={
+  'lic.link':'LICENZE','lic.title':'LICENZE','lic.stockfish':'Motore scacchistico di T. Romstad, M. Costalba, J. Kiiski, G. Linscott e collaboratori. Versione per browser di Niklas Fiekas. Codice sorgente:','lic.own':'Codice del gioco, pezzi e grafica: A.C.EON Studio.',
   'ch.title':'SCACCHI',
   'menu.sub':'MOTORE STOCKFISH / 5 LIVELLI',
   'menu.opponent':'AVVERSARIO','menu.setup':'IMPOSTAZIONI','menu.view':'VISTA','menu.board':'SCACCHIERA','menu.side':'COLORE',
@@ -251,6 +257,7 @@ L.it={
 };
 
 L.pl={
+  'lic.link':'LICENCJE','lic.title':'LICENCJE','lic.stockfish':'Silnik szachowy: T. Romstad, M. Costalba, J. Kiiski, G. Linscott i inni autorzy. Wersja przeglądarkowa: Niklas Fiekas. Kod źródłowy:','lic.own':'Kod gry, figury i oprawa: A.C.EON Studio.',
   'ch.title':'SZACHY',
   'menu.sub':'SILNIK STOCKFISH / 5 POZIOMÓW',
   'menu.opponent':'PRZECIWNIK','menu.setup':'USTAWIENIA','menu.view':'WIDOK','menu.board':'PLANSZA','menu.side':'KOLOR',

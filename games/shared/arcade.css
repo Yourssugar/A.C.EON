@@ -104,3 +104,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   linear-gradient(90deg,var(--pri) var(--fill,50%),#0d2236 var(--fill,50%));border:1px solid var(--bdr);cursor:pointer;}
 .arc-vol input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:18px;background:#fff;border:2px solid var(--pri);box-shadow:0 0 8px var(--pri);}
 .arc-vol input::-moz-range-thumb{width:10px;height:16px;border-radius:0;background:#fff;border:2px solid var(--pri);}
+
+/* телефоны: вырез экрана, без обновления страницы жестом, без увеличения двойным касанием */
+html,body{overscroll-behavior:none;}
+button,a,input{touch-action:manipulation;}
+.arc-top{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right));
+  height:calc(var(--top-h) + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);}
+body{padding-bottom:env(safe-area-inset-bottom);}

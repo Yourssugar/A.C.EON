@@ -20,7 +20,13 @@
 var THREE=null,loading=null;
 var THREE_KB=655;   // размер three.module.min.js для прогресса, если сервер не прислал длину
 
+/* динамический импорт собирается через Function: старые браузеры не знают такой синтаксис,
+   и без обёртки не разобрался бы весь файл, а вместе с ним сломалась бы 2D-игра */
+var dynImport=null;
+try{dynImport=new Function('u','return import(u)');}catch(e){dynImport=null;}
+
 function supported(){
+  if(!dynImport||!window.Promise||!window.fetch||!window.PointerEvent)return false;
   try{var c=document.createElement('canvas');return !!(window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl')));}
   catch(e){return false;}
 }
@@ -47,9 +53,9 @@ function load(onProgress){
     return pump();
   }).then(function(src){
     var blob=URL.createObjectURL(new Blob([src],{type:'text/javascript'}));
-    return import(blob).then(function(m){URL.revokeObjectURL(blob);return m;});
+    return dynImport(blob).then(function(m){URL.revokeObjectURL(blob);return m;});
   }).catch(function(){
-    return import(url);      // запасной путь: обычный импорт без прогресса
+    return dynImport(url);      // запасной путь: обычный импорт без прогресса
   }).then(function(m){THREE=m;progress(1);return m;},function(err){loading=null;throw err;});
   return loading;
 }

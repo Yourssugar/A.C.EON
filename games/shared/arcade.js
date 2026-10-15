@@ -89,7 +89,7 @@ function sfxToggle(){sfxState.off=!sfxState.off;lsSet('aceon_sfx_off',sfxState.o
 function splash(title,onStart){
   var sp=document.createElement('div');
   sp.id='arc-splash';
-  sp.innerHTML='<div class="sp-ac">A.C.EON</div><div class="sp-game"></div><div class="sp-start">PRESS START</div>';
+  sp.innerHTML='<div class="sp-ac">A.C.EON</div><div class="sp-game"></div><div class="sp-start">'+tr('arc.press')+'</div>';
   sp.querySelector('.sp-game').textContent=title;
   document.body.appendChild(sp);
   function go(){
@@ -102,21 +102,61 @@ function splash(title,onStart){
   document.addEventListener('keydown',onKey);
 }
 
-/* верхняя панель: кнопка назад, название, звук */
-function topbar(title){
+/* общие строки панели */
+var STR={
+  en:{'arc.back':'ARCADE','arc.press':'PRESS START','arc.music':'Music','arc.sfx':'Sound effects','arc.lang':'Language'},
+  ru:{'arc.back':'АРКАДА','arc.press':'НАЖМИ СТАРТ','arc.music':'Музыка','arc.sfx':'Звуки','arc.lang':'Язык'},
+  de:{'arc.back':'ARCADE','arc.press':'START DRÜCKEN','arc.music':'Musik','arc.sfx':'Soundeffekte','arc.lang':'Sprache'},
+  fr:{'arc.back':'ARCADE','arc.press':'APPUIE SUR START','arc.music':'Musique','arc.sfx':'Effets sonores','arc.lang':'Langue'},
+  es:{'arc.back':'ARCADE','arc.press':'PULSA START','arc.music':'Música','arc.sfx':'Efectos de sonido','arc.lang':'Idioma'},
+  it:{'arc.back':'ARCADE','arc.press':'PREMI START','arc.music':'Musica','arc.sfx':'Effetti sonori','arc.lang':'Lingua'},
+  pl:{'arc.back':'ARCADE','arc.press':'NACIŚNIJ START','arc.music':'Muzyka','arc.sfx':'Efekty dźwiękowe','arc.lang':'Język'}
+};
+if(window.I18n)for(var lc in STR)I18n.add(lc,STR[lc]);
+function tr(k){return window.I18n?I18n.t(k):STR.en[k];}
+
+/* выбор языка: кнопка с кодом и выпадающий список */
+function langPicker(){
+  var wrap=document.createElement('div');wrap.className='arc-lang';
+  var btn=document.createElement('button');btn.type='button';btn.className='arc-icon-btn arc-lang-btn';
+  btn.dataset.i18nTitle='arc.lang';btn.title=tr('arc.lang');
+  var list=document.createElement('div');list.className='arc-lang-list hidden';
+  function paint(){
+    btn.textContent=I18n.lang.toUpperCase();
+    list.innerHTML='';
+    I18n.langs.forEach(function(l){
+      var o=document.createElement('button');o.type='button';
+      o.className='arc-lang-opt'+(l.code===I18n.lang?' sel':'');
+      o.innerHTML='<b>'+l.code.toUpperCase()+'</b> '+l.name;
+      o.addEventListener('click',function(){list.classList.add('hidden');I18n.set(l.code);});
+      list.appendChild(o);
+    });
+  }
+  btn.addEventListener('click',function(e){e.stopPropagation();list.classList.toggle('hidden');});
+  document.addEventListener('click',function(e){if(!wrap.contains(e.target))list.classList.add('hidden');});
+  I18n.onChange(paint);paint();
+  wrap.appendChild(btn);wrap.appendChild(list);
+  return wrap;
+}
+
+/* верхняя панель: назад, название, язык, звуки, музыка */
+function topbar(titleKey){
   var bar=document.createElement('header');
   bar.className='arc-top';
-  bar.innerHTML='<a class="arc-back" href="'+new URL('../',BASE).href+'">&#9664; ARCADE</a>'+
-                '<div class="arc-title"></div>'+
-                '<button class="arc-icon-btn" type="button" title="Sound effects" data-k="sfx">FX</button>'+
-                '<button class="arc-icon-btn" type="button" title="Music" data-k="music">&#9835;</button>';
-  bar.querySelector('.arc-title').textContent=title;
+  bar.innerHTML='<a class="arc-back" href="'+new URL('../',BASE).href+'">&#9664; <span data-i18n="arc.back">'+tr('arc.back')+'</span></a>'+
+                '<div class="arc-title" data-i18n="'+titleKey+'"></div>'+
+                '<span class="arc-slot"></span>'+
+                '<button class="arc-icon-btn" type="button" data-i18n-title="arc.sfx" data-k="sfx">FX</button>'+
+                '<button class="arc-icon-btn" type="button" data-i18n-title="arc.music" data-k="music">&#9835;</button>';
+  if(window.I18n)bar.querySelector('.arc-slot').replaceWith(langPicker());
+  else bar.querySelector('.arc-slot').remove();
   var mb=bar.querySelector('[data-k="music"]'),sb=bar.querySelector('[data-k="sfx"]');
   mb.classList.toggle('off',music.off);
   sb.classList.toggle('off',sfxState.off);
   mb.addEventListener('click',function(){mb.classList.toggle('off',!musicToggle());});
   sb.addEventListener('click',function(){sb.classList.toggle('off',!sfxToggle());});
   document.body.insertBefore(bar,document.body.firstChild);
+  if(window.I18n)I18n.apply(bar);
   return bar;
 }
 

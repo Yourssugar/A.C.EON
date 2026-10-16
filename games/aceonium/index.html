@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="2" defer></script>
+<script src="../shared/boot.js" data-v="4" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
@@ -19,110 +19,7 @@
   {"src":"js/data.js","kb":9},
   {"src":"js/lang.js","kb":18},
   {"src":"js/game.js","kb":16},
-  {"src":"js/scene3d.js","kb":52},
-  {"src":"js/ui.js","kb":30},
-  {"src":"../shared/three/three.module.min.js","kb":655,"prefetch":true,"optional":true},
-  {"src":"js/aceonium.js","kb":7}
-]}
-</script>
-
-<!-- Обложка загрузки: сфера-Ядро наполняется светом вместе с прогрессом (--p от загрузчика) -->
-<template id="boot-skin">
-  <style>
-    .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
-    .bs-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
-    .bs-orb{width:90px;height:90px;border-radius:50%;border:2px solid #00e5ff;position:relative;overflow:hidden;
-      box-shadow:0 0 calc(10px + var(--p) * 40px) rgba(0,229,255,calc(.2 + var(--p) * .6)),inset 0 0 20px rgba(0,229,255,.25);}
-    .bs-orb::before{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--p) * 100%);
-      background:radial-gradient(circle at 50% 30%,#e0ffff,#00e5ff 40%,#005a70);transition:height .2s;}
-    .bs-orb::after{content:"";position:absolute;top:14%;left:22%;width:26%;height:18%;border-radius:50%;background:rgba(255,255,255,.35);}
-  </style>
-  <div class="bs-brand">A.C.EON</div>
-  <div class="bs-title">ACEONIUM</div>
-  <div class="bs-orb"></div>
-</template>
-</head>
-<body class="ac">
-
-<main class="ac-game" id="game">
-  <section class="stage" id="stage">
-    <div class="canvas-host" id="canvas-host"></div>
-    <div class="fx" id="fx"></div>
-
-    <div class="hud">
-      <div class="hud-lvl">
-        <b id="h-level"></b>
-        <div class="dots" id="h-dots"></div>
-        <span class="tag hidden" id="h-farm"></span>
-      </div>
-      <div class="hud-coins">
-        <div class="coins"><i class="coin"></i><b id="h-coins">0</b></div>
-        <small id="h-rate"></small>
-      </div>
-      <div class="hud-fat">
-        <div class="fat-top"><span id="h-fat-state"></span><b id="h-fat-pct"></b></div>
-        <div class="bar"><i id="h-fat-bar"></i></div>
-        <div class="fat-bot"><small id="h-fat-note"></small><button type="button" class="btn xs hidden" id="h-place"></button></div>
-      </div>
-    </div>
-
-    <div class="enemy hidden" id="enemy">
-      <div class="en-name" id="en-name"></div>
-      <div class="bar hp"><i id="en-hp"></i></div>
-      <div class="en-hp" id="en-hp-txt"></div>
-      <div class="boss-timer hidden" id="boss-timer"><div class="bar"><i id="boss-bar"></i></div><b id="boss-sec"></b></div>
-    </div>
-
-    <div class="farm hidden" id="farm">
-      <button type="button" class="btn pink" id="btn-boss"></button>
-      <label class="chk"><input type="checkbox" id="auto-boss"><span id="auto-boss-l"></span></label>
-    </div>
-
-    <div class="rest hidden" id="rest">
-      <p id="rest-txt"></p>
-      <p class="rest-time" id="rest-time"></p>
-      <div class="btn-row"><button type="button" class="btn" id="rest-road"></button><button type="button" class="btn hidden" id="rest-tav"></button></div>
-    </div>
-
-    <div class="skills" id="skills"></div>
-  </section>
-
-  <aside class="panel">
-    <nav class="tabs" id="tabs"></nav>
-    <div class="buy-amt" id="buy-amt"></div>
-    <div class="tab-body" id="tab-body"></div>
-  </aside>
-</main>
-
-<div class="create hidden" id="create"></div>
-
-<div class="modal hidden" id="modal"><div class="modal-box"><h3></h3><div class="m-body"></div><div class="m-btns"></div></div></div>
-<div class="toast" id="toast"></div>
-
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<title>ACEONIUM</title>
-
-<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
-     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="2" defer></script>
-<script type="application/json" id="boot-manifest">
-{"files":[
-  {"src":"../shared/arcade.css","kb":6},
-  {"src":"css/aceonium.css","kb":20},
-  {"src":"../shared/store.js","kb":3},
-  {"src":"../shared/i18n.js","kb":3},
-  {"src":"../shared/sound.js","kb":7},
-  {"src":"../shared/arcade.js","kb":5},
-  {"src":"js/data.js","kb":9},
-  {"src":"js/lang.js","kb":18},
-  {"src":"js/game.js","kb":16},
-  {"src":"js/scene3d.js","kb":52},
+  {"src":"js/scene3d.js","kb":64},
   {"src":"js/ui.js","kb":30},
   {"src":"../shared/three/three.module.min.js","kb":655,"prefetch":true,"optional":true},
   {"src":"js/aceonium.js","kb":7}

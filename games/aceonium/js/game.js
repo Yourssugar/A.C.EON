@@ -11,6 +11,7 @@ function defaults(){
   var skills={};D.SKILLS.forEach(function(s){skills[s.id]={l:1,cd:0,act:0};});
   return {
     profile:null,                                   // {name,gender:'m'|'f',created}
+    look:null,                                      // облик 3D-персонажа (avatar.js)
     wardrobe:{owned:['wander','ash','night','moss'],robe:'wander'},
     coins:0,level:1,maxLevel:1,farm:false,autoBoss:false,
     hero:1,staff:0,critCh:0,critMu:0,
@@ -343,6 +344,11 @@ P.buyRobe=function(id){
 P.equipRobe=function(id){
   var S=this.S;if(S.wardrobe.owned.indexOf(id)<0)return false;
   S.wardrobe.robe=id;this.emit('look');return true;
+};
+P.setLook=function(look){
+  this.S.look=JSON.parse(JSON.stringify(look));
+  if(this.S.profile)this.S.profile.gender=look.gender;
+  this.emit('look');
 };
 P.setProfile=function(name,gender){
   var S=this.S;

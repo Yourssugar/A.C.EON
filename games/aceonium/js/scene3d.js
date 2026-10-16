@@ -35,7 +35,7 @@ function load(){
   loading=dynImport(Boot.url('../shared/three/three.module.min.js')).catch(function(e){
     console.warn('[aceonium] shared/three not found, trying chess/three',e);
     return dynImport(Boot.url('../chess/three/three.module.min.js'));
-  }).then(function(m){THREE=m;return m;},function(e){loading=null;throw e;});
+  }).then(function(m){THREE=m;window.ACE_THREE=m;return m;},function(e){loading=null;throw e;});
   return loading;
 }
 
@@ -244,152 +244,9 @@ var PROFILE={
   m:[[0,0.02],[0.40,0.02],[0.41,0.08],[0.36,0.45],[0.30,0.80],[0.27,1.00],[0.31,1.12],[0.30,1.18],[0.16,1.27],[0.08,1.30],[0,1.30]],
   f:[[0,0.02],[0.47,0.02],[0.48,0.08],[0.36,0.40],[0.24,0.72],[0.21,0.82],[0.25,1.00],[0.26,1.10],[0.23,1.17],[0.13,1.26],[0.07,1.29],[0,1.29]]
 };
-function buildMage(look){
-  var M={root:new THREE.Group(),pose:{bodyY:0,lean:0.06,dy:0,armR:-0.45,armL:0,tilt:0.12,feet:0,glow:0.6},t:0,kick:0,ring:0,look:null,tier:-1};
-  var body=new THREE.Group();M.root.add(body);M.body=body;
-  M.mats={robe:std('#4a5068'),trim:std('#a0a8c0',{m:0.5,r:0.4}),hood:std('#3e4458'),skin:std('#e0b48e',{r:0.7}),
-    hair:std('#7a3e22'),beard:std('#4a3424'),wood:std('#2a1d14',{r:0.6}),metal:std('#8890a8',{m:0.8,r:0.3}),
-    eye:new THREE.MeshBasicMaterial({color:0x80f0ff}),boot:std('#1a1620')};
-  M.gender=null;
-  M.parts=new THREE.Group();body.add(M.parts);
-
-  /* посох в правой руке */
-  var staff=new THREE.Group();M.staff=staff;
-  /* узловатый деревянный посох: трубка по кривой с изгибами, сверху ветки держат сферу */
-  var pts=[];for(var si=0;si<=8;si++){var yy=-0.8+si*0.24;pts.push(new THREE.Vector3(Math.sin(si*1.7)*0.022,yy,Math.cos(si*2.3)*0.02));}
-  var shaftG=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,0.032,6,false);
-  staff.add(mesh(shaftG,M.mats.wood));
-  for(var kn=0;kn<4;kn++){var knot=mesh(new THREE.SphereGeometry(0.042,6,5),M.mats.wood,pts[kn*2+1].x,pts[kn*2+1].y,pts[kn*2+1].z);knot.scale.set(1,1.4,1);staff.add(knot);}
-  for(var i=0;i<4;i++){
-    var a=i/4*Math.PI*2+0.4,bp=[];
-    for(var bj=0;bj<=4;bj++){var tt=bj/4;bp.push(new THREE.Vector3(Math.cos(a)*(0.03+Math.sin(tt*Math.PI)*0.13),1.0+tt*0.3,Math.sin(a)*(0.03+Math.sin(tt*Math.PI)*0.13)));}
-    staff.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(bp),8,0.016-i*0.001,5,false),M.mats.wood));
-  }
-  M.coreMat=new THREE.MeshBasicMaterial({color:0x00e5ff,map:galaxyTex()});
-  M.core=mesh(new THREE.SphereGeometry(0.12,24,16),M.coreMat,0,1.16,0);staff.add(M.core);
-  M.shell=mesh(new THREE.SphereGeometry(0.135,24,16),new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:0.22,blending:THREE.AdditiveBlending,depthWrite:false}));
-  M.core.add(M.shell);
-  M.coreGlow=glowSprite(0x00e5ff,0.7,0.9);M.core.add(M.coreGlow);
-  M.coreLight=new THREE.PointLight(0x00e5ff,1.2,5,1.6);M.core.add(M.coreLight);
-  M.rings=[];
-  for(var r=0;r<3;r++){
-    var ring=mesh(new THREE.TorusGeometry(0.2+r*0.05,0.008,6,32),new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));
-    ring.visible=false;M.core.add(ring);M.rings.push(ring);
-  }
-  M.fightRing=mesh(new THREE.TorusGeometry(0.3,0.012,6,40),new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
-  M.core.add(M.fightRing);
-
-  M.setLook=function(look){setMageLook(M,look);};
-  M.setTier=function(tier,colors){
-    if(tier===M.tier)return;M.tier=tier;
-    var c=new THREE.Color(colors[tier%colors.length]);
-    M.coreMat.color.copy(c).lerp(new THREE.Color(1,1,1),0.5).multiplyScalar(2.2);M.shell.material.color.copy(c);M.coreGlow.material.color.copy(c);M.coreLight.color.copy(c);M.fightRing.material.color.copy(c);
-    var s=1+Math.min(tier,6)*0.07;M.core.scale.setScalar(s);
-    M.rings.forEach(function(rg,i){rg.visible=i<Math.min(tier,3);rg.material.color.copy(c);});
-  };
-  M.setLook(look);
-  M.setTier(0,['#00e5ff']);
-  return M;
-}
-function setMageLook(M,look){
-  M.mats.robe.color.set(look.robe);
-  M.mats.hood.color.set(look.robe).multiplyScalar(0.85);
-  M.mats.trim.color.set(look.trim);
-  if(M.gender===look.gender)return;
-  M.gender=look.gender;
-  var p=M.parts;
-  while(p.children.length){var ch=p.children.pop();if(ch.geometry)ch.geometry.dispose();}
-  var f=look.gender==='f',prof=PROFILE[f?'f':'m'];
-  var robeG=new THREE.LatheGeometry(prof.map(function(q){return new THREE.Vector2(q[0],q[1]);}),20);
-  ragged(robeG,0.1,0.07);
-  var robe=mesh(robeG,M.mats.robe);
-  p.add(robe);
-  var hemR=prof[1][0];
-  var hem=mesh(new THREE.TorusGeometry(hemR,0.025,5,20),M.mats.trim,0,0.05,0);hem.rotation.x=Math.PI/2;p.add(hem);
-  var waistY=f?0.80:0.80,waistR=f?0.215:0.29;
-  var belt=mesh(new THREE.TorusGeometry(waistR,0.03,5,18),M.mats.trim,0,waistY,0);belt.rotation.x=Math.PI/2;p.add(belt);
-  p.add(mesh(new THREE.BoxGeometry(0.07,0.7,0.02),M.mats.trim,0,0.42,(f?0.33:0.36)*0.98));
-  /* накидка на плечах и плащ за спиной (видно из-за спины) */
-  var mantG=new THREE.ConeGeometry(f?0.42:0.5,0.62,20,3,true);ragged(mantG,-0.3,0.09);
-  var mant=mesh(mantG,M.mats.hood,0,1.06,0);mant.material.side=THREE.DoubleSide;p.add(mant);
-  var capeG=new THREE.CylinderGeometry(f?0.24:0.29,f?0.44:0.43,1.05,12,1,true,Math.PI*0.6,Math.PI*0.8);
-  capeG=new THREE.CylinderGeometry(f?0.24:0.29,f?0.46:0.45,1.12,18,4,true,Math.PI*0.55,Math.PI*0.9);
-  ragged(capeG,-0.5,0.12);
-  var cape=mesh(capeG,M.mats.hood,0,0.62,-0.035);cape.material.side=THREE.DoubleSide;p.add(cape);M.cape=cape;
-  /* ноги */
-  M.feet=[];
-  [-1,1].forEach(function(sd){var ft=mesh(new THREE.BoxGeometry(0.1,0.07,0.22),M.mats.boot,sd*0.11,0.035,0.06);p.add(ft);M.feet.push(ft);});
-  /* голова */
-  var head=new THREE.Group();head.position.set(0,1.43,0);p.add(head);M.head=head;
-  head.add(mesh(new THREE.SphereGeometry(0.14,12,10),M.mats.skin));
-  [-1,1].forEach(function(sd){head.add(mesh(new THREE.SphereGeometry(0.02,6,5),M.mats.eye,sd*0.05,0.02,0.125));});
-  /* капюшон: тело вращения с острым верхом и вырезом для лица спереди */
-  var hp=[[0.0,0.42],[0.03,0.38],[0.08,0.3],[0.15,0.2],[0.2,0.08],[0.215,-0.04],[0.21,-0.14],[0.24,-0.22],[0.3,-0.27]].map(function(q){return new THREE.Vector2(q[0],q[1]);});
-  var hood=mesh(new THREE.LatheGeometry(hp,18,0.55,Math.PI*2-1.1),M.mats.hood,0,0,-0.03);
-  hood.material.side=THREE.DoubleSide;hood.rotation.x=-0.12;hood.scale.set(1,f?0.92:1,1.12);head.add(hood);
-  if(f){
-    var hairPos=[[-0.14,-0.17,-0.03],[0.14,-0.17,-0.03],[-0.08,-0.22,-0.11],[0.08,-0.22,-0.11],[0,-0.25,-0.14]];
-    hairPos.forEach(function(q,i){var h=mesh(new THREE.BoxGeometry(0.075,i<2?0.36:0.46,0.05),M.mats.hair,q[0],q[1],q[2]);h.rotation.z=q[0]*0.6;head.add(h);});
-    head.add(mesh(new THREE.BoxGeometry(0.2,0.05,0.04),M.mats.hair,0,0.1,0.11));
-  }else{
-    var beard=mesh(new THREE.ConeGeometry(0.09,0.2,8),M.mats.beard,0,-0.15,0.07);beard.rotation.x=Math.PI+0.25;head.add(beard);
-  }
-
-  /* руки */
-  var sh=f?0.22:0.27;
-  function arm(sd){
-    var g=new THREE.Group();g.position.set(sd*sh,1.17,0);
-    var sl=new THREE.CylinderGeometry(0.055,0.095,0.5,8);sl.translate(0,-0.25,0);
-    g.add(mesh(sl,M.mats.robe));
-    var cuff=mesh(new THREE.TorusGeometry(0.09,0.018,5,12),M.mats.trim,0,-0.49,0);cuff.rotation.x=Math.PI/2;g.add(cuff);
-    g.add(mesh(new THREE.SphereGeometry(0.055,8,6),M.mats.skin,0,-0.54,0));
-    p.add(g);return g;
-  }
-  M.armR=arm(-1);M.armL=arm(1);
-  M.armR.add(M.staff);M.staff.position.set(0,-0.54,0.02);
-}
-/* поза: цели по режиму + плавный переход + колебания */
-function updateMage(M,dt,mode,fat){
-  M.t+=dt;
-  var P=M.pose,k=1-Math.exp(-dt*7),tgt;
-  fat=fat||0;
-  if(mode==='walk')tgt={bodyY:0,lean:0.06+0.22*fat,dy:0,armR:-0.42+0.12*fat,armL:0,tilt:0.12,feet:0,glow:0.6-0.3*fat};
-  else if(mode==='fight')tgt={bodyY:0,lean:0.02+0.1*fat,dy:0,armR:-0.95+0.25*fat,armL:-0.55,tilt:0.55,feet:0,glow:1-0.35*fat};
-  else if(mode==='sit')tgt={bodyY:0,lean:0.28,dy:-0.42,armR:-0.25,armL:-0.3,tilt:-0.35,feet:0.28,glow:0.25};
-  else tgt={bodyY:0,lean:0.02,dy:0,armR:-0.3,armL:0,tilt:0.0,feet:0,glow:0.7};
-  for(var key in tgt)P[key]=lerp(P[key],tgt[key],k);
-  M.kick=Math.max(0,M.kick-dt*6);
-  var walkW=mode==='walk'?1:0,step=M.t*7*(1-0.35*fat);
-  var bob=walkW*Math.abs(Math.sin(step))*0.05+(mode!=='walk'?Math.sin(M.t*(mode==='sit'?1.2:2.2))*0.012:0);
-  M.body.position.y=P.bodyY+bob;
-  M.root.position.y=P.dy;
-  M.body.rotation.x=P.lean;
-  M.body.rotation.z=walkW*Math.sin(step)*0.03;
-  if(M.feet){
-    M.feet[0].position.z=0.06+walkW*Math.sin(step)*0.12+P.feet;
-    M.feet[1].position.z=0.06-walkW*Math.sin(step)*0.12+P.feet;
-    M.feet[0].position.y=0.035+walkW*Math.max(0,Math.cos(step))*0.04;
-    M.feet[1].position.y=0.035+walkW*Math.max(0,-Math.cos(step))*0.04;
-  }
-  M.armR.rotation.x=P.armR+walkW*Math.sin(step)*0.08-M.kick*0.35;
-  M.armL.rotation.x=P.armL-walkW*Math.sin(step)*0.3;
-  M.armL.rotation.z=mode==='fight'?0.25:0.08;
-  M.armR.rotation.z=-0.08;
-  M.staff.rotation.x=-M.armR.rotation.x+P.tilt+M.kick*0.25+walkW*Math.sin(step)*0.06;
-  if(M.head)M.head.rotation.x=mode==='sit'?0.25+Math.sin(M.t*0.8)*0.06:-P.lean*0.6;
-  var g=P.glow+M.kick*0.8;
-  M.coreGlow.scale.setScalar(0.45+g*0.55+Math.sin(M.t*5)*0.03);
-  M.coreGlow.material.opacity=Math.min(1,0.35+g*0.6);
-  M.coreLight.intensity=0.4+g*1.6;
-  var fr=mode==='fight'?1:0;
-  M.ring=lerp(M.ring,fr,k);
-  M.fightRing.material.opacity=M.ring*0.7;
-  M.fightRing.scale.setScalar(1+Math.sin(M.t*4)*0.08);
-  M.fightRing.rotation.x=M.t*1.3;M.fightRing.rotation.y=M.t*0.9;
-  M.rings.forEach(function(r,i){r.rotation.x=M.t*(0.8+i*0.5);r.rotation.y=M.t*(1.1-i*0.3);});
-  M.core.rotation.y=M.t*0.6;
-  if(M.cape){M.cape.rotation.x=-0.04-walkW*Math.abs(Math.sin(step))*0.06-(mode==='fight'?0.03:0);M.cape.rotation.z=Math.sin(M.t*1.3)*0.02;}
-}
+/* персонаж собирается в mage.js (MageKit), здесь только обёртки */
+function buildMage(look){return MageKit.build(THREE,look,(R&&R.qName)||'high');}
+function updateMage(M,dt,mode,fat){M.update(dt,mode,fat);}
 
 /* ════════ МОНСТРЫ ════════ */
 var MON_COLORS={slime:['#39d353','#c8ffd0'],eye:['#e8e0ff','#ff2d78'],golem:['#4a4a5a','#00e5ff'],ghost:['#b8c8ff','#6080ff'],spider:['#2a2f3a','#ff3344']};
@@ -673,6 +530,8 @@ function setQuality(name){
   if(!QUALITY[name])name='medium';
   var q=QUALITY[name],prev=R.qName;
   R.qName=name;R.q=q;
+  if(R.avatar)R.avatar.setResolution(avRes());
+  else if(R.mage&&R.mage.setQuality)R.mage.setQuality(name);
   if(q.post&&!R.renderer.capabilities.isWebGL2)q=Object.assign({},q,{post:null});
   var dpr=window.devicePixelRatio||1;
   R.pr=name==='low'?Math.min(dpr,1)*q.pr:Math.min(dpr,q.pr);
@@ -763,6 +622,11 @@ function init(host,quality){
   R.mageShadow=mesh(new THREE.CircleGeometry(0.55,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.35,depthWrite:false}),MAGE_POS.x,0.02,MAGE_POS.z);
   R.mageShadow.rotation.x=-Math.PI/2;scene.add(R.mageShadow);
 
+  /* бревно, на которое маг садится у дороги */
+  R.seat=new THREE.Group();
+  var logM=std('#5a3c24',{r:1});var lg=mesh(new THREE.CylinderGeometry(0.2,0.22,1.3,10),logM,0,0.2,0);lg.rotation.z=Math.PI/2;R.seat.add(lg);
+  [-1,1].forEach(function(sd){var cap=mesh(new THREE.CircleGeometry(0.2,10),std('#b08a5a',{r:1}),sd*0.651,0.2,0);cap.rotation.y=sd*Math.PI/2;R.seat.add(cap);});
+  R.seat.position.set(MAGE_POS.x,0,MAGE_POS.z+0.33);R.seat.rotation.y=Math.PI/2;R.seat.visible=false;scene.add(R.seat);
   R.camp=buildFire(0.5);R.camp.group.position.set(MAGE_POS.x+1.1,0,MAGE_POS.z-1.3);R.camp.group.visible=false;scene.add(R.camp.group);
   R.tavern=buildTavern();R.tavern.group.visible=false;scene.add(R.tavern.group);
 
@@ -821,9 +685,11 @@ function buildTavern(){
   var flame=glowSprite(0xffc060,0.3,1);flame.position.set(-2.9,1.08,-3.3);g.add(flame);
   /* кресло под магом */
   var red=std('#5a1e1e');
-  g.add(mesh(new THREE.BoxGeometry(0.85,0.42,0.75),red,MAGE_POS.x,0.21,MAGE_POS.z));
-  g.add(mesh(new THREE.BoxGeometry(0.85,1.0,0.16),red,MAGE_POS.x,0.7,MAGE_POS.z+0.4));
-  [-1,1].forEach(function(sd){g.add(mesh(new THREE.BoxGeometry(0.14,0.62,0.75),red,MAGE_POS.x+sd*0.45,0.42,MAGE_POS.z));});
+  /* кресло чуть позади: при посадке таз уходит назад на ~0.33 */
+  var cz=MAGE_POS.z+0.32;
+  g.add(mesh(new THREE.BoxGeometry(0.85,0.42,0.75),red,MAGE_POS.x,0.21,cz));
+  g.add(mesh(new THREE.BoxGeometry(0.85,0.8,0.14),red,MAGE_POS.x,0.62,cz+0.4));
+  [-1,1].forEach(function(sd){g.add(mesh(new THREE.BoxGeometry(0.14,0.62,0.75),red,MAGE_POS.x+sd*0.45,0.42,cz));});
   var lamp=new THREE.PointLight(0xffb060,1.0,10,1.4);lamp.position.set(-2.6,2.4,-3);g.add(lamp);
   T.update=function(dt){T.fire.update(dt);flame.scale.setScalar(0.26+Math.random()*0.05);};
   return T;
@@ -860,8 +726,10 @@ function resize(){
   var vf=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(32))/a)*180/Math.PI;
   R.camera.fov=Math.max(46,Math.min(78,vf));
   var portrait=a<0.9;
-  R.camBase.set(0.45,portrait?2.75:2.55,portrait?5.3:4.7);
-  R.camTarget.set(0.2,portrait?1.45:1.7,-6);
+  /* широкий экран: камера дальше и выше, чтобы маг был виден целиком */
+  var wide=Math.max(0,Math.min(1,(a-1.25)/0.6));
+  R.camBase.set(0.45,portrait?2.75:2.55+wide*0.25,portrait?5.3:4.7+wide*1.1);
+  R.camTarget.set(0.2,portrait?1.45:1.7-wide*0.25,-6);
   R.camera.position.copy(R.camBase);R.camera.lookAt(R.camTarget);
   R.camera.updateProjectionMatrix();
 }
@@ -1029,7 +897,8 @@ function frame(dt,real){
   /* маг */
   updateMage(R.mage,dt,R.mode==='tavern'?'sit':R.mode,R.fat);
   R.mageShadow.visible=R.mode!=='tavern'&&!R.shadowOn;
-  if(R.mode==='tavern'){R.mage.root.position.y+=0.42;R.tavern.update(dt);}
+  if(R.mode==='tavern'){if(!R.avatar)R.mage.root.position.y+=0.42;R.tavern.update(dt);}
+  if(R.seat)R.seat.visible=R.mode==='sit'&&!!R.avatar;
   if(R.mode==='sit')R.camp.update(dt);
   /* Zzz */
   if(R.mode==='sit'||R.mode==='tavern'){
@@ -1121,8 +990,25 @@ function forestTintKind(k){
   });
 }
 
-function setLook(look){if(R)R.mage.setLook(look);}
-function setTier(t,colors){if(R)R.mage.setTier(t,colors);}
+/* 3D-персонаж (avatar.js); пока он грузится, на дороге стоит процедурный маг */
+function avRes(){return (R&&(R.qName==='high'||R.qName==='ultra'))?'2k':'1k';}
+function setLook(look,onProgress){
+  if(!R)return Promise.resolve();
+  if(!look||!window.Avatar||!look.body){if(look&&!look.body&&R.mage.setLook&&!R.avatar)R.mage.setLook(look);return Promise.resolve();}
+  if(R.avatar)return R.avatar.setLook(look,onProgress);
+  if(R.avLoading)return R.avLoading.then(function(){return R.avatar.setLook(look,onProgress);});
+  R.avLoading=Avatar.init(THREE).then(function(){return Avatar.create(look,{res:avRes(),forGame:true,onProgress:onProgress});}).then(function(A){
+    var old=R.mage;
+    A.root.position.copy(old.root.position);A.root.rotation.copy(old.root.rotation);
+    R.scene.remove(old.root);R.scene.add(A.root);
+    A.root.traverse(function(o){if(o.isMesh){o.castShadow=true;}});
+    R.avatar=A;R.mage=A;
+    if(R.tierArgs)A.setTier(R.tierArgs[0],R.tierArgs[1]);
+    return A;
+  });
+  return R.avLoading;
+}
+function setTier(t,colors){if(R){R.tierArgs=[t,colors];R.mage.setTier(t,colors);}}
 function setFatigue(f){if(R)R.fat=f;}
 
 

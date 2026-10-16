@@ -292,46 +292,21 @@ function look(gender,robeId){var r=D.robe(robeId);return {gender:gender,robe:r.c
 
 function tabWardrobe(body){
   var wrap=el('div','wd');
-  wrap.innerHTML='<canvas class="wd-canvas" id="wd-canvas"></canvas>'+
-    '<div class="wd-form"><div class="lbl">'+t('wd.look')+'</div><div class="seg" id="wd-gender">'+
-    '<button type="button" data-g="m">'+t('cr.m')+'</button><button type="button" data-g="f">'+t('cr.f')+'</button></div>'+
-    '<div class="lbl">'+t('wd.name')+'</div><div class="name-row"><input id="wd-name" maxlength="16" autocomplete="off" spellcheck="false"><button type="button" class="btn sm" id="wd-save">'+t('wd.save')+'</button></div>'+
+  wrap.innerHTML='<div class="wd-form full"><div class="lbl">'+t('wd.name')+'</div><div class="name-row"><input id="wd-name" maxlength="16" autocomplete="off" spellcheck="false"><button type="button" class="btn sm" id="wd-save">'+t('wd.save')+'</button></div>'+
     '<div class="err hidden" id="wd-err">'+t('cr.nameErr')+'</div></div>'+
-    '<div class="lbl full">'+t('wd.robe')+'</div><div class="swatches" id="wd-sw"></div>';
+    '<button type="button" class="btn big full wd-open" id="wd-open">'+t('wd2.open')+'</button>'+
+    '<p class="note full">'+t('wd2.about')+'</p>';
   body.appendChild(wrap);
-  var prev=null;
-  if(window.Scene3D&&Scene3D.ready){try{prev=Scene3D.preview($('wd-canvas'));}catch(e){prev=null;}}
-  if(!prev)$('wd-canvas').classList.add('hidden');
-  var gender=S.profile.gender;
-  function apply(){if(prev){prev.set(look(gender,S.wardrobe.robe));prev.tier(D.staffTier(S.staff),D.TIER_COLORS);}
-    [].forEach.call($('wd-gender').children,function(b){b.classList.toggle('sel',b.dataset.g===gender);});}
-  $('wd-gender').addEventListener('click',function(e){
-    var b=e.target.closest('button');if(!b)return;gender=b.dataset.g;g.setProfile(S.profile.name,gender);apply();refresh();
-  });
   var inp=$('wd-name');inp.value=S.profile.name;
   $('wd-save').addEventListener('click',function(){
     var n=inp.value.trim();
     if(!validName(n)){$('wd-err').classList.remove('hidden');return;}
-    $('wd-err').classList.add('hidden');g.setProfile(n,gender);toast(t('wd.saved'));refresh();
+    $('wd-err').classList.add('hidden');g.setProfile(n,S.profile.gender);toast(t('wd.saved'));refresh();
   });
-  var sw=$('wd-sw'),swRows=[];
-  D.ROBES.forEach(function(r){
-    var b=el('button','sw');b.type='button';
-    b.innerHTML='<span class="sw-c" style="--c:'+r.c+';--t:'+r.t+'"></span><span class="sw-n">'+t('robe.'+r.id)+'</span><span class="sw-p"></span>';
-    b.addEventListener('click',function(){if(g.buyRobe(r.id)){Sound.sfx('select');apply();refresh();}});
-    sw.appendChild(b);swRows.push({r:r,b:b,p:b.querySelector('.sw-p')});
+  $('wd-open').addEventListener('click',function(){
+    if(!window.Wardrobe||!window.ACE_THREE){toast(t('no3d'));return;}
+    Wardrobe.open({mode:'edit',look:S.look,onDone:function(look){g.setLook(look);refresh();}});
   });
-  add({el:el('div'),update:function(){
-    swRows.forEach(function(x){
-      var own=S.wardrobe.owned.indexOf(x.r.id)>=0,open=g.robeOpen(x.r),wear=S.wardrobe.robe===x.r.id;
-      var cls='sw'+(wear?' wear':own?' own':open?'':' lock');
-      if(x.b._c!==cls){x.b._c=cls;x.b.className=cls;}
-      setHTML(x.p,wear?t('wd.wear'):own?'':!open?t('wd.open',{n:x.r.lvl}):x.r.free?t('wd.free'):COIN+D.fmt(D.robeCost(x.r)));
-      x.b.disabled=!own&&(!open||S.coins<D.robeCost(x.r));
-    });
-  }});
-  apply();
-  tabCleanup=function(){if(prev)prev.dispose();};
 }
 
 function tabPrestige(){
@@ -427,6 +402,13 @@ function refresh(){
 }
 
 function initPanel(){
+  /* кнопка: спрятать / показать панель, чтобы сцена заняла весь экран */
+  var tg=el('button','panel-toggle');tg.type='button';tg.id='panel-toggle';
+  tg.innerHTML='<svg viewBox="0 0 8 12" aria-hidden="true"><path d="M2 0h2v2h2v2h2v4H6v2H4v2H2v-2h2V8h2V4H4V2H2z" fill="currentColor"/></svg>';
+  function applyPanel(){document.body.classList.toggle('panel-off',!!S.settings.panel);}
+  tg.addEventListener('click',function(e){e.stopPropagation();S.settings.panel=!S.settings.panel;applyPanel();Sound.sfx('select');
+    setTimeout(function(){window.dispatchEvent(new Event('resize'));},50);});
+  H.stage.appendChild(tg);applyPanel();
   var tabs=$('tabs');
   TABS.forEach(function(id){
     var b=el('button','tab');b.type='button';b.dataset.tab=id;b.dataset.i18n='tab.'+id;b.textContent=t('tab.'+id);
@@ -446,6 +428,10 @@ function paintTabs(){[].forEach.call($('tabs').children,function(b){b.classList.
 
 /* ════════ СОЗДАНИЕ ГЕРОЯ ════════ */
 function showCreate(onDone){
+  if(window.Wardrobe&&window.ACE_THREE&&window.Avatar){
+    Wardrobe.open({mode:'create',look:Avatar.defaults('m'),onDone:function(look,name){g.setProfile(name,look.gender);g.setLook(look);Sound.sfx('win');onDone();}});
+    return;
+  }
   var box=$('create');box.classList.remove('hidden');
   var gender='m',robe='wander',prev=null;
   box.innerHTML='<div class="cr-box">'+
@@ -505,7 +491,7 @@ function init(game){
 }
 function rebuild(){buildTab();}
 
-window.UI={init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
+window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,banner:banner,toast:toast,modal:modal,ripple:ripple,showCreate:showCreate,offlineReport:offlineReport,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};

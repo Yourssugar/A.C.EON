@@ -20,7 +20,7 @@ function defaults(){
     prestige:{count:0,shards:0,total:0,best:1,relics:{}},
     stats:{clicks:0,kills:0,bosses:0,bossFails:0,play:0,rest:0,earned:0,earnedAll:0},
     lastSeen:0,
-    settings:{buy:1}
+    settings:{buy:1,gfx:'auto'}
   };
 }
 

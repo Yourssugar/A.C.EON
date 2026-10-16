@@ -361,6 +361,16 @@ function tabPrestige(){
 }
 
 function tabStats(body){
+  var gb=el('div','blk');
+  var opts=['auto','low','medium','high','ultra'];
+  gb.innerHTML='<div class="lbl full">'+t('gfx.title')+'</div><div class="seg gfx" id="gfx-seg">'+
+    opts.map(function(o){return '<button type="button" data-q="'+o+'">'+t('gfx.'+o)+'</button>';}).join('')+'</div><p class="note" id="gfx-note"></p>';
+  gb.addEventListener('click',function(e){var b=e.target.closest('button[data-q]');if(!b)return;UI.setGfx(b.dataset.q);Sound.sfx('select');refresh();});
+  add({el:gb,update:function(){
+    [].forEach.call(gb.querySelectorAll('button'),function(b){b.classList.toggle('sel',b.dataset.q===S.settings.gfx);});
+    var now=UI.gfxNow&&UI.gfxNow();
+    setText($('gfx-note'),now?t('gfx.now',{q:t('gfx.'+now)})+(window.acFps?' · '+window.acFps+' FPS':'')+'. '+t('gfx.d.'+now):t('no3d'));
+  }});
   add(liveBlock(function(){
     var s=S.stats,L=[
       ['st.kills',D.fmt(s.kills)],['st.bosses',s.bosses],['st.bossFails',s.bossFails],['st.clicks',D.fmt(s.clicks)],

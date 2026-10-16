@@ -19,6 +19,11 @@ UI.init(game);
 
 var has3d=false,portalBusy=false;
 
+/* облик персонажа: старые сохранения без look получают облик по умолчанию */
+function lookNow(){
+  if(window.Avatar&&S.profile&&!S.look){S.look=Avatar.defaults(S.profile.gender);}
+  return S.look||UI.look(S.profile.gender,S.wardrobe.robe);
+}
 /* ── сохранение ── */
 function save(){S.lastSeen=Date.now();Store.save('aceonium');}
 setInterval(save,10000);
@@ -64,7 +69,10 @@ game.on('kill',function(k){if(has3d)Scene3D.kill();UI.onKill(k);Sound.sfx('captu
 game.on('bossStart',function(){UI.banner(UI.t('boss.start'),'','red');Sound.sfx('check');});
 game.on('bossWin',function(e){
   UI.banner(UI.t('boss.win'),'','gold');Sound.sfx('win');
-  D.ROBES.forEach(function(r){if(r.lvl===e.L)UI.toast(UI.t('toast.robe',{s:UI.t('robe.'+r.id)}));});
+  if(window.Wardrobe)Object.keys(Wardrobe.PAID).forEach(function(id){
+    if(Wardrobe.PAID[id]===e.L){var p=id.split(':'),nm=p[0]==='staff'?UI.t('staff.'+p[1]):p[0]==='part'?UI.t('slot.'+p[1])+' '+UI.t('outfit.'+p[2]):UI.t('wd2.color',{o:UI.t('outfit.'+p[1])})+' '+(+p[2]+1);
+      UI.toast(UI.t('toast.item',{s:nm}));}
+  });
   if(e.L===D.TAVERN_LEVEL&&!S.tavern)UI.rebuild();
   save();
 });
@@ -73,7 +81,7 @@ game.on('retreat',function(){if(has3d)Scene3D.retreat();});
 game.on('skill',function(id){Sound.sfx('check');if(id==='discharge'&&has3d&&game.R.phase==='fight')Scene3D.bolt('discharge',false);});
 game.on('unlock',function(id){UI.toast(UI.t('toast.unlock',{s:UI.t('sk.'+id)}));if(UI.tab==='skills')UI.rebuild();});
 game.on('buy',function(kind){if(kind==='staff'&&has3d)Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);});
-game.on('look',function(){if(has3d&&S.profile)Scene3D.setLook(UI.look(S.profile.gender,S.wardrobe.robe));UI.panel();});
+game.on('look',function(){if(has3d&&S.profile)Scene3D.setLook(lookNow());UI.panel();save();});
 game.on('prestige',function(){if(has3d)Scene3D.setTier(0,D.TIER_COLORS);save();});
 var scenePlace=null;
 function showPlace(place,instant){
@@ -119,7 +127,7 @@ function loop(now){
   if(has3d){
     if(!portalBusy&&scenePlace==='road')Scene3D.setMode(game.R.phase==='walk'?'walk':'fight');
     Scene3D.setFatigue(S.fatigue);
-    Scene3D.frame(Math.min(dt,0.05),dt);
+    if(!(window.Wardrobe&&Wardrobe.isOpen))Scene3D.frame(Math.min(dt,0.05),dt);
   }
   if(has3d)fpsWatch(dt);
   uiT+=dt;
@@ -153,12 +161,12 @@ function begin(){
   if(S.profile){
     var away=S.lastSeen?(Date.now()-S.lastSeen)/1000:0;
     if(away<0){UI.toast(UI.t('toast.clock'));away=0;}
-    if(has3d){Scene3D.setLook(UI.look(S.profile.gender,S.wardrobe.robe));Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
+    if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
       showPlace(S.place,true);}
     if(away>5)catchUp(away,false);else game.start();
   }else{
     UI.showCreate(function(){
-      if(has3d){Scene3D.setLook(UI.look(S.profile.gender,S.wardrobe.robe));showPlace('road',true);}
+      if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace('road',true);}
       game.start();save();UI.rebuild();
     });
   }

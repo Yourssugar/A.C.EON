@@ -1,0 +1,4 @@
+Модели, текстуры и анимации персонажа: Quaternius (quaternius.com), лицензия CC0 1.0.
+  Universal Base Characters, Modular Character Outfits - Fantasy, Universal Animation Library.
+  Переработаны для браузера: модели без текстур (glb), текстуры webp 1k/2k, отобранные анимации.
+Загрузчик glTF и SkeletonUtils в games/shared/three: three.js r160, лицензия MIT.

@@ -80,7 +80,13 @@ I18n.add('ru',{
   'toast.unlock':'Новое умение: {s}','toast.robe':'Открыт цвет мантии: {s}','toast.tavern':'Портал в таверну открыт',
   'toast.clock':'Часы компьютера ушли назад: время отсутствия не засчитано',
   'no3d':'3D недоступно в этом браузере. Игра работает, но без сцены.',
-  'dbg.title':'ОТЛАДКА'
+  'dbg.title':'ОТЛАДКА',
+  'gfx.title':'ГРАФИКА','gfx.auto':'АВТО','gfx.low':'НИЗКАЯ','gfx.medium':'СРЕДНЯЯ','gfx.high':'ВЫСОКАЯ','gfx.ultra':'ХОЛСТ',
+  'gfx.now':'Сейчас: {q}','gfx.lowered':'Графика снижена до уровня {q}: не хватало кадров',
+  'gfx.d.low':'Редкий лес, без травы и тумана, пониженное разрешение.',
+  'gfx.d.medium':'Лес гуще, трава, туман и пылинки.',
+  'gfx.d.high':'Полный лес, тени от солнца, свечение магии.',
+  'gfx.d.ultra':'Как картина маслом: мазки, зерно холста, чёткие тени. Нужна хорошая видеокарта.'
 });
 
 I18n.add('en',{
@@ -157,6 +163,12 @@ I18n.add('en',{
   'toast.unlock':'New skill: {s}','toast.robe':'Robe color unlocked: {s}','toast.tavern':'Tavern portal opened',
   'toast.clock':'The computer clock went back: away time not counted',
   'no3d':'3D is not available in this browser. The game works without the scene.',
-  'dbg.title':'DEBUG'
+  'dbg.title':'DEBUG',
+  'gfx.title':'GRAPHICS','gfx.auto':'AUTO','gfx.low':'LOW','gfx.medium':'MEDIUM','gfx.high':'HIGH','gfx.ultra':'CANVAS',
+  'gfx.now':'Now: {q}','gfx.lowered':'Graphics lowered to {q}: not enough frames',
+  'gfx.d.low':'Sparse forest, no grass or fog, lower resolution.',
+  'gfx.d.medium':'Denser forest, grass, fog and dust.',
+  'gfx.d.high':'Full forest, sun shadows, magic glow.',
+  'gfx.d.ultra':'Like an oil painting: brush strokes, canvas grain, crisp shadows. Needs a good GPU.'
 });
 })();

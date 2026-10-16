@@ -236,3 +236,6 @@ input#wd-name:focus,input#cr-name:focus{border-color:var(--pri);}
   .enemy{top:64px;}
   .farm{bottom:62px;}
 }
+
+.seg.gfx{flex-wrap:wrap;}
+.seg.gfx button{flex:1 0 30%;}

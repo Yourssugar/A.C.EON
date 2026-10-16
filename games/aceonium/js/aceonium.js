@@ -1,6 +1,9 @@
 /* Aceonium: запуск, главный цикл, связка логики со сценой и интерфейсом. */
 (function(){
 'use strict';
+/* защита от двойного запуска (например, если index.html вставлен в файл дважды) */
+if(window.__aceoniumStarted){console.warn('[aceonium] second start ignored');return;}
+window.__aceoniumStarted=true;
 
 var D=window.AcData;
 window.AC_DEBUG=/[?&]debug\b/.test(location.search);
@@ -118,11 +121,32 @@ function loop(now){
     Scene3D.setFatigue(S.fatigue);
     Scene3D.frame(Math.min(dt,0.05),dt);
   }
+  if(has3d)fpsWatch(dt);
   uiT+=dt;
   if(uiT>0.1){uiT=0;UI.hud();}
   requestAnimationFrame(loop);
 }
 setInterval(function(){UI.panel();},250);
+
+/* ── авто-качество: если кадров меньше 28 в секунду, шаг вниз ── */
+var LEVELS=['low','medium','high','ultra'],fpsAcc=0,fpsN=0,fpsWarm=4;
+window.acFps=0;
+function fpsWatch(dt){
+  if(document.hidden||dt>0.5)return;
+  if(fpsWarm>0){fpsWarm-=dt;return;}
+  fpsAcc+=dt;fpsN++;
+  if(fpsAcc<5)return;
+  var fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0;window.acFps=Math.round(fps);
+  if(S.settings.gfx!=='auto')return;
+  var i=LEVELS.indexOf(Scene3D.quality);
+  if(fps<28&&i>0){var n=LEVELS[i-1];Scene3D.setQuality(n);UI.toast(UI.t('gfx.lowered',{q:UI.t('gfx.'+n)}));fpsWarm=3;UI.rebuild();}
+}
+UI.setGfx=function(v){
+  S.settings.gfx=v;save();
+  if(has3d)Scene3D.setQuality(v==='auto'?Scene3D.detectQuality():v);
+  fpsWarm=3;fpsAcc=0;fpsN=0;
+};
+UI.gfxNow=function(){return has3d?Scene3D.quality:null;};
 
 /* ── старт ── */
 function begin(){
@@ -151,7 +175,7 @@ function no3d(){
 }
 if(window.Scene3D&&Scene3D.supported()){
   Scene3D.load().then(function(){
-    Scene3D.init(document.getElementById('canvas-host'));
+    Scene3D.init(document.getElementById('canvas-host'),S.settings.gfx==='auto'?null:S.settings.gfx);
     has3d=true;begin();
   }).catch(function(e){console.warn('[aceonium] 3D off',e);no3d();});
 }else no3d();

@@ -17,9 +17,10 @@ function defaults(){
     hero:1,staff:0,critCh:0,critMu:0,
     skills:skills,
     fatigue:0,place:'road',                         // road | sit | tavern
-    tavern:false,tav:{bed:0,amulet:0,lantern:0},
+    tavern:false,tav:{bed:0,amulet:0,lantern:0,alch:0,board:0},
+    charge:0,rested:0,                              // часы сна в таверне / секунды бонуса после выхода
     prestige:{count:0,shards:0,total:0,best:1,relics:{}},
-    stats:{clicks:0,kills:0,bosses:0,bossFails:0,play:0,rest:0,earned:0,earnedAll:0},
+    stats:{clicks:0,kills:0,bosses:0,bossFails:0,play:0,rest:0,earned:0,earnedAll:0,craft:0},
     lastSeen:0,
     settings:{buy:1,gfx:'auto'}
   };
@@ -46,8 +47,18 @@ P.shardMult=function(){return 1+this.S.prestige.shards*D.SHARD_BONUS;};
 P.dmgMult=function(){
   var m=this.shardMult()*D.fatigueMult(this.S.fatigue);
   if(this.skillOn('overload'))m*=this.skillPow('overload');
+  if(this.S.rested>0)m*=D.REST_BUFF_MULT;
   return m;
 };
+/* боевой доход в секунду на текущем уровне, бодрым (основа для ремесла в таверне) */
+P.farmRate=function(){
+  var L=this.enemyLevel(),hp=D.hp(L),crit=1+this.critChance()*(this.critMult()-1);
+  var kps=Math.min(this.rawDps()*this.shardMult()*crit/hp,1/(D.WALK_TIME+D.DEATH_TIME));
+  return kps*D.goldAt(L)*this.shardMult();
+};
+P.craftShare=function(){var t=this.S.tav;return D.CRAFT_BASE+D.CRAFT_ALCH*(t.alch||0)+D.CRAFT_BOARD*(t.board||0);};
+P.craftRate=function(){return this.S.tavern?this.farmRate()*this.craftShare():0;};
+P.restBuffFor=function(hours){return Math.min(D.REST_BUFF_MAX,hours*D.REST_BUFF_PER_H);};
 P.rawDps=function(){return D.staffDps(this.S.staff);};
 P.dps=function(){return this.rawDps()*this.dmgMult();};
 P.staffRate=function(){return D.STAFF_RATE*(this.skillOn('flurry')?this.skillPow('flurry'):1);};
@@ -177,6 +188,7 @@ P.goTavern=function(auto){
 P.goRoad=function(){
   var S=this.S;
   if(S.place==='road')return false;
+  if(S.place==='tavern'&&S.charge>0){S.rested=Math.max(S.rested,this.restBuffFor(S.charge));S.charge=0;if(S.rested>0)this.emit('rested',S.rested);}
   S.place='road';
   this.emit('place','road');
   this.spawn();
@@ -192,8 +204,15 @@ P.updateFatigue=function(dt){
     var restH=this.restH()/(S.place==='sit'?D.ROAD_REST_EFF:1);
     S.fatigue=Math.max(0,S.fatigue-h/restH);
     S.stats.rest+=dt;
+    if(S.place==='tavern'){
+      S.charge+=h;
+      var c=this.craftRate()*dt;
+      if(c>0){this.addCoins(c);S.stats.craft+=c;this.R.craftAcc=(this.R.craftAcc||0)+c;this.R.craftT=(this.R.craftT||0)+dt;
+        if(this.R.craftT>=3){this.emit('craft',this.R.craftAcc);this.R.craftAcc=0;this.R.craftT=0;}}
+    }
     if(S.fatigue<=0)this.goRoad();
   }
+  if(S.rested>0&&S.place==='road'){S.rested=Math.max(0,S.rested-dt);if(!S.rested)this.emit('restedEnd');}
 };
 
 /* ── способности ── */
@@ -251,7 +270,7 @@ P.update=function(dt){
 
 /* ── офлайн: маг фармит текущий уровень, не продвигаясь, и устаёт/отдыхает ── */
 P.offline=function(sec){
-  var S=this.S,rep={sec:sec,fight:0,rest:0,coins:0,kills:0};
+  var S=this.S,rep={sec:sec,fight:0,rest:0,coins:0,kills:0,craft:0};
   if(!S.profile||sec<=0)return rep;
   sec=Math.min(sec,D.OFFLINE_MAX_H*3600);
   for(var id in S.skills){var st=S.skills[id];st.cd=Math.max(0,st.cd-sec);st.act=0;}
@@ -274,12 +293,19 @@ P.offline=function(sec){
       var restH=this.restH()/(S.place==='sit'?D.ROAD_REST_EFF:1);
       S.fatigue=Math.max(0,S.fatigue-dt/3600/restH);
       rep.rest+=dt;S.stats.rest+=dt;
+      if(S.place==='tavern'){
+        S.charge+=dt/3600;
+        var cr=this.craftRate()*dt;rep.craft+=cr;
+        if(S.fatigue<=0){S.rested=Math.max(S.rested,this.restBuffFor(S.charge));S.charge=0;}
+      }
       if(S.fatigue<=0)S.place='road';
     }
   }
   rep.kills=Math.floor(rep.kills);
   S.stats.kills+=rep.kills;
-  this.addCoins(rep.coins);
+  /* бонус отдыха тратится, если маг уже в пути без игрока */
+  S.rested=Math.max(0,S.rested-rep.fight);
+  this.addCoins(rep.coins+rep.craft);S.stats.craft+=rep.craft;
   return rep;
 };
 
@@ -330,7 +356,7 @@ P.buyTavern=function(){
 P.tavUpDef=function(id){for(var i=0;i<D.TAVERN_UP.length;i++)if(D.TAVERN_UP[i].id===id)return D.TAVERN_UP[i];return null;};
 P.buyTavUp=function(id){
   var S=this.S,u=this.tavUpDef(id);
-  if(!S.tavern||S.tav[id]>=u.max||!this.spend(u.cost(S.tav[id])))return false;
+  if(!S.tavern||S.tav[id]>=u.max||(u.lvl&&S.maxLevel<u.lvl)||!this.spend(u.cost(S.tav[id])))return false;
   S.tav[id]++;this.emit('buy','tavern');return true;
 };
 P.robeOpen=function(r){return r.free||this.S.maxLevel>r.lvl||this.S.prestige.best>r.lvl;};
@@ -369,7 +395,7 @@ P.prestige=function(){
   S.coins=0;S.level=start;S.maxLevel=start;S.farm=false;
   S.hero=1;S.staff=0;S.critCh=0;S.critMu=0;
   for(var id in S.skills)S.skills[id]={l:1,cd:0,act:0};
-  S.tavern=false;S.tav={bed:0,amulet:0,lantern:0};
+  S.tavern=false;S.tav={bed:0,amulet:0,lantern:0,alch:0,board:0};S.charge=0;S.rested=0;
   S.stats.earned=0;
   this.R.bossNow=false;
   if(S.place==='tavern')S.place='sit';     // портала больше нет: отдых продолжается у дороги

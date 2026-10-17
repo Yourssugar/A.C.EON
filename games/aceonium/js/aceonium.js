@@ -87,6 +87,16 @@ game.on('unlock',function(id){setTimeout(function(){UI.toast(UI.t('toast.unlock'
 game.on('buy',function(kind){if(kind==='staff'&&has3d)Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);save();});
 game.on('rested',function(sec){UI.toast(UI.t('toast.rested',{m:D.REST_BUFF_MULT,t:D.fmtTime(sec,{h:UI.t('u.h'),m:UI.t('u.m'),s:UI.t('u.s')})}));});
 game.on('look',function(){if(has3d&&S.profile)Scene3D.setLook(lookNow());UI.panel();save();});
+/* таверна */
+game.on('sale',function(e){if(e.mode!=='hostess'){Sound.sfx('capture');UI.toast(UI.t('tv.sold',{r:UI.itemName(e.c.item),g:D.fmt(e.price)}));}});
+game.on('custLeft',function(e){if(e.why==='haggle')UI.toast(UI.t('tv.left'));});
+game.on('customer',function(){Sound.sfx('select');});
+game.on('crafted',function(e){
+  if(e.r==='staff'||e.r==='bag'||e.r==='store'){UI.toast(UI.t('ord.done.'+e.r,{n:e.r==='staff'?S.staff:e.r==='bag'?S.bagLvl:S.storeLvl}));save();}
+  else if(e.q>=2)UI.toast(UI.t('ms.qual',{m:UI.t('ms.'+e.m),r:UI.itemName(e.r),q:UI.t('q.'+e.q)}));
+});
+game.on('mLevel',function(e){UI.toast(UI.t('ms.lvlUp',{m:UI.t('ms.'+e.m),n:e.lvl}));});
+['hire','learn','build','equip','order'].forEach(function(n){game.on(n,function(){save();});});
 var scenePlace=null;
 function sceneMode(place){return place==='road'?'walk':'tavern';}
 function showPlace(place,instant){
@@ -168,11 +178,13 @@ function begin(){
     if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
       showPlace(S.place,true);}
     if(away>5)catchUp(away,false);else game.start();
-    if(S.migratedV8){delete S.migratedV8;save();UI.modal(UI.t('mig.title'),UI.t('mig.body'));}
+    if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
+    else if(!S.seenV8b){S.seenV8b=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();save();UI.rebuild();
+      game.start();S.seenV8b=true;save();UI.rebuild();
+      setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }
   save();

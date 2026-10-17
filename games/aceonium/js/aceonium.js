@@ -91,7 +91,7 @@ game.on('look',function(){if(has3d&&S.profile)Scene3D.setLook(lookNow());UI.pane
 /* таверна */
 game.on('sale',function(e){if(e.mode!=='hostess'){Sound.sfx('capture');UI.toast(UI.t('tv.sold',{r:UI.itemName(e.c.item),g:D.fmt(e.price)}));}});
 game.on('custLeft',function(e){if(e.why==='haggle')UI.toast(UI.t('tv.left'));});
-game.on('customer',function(){Sound.sfx('select');});
+game.on('customer',function(){if(S.place!=='road')Sound.sfx('select');});
 game.on('crafted',function(e){
   if(e.r==='staff'||e.r==='bag'||e.r==='store'){UI.toast(UI.t('ord.done.'+e.r,{n:e.r==='staff'?S.staff:e.r==='bag'?S.bagLvl:S.storeLvl}));save();}
   else if(e.q>=2)UI.toast(UI.t('ms.qual',{m:UI.t('ms.'+e.m),r:UI.itemName(e.r),q:UI.t('q.'+e.q)}));

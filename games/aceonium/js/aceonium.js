@@ -11,6 +11,7 @@ window.AC_DEBUG=/[?&]debug\b/.test(location.search);
 Store.define('aceonium',{version:2,defaults:AcGame.defaults(),migrate:AcGame.migrate});
 var S=Store.get('aceonium');
 var game=new AcGame.Game(S);
+if(game.sanitize)game.sanitize();   // старые сохранения: слоты, рецепты, очереди
 window.acGame=game;   // для отладки из консоли
 
 Arcade.topbar('ac.title');
@@ -108,10 +109,10 @@ function showPlace(place,instant){
   if(!instant&&prev!==null&&prev!==mode&&Scene3D.view==='road'){portalBusy=true;Scene3D.portal(function(){portalBusy=false;Scene3D.setMode(mode);applyView();});}
   else{Scene3D.setMode(mode);applyView();}
 }
-game.on('place',function(place){userView=null;if(place!=='road')ensureTavern();showPlace(place);save();});
+game.on('place',function(place){if(place!=='road')ensureTavern();showPlace(place);UI.hud();save();});
 
-/* ── таверна в 3D: вид сверху; дома и во сне включается сама, кнопкой можно переключать ── */
-var userView=null,tavLoad=null;
+/* ── таверна в 3D: вид сверху, включается, когда маг дома или спит ── */
+var tavLoad=null;
 function tavRes(){return (Scene3D.quality==='high'||Scene3D.quality==='ultra')?'2k':'1k';}
 function ensureTavern(){
   if(!has3d||!window.Tavern3D||!window.Avatar||!window.ACE_THREE)return Promise.reject(new Error('no 3d'));
@@ -123,7 +124,7 @@ function ensureTavern(){
   }
   return tavLoad;
 }
-function wantView(){return userView||(S.place==='road'?'road':'tavern');}
+function wantView(){return S.place==='road'?'road':'tavern';}
 function applyView(){
   if(!has3d)return;
   var v=wantView();
@@ -133,15 +134,10 @@ function applyView(){
   document.body.classList.toggle('view-tavern',v==='tavern');
   UI.setView(v);
 }
-UI.toggleView=function(){
-  if(!has3d)return;
-  if(!(window.Tavern3D&&Tavern3D.ready)){ensureTavern().then(function(){userView='tavern';applyView();},function(){});return;}
-  userView=Scene3D.view==='tavern'?'road':'tavern';applyView();
-};
+UI.toggleView=function(){if(S.place==='road')game.goHome();else game.goTrip();};
 if(window.Tavern3D){
   Tavern3D.onPick(function(kind,id){
-    if(kind==='master')UI.openTab('masters',id);
-    else if(kind==='store')UI.openTab('store');
+    if(kind==='store')UI.openTab('store');
     else UI.openTab('tavern');
     Sound.sfx('select');
   });
@@ -180,7 +176,7 @@ function loop(now){
   if(has3d){
     if(!portalBusy&&scenePlace==='road')Scene3D.setMode(game.R.phase==='walk'?'walk':'fight');
     Scene3D.setFatigue(S.fatigue);
-    if(!(window.Wardrobe&&Wardrobe.isOpen))Scene3D.frame(Math.min(dt,0.05),dt);
+    if(!(window.Wardrobe&&Wardrobe.isOpen)&&!(window.Masters&&Masters.isOpen))Scene3D.frame(Math.min(dt,0.05),dt);
   }
   if(has3d)fpsWatch(dt);
   tavT+=dt;if(tavT>0.3){tavT=0;if(has3d&&Scene3D.view==='tavern')Tavern3D.sync(S);}
@@ -219,11 +215,12 @@ function begin(){
       showPlace(S.place,true);}
     if(away>5)catchUp(away,false);else game.start();
     if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
-    else if(!S.seenV8b){S.seenV8b=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
+    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
+    else if(!S.seenV10){S.seenV10=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV8b=true;save();UI.rebuild();
+      game.start();S.seenV8b=true;S.seenV10=true;save();UI.rebuild();
       setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }

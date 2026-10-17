@@ -691,7 +691,45 @@ function buildTavern(){
   g.add(mesh(new THREE.BoxGeometry(0.85,0.8,0.14),red,MAGE_POS.x,0.62,cz+0.4));
   [-1,1].forEach(function(sd){g.add(mesh(new THREE.BoxGeometry(0.14,0.62,0.75),red,MAGE_POS.x+sd*0.45,0.42,cz));});
   var lamp=new THREE.PointLight(0xffb060,1.0,10,1.4);lamp.position.set(-2.6,2.4,-3);g.add(lamp);
-  T.update=function(dt){T.fire.update(dt);flame.scale.setScalar(0.26+Math.random()*0.05);};
+  /* ночное ремесло: флаконы на столе (по уровню алхимического стола) */
+  T.potions=[];
+  var potCols=['#ff5a8a','#40e0ff','#9cff6a','#ffb830','#b080ff'];
+  for(var pi=0;pi<5;pi++){
+    var pg=new THREE.Group(),pc=new THREE.Color(potCols[pi]);
+    var pm=new THREE.MeshStandardMaterial({color:pc,emissive:pc,emissiveIntensity:0.9,roughness:0.15,transparent:true,opacity:0.85});
+    pg.add(mesh(new THREE.SphereGeometry(0.065,12,10),pm,0,0.065,0));
+    pg.add(mesh(new THREE.CylinderGeometry(0.018,0.022,0.07,8),std('#cfe8f0',{r:0.2}),0,0.15,0));
+    pg.add(mesh(new THREE.CylinderGeometry(0.022,0.022,0.025,8),std('#6a4a2a'),0,0.195,0));
+    pg.position.set(-3.05+pi*0.16,0.82,-3.5+(pi%2)*0.08);
+    pg.visible=false;g.add(pg);T.potions.push({g:pg,m:pm,ph:pi*1.3});
+  }
+  /* ступка и стопка амулетов: появляются вместе с первым флаконом */
+  T.mortar=mesh(new THREE.CylinderGeometry(0.09,0.07,0.1,10),std('#7a7068',{r:0.9}),-2.15,0.87,-3.35);T.mortar.visible=false;g.add(T.mortar);
+  /* доска заказов на левой стене */
+  T.board=new THREE.Group();T.board.position.set(-4.93,1.9,-3.4);T.board.rotation.y=Math.PI/2;
+  T.board.add(mesh(new THREE.BoxGeometry(1.5,1.0,0.05),std('#5a3a1e'),0,0,0));
+  T.board.add(mesh(new THREE.BoxGeometry(1.6,0.08,0.08),std('#2a1a0e'),0,0.53,0.02));
+  T.notes=[];
+  var noteM=std('#e8dcb8',{r:1});
+  [[-0.45,0.18,0.08],[0.05,0.22,-0.1],[0.48,0.12,0.12],[-0.3,-0.25,-0.06],[0.2,-0.22,0.1],[0.52,-0.28,-0.12]].forEach(function(q){
+    var n=mesh(new THREE.PlaneGeometry(0.32,0.38),noteM,q[0],q[1],0.03);n.rotation.z=q[2];T.board.add(n);
+    n.add(mesh(new THREE.SphereGeometry(0.02,6,4),std('#a02020'),0,0.15,0.01));
+    n.visible=false;T.notes.push(n);
+  });
+  T.board.visible=false;g.add(T.board);
+  T.set=function(tav){
+    var a=tav.alch||0,bd=tav.board||0;
+    T.potions.forEach(function(p,i){p.g.visible=i<a;});
+    T.mortar.visible=a>0;
+    T.board.visible=bd>0;
+    T.notes.forEach(function(n,i){n.visible=i<bd*2;});
+  };
+  T.time=0;
+  T.update=function(dt){
+    T.fire.update(dt);flame.scale.setScalar(0.26+Math.random()*0.05);
+    T.time+=dt;
+    for(var i=0;i<T.potions.length;i++){var p=T.potions[i];if(p.g.visible)p.m.emissiveIntensity=0.6+0.4*Math.sin(T.time*2+p.ph);}
+  };
   return T;
 }
 
@@ -833,6 +871,13 @@ function enemyScreen(){
   else _v.set(ENEMY_POS.x,1.8,ENEMY_POS.z);
   _v.project(R.camera);
   return {x:(_v.x+1)/2*R.host.clientWidth,y:(1-_v.y)/2*R.host.clientHeight};
+}
+/* ремесло в таверне: оснащение стола и доски, искры над столом при продаже */
+function setTavern(tav){if(R&&R.tavern&&R.tavern.set)R.tavern.set(tav||{});}
+function craft(){
+  if(!R||R.mode!=='tavern')return;
+  var p=new THREE.Vector3(-2.6,1.05,-3.3);
+  burst(p,0xffd56a,10,1.6,0.08,false,1.5);
 }
 function mageScreen(){
   if(!R)return null;
@@ -1050,6 +1095,6 @@ function preview(canvas){
 }
 
 window.Scene3D={setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
-  spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,portal:portal,frame:frame,preview:preview,
+  spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
   get ready(){return !!R;}};
 })();

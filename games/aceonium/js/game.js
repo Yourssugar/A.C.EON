@@ -11,7 +11,7 @@ function masterDefaults(){
   var m={};
   D.MASTERS.forEach(function(d){
     var known=D.GOODS.filter(function(x){return x.m===d.id&&x.teach===0;}).map(function(x){return x.id;});
-    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,slots:D.SLOTS0,known:known,q:[]};
+    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,slots:D.SLOTS0,known:known,q:[],teach:null};
   });
   return m;
 }
@@ -23,7 +23,7 @@ function defaults(){
     wardrobe:{owned:['wander','ash','night','moss'],robe:'wander'},
     mlvl:1,xp:0,spent:0,                            // уровень мага, опыт, потраченные очки умений
     staff:0,bagLvl:1,storeLvl:1,
-    store:{},                                       // склад: ресурс -> количество
+    store:JSON.parse(JSON.stringify(D.START.store)),   // склад: ресурс -> количество (новичку немного на первые заказы)
     tracts:[{best:0,clears:0},{best:0,clears:0},{best:0,clears:0},{best:0,clears:0}],
     lastTract:0,forceNext:null,
     plan:{c:[0,0,0,0],i:0,done:0},                  // сколько раз пройти каждый тракт
@@ -33,10 +33,10 @@ function defaults(){
     fatigue:0,charge:0,rested:0,
     skills:skills,
     journal:[],
-    gold:0,                                         // ACEONIUM, только из таверны
+    gold:D.START.gold,                              // ACEONIUM, только из таверны
     inv:{},                                         // изделия: 'id:качество' -> количество
-    equip:{head:null,body:null,hands:null,feet:null,amulet:null},
-    use:{p_str:true,p_luck:true,p_vigor:true,p_hp:true,p_spore:true,p_ward:true},   // что брать в поход
+    equip:{head:null,body:null,belt:null,feet:null,ring:null},
+    use:{p_heal:true,p_str:true,p_luck:true,p_vigor:true,p_spore:true,p_ward:true},   // что брать в поход
     masters:masterDefaults(),
     build:{forge:0,tannery:0,jewelry:0,hall:0,bedroom:0,decor:0},
     mine:{lvl:0,acc:0},
@@ -140,12 +140,24 @@ P.goTo=function(t){
     if(this.inBoss())return false;
     S.forceNext=t;this.returnHome('manual');return true;
   }
+  if(S.place==='sleep')S.sleepAfter=false;
   S.forceNext=t;this.startTrip();return true;
 };
 
 /* ── поход ── */
 P.startTrip=function(){
   var S=this.S,R=this.R;
+  /* поход на паузе (маг заходил в таверну): продолжаем с той же волны */
+  if(S.trip&&S.trip.paused){
+    if(S.forceNext===null||S.forceNext===undefined||S.forceNext===S.trip.t){
+      S.trip.paused=false;S.trip.manual=false;S.forceNext=null;S.sleepAfter=false;
+      if(S.charge>0){S.rested=Math.max(S.rested,this.restBuffFor(S.charge));S.charge=0;if(S.rested>0)this.emit('rested',S.rested);}
+      S.place='road';R.after=null;
+      this.emit('place','road');this.emit('tripResume',S.trip);
+      this.spawn();return;
+    }
+    S.trip=null;
+  }
   var t=S.forceNext!==null&&S.forceNext!==undefined&&this.tractOpen(S.forceNext)?S.forceNext:this.nextTract();
   S.forceNext=null;S.lastTract=t;S.sleepAfter=false;
   S.trip={t:t,w:1,m:0,boss:false,done:false,bag:{},n:0,kills:0,bosses:0,best:0,time:0,at:Date.now(),buff:{},drank:[]};
@@ -262,14 +274,40 @@ P.returnHome=function(why){
   this.emit('home',{why:why,got:got,n:n,lost:lost,over:over});
   this.emit('place','home');
 };
+/* сумку на склад, без потерь */
+P.deposit=function(bag){
+  var S=this.S,got={},over=0,n=0;
+  for(var k in bag){
+    var v=bag[k];if(!v)continue;
+    var room=Math.max(0,this.storeCap()-this.have(k)),put=Math.min(room,v);
+    S.store[k]=this.have(k)+put;over+=v-put;n+=put;if(put)got[k]=put;
+  }
+  S.stats.gathered+=n;
+  if(this.rep){for(var g in got)this.rep.got[g]=(this.rep.got[g]||0)+got[g];this.rep.over+=over;}
+  return {got:got,n:n,over:over};
+};
+/* маг заходит в таверну: сумка на склад, поход на паузе и потом продолжится с той же волны.
+   manual - игрок сам позвал (тогда маг ждёт игрока), иначе устал и после сна пойдёт дальше сам */
+P.pauseTrip=function(manual){
+  var S=this.S,R=this.R,tr=S.trip;
+  if(S.place!=='road'||!tr||this.inBoss())return false;
+  var r=this.deposit(tr.bag);tr.bag={};tr.n=0;
+  if(r.n||r.over){S.journal.unshift({t:tr.t,w:tr.w,why:manual?'pause':'tired',got:r.got,n:r.n,lost:0,over:r.over,dur:tr.time,at:Date.now()});if(S.journal.length>30)S.journal.length=30;}
+  tr.paused=true;tr.manual=!!manual;tr.m=Math.min(tr.m,D.MOBS-1);
+  S.place='home';
+  R.phase='home';R.enemy=null;R.hits.length=0;R.after=null;R.homeT=manual?0:D.HOME_TIME;
+  this.emit('home',{why:manual?'pause':'tired',got:r.got,n:r.n,lost:0,over:r.over});
+  this.emit('place','home');
+  return true;
+};
 P.goHome=function(){
   if(this.S.place!=='road'||this.inBoss())return false;
-  this.returnHome('manual');return true;
+  return this.pauseTrip(true);
 };
 P.sleepNow=function(){
   var S=this.S;
   if(S.place==='sleep')return false;
-  if(S.place==='road'){if(this.inBoss())return false;S.sleepAfter=true;this.returnHome('manual');return true;}
+  if(S.place==='road'){if(this.inBoss())return false;S.sleepAfter=true;this.pauseTrip(true);this.homeDecide();return true;}
   this.sleep();return true;
 };
 P.sleep=function(){var S=this.S;S.place='sleep';S.sleepAfter=false;this.R.phase='sleep';this.emit('place','sleep');};
@@ -281,7 +319,9 @@ P.setAuto=function(on){this.S.auto=!!on;};
 P.homeDecide=function(){
   var S=this.S;
   if(S.sleepAfter||S.fatigue>=0.999){this.sleep();return;}
-  if(S.auto)this.startTrip();
+  /* позвали в таверну руками: ждёт игрока; если игрока нет дольше D.PAUSE_AWAY, идёт дальше сам */
+  if(S.trip&&S.trip.paused&&S.trip.manual&&(!this.rep||this.rep.sec<D.PAUSE_AWAY))return;
+  if(S.auto||(S.trip&&S.trip.paused))this.startTrip();
 };
 
 /* ── бой онлайн ── */
@@ -339,7 +379,7 @@ P.updateFatigue=function(dt){
   var S=this.S,h=dt*this.fatigueScale/3600;
   if(S.place==='road'){
     S.fatigue=Math.min(1,S.fatigue+h/this.awakeH());
-    if(S.fatigue>=1&&!this.inBoss()&&this.R.phase!=='dying')this.returnHome('tired');
+    if(S.fatigue>=1&&!this.inBoss()&&this.R.phase!=='dying')this.pauseTrip(false);
     if(S.rested>0){S.rested=Math.max(0,S.rested-dt);if(!S.rested)this.emit('restedEnd');}
   }else if(S.place==='sleep'){
     S.fatigue=Math.max(0,S.fatigue-h/this.restH());
@@ -411,7 +451,7 @@ P.update=function(dt){
       if(R.t<=0){
         if(R.after){this.returnHome(R.after);return;}
         var why=this.preCheck();
-        if(why)this.returnHome(why);else this.spawn();
+        if(why==='tired')this.pauseTrip(false);else if(why)this.returnHome(why);else this.spawn();
       }
       return;
   }
@@ -433,6 +473,7 @@ P.offline=function(sec){
     if(S.place==='road'){
       if(!S.trip){S.place='home';R.homeT=D.HOME_TIME;continue;}
       var why=this.preCheck();
+      if(why==='tired'){this.pauseTrip(false);continue;}
       if(why){this.returnHome(why);continue;}
       var tr=S.trip,e=this.makeEnemy();
       var walk=D.WALK_TIME+(tr.m===0&&!tr.boss&&tr.w>1?D.WAVE_PAUSE:0);
@@ -502,7 +543,7 @@ P.setUse=function(id,on){this.S.use[id]=!!on;};
 
 /* ── мастера и заказы ── */
 P.master=function(id){return this.S.masters[id];};
-P.canHire=function(id){var d=D.MASTER_BY[id],m=this.master(id);return !m.hired&&(!d.build||this.S.build[d.build]>0);};
+P.canHire=function(id){return !this.master(id).hired;};
 P.hire=function(id){var d=D.MASTER_BY[id];if(!this.canHire(id)||!this.pay({gold:d.hire}))return false;this.master(id).hired=true;this.emit('hire',id);return true;};
 P.mSpeed=function(id){var m=this.master(id);return D.mSpeed(m.lvl,m.tools);};
 P.orderCost=function(rid){
@@ -525,6 +566,7 @@ P.pending=function(rid){var S=this.S;for(var id in S.masters){var q=S.masters[id
 P.orderBlock=function(mid,rid){
   var m=this.master(mid);
   if(!m.hired)return 'hire';
+  if(m.teach)return 'teaching';
   if(m.q.length>=m.slots)return 'full';
   if(D.ORDERS[rid]){if(D.ORDERS[rid].m!==mid)return 'no';if(this.pending(rid))return 'pending';if(!this.orderCost(rid))return 'max';}
   else if(m.known.indexOf(rid)<0)return 'unknown';
@@ -544,8 +586,13 @@ P.buyTools=function(mid){var c=this.toolsCost(mid);if(!c||!this.master(mid).hire
 P.slotCost=function(mid){var m=this.master(mid);return m.slots>=D.SLOTS_MAX?null:D.slotCost(m.slots);};
 P.buySlot=function(mid){var c=this.slotCost(mid);if(!c||!this.master(mid).hired||!this.pay(c))return false;this.master(mid).slots++;this.emit('buy','slot');return true;};
 /* учитель: рецепт за золото, когда мастер дорос до уровня рецепта */
-P.canLearn=function(rid){var gd=D.GOOD_BY[rid],m=this.master(gd.m);return m.hired&&m.known.indexOf(rid)<0&&m.lvl>=gd.lvl;};
-P.learn=function(rid){var gd=D.GOOD_BY[rid];if(!this.canLearn(rid)||!this.pay({gold:gd.teach}))return false;this.master(gd.m).known.push(rid);this.emit('learn',rid);return true;};
+P.canLearn=function(rid){var gd=D.GOOD_BY[rid],m=this.master(gd.m);return m.hired&&!m.teach&&m.known.indexOf(rid)<0&&m.lvl>=gd.lvl;};
+/* учитель приходит и учит какое-то время; заказы мастера в это время стоят */
+P.learn=function(rid){
+  var gd=D.GOOD_BY[rid];if(!this.canLearn(rid)||!this.pay({gold:gd.teach}))return false;
+  var T=D.teachTime(gd.lvl);this.master(gd.m).teach={r:rid,t:T,T:T};
+  this.emit('teachStart',rid);return true;
+};
 P.rollQual=function(lvl){
   var ch=D.qualChance(lvl),r=Math.random();
   for(var q=D.QUAL.length-1;q>0;q--){if(r<ch[q])return q;r-=ch[q];}
@@ -564,7 +611,14 @@ P.finishOrder=function(mid,o){
 P.tickMasters=function(dt){
   var S=this.S;
   for(var id in S.masters){
-    var m=S.masters[id];if(!m.hired||!m.q.length)continue;
+    var m=S.masters[id];if(!m.hired)continue;
+    if(m.teach){
+      m.teach.t-=dt;
+      if(m.teach.t>0)continue;
+      var rid=m.teach.r;m.teach=null;if(m.known.indexOf(rid)<0)m.known.push(rid);this.emit('learn',rid);
+      continue;
+    }
+    if(!m.q.length)continue;
     var left=dt*this.mSpeed(id),guard=0;
     while(left>0&&m.q.length&&guard++<500){
       var o=m.q[0];
@@ -658,6 +712,31 @@ P.setProfile=function(name,gender){
   if(!S.profile)S.profile={name:name,gender:gender,created:Date.now()};
   else{S.profile.name=name;S.profile.gender=gender;}
   this.emit('look');
+};
+
+/* сохранения прошлых версий: убрать вещи и рецепты, которых больше нет, новые слоты, рецепты 1 уровня */
+P.sanitize=function(){
+  var S=this.S,k;
+  var eq={head:null,body:null,belt:null,feet:null,ring:null};
+  /* надетое: в слот по новой схеме (амулет стал кольцом), иначе обратно в инвентарь */
+  for(k in S.equip){
+    var it=S.equip[k],gd=it&&D.GOOD_BY[it.id];if(!gd||!gd.slot)continue;
+    if(!eq[gd.slot])eq[gd.slot]=it;else{var key=it.id+':'+(it.q||0);S.inv[key]=(S.inv[key]||0)+1;}
+  }
+  S.equip=eq;
+  for(k in S.use)if(!D.GOOD_BY[k])delete S.use[k];
+  for(k in S.inv){var id=k.split(':')[0];if(!D.GOOD_BY[id])delete S.inv[k];}
+  var def=masterDefaults();
+  for(k in def){
+    var m=S.masters[k];if(!m){S.masters[k]=def[k];continue;}
+    if(m.teach===undefined)m.teach=null;
+    m.known=m.known.filter(function(r){return D.GOOD_BY[r]&&D.GOOD_BY[r].m===k;});
+    def[k].known.forEach(function(r){if(m.known.indexOf(r)<0)m.known.push(r);});
+    var self=this;
+    m.q=m.q.filter(function(o){var ok=D.ORDERS[o.r]||D.GOOD_BY[o.r];if(!ok&&o.c)self.refund(o.c);return ok;});
+  }
+  if(S.use.p_heal===undefined)S.use.p_heal=true;
+  S.cust=S.cust.filter(function(c){return D.GOOD_BY[c.item];});
 };
 
 /* сохранение v1 (золото, уровни) -> v2: персонаж и гардероб остаются, прогресс заново */

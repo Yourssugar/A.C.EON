@@ -250,8 +250,8 @@ function updateMage(M,dt,mode,fat){M.update(dt,mode,fat);}
 
 /* ════════ МОНСТРЫ ════════ */
 var MON_COLORS={slime:['#39d353','#c8ffd0'],eye:['#e8e0ff','#ff2d78'],golem:['#4a4a5a','#00e5ff'],ghost:['#b8c8ff','#6080ff'],spider:['#2a2f3a','#ff3344']};
-function buildMonster(type,boss,biome){
-  var col=MON_COLORS[type]||MON_COLORS.slime;
+function buildMonster(type,boss,biome,cols){
+  var col=cols||MON_COLORS[type]||MON_COLORS.slime;
   var main=new THREE.Color(col[0]),acc=new THREE.Color(col[1]);
   if(biome){var tint=new THREE.Color(BIOMES[biome].accent);main.lerp(tint,0.08);acc.lerp(tint,0.2);}
   var E={root:new THREE.Group(),body:new THREE.Group(),type:type,mats:[],t:Math.random()*10,flash:0,shake:0,lunge:0,lungeT:1+Math.random()*2,h:1,die:-1,gone:-1};
@@ -835,7 +835,7 @@ function spawn(e,walkT){
   if(!R)return;
   if(R.enemy)dropEnemy(R.enemy,'gone');
   setBiome(e.biome||0);
-  var E=buildMonster(e.type,e.boss,e.biome);
+  var E=buildMonster(e.type,e.boss,e.biome,e.cols);
   E.root.rotation.y=0;
   castShadows(E.root,true);E.shadow.visible=!R.shadowOn;
   E.root.scale.setScalar(0.001);
@@ -859,6 +859,14 @@ function dropEnemy(E,how){
   endForm(E);
   R.dead.push(E);
   if(R.enemy===E)R.enemy=null;
+}
+/* босс попал по магу: красные искры у мага и лёгкая тряска */
+function hurt(){
+  if(!R||!R.mage)return;
+  var p=new THREE.Vector3();R.mage.root.getWorldPosition(p);p.y+=1.2;
+  burst(p,0xff2d4a,14,2.4,0.12);
+  R.shakeT=Math.max(R.shakeT||0,0.25);
+  if(R.enemy)R.enemy.lunge=1;
 }
 function kill(){if(R&&R.enemy){var E=R.enemy;dropEnemy(E,'die');if(E.scale>1.5)R.shakeT=0.5;}}
 function retreat(){if(R&&R.enemy)dropEnemy(R.enemy,'gone');}
@@ -1095,6 +1103,6 @@ function preview(canvas){
 }
 
 window.Scene3D={setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
-  spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
+  spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
   get ready(){return !!R;}};
 })();

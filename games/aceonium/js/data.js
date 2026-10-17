@@ -81,8 +81,14 @@ D.tavernCost=function(){return 25*D.goldAt(20);};
 D.TAVERN_UP=[
   {id:'bed',    max:4,cost:function(l){return 40*D.goldAt(30+l*15);}},   // -0.5 ч отдыха
   {id:'amulet', max:4,cost:function(l){return 40*D.goldAt(35+l*15);}},   // +1 ч в пути
-  {id:'lantern',max:3,cost:function(l){return 50*D.goldAt(40+l*20);}}    // +10% офлайн
+  {id:'lantern',max:3,cost:function(l){return 50*D.goldAt(40+l*20);}},   // +10% офлайн
+  {id:'alch',   max:5,cost:function(l){return 30*D.goldAt(25+l*10);}},   // ремесло: +5% от боевого дохода
+  {id:'board',  max:3,cost:function(l){return 60*D.goldAt(45+l*15);},lvl:40}  // ремесло: +5%, открывается с 40 уровня
 ];
+/* ночное ремесло в таверне: доля от боевого дохода на текущем уровне */
+D.CRAFT_BASE=0.10;D.CRAFT_ALCH=0.05;D.CRAFT_BOARD=0.05;
+/* заряд Ядра: за каждый час сна в таверне 60 с урона x1.5 после выхода, максимум 3 мин */
+D.REST_BUFF_MULT=1.5;D.REST_BUFF_PER_H=60;D.REST_BUFF_MAX=180;
 
 /* ── перерождение ── */
 D.PRESTIGE_LEVEL=100;   // нужно победить босса этого уровня

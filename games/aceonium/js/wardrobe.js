@@ -17,9 +17,9 @@ var PAID={
   'part:shoulders:ranger':20,'color:ranger:1':30,'color:peasant:1':10,
   'staff:crystal':15,'staff:bone':35,'staff:iron':55,'staff:branch':75
 };
-/* пока нет золота (до таверны), вещи открываются бесплатно по уровню мага: уровень похода / 5 */
+/* вещи открываются уровнем мага (старый уровень похода / 5), цена в золоте таверны */
 function needLvl(id){return Math.max(1,Math.ceil(PAID[id]/5));}
-function priceOf(id){return PAID[id]&&!D.WARDROBE_FREE&&D.goldAt?20*D.goldAt(PAID[id]):0;}
+function priceOf(id){return PAID[id]&&!D.WARDROBE_FREE?D.wardrobePrice(needLvl(id)):0;}
 
 var W=null;   // текущее окно
 
@@ -211,7 +211,7 @@ function render(){
     render();apply();
   };
   foot();
-  var cs=W.q('.wd2-coins');if(cs)cs.classList.add('hidden');
+  var cs=W.q('.wd2-coins b');if(cs)cs.textContent=D.fmt(window.acGame.S.gold);
 }
 function skinShow(c){var THREE=window.ACE_THREE;if(!THREE)return c;var x=new THREE.Color(c).multiply(new THREE.Color('#e8b898'));return '#'+x.getHexString();}
 function paintCam(){
@@ -247,7 +247,7 @@ function foot(){
   if(!need.length){btn.textContent=t('wd.save');btn.disabled=false;note.innerHTML='';}
   else if(locked.length){btn.textContent=t('wd.save');btn.disabled=true;note.innerHTML=t('wd2.locked');}
   else if(!cost){btn.textContent=t('wd.save');btn.disabled=false;note.innerHTML='';}
-  else{var coins=S.coins||0;btn.innerHTML=t('wd2.buy')+' '+COIN+D.fmt(cost);btn.disabled=coins<cost;note.innerHTML=coins<cost?t('wd2.noCoins'):'';}
+  else{var coins=S.gold||0;btn.innerHTML=t('wd2.buy')+' '+COIN+D.fmt(cost);btn.disabled=coins<cost;note.innerHTML=coins<cost?t('wd2.noCoins'):'';}
 }
 function save(){
   if(!W)return;
@@ -257,8 +257,8 @@ function save(){
     var look=W.look;look.hoodUp=true;var cb=W.opts.onDone;close();cb(look,n);return;
   }
   if(need.length){
-    if(need.some(function(id){return !opened(id);})||(S.coins||0)<cost)return;
-    if(cost)S.coins-=cost;need.forEach(function(id){S.wardrobe.owned.push(id);});
+    if(need.some(function(id){return !opened(id);})||(S.gold||0)<cost)return;
+    if(cost)S.gold-=cost;need.forEach(function(id){S.wardrobe.owned.push(id);});
   }
   var look2=W.look;look2.hoodUp=true;var cb2=W.opts.onDone;close();Sound.sfx('win');cb2(look2);
 }

@@ -365,6 +365,7 @@ I18n.add('ru',{
   'st.crafted':'Сделано мастерами','st.sold':'Продано вещей','st.goldEarned':'Заработано золота',
   'off.crafted':'Мастера сделали: {n}','off.sold':'Продано вещей: {n}, золота: {g}',
   'wd2.about8':'Вещи гардероба открываются уровнем мага и покупаются за золото таверны.',
+  'view.tavern':'ТАВЕРНА','view.road':'ДОРОГА','view.loading':'ЗАГРУЗКА {p}%','lbl.idle':'без дела','lbl.hostess':'ХОЗЯЙКА','lbl.cust':'ждут {n}',
   'v8b.title':'ТАВЕРНА',
   'v8b.body':'<p>Таверна теперь твоя. Мастера делают вещи из ресурсов, путники их покупают. Это единственный источник золота.</p><p>Травница уже работает. Столяра можно нанять сразу: он улучшает посох и склад. Кузне нужен уголь из шахты.</p><p>Ночью, пока маг спит, таверна закрыта, но мастера доделывают заказы.</p>'
 });
@@ -415,6 +416,7 @@ I18n.add('en',{
   'st.crafted':'Crafted','st.sold':'Items sold','st.goldEarned':'Gold earned',
   'off.crafted':'Crafted: {n}','off.sold':'Items sold: {n}, gold: {g}',
   'wd2.about8':'Wardrobe items unlock with mage level and cost tavern gold.',
+  'view.tavern':'TAVERN','view.road':'ROAD','view.loading':'LOADING {p}%','lbl.idle':'idle','lbl.hostess':'HOSTESS','lbl.cust':'{n} waiting',
   'v8b.title':'TAVERN',
   'v8b.body':'<p>The tavern is yours now. Craftsmen make items from resources and travelers buy them. This is the only source of gold.</p><p>The herbalist is already working. The carpenter can be hired right away: he upgrades the staff and the store. The forge needs coal from the mine.</p><p>At night, while the mage sleeps, the tavern is closed, but the craftsmen finish their orders.</p>'
 });

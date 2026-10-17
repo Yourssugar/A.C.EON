@@ -82,7 +82,10 @@ game.on('skill',function(id){Sound.sfx('check');if(id==='discharge'&&has3d&&game
 game.on('unlock',function(id){UI.toast(UI.t('toast.unlock',{s:UI.t('sk.'+id)}));if(UI.tab==='skills')UI.rebuild();});
 game.on('buy',function(kind){if(kind==='staff'&&has3d)Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);});
 game.on('look',function(){if(has3d&&S.profile)Scene3D.setLook(lookNow());UI.panel();save();});
-game.on('prestige',function(){if(has3d)Scene3D.setTier(0,D.TIER_COLORS);save();});
+game.on('prestige',function(){if(has3d){Scene3D.setTier(0,D.TIER_COLORS);if(Scene3D.setTavern)Scene3D.setTavern(S.tav);}save();});
+game.on('craft',function(c){UI.onCraft(c);if(has3d&&Scene3D.craft)Scene3D.craft();});
+game.on('rested',function(sec){UI.toast(UI.t('toast.rested',{m:D.REST_BUFF_MULT,t:D.fmtTime(sec,{h:UI.t('u.h'),m:UI.t('u.m'),s:UI.t('u.s')})}));});
+game.on('buy',function(kind){if(kind==='tavern'&&has3d&&Scene3D.setTavern)Scene3D.setTavern(S.tav);});
 var scenePlace=null;
 function showPlace(place,instant){
   if(!has3d||place===scenePlace)return;
@@ -162,6 +165,7 @@ function begin(){
     var away=S.lastSeen?(Date.now()-S.lastSeen)/1000:0;
     if(away<0){UI.toast(UI.t('toast.clock'));away=0;}
     if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
+      if(Scene3D.setTavern)Scene3D.setTavern(S.tav);
       showPlace(S.place,true);}
     if(away>5)catchUp(away,false);else game.start();
   }else{

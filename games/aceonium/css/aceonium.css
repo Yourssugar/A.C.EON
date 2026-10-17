@@ -84,10 +84,17 @@ body.ac{overflow:hidden;height:100vh;height:100dvh;}
 .chk input{accent-color:var(--pink);}
 
 /* отдых */
-.rest{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);width:min(420px,88%);z-index:6;text-align:center;
-  background:rgba(5,5,20,.82);border:1px solid var(--bdr);padding:14px;line-height:1.8;font-size:8px;color:var(--txt);}
-.rest p{margin-bottom:8px;}
+/* окно отдыха сверху, под HUD: внизу сидит маг, его не закрываем */
+.rest{position:absolute;left:50%;top:96px;transform:translateX(-50%);width:min(440px,88%);z-index:6;text-align:center;
+  background:rgba(5,5,20,.72);border:1px solid var(--bdr);padding:10px 14px;line-height:1.7;font-size:8px;color:var(--txt);}
+.rest p{margin-bottom:6px;}
+@media (max-width:700px){.rest{top:92px;padding:6px 8px;line-height:1.5;font-size:7px;}.rest p{margin-bottom:4px;}#rest-txt,.rest-tale{display:none;}.rest-craft{font-size:7px;line-height:1.5;}.rest .btn{padding:6px 10px;}}
 .rest-time{color:var(--pri-b);}
+.rest-craft{color:#ffd56a;font-size:9px;line-height:1.7;}
+.rest-tale{font-size:8px;opacity:.75;font-style:italic;line-height:1.6;}
+.tag.core{color:#7ff3ff;border-color:#7ff3ff;box-shadow:0 0 8px rgba(0,229,255,.35);}
+.tav-craft p{margin-bottom:6px;}
+.tav-craft p.gold{color:#ffd56a;}
 
 /* умения */
 .skills{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:8px;z-index:6;}

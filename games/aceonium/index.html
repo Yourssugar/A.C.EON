@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="6" defer></script>
+<script src="../shared/boot.js" data-v="7" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
@@ -100,6 +100,7 @@
         <b id="h-level"></b>
         <div class="dots" id="h-dots"></div>
         <span class="tag hidden" id="h-farm"></span>
+        <span class="tag core hidden" id="h-rested"></span>
       </div>
       <div class="hud-coins">
         <div class="coins"><i class="coin"></i><b id="h-coins">0</b></div>
@@ -127,6 +128,8 @@
     <div class="rest hidden" id="rest">
       <p id="rest-txt"></p>
       <p class="rest-time" id="rest-time"></p>
+      <p class="rest-craft hidden" id="rest-craft"></p>
+      <p class="rest-tale hidden" id="rest-tale"></p>
       <div class="btn-row"><button type="button" class="btn" id="rest-road"></button><button type="button" class="btn hidden" id="rest-tav"></button></div>
     </div>
 

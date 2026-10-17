@@ -426,3 +426,18 @@ body.panel-off .stage{flex:1 1 auto;height:auto;}
 .qt{font-size:6px;padding:1px 3px;border:1px solid currentColor;}
 .qt.q1{color:#00ff88;}.qt.q2{color:#40a0ff;}.qt.q3{color:#ffd84a;}
 .ord .tier,.rc-top .tier{margin-right:0;}
+
+/* ── v9: таверна в 3D ── */
+.view-btn{position:absolute;left:10px;top:78px;z-index:7;font:inherit;font-size:7px;letter-spacing:1px;padding:7px 10px;background:rgba(4,20,42,.85);
+  color:#ffd84a;border:1px solid #a07a20;border-bottom-width:2px;cursor:pointer;}
+.view-btn:hover:not(:disabled){background:#2a1e06;color:#fff;}
+.view-btn.on{color:var(--pri-b);border-color:var(--pri-d);}
+.view-btn:disabled{opacity:.7;cursor:default;}
+.tv-labels{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;}
+.tv-lbl{position:absolute;left:0;top:0;white-space:nowrap;font-size:7px;color:var(--txt);background:rgba(5,5,16,.72);border:1px solid rgba(0,229,255,.35);padding:3px 6px;}
+.tv-lbl b{font-weight:normal;color:var(--pri-b);}
+body.view-tavern .enemy,body.view-tavern .skills{display:none;}
+body.view-tavern .stage{cursor:grab;}
+@media (max-width:600px){.view-btn{top:84px;}}
+body.view-tavern .rest{top:auto;bottom:12px;left:12px;transform:none;width:min(380px,70%);text-align:left;}
+body.view-tavern .rest .btn-row{justify-content:flex-start;}

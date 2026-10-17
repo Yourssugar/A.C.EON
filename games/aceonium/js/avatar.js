@@ -192,6 +192,18 @@ function clips(){
   return clipCache;
 }
 
+/* анимации таверны (работа мастеров, разговоры, сон): отдельный файл, качается при первом входе в таверну */
+var extraClips=null;
+function loadExtraClips(){
+  if(extraClips)return extraClips;
+  extraClips=Promise.all([clips(),loadGLB('models/anims_tavern.glb',function(){})]).then(function(r){
+    r[1].animations.forEach(function(c){r[0][c.name]=c;});
+    return r[0];
+  });
+  extraClips.catch(function(){extraClips=null;});
+  return extraClips;
+}
+
 /* ════════ ПЕРСОНАЖ ════════ */
 function Avatar(){
   this.root=new T.Group();this.slots={};this.look=null;this.res='1k';this.kick=0;this.mode='';this.t=0;this.castT=0;
@@ -280,6 +292,8 @@ P.setLook=function(look,onProgress){
 };
 P.hoodVisible=function(look){return look.hood!=='none'&&(this.forGame||look.hoodUp);};
 P.setStaff=function(kind){
+  /* жители таверны ходят без посоха */
+  if(!kind||kind==='none'){if(this.staff&&this.staff.group.parent)this.staff.group.parent.remove(this.staff.group);this.staff=null;return;}
   if(this.staff&&this.staff.kind===kind)return;
   if(this.staff&&this.staff.group.parent)this.staff.group.parent.remove(this.staff.group);
   this.staff=Staffs.make(T,kind);
@@ -325,7 +339,7 @@ P.play=function(name,fade){
     if(!a){a=self.mixer.clipAction(clip);self.actions[name]=a;}
     if(self.cur===a)return;
     a.reset();a.enabled=true;a.setEffectiveWeight(1);
-    if(name==='Sitting_Enter'||name==='cast'||name==='Sitting_Exit'){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true;}
+    if(name==='Sitting_Enter'||name==='cast'||name==='Sitting_Exit'||name==='Death01'){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true;}
     else a.setLoop(T.LoopRepeat,Infinity);
     a.play();
     if(self.cur&&fade!==0)self.cur.crossFadeTo(a,fade||0.35,false);
@@ -336,6 +350,8 @@ P.play=function(name,fade){
 var MODE_CLIP={walk:'walk',fight:'fight',idle:'idle',wardrobe:'wardrobe'};
 P.update=function(dt,mode,fat){
   if(!this.mixer)return;
+  /* жители таверны: анимацию выбирает tavern3d через play(), здесь только шаг микшера */
+  if(mode==='npc'){this.mixer.update(dt);return;}
   this.t+=dt;fat=fat||0;
   var self=this;
   if(mode!==this.mode){
@@ -384,7 +400,7 @@ function create(look,opts){
   return A.setLook(look,opts.onProgress);
 }
 
-window.Avatar={init:init,create:create,defaults:defaults,CATALOG:CATALOG,missing:missing,needs:needs,
+window.Avatar={init:init,create:create,loadExtraClips:loadExtraClips,defaults:defaults,CATALOG:CATALOG,missing:missing,needs:needs,
   get STAFF_OFFSET(){return Avatar.STAFF_OFFSET;},set STAFF_OFFSET(v){Avatar.STAFF_OFFSET=v;},
   fmtBytes:function(b){return b>=1048576?(b/1048576).toFixed(1)+' МБ':Math.max(1,Math.round(b/1024))+' КБ';}};
 })();

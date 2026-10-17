@@ -177,8 +177,9 @@ D.MASTERS=[
 D.MASTER_BY={};D.MASTERS.forEach(function(m){D.MASTER_BY[m.id]=m;});
 D.TOOLS_MAX=5;
 D.toolsCost=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]*Math.pow(1.8,l));c.gold=Math.ceil(50*Math.pow(2.2,l));return c;};
-D.SLOTS0=4;D.SLOTS_MAX=10;
-D.slotCost=function(n){return {gold:Math.ceil(100*Math.pow(2.5,n-D.SLOTS0))};};
+/* общая очередь крафта (v11): одна на всех, мастера работают параллельно, каждый над первой своей вещью */
+D.QSLOTS0=8;D.QSLOTS_MAX=30;
+D.qSlotCost=function(n){return {gold:Math.ceil(80*Math.pow(1.6,n-D.QSLOTS0))};};
 D.mXpNeed=function(l){return Math.ceil(20*Math.pow(1.35,l-1));};
 D.mSpeed=function(lvl,tools){return (1+0.04*(lvl-1))*(1+0.1*tools);};
 /* учитель: пока учит, мастер не работает */
@@ -217,8 +218,19 @@ D.GOODS=[
   {id:'j_bone', m:'jeweler',lvl:2,teach:300,    kind:'ring',  slot:'ring',c:'#e8dfc4',eff:{crit:0.05,hp:0.05},cost:{bone:6,iron:2},time:720,price:390},
   {id:'j_crys', m:'jeweler',lvl:4,teach:6000,   kind:'ring',  slot:'ring',c:'#7fd8ff',eff:{pick:0.1}, cost:{crystal:5,silver:3},time:1800,price:1860},
   {id:'j_amber',m:'jeweler',lvl:6,teach:12000,  kind:'ring',  slot:'ring',c:'#ffaa30',eff:{fat:0.15}, cost:{amber:1,silver:4,bone:4},time:2400,price:3750},
-  {id:'j_star', m:'jeweler',lvl:8,teach:40000,  kind:'ring',  slot:'ring',c:'#9fe8ff',eff:{dmg:0.4},  cost:{starice:2,silver:8,crystal:6},time:5400,price:15600}
+  {id:'j_star', m:'jeweler',lvl:8,teach:40000,  kind:'ring',  slot:'ring',c:'#9fe8ff',eff:{dmg:0.4},  cost:{starice:2,silver:8,crystal:6},time:5400,price:15600},
+  /* свитки мага (v11): маг пишет их сам, только когда он в таверне. lvl - уровень мага, учитель не нужен.
+     Простые без ресурсов. xp - доля опыта до следующего уровня (считается не выше уровня свитка + 5).
+     Продаются путникам и берутся в поход, как зелья. */
+  {id:'sc_spark',m:'mage',lvl:1, teach:0,kind:'scroll',c:'#ffb040',eff:{dmg:0.08},cost:{},                              time:60,  price:10,  xp:0.04},
+  {id:'sc_guard',m:'mage',lvl:3, teach:0,kind:'scroll',c:'#5ab0ff',eff:{hp:0.1},  cost:{},                              time:90,  price:14,  xp:0.05},
+  {id:'sc_wind', m:'mage',lvl:6, teach:0,kind:'scroll',c:'#a0f0c0',eff:{fat:0.1}, cost:{herb:2},                        time:180, price:32,  xp:0.07},
+  {id:'sc_seek', m:'mage',lvl:10,teach:0,kind:'scroll',c:'#e0d070',eff:{chance:0.1},cost:{herb:3,wood:2},               time:300, price:60,  xp:0.08},
+  {id:'sc_fire', m:'mage',lvl:15,teach:0,kind:'scroll',c:'#ff5a30',eff:{dmg:0.3}, cost:{coal:2,herb:3,ironwood:1},      time:600, price:180, xp:0.1},
+  {id:'sc_storm',m:'mage',lvl:25,teach:0,kind:'scroll',c:'#8a7aff',eff:{dmg:0.5,crit:0.05},cost:{crystal:2,ecto:2,herb:4},time:1200,price:700,xp:0.12},
+  {id:'sc_star', m:'mage',lvl:40,teach:0,kind:'scroll',c:'#9fe8ff',eff:{dmg:0.8}, cost:{starice:1,silver:3,crystal:2},   time:2400,price:2600,xp:0.15}
 ];
+D.MAGE_SPEED=1;
 D.GOOD_BY={};D.GOODS.forEach(function(x){D.GOOD_BY[x.id]=x;});
 D.SLOTS=['head','body','belt','feet','ring'];
 /* с чего начинает новый маг: хватает на первые заказы, пока не вернулся первый поход */
@@ -251,10 +263,12 @@ D.MINE={
 };
 
 /* покупатели */
-D.custRate=function(hall,rep){return (6+3*hall)*(1+Math.min(0.5,rep/200));};   // в час
-D.custMax=function(hall){return 3+hall;};
-D.CUST_PATIENCE=600;      // сколько ждёт покупатель
-D.HOSTESS_AFTER=90;       // через сколько хозяйка продаёт сама (по базовой цене)
+/* v11: путников в МИНУТУ, от 1 на старте до 5 (зал и репутация) */
+D.CUST_MAX_RATE=5;
+D.custRate=function(hall,rep){return Math.min(D.CUST_MAX_RATE,(1+0.8*hall)*(1+Math.min(0.25,rep/400)));};
+D.custMax=function(hall){return 6+2*hall;};   // сколько ждут одновременно
+D.CUST_PATIENCE=180;      // сколько ждёт покупатель, если нужной вещи нет
+D.HOSTESS_AFTER=30;       // через сколько хозяйка продаёт сама (по базовой цене)
 D.HAGGLE_UP=0.3;D.HAGGLE_FAIL=0.35;D.DISCOUNT=0.2;
 D.TRAVELERS=12;           // типов путников в текстах (trav.0..11)
 D.decorMult=function(l){return 1+0.06*l;};

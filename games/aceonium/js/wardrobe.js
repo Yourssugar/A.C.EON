@@ -17,7 +17,9 @@ var PAID={
   'part:shoulders:ranger':20,'color:ranger:1':30,'color:peasant:1':10,
   'staff:crystal':15,'staff:bone':35,'staff:iron':55,'staff:branch':75
 };
-function priceOf(id){return PAID[id]?20*D.goldAt(PAID[id]):0;}
+/* пока нет золота (до таверны), вещи открываются бесплатно по уровню мага: уровень похода / 5 */
+function needLvl(id){return Math.max(1,Math.ceil(PAID[id]/5));}
+function priceOf(id){return PAID[id]&&!D.WARDROBE_FREE&&D.goldAt?20*D.goldAt(PAID[id]):0;}
 
 var W=null;   // текущее окно
 
@@ -149,12 +151,12 @@ function apply(first){
 
 /* ════════ ПАНЕЛЬ ВЫБОРА ════════ */
 function owned(id){var S=window.acGame.S;return !PAID[id]||S.wardrobe.owned.indexOf(id)>=0;}
-function opened(id){var S=window.acGame.S,l=PAID[id];return !l||S.maxLevel>l||S.prestige.best>l;}
+function opened(id){var S=window.acGame.S;return !PAID[id]||S.mlvl>=needLvl(id);}
 function tile(o){
   /* o: {label, swatch, sel, id, size} */
   var cls='wd2-tile'+(o.sel?' sel':'')+(o.swatch?' sw':'');
   var sub='';
-  if(o.id&&!owned(o.id))sub=opened(o.id)?COIN+D.fmt(priceOf(o.id)):t('wd.open',{n:PAID[o.id]});
+  if(o.id&&!owned(o.id))sub=opened(o.id)?(priceOf(o.id)?COIN+D.fmt(priceOf(o.id)):t('wd.free')):t('wd.open',{n:needLvl(o.id)});
   if(o.size)sub+=(sub?' · ':'')+'+'+Avatar.fmtBytes(o.size);
   return '<button type="button" class="'+cls+(o.id&&!opened(o.id)?' lock':'')+'" data-k="'+o.k+'" data-v="'+esc(o.v)+'">'+
     (o.swatch?'<span class="wd2-sw" style="--c:'+o.swatch+'"></span>':'')+
@@ -209,7 +211,7 @@ function render(){
     render();apply();
   };
   foot();
-  var cs=W.q('.wd2-coins b');if(cs)cs.textContent=D.fmt(window.acGame.S.coins);
+  var cs=W.q('.wd2-coins');if(cs)cs.classList.add('hidden');
 }
 function skinShow(c){var THREE=window.ACE_THREE;if(!THREE)return c;var x=new THREE.Color(c).multiply(new THREE.Color('#e8b898'));return '#'+x.getHexString();}
 function paintCam(){
@@ -244,7 +246,8 @@ function foot(){
   }
   if(!need.length){btn.textContent=t('wd.save');btn.disabled=false;note.innerHTML='';}
   else if(locked.length){btn.textContent=t('wd.save');btn.disabled=true;note.innerHTML=t('wd2.locked');}
-  else{btn.innerHTML=t('wd2.buy')+' '+COIN+D.fmt(cost);btn.disabled=S.coins<cost;note.innerHTML=S.coins<cost?t('wd2.noCoins'):'';}
+  else if(!cost){btn.textContent=t('wd.save');btn.disabled=false;note.innerHTML='';}
+  else{var coins=S.coins||0;btn.innerHTML=t('wd2.buy')+' '+COIN+D.fmt(cost);btn.disabled=coins<cost;note.innerHTML=coins<cost?t('wd2.noCoins'):'';}
 }
 function save(){
   if(!W)return;
@@ -254,8 +257,8 @@ function save(){
     var look=W.look;look.hoodUp=true;var cb=W.opts.onDone;close();cb(look,n);return;
   }
   if(need.length){
-    if(need.some(function(id){return !opened(id);})||S.coins<cost)return;
-    S.coins-=cost;need.forEach(function(id){S.wardrobe.owned.push(id);});
+    if(need.some(function(id){return !opened(id);})||(S.coins||0)<cost)return;
+    if(cost)S.coins-=cost;need.forEach(function(id){S.wardrobe.owned.push(id);});
   }
   var look2=W.look;look2.hoodUp=true;var cb2=W.opts.onDone;close();Sound.sfx('win');cb2(look2);
 }
@@ -266,5 +269,5 @@ function close(){
   W.box.remove();W=null;
 }
 
-window.Wardrobe={open:open,close:close,priceOf:priceOf,PAID:PAID,get isOpen(){return !!W;}};
+window.Wardrobe={open:open,close:close,priceOf:priceOf,PAID:PAID,needLvl:needLvl,get isOpen(){return !!W;}};
 })();

@@ -507,4 +507,34 @@ I18n.add('en',{
   'v10.body':'<p>Road and tavern are separate now. On the road: route, bag, skills, wardrobe. In the tavern: sales, craft, town, store, gear.</p><p>The TO TAVERN button at the top brings the mage home. ON A TRIP continues the same tract from the same wave.</p><p>Craft has pictures. Craftsmen have their own view: items, queue, teacher. A studying craftsman does not work.</p><p>Level one items are known from the start: potion, bow, sword, cloak, belt, boots, ring.</p>',
   'v8b.body':'<p>The tavern is yours. Craftsmen make items from resources and travelers buy them. This is the only source of gold.</p><p>The store already has some resources: order your first items in the CRAFT tab.</p><p>TO TAVERN at the top brings the mage home, ON A TRIP continues from the same wave. At night, while the mage sleeps, the tavern is closed, but craftsmen finish their orders.</p>'
 });
+
+/* v11: общая очередь, свитки мага, поток путников */
+I18n.add('ru',{
+  'tv.rate':'{r} путников/мин','bd.hall.d':'Путников в минуту / мест: {v}',
+  'q2.title':'ОЧЕРЕДЬ {n}/{m}','q2.short':'очередь {n}/{m}','q2.cancel':'нажми, чтобы отменить','q2.more':'+ МЕСТО','q2.max':'очередь уже максимальная',
+  'q2.hint':'Одна очередь на всех. Каждый мастер берёт первую свою вещь, мастера работают одновременно. Нажми на вещь в очереди, чтобы отменить.',
+  'q2.canceled':'Заказ отменён, ресурсы вернулись','q2.slots':'МЕСТА В ОЧЕРЕДИ','q2.slotsI':'Общая очередь всех мастеров и мага',
+  'cr2.xp':'опыт мага','cr2.free':'без ресурсов','cr2.needMage':'НУЖЕН УР. МАГА {n}','cr2.mLvl':'ур. мага {n}','cr2.scrolls':'СВИТКИ МАГА',
+  'cr2.mageHome':'Маг пишет свитки, пока он в таверне.','cr2.mageAway':'Маг в походе или спит: свиток ждёт в очереди, пока маг не вернётся.',
+  'cr2.block.no':'НЕ ЕГО','ms.mage':'Маг','ms3.busy2':'в очереди {n}',
+  'it.sc_spark':'Свиток искры','it.sc_guard':'Свиток оберега','it.sc_wind':'Свиток попутного ветра','it.sc_seek':'Свиток поиска',
+  'it.sc_fire':'Огненный свиток','it.sc_storm':'Свиток бури','it.sc_star':'Звёздный свиток',
+  'desc.sc_spark':'Простой свиток. Маг пишет его без ресурсов и получает опыт.','desc.sc_guard':'Защитные знаки. Без ресурсов, даёт опыт.',
+  'desc.sc_wind':'В пути маг меньше устаёт.','desc.sc_seek':'С врагов чаще падает добыча.','desc.sc_fire':'Сильный урон весь поход.',
+  'desc.sc_storm':'Урон и критические удары.','desc.sc_star':'Самый сильный свиток мага.'
+});
+I18n.add('en',{
+  'tv.rate':'{r} travelers/min','bd.hall.d':'Travelers per minute / places: {v}',
+  'q2.title':'QUEUE {n}/{m}','q2.short':'queue {n}/{m}','q2.cancel':'tap to cancel','q2.more':'+ SLOT','q2.max':'queue is at maximum',
+  'q2.hint':'One queue for everyone. Each craftsman takes his first item, craftsmen work at the same time. Tap an item in the queue to cancel it.',
+  'q2.canceled':'Order canceled, resources returned','q2.slots':'QUEUE SLOTS','q2.slotsI':'Shared queue of all craftsmen and the mage',
+  'cr2.xp':'mage xp','cr2.free':'no resources','cr2.needMage':'NEEDS MAGE LV {n}','cr2.mLvl':'mage lv {n}','cr2.scrolls':'MAGE SCROLLS',
+  'cr2.mageHome':'The mage writes scrolls while he is in the tavern.','cr2.mageAway':'The mage is on a trip or asleep: the scroll waits in the queue until he is back.',
+  'cr2.block.no':'NOT THEIRS','ms.mage':'Mage','ms3.busy2':'{n} queued',
+  'it.sc_spark':'Spark scroll','it.sc_guard':'Ward scroll','it.sc_wind':'Tailwind scroll','it.sc_seek':'Seeking scroll',
+  'it.sc_fire':'Fire scroll','it.sc_storm':'Storm scroll','it.sc_star':'Star scroll',
+  'desc.sc_spark':'A simple scroll. The mage writes it without resources and gains xp.','desc.sc_guard':'Protective signs. No resources, gives xp.',
+  'desc.sc_wind':'The mage tires less on the road.','desc.sc_seek':'Enemies drop loot more often.','desc.sc_fire':'Strong damage for the whole trip.',
+  'desc.sc_storm':'Damage and critical hits.','desc.sc_star':'The strongest mage scroll.'
+});
 })();

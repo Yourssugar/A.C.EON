@@ -1,0 +1,6 @@
+Ассеты таверны, все под CC0 (можно использовать где угодно, указание автора не обязательно):
+- Medieval Village MegaKit, Fantasy Props MegaKit: Quaternius (quaternius.com)
+- KayKit Furniture Bits, KayKit Resource Bits: Kay Lousberg (kaylousberg.itch.io)
+- Текстуры old_wood_floor, cobblestone_floor_01, plastered_wall, stone_brick_wall_001, dark_wood,
+  fine_grained_wood, thatch_roof_angled, grassy_cobblestone, grass_ground: Poly Haven (polyhaven.com)
+Модели пересобраны (только нужные, без картинок внутри), текстуры пережаты в webp 1k/2k.

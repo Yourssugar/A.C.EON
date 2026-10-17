@@ -38,7 +38,7 @@ var H={};
 function initHud(){
   ['h-level','h-dots','h-farm','h-coins','h-rate','h-fat-state','h-fat-pct','h-fat-bar','h-fat-note','h-place',
    'enemy','en-name','en-hp','en-hp-txt','boss-timer','boss-bar','boss-sec','farm','btn-boss','auto-boss','auto-boss-l',
-   'rest','rest-txt','rest-time','rest-road','rest-tav','skills','fx','stage'].forEach(function(id){H[id]=$(id);});
+   'rest','rest-txt','rest-time','rest-craft','rest-tale','h-rested','rest-road','rest-tav','skills','fx','stage'].forEach(function(id){H[id]=$(id);});
   var dots='';for(var i=0;i<10;i++)dots+='<i'+(i===9?' class="b"':'')+'></i>';H['h-dots'].innerHTML=dots;
   H.dots=[].slice.call(H['h-dots'].children);
   H['h-place'].addEventListener('click',function(){if(S.place==='road')g.goTavern();else g.goRoad();});
@@ -66,6 +66,9 @@ function refreshHud(){
   });
   H['h-farm'].classList.toggle('hidden',!S.farm);
   setText(H['h-farm'],t('hud.farm'));
+  var rb=S.rested>0&&S.place==='road';
+  H['h-rested'].classList.toggle('hidden',!rb);
+  if(rb)setText(H['h-rested'],t('hud.rested',{m:D.REST_BUFF_MULT,t:ft(S.rested)}));
   setText(H['h-coins'],D.fmt(S.coins));
   setText(H['h-rate'],t('hud.dps')+' '+D.fmt(g.dps())+'  '+t('hud.click')+' '+D.fmt(g.clickDmg()));
   /* усталость */
@@ -93,6 +96,13 @@ function refreshHud(){
     setText(H['rest-road'],t('btn.road'));
     setText(H['rest-tav'],t('btn.tavern'));
     H['rest-tav'].classList.toggle('hidden',!(S.place==='sit'&&S.tavern));
+    var inTav=S.place==='tavern',cr=g.craftRate();
+    H['rest-craft'].classList.toggle('hidden',!S.tavern);
+    if(S.tavern)setHTML(H['rest-craft'],inTav?
+      t('rest.craft',{v:D.fmt(cr),p:Math.round(g.craftShare()*100)})+'<br>'+t('rest.charge',{t:ft(g.restBuffFor(S.charge)),m:D.REST_BUFF_MULT}):
+      t('rest.craftSit',{v:D.fmt(cr)}));
+    H['rest-tale'].classList.toggle('hidden',!(inTav&&tale));
+    if(inTav&&tale)setText(H['rest-tale'],tale);
   }
   /* враг */
   var e=R.enemy,showE=!!(S.place==='road'&&e&&(R.phase==='fight'||(R.phase==='walk'&&e.boss)));
@@ -143,6 +153,16 @@ function enemyPos(){
 function onHit(h){
   var p=enemyPos();
   pop(h.big?'big':h.crit?'crit':h.click?'clk':'stf',D.fmt(h.dmg)+(h.crit?'!':''),p.x+(Math.random()-0.5)*70,p.y+(Math.random()-0.5)*20);
+}
+/* ночное ремесло: монетки над магом и короткая сценка у камина */
+var tale='',taleI=-1;
+function onCraft(c){
+  var tales=tg('tales').split('|');
+  var i=Math.floor(Math.random()*tales.length);if(i===taleI)i=(i+1)%tales.length;taleI=i;
+  tale=tales[i];
+  var p=window.Scene3D&&Scene3D.mageScreen&&Scene3D.mageScreen();
+  if(!p){var r=H.stage.getBoundingClientRect();p={x:r.width*0.5,y:r.height*0.45};}
+  pop('gold','+'+D.fmt(c),p.x,p.y-30);
 }
 function onKill(k){
   var p=enemyPos();
@@ -270,16 +290,24 @@ function tabTavern(){
   add(liveBlock(function(){
     return '<p>'+t('tav.info',{a:g.awakeH(),r:g.restH(),r2:g.restH()/D.ROAD_REST_EFF})+'</p><p class="note">'+t('tav.curve')+'</p>';
   }));
+  add(liveBlock(function(){
+    var h='<div class="lbl full">'+t('tav.craftT')+'</div><p>'+t('tav.craftD')+'</p>';
+    if(S.tavern)h+='<p class="gold">'+t('tav.craftNow',{p:Math.round(g.craftShare()*100),v:D.fmt(g.farmRate()*g.craftShare())})+'</p>';
+    h+='<div class="lbl full">'+t('tav.coreT')+'</div><p>'+t('tav.coreD',{s:D.REST_BUFF_PER_H,m:D.REST_BUFF_MULT,x:D.REST_BUFF_MAX/60})+'</p>';
+    return h;
+  },'tav-craft'));
   add(row({title:function(){return t('tav.title');},
     info:function(){return S.tavern?t('tav.owned'):t('tav.desc',{h:g.restH(),h2:g.restH()/D.ROAD_REST_EFF})+(S.maxLevel<=D.TAVERN_LEVEL?'<br><small>'+t('tav.locked',{n:D.TAVERN_LEVEL})+'</small>':'');},
     btn:function(){return t('tav.buy');},
     done:function(){return S.tavern;},locked:function(){return !S.tavern&&S.maxLevel<=D.TAVERN_LEVEL;},
     cost:function(){return D.tavernCost();},buy:function(){var ok=g.buyTavern();if(ok){toast(t('toast.tavern'));buildTab();}return ok;}}));
   if(!S.tavern)return;
-  var vals={bed:function(){return g.restH();},amulet:function(){return g.awakeH();},lantern:function(){return Math.round(g.offlineEff()*100);}};
+  var vals={bed:function(){return g.restH();},amulet:function(){return g.awakeH();},lantern:function(){return Math.round(g.offlineEff()*100);},
+    alch:function(){return Math.round(D.CRAFT_ALCH*100*S.tav.alch);},board:function(){return Math.round(D.CRAFT_BOARD*100*S.tav.board);}};
   D.TAVERN_UP.forEach(function(u){
     add(row({title:function(){return t('tav.'+u.id);},lvl:function(){return t('row.lvlMax',{n:S.tav[u.id],m:u.max});},
-      info:function(){return t('tav.'+u.id+'.i',{v:vals[u.id]()});},
+      info:function(){return t('tav.'+u.id+'.i',{v:vals[u.id]()})+(u.lvl&&S.maxLevel<u.lvl?'<br><small>'+t('tav.locked',{n:u.lvl})+'</small>':'');},
+      locked:function(){return !!(u.lvl&&S.maxLevel<u.lvl);},
       done:function(){return S.tav[u.id]>=u.max;},cost:function(){return u.cost(S.tav[u.id]);},buy:function(){return g.buyTavUp(u.id);}}));
   });
 }
@@ -349,7 +377,7 @@ function tabStats(body){
   add(liveBlock(function(){
     var s=S.stats,L=[
       ['st.kills',D.fmt(s.kills)],['st.bosses',s.bosses],['st.bossFails',s.bossFails],['st.clicks',D.fmt(s.clicks)],
-      ['st.play',ft(s.play)],['st.rest',ft(s.rest)],['st.earned',D.fmt(s.earned)],['st.earnedAll',D.fmt(s.earnedAll)],
+      ['st.play',ft(s.play)],['st.rest',ft(s.rest)],['st.craft',D.fmt(s.craft||0)],['st.earned',D.fmt(s.earned)],['st.earnedAll',D.fmt(s.earnedAll)],
       ['st.max',S.prestige.best],['st.rebirths',S.prestige.count]];
     return '<div class="lbl full">'+t('st.title')+'</div><table class="stats">'+L.map(function(x){return '<tr><td>'+t(x[0])+'</td><td>'+x[1]+'</td></tr>';}).join('')+'</table>';
   }));
@@ -477,6 +505,7 @@ function offlineReport(rep){
   if(rep.fight>30)rows.push('<p>'+tg('off.fight',{t:ft(rep.fight)})+'</p>');
   if(rep.rest>30)rows.push('<p>'+tg('off.rest',{t:ft(rep.rest)})+'</p>');
   rows.push('<p class="gold">'+COIN+t('off.coins',{c:D.fmt(rep.coins)})+'</p>');
+  if(rep.craft>0)rows.push('<p class="gold">'+COIN+t('off.craft',{c:D.fmt(rep.craft)})+'</p>');
   if(rep.kills)rows.push('<p>'+t('off.kills',{n:D.fmt(rep.kills)})+'</p>');
   modal(t('off.title'),rows.join(''));
 }
@@ -492,7 +521,7 @@ function init(game){
 function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
-  onHit:onHit,onKill:onKill,banner:banner,toast:toast,modal:modal,ripple:ripple,showCreate:showCreate,offlineReport:offlineReport,
+  onHit:onHit,onKill:onKill,onCraft:onCraft,banner:banner,toast:toast,modal:modal,ripple:ripple,showCreate:showCreate,offlineReport:offlineReport,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

@@ -143,7 +143,7 @@ function build(renderer){
   V.hemi=new T.HemisphereLight(0xe0ecff,0x4a5a30,1.1);s.add(V.hemi);
   V.sun=new T.DirectionalLight(0xfff0d8,1.7);V.sun.position.set(14,26,18);V.sun.target.position.set(1,0,0);s.add(V.sun);s.add(V.sun.target);
   V.sun.castShadow=true;var sc=V.sun.shadow.camera;sc.left=-20;sc.right=20;sc.top=20;sc.bottom=-20;sc.near=1;sc.far=70;
-  V.sun.shadow.mapSize.set(2048,2048);V.sun.shadow.bias=-0.0005;V.sun.shadow.normalBias=0.04;
+  var hq=window.Scene3D&&(Scene3D.quality==='high'||Scene3D.quality==='ultra');V.sun.shadow.mapSize.set(hq?2048:1024,hq?2048:1024);V.sun.shadow.bias=-0.0005;V.sun.shadow.normalBias=0.04;
   V.inner=new T.PointLight(0xffb060,0,16,1.6);V.inner.position.set(1,2.6,-2.5);s.add(V.inner);
   /* земля и двор */
   var gm=mat('grass');gm.color.set('#b4c890');
@@ -206,7 +206,8 @@ function layout(S){
   while(G.children.length)G.remove(G.children[0]);
   V.walls.length=0;V.fires.length=0;
   var B=S.build,mk=function(id){return S.masters[id]&&S.masters[id].hired;};
-  var forge=B.forge>0,tannery=B.tannery>0,jewelry=B.jewelry>0,hall=B.hall||0,bed=B.bedroom||0,decor=B.decor||0;
+  /* мастера живут в своих мастерских в городе: в таверне только зал, комната мага, двор и склад */
+  var forge=false,tannery=false,jewelry=false,hall=B.hall||0,bed=B.bedroom||0,decor=B.decor||0;
   var st=V.st={};
   /* главный дом */
   room(G,-6,6,-4,4,'plaster',{
@@ -282,12 +283,6 @@ function layout(S){
     prop(G,'Bookcase_2',-1.65,-5.2,Math.PI/2);prop(G,'CandleStick_Triple',0.4,-6.9,0,0);
     st.jeweler={x:-0.5,z:-6.0,rot:Math.PI};
   }else st.jeweler=null;
-  /* столярный навес во дворе */
-  var cx=6.5,cz=7.5;
-  prop(G,'Prop_Support',cx-1.6,cz-1.2,Math.PI);prop(G,'Prop_Support',cx+1.6,cz-1.2,Math.PI);
-  var roof=box(4.4,0.12,2.6,mat('thatch'),1.2);place(roof,cx,cz-0.2,0,2.75);roof.rotation.x=-0.18;G.add(roof);
-  prop(G,'Workbench',cx,cz-0.6,0);prop(G,'Wood_Planks_Stack_Medium',cx+1.6,cz+0.4,0.3);prop(G,'Axe_Bronze',cx-0.6,cz-0.6,0,0.9);
-  st.carpenter={x:cx,z:cz+0.2,rot:Math.PI};
   /* склад под навесом слева: по стопке на уровень склада */
   var stacks=['Wood_Log_Stack','Stone_Chunks_Large','Iron_Bars_Stack_Small','Textiles_Stack_Small','Wood_Planks_Stack_Medium','Silver_Bars_Stack_Small','Gold_Bars_Stack_Small'];
   var sx=-8.6;
@@ -298,13 +293,7 @@ function layout(S){
     prop(G,'Pallet_Wood',px,pz,0);prop(G,stacks[i],px,pz,0.2,0.14);
   }
   st.store={x:sx,z:-0.6};
-  /* шахта: вагонетка, кирка, куча угля */
-  if(S.mine.lvl>0){
-    prop(G,'Prop_Wagon',-7,8.6,Math.PI*0.6,0,0.8);prop(G,'Pickaxe_Bronze',-5.4,9.4,0.4);
-    V.coal=prop(G,'Stone_Chunks_Large',-5.8,7.6,0,0,1.2);
-    V.coal.traverse(function(m){if(m.isMesh){m.material=m.material.clone();m.material.color.set('#3a3a42');}});
-    st.mine={x:-6.6,z:8.4};
-  }else{st.mine=null;V.coal=null;}
+  st.mine=null;V.coal=null;
   /* забор вдоль дороги, проход к двери */
   for(var fx=-9;fx<=9;fx+=2)if(Math.abs(fx-1)>1)prop(G,'Prop_WoodenFence_Single',fx,12.4,0);
   prop(G,'Barrel_Apples',2.6,5.0,0);prop(G,'Crate_Wooden',-0.6,5.0,0.3);
@@ -426,8 +415,7 @@ function goTo(N,pts){N.path=pts.map(function(p){return {x:p[0],z:p[1]};});}
 
 /* ════════ СИНХРОНИЗАЦИЯ С ИГРОЙ ════════ */
 function signature(S){
-  var hired=Object.keys(S.masters).filter(function(k){return S.masters[k].hired;}).join(',');
-  return JSON.stringify([S.build,S.storeLvl,S.mine.lvl,hired]);
+  return JSON.stringify([S.build.hall,S.build.bedroom,S.build.decor,S.storeLvl]);
 }
 function sync(S){
   if(!V||!readyFlag)return;
@@ -435,20 +423,12 @@ function sync(S){
   if(sig!==V.sig){V.sig=sig;layout(S);placeMasters(S,true);}
   setNight(S.place==='sleep');
   placeMasters(S,false);
-  syncCustomers(S);
   if(V.coal&&S.mine.lvl){var k=S.mine.acc/Math.max(1,D().MINE.cap(S.mine.lvl));V.coal.scale.setScalar(0.4+k*1.1);}
   V.S=S;
 }
 function D(){return window.AcData;}
 function placeMasters(S,moved){
   var st=V.st;
-  ['herbalist','carpenter','smith','tanner','jeweler'].forEach(function(id){
-    var m=S.masters[id],p=st[id],key='m:'+id,N=V.npcs[key];
-    if(!m||!m.hired||!p){if(N)removeNpc(N);return;}
-    if(!N)N=spawnNpc(key,fullLook(MASTER_LOOK[id]),p.x,p.z,p.rot);
-    if(moved){N.x=p.x;N.z=p.z;N.rot=p.rot;N.path=[];}
-    setAnim(N,m.q.length?WORK[id]:'Idle_Loop');
-  });
   var h=V.npcs.hostess;
   if(!h)h=spawnNpc('hostess',fullLook(MASTER_LOOK.hostess),st.hostess.x,st.hostess.z,st.hostess.rot);
   setAnim(h,S.cust.length&&S.place!=='sleep'?'Idle_Talking_Loop':'Idle_Loop');
@@ -560,11 +540,9 @@ function screenOf(x,y,z){
 }
 function anchors(){
   var out=[],st=V.st||{};
-  ['herbalist','carpenter','smith','tanner','jeweler'].forEach(function(id){var N=V.npcs['m:'+id];if(N)out.push({kind:'master',id:id,x:N.x,y:2.25,z:N.z});});
   if(V.npcs.hostess)out.push({kind:'hostess',id:'hostess',x:st.hostess.x,y:2.25,z:st.hostess.z});
   if(st.mine)out.push({kind:'mine',id:'mine',x:st.mine.x,y:1.9,z:st.mine.z});
   if(st.store)out.push({kind:'store',id:'store',x:st.store.x,y:2.9,z:st.store.z});
-  for(var k in V.npcs){var N=V.npcs[k];if(N.cust&&!N.leaving)out.push({kind:'customer',id:k,x:N.x,y:2.0,z:N.z,silent:true});}
   return out;
 }
 function pick(e){
@@ -638,7 +616,7 @@ function setActive(on,host){
 }
 function resetView(){if(!V)return;V.goal.az=0.5;V.goal.pol=0.9;V.goal.dist=30;V.goal.target.set(0.5,0,1.5);}
 
-window.Tavern3D={init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
+window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_LOOK[id]):null;},init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
   resetView:resetView,bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});return {meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
   onPick:function(fn){onPickCb=fn;},setLabeler:function(fn){labeler=fn;},
   get ready(){return readyFlag;},get loading(){return !!loading&&!readyFlag;},get scene(){return V&&V.scene;},get camera(){return V&&V.camera;},

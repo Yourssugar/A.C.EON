@@ -36,8 +36,8 @@ function open(id){
     if(a==='order')ok=g.order(M.id,b.dataset.r);
     if(a==='learn')ok=g.learn(b.dataset.r);
     if(a==='tools')ok=g.buyTools(M.id);
-    if(a==='slot')ok=g.buySlot(M.id);
-    if(a==='cancel')ok=g.cancel(M.id,+b.dataset.i);
+    if(a==='slot')ok=g.buyQSlot();
+    if(a==='cancel')ok=g.cancel(+b.dataset.i);
     if(ok){Sound.sfx('select');if(a==='hire')showMaster();}
     render(true);
   });
@@ -104,7 +104,8 @@ function showMaster(){
 function anim(){
   var A=M.st&&M.st.cur;if(!A)return;
   var m=window.acGame.master(M.id);
-  var a=!m.hired?'Idle_Loop':m.teach?'Idle_Talking_Loop':m.q.length?WORK[M.id]:'Idle_Loop';
+  var g=window.acGame,mine=g.queueOf(M.id).length;
+  var a=!m.hired?'Idle_Loop':m.teach?'Idle_Talking_Loop':mine?WORK[M.id]:'Idle_Loop';
   if(A.curName!==a)A.play(a,0.3);
 }
 
@@ -123,8 +124,7 @@ function render(full){
   if(m.hired){
     stTxt='<b>'+t('ms.'+id)+'</b> '+t('ms.lvl',{n:m.lvl})+'<div class="bar xp"><i style="width:'+Math.min(100,m.xp/D.mXpNeed(m.lvl)*100).toFixed(1)+'%"></i></div>';
     if(m.teach)stTxt+='<span class="tch">'+t('ms2.teaching',{r:UI.itemName(m.teach.r),t:UI.ft(m.teach.t)})+'</span>';
-    else if(m.q.length)stTxt+='<span>'+t('ms2.busy',{r:UI.orderName(m.q[0].r),t:UI.ft(m.q[0].t/g.mSpeed(id))})+'</span>';
-    else stTxt+='<span>'+t('ms.idle')+'</span>';
+    else{var my=g.queueOf(id);if(my.length)stTxt+='<span>'+t('ms2.busy',{r:UI.orderName(my[0].r),t:UI.ft(my[0].t/g.mSpeed(id))})+'</span>';else stTxt+='<span>'+t('ms.idle')+'</span>';}
   }
   if(stEl._h!==stTxt){stEl._h=stTxt;stEl.innerHTML=stTxt;}
   anim();
@@ -135,11 +135,12 @@ function render(full){
     h+='<div class="lbl full">'+t('ms2.canMake')+'</div><div class="ms2-grid">'+D.GOODS.filter(function(x){return x.m===id;}).map(function(x){return card(x.id,'view');}).join('')+'</div>';
     return setBody(body,h);
   }
-  /* очередь */
-  h+='<div class="lbl full">'+t('ms.queue',{n:m.q.length,m:m.slots})+'</div><div class="ms2-q">';
-  for(var i=0;i<m.slots;i++){
-    var o=m.q[i];
-    if(o)h+='<button type="button" class="ms2-slot full" data-act="cancel" data-i="'+i+'" title="'+t('ms.cancel')+'">'+UI.orderIcon(o.r,true)+(i===0?'<i class="pr" style="height:'+((1-o.t/o.T)*100).toFixed(0)+'%"></i>':'')+'</button>';
+  /* общая очередь: вещи этого мастера ярко, чужие тускло */
+  var act=g.activeSet();
+  h+='<div class="lbl full">'+t('q2.title',{n:S.queue.length,m:S.qSlots})+'</div><div class="ms2-q">';
+  for(var i=0;i<S.qSlots;i++){
+    var o=S.queue[i];
+    if(o)h+='<button type="button" class="ms2-slot full'+(o.m===id?'':' other')+'" data-act="cancel" data-i="'+i+'" title="'+t('q2.cancel')+'">'+UI.orderIcon(o.r,true)+(act[i]?'<i class="pr" style="height:'+((1-o.t/o.T)*100).toFixed(0)+'%"></i>':'')+'</button>';
     else h+='<span class="ms2-slot"></span>';
   }
   h+='</div>';
@@ -154,11 +155,11 @@ function render(full){
     h+='<div class="lbl full">'+t('ms.teacher')+'</div><p class="note">'+t('ms2.teacherD')+'</p><div class="ms2-grid">'+rest.map(function(x){return card(x.id,'learn');}).join('')+'</div>';
   }
   /* улучшения мастера */
-  var tc=g.toolsCost(id),sc=g.slotCost(id);
+  var tc=g.toolsCost(id),sc=g.qSlotCost();
   h+='<div class="lbl full">'+t('ms2.upgrades')+'</div>'+
     '<div class="ms2-up"><div><b>'+t('ms.tools')+'</b> '+t('row.lvlMax',{n:m.tools,m:D.TOOLS_MAX})+'<small>'+t('ms.toolsI')+'</small></div>'+
       (tc?'<button type="button" class="btn sm" data-act="tools"'+(g.canPay(tc)?'':' disabled')+'>'+UI.costHtml(tc)+'</button>':'<span class="note">'+t('buy.done')+'</span>')+'</div>'+
-    '<div class="ms2-up"><div><b>'+t('ms.slots')+'</b> '+t('row.lvlMax',{n:m.slots,m:D.SLOTS_MAX})+'<small>'+t('ms.slotsI')+'</small></div>'+
+    '<div class="ms2-up"><div><b>'+t('q2.slots')+'</b> '+t('row.lvlMax',{n:S.qSlots,m:D.QSLOTS_MAX})+'<small>'+t('q2.slotsI')+'</small></div>'+
       (sc?'<button type="button" class="btn sm" data-act="slot"'+(g.canPay(sc)?'':' disabled')+'>'+UI.costHtml(sc)+'</button>':'<span class="note">'+t('buy.done')+'</span>')+'</div>';
   setBody(body,h);
 }

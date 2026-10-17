@@ -752,10 +752,13 @@ function setBiome(id){
   forestTint(b);
 }
 
+/* таверна на слабой графике: без постобработки и с пиксельным коэффициентом не выше 1 (телефоны) */
+function tavLite(){return R.qName!=='high'&&R.qName!=='ultra';}
+function curPr(){return R.view==='tavern'&&tavLite()?Math.min(R.pr||1,1):(R.pr||1);}
 function resize(){
   if(!R)return;
   var w=R.host.clientWidth||1,h=R.host.clientHeight||1;
-  R.renderer.setPixelRatio(R.pr||1);
+  R.renderer.setPixelRatio(curPr());
   R.renderer.setSize(w,h,false);
   if(R.post&&R.postMode)R.post.resize(Math.round(w*R.pr),Math.round(h*R.pr));
   R.renderer.domElement.style.width=w+'px';R.renderer.domElement.style.height=h+'px';
@@ -929,7 +932,7 @@ function frame(dt,real){
   /* вид таверны: своя сцена и камера из tavern3d.js, дорога в это время стоит */
   if(R.view==='tavern'&&window.Tavern3D&&Tavern3D.built){
     Tavern3D.update(Math.min(dt,0.05));
-    if(R.post&&R.postMode)R.post.render(Tavern3D.scene,Tavern3D.camera,R.postMode,R.t);
+    if(R.post&&R.postMode&&!tavLite())R.post.render(Tavern3D.scene,Tavern3D.camera,R.postMode,R.t);
     else{R.renderer.setRenderTarget(null);R.renderer.render(Tavern3D.scene,Tavern3D.camera);}
     return;
   }
@@ -1079,7 +1082,8 @@ function setView(v,mage){
     Tavern3D.setActive(true,R.renderer.domElement);
     if(mage&&R.avatar)Tavern3D.setMage(R.avatar,mage);else Tavern3D.releaseMage();
   }else if(window.Tavern3D&&Tavern3D.built){Tavern3D.setActive(false);Tavern3D.releaseMage();}
-  R.view=v;
+  var was=R.view;R.view=v;
+  if(was!==v)resize();
 }
 function setFatigue(f){if(R)R.fat=f;}
 

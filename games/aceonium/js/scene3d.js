@@ -770,6 +770,7 @@ function resize(){
   R.camTarget.set(0.2,portrait?1.45:1.7-wide*0.25,-6);
   R.camera.position.copy(R.camBase);R.camera.lookAt(R.camTarget);
   R.camera.updateProjectionMatrix();
+  if(window.Tavern3D&&Tavern3D.built)Tavern3D.resize(w,h);
 }
 
 /* ── спрайты-частицы из пула ── */
@@ -925,6 +926,13 @@ function portal(cb){
 
 function frame(dt,real){
   if(!R)return;
+  /* вид таверны: своя сцена и камера из tavern3d.js, дорога в это время стоит */
+  if(R.view==='tavern'&&window.Tavern3D&&Tavern3D.built){
+    Tavern3D.update(Math.min(dt,0.05));
+    if(R.post&&R.postMode)R.post.render(Tavern3D.scene,Tavern3D.camera,R.postMode,R.t);
+    else{R.renderer.setRenderTarget(null);R.renderer.render(Tavern3D.scene,Tavern3D.camera);}
+    return;
+  }
   real=real===undefined?dt:Math.min(real,1);
   R.t+=dt;
   var walking=R.mode==='walk';
@@ -1062,6 +1070,17 @@ function setLook(look,onProgress){
   return R.avLoading;
 }
 function setTier(t,colors){if(R){R.tierArgs=[t,colors];R.mage.setTier(t,colors);}}
+/* вид: дорога или таверна сверху; mage - 'home' | 'sleep' | null (маг в походе, в таверне его нет) */
+function setView(v,mage){
+  if(!R)return;
+  if(v==='tavern'&&!(window.Tavern3D&&Tavern3D.ready))v='road';
+  if(v==='tavern'){
+    if(!Tavern3D.built){Tavern3D.build(R.renderer);resize();}
+    Tavern3D.setActive(true,R.renderer.domElement);
+    if(mage&&R.avatar)Tavern3D.setMage(R.avatar,mage);else Tavern3D.releaseMage();
+  }else if(window.Tavern3D&&Tavern3D.built){Tavern3D.setActive(false);Tavern3D.releaseMage();}
+  R.view=v;
+}
 function setFatigue(f){if(R)R.fat=f;}
 
 
@@ -1103,6 +1122,6 @@ function preview(canvas){
 }
 
 window.Scene3D={setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
-  spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
+  setView:setView,get view(){return R?R.view||'road':'road';},spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
   get ready(){return !!R;}};
 })();

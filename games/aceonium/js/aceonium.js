@@ -103,17 +103,56 @@ function showPlace(place,instant){
   if(!has3d)return;
   var mode=sceneMode(place),prev=scenePlace===null?null:sceneMode(scenePlace);
   scenePlace=place;
-  if(prev===mode&&!instant)return;
+  if(prev===mode&&!instant){applyView();return;}
   if(mode!=='walk')Scene3D.retreat();
-  if(!instant&&prev!==null&&prev!==mode){portalBusy=true;Scene3D.portal(function(){portalBusy=false;Scene3D.setMode(mode);});}
-  else Scene3D.setMode(mode);
+  if(!instant&&prev!==null&&prev!==mode&&Scene3D.view==='road'){portalBusy=true;Scene3D.portal(function(){portalBusy=false;Scene3D.setMode(mode);applyView();});}
+  else{Scene3D.setMode(mode);applyView();}
 }
-game.on('place',function(place){showPlace(place);save();});
+game.on('place',function(place){userView=null;if(place!=='road')ensureTavern();showPlace(place);save();});
+
+/* ── таверна в 3D: вид сверху; дома и во сне включается сама, кнопкой можно переключать ── */
+var userView=null,tavLoad=null;
+function tavRes(){return (Scene3D.quality==='high'||Scene3D.quality==='ultra')?'2k':'1k';}
+function ensureTavern(){
+  if(!has3d||!window.Tavern3D||!window.Avatar||!window.ACE_THREE)return Promise.reject(new Error('no 3d'));
+  if(Tavern3D.ready)return Promise.resolve();
+  if(!tavLoad){
+    tavLoad=Avatar.init(window.ACE_THREE).then(function(){return Tavern3D.init(window.ACE_THREE);})
+      .then(function(){return Tavern3D.load(tavRes(),function(p){UI.viewProgress(p);});});
+    tavLoad.then(function(){UI.viewProgress(1);applyView();},function(e){console.warn('[aceonium] tavern',e);tavLoad=null;UI.viewProgress(-1);});
+  }
+  return tavLoad;
+}
+function wantView(){return userView||(S.place==='road'?'road':'tavern');}
+function applyView(){
+  if(!has3d)return;
+  var v=wantView();
+  if(v==='tavern'&&!(window.Tavern3D&&Tavern3D.ready))v='road';
+  if(v==='tavern'){Tavern3D.sync(S);Scene3D.setView('tavern',S.place==='road'?null:S.place);}
+  else Scene3D.setView('road');
+  document.body.classList.toggle('view-tavern',v==='tavern');
+  UI.setView(v);
+}
+UI.toggleView=function(){
+  if(!has3d)return;
+  if(!(window.Tavern3D&&Tavern3D.ready)){ensureTavern().then(function(){userView='tavern';applyView();},function(){});return;}
+  userView=Scene3D.view==='tavern'?'road':'tavern';applyView();
+};
+if(window.Tavern3D){
+  Tavern3D.onPick(function(kind,id){
+    if(kind==='master')UI.openTab('masters',id);
+    else if(kind==='store')UI.openTab('store');
+    else UI.openTab('tavern');
+    Sound.sfx('select');
+  });
+  Tavern3D.setLabeler(UI.tavernLabel);
+}
 
 /* ── ввод ── */
 var stage=document.getElementById('stage');
 stage.addEventListener('pointerdown',function(e){
   if(e.target.closest('button,input,label,.rest,.enemy'))return;
+  if(has3d&&Scene3D.view==='tavern')return;
   if(game.click()){
     var r=stage.getBoundingClientRect();UI.ripple(e.clientX-r.left,e.clientY-r.top);
   }
@@ -127,7 +166,7 @@ document.addEventListener('keydown',function(e){
 });
 
 /* ── главный цикл ── */
-var last=performance.now(),lastWall=Date.now(),uiT=0;
+var last=performance.now(),lastWall=Date.now(),uiT=0,tavT=0;
 function loop(now){
   var dt=(now-last)/1000;last=now;
   var wall=Date.now(),gap=(wall-lastWall)/1000;lastWall=wall;
@@ -144,6 +183,7 @@ function loop(now){
     if(!(window.Wardrobe&&Wardrobe.isOpen))Scene3D.frame(Math.min(dt,0.05),dt);
   }
   if(has3d)fpsWatch(dt);
+  tavT+=dt;if(tavT>0.3){tavT=0;if(has3d&&Scene3D.view==='tavern')Tavern3D.sync(S);}
   uiT+=dt;
   if(uiT>0.1){uiT=0;UI.hud();}
   requestAnimationFrame(loop);
@@ -190,6 +230,9 @@ function begin(){
   save();
   lastWall=Date.now();last=performance.now();
   requestAnimationFrame(loop);
+  /* таверну качаем заранее в фоне (на слабой графике только когда понадобится) */
+  if(has3d&&Scene3D.quality!=='low')setTimeout(function(){ensureTavern().catch(function(){});},12000);
+  if(has3d&&S.place!=='road')ensureTavern().catch(function(){});
   Sound.music('game');
 }
 

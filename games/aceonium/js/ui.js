@@ -253,7 +253,25 @@ var PIX={
     '................',
     '................',
     '................',
-    '................'],pal:{y:'#e0b040',w:'#ffffff'}}
+    '................'],pal:{y:'#e0b040',w:'#ffffff'}},
+  /* свиток: пергамент, руна цвета свитка, печать */
+  scroll:{rows:[
+    '................',
+    '..oppppppppppo..',
+    '.opPPPPPPPPPPpo.',
+    '..oppppppppppo..',
+    '...pPPPPPPPPp...',
+    '...pPMMPPPPPp...',
+    '...pPPMMPPPPp...',
+    '...pPPPMMPPPp...',
+    '...pPPMMPPPPp...',
+    '...pPMMPPPPPp...',
+    '...pPPPPPPrrp...',
+    '...pPPPPPrRRr...',
+    '..opppppprRRro..',
+    '.opPPPPPPPrrPpo.',
+    '..oppppppppppo..',
+    '................'],pal:{o:'#6a4428',p:'#c8a870',P:'#f0dcae',r:'#8a1a1a',R:'#d03030'}}
 };
 var ITEM_TPL={s_sword:'sword',s_blade:'sword',s_axe:'axe',c_bow:'bow',c_wand:'bow',c_shield:'shield',
   t_cloak:'cloak',t_silk:'cloak',s_mail:'cloak',t_hood:'helm',s_helm:'helm',t_belt:'belt',t_boots:'boots',p_ward:'charm'};
@@ -277,7 +295,7 @@ function pixSvg(tpl,color,cls){
 }
 function itemIcon(id,q,big){
   var gd=D.GOOD_BY[id];if(!gd)return '';
-  var tpl=ITEM_TPL[id]||(gd.kind==='potion'?'potion':gd.kind==='ring'?'ring':'sword');
+  var tpl=ITEM_TPL[id]||(gd.kind==='potion'?'potion':gd.kind==='ring'?'ring':gd.kind==='scroll'?'scroll':'sword');
   var color=tpl==='ring'?'#c8d0dc':gd.c;
   var svg=pixSvg(tpl,color,'ri it q'+(q||0)+(big?' big':''));
   if(tpl==='ring'&&gd.id!=='j_ring')svg=svg.replace(/#2a70ff/g,gd.c).replace(/#9fd0ff/g,shade(gd.c,1.3));
@@ -429,17 +447,18 @@ function refreshHud(){
 }
 /* нижняя полоса: что сейчас делают мастера */
 function paintQbar(road){
-  var q=H.qbar,h='',n=0;
+  var q=H.qbar,h='';
   if(!road){
     D.MASTERS.forEach(function(d){
-      var m=g.master(d.id);if(!m.hired)return;
-      if(m.teach){n++;h+='<div class="qb-it teach" title="'+esc(t('ms.'+d.id))+'">'+orderIcon(m.teach.r)+'<i style="width:'+((1-m.teach.t/m.teach.T)*100).toFixed(1)+'%"></i><small>'+t('qb.teach')+'</small></div>';return;}
-      m.q.forEach(function(o,k){
-        n++;var p=k===0&&o.T?(1-o.t/o.T):0;
-        h+='<div class="qb-it'+(k?' wait':'')+'" title="'+esc(orderName(o.r)+' · '+t('ms.'+d.id))+'">'+orderIcon(o.r)+'<i style="width:'+(p*100).toFixed(1)+'%"></i><small>'+(k?'':ft(o.t/g.mSpeed(d.id)))+'</small></div>';
-      });
+      var m=g.master(d.id);if(!m.hired||!m.teach)return;
+      h+='<div class="qb-it teach" title="'+esc(t('ms.'+d.id))+'">'+orderIcon(m.teach.r)+'<i style="width:'+((1-m.teach.t/m.teach.T)*100).toFixed(1)+'%"></i><small>'+t('qb.teach')+'</small></div>';
     });
-    if(!n)h='<span class="qb-empty">'+t('qb.empty')+'</span>';
+    var act=g.activeSet();
+    S.queue.forEach(function(o,k){
+      var on=!!act[k],p=on&&o.T?(1-o.t/o.T):0;
+      h+='<div class="qb-it'+(on?'':' wait')+(o.m==='mage'?' mage':'')+'" title="'+esc(orderName(o.r)+' · '+mName(o.m))+'">'+orderIcon(o.r)+'<i style="width:'+(p*100).toFixed(1)+'%"></i><small>'+(on?ft(o.t/g.mSpeed(o.m)):'')+'</small></div>';
+    });
+    h=h?h+'<span class="qb-n">'+S.queue.length+'/'+S.qSlots+'</span>':'<span class="qb-empty">'+t('qb.empty')+'</span>';
   }
   q.classList.toggle('hidden',road);
   setHTML(q,h);
@@ -654,7 +673,7 @@ function tabTavern(){
   add(liveBlock(function(){
     var open=g.isOpen(),hall=g.buildLvl('hall');
     return '<div class="tv-head"><b>'+COIN+D.fmt(S.gold)+'</b><span class="'+(open?'ok':'bad')+'">'+t(open?'tv.open':'tv.closed')+'</span></div>'+
-      '<div class="stat-row"><span>'+t('tv.rate',{r:Math.round(D.custRate(hall,S.rep))})+'</span><span>'+t('tv.rep',{n:Math.floor(S.rep)})+'</span><span>'+t('tv.soldN',{n:D.fmt(S.stats.sold||0)})+'</span></div>';
+      '<div class="stat-row"><span>'+t('tv.rate',{r:(Math.round(D.custRate(hall,S.rep)*10)/10)})+'</span><span>'+t('tv.rep',{n:Math.floor(S.rep)})+'</span><span>'+t('tv.soldN',{n:D.fmt(S.stats.sold||0)})+'</span></div>';
   }));
   add(actBlock(function(){
     var h='';
@@ -684,7 +703,32 @@ function allRecipes(){
     Object.keys(D.ORDERS).forEach(function(r){if(D.ORDERS[r].m===d.id)out.push({r:r,m:d.id});});
     D.GOODS.forEach(function(x){if(x.m===d.id)out.push({r:x.id,m:d.id});});
   });
+  D.GOODS.forEach(function(x){if(x.m==='mage')out.push({r:x.id,m:'mage'});});
   return out;
+}
+function recipeMaster(r){var gd=D.GOOD_BY[r];return gd?gd.m:D.ORDERS[r].m;}
+function mName(mid){return mid==='mage'?t('ms.mage'):t('ms.'+mid);}
+/* общая очередь: значки, у кого сейчас в работе полоска; нажатие отменяет заказ */
+function queueHtml(withBuy){
+  var Q=S.queue,act=g.activeSet(),h='<div class="lbl full">'+t('q2.title',{n:Q.length,m:S.qSlots})+'</div><div class="q2">';
+  for(var i=0;i<S.qSlots;i++){
+    var o=Q[i];
+    if(!o){h+='<span class="q2-slot"></span>';continue;}
+    var p=act[i]&&o.T?(1-o.t/o.T):0;
+    h+='<button type="button" class="q2-slot full'+(act[i]?' on':'')+(o.m==='mage'?' mage':'')+'" data-act="cancel" data-i="'+i+'" title="'+esc(orderName(o.r)+' · '+mName(o.m)+' · '+t('q2.cancel'))+'">'+
+      orderIcon(o.r,true)+'<i style="height:'+(p*100).toFixed(0)+'%"></i></button>';
+  }
+  h+='</div>';
+  if(withBuy){
+    var qc=g.qSlotCost();
+    h+='<div class="q2-buy">'+(qc?'<button type="button" class="btn sm" data-act="qslot"'+(g.canPay(qc)?'':' disabled')+'>'+t('q2.more')+' '+costHtml(qc)+'</button>':'<span class="note">'+t('q2.max')+'</span>')+
+      '<span class="note">'+t('q2.hint')+'</span></div>';
+  }
+  return h;
+}
+function queueAct(act,ds){
+  if(act==='cancel'&&g.cancel(+ds.i))toast(t('q2.canceled'));
+  if(act==='qslot')g.buyQSlot();
 }
 function tabCraft(){
   var seg=el('div','seg csub');
@@ -693,53 +737,57 @@ function tabCraft(){
   add({el:seg,update:function(){[].forEach.call(seg.children,function(b){b.classList.toggle('sel',b.dataset.s===craftSub);});}});
   if(craftSub==='masters')return tabCraftMasters();
   if(!curItem)curItem='p_heal';
-  /* сетка: вещи, которые мастера уже умеют, и отдельно улучшения. Остальное видно у мастеров (учитель) */
+  /* выбранная вещь */
   add(actBlock(function(){
-    var goods='',ups='';
-    allRecipes().forEach(function(x){
-      var m=g.master(x.m),sp=!!D.ORDERS[x.r];
-      if(!sp&&m.known.indexOf(x.r)<0)return;
-      if(sp&&!g.orderCost(x.r))return;
-      var bl=g.orderBlock(x.m,x.r),busy=sp&&bl==='pending';
-      var cls='it-card'+(curItem===x.r?' sel':'')+(!m.hired?' dim':'')+(m.hired&&!bl?' ok':'');
-      var c='<button type="button" class="'+cls+'" data-act="pick" data-r="'+x.r+'">'+orderIcon(x.r,true)+'<span>'+orderName(x.r)+'</span>'+
-        '<small>'+(busy?t('cr2.block.pending'):sp?'':(!m.hired?t('ms.notHired'):g.invCount(x.r)?'x'+g.invCount(x.r):''))+'</small></button>';
-      if(sp)ups+=c;else goods+=c;
-    });
-    return '<div class="lbl full">'+t('cr2.goods')+'</div><div class="it-grid">'+goods+'</div>'+(ups?'<div class="lbl full">'+t('cr2.ups')+'</div><div class="it-grid">'+ups+'</div>':'');
-  },function(act,ds){if(act==='pick')curItem=ds.r;}));
-  /* выбранное изделие */
-  add(actBlock(function(){
-    if(!curItem)return '<p class="note">'+t('cr2.pick')+'</p>';
-    var r=curItem,gd=D.GOOD_BY[r],mid=gd?gd.m:D.ORDERS[r].m,m=g.master(mid),sp=!gd,known=sp||m.known.indexOf(r)>=0,c=g.orderCost(r);
+    var r=curItem,gd=D.GOOD_BY[r],mid=recipeMaster(r),m=g.master(mid),sp=!gd,mage=mid==='mage',known=sp||m.known.indexOf(r)>=0,c=g.orderCost(r);
     var h='<div class="it-detail"><div class="it-big">'+orderIcon(r,true)+'</div><div class="it-info"><b>'+orderName(r)+'</b>'+
-      '<small>'+t('ms.'+mid)+(m.hired?' '+t('ms.lvl',{n:m.lvl}):' · '+t('ms.notHired'))+'</small>';
+      '<small>'+mName(mid)+(m.hired?' '+t('ms.lvl',{n:m.lvl}):' · '+t('ms.notHired'))+'</small>';
     if(gd&&gd.eff)h+='<em>'+effText(r,0)+'</em>';
     h+='<p class="note">'+t('desc.'+r)+'</p></div></div>';
     if(!c){h+='<p class="note">'+t('ord.'+r+'Max')+'</p>';return h;}
-    h+='<div class="it-facts"><span>'+t('cr2.time')+' <b>'+ft(g.orderTime(r)/g.mSpeed(mid))+'</b></span>'+(gd?'<span>'+t('cr2.price')+' <b>'+COIN+D.fmt(gd.price)+'</b></span>':'')+'</div>';
-    h+='<div class="it-cost">'+costHtml(c)+'</div>';
+    h+='<div class="it-facts"><span>'+t('cr2.time')+' <b>'+ft(g.orderTime(r)/g.mSpeed(mid))+'</b></span>'+(gd?'<span>'+t('cr2.price')+' <b>'+COIN+D.fmt(gd.price)+'</b></span>':'')+
+      (mage?'<span>'+t('cr2.xp')+' <b>+'+D.fmt(g.scrollXp(r))+'</b></span>':'')+'</div>';
+    h+='<div class="it-cost">'+(Object.keys(c).length?costHtml(c):'<span class="note">'+t('cr2.free')+'</span>')+'</div>';
     if(!m.hired){var hc=D.MASTER_BY[mid].hire;h+='<button type="button" class="btn pink" data-act="hire" data-m="'+mid+'"'+(S.gold<hc?' disabled':'')+'>'+t('cr2.hireFirst',{m:t('ms.'+mid)})+' '+COIN+D.fmt(hc)+'</button>';}
+    else if(!known&&mage)h+='<button type="button" class="btn" disabled>'+t('cr2.needMage',{n:gd.lvl})+'</button>';
     else if(!known)h+='<button type="button" class="btn" data-act="masters" data-m="'+mid+'">'+(m.lvl>=gd.lvl?t('cr2.teach',{g:D.fmt(gd.teach)}):t('cr2.needLvl',{m:t('ms.'+mid),n:gd.lvl}))+'</button>';
     else{
       var bl=g.orderBlock(mid,r);
       h+='<div class="btn-row left"><button type="button" class="btn pink" data-act="order" data-r="'+r+'"'+(bl?' disabled':'')+'>'+(bl?t('cr2.block.'+bl):t('cr2.do'))+'</button>'+
-        '<span class="note">'+t('ms.queue',{n:m.q.length,m:m.slots})+'</span></div>';
+        '<span class="note">'+t('q2.short',{n:S.queue.length,m:S.qSlots})+'</span></div>';
     }
+    if(mage)h+='<p class="note'+(S.place==='home'?'':' bad')+'">'+t(S.place==='home'?'cr2.mageHome':'cr2.mageAway')+'</p>';
     return h;
   },function(act,ds){
-    if(act==='order'){var gd=D.GOOD_BY[ds.r],mid=gd?gd.m:D.ORDERS[ds.r].m;if(g.order(mid,ds.r))Sound.sfx('select');}
+    if(act==='order'&&g.order(recipeMaster(ds.r),ds.r))Sound.sfx('select');
     if(act==='hire'&&g.hire(ds.m))toast(t('ms.hired',{m:t('ms.'+ds.m)}));
     if(act==='masters'&&window.Masters)Masters.open(ds.m);
   }));
-  /* карточка выбранной вещи сверху, сетка под ней */
-  var n=rows.length,tmp=rows[n-1];rows[n-1]=rows[n-2];rows[n-2]=tmp;
+  /* общая очередь */
+  add(actBlock(function(){return queueHtml(true);},queueAct));
+  /* сетка: вещи мастеров (что уже умеют), свитки мага, улучшения. Остальное видно у мастеров (учитель) */
+  add(actBlock(function(){
+    var goods='',scr='',ups='';
+    allRecipes().forEach(function(x){
+      var m=g.master(x.m),sp=!!D.ORDERS[x.r],mage=x.m==='mage',known=sp||m.known.indexOf(x.r)>=0;
+      if(!sp&&!mage&&!known)return;
+      if(sp&&!g.orderCost(x.r))return;
+      var bl=g.orderBlock(x.m,x.r),busy=sp&&bl==='pending';
+      var cls='it-card'+(curItem===x.r?' sel':'')+(!m.hired||!known?' dim':'')+(m.hired&&!bl?' ok':'');
+      var sub=busy?t('cr2.block.pending'):sp?'':!m.hired?t('ms.notHired'):!known?t('cr2.mLvl',{n:D.GOOD_BY[x.r].lvl}):g.invCount(x.r)?'x'+g.invCount(x.r):'';
+      var c='<button type="button" class="'+cls+'" data-act="pick" data-r="'+x.r+'">'+orderIcon(x.r,true)+'<span>'+orderName(x.r)+'</span><small>'+sub+'</small></button>';
+      if(sp)ups+=c;else if(mage)scr+=c;else goods+=c;
+    });
+    return '<div class="lbl full">'+t('cr2.goods')+'</div><div class="it-grid">'+goods+'</div>'+
+      '<div class="lbl full">'+t('cr2.scrolls')+'</div><div class="it-grid">'+scr+'</div>'+
+      (ups?'<div class="lbl full">'+t('cr2.ups')+'</div><div class="it-grid">'+ups+'</div>':'');
+  },function(act,ds){if(act==='pick')curItem=ds.r;}));
 }
 function tabCraftMasters(){
   add(actBlock(function(){
     var h='<div class="ms-list">';
     D.MASTERS.forEach(function(d){
-      var m=g.master(d.id),state=!m.hired?t('ms.notHired'):m.teach?t('ms3.teach'):m.q.length?t('ms3.busy',{n:m.q.length,m:m.slots}):t('ms.idle');
+      var m=g.master(d.id),n=g.queueOf(d.id).length,state=!m.hired?t('ms.notHired'):m.teach?t('ms3.teach'):n?t('ms3.busy2',{n:n}):t('ms.idle');
       h+='<button type="button" class="ms-card'+(m.hired?'':' off')+'" data-act="open" data-m="'+d.id+'">'+
         '<span class="ms-face f-'+d.id+'"></span><span class="ms-txt"><b>'+t('ms.'+d.id)+'</b><small>'+(m.hired?t('ms.lvl',{n:m.lvl})+' · ':'')+state+'</small></span>'+
         '<span class="ms-items">'+m.known.slice(0,4).map(function(r){return itemIcon(r,0);}).join('')+'</span></button>';
@@ -771,7 +819,7 @@ function tabCity(){
 }
 function buildVal(id){
   var l=g.buildLvl(id);
-  if(id==='hall')return D.custRate(l,0)+' / '+D.custMax(l);
+  if(id==='hall')return (Math.round(D.custRate(l,0)*10)/10)+' / '+D.custMax(l);
   if(id==='bedroom')return g.restH();
   if(id==='decor')return Math.round((D.decorMult(l)-1)*100);
   return '';
@@ -822,7 +870,7 @@ function tabGear(){
   add(actBlock(function(){
     var h='<div class="lbl full">'+t('gear.potions')+'</div><div class="it-grid">';
     D.GOODS.forEach(function(gd){
-      if(gd.kind!=='potion'&&gd.kind!=='ward')return;
+      if(gd.kind!=='potion'&&gd.kind!=='ward'&&gd.kind!=='scroll')return;
       var known=g.master(gd.m).known.indexOf(gd.id)>=0||g.invCount(gd.id)>0;if(!known)return;
       h+='<label class="it-card pot'+(S.use[gd.id]?' ok':'')+'"><input type="checkbox" data-act="use" data-id="'+gd.id+'"'+(S.use[gd.id]?' checked':'')+'>'+itemIcon(gd.id,0,true)+'<span>'+itemName(gd.id)+'</span><small>x'+g.invCount(gd.id)+'</small></label>';
     });

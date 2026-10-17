@@ -133,6 +133,10 @@ function initHud(){
   H.dots=[].slice.call(H['h-dots'].children);
   $('h-bag-i').innerHTML=BAG_SVG;
   H['h-place'].addEventListener('click',function(){if(S.place==='road')g.goHome();else g.goTrip();});
+  /* переключатель вида: дорога / таверна сверху */
+  var vb=el('button','view-btn');vb.type='button';vb.id='view-btn';
+  vb.addEventListener('click',function(e){e.stopPropagation();if(UI.toggleView)UI.toggleView();Sound.sfx('select');});
+  H.stage.appendChild(vb);H.view=vb;setViewBtn('road');
   H['rest-road'].addEventListener('click',function(){g.goTrip();});
   H['rest-tav'].addEventListener('click',function(){g.sleepNow();});
   /* умения */
@@ -739,6 +743,30 @@ function initPanel(){
   });
   paintTabs();
 }
+var viewNow='road',viewLoad=-1;
+function setViewBtn(v){viewNow=v;paintView();}
+function paintView(){
+  if(!H.view)return;
+  if(viewLoad>=0&&viewLoad<1){setText(H.view,t('view.loading',{p:Math.round(viewLoad*100)}));H.view.disabled=true;return;}
+  H.view.disabled=false;
+  setText(H.view,viewNow==='tavern'?t('view.road'):t('view.tavern'));
+  H.view.classList.toggle('on',viewNow==='tavern');
+}
+function viewProgress(p){viewLoad=p;paintView();}
+/* открыть вкладку (например, по клику на мастера в 3D-таверне) */
+function openTab(tab,sub){
+  if(tab==='masters'&&sub)curMaster=sub;
+  curTab=tab;paintTabs();buildTab();
+  if(S.settings.panel){S.settings.panel=false;document.body.classList.remove('panel-off');setTimeout(function(){window.dispatchEvent(new Event('resize'));},50);}
+}
+/* подписи над жителями таверны */
+function tavernLabel(kind,id){
+  if(kind==='master'){var m=g.master(id);return '<b>'+t('ms.'+id)+'</b> '+t('ms.lvl',{n:m.lvl})+(m.q.length?' · '+m.q.length+'/'+m.slots:' · '+t('lbl.idle'));}
+  if(kind==='hostess')return '<b>'+t('lbl.hostess')+'</b>'+(S.cust.length?' · '+t('lbl.cust',{n:S.cust.length}):'');
+  if(kind==='mine')return '<b>'+t('mine.title')+'</b> '+Math.floor(S.mine.acc)+'/'+g.mineCap();
+  if(kind==='store')return '<b>'+t('store.title')+'</b>';
+  return '';
+}
 function paintTabs(){[].forEach.call($('tabs').children,function(b){b.classList.toggle('sel',b.dataset.tab===curTab);});}
 
 /* ════════ СОЗДАНИЕ ГЕРОЯ ════════ */
@@ -800,7 +828,7 @@ function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
-  showCreate:showCreate,offlineReport:offlineReport,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,
+  showCreate:showCreate,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

@@ -65,29 +65,223 @@ function costHtml(cost){
 }
 var COIN='<i class="coin"></i>';
 
-/* ── иконки изделий: форма по виду вещи, цвет из data.js ── */
-var ITEM_SVG={
-  bottle:'<rect x="6" y="1" width="4" height="2" fill="#a07850"/><rect x="6.5" y="3" width="3" height="3" fill="#cfe8f0"/><circle cx="8" cy="10.5" r="4.5" fill="C"/><circle cx="6.5" cy="9" r="1.2" fill="#fff" opacity=".6"/>',
-  charm:'<path d="M8 1l6 4v6l-6 4-6-4V5z" fill="C"/><path d="M8 4l3 2v4l-3 2-3-2V6z" fill="#fff" opacity=".35"/>',
-  stick:'<path d="M3 14L13 2" stroke="C" stroke-width="2.4"/><circle cx="13" cy="2.5" r="1.6" fill="#fff" opacity=".5"/>',
-  bow:'<path d="M4 2c7 2 7 10 0 12" stroke="C" stroke-width="2" fill="none"/><path d="M4 2v12" stroke="#e8e0c8" stroke-width=".8"/>',
-  shield:'<path d="M3 2h10v6c0 4-5 7-5 7s-5-3-5-7z" fill="C"/><path d="M8 2v12M3 6h10" stroke="#000" stroke-opacity=".3"/>',
-  axe:'<path d="M5 15L10 3" stroke="#8a5a32" stroke-width="2"/><path d="M8 2c4 0 6 2 6 5l-5-1z" fill="C"/>',
-  sword:'<path d="M12 1l2 2-8 8-2-2z" fill="C"/><path d="M3 9l4 4M2 14l2-2" stroke="#8a5a32" stroke-width="2"/>',
-  helm:'<path d="M3 10a5 6 0 0 1 10 0v3H3z" fill="C"/><rect x="5" y="9" width="6" height="2" fill="#000" opacity=".4"/>',
-  mail:'<path d="M4 2h8l2 4-2 1v7H4V7L2 6z" fill="C"/><path d="M5 5h6M5 8h6M5 11h6" stroke="#000" stroke-opacity=".25"/>',
-  glove:'<path d="M5 15V7l1-5h1v5l1-6h1v6l1-5h1v6l1-3h1l-1 7v3z" fill="C"/>',
-  boot:'<path d="M5 1h5v9l4 2v3H4z" fill="C"/><rect x="4" y="13" width="10" height="2" fill="#000" opacity=".35"/>',
-  hood:'<path d="M8 1c4 0 6 4 6 8v6H2V9c0-4 2-8 6-8z" fill="C"/><ellipse cx="8" cy="10" rx="3" ry="3.5" fill="#000" opacity=".55"/>',
-  cloak:'<path d="M6 1h4l4 14H2z" fill="C"/><path d="M8 1v14" stroke="#000" stroke-opacity=".2"/>',
-  amulet:'<path d="M3 1q5 6 10 0" stroke="#d6dde8" fill="none"/><path d="M8 6l4 4-4 5-4-5z" fill="C"/>'
+/* ── пиксельные картинки изделий 16x16: строки, буква = цвет; M и m - основной цвет вещи и его тень ── */
+var PIX={
+  sword:{rows:[
+    '................',
+    '.............ww.',
+    '............wMw.',
+    '...........wMm..',
+    '..........wMm...',
+    '.........wMm....',
+    '........wMm.....',
+    '...g...wMm......',
+    '...gg.wMm.......',
+    '....ggMm........',
+    '....bgg.........',
+    '...bbggg........',
+    '..bb...g........',
+    '.pb.............',
+    'pp..............',
+    '................'],pal:{w:'#f4f8ff',g:'#e0b040',b:'#6a4428',p:'#c09030'}},
+  axe:{rows:[
+    '..........mm....',
+    '........mmMMm...',
+    '.......mMMMMMw..',
+    '.......mMMMMMw..',
+    '........mMMMw...',
+    '.......bbmm.....',
+    '......bb........',
+    '.....bb.........',
+    '....bb..........',
+    '...bb...........',
+    '..bb............',
+    '.bb.............',
+    'bb..............',
+    '................',
+    '................',
+    '................'],pal:{w:'#f4f8ff',b:'#7a5030'}},
+  bow:{rows:[
+    '.......MM.......',
+    '......M..l......',
+    '.....M...l......',
+    '.....M...l......',
+    '....Mm...l......',
+    '....Mm...l......',
+    '....hh...l......',
+    '....hh...l......',
+    '....hh...l......',
+    '....Mm...l......',
+    '....Mm...l......',
+    '.....M...l......',
+    '.....M...l......',
+    '......M..l......',
+    '.......MM.......',
+    '................'],pal:{l:'#efe6d0',h:'#4a2c18'}},
+  shield:{rows:[
+    '................',
+    '..oooooooooooo..',
+    '..oMMMMggMMMMo..',
+    '..oMMMMggMMMMo..',
+    '..oMMMMggMMMMo..',
+    '..oggggggggggo..',
+    '..omMMMggMMMmo..',
+    '...omMMggMMmo...',
+    '...omMMggMMmo...',
+    '....omMggMmo....',
+    '.....omggmo.....',
+    '......omgo......',
+    '.......oo.......',
+    '................',
+    '................',
+    '................'],pal:{o:'#3a2414',g:'#c0c8d4'}},
+  cloak:{rows:[
+    '......MMMM......',
+    '.....MmmmmM.....',
+    '....MmkkkkmM....',
+    '....MmkkkkmM....',
+    '....MMmkkmMM....',
+    '...MMMyMMyMMM...',
+    '...MMMMMMMMMM...',
+    '..MMmMMMMMMmMM..',
+    '..MMmMMMMMMmMM..',
+    '.MMMmMMMMMMMmMM.',
+    '.MMmMMMMMMMMMmM.',
+    '.MMmMMMMMMMMmMM.',
+    'MMmMMMMMMMMMMMmM',
+    'MmmMMMMMMMMMMMmm',
+    'MMMMMMMMMMMMMMMM',
+    '................'],pal:{k:'#120c08',y:'#e0b040'}},
+  helm:{rows:[
+    '................',
+    '.......ww.......',
+    '.....MMMMMM.....',
+    '....MwMMMMMM....',
+    '...MwMMMMMMMm...',
+    '...MMMMMMMMMm...',
+    '...mmmmmmmmmm...',
+    '...MM.kkkk.Mm...',
+    '...MM.kkkk.Mm...',
+    '...MMM....MMm...',
+    '...MMM....MMm...',
+    '....mm....mm....',
+    '................',
+    '................',
+    '................',
+    '................'],pal:{w:'#f4f8ff',k:'#0c0c10'}},
+  ring:{rows:[
+    '................',
+    '.......ee.......',
+    '......eEEe......',
+    '......eeee......',
+    '.....MMMMMM.....',
+    '....MM....mM....',
+    '...MM......mM...',
+    '...M........m...',
+    '..MM........mm..',
+    '..MM........mm..',
+    '...M........m...',
+    '...MM......mm...',
+    '....MM....mm....',
+    '.....mmmmmm.....',
+    '................',
+    '................'],pal:{e:'#2a70ff',E:'#9fd0ff'}},
+  belt:{rows:[
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    'mmmmmmyyyymmmmmm',
+    'MMMMMMy..yMMMMMM',
+    'MMMMMMy.yyMMMMMM',
+    'MMMMMMy..yMMMMMM',
+    'mmmmmmyyyymmmmmm',
+    '..........M.M...',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................'],pal:{y:'#e0b040'}},
+  boots:{rows:[
+    '................',
+    '....mmmmm.......',
+    '....MMMMm.......',
+    '....MMMMm.......',
+    '....MMMMm.......',
+    '....yyyym.......',
+    '....MMMMm.......',
+    '....MMMMmm......',
+    '....MMMMMMm.....',
+    '....MMMMMMMmm...',
+    '...MMMMMMMMMMm..',
+    '...MMMMMMMMMMm..',
+    '...dddddddddddd.',
+    '................',
+    '................',
+    '................'],pal:{y:'#c09030',d:'#2a1a10'}},
+  potion:{rows:[
+    '......cccc......',
+    '......cccc......',
+    '.......gg.......',
+    '.......gg.......',
+    '......gggg......',
+    '.....gMMMMg.....',
+    '....gMMMMMMg....',
+    '...gMMwMMMMMg...',
+    '...gMMwMMMMMg...',
+    '...gMMMMMMMmg...',
+    '...gMMMMMMmmg...',
+    '....gMMMMmmg....',
+    '.....gggggg.....',
+    '................',
+    '................',
+    '................'],pal:{c:'#8a5a32',g:'#cfe8f0',w:'#ffffff'}},
+  charm:{rows:[
+    '.......y........',
+    '......y.y.......',
+    '.....y...y......',
+    '......MMM.......',
+    '.....MMMMM......',
+    '....MMwMMMM.....',
+    '...MMMwMMMMM....',
+    '...MMMMMMMMm....',
+    '....MMMMMMm.....',
+    '.....MMMMm......',
+    '......Mmm.......',
+    '.......m........',
+    '................',
+    '................',
+    '................',
+    '................'],pal:{y:'#e0b040',w:'#ffffff'}}
 };
-var ITEM_SHAPE={p_ward:'charm',c_shaft:'stick',c_wand:'stick',c_bow:'bow',c_shield:'shield',s_axe:'axe',s_sword:'sword',s_blade:'sword',
-  s_helm:'helm',s_mail:'mail',t_gloves:'glove',t_boots:'boot',t_hood:'hood',t_cloak:'cloak'};
-function itemIcon(id,q){
+var ITEM_TPL={s_sword:'sword',s_blade:'sword',s_axe:'axe',c_bow:'bow',c_wand:'bow',c_shield:'shield',
+  t_cloak:'cloak',t_silk:'cloak',s_mail:'cloak',t_hood:'helm',s_helm:'helm',t_belt:'belt',t_boots:'boots',p_ward:'charm'};
+function shade(hex,k){var n=parseInt(hex.slice(1),16),r=n>>16,g2=n>>8&255,b=n&255;function c(v){return Math.max(0,Math.min(255,Math.round(v*k)));}return '#'+((1<<24)+(c(r)<<16)+(c(g2)<<8)+c(b)).toString(16).slice(1);}
+var pixCache={};
+function pixSvg(tpl,color,cls){
+  var key=tpl+color+cls;if(pixCache[key])return pixCache[key];
+  var P=PIX[tpl],pal={};for(var k in P.pal)pal[k]=P.pal[k];
+  pal.M=color;pal.m=shade(color,0.62);
+  var out='';
+  P.rows.forEach(function(row,y){
+    var x=0;
+    while(x<16){
+      var ch=row[x];if(ch==='.'||ch===' '||!pal[ch]){x++;continue;}
+      var x2=x;while(x2<16&&row[x2]===ch)x2++;
+      out+='<rect x="'+x+'" y="'+y+'" width="'+(x2-x)+'" height="1" fill="'+pal[ch]+'"/>';
+      x=x2;
+    }
+  });
+  return (pixCache[key]='<svg class="'+cls+'" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">'+out+'</svg>');
+}
+function itemIcon(id,q,big){
   var gd=D.GOOD_BY[id];if(!gd)return '';
-  var shape=ITEM_SHAPE[id]||(gd.kind==='potion'?'bottle':gd.kind==='amulet'?'amulet':'stick');
-  return '<svg class="ri it q'+(q||0)+'" viewBox="0 0 16 16" aria-hidden="true">'+ITEM_SVG[shape].replace(/"C"/g,'"'+gd.c+'"')+'</svg>';
+  var tpl=ITEM_TPL[id]||(gd.kind==='potion'?'potion':gd.kind==='ring'?'ring':'sword');
+  var color=tpl==='ring'?'#c8d0dc':gd.c;
+  var svg=pixSvg(tpl,color,'ri it q'+(q||0)+(big?' big':''));
+  if(tpl==='ring'&&gd.id!=='j_ring')svg=svg.replace(/#2a70ff/g,gd.c).replace(/#9fd0ff/g,shade(gd.c,1.3));
+  return svg;
 }
 function itemName(id){return t('it.'+id);}
 function qualTag(q){return q>0?' <span class="qt q'+q+'">'+t('q.'+q)+'</span>':'';}
@@ -104,11 +298,12 @@ function orderName(rid){
   if(rid==='store')return t('ord.store',{n:S.storeLvl+1});
   return itemName(rid);
 }
-function orderIcon(rid){
-  if(rid==='staff')return '<i class="tier" style="--tc:'+D.TIER_COLORS[D.staffTier(S.staff)%D.TIER_COLORS.length]+'"></i>';
-  if(rid==='bag')return BAG_SVG.replace('class="bag-ico"','class="ri"');
-  if(rid==='store')return resIcon('wood');
-  return itemIcon(rid,0);
+function orderIcon(rid,big){
+  var c=big?' big':'';
+  if(rid==='staff')return '<svg class="ri it'+c+'" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="7" y="4" width="2" height="12" fill="#7a5030"/><rect x="5" y="0" width="6" height="5" fill="'+D.TIER_COLORS[D.staffTier(S.staff)%D.TIER_COLORS.length]+'"/><rect x="6" y="1" width="2" height="2" fill="#fff"/></svg>';
+  if(rid==='bag')return BAG_SVG.replace('class="bag-ico"','class="ri it'+c+'"');
+  if(rid==='store')return '<svg class="ri it'+c+'" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="3" width="14" height="2" fill="#8a5a32"/><rect x="1" y="8" width="14" height="2" fill="#8a5a32"/><rect x="1" y="13" width="14" height="2" fill="#8a5a32"/><rect x="1" y="3" width="2" height="12" fill="#5a3a22"/><rect x="13" y="3" width="2" height="12" fill="#5a3a22"/><rect x="4" y="5" width="3" height="3" fill="#c08452"/><rect x="9" y="10" width="3" height="3" fill="#9aa6b4"/></svg>';
+  return itemIcon(rid,0,big);
 }
 /* блок, который перерисовывается целиком, а кнопки внутри ловятся через data-act */
 function actBlock(fn,onAct,cls){
@@ -134,9 +329,16 @@ function initHud(){
   $('h-bag-i').innerHTML=BAG_SVG;
   H['h-place'].addEventListener('click',function(){if(S.place==='road')g.goHome();else g.goTrip();});
   /* переключатель вида: дорога / таверна сверху */
+  var vbox=el('div','view-box');
   var vb=el('button','view-btn');vb.type='button';vb.id='view-btn';
-  vb.addEventListener('click',function(e){e.stopPropagation();if(UI.toggleView)UI.toggleView();Sound.sfx('select');});
-  H.stage.appendChild(vb);H.view=vb;setViewBtn('road');
+  vb.addEventListener('click',function(e){e.stopPropagation();if(S.place==='road')g.goHome();else g.goTrip();Sound.sfx('select');refreshHud();});
+  var sb=el('button','view-btn sleep-btn');sb.type='button';sb.id='sleep-btn';
+  sb.addEventListener('click',function(e){e.stopPropagation();g.sleepNow();Sound.sfx('select');refreshHud();});
+  vbox.appendChild(vb);vbox.appendChild(sb);H.stage.appendChild(vbox);H.view=vb;H.sleep=sb;
+  /* очередь крафта внизу экрана таверны */
+  var qb=el('div','qbar hidden');qb.id='qbar';
+  qb.addEventListener('click',function(e){e.stopPropagation();openTab('craft','make');Sound.sfx('select');});
+  H.stage.appendChild(qb);H.qbar=qb;
   H['rest-road'].addEventListener('click',function(){g.goTrip();});
   H['rest-tav'].addEventListener('click',function(){g.sleepNow();});
   /* умения */
@@ -183,27 +385,19 @@ function refreshHud(){
   var restLeft=f*g.restH()*3600/g.fatigueScale;
   if(S.place==='sleep')setText(H['h-fat-note'],t('fat.up',{t:ft(restLeft)}));
   else setText(H['h-fat-note'],t('fat.dmg',{p:Math.round(D.fatigueMult(f)*100)}));
-  setText(H['h-place'],road?t('btn.home'):t('btn.trip'));
-  H['h-place'].disabled=road&&g.inBoss();
-  /* дом и сон */
-  H.rest.classList.toggle('hidden',road);
-  if(!road){
-    if(S.place==='sleep'){
-      setText(H['rest-txt'],tg('rest.sleep'));
-      setText(H['rest-time'],tg('rest.up',{t:ft(restLeft)})+'. '+t('rest.early'));
-      setHTML(H['rest-craft'],t('rest.charge',{t:ft(g.restBuffFor(S.charge)),m:D.REST_BUFF_MULT}));
-    }else{
-      setText(H['rest-txt'],tg('rest.home'));
-      var nx=S.sleepAfter||f>=0.999?t('rest.toSleep'):S.auto?t('rest.next',{t:tractName(nextTractPeek()),s:Math.ceil(Math.max(0,R.homeT))}):t('rest.wait');
-      setText(H['rest-time'],nx);
-      setHTML(H['rest-craft'],'');
-    }
-    H['rest-craft'].classList.toggle('hidden',S.place!=='sleep');
-    setText(H['rest-road'],t('btn.trip'));
-    setText(H['rest-tav'],t('btn.sleep'));
-    H['rest-tav'].classList.toggle('hidden',S.place!=='home');
-    H['rest-tav'].disabled=f<0.02;
+  H['h-place'].classList.add('hidden');
+  paintView();checkTabSet();
+  /* сон: маленькая плашка, днём в таверне её нет */
+  var sleeping=S.place==='sleep';
+  H.rest.classList.toggle('hidden',!sleeping);
+  if(sleeping){
+    setText(H['rest-txt'],tg('rest.sleep'));
+    setText(H['rest-time'],tg('rest.up',{t:ft(restLeft)}));
+    setHTML(H['rest-craft'],'');H['rest-craft'].classList.add('hidden');
+    setText(H['rest-road'],t('rest.wake'));
+    H['rest-tav'].classList.add('hidden');
   }
+  paintQbar(road);
   /* враг */
   var e=R.enemy,showE=!!(road&&e&&(R.phase==='fight'||(R.phase==='walk'&&e.boss)));
   H.enemy.classList.toggle('hidden',!showE);
@@ -232,6 +426,23 @@ function refreshHud(){
     setText(x.t,!un?t('sk.lockedShort',{n:x.s.unlock}):state==='cd'?ft(st.cd):state==='act'?Math.ceil(st.act)+t('u.s'):'');
     x.b.title=t('sk.'+x.s.id)+': '+t('sk.'+x.s.id+'.d',skillVars(x.s));
   });
+}
+/* нижняя полоса: что сейчас делают мастера */
+function paintQbar(road){
+  var q=H.qbar,h='',n=0;
+  if(!road){
+    D.MASTERS.forEach(function(d){
+      var m=g.master(d.id);if(!m.hired)return;
+      if(m.teach){n++;h+='<div class="qb-it teach" title="'+esc(t('ms.'+d.id))+'">'+orderIcon(m.teach.r)+'<i style="width:'+((1-m.teach.t/m.teach.T)*100).toFixed(1)+'%"></i><small>'+t('qb.teach')+'</small></div>';return;}
+      m.q.forEach(function(o,k){
+        n++;var p=k===0&&o.T?(1-o.t/o.T):0;
+        h+='<div class="qb-it'+(k?' wait':'')+'" title="'+esc(orderName(o.r)+' · '+t('ms.'+d.id))+'">'+orderIcon(o.r)+'<i style="width:'+(p*100).toFixed(1)+'%"></i><small>'+(k?'':ft(o.t/g.mSpeed(d.id)))+'</small></div>';
+      });
+    });
+    if(!n)h='<span class="qb-empty">'+t('qb.empty')+'</span>';
+  }
+  q.classList.toggle('hidden',road);
+  setHTML(q,h);
 }
 /* какой тракт будет следующим (без изменения плана) */
 function nextTractPeek(){
@@ -312,8 +523,11 @@ function modal(title,body,buttons){
 }
 
 /* ════════ ПАНЕЛЬ ════════ */
-var TABS=['path','tavern','masters','store','gear','skills','wardrobe','stats'];
-var curTab='path',rows=[],tabCleanup=null;
+/* дорога и таверна: у каждой свой набор вкладок */
+var TABSETS={road:['path','bag','skills','wardrobe','stats'],tavern:['tavern','craft','city','store','gear','stats']};
+var TABS=['path','bag','skills','wardrobe','tavern','craft','city','store','gear','stats'];
+var curTab='path',rows=[],tabCleanup=null,tabSet='road',lastTab={road:'path',tavern:'tavern'};
+function placeSet(){return S.place==='road'?'road':'tavern';}
 
 /* строка улучшения: o.cost() даёт ресурсы {wood:3} или {points:n} */
 function row(o){
@@ -344,150 +558,214 @@ function liveBlock(fn,cls){var b=el('div','blk'+(cls?' '+cls:''));return {el:b,u
 function buildTab(){
   if(tabCleanup){tabCleanup();tabCleanup=null;}
   var body=$('tab-body');body.innerHTML='';rows=[];
-  ({path:tabPath,tavern:tabTavern,masters:tabMasters,store:tabStore,gear:tabGear,skills:tabSkills,wardrobe:tabWardrobe,stats:tabStats})[curTab](body);
+  ({path:tabPath,bag:tabBag,tavern:tabTavern,craft:tabCraft,city:tabCity,store:tabStore,gear:tabGear,skills:tabSkills,wardrobe:tabWardrobe,stats:tabStats})[curTab](body);
   rows.forEach(function(r){body.appendChild(r.el);});
   refresh();
 }
 function add(r){rows.push(r);return r;}
 
-/* ── вкладка ПУТЬ: маг, статус, план походов ── */
+/* ══════════ ДОРОГА ══════════ */
+
+/* ── ПУТЬ: плитки трактов, выбранный тракт подробно, план и переключатели ── */
+var curTract=null;
 function mageHead(){
   var p=S.profile||{name:'',gender:'m'},need=D.xpNeed(S.mlvl);
   return '<div class="hero-head"><b>'+esc(p.name)+'</b><span>'+t('hud.mlvl',{n:S.mlvl})+'</span></div>'+
     '<div class="bar xp"><i style="width:'+Math.min(100,S.xp/need*100).toFixed(1)+'%"></i></div>'+
-    '<p class="note">'+t('mage.stats',{d:D.fmt(g.dps()),h:D.fmt(g.maxHp()),x:D.fmt(S.xp),n:D.fmt(need)})+'</p>';
+    '<div class="stat-row"><span>'+icon('overload')+D.fmt(g.dps())+'</span><span class="hp">'+D.fmt(g.maxHp())+'</span><span>'+t('mage.xp',{x:D.fmt(S.xp),n:D.fmt(need)})+'</span></div>';
 }
 function statusLine(){
   var tr=S.trip;
   if(S.place==='road'&&tr)return tg('st.road',{t:tractName(tr.t),w:tr.w,n:tr.n,c:g.bagCap()});
   if(S.place==='sleep')return tg('st.sleep',{t:ft(S.fatigue*g.restH()*3600/g.fatigueScale)});
+  if(tr&&tr.paused)return tg('st.paused',{t:tractName(tr.t),w:tr.w});
   return tg('st.home');
 }
-function planLine(){
-  var left=g.planLeft();
-  return left>0?t('plan.left',{n:left}):t('plan.empty',{t:tractName(nextTractPeek())});
-}
 function tabPath(){
+  if(curTract===null)curTract=S.trip?S.trip.t:S.lastTract||0;
   add(liveBlock(mageHead,'hero-blk'));
-  add(liveBlock(function(){return '<p class="status">'+statusLine()+'</p><p class="note">'+planLine()+'</p>';}));
+  /* плитки трактов */
+  add(actBlock(function(){
+    var h='<div class="tr-tiles">';
+    D.TRACTS.forEach(function(T,i){
+      var open=g.tractOpen(i),st=S.tracts[i],here=S.trip&&S.trip.t===i;
+      h+='<button type="button" class="tr-tile b'+T.biome+(i===curTract?' sel':'')+(open?'':' lock')+(here?' here':'')+'" data-act="pick" data-i="'+i+'">'+
+        '<b>'+tractName(i)+'</b><small>'+(!open?t('tr.locked'):here?t('tr.here'):st.clears?t('tr.cleared',{n:st.clears}):st.best?t('tr.best',{w:st.best}):t('tr.new'))+'</small>'+
+        '<span class="tr-ico">'+T.res.map(function(r){return resIcon(r);}).join('')+resIcon(T.rare)+'</span>'+
+        (S.plan.c[i]?'<i class="tr-plan">x'+S.plan.c[i]+'</i>':'')+'</button>';
+    });
+    return h+'</div>';
+  },function(act,ds){if(act==='pick')curTract=+ds.i;}));
+  /* выбранный тракт */
+  add(actBlock(function(){
+    var i=curTract,T=D.TRACTS[i],open=g.tractOpen(i),st=S.tracts[i],cl=st.clears>0,here=S.trip&&S.trip.t===i;
+    var h='<div class="tr-detail b'+T.biome+'"><div class="tr-head"><b>'+tractName(i)+'</b><span>'+(cl?t('tr.cleared',{n:st.clears}):'')+'</span></div>';
+    if(!open)return h+'<p class="note">'+t('tr.need',{t:tractName(i-1)})+'</p></div>';
+    h+='<div class="tr-res">'+T.res.map(function(r){return '<span class="cst">'+resIcon(r)+t('res.'+r)+'</span>';}).join('')+'<span class="cst rare">'+resIcon(T.rare)+t('res.'+T.rare)+'</span></div>';
+    h+='<div class="tr-facts"><div><small>'+t('trd.dmg')+'</small><b>'+D.fmt(D.recDps(i,1))+' - '+D.fmt(D.recDps(i,100))+'</b></div>'+
+       '<div><small>'+t('trd.lvl')+'</small><b>'+D.recLevel(i,1)+' - '+D.recLevel(i,100)+'</b></div>'+
+       '<div><small>'+t('trd.chance')+'</small><b>'+pct(D.chance(1,cl))+' - '+pct(D.chance(100,cl))+'</b></div>'+
+       '<div><small>'+t('trd.best')+'</small><b>'+(st.best||0)+' / 100</b></div></div>';
+    if(!cl)h+='<p class="note">'+t('tr.chanceUp')+'</p>';
+    h+='<div class="tr-ctl"><div class="stepper"><button type="button" data-act="plan" data-d="-1">-</button><span class="tr-n">'+t('plan.times',{n:S.plan.c[i]})+'</span><button type="button" data-act="plan" data-d="1">+</button></div>'+
+       '<button type="button" class="btn sm" data-act="go"'+(here||(S.place==='road'&&g.inBoss())?' disabled':'')+'>'+(here?t('tr.going'):t('tr.go'))+'</button></div></div>';
+    return h;
+  },function(act,ds){
+    if(act==='plan')g.setPlan(curTract,S.plan.c[curTract]+(+ds.d));
+    if(act==='go'&&g.goTo(curTract))toast(t('plan.goNow',{t:tractName(curTract)}));
+  }));
+  add(liveBlock(function(){var left=g.planLeft();return '<p class="note">'+(left>0?t('plan.left',{n:left}):t('plan.empty',{t:tractName(nextTractPeek())}))+' '+t('plan.hint2')+'</p>';}));
   /* переключатели */
   var sw=el('div','blk toggles');
-  sw.innerHTML='<label class="chk"><input type="checkbox" id="p-caut"><span>'+t('opt.cautious')+'</span></label><p class="note">'+t('opt.cautiousD')+'</p>'+
-    '<label class="chk"><input type="checkbox" id="p-auto"><span>'+t('opt.auto')+'</span></label><p class="note">'+t('opt.autoD')+'</p>';
+  sw.innerHTML='<label class="chk" title="'+esc(t('opt.cautiousD'))+'"><input type="checkbox" id="p-caut"><span>'+t('opt.cautious')+'</span></label>'+
+    '<label class="chk" title="'+esc(t('opt.autoD'))+'"><input type="checkbox" id="p-auto"><span>'+t('opt.auto')+'</span></label>';
   sw.querySelector('#p-caut').addEventListener('change',function(){g.setCautious(this.checked);});
   sw.querySelector('#p-auto').addEventListener('change',function(){g.setAuto(this.checked);});
   add({el:sw,update:function(){sw.querySelector('#p-caut').checked=!!S.cautious;sw.querySelector('#p-auto').checked=!!S.auto;}});
-  add(block('<div class="lbl full">'+t('plan.title')+'</div><p class="note">'+t('plan.hint')+'</p>'));
-  D.TRACTS.forEach(function(T,i){add(tractCard(T,i));});
-}
-function tractCard(T,i){
-  var c=el('div','tract');
-  c.innerHTML='<div class="tr-head"><b></b><span class="tr-st"></span></div><div class="tr-res"></div><div class="tr-info"></div>'+
-    '<div class="tr-ctl"><div class="stepper"><button type="button" data-d="-1">-</button><span class="tr-n"></span><button type="button" data-d="1">+</button></div>'+
-    '<button type="button" class="btn sm tr-go"></button></div>';
-  var q={b:c.querySelector('.tr-head b'),st:c.querySelector('.tr-st'),res:c.querySelector('.tr-res'),info:c.querySelector('.tr-info'),n:c.querySelector('.tr-n'),go:c.querySelector('.tr-go'),ctl:c.querySelector('.tr-ctl')};
-  c.querySelector('.stepper').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;g.setPlan(i,S.plan.c[i]+(+b.dataset.d));Sound.sfx('select');refresh();});
-  q.go.addEventListener('click',function(){if(g.goTo(i)){Sound.sfx('select');toast(t('plan.goNow',{t:tractName(i)}));}refresh();});
-  setHTML(q.res,T.res.map(function(r){return '<span class="cst">'+resIcon(r)+t('res.'+r)+'</span>';}).join('')+'<span class="cst rare">'+resIcon(T.rare)+t('res.'+T.rare)+'</span>');
-  return {el:c,update:function(){
-    var open=g.tractOpen(i),st=S.tracts[i],cl=st.clears>0,here=S.place==='road'&&S.trip&&S.trip.t===i;
-    setText(q.b,tractName(i));
-    setText(q.st,!open?t('tr.locked'):here?t('tr.here'):cl?t('tr.cleared',{n:st.clears}):st.best?t('tr.best',{w:st.best}):t('tr.new'));
-    c.classList.toggle('lock',!open);c.classList.toggle('here',!!here);
-    var c0=D.chance(1,cl),c1=D.chance(100,cl);
-    setHTML(q.info,open?
-      t('tr.rec',{a:D.fmt(D.recDps(i,1)),b:D.fmt(D.recDps(i,100)),la:D.recLevel(i,1),lb:D.recLevel(i,100)})+'<br>'+
-      t('tr.chance',{a:pct(c0),b:pct(c1)})+(cl?'':' <small>'+t('tr.chanceUp')+'</small>'):
-      t('tr.need',{t:tractName(i-1)}));
-    q.ctl.classList.toggle('hidden',!open);
-    setText(q.n,t('plan.times',{n:S.plan.c[i]}));
-    setText(q.go,here?t('tr.going'):t('tr.go'));
-    q.go.disabled=!!here||(S.place==='road'&&g.inBoss());
-  }};
 }
 
-/* ── вкладка СКЛАД ── */
-function tabStore(){
+/* ── СУМКА: что сейчас несёт маг и журнал походов ── */
+function tabBag(){
   add(liveBlock(function(){
-    var cap=g.storeCap(),h='<div class="lbl full">'+t('store.title')+'</div><p class="note">'+t('store.cap',{n:D.fmt(cap)})+'</p><div class="res-grid">';
-    D.RES.forEach(function(r){
-      var n=g.have(r.id);
-      h+='<div class="res-tile'+(n>=cap?' full':'')+(n?'':' zero')+'">'+resIcon(r.id)+'<span>'+t('res.'+r.id)+'</span><b>'+D.fmt(n)+'</b></div>';
-    });
-    return h+'</div>';
-  }));
-  add(liveBlock(function(){
-    var h='<div class="lbl full">'+t('store.items')+'</div>',any=false;
-    D.GOODS.forEach(function(gd){
-      var n=g.invCount(gd.id);if(!n)return;any=true;
-      var qs='';for(var q=D.QUAL.length-1;q>0;q--){var c=S.inv[gd.id+':'+q];if(c)qs+=' <span class="qt q'+q+'">'+c+'</span>';}
-      h+='<div class="inv-row">'+itemIcon(gd.id,0)+'<span>'+itemName(gd.id)+qs+'</span><b>'+n+'</b></div>';
-    });
-    return h+(any?'':'<p class="note">'+t('store.noItems')+'</p>');
-  }));
-  add(liveBlock(function(){
-    if(!S.trip)return '';
-    return '<div class="lbl full">'+t('store.bag',{n:S.trip.n,c:g.bagCap()})+'</div><div class="res-line">'+resList(S.trip.bag)+'</div>';
+    var tr=S.trip,n=tr?tr.n:0,cap=g.bagCap(),h='<div class="lbl full">'+t('bag.title',{n:n,c:cap})+'</div>';
+    h+='<div class="bar bagbar"><i style="width:'+Math.min(100,n/cap*100).toFixed(1)+'%"></i></div>';
+    var bag=tr?tr.bag:{},any=false,grid='<div class="res-grid">';
+    for(var k in bag)if(bag[k]){any=true;grid+='<div class="res-tile">'+resIcon(k)+'<span>'+t('res.'+k)+'</span><b>'+bag[k]+'</b></div>';}
+    h+=any?grid+'</div>':'<p class="note">'+t('bag.empty')+'</p>';
+    h+='<p class="note">'+t('bag.info',{p:pct(g.bag().pick)})+'</p>';
+    return h;
   }));
   add(liveBlock(function(){
     var h='<div class="lbl full">'+t('jr.title')+'</div>';
     if(!S.journal.length)return h+'<p class="note">'+t('jr.empty')+'</p>';
-    S.journal.slice(0,15).forEach(function(j){
+    S.journal.slice(0,12).forEach(function(j){
       h+='<div class="jr'+(j.why==='defeat'?' bad':'')+'"><div class="jr-top"><b>'+tractName(j.t)+'</b><span>'+t('jr.wave',{w:j.w})+' · '+ft(j.dur||0)+'</span></div>'+
-        '<div class="jr-why">'+t('why.'+j.why)+(j.why==='defeat'?' · '+t('jr.lost',{n:j.lost}):' · +'+j.n+(j.over?' · '+t('home.over',{n:j.over}):''))+'</div>'+
+        '<div class="jr-why">'+t('why.'+j.why)+(j.why==='defeat'?' · '+t('jr.lost',{n:j.lost}):' · +'+j.n)+'</div>'+
         (j.why==='defeat'?'':'<div class="res-line">'+resList(j.got)+'</div>')+'</div>';
     });
     return h;
   }));
 }
 
-/* ── вкладка ТАВЕРНА: покупатели, постройки, шахта ── */
+/* ══════════ ТАВЕРНА ══════════ */
+
+/* ── ТАВЕРНА: продажи ── */
 function tabTavern(){
   add(liveBlock(function(){
     var open=g.isOpen(),hall=g.buildLvl('hall');
     return '<div class="tv-head"><b>'+COIN+D.fmt(S.gold)+'</b><span class="'+(open?'ok':'bad')+'">'+t(open?'tv.open':'tv.closed')+'</span></div>'+
-      '<p class="note">'+t('tv.info',{r:Math.round(D.custRate(hall,S.rep)),m:D.custMax(hall),rep:Math.floor(S.rep)})+'</p>';
+      '<div class="stat-row"><span>'+t('tv.rate',{r:Math.round(D.custRate(hall,S.rep))})+'</span><span>'+t('tv.rep',{n:Math.floor(S.rep)})+'</span><span>'+t('tv.soldN',{n:D.fmt(S.stats.sold||0)})+'</span></div>';
   }));
   add(actBlock(function(){
-    var h='<div class="lbl full">'+t('tv.cust')+'</div>';
-    if(!S.cust.length)return h+'<p class="note">'+t(g.isOpen()?'tv.noCust':'tv.night')+'</p>';
+    var h='';
+    if(!S.cust.length)return '<p class="note">'+t(g.isOpen()?'tv.noCust':'tv.night')+'</p>';
     S.cust.forEach(function(c){
       var q=g.custQual(c),has=q>=0,price=g.custPrice(c),left=Math.max(0,D.HOSTESS_AFTER-c.wait);
-      h+='<div class="cust"><div class="cu-top"><b>'+t('trav.'+c.who)+'</b><span>'+(has?t('tv.hostessIn',{s:Math.ceil(left)}):t('tv.leaveIn',{t:ft(Math.max(0,D.CUST_PATIENCE-c.wait))}))+'</span></div>'+
-        '<div class="cu-want">'+t('tv.wants')+' '+itemIcon(c.item,0)+itemName(c.item)+' · '+t('tv.stock',{n:g.invCount(c.item)})+'</div>'+
+      h+='<div class="cust"><div class="cu-item">'+itemIcon(c.item,0,true)+'</div><div class="cu-main"><div class="cu-top"><b>'+t('trav.'+c.who)+'</b><span>'+(has?t('tv.hostessIn',{s:Math.ceil(left)}):t('tv.leaveIn',{t:ft(Math.max(0,D.CUST_PATIENCE-c.wait))}))+'</span></div>'+
+        '<div class="cu-want">'+itemName(c.item)+' · '+t('tv.stock',{n:g.invCount(c.item)})+'</div>'+
         '<div class="cu-btns">'+
-          '<button type="button" class="btn sm" data-act="sell" data-id="'+c.id+'"'+(has?'':' disabled')+'>'+t('tv.sell')+' '+COIN+D.fmt(price)+'</button>'+
-          '<button type="button" class="btn sm" data-act="up" data-id="'+c.id+'"'+(has?'':' disabled')+'>'+t('tv.up')+' '+COIN+D.fmt(Math.round(price*(1+D.HAGGLE_UP)))+'</button>'+
-          '<button type="button" class="btn sm" data-act="down" data-id="'+c.id+'"'+(has?'':' disabled')+'>'+t('tv.down')+'</button>'+
-          '<button type="button" class="btn sm red" data-act="no" data-id="'+c.id+'">'+t('tv.no')+'</button></div></div>';
+          '<button type="button" class="btn sm" data-act="sell" data-id="'+c.id+'"'+(has?'':' disabled')+'>'+COIN+D.fmt(price)+'</button>'+
+          '<button type="button" class="btn sm" data-act="up" data-id="'+c.id+'"'+(has?'':' disabled')+' title="'+esc(t('tv.upT',{p:Math.round(D.HAGGLE_FAIL*100)}))+'">'+t('tv.up')+'</button>'+
+          '<button type="button" class="btn sm" data-act="down" data-id="'+c.id+'"'+(has?'':' disabled')+' title="'+esc(t('tv.downT'))+'">'+t('tv.down')+'</button>'+
+          '<button type="button" class="btn sm red" data-act="no" data-id="'+c.id+'">'+t('tv.no')+'</button></div></div></div>';
     });
-    return h+'<p class="note">'+t('tv.hint',{p:Math.round(D.HAGGLE_FAIL*100)})+'</p>';
+    return h;
   },function(act,ds){
     var c=g.custById(+ds.id);if(!c)return;
     if(act==='sell')g.sellTo(c);else if(act==='up')g.sellTo(c,'up');else if(act==='down')g.sellTo(c,'down');else g.refuse(c);
   }));
-  /* шахта */
+}
+
+/* ── КРАФТ: две вкладки, изделия с картинками и мастера ── */
+var craftSub='make',curItem=null;
+function allRecipes(){
+  var out=[];
+  D.MASTERS.forEach(function(d){
+    Object.keys(D.ORDERS).forEach(function(r){if(D.ORDERS[r].m===d.id)out.push({r:r,m:d.id});});
+    D.GOODS.forEach(function(x){if(x.m===d.id)out.push({r:x.id,m:d.id});});
+  });
+  return out;
+}
+function tabCraft(){
+  var seg=el('div','seg csub');
+  seg.innerHTML='<button type="button" data-s="make">'+t('cr2.make')+'</button><button type="button" data-s="masters">'+t('cr2.masters')+'</button>';
+  seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;craftSub=b.dataset.s;Sound.sfx('select');buildTab();});
+  add({el:seg,update:function(){[].forEach.call(seg.children,function(b){b.classList.toggle('sel',b.dataset.s===craftSub);});}});
+  if(craftSub==='masters')return tabCraftMasters();
+  if(!curItem)curItem='p_heal';
+  /* сетка: вещи, которые мастера уже умеют, и отдельно улучшения. Остальное видно у мастеров (учитель) */
   add(actBlock(function(){
-    var mn=S.mine;
-    var h='<div class="lbl full">'+t('mine.title')+'</div>';
+    var goods='',ups='';
+    allRecipes().forEach(function(x){
+      var m=g.master(x.m),sp=!!D.ORDERS[x.r];
+      if(!sp&&m.known.indexOf(x.r)<0)return;
+      if(sp&&!g.orderCost(x.r))return;
+      var bl=g.orderBlock(x.m,x.r),busy=sp&&bl==='pending';
+      var cls='it-card'+(curItem===x.r?' sel':'')+(!m.hired?' dim':'')+(m.hired&&!bl?' ok':'');
+      var c='<button type="button" class="'+cls+'" data-act="pick" data-r="'+x.r+'">'+orderIcon(x.r,true)+'<span>'+orderName(x.r)+'</span>'+
+        '<small>'+(busy?t('cr2.block.pending'):sp?'':(!m.hired?t('ms.notHired'):g.invCount(x.r)?'x'+g.invCount(x.r):''))+'</small></button>';
+      if(sp)ups+=c;else goods+=c;
+    });
+    return '<div class="lbl full">'+t('cr2.goods')+'</div><div class="it-grid">'+goods+'</div>'+(ups?'<div class="lbl full">'+t('cr2.ups')+'</div><div class="it-grid">'+ups+'</div>':'');
+  },function(act,ds){if(act==='pick')curItem=ds.r;}));
+  /* выбранное изделие */
+  add(actBlock(function(){
+    if(!curItem)return '<p class="note">'+t('cr2.pick')+'</p>';
+    var r=curItem,gd=D.GOOD_BY[r],mid=gd?gd.m:D.ORDERS[r].m,m=g.master(mid),sp=!gd,known=sp||m.known.indexOf(r)>=0,c=g.orderCost(r);
+    var h='<div class="it-detail"><div class="it-big">'+orderIcon(r,true)+'</div><div class="it-info"><b>'+orderName(r)+'</b>'+
+      '<small>'+t('ms.'+mid)+(m.hired?' '+t('ms.lvl',{n:m.lvl}):' · '+t('ms.notHired'))+'</small>';
+    if(gd&&gd.eff)h+='<em>'+effText(r,0)+'</em>';
+    h+='<p class="note">'+t('desc.'+r)+'</p></div></div>';
+    if(!c){h+='<p class="note">'+t('ord.'+r+'Max')+'</p>';return h;}
+    h+='<div class="it-facts"><span>'+t('cr2.time')+' <b>'+ft(g.orderTime(r)/g.mSpeed(mid))+'</b></span>'+(gd?'<span>'+t('cr2.price')+' <b>'+COIN+D.fmt(gd.price)+'</b></span>':'')+'</div>';
+    h+='<div class="it-cost">'+costHtml(c)+'</div>';
+    if(!m.hired){var hc=D.MASTER_BY[mid].hire;h+='<button type="button" class="btn pink" data-act="hire" data-m="'+mid+'"'+(S.gold<hc?' disabled':'')+'>'+t('cr2.hireFirst',{m:t('ms.'+mid)})+' '+COIN+D.fmt(hc)+'</button>';}
+    else if(!known)h+='<button type="button" class="btn" data-act="masters" data-m="'+mid+'">'+(m.lvl>=gd.lvl?t('cr2.teach',{g:D.fmt(gd.teach)}):t('cr2.needLvl',{m:t('ms.'+mid),n:gd.lvl}))+'</button>';
+    else{
+      var bl=g.orderBlock(mid,r);
+      h+='<div class="btn-row left"><button type="button" class="btn pink" data-act="order" data-r="'+r+'"'+(bl?' disabled':'')+'>'+(bl?t('cr2.block.'+bl):t('cr2.do'))+'</button>'+
+        '<span class="note">'+t('ms.queue',{n:m.q.length,m:m.slots})+'</span></div>';
+    }
+    return h;
+  },function(act,ds){
+    if(act==='order'){var gd=D.GOOD_BY[ds.r],mid=gd?gd.m:D.ORDERS[ds.r].m;if(g.order(mid,ds.r))Sound.sfx('select');}
+    if(act==='hire'&&g.hire(ds.m))toast(t('ms.hired',{m:t('ms.'+ds.m)}));
+    if(act==='masters'&&window.Masters)Masters.open(ds.m);
+  }));
+  /* карточка выбранной вещи сверху, сетка под ней */
+  var n=rows.length,tmp=rows[n-1];rows[n-1]=rows[n-2];rows[n-2]=tmp;
+}
+function tabCraftMasters(){
+  add(actBlock(function(){
+    var h='<div class="ms-list">';
+    D.MASTERS.forEach(function(d){
+      var m=g.master(d.id),state=!m.hired?t('ms.notHired'):m.teach?t('ms3.teach'):m.q.length?t('ms3.busy',{n:m.q.length,m:m.slots}):t('ms.idle');
+      h+='<button type="button" class="ms-card'+(m.hired?'':' off')+'" data-act="open" data-m="'+d.id+'">'+
+        '<span class="ms-face f-'+d.id+'"></span><span class="ms-txt"><b>'+t('ms.'+d.id)+'</b><small>'+(m.hired?t('ms.lvl',{n:m.lvl})+' · ':'')+state+'</small></span>'+
+        '<span class="ms-items">'+m.known.slice(0,4).map(function(r){return itemIcon(r,0);}).join('')+'</span></button>';
+    });
+    return h+'</div><p class="note">'+t('ms3.hint')+'</p>';
+  },function(act,ds){if(act==='open'&&window.Masters)Masters.open(ds.m);}));
+}
+
+/* ── ГОРОД: постройки таверны и шахта ── */
+function tabCity(){
+  add(actBlock(function(){
+    var mn=S.mine,h='<div class="lbl full">'+t('mine.title')+'</div>';
     if(!mn.lvl)return h+'<p class="note">'+t('mine.desc')+'</p>';
-    return h+'<p>'+t('mine.info',{r:(Math.round(g.mineRate()*100)/100),c:g.mineCap()})+'</p>'+
-      '<div class="bar mine"><i style="width:'+(mn.acc/g.mineCap()*100).toFixed(1)+'%"></i></div>'+
-      '<div class="mine-row">'+resIcon('coal')+'<span>'+Math.floor(mn.acc)+' / '+g.mineCap()+'</span>'+
+    return h+'<div class="mine-row">'+resIcon('coal')+'<span>'+Math.floor(mn.acc)+' / '+g.mineCap()+' · '+t('mine.rate',{r:(Math.round(g.mineRate()*100)/100)})+'</span>'+
       '<button type="button" class="btn sm" data-act="collect"'+(mn.acc>=1?'':' disabled')+'>'+t('mine.collect')+'</button></div>'+
-      (mn.acc>=g.mineCap()?'<p class="bad">'+t('mine.full')+'</p>':'');
+      '<div class="bar mine"><i style="width:'+(mn.acc/g.mineCap()*100).toFixed(1)+'%"></i></div>'+(mn.acc>=g.mineCap()?'<p class="bad">'+t('mine.full')+'</p>':'');
   },function(act){if(act==='collect'){var n=g.mineCollect();if(n)toast(t('mine.got',{n:n}));}}));
   add(row({title:function(){return t('mine.title');},lvl:function(){return S.mine.lvl?t('row.lvlMax',{n:S.mine.lvl,m:D.MINE.max}):'';},
     info:function(){var l=S.mine.lvl;return l?t('mine.next',{a:Math.round(D.MINE.rate(l)*100)/100,b:Math.round(D.MINE.rate(l+1)*100)/100}):t('mine.buyI');},
     btn:function(){return S.mine.lvl?t('buy.up'):t('buy.buy');},
     done:function(){return S.mine.lvl>=D.MINE.max;},cost:function(){return g.mineCost();},buy:function(){return g.mineUp();}}));
-  /* постройки */
-  add(block('<div class="lbl full">'+t('bd.title')+'</div>'));
   D.BUILD_ORDER.forEach(function(id){
     var b=D.BUILD[id];
-    add(row({title:function(){return t('bd.'+id);},lvl:function(){return b.once?'':t('row.lvlMax',{n:g.buildLvl(id),m:b.max});},
+    add(row({title:function(){return t('bd.'+id);},lvl:function(){return t('row.lvlMax',{n:g.buildLvl(id),m:b.max});},
       info:function(){return t('bd.'+id+'.d',{v:buildVal(id)});},
-      btn:function(){return b.once?t('buy.build'):t('buy.up');},
+      btn:function(){return t('buy.up');},
       done:function(){return !g.buildCost(id);},cost:function(){return g.buildCost(id);},buy:function(){return g.buildUp(id);}}));
   });
 }
@@ -499,126 +777,56 @@ function buildVal(id){
   return '';
 }
 
-/* ── вкладка МАСТЕРА ── */
-var curMaster='herbalist';
-function tabMasters(){
-  var seg=el('div','seg mseg');
-  D.MASTERS.forEach(function(d){var b=el('button');b.type='button';b.dataset.m=d.id;seg.appendChild(b);});
-  seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;curMaster=b.dataset.m;Sound.sfx('select');buildTab();});
-  add({el:seg,update:function(){[].forEach.call(seg.children,function(b){var m=g.master(b.dataset.m);
-    setText(b,t('ms.'+b.dataset.m)+(m.hired&&m.q.length?' '+m.q.length:''));b.classList.toggle('sel',b.dataset.m===curMaster);b.classList.toggle('off',!m.hired);});}});
-  var id=curMaster,d=D.MASTER_BY[id];
-  add(actBlock(function(){
-    var m=g.master(id);
-    var h='<div class="ms-head"><b>'+t('ms.'+id)+'</b><span>'+(m.hired?t('ms.lvl',{n:m.lvl}):t('ms.notHired'))+'</span></div><p class="note">'+t('ms.'+id+'.d')+'</p>';
-    if(!m.hired){
-      var need=d.build&&!g.buildLvl(d.build);
-      h+=need?'<p class="bad">'+t('ms.needBuild',{b:t('bd.'+d.build)})+'</p>':'';
-      h+='<button type="button" class="btn" data-act="hire"'+(need||S.gold<d.hire?' disabled':'')+'>'+t('ms.hire')+' '+COIN+D.fmt(d.hire)+'</button>';
-      return h;
-    }
-    var need2=D.mXpNeed(m.lvl);
-    h+='<div class="bar xp"><i style="width:'+Math.min(100,m.xp/need2*100).toFixed(1)+'%"></i></div>'+
-      '<p class="note">'+t('ms.stats',{s:Math.round(g.mSpeed(id)*100),x:Math.floor(m.xp),n:need2,q:Math.round((1-D.qualChance(m.lvl)[1]-D.qualChance(m.lvl)[2]-D.qualChance(m.lvl)[3])*1000)/10})+'</p>'+
-      '<div class="lbl full">'+t('ms.queue',{n:m.q.length,m:m.slots})+'</div>';
-    if(!m.q.length)h+='<p class="note">'+t('ms.idle')+'</p>';
-    var sp=g.mSpeed(id),acc=0;
-    m.q.forEach(function(o,i){
-      acc+=o.t/sp;
-      h+='<div class="ord'+(i===0?' cur':'')+'">'+orderIcon(o.r)+'<span>'+orderName(o.r)+'</span><small>'+(i===0?ft(o.t/sp):t('ms.after',{t:ft(acc)}))+'</small>'+
-        '<button type="button" class="x" data-act="cancel" data-i="'+i+'" title="'+t('ms.cancel')+'">x</button>'+
-        (i===0?'<div class="bar"><i style="width:'+((1-o.t/o.T)*100).toFixed(1)+'%"></i></div>':'')+'</div>';
+/* ── СКЛАД: ресурсы и изделия ── */
+function tabStore(){
+  add(liveBlock(function(){
+    var cap=g.storeCap(),h='<div class="lbl full">'+t('store.title')+' · '+t('store.capS',{n:D.fmt(cap)})+'</div><div class="res-grid">';
+    D.RES.forEach(function(r){
+      var n=g.have(r.id);if(!n&&r.rare)return;
+      h+='<div class="res-tile'+(n>=cap?' full':'')+(n?'':' zero')+'">'+resIcon(r.id)+'<span>'+t('res.'+r.id)+'</span><b>'+D.fmt(n)+'</b></div>';
     });
-    return h;
-  },function(act,ds){
-    if(act==='hire'){if(g.hire(id)){toast(t('ms.hired',{m:t('ms.'+id)}));buildTab();}}
-    if(act==='cancel')g.cancel(id,+ds.i);
+    return h+'</div>';
   }));
-  if(!g.master(id).hired)return;
-  /* заказать */
-  var specials=Object.keys(D.ORDERS).filter(function(r){return D.ORDERS[r].m===id;});
-  add(actBlock(function(){
-    var m=g.master(id),h='<div class="lbl full">'+t('ms.order')+'</div>';
-    specials.concat(m.known).forEach(function(r){
-      var c=g.orderCost(r),blk=g.orderBlock(id,r),gd=D.GOOD_BY[r];
-      if(!c&&D.ORDERS[r]){h+='<div class="rcp dim">'+orderIcon(r)+'<span>'+t('ord.'+r+'Max')+'</span></div>';return;}
-      h+='<div class="rcp'+(blk&&blk!=='cost'?' dim':'')+'"><div class="rc-top">'+orderIcon(r)+'<b>'+orderName(r)+'</b>'+
-        '<small>'+ft(g.orderTime(r)/g.mSpeed(id))+(gd?' · '+COIN+D.fmt(gd.price):'')+'</small></div>'+
-        (gd&&gd.eff?'<div class="rc-eff">'+effText(r,0)+'</div>':'')+
-        '<div class="rc-bot"><span class="rc-cost">'+costHtml(c)+'</span>'+
-        '<button type="button" class="btn sm" data-act="order" data-r="'+r+'"'+(blk?' disabled':'')+'>'+(blk==='pending'?t('ms.pending'):blk==='full'?t('ms.full'):'+')+'</button></div></div>';
+  add(liveBlock(function(){
+    var h='<div class="lbl full">'+t('store.items')+'</div><div class="it-grid">',any=false;
+    D.GOODS.forEach(function(gd){
+      var n=g.invCount(gd.id);if(!n)return;any=true;
+      var best=0;for(var q=D.QUAL.length-1;q>0;q--)if(S.inv[gd.id+':'+q]){best=q;break;}
+      h+='<div class="it-card">'+itemIcon(gd.id,best,true)+'<span>'+itemName(gd.id)+'</span><small>x'+n+'</small></div>';
     });
-    return h;
-  },function(act,ds){if(act==='order')g.order(id,ds.r);}));
-  /* учитель */
-  add(actBlock(function(){
-    var m=g.master(id),list=D.GOODS.filter(function(x){return x.m===id&&m.known.indexOf(x.id)<0;});
-    var h='<div class="lbl full">'+t('ms.teacher')+'</div>';
-    if(!list.length)return h+'<p class="note">'+t('ms.allKnown')+'</p>';
-    h+='<p class="note">'+t('ms.teacherD')+'</p>';
-    list.forEach(function(x){
-      var ok=m.lvl>=x.lvl;
-      h+='<div class="rcp'+(ok?'':' dim')+'"><div class="rc-top">'+itemIcon(x.id,0)+'<b>'+itemName(x.id)+'</b><small>'+(ok?COIN+D.fmt(x.price):t('ms.needLvl',{n:x.lvl}))+'</small></div>'+
-        (x.eff?'<div class="rc-eff">'+effText(x.id,0)+'</div>':'')+
-        '<div class="rc-bot"><span class="rc-cost">'+costHtml(x.cost)+'</span><button type="button" class="btn sm" data-act="learn" data-r="'+x.id+'"'+(ok&&S.gold>=x.teach?'':' disabled')+'>'+t('ms.learn')+' '+COIN+D.fmt(x.teach)+'</button></div></div>';
-    });
-    return h;
-  },function(act,ds){if(act==='learn'&&g.learn(ds.r))toast(t('ms.learned',{r:itemName(ds.r)}));}));
-  add(row({title:function(){return t('ms.tools');},lvl:function(){return t('row.lvlMax',{n:g.master(id).tools,m:D.TOOLS_MAX});},
-    info:function(){return t('ms.toolsI');},done:function(){return !g.toolsCost(id);},cost:function(){return g.toolsCost(id);},buy:function(){return g.buyTools(id);}}));
-  add(row({title:function(){return t('ms.slots');},lvl:function(){return t('row.lvlMax',{n:g.master(id).slots,m:D.SLOTS_MAX});},
-    info:function(){return t('ms.slotsI');},done:function(){return !g.slotCost(id);},cost:function(){return g.slotCost(id);},buy:function(){return g.buySlot(id);}}));
+    return h+'</div>'+(any?'':'<p class="note">'+t('store.noItems')+'</p>');
+  }));
 }
 
-/* ── вкладка СНАРЯЖЕНИЕ: улучшения мага, надетые вещи, зелья в поход ── */
+/* ── СНАРЯЖЕНИЕ: надетое и зелья в поход ── */
 function tabGear(){
   add(liveBlock(function(){
-    return '<div class="lbl full">'+t('gear.stats')+'</div><p>'+t('gear.statsI',{d:D.fmt(g.dps()),h:D.fmt(g.maxHp()),c:Math.round(g.critChance()*100),p:Math.round(g.pickMult()*100),a:Math.round(g.awakeH()*10)/10,r:g.restH()})+'</p>';
+    return '<div class="stat-row big"><span>'+icon('overload')+D.fmt(g.dps())+'</span><span class="hp">'+D.fmt(g.maxHp())+'</span><span>'+t('gear.crit',{c:Math.round(g.critChance()*100)})+'</span><span>'+t('gear.pick',{p:Math.round(g.pickMult()*100)})+'</span></div>';
   }));
-  function orderRow(rid,title,lvl,info,done){
-    var mid=D.ORDERS[rid].m;
-    return row({title:title,lvl:lvl,info:info,
-      sub:function(){var m=g.master(mid);return !m.hired?t('gear.needM',{m:t('ms.'+mid)}):g.pending(rid)?t('ms.pending'):m.q.length>=m.slots?t('ms.full'):t('gear.byM',{m:t('ms.'+mid),t:ft(g.orderTime(rid)/g.mSpeed(mid))});},
-      btn:function(){return g.pending(rid)?t('ms.pending'):t('gear.order');},
-      locked:function(){return !g.master(mid).hired;},done:done,
-      cost:function(){return g.pending(rid)?null:g.orderCost(rid);},buy:function(){return g.order(mid,rid);}});
-  }
-  add(orderRow('staff',function(){return t('work.staff');},function(){return t('row.lvl',{n:S.staff});},function(){
-    var tier=D.staffTier(S.staff),col=D.TIER_COLORS[tier%D.TIER_COLORS.length];
-    return '<span class="tier" style="--tc:'+col+'"></span>'+t('work.staffI',{v:D.fmt(g.rawDps()),n:D.fmt(D.staffDps(S.staff+1,S.mlvl))})+'<br><small>'+t('work.tier',{n:tier+1,l:(tier+1)*10})+'</small>';
-  },function(){return false;}));
-  add(orderRow('bag',function(){return t('work.bag');},function(){return t('row.lvlMax',{n:S.bagLvl,m:D.BAG.length});},function(){
-    var b=g.bag(),n=D.BAG[S.bagLvl];return t('work.bagI',{c:b.cap,p:pct(b.pick)})+(n?'<br><small>'+t('work.next',{s:t('work.bagI',{c:n.cap,p:pct(n.pick)})})+'</small>':'');
-  },function(){return S.bagLvl>=D.BAG.length;}));
-  add(orderRow('store',function(){return t('work.store');},function(){return t('row.lvlMax',{n:S.storeLvl,m:D.STORE.length});},function(){
-    var n=D.STORE[S.storeLvl];return t('work.storeI',{c:D.fmt(g.storeCap())})+(n?'<br><small>'+t('work.next',{s:t('work.storeI',{c:D.fmt(n.cap)})})+'</small>':'');
-  },function(){return S.storeLvl>=D.STORE.length;}));
-  /* надетое */
   add(actBlock(function(){
-    var h='<div class="lbl full">'+t('gear.equip')+'</div>';
+    var h='<div class="eq-grid">';
     D.SLOTS.forEach(function(sl){
       var it=S.equip[sl];
-      h+='<div class="slot"><div class="sl-top"><b>'+t('slot8.'+sl)+'</b>'+(it?'<button type="button" class="x" data-act="off" data-s="'+sl+'">'+t('gear.off')+'</button>':'')+'</div>';
-      h+=it?'<div class="sl-it">'+itemIcon(it.id,it.q)+'<span>'+itemName(it.id)+qualTag(it.q)+'</span><small>'+effText(it.id,it.q)+'</small></div>':'<p class="note">'+t('gear.empty')+'</p>';
-      D.GOODS.forEach(function(gd){
-        if(gd.slot!==sl)return;var n=g.invCount(gd.id);if(!n)return;
-        var bestQ=-1;for(var q=D.QUAL.length-1;q>=0;q--)if(S.inv[gd.id+':'+q]){bestQ=q;break;}
-        h+='<div class="sl-alt">'+itemIcon(gd.id,bestQ)+'<span>'+itemName(gd.id)+qualTag(bestQ)+' x'+n+'</span><small>'+effText(gd.id,bestQ)+'</small><button type="button" class="btn xs" data-act="on" data-id="'+gd.id+'">'+t('gear.on')+'</button></div>';
-      });
-      h+='</div>';
+      h+='<div class="eq-slot'+(it?' on':'')+'"><small>'+t('slot8.'+sl)+'</small>'+(it?itemIcon(it.id,it.q,true)+'<b>'+itemName(it.id)+'</b><em>'+effText(it.id,it.q)+'</em><button type="button" class="x" data-act="off" data-s="'+sl+'">x</button>':'<span class="eq-empty"></span>')+'</div>';
     });
+    h+='</div>';
+    var alt='';
+    D.GOODS.forEach(function(gd){
+      if(!gd.slot)return;var n=g.invCount(gd.id);if(!n)return;
+      var bestQ=0;for(var q=D.QUAL.length-1;q>=0;q--)if(S.inv[gd.id+':'+q]){bestQ=q;break;}
+      alt+='<button type="button" class="it-card ok" data-act="on" data-id="'+gd.id+'">'+itemIcon(gd.id,bestQ,true)+'<span>'+itemName(gd.id)+'</span><small>'+t('gear.on')+' · x'+n+'</small></button>';
+    });
+    if(alt)h+='<div class="lbl full">'+t('gear.can')+'</div><div class="it-grid">'+alt+'</div>';
     return h;
   },function(act,ds){if(act==='off')g.unequip(ds.s);if(act==='on')g.equipItem(ds.id);}));
-  /* зелья */
   add(actBlock(function(){
-    var h='<div class="lbl full">'+t('gear.potions')+'</div><p class="note">'+t('gear.potionsD')+'</p>';
+    var h='<div class="lbl full">'+t('gear.potions')+'</div><div class="it-grid">';
     D.GOODS.forEach(function(gd){
       if(gd.kind!=='potion'&&gd.kind!=='ward')return;
       var known=g.master(gd.m).known.indexOf(gd.id)>=0||g.invCount(gd.id)>0;if(!known)return;
-      h+='<label class="pot">'+'<input type="checkbox" data-act="use" data-id="'+gd.id+'"'+(S.use[gd.id]?' checked':'')+'>'+itemIcon(gd.id,0)+'<span>'+itemName(gd.id)+' x'+g.invCount(gd.id)+'</span><small>'+effText(gd.id,0)+'</small></label>';
+      h+='<label class="it-card pot'+(S.use[gd.id]?' ok':'')+'"><input type="checkbox" data-act="use" data-id="'+gd.id+'"'+(S.use[gd.id]?' checked':'')+'>'+itemIcon(gd.id,0,true)+'<span>'+itemName(gd.id)+'</span><small>x'+g.invCount(gd.id)+'</small></label>';
     });
-    if(S.trip&&S.trip.drank&&S.trip.drank.length)h+='<p class="note">'+t('gear.drank',{s:S.trip.drank.map(itemName).join(', ')})+'</p>';
-    return h;
+    return h+'</div><p class="note">'+t('gear.potionsD2')+'</p>';
   },function(act,ds,e){if(act==='use'&&e.type==='change')g.setUse(ds.id,e.target.checked);}));
 }
 
@@ -738,9 +946,10 @@ function initPanel(){
   var tabs=$('tabs');
   TABS.forEach(function(id){
     var b=el('button','tab');b.type='button';b.dataset.tab=id;b.dataset.i18n='tab.'+id;b.textContent=t('tab.'+id);
-    b.addEventListener('click',function(){curTab=id;paintTabs();buildTab();Sound.sfx('select');});
+    b.addEventListener('click',function(){curTab=id;lastTab[tabSet]=id;paintTabs();buildTab();Sound.sfx('select');});
     tabs.appendChild(b);
   });
+  tabSet=placeSet();curTab=lastTab[tabSet];
   paintTabs();
 }
 var viewNow='road',viewLoad=-1;
@@ -748,26 +957,39 @@ function setViewBtn(v){viewNow=v;paintView();}
 function paintView(){
   if(!H.view)return;
   if(viewLoad>=0&&viewLoad<1){setText(H.view,t('view.loading',{p:Math.round(viewLoad*100)}));H.view.disabled=true;return;}
-  H.view.disabled=false;
-  setText(H.view,viewNow==='tavern'?t('view.road'):t('view.tavern'));
-  H.view.classList.toggle('on',viewNow==='tavern');
+  var road=S.place==='road';
+  setText(H.view,road?t('go.tavern'):t('go.trip'));setText(H.sleep,t('btn.sleep'));
+  H.view.disabled=road&&g.inBoss();
+  H.view.classList.toggle('on',!road);
+  H.sleep.classList.toggle('hidden',S.place!=='home');
+  H.sleep.disabled=S.fatigue<0.02;
 }
 function viewProgress(p){viewLoad=p;paintView();}
 /* открыть вкладку (например, по клику на мастера в 3D-таверне) */
 function openTab(tab,sub){
-  if(tab==='masters'&&sub)curMaster=sub;
-  curTab=tab;paintTabs();buildTab();
+  if(tab==='craft'&&sub)craftSub=sub;
+  if(TABSETS[tabSet].indexOf(tab)<0)return;
+  curTab=tab;lastTab[tabSet]=tab;paintTabs();buildTab();
   if(S.settings.panel){S.settings.panel=false;document.body.classList.remove('panel-off');setTimeout(function(){window.dispatchEvent(new Event('resize'));},50);}
 }
 /* подписи над жителями таверны */
 function tavernLabel(kind,id){
-  if(kind==='master'){var m=g.master(id);return '<b>'+t('ms.'+id)+'</b> '+t('ms.lvl',{n:m.lvl})+(m.q.length?' · '+m.q.length+'/'+m.slots:' · '+t('lbl.idle'));}
   if(kind==='hostess')return '<b>'+t('lbl.hostess')+'</b>'+(S.cust.length?' · '+t('lbl.cust',{n:S.cust.length}):'');
-  if(kind==='mine')return '<b>'+t('mine.title')+'</b> '+Math.floor(S.mine.acc)+'/'+g.mineCap();
   if(kind==='store')return '<b>'+t('store.title')+'</b>';
   return '';
 }
-function paintTabs(){[].forEach.call($('tabs').children,function(b){b.classList.toggle('sel',b.dataset.tab===curTab);});}
+function paintTabs(){
+  var set=TABSETS[tabSet];
+  [].forEach.call($('tabs').children,function(b){b.classList.toggle('sel',b.dataset.tab===curTab);b.classList.toggle('hidden',set.indexOf(b.dataset.tab)<0);});
+}
+/* маг ушёл в таверну или вернулся в поход: меняем набор вкладок */
+function checkTabSet(){
+  var s2=placeSet();if(s2===tabSet)return;
+  tabSet=s2;
+  if(TABSETS[s2].indexOf(curTab)<0)curTab=lastTab[s2];
+  document.body.classList.toggle('at-home',s2==='tavern');
+  paintTabs();buildTab();
+}
 
 /* ════════ СОЗДАНИЕ ГЕРОЯ ════════ */
 function showCreate(onDone){
@@ -828,7 +1050,7 @@ function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
-  showCreate:showCreate,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,
+  showCreate:showCreate,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

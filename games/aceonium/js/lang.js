@@ -553,4 +553,48 @@ I18n.add('en',{
 /* v12.1: быстрый заказ */
 I18n.add('ru',{'cr2.ordered':'В очереди: {r}','cr2.hint2':'Нажми на вещь ещё раз, чтобы сразу заказать'});
 I18n.add('en',{'cr2.ordered':'Queued: {r}','cr2.hint2':'Tap an item again to order it right away'});
+
+/* v13: качество, освоение, коллекции, инструменты */
+I18n.add('ru',{
+  'q.0':'обычное','q.1':'хорошее','q.2':'безупречное','q.3':'легендарное',
+  'ms.toolsI':'Шанс хорошего +0.6% и безупречного +0.4% за уровень',
+  'cr2.mastery':'освоено {n}/{m}','cr2.faster':'работа руками быстрее на {p}%',
+  'coll.title':'КОЛЛЕКЦИЯ {n}/{m}','coll.info':'Отдай по одной вещи каждого рецепта мастера. Собранная коллекция: легендарное +2%, скорость +10%, цена +10%.',
+  'coll.doneI':'Коллекция собрана: легендарное +2%, скорость +10%, цена +10%.','coll.add':'В КОЛЛЕКЦИЮ','coll.addI':'отдаёт одну вещь худшего качества',
+  'coll.got':'В коллекции: {r}','coll.full':'Коллекция собрана: {m}. Легендарное +2%, скорость +10%, цена +10%'
+});
+I18n.add('en',{
+  'q.0':'common','q.1':'good','q.2':'flawless','q.3':'legendary',
+  'ms.toolsI':'Good +0.6% and flawless +0.4% chance per level',
+  'cr2.mastery':'mastered {n}/{m}','cr2.faster':'handwork {p}% faster',
+  'coll.title':'COLLECTION {n}/{m}','coll.info':'Give one item of each of the craftsman\'s recipes. A full collection: legendary +2%, speed +10%, price +10%.',
+  'coll.doneI':'Collection complete: legendary +2%, speed +10%, price +10%.','coll.add':'TO COLLECTION','coll.addI':'gives one item of the lowest quality',
+  'coll.got':'Added to collection: {r}','coll.full':'Collection complete: {m}. Legendary +2%, speed +10%, price +10%'
+});
+
+/* v14: питомцы */
+I18n.add('ru',{
+  'pet.fox':'Лиса','pet.shiba':'Шиба','pet.cat':'Кот','pet.wolf':'Волк','pet.dragon':'Дракончик',
+  'pt.title':'МАСТЕР ПИТОМЦЕВ','pt.cardI':'даст лису','pt.trainS':'тренирует','pt.activeS':'с магом','pt.locked':'не найден',
+  'pt.desc':'Мастер питомцев растит и тренирует зверей, которые ходят с магом в приключения. При найме он дарит ручную лису.',
+  'pt.hire':'НАНЯТЬ','pt.hireI':'После найма лиса сразу пойдёт с магом. Других питомцев маг находит в главах.',
+  'pt.where':'ГДЕ НАЙТИ','pt.whereStart':'Мастер питомцев дарит её при найме.','pt.whereTract':'Пройди главу «{t}» до 100-й волны. Шанс найти {p}% за каждое полное прохождение, пока не найдёшь.',
+  'pt.bonus':'БОНУС','pt.perLvl':'за уровень','pt.level':'УРОВЕНЬ {n}/{m}','pt.next':'На следующем уровне: {e}',
+  'pt.isActive':'Этот питомец ходит с магом.','pt.use':'ВЗЯТЬ С СОБОЙ','pt.train':'ТРЕНИРОВКА','pt.trainTo':'До уровня {n}',
+  'pt.training':'Тренировка: {p}, ещё {t}','pt.block.hire':'Сначала найми мастера питомцев.','pt.block.busy':'Мастер уже тренирует другого питомца.','pt.block.max':'Максимальный уровень.','pt.block.none':'Питомец ещё не найден.',
+  'pt.with':'С магом: {p}, ур. {n}','pt.got':'Мастер питомцев подарил: {p}','pt.foundT':'НОВЫЙ ПИТОМЕЦ','pt.found':'В конце главы к магу прибился новый питомец: {p}. Взять его с собой можно у мастера питомцев.',
+  'pt.lvlUp':'{p} теперь уровня {n}'
+});
+I18n.add('en',{
+  'pet.fox':'Fox','pet.shiba':'Shiba','pet.cat':'Cat','pet.wolf':'Wolf','pet.dragon':'Dragonling',
+  'pt.title':'PET MASTER','pt.cardI':'gives a fox','pt.trainS':'training','pt.activeS':'with mage','pt.locked':'not found',
+  'pt.desc':'The pet master raises and trains animals that go on adventures with the mage. When hired, he gives a tame fox.',
+  'pt.hire':'HIRE','pt.hireI':'After hiring, the fox goes with the mage right away. Other pets are found in chapters.',
+  'pt.where':'WHERE TO FIND','pt.whereStart':'The pet master gives it when hired.','pt.whereTract':'Clear the chapter "{t}" to wave 100. {p}% chance per full clear until found.',
+  'pt.bonus':'BONUS','pt.perLvl':'per level','pt.level':'LEVEL {n}/{m}','pt.next':'Next level: {e}',
+  'pt.isActive':'This pet goes with the mage.','pt.use':'TAKE ALONG','pt.train':'TRAINING','pt.trainTo':'To level {n}',
+  'pt.training':'Training: {p}, {t} left','pt.block.hire':'Hire the pet master first.','pt.block.busy':'The master is training another pet.','pt.block.max':'Maximum level.','pt.block.none':'Pet not found yet.',
+  'pt.with':'With the mage: {p}, lv {n}','pt.got':'The pet master gave you: {p}','pt.foundT':'NEW PET','pt.found':'At the end of the chapter a new pet joined the mage: {p}. Take it along at the pet master.',
+  'pt.lvlUp':'{p} is now level {n}'
+});
 })();

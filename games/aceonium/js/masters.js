@@ -37,6 +37,7 @@ function open(id){
     if(a==='learn')ok=g.learn(b.dataset.r);
     if(a==='tools')ok=g.buyTools(M.id);
     if(a==='slot')ok=g.buyQSlot();
+    if(a==='coll')ok=g.collAdd(b.dataset.r);
     if(a==='cancel')ok=g.cancel(+b.dataset.i);
     if(ok){Sound.sfx('select');if(a==='hire')showMaster();}
     render(true);
@@ -154,6 +155,11 @@ function render(full){
   if(rest.length){
     h+='<div class="lbl full">'+t('ms.teacher')+'</div><p class="note">'+t('ms2.teacherD')+'</p><div class="ms2-grid">'+rest.map(function(x){return card(x.id,'learn');}).join('')+'</div>';
   }
+  /* коллекция: по одной вещи каждого рецепта мастера */
+  var cl=g.collList(id),cn=g.collCount(id),cd=g.collDone(id);
+  h+='<div class="lbl full">'+t('coll.title',{n:cn,m:cl.length})+'</div><p class="note">'+t(cd?'coll.doneI':'coll.info')+'</p><div class="coll">'+
+    cl.map(function(r){var has=g.collHas(id,r),can=!has&&g.invCount(r)>0;
+      return '<button type="button" class="coll-it'+(has?' has':'')+(can?' can':'')+'" data-act="coll" data-r="'+r+'"'+(can?'':' disabled')+' title="'+UI.itemName(r)+'">'+UI.orderIcon(r,true)+(can?'<i>+</i>':'')+'</button>';}).join('')+'</div>';
   /* улучшения мастера */
   var tc=g.toolsCost(id),sc=g.qSlotCost();
   h+='<div class="lbl full">'+t('ms2.upgrades')+'</div>'+
@@ -172,11 +178,11 @@ function card(r,mode){
     var c=g.orderCost(r);
     if(!c)return '<div class="'+cls+' dim">'+UI.orderIcon(r,true)+'<b>'+t('ord.'+r+'Max')+'</b></div>';
     var bl=g.orderBlock(id,r);
-    sub=UI.ft(g.orderTime(r)/g.mSpeed(id));
+    sub=UI.ft(g.craftTime(id,r)/g.mSpeed(id));
     btn='<div class="cost">'+UI.costHtml(c)+'</div><button type="button" class="btn sm" data-act="order" data-r="'+r+'"'+(bl?' disabled':'')+'>'+(bl==='pending'?t('ms.pending'):t('ms2.do'))+'</button>';
   }else if(mode==='make'){
     var bl2=g.orderBlock(id,r);
-    sub=UI.ft(gd.time/g.mSpeed(id))+' · '+COIN+D.fmt(gd.price);
+    sub=UI.ft(g.craftTime(id,r)/g.mSpeed(id))+' · '+COIN+D.fmt(gd.price)+'<br>'+t('cr2.mastery',{n:Math.min(g.mastery(id,r),D.MASTERY_CAP),m:D.MASTERY_CAP});
     btn='<div class="cost">'+UI.costHtml(gd.cost)+'</div><button type="button" class="btn sm" data-act="order" data-r="'+r+'"'+(bl2?' disabled':'')+'>'+(bl2==='teaching'?t('ms2.studying'):bl2==='full'?t('ms.full'):t('ms2.do'))+'</button>';
   }else if(mode==='learn'){
     var ok=g.canLearn(r);cls+=ok?'':' dim';

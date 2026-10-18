@@ -623,3 +623,26 @@ body:not(.view-tavern) .qbar{display:none;}
 .cbar-it small{display:block;font-size:12px;}
 .cbar-q{font-size:12px;color:#9fc4d6;white-space:nowrap;}
 .blk.cbar .btn{flex:0 0 auto;}
+
+/* ── v13: освоение, шансы качества, коллекция ── */
+.mast{margin:6px 0 8px;}
+.mast-t{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#9fc4d6;}
+.bar.mastb{margin:3px 0 5px;}
+.bar.mastb i{background:#ffd84a;}
+.qrow{display:flex;gap:10px;font-size:12px;}
+.qrow span::before{content:'';display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:0;}
+.qrow .q0{color:#b0c4d0;}.qrow .q0::before{background:#b0c4d0;}
+.qrow .q1{color:#00ff88;}.qrow .q1::before{background:#00ff88;}
+.qrow .q2{color:#40a0ff;}.qrow .q2::before{background:#40a0ff;}
+.qrow .q3{color:#ffd84a;}.qrow .q3::before{background:#ffd84a;}
+.coll{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.coll-it{position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;font:inherit;background:#06182e;border:1px dashed var(--bdr-d);opacity:.35;}
+.coll-it .ri{width:34px;height:34px;}
+.coll-it.has{opacity:1;border-style:solid;border-color:#ffd84a;}
+.coll-it.can{opacity:.8;border-color:#00ff88;cursor:pointer;}
+.coll-it i{position:absolute;right:2px;top:0;font-style:normal;color:#00ff88;font-size:14px;}
+
+/* ── v14: питомцы ── */
+.ms-face.f-pets{background:#c86a20;}
+.pet-line{font-size:12px;color:#9fc4d6;margin-top:4px;}
+.pt2 .ms2-status b{color:#ffb070;}

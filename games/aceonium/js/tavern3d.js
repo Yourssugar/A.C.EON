@@ -130,7 +130,8 @@ function model(name){
    Пристройки появляются после покупки: кузня (восток, север), дубильня (восток, юг), ювелирная (север).
    Двор на юге: дорога, столярный навес, шахта, склад под навесом слева от дома. */
 var DOOR={x:1,z:4};
-var PATH_IN=[[1,15],[1,5.2],[1,2.8]];
+var PATH_IN=[[1,16.5],[1,5.2],[1,2.8]];
+var ROAD_Z=16.5,ROAD_END=28;   // путники идут по дороге из-за края и сворачивают к двери
 function place(o,x,z,rot,y){o.position.set(x,y||0,z);o.rotation.y=rot||0;return o;}
 
 function build(renderer){
@@ -139,16 +140,18 @@ function build(renderer){
      az:0.5,pol:0.9,dist:30,target:new T.Vector3(0.5,0,1.5),goal:{az:0.5,pol:0.9,dist:30,target:new T.Vector3(0.5,0,1.5)},
      t:0,night:false,labels:{},active:false,fires:[]};
   var s=V.scene;
-  s.background=new T.Color(0x8fb4cc);s.fog=new T.Fog(0x8fb4cc,40,95);
-  V.hemi=new T.HemisphereLight(0xe0ecff,0x4a5a30,1.1);s.add(V.hemi);
+  s.background=new T.Color(0x8fb4cc);s.fog=new T.Fog(0x8fb4cc,45,125);
+  V.hemi=new T.HemisphereLight(0xe0ecff,0x4a5a30,1.3);s.add(V.hemi);
   V.sun=new T.DirectionalLight(0xfff0d8,1.7);V.sun.position.set(14,26,18);V.sun.target.position.set(1,0,0);s.add(V.sun);s.add(V.sun.target);
   V.sun.castShadow=true;var sc=V.sun.shadow.camera;sc.left=-20;sc.right=20;sc.top=20;sc.bottom=-20;sc.near=1;sc.far=70;
   var hq=window.Scene3D&&(Scene3D.quality==='high'||Scene3D.quality==='ultra');V.sun.shadow.mapSize.set(hq?2048:1024,hq?2048:1024);V.sun.shadow.bias=-0.0005;V.sun.shadow.normalBias=0.04;
   V.inner=new T.PointLight(0xffb060,0,16,1.6);V.inner.position.set(1,2.6,-2.5);s.add(V.inner);
   /* земля и двор */
-  var gm=mat('grass');gm.color.set('#b4c890');
-  var grass=plane(80,80,gm,16);grass.position.y=-0.03;s.add(grass);
+  var gm=mat('grass');gm.color.set('#c8dc9c');
+  var grass=plane(320,320,gm,64);grass.position.y=-0.03;s.add(grass);
   var path=plane(3,11,mat('yard'),1.5,5.5);place(path,1,9.6,0,-0.01);s.add(path);
+  /* дорога мимо таверны: по ней приходят и уходят путники */
+  var road=plane(200,4,mat('yard'),60,1.2);place(road,0,16.5,0,-0.02);s.add(road);
   var yard=plane(20,4,mat('yard'),6,1.2);place(yard,0,6,0,-0.015);s.add(yard);
   V.layout=new T.Group();s.add(V.layout);
   return V;
@@ -361,7 +364,7 @@ function fire(G,x,y,z,size){
 function setNight(on){
   if(!V||V.night===on)return;
   V.night=on;
-  V.hemi.intensity=on?0.6:1.25;V.hemi.color.set(on?0x7088c0:0xe0ecff);
+  V.hemi.intensity=on?0.6:1.4;V.hemi.color.set(on?0x7088c0:0xe0ecff);
   V.sun.intensity=on?0.45:1.8;V.sun.color.set(on?0x9ab0e8:0xfff0d8);
   V.scene.background.set(on?0x0b1426:0x8fb4cc);V.scene.fog.color.set(on?0x0b1426:0x8fb4cc);
   V.inner.intensity=on?2.2:0.8;
@@ -423,6 +426,8 @@ function sync(S){
   if(sig!==V.sig){V.sig=sig;layout(S);placeMasters(S,true);}
   setNight(S.place==='sleep');
   placeMasters(S,false);
+  syncCustomers(S);
+  buildNature();
   if(V.coal&&S.mine.lvl){var k=S.mine.acc/Math.max(1,D().MINE.cap(S.mine.lvl));V.coal.scale.setScalar(0.4+k*1.1);}
   V.S=S;
 }
@@ -434,24 +439,80 @@ function placeMasters(S,moved){
   setAnim(h,S.cust.length&&S.place!=='sleep'?'Idle_Talking_Loop':'Idle_Loop');
 }
 /* сколько путников рисовать: каждый это полноценный персонаж, на слабой графике меньше */
-var CUST_MAX={low:3,medium:5,high:8,ultra:8};
+var CUST_MAX={low:2,medium:4,high:6,ultra:8};
 function syncCustomers(S){
-  var seen={},lim=CUST_MAX[window.Scene3D&&Scene3D.quality]||5;
+  var seen={},lim=CUST_MAX[window.Scene3D&&Scene3D.quality]||5,live=0;
+  for(var k0 in V.npcs)if(V.npcs[k0].cust)live++;
   S.cust.forEach(function(c,i){
     if(i>=lim)return;
     seen[c.id]=1;
     var key='c:'+c.id,N=V.npcs[key],slot=V.st.queue[Math.min(i,V.st.queue.length-1)];
-    if(!N){
-      N=spawnNpc(key,travelerLook(c),PATH_IN[0][0],PATH_IN[0][1],Math.PI);
-      goTo(N,PATH_IN.slice(1).concat([slot]));N.slot=i;N.cust=true;N.speed=1.6;
+    /* уходящие тоже считаются: на слабой графике не больше lim+1 путников на экране */
+    if(!N&&live>=lim+1){delete seen[c.id];return;}
+    if(!N){live++;
+      var side=rnd(c.id*3.1)<0.5?-1:1;N=spawnNpc(key,travelerLook(c),side*ROAD_END,ROAD_Z+(rnd(c.id)-0.5)*1.4,side>0?-Math.PI/2:Math.PI/2);
+      goTo(N,PATH_IN.concat([slot]));N.slot=i;N.cust=true;N.speed=2.6;N.side=side;
     }else if(N.slot!==i&&!N.leaving){N.slot=i;goTo(N,[slot]);}
   });
   for(var key in V.npcs){
     var N=V.npcs[key];
     if(!N.cust||N.leaving)continue;
     var id=+key.slice(2);
-    if(!seen[id]){N.leaving=true;goTo(N,[[2.4,2.8],PATH_IN[1],PATH_IN[0]]);}
+    if(!seen[id]){N.leaving=true;N.speed=2.6;var out=-(N.side||1);goTo(N,[[2.4,2.8],PATH_IN[1],PATH_IN[0],[out*ROAD_END,ROAD_Z]]);}
   }
+}
+
+/* ════════ ПРИРОДА ВОКРУГ ════════
+   Деревья, кусты, цветы и трава из моделей приключения (adventure.js), когда они уже скачаны.
+   Всё неподвижное: по одному InstancedMesh на часть модели, расстановка с постоянным зерном. */
+var NATURE=[
+  /* модель, сколько при высокой графике, кольцо от центра, масштаб, вид */
+  ['CommonTree_1',10,[13.5,40],[0.9,1.25],'tree'],['CommonTree_2',10,[13.5,40],[0.9,1.25],'tree'],['CommonTree_3',6,[20,50],[0.9,1.2],'tree'],
+  ['CommonTree_5',8,[24,55],[0.9,1.3],'tree'],['Pine_1',6,[26,58],[1,1.3],'tree'],['Pine_5',8,[30,62],[1,1.4],'tree'],
+  ['Bush_Common',18,[9,26],[0.6,1.0],'bush'],['Bush_Common_Flowers',12,[8.5,22],[0.6,0.95],'bush'],
+  ['Rock_Medium_1',5,[12,34],[0.3,0.7],'rock'],['Rock_Medium_2',5,[12,34],[0.3,0.7],'rock'],
+  ['Flower_3_Group',14,[8,20],[0.35,0.6],'small'],['Flower_4_Group',10,[8,20],[0.35,0.6],'small'],['Fern_1',10,[9,24],[0.5,0.8],'small'],
+  ['Grass_Common_Short',70,[7.5,30],[0.45,0.8],'grass'],['Grass_Common_Tall',36,[8,30],[0.4,0.7],'grass'],['Clover_1',20,[7.5,22],[0.4,0.7],'grass']
+];
+var NAT_DENS={low:{tree:0.4,bush:0.5,rock:1,small:0.5,grass:0},medium:{tree:0.65,bush:0.8,rock:1,small:0.8,grass:0.5},high:{tree:1,bush:1,rock:1,small:1,grass:1},ultra:{tree:1,bush:1,rock:1,small:1,grass:1}};
+var LEAF_PAL=['#6a9a2a','#7aa834','#5c8c26','#86b03e'];
+/* занятые места: дом со складом, двор с забором, дорожка, дорога (деревья и кусты туда не ставим) */
+function natFree(x,z,kind){
+  if(x>-12&&x<8&&z>-7&&z<14)return false;
+  if(kind!=='grass'&&z>13.6&&z<19.4)return false;
+  if(kind==='grass'&&z>14.3&&z<18.7)return false;
+  return true;
+}
+function buildNature(){
+  if(!V||V.nature||!window.Adventure||!Adventure.ready||!Adventure.parts)return;
+  var q=(window.Scene3D&&Scene3D.quality)||'medium',dens=NAT_DENS[q]||NAT_DENS.medium;
+  var G=new T.Group();V.nature=G;V.scene.add(G);
+  var m4=new T.Matrix4(),tr=new T.Matrix4(),qt=new T.Quaternion(),e=new T.Euler(),v=new T.Vector3(),sc=new T.Vector3(),col=new T.Color();
+  var pal=LEAF_PAL.map(function(h){return new T.Color(h);});
+  NATURE.forEach(function(d,ki){
+    var ps=Adventure.parts(d[0]);if(!ps)return;
+    var n=Math.round(d[1]*dens[d[4]]);if(!n)return;
+    var pos=[],seed=ki*1000+7,guard=0;
+    while(pos.length<n&&guard++<n*60){
+      var a=rnd(seed++)*Math.PI*2,r=d[2][0]+Math.sqrt(rnd(seed++))*(d[2][1]-d[2][0]);
+      var x=0.5+Math.cos(a)*r,z=3+Math.sin(a)*r;
+      if(!natFree(x,z,d[4]))continue;
+      pos.push({x:x,z:z,s:d[3][0]+rnd(seed++)*(d[3][1]-d[3][0]),ry:rnd(seed++)*6.283,v:0.85+rnd(seed++)*0.25,pi:Math.floor(rnd(seed++)*8)});
+    }
+    ps.forEach(function(p){
+      var im=new T.InstancedMesh(p.geo,p.mat,pos.length);
+      pos.forEach(function(o,i){
+        tr.compose(v.set(o.x,0,o.z),qt.setFromEuler(e.set(0,o.ry,0)),sc.set(o.s,o.s,o.s));
+        m4.multiplyMatrices(tr,p.m);im.setMatrixAt(i,m4);
+        if(p.leaf)col.copy(pal[o.pi%pal.length]).multiplyScalar(o.v);else col.setRGB(o.v,o.v,o.v);
+        im.setColorAt(i,col);
+      });
+      im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
+      im.castShadow=d[4]==='tree'||d[4]==='bush'||d[4]==='rock';im.receiveShadow=false;
+      G.add(im);
+    });
+  });
+  if(V.renderer)V.renderer.shadowMap.needsUpdate=true;
 }
 
 /* ════════ МАГ В ТАВЕРНЕ ════════ */
@@ -617,7 +678,7 @@ function setActive(on,host){
 function resetView(){if(!V)return;V.goal.az=0.5;V.goal.pol=0.9;V.goal.dist=30;V.goal.target.set(0.5,0,1.5);}
 
 window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_LOOK[id]):null;},init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
-  resetView:resetView,bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});return {meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
+  resetView:resetView,bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});var np=Object.keys(V.npcs),nr=np.filter(function(k){return V.npcs[k].ready;}).length;return {npcs:np.length,npcReady:nr,npcPos:np.map(function(k){var N=V.npcs[k];return k+':'+N.x.toFixed(1)+','+N.z.toFixed(1);}).join(' '),meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
   onPick:function(fn){onPickCb=fn;},setLabeler:function(fn){labeler=fn;},
   get ready(){return readyFlag;},get loading(){return !!loading&&!readyFlag;},get scene(){return V&&V.scene;},get camera(){return V&&V.camera;},
   get active(){return !!(V&&V.active);},get built(){return !!V;}};

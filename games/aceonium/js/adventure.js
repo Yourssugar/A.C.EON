@@ -172,6 +172,46 @@ function monster(key){
   return {root:o,mixer:mixer,acts:acts,mats:mats,h:d.h+(d.fly||0),fly:d.fly||0};
 }
 
+/* ════════ ПИТОМЦЫ (v14) ════════ */
+var PET={},PETP={};
+function loadPet(id){
+  if(PETP[id])return PETP[id];
+  PETP[id]=fetchBuf('models/pet_'+id+'.glb').then(parse).then(function(g){
+    var root=g.scene;root.updateMatrixWorld(true);
+    var box=new T.Box3().setFromObject(root,true);
+    PET[id]={scene:root,clips:g.animations,h:Math.max(0.01,box.max.y-box.min.y),minY:box.min.y};
+    return PET[id];
+  });
+  PETP[id].catch(function(e){console.warn('[adventure] pet',id,e);delete PETP[id];});
+  return PETP[id];
+}
+/* копия питомца: рост из данных, перекраска (лиса ярко-рыжая), микшер и имена клипов по ролям */
+function pet(id){
+  var src=PET[id],d=window.AcData&&AcData.PET_BY[id];if(!src||!d)return null;
+  var o=SKU.clone(src.scene);
+  o.traverse(function(m){
+    if(!m.isMesh)return;m.frustumCulled=false;m.castShadow=true;m.userData.shared=true;
+    var arr=(Array.isArray(m.material)?m.material:[m.material]).map(function(mm){
+      var c=mm.clone();c.userData.own=true;if(c.metalness>0.2||c.userData.fromFBX){c.metalness=0;c.roughness=0.8;}
+      if(d.tint&&d.tint[mm.name])c.color.set(d.tint[mm.name]);return c;});
+    m.material=arr.length===1?arr[0]:arr;
+  });
+  var k=d.h/src.h,holder=new T.Group();o.scale.setScalar(k);o.position.y=-src.minY*k;holder.add(o);
+  var mixer=new T.AnimationMixer(o),acts={};src.clips.forEach(function(c){acts[c.name]=mixer.clipAction(c);});
+  var P={root:holder,model:o,mixer:mixer,acts:acts,anim:d.anim,fly:d.fly||0,cur:null,id:id};
+  P.play=function(role,fade){
+    var name=P.anim[role]||P.anim.idle,a=acts[name]||acts[P.anim.idle];if(!a)return;
+    if(P.cur===name&&a.isRunning())return;
+    var once=role==='attack';
+    a.reset();a.setLoop(once?T.LoopOnce:T.LoopRepeat,Infinity);a.clampWhenFinished=once;
+    var prev=P.cur&&acts[P.cur];if(prev&&prev!==a){if(fade)a.crossFadeFrom(prev,fade,false);else prev.stop();}
+    a.play();P.cur=name;P.once=once;P.role=role;
+  };
+  P.busy=function(){var a=P.cur&&acts[P.cur];return P.once&&a&&a.isRunning();};
+  P.dispose=function(){o.traverse(function(m){if(m.isMesh)(Array.isArray(m.material)?m.material:[m.material]).forEach(function(x){x.dispose();});});};
+  return P;
+}
+
 /* ════════ ЗАГРУЗКА ════════ */
 function init(THREE){
   if(T)return Promise.resolve();
@@ -189,7 +229,7 @@ function loadBase(resolution){
 }
 function loadBiome(b,t){return Promise.all([loadGround(b),loadTract(t===undefined?b:t)]);}
 
-window.Adventure={init:init,loadBase:loadBase,parts:parts,loadBiome:loadBiome,loadGround:loadGround,loadTract:loadTract,kinds:kinds,groundSet:groundSet,monster:monster,
+window.Adventure={init:init,loadBase:loadBase,parts:parts,loadPet:loadPet,pet:pet,hasPet:function(id){return !!PET[id];},loadBiome:loadBiome,loadGround:loadGround,loadTract:loadTract,kinds:kinds,groundSet:groundSet,monster:monster,
   hasMonster:function(key){var d=MAP[key];return !!(d&&MON[d.id]);},MAP:MAP,
   get ready(){return baseReady;},get res(){return res;}};
 })();

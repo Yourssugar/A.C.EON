@@ -428,6 +428,7 @@ function sync(S){
   placeMasters(S,false);
   syncCustomers(S);
   buildNature();
+  syncPet(S);
   if(V.coal&&S.mine.lvl){var k=S.mine.acc/Math.max(1,D().MINE.cap(S.mine.lvl));V.coal.scale.setScalar(0.4+k*1.1);}
   V.S=S;
 }
@@ -460,6 +461,20 @@ function syncCustomers(S){
     var id=+key.slice(2);
     if(!seen[id]){N.leaving=true;N.speed=2.6;var out=-(N.side||1);goTo(N,[[2.4,2.8],PATH_IN[1],PATH_IN[0],[out*ROAD_END,ROAD_Z]]);}
   }
+}
+
+/* ── питомец в таверне (v14): лежит у камина ── */
+function syncPet(S){
+  var id=S.pets&&S.pets.active||null;
+  if(V.petId===id)return;
+  if(V.pet){V.scene.remove(V.pet.root);V.pet.dispose();V.pet=null;}
+  V.petId=id;
+  if(!id||!window.Adventure||!Adventure.ready)return;
+  if(!Adventure.hasPet(id)){Adventure.loadPet(id).then(function(){if(V&&V.petId===id)V.petId='-';},function(){});return;}
+  var P=Adventure.pet(id);if(!P)return;
+  V.pet=P;P.root.position.set(2.3,0,-2.35);P.root.rotation.y=-2.3;
+  if(P.fly)P.root.position.y=P.fly;
+  V.scene.add(P.root);P.play('low',0);
 }
 
 /* ════════ ПРИРОДА ВОКРУГ ════════
@@ -654,6 +669,7 @@ function update(dt){
     }else if(N.cust&&N.av){var a=N.slot===0?'Idle_Talking_Loop':'Idle_Loop';if(N.av.curName!==a)N.av.play(a,0.3);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
     if(N.av){N.av.root.position.set(N.x,0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}
   }
+  if(V.pet){V.pet.mixer.update(dt);if(V.pet.fly)V.pet.root.position.y=V.pet.fly+Math.sin(V.t*2)*0.06;}
   if(mageRef){mageRef.update(dt,'npc');
     if(mageMode==='sleep'){zzT-=dt;if(zzT<=0&&mageRef.head)zzT=1.2,spawnZ();}
   }

@@ -97,6 +97,13 @@ game.on('crafted',function(e){
   else if(e.q>=2)UI.toast(UI.t('ms.qual',{m:UI.t('ms.'+e.m),r:UI.itemName(e.r),q:UI.t('q.'+e.q)}));
 });
 game.on('mLevel',function(e){UI.toast(UI.t('ms.lvlUp',{m:UI.t('ms.'+e.m),n:e.lvl}));});
+function petSync(){if(has3d&&Scene3D.setPet)Scene3D.setPet(S.pets&&S.pets.active);}
+game.on('pet',function(){petSync();save();UI.panel();});
+game.on('petHire',function(id){petSync();save();Sound.sfx('win');UI.toast(UI.t('pt.got',{p:UI.t('pet.'+id)}));UI.panel();});
+game.on('petFound',function(id){petSync();save();if(!game.silent){Sound.sfx('win');UI.modal(UI.t('pt.foundT'),'<p>'+UI.t('pt.found',{p:UI.t('pet.'+id)})+'</p>');}});
+game.on('petLevel',function(e){save();UI.toast(UI.t('pt.lvlUp',{p:UI.t('pet.'+e.id),n:e.lvl}));UI.panel();});
+game.on('petTrain',function(){save();});
+game.on('coll',function(e){Sound.sfx('capture');UI.toast(e.done?UI.t('coll.full',{m:UI.t('ms.'+e.m)}):UI.t('coll.got',{r:UI.itemName(e.r)}));save();UI.panel();});
 ['hire','learn','build','equip','order'].forEach(function(n){game.on(n,function(){save();});});
 var scenePlace=null;
 function sceneMode(place){return place==='road'?'walk':'tavern';}
@@ -176,7 +183,7 @@ function loop(now){
   if(has3d){
     if(!portalBusy&&scenePlace==='road')Scene3D.setMode(game.R.phase==='walk'?'walk':'fight');
     Scene3D.setFatigue(S.fatigue);
-    if(!(window.Wardrobe&&Wardrobe.isOpen)&&!(window.Masters&&Masters.isOpen))Scene3D.frame(Math.min(dt,0.05),dt);
+    if(!(window.Wardrobe&&Wardrobe.isOpen)&&!(window.Masters&&Masters.isOpen)&&!(window.Pets&&Pets.isOpen))Scene3D.frame(Math.min(dt,0.05),dt);
   }
   if(has3d)fpsWatch(dt);
   tavT+=dt;if(tavT>0.3){tavT=0;if(has3d&&Scene3D.view==='tavern')Tavern3D.sync(S);}
@@ -212,7 +219,7 @@ function begin(){
     var away=S.lastSeen?(Date.now()-S.lastSeen)/1000:0;
     if(away<0){UI.toast(UI.t('toast.clock'));away=0;}
     if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
-      showPlace(S.place,true);}
+      showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
     if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
     else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}

@@ -60,6 +60,15 @@ function shop(){
   var cc=g.crewCost();if(!process.env.NOPROD&&cc&&S.gold>cc.gold*4&&g.buyCrew())mark('crew'+S.crews,'бригада '+S.crews);
   for(var id3 in S.masters){if(!S.masters[id3].hired)continue;
     for(var ti=0;ti<20;ti++){var tc=g.toolsCost(id3);if(!tc||!g.canPay(tc)||!spend(tc))break;g.buyTools(id3);}}
+  /* зал (v16): пивовар, повар, места, помощники, если не хватает порций */
+  if(!process.env.NOTAV){
+    D.WORKER_ORDER.forEach(function(w){
+      var o=S.tav[w];
+      if(!o.hired){if(g.workerBlock(w)===''&&S.gold>D.WORKERS[w].hire*3&&g.workerHire(w))mark('w'+w,'нанят '+w);return;}
+      var hc=g.helpCost(w);if(hc&&g.needH(w)>g.capacityH(w)&&S.gold>hc.gold*3&&g.hireHelp(w))mark('h'+w+o.help,w+' помощник '+o.help);
+    });
+    for(var si=0;si<5;si++){var sc=g.seatCost();if(!sc||S.gold<sc.gold*4)break;g.buySeat();}
+  }
   /* питомцы: нанять мастера, когда есть лишнее золото, тренировать активного */
   if(!S.pets.hired&&S.gold>D.PETMASTER_HIRE*2&&g.petHire())mark('pets','мастер питомцев');
   if(S.pets.hired&&S.pets.active){var pc=g.petCost(S.pets.active);if(pc&&S.gold>pc.gold*3)g.petTrain(S.pets.active);}
@@ -89,8 +98,8 @@ while(T<DAYS*86400){
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+
-      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join(''));
-    gold0=S.stats.goldEarned;sold0=S.stats.sold;
+      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+S.tav.seats+'м '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join(''));
+    gold0=S.stats.goldEarned;sold0=S.stats.sold;global.__tinc=S.tav.inc;
   }
 }
 console.log(log.join('\n'));

@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="6" defer></script>
+<script src="../shared/boot.js" data-v="8" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
@@ -24,7 +24,8 @@
   {"src":"js/coach.js","kb":2},
   {"src":"js/engine.js","kb":4},
   {"src":"js/board2d.js","kb":5},
-  {"src":"js/board3d.js","kb":31},
+  {"src":"../shared/three-loader.js","kb":3},
+  {"src":"js/board3d.js","kb":30},
   {"src":"js/chess.js","kb":41},
   {"src":"stockfish/stockfish.js","kb":95,"prefetch":true,"optional":true},
   {"src":"stockfish/stockfish.wasm","kb":546,"nov":true,"optional":true}
@@ -238,7 +239,7 @@
     <div class="lic-item">
       <b>three.js</b>
       <span>Copyright 2010-2023 three.js authors</span>
-      <span>MIT License: <a href="three/LICENSE.txt" target="_blank" rel="noopener">LICENSE.txt</a></span>
+      <span>MIT License: <a href="../shared/three/LICENSE.txt" target="_blank" rel="noopener">LICENSE.txt</a></span>
       <span><a href="https://github.com/mrdoob/three.js" target="_blank" rel="noopener">github.com/mrdoob/three.js</a></span>
     </div>
     <div class="lic-item">

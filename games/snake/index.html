@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON SNAKE</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="2" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/snake.css","kb":9},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":7},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"../shared/three-loader.js","kb":3},
+  {"src":"js/lang.js","kb":16},
+  {"src":"js/view3d.js","kb":13},
+  {"src":"js/snake.js","kb":30}
+]}
+</script>
+
+<!-- Обложка загрузки: змейка ползёт по полоске вместе с прогрессом (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .bs-track{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;width:min(260px,70vw);}
+    .bs-track i{aspect-ratio:1;height:auto;min-height:12px;background:#0b1626;
+      --k:clamp(0,calc((var(--p) - var(--t)) * 30),1);}
+    .bs-track i{background:rgb(calc(11 + 0 * var(--k)),calc(22 + 207 * var(--k)),calc(38 + 217 * var(--k)));
+      box-shadow:0 0 calc(10px * var(--k)) rgba(0,229,255,.7);transition:background .2s,box-shadow .2s;}
+    .bs-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="bs-brand">A.C.EON</div>
+  <div class="bs-title">SNAKE</div>
+  <div class="bs-track"></div>
+</template>
+<script>
+(function(){
+  var b=document.getElementById('boot-skin').content.querySelector('.bs-track'),h='';
+  for(var i=0;i<16;i++)h+='<i style="--t:'+(i/16*0.95).toFixed(3)+'"></i>';
+  b.innerHTML=h;
+})();
+</script>
+</head>
+<body class="screen-menu">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="sn-menu" id="menu">
+  <div class="sn-head">
+    <h1 class="sn-title"><span class="sn-brand">A.C.EON</span><span data-i18n="sn.title"></span></h1>
+    <div class="sn-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <section class="sn-card">
+    <h2 class="sn-h" data-i18n="menu.mode"></h2>
+    <div class="mode-list" id="mode-list"></div>
+  </section>
+
+  <section class="sn-card">
+    <div class="opt" id="opt-speed">
+      <h2 class="sn-h" data-i18n="menu.speed"></h2>
+      <div class="seg" id="seg-speed">
+        <button class="seg-btn" data-v="slow" data-i18n="speed.slow"></button>
+        <button class="seg-btn" data-v="normal" data-i18n="speed.normal"></button>
+        <button class="seg-btn" data-v="fast" data-i18n="speed.fast"></button>
+      </div>
+    </div>
+    <div class="opt" id="opt-bonus">
+      <h2 class="sn-h" data-i18n="menu.bonus"></h2>
+      <div class="seg" id="seg-bonus">
+        <button class="seg-btn" data-v="off" data-i18n="bonus.off"></button>
+        <button class="seg-btn" data-v="on" data-i18n="bonus.on"></button>
+      </div>
+      <div class="bonus-help">
+        <span><i class="bi bi-gold">5</i><span data-i18n="bonus.gold"></span></span>
+        <span><i class="bi bi-slow">S</i><span data-i18n="bonus.slow"></span></span>
+        <span><i class="bi bi-cut">X</i><span data-i18n="bonus.cut"></span></span>
+        <span><i class="bi bi-ghost">G</i><span data-i18n="bonus.ghost"></span></span>
+      </div>
+    </div>
+    <div class="opt hidden" id="opt-levels">
+      <h2 class="sn-h" data-i18n="menu.level"></h2>
+      <div class="level-grid" id="level-grid"></div>
+      <div class="level-help" data-i18n="lvl.help"></div>
+    </div>
+    <div class="opt">
+      <h2 class="sn-h" data-i18n="menu.view"></h2>
+      <div class="seg" id="seg-view">
+        <button class="seg-btn" data-v="2d">2D</button>
+        <button class="seg-btn" data-v="3d">3D</button>
+      </div>
+    </div>
+    <h2 class="sn-h sn-h2" data-i18n="menu.best"></h2>
+    <div class="best-table" id="best-table"></div>
+  </section>
+
+  <div class="sn-actions">
+    <button class="btn sn-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn sn-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+  <div class="sn-keys" data-i18n="help.keys"></div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="sn-game" id="game">
+  <div class="hud" id="hud">
+    <div class="hud-cell"><span data-i18n="hud.score"></span><b id="hud-score">0</b></div>
+    <div class="hud-cell"><span id="hud-best-l" data-i18n="hud.best"></span><b id="hud-best">0</b></div>
+    <div class="hud-cell hud-time" id="hud-time-c"><span data-i18n="hud.time"></span><b id="hud-time">0:00</b></div>
+    <div class="hud-fx" id="hud-fx"></div>
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-btns">
+      <button class="btn btn-view" id="btn-view">3D</button>
+      <button class="btn" id="btn-pause" data-i18n="hud.pause"></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+
+  <div class="board-wrap" id="board-wrap">
+    <canvas id="board"></canvas>
+    <div class="board-msg hidden" id="board-msg"><b id="board-msg-t"></b><span id="board-msg-s"></span></div>
+    <div class="b3-load hidden" id="b3-load"></div>
+  </div>
+
+  <div class="dpad" id="dpad" aria-hidden="true">
+    <button class="dp dp-u" data-d="0,-1">&#9650;</button>
+    <button class="dp dp-l" data-d="-1,0">&#9664;</button>
+    <button class="dp dp-r" data-d="1,0">&#9654;</button>
+    <button class="dp dp-d" data-d="0,1">&#9660;</button>
+  </div>
+</main>
+
+<!-- конец игры -->
+<div class="arc-modal hidden" id="over-modal">
+  <div class="arc-box over-box">
+    <div class="over-title" id="over-title" data-i18n="over.title"></div>
+    <div class="over-record hidden" id="over-record" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn" id="over-again">&#9654; <span id="over-again-t" data-i18n="over.again"></span></button>
+      <button class="btn" id="over-menu" data-i18n="hud.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

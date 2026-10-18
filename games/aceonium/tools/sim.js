@@ -1,4 +1,4 @@
-/* Проверка баланса v13: node tools/sim.js [дней] [осторожность 1|0] [заходов в день]
+/* Проверка баланса v15 (промыслы: NOPROD=1 отключает): node tools/sim.js [дней] [осторожность 1|0] [заходов в день]
    Игрок заходит каждый час с 7 до 23 (по умолчанию): забирает уголь, учит рецепты, нанимает,
    строит, заказывает улучшения посоха/сумки/склада, забивает очереди мастеров товаром,
    надевает лучшее и отправляет мага на дальний открытый тракт.
@@ -18,14 +18,14 @@ var marks={};
 function mark(k,txt){if(!marks[k]){marks[k]=1;log.push(fmtT(T)+'  '+txt+'  gold '+D.fmt(S.gold)+' staff '+S.staff+' mlvl '+S.mlvl);}}
 
 function shop(){
-  g.mineCollect();
+  g.prodCollectAll(true);
   /* найм и постройки по порядку */
   ['carpenter','smith','tanner','jeweler'].forEach(function(id){
     var d=D.MASTER_BY[id];
     if(d.build&&!g.buildLvl(d.build)&&g.buildUp(d.build))mark('b'+d.build,'постройка '+d.build);
     if(g.hire(id))mark('h'+id,'нанят '+id);
   });
-  if(S.masters.smith.hired&&g.mineUp())mark('mine'+S.mine.lvl,'шахта ур. '+S.mine.lvl);
+  if(S.masters.smith.hired&&!S.prod.mine.lvl&&!S.prod.mine.bt&&g.prodBuild('mine'))mark('pmine','построена шахта');
   /* улучшения мага заказом */
   g.order('carpenter','staff');g.order('tanner','bag');g.order('carpenter','store');
   /* рецепты: всё, что по карману, но не больше трети золота */
@@ -34,9 +34,6 @@ function shop(){
   ['hall','bedroom','decor'].forEach(function(b){var c=g.buildCost(b);if(c&&S.gold>c.gold*2)g.buildUp(b);});
   /* общая очередь и инструменты */
   var qc=g.qSlotCost();if(qc&&S.gold>qc.gold*3)g.buyQSlot();
-  for(var id in S.masters){var m=S.masters[id];if(!m.hired)continue;
-    var tc=g.toolsCost(id);if(tc&&g.canPay(tc)&&S.gold>tc.gold*3)g.buyTools(id);
-  }
   /* товар: по кругу мастерам самый дорогой из известных, но не трогая запас на посох */
   var reserve=g.orderCost('staff'),ids=Object.keys(S.masters).filter(function(id){return S.masters[id].hired;});
   for(var round=0;round<20&&S.queue.length<S.qSlots-2;round++){
@@ -52,6 +49,17 @@ function shop(){
     });
     if(!any)break;
   }
+  /* промыслы и инструменты: не больше трети золота за заход, после рецептов и товара */
+  var budget=S.gold/3,spend=function(c){if(!c||c.gold>budget)return false;budget-=c.gold;return true;};
+  var plist=process.env.NOPROD?[{id:'mine'}]:D.PROD.concat([{id:'stable'}]);
+  plist.forEach(function(d){
+    var o=S.prod[d.id],def=g.prodDef(d.id);
+    if(!o.lvl&&!o.bt){if(g.prodBuildBlock(d.id)===''&&spend(def.build)&&g.prodBuild(d.id))mark('p'+d.id,'построен '+d.id);return;}
+    for(var i=0;i<20;i++){var c=g.prodCost(d.id);if(!spend(c))break;g.prodInvest(d.id);}
+  });
+  var cc=g.crewCost();if(!process.env.NOPROD&&cc&&S.gold>cc.gold*4&&g.buyCrew())mark('crew'+S.crews,'бригада '+S.crews);
+  for(var id3 in S.masters){if(!S.masters[id3].hired)continue;
+    for(var ti=0;ti<20;ti++){var tc=g.toolsCost(id3);if(!tc||!g.canPay(tc)||!spend(tc))break;g.buyTools(id3);}}
   /* питомцы: нанять мастера, когда есть лишнее золото, тренировать активного */
   if(!S.pets.hired&&S.gold>D.PETMASTER_HIRE*2&&g.petHire())mark('pets','мастер питомцев');
   if(S.pets.hired&&S.pets.active){var pc=g.petCost(S.pets.active);if(pc&&S.gold>pc.gold*3)g.petTrain(S.pets.active);}
@@ -77,11 +85,11 @@ while(T<DAYS*86400){
   for(var t=0;t<4;t++)if(S.tracts[t].clears>0)mark('clear'+t,'ТРАКТ '+t+' пройден');
   if(T%86400===0){
     log.push(fmtT(T)+'  gold '+D.fmt(S.gold)+' (+'+D.fmt(S.stats.goldEarned-gold0)+' продаж '+(S.stats.sold-sold0)+') staff '+S.staff+' dps '+D.fmt(g.rawDps())+' mlvl '+S.mlvl+
-      ' bag '+S.bagLvl+' store '+S.storeLvl+' mine '+S.mine.lvl+' hall '+S.build.hall+' best '+S.tracts.map(function(x){return x.best+'/'+x.clears;}).join(',')+' lost '+S.stats.lostBags);
+      ' bag '+S.bagLvl+' store '+S.storeLvl+' prod '+D.PROD.map(function(d){return d.id[0]+S.prod[d.id].lvl;}).join('')+' st'+S.prod.stable.lvl+' cr'+S.crews+' hall '+S.build.hall+' best '+S.tracts.map(function(x){return x.best+'/'+x.clears;}).join(',')+' lost '+S.stats.lostBags);
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+
-      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp()));
+      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join(''));
     gold0=S.stats.goldEarned;sold0=S.stats.sold;
   }
 }

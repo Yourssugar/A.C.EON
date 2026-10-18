@@ -385,7 +385,8 @@ P.updateFatigue=function(dt){
   }else if(S.place==='sleep'){
     S.fatigue=Math.max(0,S.fatigue-h/this.restH());
     S.charge+=h;S.stats.rest+=dt;
-    if(S.fatigue<=0){S.place='home';this.R.phase='home';this.R.homeT=D.HOME_TIME;this.emit('wake');this.emit('place','home');}
+    /* выспался: сразу в путь (продолжит поход с той же волны или начнёт новый) */
+    if(S.fatigue<=0){S.fatigue=0;this.emit('wake');this.startTrip();}
   }
 };
 
@@ -504,7 +505,7 @@ P.offline=function(sec){
       var need=S.fatigue*this.restH()*3600,ds=Math.min(need,sec-t);
       t+=ds;rep.sleep+=ds;S.stats.rest+=ds;this.offTick(ds);
       S.fatigue=Math.max(0,S.fatigue-ds/(this.restH()*3600));S.charge+=ds/3600;
-      if(S.fatigue<=1e-9){S.fatigue=0;S.place='home';R.homeT=D.HOME_TIME;}
+      if(S.fatigue<=1e-9){S.fatigue=0;this.startTrip();}
     }
   }
   this.silent=false;this.rep=null;

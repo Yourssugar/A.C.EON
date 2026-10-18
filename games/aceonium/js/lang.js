@@ -537,4 +537,20 @@ I18n.add('en',{
   'desc.sc_wind':'The mage tires less on the road.','desc.sc_seek':'Enemies drop loot more often.','desc.sc_fire':'Strong damage for the whole trip.',
   'desc.sc_storm':'Damage and critical hits.','desc.sc_star':'The strongest mage scroll.'
 });
+
+/* v12: имена врагов под новые модели */
+I18n.add('ru',{
+  'mon.wood':'ДРЕВЕСНЫЙ ЗМЕЙ','mon.iron':'ОРК-РУДОКОП','mon.herb':'ТРАВЯНАЯ ЖАБА','mon.hide':'КРОЛИК-ГРОМИЛА',
+  'mon.bone':'КОСТОГРЫЗ','mon.silk':'ПАУК-ТКАЧ','mon.spore':'СПОРОВАЯ ОСА','mon.crystal':'ЛЕДЯНОЙ БЕС','mon.silver':'СЕРЕБРИСТЫЙ ЙЕТИ',
+  'boss.summer':'ВОЖДЬ ОРКОВ','boss.pass':'ДЕМОН ПЕРЕВАЛА'
+});
+I18n.add('en',{
+  'mon.wood':'TREE SNAKE','mon.iron':'ORC MINER','mon.herb':'HERB TOAD','mon.hide':'BRUTE BUNNY',
+  'mon.bone':'BONE GNAWER','mon.silk':'WEAVER SPIDER','mon.spore':'SPORE WASP','mon.crystal':'ICE IMP','mon.silver':'SILVER YETI',
+  'boss.summer':'ORC CHIEFTAIN','boss.pass':'DEMON OF THE PASS'
+});
+
+/* v12.1: быстрый заказ */
+I18n.add('ru',{'cr2.ordered':'В очереди: {r}','cr2.hint2':'Нажми на вещь ещё раз, чтобы сразу заказать'});
+I18n.add('en',{'cr2.ordered':'Queued: {r}','cr2.hint2':'Tap an item again to order it right away'});
 })();

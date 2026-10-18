@@ -11,7 +11,7 @@ function masterDefaults(){
   var m={};
   D.MASTERS.forEach(function(d){
     var known=D.GOODS.filter(function(x){return x.m===d.id&&x.teach===0;}).map(function(x){return x.id;});
-    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,known:known,teach:null};
+    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,known:known,teach:null,done:{},coll:{}};
   });
   return m;
 }
@@ -39,6 +39,8 @@ function defaults(){
     use:{p_heal:true,p_str:true,p_luck:true,p_vigor:true,p_spore:true,p_ward:true,sc_spark:true,sc_guard:true},   // что брать в поход
     masters:masterDefaults(),
     queue:[],qSlots:D.QSLOTS0,                      // общая очередь крафта: {r,m,t,T,c}
+    mageCraft:{done:{},coll:{}},                    // освоение и коллекция свитков мага
+    pets:{hired:false,own:{},active:null,train:null}, // питомцы: own[id]={lvl}, train={id,t,T}
     build:{forge:0,tannery:0,jewelry:0,hall:0,bedroom:0,decor:0},
     mine:{lvl:0,acc:0},
     cust:[],custAcc:0,custId:0,rep:0,
@@ -79,6 +81,7 @@ P.eff=function(k){
   var S=this.S,v=0;
   for(var sl in S.equip){var it=S.equip[sl];if(!it)continue;var gd=D.GOOD_BY[it.id];if(gd&&gd.eff&&gd.eff[k])v+=gd.eff[k]*D.QUAL[it.q];}
   if(S.trip&&S.trip.buff&&S.trip.buff[k])v+=S.trip.buff[k];
+  v+=this.petEff(k);
   return v;
 };
 P.rawDps=function(){return D.staffDps(this.S.staff,this.S.mlvl);};
@@ -201,7 +204,7 @@ P.preCheck=function(){
   if(tr.done)return 'end';
   if(S.fatigue>=1)return 'tired';
   if(tr.n>=this.bagCap())return 'full';
-  if(tr.boss&&S.cautious&&!this.predictBoss().win)return 'cautious';
+  if(tr.boss&&!this.predictBoss().win)return 'cautious';
   return null;
 };
 /* расчёт боя с боссом по текущей силе (без кликов) */
@@ -238,7 +241,7 @@ P.applyKill=function(e){
     S.stats.bosses++;tr.bosses++;tr.boss=false;
     if(this.rep)this.rep.bosses++;
     var first=false;
-    if(tr.w>=D.WAVES){tr.done=true;first=S.tracts[tr.t].clears===0;S.tracts[tr.t].clears++;}
+    if(tr.w>=D.WAVES){tr.done=true;first=S.tracts[tr.t].clears===0;S.tracts[tr.t].clears++;this.petFind(tr.t);}
     else tr.w++;
     this.emit('bossWin',{t:tr.t,w:e.L,k:k,clear:tr.done,first:first});
     if(first&&tr.t+1<D.TRACTS.length)this.emit('tractOpen',tr.t+1);
@@ -313,7 +316,7 @@ P.sleepNow=function(){
 };
 P.sleep=function(){var S=this.S;S.place='sleep';S.sleepAfter=false;this.R.phase='sleep';this.emit('place','sleep');};
 P.goTrip=function(){var S=this.S;if(S.place==='road')return false;S.sleepAfter=false;this.startTrip();return true;};
-P.setCautious=function(on){this.S.cautious=!!on;};
+P.setCautious=function(){this.S.cautious=true;};   // v13: осторожность всегда включена, в меню её нет
 P.setAuto=function(on){this.S.auto=!!on;};
 
 /* после возвращения: спать или в новый поход */
@@ -548,11 +551,26 @@ P.setUse=function(id,on){this.S.use[id]=!!on;};
 P.master=function(id){
   if(id!=='mage')return this.S.masters[id];
   var S=this.S;
-  return {hired:true,lvl:S.mlvl,xp:0,tools:0,teach:null,known:D.GOODS.filter(function(x){return x.m==='mage'&&x.lvl<=S.mlvl;}).map(function(x){return x.id;})};
+  if(!S.mageCraft)S.mageCraft={done:{},coll:{}};
+  return {hired:true,lvl:S.mlvl,xp:0,tools:0,teach:null,done:S.mageCraft.done,coll:S.mageCraft.coll,known:D.GOODS.filter(function(x){return x.m==='mage'&&x.lvl<=S.mlvl;}).map(function(x){return x.id;})};
 };
 P.canHire=function(id){return id!=='mage'&&!this.master(id).hired;};
 P.hire=function(id){var d=D.MASTER_BY[id];if(!d||!this.canHire(id)||!this.pay({gold:d.hire}))return false;this.master(id).hired=true;this.emit('hire',id);return true;};
-P.mSpeed=function(id){if(id==='mage')return D.MAGE_SPEED;var m=this.master(id);return D.mSpeed(m.lvl,m.tools);};
+P.mSpeed=function(id){var c=this.collDone(id);if(id==='mage')return D.MAGE_SPEED*(c?1.1:1);var m=this.master(id);return D.mSpeed(m.lvl,c);};
+/* освоение: сколько копий вещи сделал этот мастер; время вещи с учётом освоения (без общей скорости мастера) */
+P.mastery=function(mid,rid){var m=this.master(mid);return m&&m.done?(m.done[rid]||0):0;};
+P.craftTime=function(mid,rid){var gd=D.GOOD_BY[rid];return gd?D.craftTime(gd,this.mastery(mid,rid)):this.orderTime(rid);};
+/* коллекция мастера: по одной вещи каждого его рецепта; собранная даёт +2% легендарного, +10% скорости и +10% к цене */
+P.collList=function(mid){return D.GOODS.filter(function(x){return x.m===mid;}).map(function(x){return x.id;});};
+P.collHas=function(mid,rid){var m=this.master(mid);return !!(m&&m.coll&&m.coll[rid]);};
+P.collCount=function(mid){var self=this;return this.collList(mid).filter(function(r){return self.collHas(mid,r);}).length;};
+P.collDone=function(mid){var l=this.collList(mid);return l.length>0&&this.collCount(mid)===l.length;};
+P.collAdd=function(rid){
+  var gd=D.GOOD_BY[rid];if(!gd)return false;
+  var m=this.master(gd.m);if(!m||this.collHas(gd.m,rid)||this.invCount(rid)<1)return false;
+  this.invTake(rid,false);m.coll[rid]=1;
+  this.emit('coll',{m:gd.m,r:rid,done:this.collDone(gd.m)});return true;
+};
 P.orderCost=function(rid){
   var S=this.S;
   function withGold(c,g){if(!c)return null;var o={gold:g};for(var k in c)o[k]=c[k];return o;}
@@ -595,7 +613,7 @@ P.orderBlock=function(mid,rid){
 };
 P.order=function(mid,rid){
   if(this.orderBlock(mid,rid))return false;
-  var c=this.orderCost(rid),T=this.orderTime(rid);
+  var c=this.orderCost(rid),T=this.craftTime(mid,rid);
   this.pay(c);
   this.S.queue.push({r:rid,m:mid,t:T,T:T,c:JSON.parse(JSON.stringify(c))});
   this.emit('order',{m:mid,r:rid});return true;
@@ -614,8 +632,8 @@ P.learn=function(rid){
   var T=D.teachTime(gd.lvl);this.master(gd.m).teach={r:rid,t:T,T:T};
   this.emit('teachStart',rid);return true;
 };
-P.rollQual=function(lvl){
-  var ch=D.qualChance(lvl),r=Math.random();
+P.rollQual=function(mid){
+  var m=this.master(mid),ch=D.qualChance(m?m.tools:0,this.collDone(mid)),r=Math.random();
   for(var q=D.QUAL.length-1;q>0;q--){if(r<ch[q])return q;r-=ch[q];}
   return 0;
 };
@@ -626,7 +644,8 @@ P.finishOrder=function(mid,o){
   if(o.r==='staff'){S.staff++;this.emit('buy','staff');}
   else if(o.r==='bag'){S.bagLvl++;this.emit('buy','bag');}
   else if(o.r==='store'){S.storeLvl++;this.emit('buy','store');}
-  else{q=this.rollQual(mid==='mage'?Math.floor(S.mlvl/3):this.master(mid).lvl);this.invAdd(o.r,q,1);S.stats.crafted++;if(this.rep)this.rep.crafted++;}
+  else{q=this.rollQual(mid);this.invAdd(o.r,q,1);S.stats.crafted++;if(this.rep)this.rep.crafted++;
+    var mm=this.master(mid);if(mm&&mm.done)mm.done[o.r]=(mm.done[o.r]||0)+1;}
   if(mid==='mage')this.addXp(this.scrollXp(o.r));
   else{
     var m=this.master(mid);m.xp+=o.T/10;
@@ -697,7 +716,7 @@ P.spawnCustomer=function(){
 P.custQual=function(c){for(var q=0;q<D.QUAL.length;q++)if(this.S.inv[c.item+':'+q]>0)return q;return -1;};
 P.custPrice=function(c,by){
   var gd=D.GOOD_BY[c.item],q=Math.max(0,this.custQual(c));
-  var p=gd.price*D.QUAL[q]*D.decorMult(this.buildLvl('decor'));
+  var p=gd.price*D.QUAL[q]*D.decorMult(this.buildLvl('decor'))*(this.collDone(gd.m)?D.COLL_PRICE:1);
   return Math.round(by==='hostess'?p:p*c.mood);
 };
 P.custRemove=function(c){var a=this.S.cust,i=a.indexOf(c);if(i>=0)a.splice(i,1);};
@@ -737,7 +756,37 @@ P.tickCustomers=function(dt){
     if(c.wait>=D.CUST_PATIENCE||(off&&this.custQual(c)<0)){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});}
   }
 };
-P.tavernTick=function(dt){this.tickMasters(dt);this.tickMine(dt);this.tickCustomers(dt);};
+P.tavernTick=function(dt){this.tickMasters(dt);this.tickMine(dt);this.tickCustomers(dt);this.tickPets(dt);};
+
+/* ── питомцы ── */
+P.pets=function(){var S=this.S;if(!S.pets)S.pets={hired:false,own:{},active:null,train:null};return S.pets;};
+P.pet=function(id){return this.pets().own[id]||null;};
+P.petEff=function(k){var P2=this.pets(),id=P2.active,p=id&&P2.own[id],d=id&&D.PET_BY[id];if(!p||!d||!d.eff[k])return 0;return d.eff[k]*p.lvl;};
+P.petHire=function(){
+  var P2=this.pets();if(P2.hired||!this.pay({gold:D.PETMASTER_HIRE}))return false;
+  P2.hired=true;var st=D.PETS[0].id;if(!P2.own[st])P2.own[st]={lvl:1};if(!P2.active)P2.active=st;
+  this.emit('petHire',st);return true;
+};
+P.petSet=function(id){var P2=this.pets();if(!P2.own[id])return false;P2.active=id;this.emit('pet',id);return true;};
+P.petCost=function(id){var p=this.pet(id);return p&&p.lvl<D.PET_MAX?D.petCost(p.lvl):null;};
+P.petBlock=function(id){var P2=this.pets(),p=P2.own[id];if(!P2.hired)return 'hire';if(!p)return 'none';if(p.lvl>=D.PET_MAX)return 'max';if(P2.train)return 'busy';if(!this.canPay(this.petCost(id)))return 'cost';return '';};
+P.petTrain=function(id){
+  if(this.petBlock(id))return false;var p=this.pet(id);this.pay(this.petCost(id));
+  var T=D.petTime(p.lvl);this.pets().train={id:id,t:T,T:T};this.emit('petTrain',id);return true;
+};
+P.tickPets=function(dt){
+  var P2=this.pets(),tr=P2.train;if(!tr)return;
+  tr.t-=dt;if(tr.t>0)return;
+  P2.train=null;var p=P2.own[tr.id];if(p&&p.lvl<D.PET_MAX){p.lvl++;this.emit('petLevel',{id:tr.id,lvl:p.lvl});}
+};
+/* глава пройдена до конца: шанс найти её питомца */
+P.petFind=function(t){
+  var d=null;D.PETS.forEach(function(p){if(p.tract===t)d=p;});
+  var P2=this.pets();if(!d||P2.own[d.id]||Math.random()>=D.PET_FIND)return false;
+  P2.own[d.id]={lvl:1};if(!P2.active)P2.active=d.id;
+  if(this.rep)this.rep.pet=d.id;
+  this.emit('petFound',d.id);return true;
+};
 
 /* ── облик ── */
 P.robeOpen=function(r){return !!r.free;};
@@ -771,6 +820,8 @@ P.sanitize=function(){
   for(k in def){
     var m=S.masters[k];if(!m){S.masters[k]=def[k];continue;}
     if(m.teach===undefined)m.teach=null;
+    if(!m.done)m.done={};if(!m.coll)m.coll={};
+    m.tools=Math.min(m.tools||0,D.TOOLS_MAX);
     m.known=m.known.filter(function(r){return D.GOOD_BY[r]&&D.GOOD_BY[r].m===k;});
     def[k].known.forEach(function(r){if(m.known.indexOf(r)<0)m.known.push(r);});
     var self=this;
@@ -783,6 +834,11 @@ P.sanitize=function(){
   S.qSlots=Math.min(D.QSLOTS_MAX,Math.max(S.qSlots,S.queue.length));
   S.queue=S.queue.filter(function(o){return (D.ORDERS[o.r]||D.GOOD_BY[o.r])&&(o.m==='mage'||S.masters[o.m]);});
   if(S.use.sc_spark===undefined){S.use.sc_spark=true;S.use.sc_guard=true;}
+  if(!S.mageCraft)S.mageCraft={done:{},coll:{}};
+  if(!S.pets)S.pets={hired:false,own:{},active:null,train:null};
+  for(k in S.pets.own)if(!D.PET_BY[k])delete S.pets.own[k];
+  if(S.pets.active&&!S.pets.own[S.pets.active])S.pets.active=null;
+  S.cautious=true;
   if(S.use.p_heal===undefined)S.use.p_heal=true;
   S.cust=S.cust.filter(function(c){return D.GOOD_BY[c.item];});
 };

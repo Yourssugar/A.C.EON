@@ -778,10 +778,29 @@ function tabCraft(){
       var c='<button type="button" class="'+cls+'" data-act="pick" data-r="'+x.r+'">'+orderIcon(x.r,true)+'<span>'+orderName(x.r)+'</span><small>'+sub+'</small></button>';
       if(sp)ups+=c;else if(mage)scr+=c;else goods+=c;
     });
-    return '<div class="lbl full">'+t('cr2.goods')+'</div><div class="it-grid">'+goods+'</div>'+
+    return '<p class="note">'+t('cr2.hint2')+'</p><div class="lbl full">'+t('cr2.goods')+'</div><div class="it-grid">'+goods+'</div>'+
       '<div class="lbl full">'+t('cr2.scrolls')+'</div><div class="it-grid">'+scr+'</div>'+
       (ups?'<div class="lbl full">'+t('cr2.ups')+'</div><div class="it-grid">'+ups+'</div>':'');
-  },function(act,ds){if(act==='pick')curItem=ds.r;}));
+  },function(act,ds){
+    if(act!=='pick')return;
+    /* второе нажатие на уже выбранную вещь сразу ставит её в очередь */
+    if(curItem===ds.r){quickOrder(ds.r);return;}
+    curItem=ds.r;
+  }));
+  /* закреплённая снизу полоса: выбранная вещь и кнопка, видна при любой прокрутке списка */
+  add(actBlock(function(){
+    var r=curItem,mid=recipeMaster(r),m=g.master(mid),c=g.orderCost(r),bl=c?g.orderBlock(mid,r):'max';
+    var btn=bl?t('cr2.block.'+bl):t('cr2.do');
+    return '<div class="cbar-it">'+orderIcon(r,true)+'<div><b>'+orderName(r)+'</b><small>'+(c&&Object.keys(c).length?costHtml(c):t('cr2.free'))+'</small></div></div>'+
+      '<span class="cbar-q">'+S.queue.length+'/'+S.qSlots+'</span>'+
+      '<button type="button" class="btn pink" data-act="order" data-r="'+r+'"'+(bl?' disabled':'')+'>'+btn+'</button>';
+  },function(act,ds){if(act==='order')quickOrder(ds.r);},'cbar'));
+}
+function quickOrder(r){
+  var mid=recipeMaster(r);
+  if(g.order(mid,r)){toast(t('cr2.ordered',{r:orderName(r)}));return true;}
+  var bl=g.orderBlock(mid,r);if(bl)toast(t('cr2.block.'+bl));
+  return false;
 }
 function tabCraftMasters(){
   add(actBlock(function(){

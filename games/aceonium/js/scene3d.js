@@ -71,7 +71,7 @@ var BIOMES=[
    hemiSky:'#ecd4bc',hemiGround:'#5a4826',sunCol:'#ffc890',sunI:1.7,fill:0.7,hemiI:1.4,mote:'#ffd090',moteOp:0.6,night:false,accent:'#ffb060'},
   {id:2,name:'night',skyTop:'#03061a',skyMid:'#0c1a38',skyBot:'#1e3a5c',sun:'#cfe8ff',sunY:0.7,fog:'#142236',fogNear:6,fogFar:55,
    grass:'#1a3020',grass2:'#24402a',road:'#4a4c56',road2:'#33353e',pine:'#0f2220',oak:'#1e3a2c',rock:'#3a4048',moss:'#1e3a28',
-   hemiSky:'#5070b0',hemiGround:'#142018',sunCol:'#9fc4ff',sunI:0.9,fill:0.6,hemiI:1.0,mote:'#7ff0ff',moteOp:0.95,night:true,accent:'#00e5ff'},
+   hemiSky:'#5070b0',hemiGround:'#142018',sunCol:'#9fc4ff',sunI:1.15,fill:0.75,hemiI:1.35,mote:'#7ff0ff',moteOp:0.95,night:true,accent:'#00e5ff'},
   {id:3,name:'dusk', skyTop:'#2a1232',skyMid:'#8a3a4a',skyBot:'#f0703c',sun:'#ff9a50',sunY:0.86,fog:'#6e3e44',fogNear:8,fogFar:66,
    grass:'#3c3a20',grass2:'#5a4a24',road:'#806050',road2:'#5a4034',pine:'#3a2a2e',oak:'#7a3430',rock:'#5a4a4a',moss:'#4a4a22',
    hemiSky:'#d09090',hemiGround:'#3a2418',sunCol:'#ffa070',sunI:1.5,fill:0.65,hemiI:1.25,mote:'#ffa070',moteOp:0.6,night:false,accent:'#ff7040'}
@@ -332,6 +332,24 @@ function buildMonster(type,boss,biome,cols){
 function updateMonster(E,dt,fighting){
   E.t+=dt;
   var t=E.t;
+  if(E.mixer){
+    /* модель: пока идёт к магу - ходьба, в бою стоит и иногда бьёт, при смерти свой клип */
+    if(E.die<0&&E.gone<0){
+      if(!E.form&&E.cur!==idleAct(E)&&!(E.curOnce&&E.acts[E.cur].isRunning()))playAct(E,idleAct(E),0.25);
+      if(fighting){E.lungeT-=dt;if(E.lungeT<=0){E.lungeT=1.8+Math.random()*1.8;var at=E.acts.Punch?'Punch':E.acts.Attack?'Attack':null;if(at)playAct(E,at,0.12);}}
+      if(E.lunge>0.95&&E.acts.HitReact&&E.cur!=='HitReact'&&!E.curOnce)playAct(E,E.acts.Punch?'Punch':'HitReact',0.1);
+    }
+    E.mixer.update(dt);
+    if(E.float!==undefined)E.body.position.y=Math.sin(t*2)*0.06;
+    if(E.aura){E.aura.rotation.z=t*0.6;E.aura.material.opacity=0.45+Math.sin(t*3)*0.15;}
+    E.lunge=Math.max(0,E.lunge-dt*2.5);
+    E.body.position.x=E.shake>0?(Math.random()-0.5)*0.08*E.shake:0;
+    E.shake=Math.max(0,E.shake-dt*6);
+    E.flash=Math.max(0,E.flash-dt*8);
+    for(var mi=0;mi<E.mats.length;mi++){var mm=E.mats[mi];if(!mm.emissive)continue;if(mm.userData.e===undefined){mm.userData.e=mm.emissive.clone();mm.userData.ei=mm.emissiveIntensity;}
+      if(E.flash>0){if(mm.emissiveMap)mm.emissive.setRGB(1,1,1);else mm.emissive.copy(mm.color);mm.emissiveIntensity=E.flash*0.45;}else{mm.emissive.copy(mm.userData.e);mm.emissiveIntensity=mm.userData.ei;}}
+    return;
+  }
   if(E.blob){E.blob.scale.y=0.78+Math.sin(t*4)*0.06;E.blob.scale.x=E.blob.scale.z=1-Math.sin(t*4)*0.04;}
   if(E.float!==undefined)E.body.position.y=E.float+Math.sin(t*2)*0.08;
   if(E.tent)E.tent.forEach(function(tn,i){tn.rotation.x=Math.sin(t*3+i)*0.3;tn.rotation.z=Math.sin(t*2.3+i*2)*0.2;});
@@ -348,7 +366,7 @@ function updateMonster(E,dt,fighting){
   for(var i=0;i<E.mats.length;i++){var m=E.mats[i];if(m.userData.e===undefined){m.userData.e=m.emissive.clone();m.userData.ei=m.emissiveIntensity;}
     if(E.flash>0){m.emissive.setRGB(1,1,1);m.emissiveIntensity=E.flash*0.9;}else{m.emissive.copy(m.userData.e);m.emissiveIntensity=m.userData.ei;}}
 }
-function disposeTree(o){o.traverse(function(ch){if(ch.geometry)ch.geometry.dispose();if(ch.material&&!ch.material.map&&ch.material.dispose&&!ch.userData.keep)ch.material.dispose();});}
+function disposeTree(o){o.traverse(function(ch){if(ch.geometry&&!ch.userData.shared)ch.geometry.dispose();if(ch.material&&ch.material.userData&&ch.material.userData.own)ch.material.dispose();if(ch.material&&!ch.material.map&&ch.material.dispose&&!ch.userData.keep)ch.material.dispose();});}
 /* ════════ СЦЕНА: лесная дорога, вид из-за спины мага ════════
    Маг стоит на месте, мир едет на него (+z). Враги собираются из тени вдали. */
 var R=null;
@@ -390,11 +408,11 @@ function makeKinds(){
       part(plane,blades,0,0,0,0.9,0.7,1,Math.PI/2,'grass')]}
   };
 }
-function buildForest(){
-  KINDS=makeKinds();
-  var F={kinds:[],m:new THREE.Matrix4(),t:new THREE.Matrix4(),q:new THREE.Quaternion(),v:new THREE.Vector3(),s:new THREE.Vector3(),e:new THREE.Euler(),c:new THREE.Color()};
-  Object.keys(KINDS).forEach(function(name){
-    var K=KINDS[name],inst=[],meshes=[];
+function buildForest(kinds){
+  var K0=kinds||(KINDS=makeKinds());
+  var F={kinds:[],m:new THREE.Matrix4(),t:new THREE.Matrix4(),q:new THREE.Quaternion(),v:new THREE.Vector3(),s:new THREE.Vector3(),e:new THREE.Euler(),c:new THREE.Color(),models:!!kinds};
+  Object.keys(K0).forEach(function(name){
+    var K=K0[name],inst=[],meshes=[];
     for(var i=0;i<K.count;i++)inst.push(placeInst(K,{},Z_FAR+Math.random()*(Z_NEAR-Z_FAR)));
     K.parts.forEach(function(p){
       var im=new THREE.InstancedMesh(p.geo,p.mat,K.count);
@@ -402,13 +420,31 @@ function buildForest(){
       if(p.tint)im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(K.count*3),3);
       R.world.add(im);meshes.push(im);
     });
-    F.kinds.push({name:name,K:K,inst:inst,meshes:meshes});
+    F.kinds.push({name:name,K:K,inst:inst,meshes:meshes,grass:name==='grass'||!!K.grass});
   });
   return F;
 }
+/* лес из моделей приключения (adventure.js) вместо простых фигур: пересобираем при смене тракта */
+function swapForest(kinds){
+  var old=R.forest;
+  old.kinds.forEach(function(k){k.meshes.forEach(function(m){R.world.remove(m);m.dispose();});});
+  R.forest=buildForest(kinds);
+  R.forest.kinds.forEach(function(k){var big=!k.grass&&!k.K.road;k.meshes.forEach(function(m){m.castShadow=big;m.receiveShadow=false;});});
+  applyDensity();
+  R.forest.kinds.forEach(forestTintKind);
+  forestUpdate(0);
+}
+function applyDensity(){
+  var q=R.q||QUALITY.medium;
+  R.forest.kinds.forEach(function(k){
+    var dens=k.grass?q.grass:q.density;
+    var n=Math.floor(k.K.count*dens);
+    k.meshes.forEach(function(m){m.count=n;m.visible=n>0;});
+  });
+}
 function placeInst(K,o,z){
   var side=Math.random()<0.5?-1:1;
-  o.x=side*rnd(K.xr[0],K.xr[1]);o.z=z;o.s=rnd(K.sr[0],K.sr[1]);o.ry=rnd(0,Math.PI*2);o.v=rnd(0.75,1.2);
+  o.x=side*rnd(K.xr[0],K.xr[1]);o.z=z;o.s=rnd(K.sr[0],K.sr[1]);o.ry=rnd(0,Math.PI*2);o.v=K.parts&&K.leafPal!==undefined?rnd(0.85,1.1):rnd(0.75,1.2);o.pi=Math.floor(Math.random()*8);
   return o;
 }
 function forestTint(b){
@@ -536,11 +572,8 @@ function setQuality(name){
   var dpr=window.devicePixelRatio||1;
   R.pr=name==='low'?Math.min(dpr,1)*q.pr:Math.min(dpr,q.pr);
   /* плотность леса: рисуем только часть экземпляров */
-  R.forest.kinds.forEach(function(k){
-    var dens=k.name==='grass'?q.grass:q.density;
-    var n=Math.floor(k.K.count*dens);
-    k.meshes.forEach(function(m){m.count=n;m.visible=n>0;});
-  });
+  applyDensity();
+  applyGround();
   R.mist.forEach(function(m){m.visible=q.mist;});
   R.motes.visible=q.motes;
   /* тени */
@@ -636,6 +669,7 @@ function init(host,quality){
   setBiome(0);
   forestUpdate(0);
   setQuality(quality&&QUALITY[quality]?quality:detectQuality());
+  setTimeout(loadAdventure,1500);
   if(window.ResizeObserver)new ResizeObserver(resize).observe(host);
   else window.addEventListener('resize',resize);
   return R;
@@ -743,13 +777,63 @@ function setBiome(id){
   R.sunGlow.position.y=60-(b.sunY-0.5)*200*0.9;
   R.rays.forEach(function(r){r.visible=!b.night;r.material.color.set(b.sun);});
   R.treelines.forEach(function(tl){tl.material.map=treelineTex(b,tl.userData.k);tl.material.needsUpdate=true;});
-  var gm=grassTex(b);gm.repeat.set(60,50);R.ground.material.map=gm;R.ground.material.needsUpdate=true;
-  var rm=roadTex(b);rm.repeat.set(1,50);R.road.material.map=rm;R.road.material.needsUpdate=true;
+  R.groundBiome=-1;applyGround();
+  if(window.Adventure&&Adventure.ready){
+    swapForest(Adventure.kinds(id));
+    Adventure.loadBiome(id).then(function(){if(R.biome===id){R.groundBiome=-1;applyGround();}},function(){});
+  }
   R.hemi.color.set(b.hemiSky);R.hemi.groundColor.set(b.hemiGround);R.hemi.intensity=b.hemiI||1;
   R.sun.color.set(b.sunCol);R.sun.intensity=b.sunI;R.fill.intensity=b.fill;
-  R.mist.forEach(function(m){m.material.color.set(b.night?'#8aa0c0':'#ffffff');m.material.opacity=b.night?0.18:0.32;});
+  /* с настоящим лесом туман реже, иначе он прячет деревья */
+  var mk=R.forest&&R.forest.models?0.5:1;
+  R.mist.forEach(function(m){m.material.color.set(b.night?'#8aa0c0':'#ffffff');m.material.opacity=(b.night?0.18:0.32)*mk;});
   R.motes.material.color.set(b.mote);R.motes.material.opacity=b.moteOp;R.motes.material.size=b.night?0.14:0.09;
   forestTint(b);
+}
+/* земля и дорога: текстуры Poly Haven, если уже скачаны, иначе нарисованные */
+var roadMask=null;
+function maskTex(){
+  if(roadMask)return roadMask;
+  roadMask=canvasTex('roadmask',256,256,function(g,w,h){
+    g.fillStyle='#000';g.fillRect(0,0,w,h);
+    var L=56,Rr=200;
+    for(var y=0;y<h;y++){
+      var e1=L+Math.sin(y/h*Math.PI*4)*6+Math.sin(y/h*Math.PI*10)*3,e2=Rr+Math.sin(y/h*Math.PI*6+1)*6+Math.sin(y/h*Math.PI*14)*3;
+      var grd=g.createLinearGradient(e1-18,0,e2+18,0);
+      grd.addColorStop(0,'#000');grd.addColorStop(18/(e2-e1+36),'#fff');grd.addColorStop(1-18/(e2-e1+36),'#fff');grd.addColorStop(1,'#000');
+      g.fillStyle=grd;g.fillRect(e1-18,y,e2-e1+36,1);
+    }
+  });
+  roadMask.wrapS=THREE.ClampToEdgeWrapping;roadMask.wrapT=THREE.RepeatWrapping;roadMask.repeat.set(1,50);
+  return roadMask;
+}
+function rep2(t,x,y){if(!t)return null;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(x,y);t.needsUpdate=true;return t;}
+function applyGround(){
+  if(!R||R.biome<0)return;
+  var b=R.biomeObj,id=R.biome,set=window.Adventure&&Adventure.groundSet?Adventure.groundSet(id):null;
+  var key=id+(set?'a':'c')+(R.qName||'');
+  if(R.groundBiome===key)return;R.groundBiome=key;
+  var gm=R.ground.material,rm=R.road.material,nrm=R.qName&&R.qName!=='low';
+  if(set){
+    gm.map=rep2(set.g,48,40);gm.normalMap=nrm?rep2(set.gn,48,40):null;gm.color.set(set.gc);
+    rm.map=rep2(set.r,1.3,46);rm.normalMap=nrm?rep2(set.rn,1.3,46):null;rm.alphaMap=maskTex();rm.color.set(set.rc);
+    if(gm.normalMap)gm.normalScale.set(0.8,0.8);if(rm.normalMap)rm.normalScale.set(1,1);
+  }else{
+    var gt=grassTex(b);gt.repeat.set(60,50);gm.map=gt;gm.normalMap=null;gm.color.set('#ffffff');
+    var rt=roadTex(b);rt.repeat.set(1,50);rm.map=rt;rm.normalMap=null;rm.alphaMap=null;rm.color.set('#ffffff');
+  }
+  gm.needsUpdate=true;rm.needsUpdate=true;
+}
+/* ассеты приключения: качаются в фоне после старта; когда готовы, лес и земля переключаются сами */
+function loadAdventure(){
+  if(!window.Adventure||R.advLoading)return;
+  R.advLoading=true;
+  var res=(R.qName==='high'||R.qName==='ultra')?'2k':'1k';
+  Adventure.init(THREE).then(function(){return Adventure.loadBase(res);}).then(function(){
+    var id=R.biome;R.biome=-1;setBiome(id<0?0:id);
+    /* монстры других трактов: только открытых, остальные докачаются, когда маг туда пойдёт */
+    var g=window.acGame;for(var t=0;t<4;t++)if(t!==id&&g&&g.tractOpen&&g.tractOpen(t))Adventure.loadTract(t);
+  },function(e){console.warn('[scene3d] adventure',e);R.advLoading=false;});
 }
 
 /* таверна на слабой графике: без постобработки и с пиксельным коэффициентом не выше 1 (телефоны) */
@@ -835,11 +919,43 @@ function bolt(kind,crit){
 }
 function bez(o,a,c,b,t){var u=1-t;o.set(u*u*a.x+2*u*t*c.x+t*t*b.x,u*u*a.y+2*u*t*c.y+t*t*b.y,u*u*a.z+2*u*t*c.z+t*t*b.z);return o;}
 
+/* монстр из моделей приключения: та же структура E, что у нарисованного, плюс микшер анимаций */
+function buildModelMonster(key,boss,biome){
+  var A=Adventure.monster(key);if(!A)return null;
+  var E={root:new THREE.Group(),body:new THREE.Group(),type:'model',model:A,mixer:A.mixer,acts:A.acts,mats:A.mats,t:Math.random()*10,flash:0,shake:0,lunge:0,lungeT:1+Math.random()*2,die:-1,gone:-1,cur:null};
+  E.scale=boss?2.0:1.35;
+  /* рост модели задан в метрах: внутри делим на масштаб, который растит монстра при появлении */
+  E.body.scale.setScalar(1/E.scale);E.body.add(A.root);E.root.add(E.body);
+  E.h=A.h/E.scale;E.float=A.fly?A.fly/E.scale:undefined;
+  A.root.traverse(function(o){if(o.isMesh)o.userData.shared=true;});
+  if(boss){
+    E.aura=mesh(new THREE.RingGeometry(0.7,0.85,40),new THREE.MeshBasicMaterial({color:0xff2d4a,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}),0,0.03,0);
+    E.aura.rotation.x=-Math.PI/2;E.root.add(E.aura);
+    var ag2=glowSprite(0xff2d4a,2.4,0.25);ag2.position.y=E.h*0.5;E.root.add(ag2);
+  }
+  E.shadow=mesh(new THREE.CircleGeometry(0.55,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.4,depthWrite:false}),0,0.012,0);
+  E.shadow.rotation.x=-Math.PI/2;E.root.add(E.shadow);
+  playAct(E,E.acts.Walk?'Walk':E.acts.Flying?'Flying':E.acts.Jump?'Jump':'Idle',0);
+  return E;
+}
+/* клип монстра: idle/walk по кругу, удар и смерть один раз */
+function playAct(E,name,fade){
+  var a=E.acts[name];if(!a||E.cur===name&&a.isRunning())return;
+  var once=/Attack|Punch|Death|HitReact/.test(name);
+  a.reset();a.setLoop(once?THREE.LoopOnce:THREE.LoopRepeat,Infinity);a.clampWhenFinished=once;a.enabled=true;
+  var prev=E.cur&&E.acts[E.cur];
+  if(prev&&prev!==a&&fade>0)a.crossFadeFrom(prev,fade,false);else if(prev&&prev!==a)prev.stop();
+  a.play();E.cur=name;E.curOnce=once;
+}
+function idleAct(E){return E.acts.Idle?'Idle':E.acts.Flying?'Flying':'Walk';}
 function spawn(e,walkT){
   if(!R)return;
   if(R.enemy)dropEnemy(R.enemy,'gone');
   setBiome(e.biome||0);
-  var E=buildMonster(e.type,e.boss,e.biome,e.cols);
+  var key=e.boss?e.name:e.res,E=null;
+  if(window.Adventure&&Adventure.hasMonster&&Adventure.hasMonster(key))E=buildModelMonster(key,e.boss,e.biome);
+  else if(window.Adventure&&Adventure.ready&&e.t!==undefined)Adventure.loadTract(e.t);
+  if(!E)E=buildMonster(e.type,e.boss,e.biome,e.cols);
   E.root.rotation.y=0;
   castShadows(E.root,true);E.shadow.visible=!R.shadowOn;
   E.root.scale.setScalar(0.001);
@@ -943,8 +1059,7 @@ function frame(dt,real){
   /* мир едет на мага */
   if(walking&&R.world.visible){
     var d=WALK_SPEED*dt*(1-0.3*R.fat);
-    R.road.material.map.offset.y+=d/4;
-    R.ground.material.map.offset.y+=d/(200/50);
+    scrollTex(R.road.material,d);scrollTex(R.ground.material,d);
     forestUpdate(d);
     R.forest.kinds.forEach(function(k){if(k.dirty){k.dirty=false;forestTintKind(k);}});
     R.mist.forEach(function(m){m.position.z+=d;if(m.position.z>-6){m.position.z-=rnd(60,80);m.position.x=rnd(-14,14);}});
@@ -998,6 +1113,16 @@ function frame(dt,real){
   for(var di=R.dead.length-1;di>=0;di--){
     var X=R.dead[di];updateMonster(X,dt,false);
     var base=X.root.scale.x;
+    if(X.die>=0&&X.mixer){
+      /* модель: клип смерти, потом тает */
+      if(X.cur!=='Death'&&X.acts.Death)playAct(X,'Death',0.1);
+      X.die+=Math.max(dt,real);
+      var hold=X.acts.Death?1.0:0,kk=Math.max(0,(X.die-hold)/0.4);
+      if(!X.acts.Death)X.root.rotation.z=Math.min(1.4,X.die*3);
+      X.root.scale.setScalar(X.scale*Math.max(0.01,1-kk));
+      if(kk>=1){R.scene.remove(X.root);disposeTree(X.root);R.dead.splice(di,1);}
+      continue;
+    }
     if(X.die>=0){X.die+=Math.max(dt,real);var kd=X.die/0.5;X.root.scale.setScalar(X.scale*Math.max(0.01,1-kd));X.root.position.y=kd*0.5;X.root.rotation.y+=dt*5;if(kd>=1){R.scene.remove(X.root);disposeTree(X.root);R.dead.splice(di,1);}}
     else{if(X.goneBase===undefined)X.goneBase=base;X.gone+=Math.max(dt,real);var gk=X.gone/0.35;X.root.scale.setScalar(Math.max(0.001,X.goneBase*(1-gk)));if(walking)X.root.position.z+=WALK_SPEED*dt;if(gk>=1){R.scene.remove(X.root);disposeTree(X.root);R.dead.splice(di,1);}}
   }
@@ -1042,8 +1167,26 @@ function frame(dt,real){
   if(R.post&&R.postMode)R.post.render(R.scene,R.camera,R.postMode,R.t);
   else{R.renderer.setRenderTarget(null);R.renderer.render(R.scene,R.camera);}
 }
+/* земля едет на мага: сдвиг текстуры = путь * повторы / длина плоскости (200 м) */
+function scrollTex(m,d){
+  var seen=[];
+  [m.map,m.normalMap,m.alphaMap].forEach(function(t){if(!t||seen.indexOf(t)>=0)return;seen.push(t);t.offset.y+=d*t.repeat.y/200;});
+}
 function forestTintKind(k){
   var b=R.biomeObj,c=R.forest.c;
+  if(R.forest.models){
+    var pal=k.K.leafPal?k.K.leafPal.map(function(h){return new THREE.Color(h);}):null;
+    k.K.parts.forEach(function(p,pi){
+      var im=k.meshes[pi];if(!im.instanceColor)return;
+      for(var i=0;i<k.inst.length;i++){
+        var o=k.inst[i];
+        if(p.tint==='leaf'&&pal)c.copy(pal[o.pi%pal.length]).multiplyScalar(o.v);else c.setRGB(o.v,o.v,o.v);
+        im.setColorAt(i,c);
+      }
+      im.instanceColor.needsUpdate=true;
+    });
+    return;
+  }
   var base={pine:b.pine,oak:b.oak,rock:b.rock,moss:b.moss,bush:b.oak,grass:b.grass2};
   k.K.parts.forEach(function(p,pi){
     if(!p.tint)return;

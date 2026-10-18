@@ -1,0 +1,6 @@
+Ассеты приключения (дорога), все CC0 1.0 (public domain):
+- Stylized Nature MegaKit [Standard] by Quaternius, https://quaternius.com
+- Ultimate Monsters (Big) by Quaternius, https://quaternius.com/packs/ultimatemonsters.html
+- Easy Animated Enemy Pack by Quaternius
+- Текстуры земли и дороги Poly Haven, https://polyhaven.com: grass_ground, forest_leaves_04, brown_mud_leaves_01, stony_dirt_path, rock_path, aerial_ground_rock
+Сборка: /home/claude/pipe/build_adventure.mjs (модели без картинок, текстуры webp 1k/2k).

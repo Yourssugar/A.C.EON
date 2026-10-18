@@ -26,7 +26,7 @@ function open(id){
   document.body.appendChild(box);M.box=box;
   M.q=function(s){return box.querySelector(s);};
   var tabs=M.q('.ms2-tabs');
-  D.MASTERS.forEach(function(d){var b=el('button');b.type='button';b.dataset.m=d.id;tabs.appendChild(b);});
+  D.MASTERS.map(function(d){return d.id;}).concat(['mage']).forEach(function(mid){var b=el('button');b.type='button';b.dataset.m=mid;tabs.appendChild(b);});
   tabs.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;M.id=b.dataset.m;Sound.sfx('select');showMaster();render(true);});
   M.q('[data-act="close"]').addEventListener('click',close);
   M.q('.ms2-body').addEventListener('click',function(e){
@@ -38,6 +38,8 @@ function open(id){
     if(a==='tools'){var n=0;do{if(!g.buyTools(M.id))break;n++;}while(b.dataset.max&&n<D.STAGES);ok=n>0;}
     if(a==='slot')ok=g.buyQSlot();
     if(a==='coll')ok=g.collAdd(b.dataset.r);
+    if(a==='book'&&window.Book){Book.open(M.id);return;}
+    if(a==='pin'){g.togglePin(b.dataset.r);ok=true;}
     if(a==='cancel')ok=g.cancel(+b.dataset.i);
     if(ok){Sound.sfx('select');if(a==='hire')showMaster();}
     render(true);
@@ -87,10 +89,10 @@ function initStage(){
   }
   requestAnimationFrame(loop);
 }
-var WORK={herbalist:'Interact',carpenter:'PickUp_Table',smith:'Fixing_Kneeling',tanner:'Interact',jeweler:'Interact'};
+var WORK={herbalist:'Interact',carpenter:'PickUp_Table',smith:'Fixing_Kneeling',tanner:'Interact',jeweler:'Interact',mage:'Interact'};
 function showMaster(){
   var st=M&&M.st;if(!st||!window.Tavern3D)return;
-  var id=M.id,look=Tavern3D.masterLook(id);if(!look)return;
+  var id=M.id,look=id==='mage'?window.acGame.S.look:Tavern3D.masterLook(id);if(!look)return;
   for(var k in st.avs)if(st.avs[k].root)st.avs[k].root.visible=k===id;
   var A=st.avs[id];
   if(A&&A.root){st.cur=A;anim();return;}
@@ -113,24 +115,25 @@ function anim(){
 /* ════════ СПИСОК ════════ */
 function render(full){
   if(!M)return;
-  var g=window.acGame,S=g.S,id=M.id,d=D.MASTER_BY[id],m=g.master(id);
+  var g=window.acGame,S=g.S,id=M.id,d=D.MASTER_BY[id]||{hire:0},m=g.master(id),mage=id==='mage';
   M.q('.wd2-coins b').textContent=D.fmt(S.gold);
   [].forEach.call(M.q('.ms2-tabs').children,function(b){
     var mm=g.master(b.dataset.m);
-    b.innerHTML=t('ms.'+b.dataset.m)+'<small>'+(mm.hired?t('ms.lvl',{n:mm.lvl}):t('ms.notHired'))+'</small>';
+    b.innerHTML=(b.dataset.m==='mage'?t('ms.mage'):t('ms.'+b.dataset.m))+'<small>'+(mm.hired?t('ms.lvl',{n:mm.lvl}):t('ms.notHired'))+'</small>';
     b.classList.toggle('sel',b.dataset.m===id);b.classList.toggle('off',!mm.hired);
   });
   /* статус над подиумом */
   var stEl=M.q('.ms2-status'),stTxt='';
   if(m.hired){
-    stTxt='<b>'+t('ms.'+id)+'</b> '+t('ms.lvl',{n:m.lvl})+'<div class="bar xp"><i style="width:'+Math.min(100,m.xp/D.mXpNeed(m.lvl)*100).toFixed(1)+'%"></i></div>';
+    stTxt='<b>'+(mage?t('ms.mage'):t('ms.'+id))+'</b> '+t('ms.lvl',{n:m.lvl})+(mage?'':'<div class="bar xp"><i style="width:'+Math.min(100,m.xp/D.mXpNeed(m.lvl)*100).toFixed(1)+'%"></i></div>');
     if(m.teach)stTxt+='<span class="tch">'+t('ms2.teaching',{r:UI.itemName(m.teach.r),t:UI.ft(m.teach.t)})+'</span>';
     else{var my=g.queueOf(id);if(my.length)stTxt+='<span>'+t('ms2.busy',{r:UI.orderName(my[0].r),t:UI.ft(my[0].t/g.mSpeed(id))})+'</span>';else stTxt+='<span>'+t('ms.idle')+'</span>';}
   }
   if(stEl._h!==stTxt){stEl._h=stTxt;stEl.innerHTML=stTxt;}
   anim();
   var body=M.q('.ms2-body'),h='';
-  h+='<p class="note">'+t('ms.'+id+'.d')+'</p>';
+  h+='<p class="note">'+t(mage?'ms3.mageD':'ms.'+id+'.d')+'</p>';
+  if(mage&&S.place!=='home')h+='<p class="bad">'+t('cr2.mageAway')+'</p>';
   if(!m.hired){
     h+='<button type="button" class="btn pink big" data-act="hire"'+(S.gold<d.hire?' disabled':'')+'>'+t('ms.hire')+' '+COIN+D.fmt(d.hire)+'</button>';
     h+='<div class="lbl full">'+t('ms2.canMake')+'</div><div class="ms2-grid">'+D.GOODS.filter(function(x){return x.m===id;}).map(function(x){return card(x.id,'view');}).join('')+'</div>';
@@ -146,20 +149,17 @@ function render(full){
   }
   h+='</div>';
   if(m.teach)h+='<p class="tch">'+t('ms2.teachNote')+'</p>';
-  /* что умеет */
-  var specials=Object.keys(D.ORDERS).filter(function(r){return D.ORDERS[r].m===id;});
-  h+='<div class="lbl full">'+t('ms2.make')+'</div><div class="ms2-grid">'+specials.map(function(r){return card(r,'special');}).join('')+
-     m.known.map(function(r){return card(r,'make');}).join('')+'</div>';
-  /* учитель */
+  /* что умеет (улучшения посоха, сумки и склада заказываются во вкладке ГОРОД) */
+  h+='<div class="lbl full">'+t('ms2.make')+'</div><div class="ms2-grid">'+m.known.map(function(r){return card(r,'make');}).join('')+'</div>';
+  /* учитель; у мага новые свитки открываются его уровнем */
   var rest=D.GOODS.filter(function(x){return x.m===id&&m.known.indexOf(x.id)<0;});
   if(rest.length){
-    h+='<div class="lbl full">'+t('ms.teacher')+'</div><p class="note">'+t('ms2.teacherD')+'</p><div class="ms2-grid">'+rest.map(function(x){return card(x.id,'learn');}).join('')+'</div>';
+    h+='<div class="lbl full">'+t(mage?'ms3.mageLater':'ms.teacher')+'</div>'+(mage?'':'<p class="note">'+t('ms2.teacherD')+'</p>')+'<div class="ms2-grid">'+rest.map(function(x){return card(x.id,mage?'view':'learn');}).join('')+'</div>';
   }
-  /* коллекция: по одной вещи каждого рецепта мастера */
-  var cl=g.collList(id),cn=g.collCount(id),cd=g.collDone(id);
-  h+='<div class="lbl full">'+t('coll.title',{n:cn,m:cl.length})+'</div><p class="note">'+t(cd?'coll.doneI':'coll.info')+'</p><div class="coll">'+
-    cl.map(function(r){var has=g.collHas(id,r),can=!has&&g.invCount(r)>0;
-      return '<button type="button" class="coll-it'+(has?' has':'')+(can?' can':'')+'" data-act="coll" data-r="'+r+'"'+(can?'':' disabled')+' title="'+UI.itemName(r)+'">'+UI.orderIcon(r,true)+(can?'<i>+</i>':'')+'</button>';}).join('')+'</div>';
+  /* коллекция живёт в книге */
+  var cl=g.collList(id),cn=g.collCount(id);
+  h+='<div class="ms2-up"><div><b>'+t('bk.title')+'</b> '+cn+' / '+cl.length+'<small>'+t(g.collDone(id)?'coll.doneI':'bk.hint')+'</small></div><button type="button" class="btn sm" data-act="book">'+t('bk.open')+'</button></div>';
+  if(mage){setBody(body,h);return;}
   /* улучшения мастера */
   var tc=g.toolsCost(id),sc=g.qSlotCost();
   h+='<div class="lbl full">'+t('ms2.upgrades')+'</div>'+
@@ -178,6 +178,7 @@ function setBody(body,h){if(body._h!==h){var sc=body.scrollTop;body._h=h;body.in
 function card(r,mode){
   var g=window.acGame,id=M.id,m=g.master(id),gd=D.GOOD_BY[r],sp=!!D.ORDERS[r];
   var name=UI.orderName(r),btn='',sub='',cls='ms2-card';
+  if(mode==='make'&&id==='mage'&&gd)sub='';
   if(mode==='special'){
     var c=g.orderCost(r);
     if(!c)return '<div class="'+cls+' dim">'+UI.orderIcon(r,true)+'<b>'+t('ord.'+r+'Max')+'</b></div>';
@@ -187,12 +188,13 @@ function card(r,mode){
   }else if(mode==='make'){
     var bl2=g.orderBlock(id,r);
     sub=UI.ft(g.craftTime(id,r)/g.mSpeed(id))+' · '+COIN+D.fmt(gd.price)+'<br>'+t('cr2.mastery',{n:Math.min(g.mastery(id,r),D.MASTERY_CAP),m:D.MASTERY_CAP});
-    btn='<div class="cost">'+UI.costHtml(gd.cost)+'</div><button type="button" class="btn sm" data-act="order" data-r="'+r+'"'+(bl2?' disabled':'')+'>'+(bl2==='teaching'?t('ms2.studying'):bl2==='full'?t('ms.full'):t('ms2.do'))+'</button>';
+    btn='<div class="cost">'+UI.costHtml(gd.cost)+'</div><button type="button" class="btn sm" data-act="order" data-r="'+r+'"'+(bl2?' disabled':'')+'>'+(bl2==='teaching'?t('ms2.studying'):bl2==='full'?t('ms.full'):t('ms2.do'))+'</button>'+
+      '<button type="button" class="pin-b'+(g.isPinned(r)?' on':'')+'" data-act="pin" data-r="'+r+'" title="'+t(g.isPinned(r)?'cr3.unpin':'cr3.pin')+'"></button>';
   }else if(mode==='learn'){
     var ok=g.canLearn(r);cls+=ok?'':' dim';
     sub=m.lvl>=gd.lvl?COIN+D.fmt(gd.price):t('ms.needLvl',{n:gd.lvl});
     btn='<button type="button" class="btn sm pink" data-act="learn" data-r="'+r+'"'+(ok&&g.S.gold>=gd.teach?'':' disabled')+'>'+t('ms.learn')+' '+COIN+D.fmt(gd.teach)+'</button><small>'+UI.ft(D.teachTime(gd.lvl))+'</small>';
-  }else{sub=gd.lvl>1?t('ms.needLvl',{n:gd.lvl}):COIN+D.fmt(gd.price);}
+  }else{sub=id==='mage'?t('cr2.needMage',{n:gd.lvl}):gd.lvl>1?t('ms.needLvl',{n:gd.lvl}):COIN+D.fmt(gd.price);cls+=' dim';}
   var eff=gd&&gd.eff?UI.effText(r,0):'';
   return '<div class="'+cls+'">'+UI.orderIcon(r,true)+'<b>'+name+'</b><small>'+sub+'</small>'+(eff?'<em>'+eff+'</em>':'')+btn+'</div>';
 }

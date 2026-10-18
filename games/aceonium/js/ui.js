@@ -51,8 +51,16 @@ var RES_SVG={
   starice:'<path d="M8 1l2 5h5l-4 3 2 6-5-4-5 4 2-6-4-3h5z" fill="C"/>',
   coal:'<path d="M2 11l3-6 4-2 5 3 1 6-4 3H5z" fill="C"/><path d="M6 6l3-1 2 3" stroke="#9aa0aa" stroke-opacity=".6" fill="none"/>'
 };
+/* v18: картинки из 3D, один атлас assets/icons/icons.webp (сетка 8 x 7 по 128 px) */
+var SPR_IDS=["r_wood", "r_iron", "r_herb", "r_hide", "r_bone", "r_silk", "r_spore", "r_ecto", "r_crystal", "r_silver", "r_coal", "r_ironwood", "r_amber", "r_pearl", "r_starice", "p_heal", "p_str", "p_luck", "p_vigor", "p_spore", "p_ward", "c_bow", "c_shield", "c_wand", "s_sword", "s_axe", "s_helm", "s_mail", "s_blade", "t_cloak", "t_belt", "t_boots", "t_hood", "t_silk", "j_ring", "j_bone", "j_crys", "j_amber", "j_star", "sc_spark", "sc_guard", "sc_wind", "sc_seek", "sc_fire", "sc_storm", "sc_star", "o_staff", "o_bag", "o_store", "o_coin", "o_book"],SPR_COLS=8,SPR_ROWS=7,SPR={};SPR_IDS.forEach(function(id,i){SPR[id]=i;});
+function spr(id,cls){
+  var i=SPR[id];if(i===undefined)return '';
+  var c=i%SPR_COLS,r=Math.floor(i/SPR_COLS);
+  return '<span class="spr'+(cls?' '+cls:'')+'" style="background-position:'+(c/(SPR_COLS-1)*100).toFixed(3)+'% '+(r/(SPR_ROWS-1)*100).toFixed(3)+'%"></span>';
+}
 function resIcon(id,cls){
   var r=D.RES_BY[id];if(!r)return '';
+  if(SPR['r_'+id]!==undefined)return spr('r_'+id,'ri'+(r.rare?' rare':'')+(cls?' '+cls:''));
   return '<svg class="ri'+(r.rare?' rare':'')+(cls?' '+cls:'')+'" viewBox="0 0 16 16" aria-hidden="true">'+RES_SVG[id].replace(/"C"/g,'"'+r.c+'"')+'</svg>';
 }
 var BAG_SVG='<svg class="bag-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2h4v2h2l2 3v7H2V7l2-3h2z" fill="#c08452"/><rect x="5" y="7" width="6" height="2" fill="#000" opacity=".3"/><rect x="7" y="2" width="2" height="2" fill="#5a3a22"/></svg>';
@@ -293,8 +301,9 @@ function pixSvg(tpl,color,cls){
   });
   return (pixCache[key]='<svg class="'+cls+'" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">'+out+'</svg>');
 }
-function itemIcon(id,q,big){
+function itemIcon(id,q,big,extra){
   var gd=D.GOOD_BY[id];if(!gd)return '';
+  if(SPR[id]!==undefined)return spr(id,'ri it q'+(q||0)+(big?' big':'')+(extra?' '+extra:''));
   var tpl=ITEM_TPL[id]||(gd.kind==='potion'?'potion':gd.kind==='ring'?'ring':gd.kind==='scroll'?'scroll':'sword');
   var color=tpl==='ring'?'#c8d0dc':gd.c;
   var svg=pixSvg(tpl,color,'ri it q'+(q||0)+(big?' big':''));
@@ -316,8 +325,10 @@ function orderName(rid){
   if(rid==='store')return t('ord.store',{n:S.storeLvl+1});
   return itemName(rid);
 }
-function orderIcon(rid,big){
+function orderIcon(rid,big,extra){
   var c=big?' big':'';
+  if(rid==='staff'||rid==='bag'||rid==='store')return spr('o_'+rid,'ri it'+c+(extra?' '+extra:''));
+  if(D.GOOD_BY[rid])return itemIcon(rid,0,big,extra);
   if(rid==='staff')return '<svg class="ri it'+c+'" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="7" y="4" width="2" height="12" fill="#7a5030"/><rect x="5" y="0" width="6" height="5" fill="'+D.TIER_COLORS[D.staffTier(S.staff)%D.TIER_COLORS.length]+'"/><rect x="6" y="1" width="2" height="2" fill="#fff"/></svg>';
   if(rid==='bag')return BAG_SVG.replace('class="bag-ico"','class="ri it'+c+'"');
   if(rid==='store')return '<svg class="ri it'+c+'" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="3" width="14" height="2" fill="#8a5a32"/><rect x="1" y="8" width="14" height="2" fill="#8a5a32"/><rect x="1" y="13" width="14" height="2" fill="#8a5a32"/><rect x="1" y="3" width="2" height="12" fill="#5a3a22"/><rect x="13" y="3" width="2" height="12" fill="#5a3a22"/><rect x="4" y="5" width="3" height="3" fill="#c08452"/><rect x="9" y="10" width="3" height="3" fill="#9aa6b4"/></svg>';
@@ -797,7 +808,37 @@ function tabCraft(){
   seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;craftSub=b.dataset.s;Sound.sfx('select');buildTab();});
   add({el:seg,update:function(){[].forEach.call(seg.children,function(b){b.classList.toggle('sel',b.dataset.s===craftSub);});}});
   if(craftSub==='masters')return tabCraftMasters();
-  if(!curItem)curItem='p_heal';
+  /* v18: здесь только недавние (10 последних разных) и закреплённые; заказывать новое - в окне мастера */
+  var lst=craftList();
+  if(!curItem||!D.GOOD_BY[curItem]||lst.indexOf(curItem)<0)curItem=lst[0]||null;
+  add(actBlock(function(){
+    return '<div class="cr-top"><button type="button" class="btn sm" data-act="book">'+spr('o_book','ri')+' '+t('bk.open')+'</button>'+
+      '<button type="button" class="btn sm" data-act="masters">'+t('cr3.toMasters')+'</button></div>';
+  },function(act){if(act==='book'&&window.Book)Book.open();if(act==='masters'){craftSub='masters';buildTab();}}));
+  if(!curItem){
+    add(actBlock(function(){return queueHtml(true);},queueAct));
+    add(block('<p class="note">'+t('cr3.empty')+'</p>'));
+    return;
+  }
+  /* закреплённые и недавние */
+  add(actBlock(function(){
+    function cardOf(r){
+      var mid=recipeMaster(r),m=g.master(mid),bl=g.orderBlock(mid,r),pin=g.isPinned(r);
+      var cls='it-card'+(curItem===r?' sel':'')+(m.hired&&!bl?' ok':'')+(pin?' pin':'');
+      var n=g.invCount(r);
+      return '<button type="button" class="'+cls+'" data-act="pick" data-r="'+r+'">'+(pin?'<i class="pin-i"></i>':'')+orderIcon(r,true)+'<span>'+orderName(r)+'</span><small>'+(n?'x'+n:'')+'</small></button>';
+    }
+    var P=S.pinned||[],Rc=(S.recent||[]).filter(function(r){return P.indexOf(r)<0;});
+    var h='';
+    if(P.length)h+='<div class="lbl full">'+t('cr3.pinned')+'</div><div class="it-grid">'+P.map(cardOf).join('')+'</div>';
+    if(Rc.length)h+='<div class="lbl full">'+t('cr3.recent')+'</div><div class="it-grid">'+Rc.map(cardOf).join('')+'</div>';
+    return h+'<p class="note">'+t('cr3.hint')+'</p>';
+  },function(act,ds){
+    if(act!=='pick')return;
+    /* второе нажатие на уже выбранную вещь сразу ставит её в очередь */
+    if(curItem===ds.r){quickOrder(ds.r);return;}
+    curItem=ds.r;
+  }));
   /* выбранная вещь */
   add(actBlock(function(){
     var r=curItem,gd=D.GOOD_BY[r],mid=recipeMaster(r),m=g.master(mid),sp=!gd,mage=mid==='mage',known=sp||m.known.indexOf(r)>=0,c=g.orderCost(r);
@@ -820,37 +861,18 @@ function tabCraft(){
     }
     if(mage)h+='<p class="note'+(S.place==='home'?'':' bad')+'">'+t(S.place==='home'?'cr2.mageHome':'cr2.mageAway')+'</p>';
     if(gd&&!g.collHas(mid,r)&&g.invCount(r)>0)h+='<button type="button" class="btn sm" data-act="coll" data-r="'+r+'">'+t('coll.add')+'</button> <span class="note">'+t('coll.addI')+'</span>';
+    if(gd)h+='<div class="btn-row left"><button type="button" class="btn sm'+(g.isPinned(r)?' pink':'')+'" data-act="pin" data-r="'+r+'">'+t(g.isPinned(r)?'cr3.unpin':'cr3.pin')+'</button>'+
+      '<button type="button" class="btn sm" data-act="masters" data-m="'+mid+'">'+t('cr3.openMaster',{m:mName(mid)})+'</button></div>';
     return h;
   },function(act,ds){
     if(act==='order'&&g.order(recipeMaster(ds.r),ds.r))Sound.sfx('select');
     if(act==='hire'&&g.hire(ds.m))toast(t('ms.hired',{m:t('ms.'+ds.m)}));
     if(act==='masters'&&window.Masters)Masters.open(ds.m);
     if(act==='coll')g.collAdd(ds.r);
+    if(act==='pin'){g.togglePin(ds.r);buildTab();}
   }));
   /* общая очередь */
   add(actBlock(function(){return queueHtml(true);},queueAct));
-  /* сетка: вещи мастеров (что уже умеют), свитки мага, улучшения. Остальное видно у мастеров (учитель) */
-  add(actBlock(function(){
-    var goods='',scr='',ups='';
-    allRecipes().forEach(function(x){
-      var m=g.master(x.m),sp=!!D.ORDERS[x.r],mage=x.m==='mage',known=sp||m.known.indexOf(x.r)>=0;
-      if(!sp&&!mage&&!known)return;
-      if(sp&&!g.orderCost(x.r))return;
-      var bl=g.orderBlock(x.m,x.r),busy=sp&&bl==='pending';
-      var cls='it-card'+(curItem===x.r?' sel':'')+(!m.hired||!known?' dim':'')+(m.hired&&!bl?' ok':'');
-      var sub=busy?t('cr2.block.pending'):sp?'':!m.hired?t('ms.notHired'):!known?t('cr2.mLvl',{n:D.GOOD_BY[x.r].lvl}):g.invCount(x.r)?'x'+g.invCount(x.r):'';
-      var c='<button type="button" class="'+cls+'" data-act="pick" data-r="'+x.r+'">'+orderIcon(x.r,true)+'<span>'+orderName(x.r)+'</span><small>'+sub+'</small></button>';
-      if(sp)ups+=c;else if(mage)scr+=c;else goods+=c;
-    });
-    return '<p class="note">'+t('cr2.hint2')+'</p><div class="lbl full">'+t('cr2.goods')+'</div><div class="it-grid">'+goods+'</div>'+
-      '<div class="lbl full">'+t('cr2.scrolls')+'</div><div class="it-grid">'+scr+'</div>'+
-      (ups?'<div class="lbl full">'+t('cr2.ups')+'</div><div class="it-grid">'+ups+'</div>':'');
-  },function(act,ds){
-    if(act!=='pick')return;
-    /* второе нажатие на уже выбранную вещь сразу ставит её в очередь */
-    if(curItem===ds.r){quickOrder(ds.r);return;}
-    curItem=ds.r;
-  }));
   /* закреплённая снизу полоса: выбранная вещь и кнопка, видна при любой прокрутке списка */
   add(actBlock(function(){
     var r=curItem,mid=recipeMaster(r),m=g.master(mid),c=g.orderCost(r),bl=c?g.orderBlock(mid,r):'max';
@@ -860,6 +882,7 @@ function tabCraft(){
       '<button type="button" class="btn pink" data-act="order" data-r="'+r+'"'+(bl?' disabled':'')+'>'+btn+'</button>';
   },function(act,ds){if(act==='order')quickOrder(ds.r);},'cbar'));
 }
+function craftList(){var P=S.pinned||[];return P.concat((S.recent||[]).filter(function(r){return P.indexOf(r)<0;}));}
 function quickOrder(r){
   var mid=recipeMaster(r);
   if(g.order(mid,r)){toast(t('cr2.ordered',{r:orderName(r)}));return true;}
@@ -875,6 +898,10 @@ function tabCraftMasters(){
         '<span class="ms-face f-'+d.id+'"></span><span class="ms-txt"><b>'+t('ms.'+d.id)+'</b><small>'+(m.hired?t('ms.lvl',{n:m.lvl})+' · ':'')+state+'</small></span>'+
         '<span class="ms-items">'+m.known.slice(0,4).map(function(r){return itemIcon(r,0);}).join('')+'</span></button>';
     });
+    /* маг пишет свитки сам, когда он в таверне */
+    var mq=g.queueOf('mage').length;
+    h+='<button type="button" class="ms-card" data-act="open" data-m="mage"><span class="ms-face f-mage"></span><span class="ms-txt"><b>'+t('ms.mage')+'</b><small>'+t('ms.lvl',{n:S.mlvl})+' · '+(mq?t('ms3.busy2',{n:mq}):S.place==='home'?t('ms.idle'):t('ms3.mageAwayS'))+'</small></span>'+
+      '<span class="ms-items">'+g.master('mage').known.slice(-4).map(function(r){return itemIcon(r,0);}).join('')+'</span></button>';
     /* мастер питомцев: своё окно */
     var P2=g.pets(),ap=P2.active&&P2.own[P2.active];
     h+='<button type="button" class="ms-card'+(P2.hired?'':' off')+'" data-act="pets"><span class="ms-face f-pets"></span><span class="ms-txt"><b>'+t('pt.title')+'</b><small>'+
@@ -944,7 +971,26 @@ function prodBlock(id){
     else if(act==='collect'){var r=g.prodCollect(id2);if(!Object.keys(r).length)toast(t('pd.storeFull'));}
   },'pd pd-'+id);
 }
+/* v18: улучшения мага заказываются здесь (посох и склад у столяра, сумка у кожевника) */
+function mageUpBlock(){
+  return actBlock(function(){
+    var h='<div class="pd-head"><b>'+t('cr2.ups')+'</b><span>'+t('q2.short',{n:S.queue.length,m:S.qSlots})+'</span></div>';
+    ['staff','bag','store'].forEach(function(r){
+      var mid=D.ORDERS[r].m,m=g.master(mid),c=g.orderCost(r);
+      h+='<div class="mu-row">'+orderIcon(r,true)+'<div class="mu-t"><b>'+orderName(r)+'</b><small>'+t('ms.lvl',{n:r==='staff'?S.staff:r==='bag'?S.bagLvl:S.storeLvl})+' · '+mName(mid)+(c?' · '+ft(g.craftTime(mid,r)/g.mSpeed(mid)):'')+'</small>'+(c?'<span class="mu-c">'+costHtml(c)+'</span>':'')+'</div>';
+      if(!c){h+='<span class="note">'+t('buy.done')+'</span></div>';return;}
+      var bl=g.orderBlock(mid,r);
+      if(bl==='hire')h+='<button type="button" class="btn sm pink" data-act="hire" data-m="'+mid+'">'+t('cr2.hireFirst',{m:t('ms.'+mid)})+'</button></div>';
+      else h+='<button type="button" class="btn sm" data-act="order" data-r="'+r+'"'+(bl?' disabled':'')+'>'+(bl?t('cr2.block.'+bl):t('cr2.do'))+'</button></div>';
+    });
+    return h;
+  },function(act,ds){
+    if(act==='order'){var mid=D.ORDERS[ds.r].m;if(g.order(mid,ds.r))toast(t('cr2.ordered',{r:orderName(ds.r)}));}
+    if(act==='hire'&&g.hire(ds.m))toast(t('ms.hired',{m:t('ms.'+ds.m)}));
+  },'pd');
+}
 function tabCity(){
+  add(mageUpBlock());
   add(actBlock(function(){
     var busy=g.crewsBusy(),n=S.crews||1,q=g.crewQ(),cc=g.crewCost();
     var h='<div class="lbl full">'+t('pd.crews')+'</div><p>'+t('pd.crewsNow',{a:busy,b:n})+'</p>';
@@ -1279,7 +1325,7 @@ function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
-  showCreate:showCreate,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,stageHtml:stageHtml,prodName:prodName,
+  showCreate:showCreate,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

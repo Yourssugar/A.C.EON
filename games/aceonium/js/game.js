@@ -50,7 +50,9 @@ function defaults(){
     pets:{hired:false,own:{},active:null,train:null}, // питомцы: own[id]={lvl}, train={id,t,T}
     build:{forge:0,tannery:0,jewelry:0,hall:0,bedroom:0,decor:0},
     prod:prodDefaults(),crews:1,crewQ:[],
-    tav:tavDefaults(),                              // v16: места, гости, повар и пивовар
+    tav:tavDefaults(),
+    recent:[],pinned:[],                            // v18: недавние заказы во вкладке КРАФТ и закреплённые вещи
+                                 // v16: места, гости, повар и пивовар
                     // промыслы (v15) и бригады строителей
     cust:[],custAcc:0,custId:0,rep:0,
     seenV8b:false,
@@ -640,8 +642,13 @@ P.order=function(mid,rid){
   var c=this.orderCost(rid),T=this.craftTime(mid,rid);
   this.pay(c);
   this.S.queue.push({r:rid,m:mid,t:T,T:T,c:JSON.parse(JSON.stringify(c))});
+  if(D.GOOD_BY[rid])this.noteRecent(rid);
   this.emit('order',{m:mid,r:rid});return true;
 };
+/* v18: последние 10 разных вещей, что заказывали; закреплённые остаются наверху */
+P.noteRecent=function(rid){var a=this.S.recent||(this.S.recent=[]),i=a.indexOf(rid);if(i>=0)a.splice(i,1);a.unshift(rid);if(a.length>10)a.length=10;};
+P.isPinned=function(rid){return (this.S.pinned||[]).indexOf(rid)>=0;};
+P.togglePin=function(rid){var a=this.S.pinned||(this.S.pinned=[]),i=a.indexOf(rid);if(i>=0)a.splice(i,1);else if(D.GOOD_BY[rid]&&a.length<16)a.push(rid);else return false;this.emit('pin',rid);return true;};
 /* отмена по номеру в общей очереди: ресурсы и золото возвращаются */
 P.cancel=function(i){var q=this.S.queue,o=q[i];if(!o)return false;this.refund(o.c);q.splice(i,1);this.emit('order',{m:o.m});return true;};
 /* инструменты: та же схема вкладов, мастер делает инструмент сам (без бригады), последний вклад с материалами */
@@ -911,8 +918,8 @@ P.guestTry=function(c){
   if(!this.isOpen()||Math.random()>=D.GUEST_CHANCE)return false;
   var T=this.tav(),seat=this.freeSeat();if(seat<0)return false;
   var gst={id:c.id,who:c.who,seat:seat,t:D.GUEST_SIT};T.guests.push(gst);
-  this.serve('brewer');
-  if(Math.random()<D.GUEST_FOOD)this.serve('cook');
+  gst.beer=this.serve('brewer');
+  if(Math.random()<D.GUEST_FOOD)gst.food=this.serve('cook');
   this.emit('guest',gst);return true;
 };
 P.workerEff=function(w){
@@ -1060,6 +1067,11 @@ P.sanitize=function(){
   delete S.mine;
   if(!S.crews)S.crews=1;
   if(!S.crewQ)S.crewQ=[];
+  if(!S.recent)S.recent=[];if(!S.pinned)S.pinned=[];
+  /* v18: при переходе недавние берём из очереди и из того, что лежит на складе */
+  if(!S.recent.length&&!S.recentSeeded){S.recentSeeded=true;var self2=this;S.queue.forEach(function(o){if(D.GOOD_BY[o.r]&&S.recent.indexOf(o.r)<0)S.recent.push(o.r);});
+    for(var ik in S.inv){var rid0=ik.split(':')[0];if(S.inv[ik]>0&&D.GOOD_BY[rid0]&&S.recent.indexOf(rid0)<0&&S.recent.length<10)S.recent.push(rid0);}}
+  S.recent=S.recent.filter(function(r){return D.GOOD_BY[r];});S.pinned=S.pinned.filter(function(r){return D.GOOD_BY[r];});
   if(!S.tav)S.tav=tavDefaults();
   var td=tavDefaults();for(k in td)if(S.tav[k]===undefined)S.tav[k]=td[k];
   D.WORKER_ORDER.forEach(function(w){var wd=workerDefaults();for(var j in wd)if(S.tav[w][j]===undefined)S.tav[w][j]=wd[j];});

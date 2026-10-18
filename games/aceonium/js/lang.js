@@ -516,7 +516,7 @@ I18n.add('ru',{
   'q2.canceled':'Заказ отменён, ресурсы вернулись','q2.slots':'МЕСТА В ОЧЕРЕДИ','q2.slotsI':'Общая очередь всех мастеров и мага',
   'cr2.xp':'опыт мага','cr2.free':'без ресурсов','cr2.needMage':'НУЖЕН УР. МАГА {n}','cr2.mLvl':'ур. мага {n}','cr2.scrolls':'СВИТКИ МАГА',
   'cr2.mageHome':'Маг пишет свитки, пока он в таверне.','cr2.mageAway':'Маг в походе или спит: свиток ждёт в очереди, пока маг не вернётся.',
-  'cr2.block.no':'НЕ ЕГО','ms.mage':'Маг','ms3.busy2':'в очереди {n}',
+  'cr2.block.no':'НЕ ЕГО','ms.mage':'МАГ','ms3.busy2':'в очереди {n}',
   'it.sc_spark':'Свиток искры','it.sc_guard':'Свиток оберега','it.sc_wind':'Свиток попутного ветра','it.sc_seek':'Свиток поиска',
   'it.sc_fire':'Огненный свиток','it.sc_storm':'Свиток бури','it.sc_star':'Звёздный свиток',
   'desc.sc_spark':'Простой свиток. Маг пишет его без ресурсов и получает опыт.','desc.sc_guard':'Защитные знаки. Без ресурсов, даёт опыт.',
@@ -530,7 +530,7 @@ I18n.add('en',{
   'q2.canceled':'Order canceled, resources returned','q2.slots':'QUEUE SLOTS','q2.slotsI':'Shared queue of all craftsmen and the mage',
   'cr2.xp':'mage xp','cr2.free':'no resources','cr2.needMage':'NEEDS MAGE LV {n}','cr2.mLvl':'mage lv {n}','cr2.scrolls':'MAGE SCROLLS',
   'cr2.mageHome':'The mage writes scrolls while he is in the tavern.','cr2.mageAway':'The mage is on a trip or asleep: the scroll waits in the queue until he is back.',
-  'cr2.block.no':'NOT THEIRS','ms.mage':'Mage','ms3.busy2':'{n} queued',
+  'cr2.block.no':'NOT THEIRS','ms.mage':'MAGE','ms3.busy2':'{n} queued',
   'it.sc_spark':'Spark scroll','it.sc_guard':'Ward scroll','it.sc_wind':'Tailwind scroll','it.sc_seek':'Seeking scroll',
   'it.sc_fire':'Fire scroll','it.sc_storm':'Storm scroll','it.sc_star':'Star scroll',
   'desc.sc_spark':'A simple scroll. The mage writes it without resources and gains xp.','desc.sc_guard':'Protective signs. No resources, gives xp.',
@@ -710,5 +710,31 @@ I18n.add('en',{
   'bs.summer.mini':'ANCIENT GOLEM','bs.summer.mid':'MUSHROOM ELDER','bs.autumn.mini':'ALPACA CHIEF','bs.autumn.mid':'HIGH SHAMAN',
   'bs.swamp.mini':'BOG KING','bs.swamp.mid':'MUSHROOM KING','bs.pass.mini':'MOUNTAIN WHIRL','bs.pass.mid':'MOUNTAIN WARLOCK',
   'v17.title':'NEW MONSTERS','v17.body':'<p>Every tract has more monsters now, and from wave 30 elites appear: bigger, glowing, twice as tough, with double loot. Bosses on waves 10-40 and 60-90 differ, wave 50 has a special one.</p><p>Combat is livelier: monsters wind up before striking, the boss marks where it will hit, crits freeze the frame and knock back. The pet runs in and bites on its own, its damage shows as separate numbers (the total is the same).</p>'
+});
+
+/* v18: картинки из 3D, книга коллекций, крафт по-новому */
+I18n.add('ru',{
+  'bk.title':'КНИГА КОЛЛЕКЦИЙ','bk.open':'КНИГА КОЛЛЕКЦИЙ','bk.total':'собрано {n} из {m}','bk.hint':'по одной вещи каждого рецепта',
+  'bk.reward':'Соберёшь страницу целиком: легендарное +2%, скорость мастера +10%, цена его вещей +10%.',
+  'bk.rewardOn':'Страница собрана: легендарное +2%, скорость +10%, цена +10%.',
+  'bk.inBook':'Уже в книге.','bk.canAdd':'На складе: {n}. Вложи одну, в книгу уйдёт самая простая по качеству.','bk.add':'ВЛОЖИТЬ В КНИГУ',
+  'bk.makeIt':'{m} умеет это делать: закажи в окне мастера.','bk.learnIt':'{m} выучит это у учителя на {n}-м уровне.','bk.mageLvl':'Маг напишет этот свиток на {n}-м уровне.',
+  'cr3.toMasters':'МАСТЕРА','cr3.empty':'Здесь появятся вещи, которые ты заказывал (10 последних без повторов), и закреплённые. Заказывай новое в окне мастера: вкладка МАСТЕРА.',
+  'cr3.pin':'ЗАКРЕПИТЬ','cr3.unpin':'ОТКРЕПИТЬ','cr3.openMaster':'ОКНО: {m}','cr3.pinned':'ЗАКРЕПЛЁННЫЕ','cr3.recent':'НЕДАВНИЕ',
+  'cr3.hint':'Второе нажатие на выбранную вещь ставит её в очередь. Улучшения посоха, сумки и склада теперь во вкладке ГОРОД.',
+  'ms3.mageD':'Маг сам пишет свитки, пока сидит в таверне. Новые свитки открываются его уровнем.','ms3.mageLater':'ОТКРОЮТСЯ ПОЗЖЕ','ms3.mageAwayS':'в походе',
+  'store.noItems':'Пока ничего. Вещи заказывают в окне мастера (вкладка КРАФТ, МАСТЕРА).','v18.title':'КНИГА И КАРТИНКИ','v18.body':'<p>У всех вещей и ресурсов теперь картинки из 3D. Коллекции собраны в отдельную книгу: кнопка во вкладке КРАФТ и в окне мастера.</p><p>Вещи заказываются в окне мастера (маг тоже там, со своими свитками). Во вкладке КРАФТ остались 10 последних заказов и закреплённые вещи. Посох, сумка и склад улучшаются во вкладке ГОРОД. Гости в таверне едят и пьют за столами.</p>'
+});
+I18n.add('en',{
+  'bk.title':'COLLECTION BOOK','bk.open':'COLLECTION BOOK','bk.total':'{n} of {m} collected','bk.hint':'one item of every recipe',
+  'bk.reward':'Complete the page: legendary +2%, master speed +10%, item price +10%.',
+  'bk.rewardOn':'Page complete: legendary +2%, speed +10%, price +10%.',
+  'bk.inBook':'Already in the book.','bk.canAdd':'In store: {n}. Put one in; the lowest quality goes to the book.','bk.add':'PUT IN THE BOOK',
+  'bk.makeIt':'{m} can make it: order in the master window.','bk.learnIt':'{m} learns it from the teacher at level {n}.','bk.mageLvl':'The mage writes this scroll at level {n}.',
+  'cr3.toMasters':'MASTERS','cr3.empty':'Items you ordered (last 10, no repeats) and pinned ones show up here. Order new things in a master window: the MASTERS tab.',
+  'cr3.pin':'PIN','cr3.unpin':'UNPIN','cr3.openMaster':'WINDOW: {m}','cr3.pinned':'PINNED','cr3.recent':'RECENT',
+  'cr3.hint':'A second tap on the selected item queues it. Staff, bag and store upgrades are on the TOWN tab now.',
+  'ms3.mageD':'The mage writes scrolls himself while sitting in the tavern. New scrolls open with his level.','ms3.mageLater':'OPEN LATER','ms3.mageAwayS':'on a trip',
+  'store.noItems':'Nothing yet. Order items in a master window (CRAFT tab, MASTERS).','v18.title':'BOOK AND PICTURES','v18.body':'<p>All items and resources have pictures rendered from 3D now. Collections moved into a separate book: a button on the CRAFT tab and in the master window.</p><p>Items are ordered in the master window (the mage is there too, with his scrolls). The CRAFT tab keeps your last 10 orders and pinned items. Staff, bag and store are upgraded on the TOWN tab. Seated guests eat and drink at the tables.</p>'
 });
 })();

@@ -1,4 +1,4 @@
-/* Проверка баланса v11: node tools/sim.js [дней] [осторожность 1|0] [заходов в день]
+/* Проверка баланса v13: node tools/sim.js [дней] [осторожность 1|0] [заходов в день]
    Игрок заходит каждый час с 7 до 23 (по умолчанию): забирает уголь, учит рецепты, нанимает,
    строит, заказывает улучшения посоха/сумки/склада, забивает очереди мастеров товаром,
    надевает лучшее и отправляет мага на дальний открытый тракт.
@@ -52,6 +52,13 @@ function shop(){
     });
     if(!any)break;
   }
+  /* питомцы: нанять мастера, когда есть лишнее золото, тренировать активного */
+  if(!S.pets.hired&&S.gold>D.PETMASTER_HIRE*2&&g.petHire())mark('pets','мастер питомцев');
+  if(S.pets.hired&&S.pets.active){var pc=g.petCost(S.pets.active);if(pc&&S.gold>pc.gold*3)g.petTrain(S.pets.active);}
+  /* лучший питомец: у кого больше урона на текущем уровне */
+  var best=S.pets.active,bv=-1;for(var pid in S.pets.own){var dd=D.PET_BY[pid],v=(dd.eff.dmg||0)*S.pets.own[pid].lvl;if(v>bv){bv=v;best=pid;}}if(best)S.pets.active=best;
+  /* коллекции: по одной вещи каждого рецепта */
+  D.GOODS.forEach(function(gd){if(g.invCount(gd.id)>1)g.collAdd(gd.id);});
   /* надеть лучшее */
   D.GOODS.forEach(function(gd){if(!gd.slot||!g.invCount(gd.id))return;var cur=S.equip[gd.slot],cv=cur?(D.GOOD_BY[cur.id].price*D.QUAL[cur.q]):0;if(gd.price>cv)g.equipItem(gd.id);});
   D.SKILLS.forEach(function(s){while(g.buySkill(s.id));});
@@ -72,6 +79,8 @@ while(T<DAYS*86400){
     log.push(fmtT(T)+'  gold '+D.fmt(S.gold)+' (+'+D.fmt(S.stats.goldEarned-gold0)+' продаж '+(S.stats.sold-sold0)+') staff '+S.staff+' dps '+D.fmt(g.rawDps())+' mlvl '+S.mlvl+
       ' bag '+S.bagLvl+' store '+S.storeLvl+' mine '+S.mine.lvl+' hall '+S.build.hall+' best '+S.tracts.map(function(x){return x.best+'/'+x.clears;}).join(',')+' lost '+S.stats.lostBags);
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
+      ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
+      ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+
       ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp()));
     gold0=S.stats.goldEarned;sold0=S.stats.sold;
   }

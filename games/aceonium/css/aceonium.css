@@ -646,3 +646,36 @@ body:not(.view-tavern) .qbar{display:none;}
 .ms-face.f-pets{background:#c86a20;}
 .pet-line{font-size:12px;color:#9fc4d6;margin-top:4px;}
 .pt2 .ms2-status b{color:#ffb070;}
+
+/* v15: промыслы и стадии */
+.pd{border:1px solid var(--bdr-d);background:var(--bg3);padding:8px;margin-bottom:6px;transition:box-shadow .3s;}
+.pd.flash{box-shadow:0 0 0 2px var(--pri);}
+.pd-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+.pd-head b{font-size:15px;letter-spacing:1px;}
+.pd-head span{color:#7aa0b4;font-size:13px;}
+.pd-line{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;}
+.pd-line span{flex:1;}
+.pd-line small{color:#7aa0b4;font-size:12px;min-width:70px;text-align:right;}
+.pd-line.off{opacity:.5;}
+.bar.pdb{height:5px;margin:2px 0 2px;}
+.bar.pdb i{background:#b07a40;}
+.bar.pdb.full i{background:#ff8a30;}
+.stg{margin-top:8px;padding-top:6px;border-top:1px dashed var(--bdr-d);}
+.stg-t{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;}
+.stg-t span{color:#9fc3d6;letter-spacing:1px;}
+.stg-s{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-bottom:5px;}
+.stg-s i{height:9px;background:#0a1824;border:1px solid var(--bdr-d);}
+.stg-s i.on{background:var(--pri);border-color:var(--pri);}
+.bar.stgb i{background:#ffb830;transition:none;}
+.stg-b{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;}
+.stg-b .btn .cst{margin-left:4px;}
+.btn.ghost{background:transparent;}
+.ms2-up.col{flex-direction:column;align-items:stretch;}
+.ms2-up.col .stg{margin-top:4px;}
+.tv-lbl .pl-l{display:inline-block;min-width:18px;text-align:center;background:var(--pri-d);color:#fff;margin-right:2px;}
+.tv-lbl i{font-style:normal;color:#ffd27a;}
+.tv-lbl .pl-n{color:#9fb4c4;}
+.tv-lbl .pl-full{font-style:normal;color:#ff8a30;font-weight:700;}
+.tv-lbl .pl-bar{display:block;height:3px;background:#0a1824;margin-top:2px;}
+.tv-lbl .pl-bar s{display:block;height:100%;background:var(--pri);text-decoration:none;}
+.tv-lbl .pl-bar s.b{background:#ffb830;}

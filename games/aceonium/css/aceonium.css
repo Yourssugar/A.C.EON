@@ -679,3 +679,8 @@ body:not(.view-tavern) .qbar{display:none;}
 .tv-lbl .pl-bar{display:block;height:3px;background:#0a1824;margin-top:2px;}
 .tv-lbl .pl-bar s{display:block;height:100%;background:var(--pri);text-decoration:none;}
 .tv-lbl .pl-bar s.b{background:#ffb830;}
+/* v16: повар и пивовар */
+.wk-row{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;}
+.wk-row span{flex:1;}
+.wk-row small{color:#7aa0b4;font-size:12px;}
+.bar.stgb.thin{height:4px;margin:2px 0 6px;}

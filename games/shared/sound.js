@@ -7,6 +7,7 @@
    Sound.music('menu')                              включить плейлист (плавно)
    Sound.duck(0.3, 2000)                            приглушить музыку на время
    Sound.sfx('move')                                эффект
+   Sound.define('eat', fn(t, tone, noise))          свой эффект игры
    Sound.setVolume('music'|'sfx', 0..1)
 
    Без своих треков страница играет общий плейлист аркады, и трек продолжается
@@ -139,5 +140,8 @@ function sfx(name){
   try{SFX[name](ctx.currentTime+0.01);}catch(e){}
 }
 
-window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,setVolume:setVolume,volume:volume};
+/* свой эффект игры: Sound.define('eat', function(t, tone, noise){ tone(t, 660, 0.08, 'square', 0.06); }) */
+function define(name,fn){SFX[name]=function(t){fn(t,tone,noise);};}
+
+window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,define:define,setVolume:setVolume,volume:volume};
 })();

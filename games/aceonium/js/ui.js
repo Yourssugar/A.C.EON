@@ -735,7 +735,7 @@ function queueAct(act,ds){
 /* освоение вещи и шансы качества: полоска n/60, сколько уже быстрее работа руками */
 function masteryHtml(mid,r){
   var n=g.mastery(mid,r),cap=D.MASTERY_CAP,k=Math.min(1,n/cap),cut=Math.round((1-D.masteryMult(n))*100);
-  var m=g.master(mid),ch=D.qualChance(m.tools,g.collDone(mid)),pc=function(x){return Math.round(x*1000)/10+'%';};
+  var ch=D.qualChance(g.toolsEff(mid),g.collDone(mid)),pc=function(x){return Math.round(x*1000)/10+'%';};
   return '<div class="mast"><div class="mast-t"><span>'+t('cr2.mastery',{n:Math.min(n,cap),m:cap})+'</span><span>'+(cut?t('cr2.faster',{p:cut}):'')+'</span></div>'+
     '<div class="bar mastb"><i style="width:'+(k*100).toFixed(1)+'%"></i></div>'+
     '<div class="qrow"><span class="q0">'+pc(1-ch[1]-ch[2]-ch[3])+'</span><span class="q1">'+pc(ch[1])+'</span><span class="q2">'+pc(ch[2])+'</span><span class="q3">'+pc(ch[3])+'</span></div></div>';
@@ -833,18 +833,82 @@ function tabCraftMasters(){
 }
 
 /* ── ГОРОД: постройки таверны и шахта ── */
+/* ── ГОРОД: промыслы, бригады, конюшня и постройки таверны ── */
+/* полоска 20 вкладов: o={st,bt,lvl,max,cost,now,next,wait,act,id,extra} */
+function stageHtml(o){
+  var segs='';for(var i=0;i<D.STAGES;i++)segs+='<i'+(i<o.st?' class="on"':'')+'></i>';
+  var h='<div class="stg">';
+  if(o.lvl>=o.max&&!o.bt)return h+'<div class="stg-t"><span>'+t('st2.max')+'</span></div></div>';
+  if(o.bt){
+    var k=1-o.bt.t/o.bt.T;
+    return h+'<div class="stg-t"><span>'+t(o.kind==='tools'?'st2.making':'st2.building',{n:o.lvl+1})+'</span><b>'+ft(o.bt.t)+'</b></div>'+
+      '<div class="bar stgb"><i style="width:'+(k*100).toFixed(1)+'%"></i></div>'+(o.next?'<p class="note">'+t('st2.after',{v:o.next})+'</p>':'')+'</div>';
+  }
+  if(o.wait)return h+'<div class="stg-t"><span>'+t('st2.wait')+'</span></div><p class="note">'+t('st2.waitI')+'</p></div>';
+  h+='<div class="stg-t"><span>'+t('st2.toNext',{n:o.lvl+1})+'</span><b>'+o.st+' / '+D.STAGES+'</b></div><div class="stg-s">'+segs+'</div>';
+  if(o.now)h+='<p class="note">'+t('st2.now',{a:o.now,b:o.next})+'</p>';
+  if(o.cost)h+='<div class="stg-b"><button type="button" class="btn sm" data-act="'+o.act+'" data-id="'+o.id+'"'+(g.canPay(o.cost)?'':' disabled')+'>'+t('st2.invest')+' '+costHtml(o.cost)+'</button>'+
+    '<button type="button" class="btn sm ghost" data-act="'+o.act+'" data-id="'+o.id+'" data-max="1"'+(g.canPay(o.cost)?'':' disabled')+'>'+t('st2.max5')+'</button></div>';
+  if(o.extra)h+='<p class="note">'+o.extra+'</p>';
+  return h+'</div>';
+}
+function rate2(v){return v>=10?Math.round(v*10)/10:Math.round(v*100)/100;}
+function prodName(id){return t('pd.'+id);}
+function prodBlock(id){
+  return actBlock(function(){
+    var d=g.prodDef(id),o=g.prod(id),built=o.lvl>0,q=g.crewQueued(id);
+    var h='<div class="pd-head"><b>'+prodName(id)+'</b><span>'+(built?t('ms.lvl',{n:o.lvl}):'')+'</span></div>';
+    if(!built){
+      h+='<p class="note">'+t('pd.'+id+'.d')+'</p>';
+      if(o.bt)return h+stageHtml({kind:'prod',lvl:0,max:1,st:0,bt:o.bt});
+      if(q)return h+'<p class="note">'+t('st2.waitI')+'</p>';
+      var blk=g.prodBuildBlock(id);
+      if(blk==='tract')return h+'<p class="bad">'+t('pd.needTract',{t:tractName(d.tract)})+'</p>';
+      return h+'<div class="stg-b"><button type="button" class="btn sm" data-act="build" data-id="'+id+'"'+(blk?' disabled':'')+'>'+t('buy.build')+' '+costHtml(d.build)+'</button></div>';
+    }
+    if(id==='stable'){
+      var ev=g.cartEvery(),nx=D.STABLE.every[Math.min(o.lvl,D.STABLE.max-1)];
+      h+='<p>'+t('pd.cartNow',{m:Math.round(ev)})+'</p><p class="note">'+t('pd.cartNext',{m:Math.round(ev*60-(o.cart||0))>0?ft(ev*60-(o.cart||0)):'0'})+'</p>';
+      return h+stageHtml({kind:'prod',id:id,act:'inv',lvl:o.lvl,max:D.STABLE.max,st:o.st,bt:o.bt,cost:g.prodCost(id),wait:q,
+        now:o.lvl<D.STABLE.max?t('pd.every',{m:Math.round(ev)}):'',next:t('pd.every',{m:nx})});
+    }
+    var any=false;
+    d.lines.forEach(function(r){
+      var open=g.lineOpen(r),n=Math.floor(o.acc[r]||0),cap=g.lineCap(id,r),rt=g.lineRate(id,r);
+      if(n>=1)any=true;
+      h+='<div class="pd-line'+(open?'':' off')+'">'+resIcon(r)+'<span>'+t('res.'+r)+'</span>'+
+        (open?'<b>'+D.fmt(n)+' / '+D.fmt(cap)+'</b><small>'+t('pd.perH',{n:rate2(rt)})+'</small>':'<small>'+t('pd.lineTract',{t:tractName(D.resTract(r))})+'</small>')+'</div>'+
+        (open?'<div class="bar pdb'+(n>=cap?' full':'')+'"><i style="width:'+Math.min(100,n/cap*100).toFixed(1)+'%"></i></div>':'');
+    });
+    h+='<div class="stg-b"><button type="button" class="btn sm" data-act="collect" data-id="'+id+'"'+(any?'':' disabled')+'>'+t('mine.collect')+'</button>'+(g.prodFull(id)?'<span class="bad">'+t('pd.full')+'</span>':'')+'</div>';
+    var ln=d.lines.filter(function(r){return g.lineOpen(r);})[0]||d.lines[0];
+    var nowV=rate2(g.lineRate(id,ln)),nextV=rate2(D.PROD_BASE[ln]*(o.lvl+1));
+    return h+stageHtml({kind:'prod',id:id,act:'inv',lvl:o.lvl,max:D.PROD_MAX,st:o.st,bt:o.bt,cost:g.prodCost(id),wait:q,
+      now:resIcon(ln)+t('pd.perH',{n:nowV}),next:resIcon(ln)+t('pd.perH',{n:nextV}),
+      extra:o.st<D.STAGES&&!o.bt&&o.lvl<D.PROD_MAX?t('st2.left',{g:D.fmt(g.prodCostLeft(id))}):''});
+  },function(act,ds){
+    var id2=ds.id;
+    if(act==='build'){if(g.prodBuild(id2))toast(t('pd.started',{b:prodName(id2)}));}
+    else if(act==='inv'){var n=0;do{if(!g.prodInvest(id2))break;n++;}while(ds.max&&n<D.STAGES);}
+    else if(act==='collect'){var r=g.prodCollect(id2);if(!Object.keys(r).length)toast(t('pd.storeFull'));}
+  },'pd pd-'+id);
+}
 function tabCity(){
   add(actBlock(function(){
-    var mn=S.mine,h='<div class="lbl full">'+t('mine.title')+'</div>';
-    if(!mn.lvl)return h+'<p class="note">'+t('mine.desc')+'</p>';
-    return h+'<div class="mine-row">'+resIcon('coal')+'<span>'+Math.floor(mn.acc)+' / '+g.mineCap()+' · '+t('mine.rate',{r:(Math.round(g.mineRate()*100)/100)})+'</span>'+
-      '<button type="button" class="btn sm" data-act="collect"'+(mn.acc>=1?'':' disabled')+'>'+t('mine.collect')+'</button></div>'+
-      '<div class="bar mine"><i style="width:'+(mn.acc/g.mineCap()*100).toFixed(1)+'%"></i></div>'+(mn.acc>=g.mineCap()?'<p class="bad">'+t('mine.full')+'</p>':'');
-  },function(act){if(act==='collect'){var n=g.mineCollect();if(n)toast(t('mine.got',{n:n}));}}));
-  add(row({title:function(){return t('mine.title');},lvl:function(){return S.mine.lvl?t('row.lvlMax',{n:S.mine.lvl,m:D.MINE.max}):'';},
-    info:function(){var l=S.mine.lvl;return l?t('mine.next',{a:Math.round(D.MINE.rate(l)*100)/100,b:Math.round(D.MINE.rate(l+1)*100)/100}):t('mine.buyI');},
-    btn:function(){return S.mine.lvl?t('buy.up'):t('buy.buy');},
-    done:function(){return S.mine.lvl>=D.MINE.max;},cost:function(){return g.mineCost();},buy:function(){return g.mineUp();}}));
+    var busy=g.crewsBusy(),n=S.crews||1,q=g.crewQ(),cc=g.crewCost();
+    var h='<div class="lbl full">'+t('pd.crews')+'</div><p>'+t('pd.crewsNow',{a:busy,b:n})+'</p>';
+    var list=[];for(var id in S.prod){var o=S.prod[id];if(o.bt)list.push(prodName(id)+' · '+ft(o.bt.t));}
+    if(list.length)h+='<p class="note">'+list.join('<br>')+'</p>';
+    if(q.length)h+='<p class="note">'+t('pd.queue',{l:q.map(prodName).join(', ')})+'</p>';
+    h+='<div class="stg-b">'+(cc?'<button type="button" class="btn sm" data-act="crew"'+(g.canPay(cc)?'':' disabled')+'>'+t('pd.crewBuy')+' '+costHtml(cc)+'</button>':'')+
+      '<button type="button" class="btn sm" data-act="all">'+t('pd.collectAll')+'</button></div>';
+    return h;
+  },function(act){
+    if(act==='crew')g.buyCrew();
+    else if(act==='all'){var r=g.prodCollectAll();if(!r.n)toast(t('pd.nothing'));}
+  }));
+  D.PROD.forEach(function(d){add(prodBlock(d.id));});
+  add(prodBlock('stable'));
   D.BUILD_ORDER.forEach(function(id){
     var b=D.BUILD[id];
     add(row({title:function(){return t('bd.'+id);},lvl:function(){return t('row.lvlMax',{n:g.buildLvl(id),m:b.max});},
@@ -1054,12 +1118,25 @@ function openTab(tab,sub){
   if(tab==='craft'&&sub)craftSub=sub;
   if(TABSETS[tabSet].indexOf(tab)<0)return;
   curTab=tab;lastTab[tabSet]=tab;paintTabs();buildTab();
+  /* тап по зданию в 3D: прокрутить к его карточке и подсветить */
+  if(tab==='city'&&sub){var bx=document.querySelector('#tab-body .pd-'+sub);if(bx){bx.scrollIntoView({block:'start',behavior:'smooth'});bx.classList.add('flash');setTimeout(function(){bx.classList.remove('flash');},1200);}}
   if(S.settings.panel){S.settings.panel=false;document.body.classList.remove('panel-off');setTimeout(function(){window.dispatchEvent(new Event('resize'));},50);}
 }
 /* подписи над жителями таверны */
 function tavernLabel(kind,id){
   if(kind==='hostess')return '<b>'+t('lbl.hostess')+'</b>'+(S.cust.length?' · '+t('lbl.cust',{n:S.cust.length}):'');
   if(kind==='store')return '<b>'+t('store.title')+'</b>';
+  if(kind==='prod'){
+    var o=g.prod(id);if(!o)return '';
+    if(!o.lvl&&!o.bt)return '<span class="pl-n">'+prodName(id)+'</span>';
+    var L=g.prodLabel(id),txt;
+    if(L.build)txt='<i>'+t('lbl.build')+' '+ft(L.left)+'</i>';
+    else if(L.max)txt='';
+    else if(L.wait)txt='<i>'+t('lbl.wait')+'</i>';
+    else txt='<i>'+Math.round(L.k*100)+'%</i>';
+    var full=o.lvl&&id!=='stable'&&g.prodFull(id)?' <em class="pl-full">!</em>':'';
+    return '<b class="pl-l">'+o.lvl+'</b> '+prodName(id)+' '+txt+full+'<span class="pl-bar"><s style="width:'+Math.round((L.build?L.k:L.k)*100)+'%"'+(L.build?' class="b"':'')+'></s></span>';
+  }
   return '';
 }
 function paintTabs(){
@@ -1114,6 +1191,7 @@ function offlineReport(rep){
   var any=false;for(var k in rep.got)if(rep.got[k]){any=true;break;}
   rows.push('<p class="lbl">'+t('off.got')+'</p><div class="res-line">'+(any?resList(rep.got):'<span class="note">'+t('st.none')+'</span>')+'</div>');
   if(rep.lostBags)rows.push('<p class="bad">'+t('off.lost',{n:rep.lostBags,i:rep.lost})+'</p>');
+  if(rep.prod)rows.push('<p class="lbl">'+t('off.prod')+'</p><div class="res-line">'+resList(rep.prod)+'</div>');
   if(rep.crafted)rows.push('<p>'+t('off.crafted',{n:rep.crafted})+'</p>');
   if(rep.pet)rows.push('<p class="ok">'+t('pt.found',{p:t('pet.'+rep.pet)})+'</p>');
   if(rep.sold)rows.push('<p class="gold">'+COIN+t('off.sold',{n:rep.sold,g:D.fmt(rep.gold)})+'</p>');
@@ -1135,7 +1213,7 @@ function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
-  showCreate:showCreate,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,
+  showCreate:showCreate,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,stageHtml:stageHtml,prodName:prodName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

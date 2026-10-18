@@ -35,7 +35,7 @@ function open(id){
     if(a==='hire')ok=g.hire(M.id);
     if(a==='order')ok=g.order(M.id,b.dataset.r);
     if(a==='learn')ok=g.learn(b.dataset.r);
-    if(a==='tools')ok=g.buyTools(M.id);
+    if(a==='tools'){var n=0;do{if(!g.buyTools(M.id))break;n++;}while(b.dataset.max&&n<D.STAGES);ok=n>0;}
     if(a==='slot')ok=g.buyQSlot();
     if(a==='coll')ok=g.collAdd(b.dataset.r);
     if(a==='cancel')ok=g.cancel(+b.dataset.i);
@@ -163,12 +163,16 @@ function render(full){
   /* улучшения мастера */
   var tc=g.toolsCost(id),sc=g.qSlotCost();
   h+='<div class="lbl full">'+t('ms2.upgrades')+'</div>'+
-    '<div class="ms2-up"><div><b>'+t('ms.tools')+'</b> '+t('row.lvlMax',{n:m.tools,m:D.TOOLS_MAX})+'<small>'+t('ms.toolsI')+'</small></div>'+
-      (tc?'<button type="button" class="btn sm" data-act="tools"'+(g.canPay(tc)?'':' disabled')+'>'+UI.costHtml(tc)+'</button>':'<span class="note">'+t('buy.done')+'</span>')+'</div>'+
+    '<div class="ms2-up col"><div><b>'+t('ms.tools')+'</b> '+t('row.lvlMax',{n:m.tools,m:D.TOOLS_MAX})+'<small>'+t('ms.toolsI')+'</small></div>'+
+      UI.stageHtml({kind:'tools',id:id,act:'tools',lvl:m.tools,max:D.TOOLS_MAX,st:m.tst||0,bt:m.tbt,cost:tc,
+        now:toolsQ(g,id,g.toolsEff(id)),next:toolsQ(g,id,Math.min(D.TOOLS_MAX,m.tools+1)),
+        extra:(m.tst===D.STAGES-1?t('st2.lastRes'):'')})+'</div>'+
     '<div class="ms2-up"><div><b>'+t('q2.slots')+'</b> '+t('row.lvlMax',{n:S.qSlots,m:D.QSLOTS_MAX})+'<small>'+t('q2.slotsI')+'</small></div>'+
       (sc?'<button type="button" class="btn sm" data-act="slot"'+(g.canPay(sc)?'':' disabled')+'>'+UI.costHtml(sc)+'</button>':'<span class="note">'+t('buy.done')+'</span>')+'</div>';
   setBody(body,h);
 }
+/* шансы хорошего и безупречного при таком уровне инструментов */
+function toolsQ(g,id,lv){var ch=D.qualChance(lv,g.collDone(id)),pc=function(x){return Math.round(x*1000)/10+'%';};return pc(ch[1])+' / '+pc(ch[2]);}
 function setBody(body,h){if(body._h!==h){var sc=body.scrollTop;body._h=h;body.innerHTML=h;body.scrollTop=sc;}}
 /* карточка изделия: картинка, имя, время, цена, ресурсы и кнопка */
 function card(r,mode){

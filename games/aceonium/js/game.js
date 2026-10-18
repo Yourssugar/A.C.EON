@@ -11,9 +11,14 @@ function masterDefaults(){
   var m={};
   D.MASTERS.forEach(function(d){
     var known=D.GOODS.filter(function(x){return x.m===d.id&&x.teach===0;}).map(function(x){return x.id;});
-    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,known:known,teach:null,done:{},coll:{}};
+    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,tst:0,tbt:null,known:known,teach:null,done:{},coll:{}};
   });
   return m;
+}
+function prodDefaults(){
+  var p={};D.PROD.forEach(function(d){p[d.id]={lvl:0,st:0,bt:null,acc:{}};});
+  p.stable={lvl:0,st:0,bt:null,cart:0};
+  return p;
 }
 function defaults(){
   var skills={};D.SKILLS.forEach(function(s){skills[s.id]={l:1,cd:0,act:0};});
@@ -42,7 +47,7 @@ function defaults(){
     mageCraft:{done:{},coll:{}},                    // освоение и коллекция свитков мага
     pets:{hired:false,own:{},active:null,train:null}, // питомцы: own[id]={lvl}, train={id,t,T}
     build:{forge:0,tannery:0,jewelry:0,hall:0,bedroom:0,decor:0},
-    mine:{lvl:0,acc:0},
+    prod:prodDefaults(),crews:1,crewQ:[],                 // промыслы (v15) и бригады строителей
     cust:[],custAcc:0,custId:0,rep:0,
     seenV8b:false,
     stats:{clicks:0,kills:0,bosses:0,bossFails:0,trips:0,lostBags:0,lostItems:0,gathered:0,play:0,rest:0,sold:0,goldEarned:0,crafted:0},
@@ -620,8 +625,21 @@ P.order=function(mid,rid){
 };
 /* отмена по номеру в общей очереди: ресурсы и золото возвращаются */
 P.cancel=function(i){var q=this.S.queue,o=q[i];if(!o)return false;this.refund(o.c);q.splice(i,1);this.emit('order',{m:o.m});return true;};
-P.toolsCost=function(mid){var m=this.master(mid);return !D.MASTER_BY[mid]||m.tools>=D.TOOLS_MAX?null:D.toolsCost(D.MASTER_BY[mid],m.tools);};
-P.buyTools=function(mid){var c=this.toolsCost(mid);if(!c||!this.master(mid).hired||!this.pay(c))return false;this.master(mid).tools++;this.emit('buy','tools');return true;};
+/* инструменты: та же схема вкладов, мастер делает инструмент сам (без бригады), последний вклад с материалами */
+P.toolsCost=function(mid){
+  var m=this.master(mid),d=D.MASTER_BY[mid];
+  if(!d||!m.hired||m.tools>=D.TOOLS_MAX||m.tbt||m.tst>=D.STAGES)return null;
+  var c={gold:D.stageCost(D.TOOLS_C0,m.tools,m.tst)};
+  if(m.tst===D.STAGES-1){var r=D.toolsRes(d,m.tools);for(var k in r)c[k]=r[k];}
+  return c;
+};
+P.buyTools=function(mid){
+  var c=this.toolsCost(mid),m=this.master(mid);if(!c||!this.pay(c))return false;
+  m.tst++;
+  if(m.tst>=D.STAGES){var T=D.stageTime(m.tools);m.tbt={t:T,T:T};}
+  this.emit('invest',{kind:'tools',id:mid});return true;
+};
+P.toolsEff=function(mid){var m=this.master(mid);return m?(m.tools||0)+D.STAGE_STEP*(m.tst||0):0;};
 P.qSlotCost=function(){var n=this.S.qSlots;return n>=D.QSLOTS_MAX?null:D.qSlotCost(n);};
 P.buyQSlot=function(){var c=this.qSlotCost();if(!c||!this.pay(c))return false;this.S.qSlots++;this.emit('buy','slot');return true;};
 /* учитель: рецепт за золото, когда мастер дорос до уровня рецепта */
@@ -633,7 +651,7 @@ P.learn=function(rid){
   this.emit('teachStart',rid);return true;
 };
 P.rollQual=function(mid){
-  var m=this.master(mid),ch=D.qualChance(m?m.tools:0,this.collDone(mid)),r=Math.random();
+  var ch=D.qualChance(this.toolsEff(mid),this.collDone(mid)),r=Math.random();
   for(var q=D.QUAL.length-1;q>0;q--){if(r<ch[q])return q;r-=ch[q];}
   return 0;
 };
@@ -681,16 +699,119 @@ P.buildLvl=function(id){return this.S.build[id]||0;};
 P.buildCost=function(id){var b=D.BUILD[id],l=this.buildLvl(id);if(b.once?l>0:l>=b.max)return null;return b.cost(l);};
 P.buildUp=function(id){var c=this.buildCost(id);if(!c||!this.pay(c))return false;this.S.build[id]=this.buildLvl(id)+1;this.emit('build',id);return true;};
 
-/* ── шахта ── */
-P.mineCost=function(){var l=this.S.mine.lvl;return l===0?D.MINE.buy:l>=D.MINE.max?null:D.MINE.cost(l);};
-P.mineUp=function(){var c=this.mineCost();if(!c||!this.pay(c))return false;this.S.mine.lvl++;this.emit('build','mine');return true;};
-P.mineRate=function(){return this.S.mine.lvl?D.MINE.rate(this.S.mine.lvl):0;};
-P.mineCap=function(){return this.S.mine.lvl?D.MINE.cap(this.S.mine.lvl):0;};
-P.tickMine=function(dt){var mn=this.S.mine;if(!mn.lvl)return;mn.acc=Math.min(this.mineCap(),mn.acc+this.mineRate()*dt/60);};
-P.mineCollect=function(){
-  var mn=this.S.mine,room=Math.max(0,this.storeCap()-this.have('coal')),n=Math.min(Math.floor(mn.acc),room);
-  if(n<=0)return 0;
-  this.S.store.coal=this.have('coal')+n;mn.acc-=n;this.emit('mine',n);return n;
+/* ════════ ПРОМЫСЛЫ И СТАДИИ (v15) ════════ */
+P.prod=function(id){var S=this.S;if(!S.prod)S.prod=prodDefaults();return S.prod[id];};
+P.prodDef=function(id){return id==='stable'?D.STABLE:D.PROD_BY[id];};
+P.prodMax=function(id){return id==='stable'?D.STABLE.max:D.PROD_MAX;};
+/* уровень с учётом вкладов: 3 уровень и 7 вкладов = 3.07 */
+P.prodEff=function(id){var o=this.prod(id);return o.lvl?o.lvl+D.STAGE_STEP*o.st:0;};
+P.lineOpen=function(r){return this.tractOpen(D.resTract(r));};
+P.lineRate=function(id,r,eff){if(!this.lineOpen(r))return 0;return D.PROD_BASE[r]*(eff===undefined?this.prodEff(id):eff);};   // в час
+P.lineCap=function(id,r){return Math.max(10,Math.ceil(D.PROD_BASE[r]*Math.max(1,this.prod(id).lvl)*D.PROD_KEEP));};
+P.crewsBusy=function(){var n=0,S=this.S;for(var id in S.prod)if(S.prod[id].bt)n++;return n;};
+P.crewFree=function(){return this.crewsBusy()<(this.S.crews||1);};
+P.crewCost=function(){var n=this.S.crews||1;return n>=D.CREW_COST.length?null:{gold:D.CREW_COST[n]};};
+P.buyCrew=function(){var c=this.crewCost();if(!c||!this.pay(c))return false;this.S.crews=(this.S.crews||1)+1;this.emit('crew',this.S.crews);this.prodStartWaiting();return true;};
+/* можно ли поставить здание: '' или причина */
+P.prodBuildBlock=function(id){
+  var o=this.prod(id),d=this.prodDef(id);
+  if(o.lvl>0||o.bt)return 'built';
+  if(d.tract!==undefined&&!this.tractOpen(d.tract))return 'tract';
+  if(this.crewQueued(id))return 'built';
+  if(!this.canPay(d.build))return 'cost';
+  return '';
+};
+P.prodBuild=function(id){
+  if(this.prodBuildBlock(id))return false;
+  this.pay(this.prodDef(id).build);this.prod(id).st=0;
+  this.crewQ().push(id);this.emit('invest',{kind:'prod',id:id});
+  this.prodStartWaiting();return true;
+};
+/* следующий вклад: null, если строится, уровень максимальный или 20 вкладов уже сделаны */
+P.prodCost=function(id){
+  var o=this.prod(id);if(!o.lvl||o.bt||o.lvl>=this.prodMax(id)||o.st>=D.STAGES)return null;
+  return {gold:D.stageCost(this.prodDef(id).c0,o.lvl-1,o.st)};
+};
+/* сколько стоят все оставшиеся вклады до стройки */
+P.prodCostLeft=function(id){var o=this.prod(id),c0=this.prodDef(id).c0,s=0;for(var i=o.st;i<D.STAGES;i++)s+=D.stageCost(c0,o.lvl-1,i);return s;};
+P.prodInvest=function(id){
+  var c=this.prodCost(id);if(!c||!this.pay(c))return false;
+  var o=this.prod(id);o.st++;
+  this.emit('invest',{kind:'prod',id:id});
+  if(o.st>=D.STAGES){this.crewQ().push(id);this.prodStartWaiting();}
+  return true;
+};
+/* очередь к бригадам: новая постройка или здание с 20 вкладами, по порядку */
+P.crewQ=function(){var S=this.S;if(!S.crewQ)S.crewQ=[];return S.crewQ;};
+P.crewQueued=function(id){return this.crewQ().indexOf(id)>=0;};
+P.prodStartWaiting=function(){
+  var q=this.crewQ();
+  while(q.length&&this.crewFree()){
+    var id=q.shift(),o=this.prod(id);if(!o||o.bt)continue;
+    var T=D.stageTime(o.lvl);o.bt={t:T,T:T};this.emit('stage',{kind:'prod',id:id,lvl:o.lvl});
+  }
+};
+P.prodWaiting=function(id){return this.crewQueued(id);};
+/* интервал возчика в минутах: между уровнями плавно по вкладам */
+P.cartEvery=function(){
+  var o=this.prod('stable');if(!o.lvl)return 0;
+  var e=D.STABLE.every,a=e[o.lvl-1],b=e[Math.min(o.lvl,e.length-1)];
+  return a-(a-b)*D.STAGE_STEP*o.st;
+};
+P.prodCollect=function(id,quiet){
+  var o=this.prod(id),got={},n=0;
+  for(var r in o.acc){
+    var k=Math.min(Math.floor(o.acc[r]),Math.max(0,this.storeCap()-this.have(r)));
+    if(k<=0)continue;
+    this.S.store[r]=this.have(r)+k;o.acc[r]-=k;got[r]=k;n+=k;
+  }
+  if(n&&this.rep){var rp=this.rep.prod=this.rep.prod||{};for(var g in got)rp[g]=(rp[g]||0)+got[g];}
+  if(n&&!quiet)this.emit('prodGot',{id:id,got:got,n:n});
+  return got;
+};
+P.prodCollectAll=function(quiet){
+  var all={},n=0,self=this;
+  D.PROD.forEach(function(d){var g=self.prodCollect(d.id,true);for(var r in g){all[r]=(all[r]||0)+g[r];n+=g[r];}});
+  if(n&&!quiet)this.emit('prodGot',{id:'all',got:all,n:n});
+  return {got:all,n:n};
+};
+P.prodFull=function(id){var o=this.prod(id),self=this;return this.prodDef(id).lines.some(function(r){return self.lineOpen(r)&&(o.acc[r]||0)>=self.lineCap(id,r);});};
+P.prodHas=function(id){var o=this.prod(id);for(var r in o.acc)if(o.acc[r]>=1)return true;return false;};
+P.tickProd=function(dt){
+  var S=this.S,self=this;if(!S.prod)S.prod=prodDefaults();
+  /* стройки */
+  for(var id in S.prod){
+    var o=S.prod[id];if(!o.bt)continue;
+    o.bt.t-=dt;if(o.bt.t>0)continue;
+    o.bt=null;o.lvl++;o.st=0;
+    this.emit('built',{kind:'prod',id:id,lvl:o.lvl});
+    this.prodStartWaiting();
+  }
+  /* добыча */
+  D.PROD.forEach(function(d){
+    var o=S.prod[d.id];if(!o.lvl)return;
+    var eff=self.prodEff(d.id);
+    d.lines.forEach(function(r){
+      var rt=self.lineRate(d.id,r,eff);if(!rt)return;
+      o.acc[r]=Math.min(self.lineCap(d.id,r),(o.acc[r]||0)+rt*dt/3600);
+    });
+  });
+  /* возчик */
+  var st=S.prod.stable;
+  if(st.lvl){st.cart=(st.cart||0)+dt;var ev=this.cartEvery()*60;if(st.cart>=ev){st.cart=0;var r=this.prodCollectAll(true);if(r.n)this.emit('cart',r);}}
+  /* инструменты мастеров */
+  for(var mid in S.masters){
+    var m=S.masters[mid];if(!m.tbt)continue;
+    m.tbt.t-=dt;if(m.tbt.t>0)continue;
+    m.tbt=null;m.tools=Math.min(D.TOOLS_MAX,m.tools+1);m.tst=0;
+    this.emit('built',{kind:'tools',id:mid,lvl:m.tools});
+  }
+};
+/* подпись над зданием: уровень и сколько процентов до следующего (вклады), или стройка */
+P.prodLabel=function(id){
+  var o=this.prod(id);
+  if(o.bt)return {lvl:o.lvl,build:true,left:o.bt.t,k:1-o.bt.t/o.bt.T};
+  return {lvl:o.lvl,build:false,k:o.st/D.STAGES,max:o.lvl>=this.prodMax(id),wait:this.prodWaiting(id)};
 };
 
 /* ── покупатели ── */
@@ -756,7 +877,7 @@ P.tickCustomers=function(dt){
     if(c.wait>=D.CUST_PATIENCE||(off&&this.custQual(c)<0)){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});}
   }
 };
-P.tavernTick=function(dt){this.tickMasters(dt);this.tickMine(dt);this.tickCustomers(dt);this.tickPets(dt);};
+P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickCustomers(dt);this.tickPets(dt);};
 
 /* ── питомцы ── */
 P.pets=function(){var S=this.S;if(!S.pets)S.pets={hired:false,own:{},active:null,train:null};return S.pets;};
@@ -822,6 +943,7 @@ P.sanitize=function(){
     if(m.teach===undefined)m.teach=null;
     if(!m.done)m.done={};if(!m.coll)m.coll={};
     m.tools=Math.min(m.tools||0,D.TOOLS_MAX);
+    if(m.tst===undefined){m.tst=0;m.tbt=null;}
     m.known=m.known.filter(function(r){return D.GOOD_BY[r]&&D.GOOD_BY[r].m===k;});
     def[k].known.forEach(function(r){if(m.known.indexOf(r)<0)m.known.push(r);});
     var self=this;
@@ -839,6 +961,14 @@ P.sanitize=function(){
   for(k in S.pets.own)if(!D.PET_BY[k])delete S.pets.own[k];
   if(S.pets.active&&!S.pets.own[S.pets.active])S.pets.active=null;
   S.cautious=true;
+  /* v15: шахта стала промыслом, уголь в запасе сохраняется */
+  /* Store дописывает prod из дефолтов ещё до sanitize, поэтому смотрим на старую шахту */
+  if(!S.prod)S.prod=prodDefaults();
+  var pd=prodDefaults();for(k in pd)if(!S.prod[k])S.prod[k]=pd[k];
+  if(S.mine&&S.mine.lvl&&!S.prod.mine.lvl&&!S.prod.mine.bt){S.prod.mine.lvl=Math.min(D.PROD_MAX,S.mine.lvl);S.prod.mine.acc.coal=Math.min(S.mine.acc||0,this.lineCap('mine','coal'));}
+  delete S.mine;
+  if(!S.crews)S.crews=1;
+  if(!S.crewQ)S.crewQ=[];
   if(S.use.p_heal===undefined)S.use.p_heal=true;
   S.cust=S.cust.filter(function(c){return D.GOOD_BY[c.item];});
 };

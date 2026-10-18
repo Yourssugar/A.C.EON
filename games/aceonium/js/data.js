@@ -169,7 +169,7 @@ D.QUAL=[1,1.25,1.5,2];
 D.qualChance=function(tools,coll){var t=Math.min(tools||0,D.TOOLS_MAX);return [0,0.08+0.006*t,0.04+0.004*t,0.01+(coll?0.02:0)];};
 
 /* мастера: живут в своих домах и мастерских в городе, нанимаются за золото.
-   Инструменты за ресурсы ускоряют работу, очередь заказов расширяется за золото. */
+   Инструменты (v15: вклады стадиями) повышают шанс качества, очередь заказов расширяется за золото. */
 D.MASTERS=[
   {id:'herbalist',hire:0,  tools:{herb:10,wood:5}},
   {id:'carpenter',hire:60, tools:{wood:15,iron:5}},
@@ -179,7 +179,6 @@ D.MASTERS=[
 ];
 D.MASTER_BY={};D.MASTERS.forEach(function(m){D.MASTER_BY[m.id]=m;});
 D.TOOLS_MAX=10;
-D.toolsCost=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]*Math.pow(1.45,l));c.gold=Math.ceil(50*Math.pow(1.9,l));return c;};
 /* общая очередь крафта (v11): одна на всех, мастера работают параллельно, каждый над первой своей вещью */
 D.QSLOTS0=8;D.QSLOTS_MAX=30;
 D.qSlotCost=function(n){return {gold:Math.ceil(80*Math.pow(1.6,n-D.QSLOTS0))};};
@@ -276,13 +275,34 @@ D.BUILD={
 D.BUILD_ORDER=['hall','bedroom','decor'];
 
 /* шахта: уголь в минуту, предел вагонеток, улучшения дорожают быстрее, чем растёт добыча */
-D.MINE={
-  buy:{gold:250,wood:30},
-  max:10,
-  rate:function(l){return 0.3*Math.pow(1.33,l-1);},
-  cap:function(l){return 120*l;},
-  cost:function(l){return {gold:Math.ceil(250*Math.pow(2.8,l)),wood:Math.ceil(30*Math.pow(1.7,l)),iron:Math.ceil(20*Math.pow(1.7,l))};}
-};
+/* ════════ УЛУЧШЕНИЯ СТАДИЯМИ (v15) ════════
+   Переход на следующий уровень: 20 вкладов золотом, каждый на 5% дороже прошлого и сразу даёт +1% шага уровня.
+   После 20-го вклада стройка по времени (здания строит бригада, инструменты мастер делает сам),
+   по её окончании приходят остальные 80% шага. Первый вклад c(L)=c0*2^L, L - текущий уровень от 0. */
+D.STAGES=20;D.STAGE_GROW=1.05;D.STAGE_STEP=0.01;D.STAGE_LVL=2;
+D.stageCost=function(c0,L,i){return Math.ceil(c0*Math.pow(D.STAGE_LVL,L)*Math.pow(D.STAGE_GROW,i));};
+D.stageTime=function(L){return L<=0?600:Math.round(900*Math.pow(L,1.5));};
+D.CREW_COST=[0,5000,50000];   // бригады строителей: первая есть сразу
+
+/* промыслы: линии ресурсов работают, когда открыт тракт с этим ресурсом. Добыча в час = база * уровень. */
+D.PROD_BASE={wood:4,iron:4,herb:4,hide:4,coal:18,bone:1,silk:1,spore:0.75,ecto:0.75,silver:0.5,crystal:0.5};
+D.PROD_KEEP=6;      // часов работы влезает в запас здания
+D.PROD_MAX=10;
+D.PROD=[
+  {id:'saw',  lines:['wood'],                       build:{gold:150,iron:20},             c0:10},
+  {id:'mine', lines:['coal','iron','silver','crystal'],build:{gold:250,wood:30},          c0:25},
+  {id:'hunt', lines:['hide','bone','silk'],         build:{gold:300,wood:40},             c0:15},
+  {id:'farm', lines:['herb','spore'],               build:{gold:200,wood:30},             c0:12},
+  {id:'ghost',lines:['ecto'],                       build:{gold:8000,bone:150,silk:100},  c0:60,tract:2}
+];
+D.PROD_BY={};D.PROD.forEach(function(p){D.PROD_BY[p.id]=p;});
+/* в каком тракте открывается ресурс (уголь из шахты есть всегда) */
+D.resTract=function(r){if(r==='coal')return 0;for(var i=0;i<D.TRACTS.length;i++)if(D.TRACTS[i].res.indexOf(r)>=0)return i;return 99;};
+/* конюшня и возчик: сам свозит запас промыслов на склад раз в столько минут */
+D.STABLE={build:{gold:1500,wood:60},c0:150,max:5,every:[60,40,25,15,10]};
+/* инструменты мастера на той же схеме: c0 золотом, последний вклад ещё и материалы */
+D.TOOLS_C0=5;
+D.toolsRes=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]*Math.pow(1.45,l));return c;};
 
 /* ════════ ПИТОМЦЫ (v14) ════════
    Лису даёт мастер питомцев при найме. Остальных маг находит, пройдя главу (тракт) до 100-й волны:

@@ -597,4 +597,54 @@ I18n.add('en',{
   'pt.with':'With the mage: {p}, lv {n}','pt.got':'The pet master gave you: {p}','pt.foundT':'NEW PET','pt.found':'At the end of the chapter a new pet joined the mage: {p}. Take it along at the pet master.',
   'pt.lvlUp':'{p} is now level {n}'
 });
+
+/* v15: промыслы, бригады, стадии улучшений */
+I18n.add('ru',{
+  'pd.saw':'ЛЕСОПИЛКА','pd.mine':'ШАХТА','pd.hunt':'ОХОТНИЧИЙ ДВОР','pd.farm':'ОГОРОД','pd.ghost':'ЛОВЕЦ ДУХОВ','pd.stable':'КОНЮШНЯ',
+  'pd.saw.d':'Пилит дерево. Работает сама, запас забираешь на склад.',
+  'pd.mine.d':'Уголь сразу, железо с летнего тракта, серебро и кристаллы с перевала.',
+  'pd.hunt.d':'Охотники приносят кожу, а с осеннего тракта ещё кость и шёлк.',
+  'pd.farm.d':'Травы с грядок, а когда откроется болото, споры из грибного погреба.',
+  'pd.ghost.d':'Ловушки на болоте собирают эктоплазму.',
+  'pd.stable.d':'Возчик с телегой сам объезжает промыслы и свозит запас на склад.',
+  'pd.needTract':'Откроется после тракта «{t}»','pd.lineTract':'откроется: {t}','pd.perH':'{n} в час',
+  'pd.full':'Запас полный, линия стоит','pd.storeFull':'На складе нет места','pd.nothing':'Забирать пока нечего',
+  'pd.crews':'БРИГАДЫ СТРОИТЕЛЕЙ','pd.crewsNow':'Заняты {a} из {b}. Одна бригада строит одно здание за раз.',
+  'pd.queue':'Ждут бригаду: {l}','pd.crewBuy':'ЕЩЁ БРИГАДА','pd.collectAll':'СОБРАТЬ ВСЁ','pd.started':'{b}: заказана постройка',
+  'pd.cartNow':'Возчик ездит раз в {m} мин.','pd.cartNext':'Следующий объезд через {m}','pd.every':'раз в {m} мин.',
+  'pd.got':'На склад: {l}','pd.cart':'Возчик привёз: {l}','pd.built':'{b}: уровень {n}','pd.builtNew':'{b} построена',
+  'st2.toNext':'ДО УРОВНЯ {n}','st2.invest':'ВЛОЖИТЬ','st2.max5':'ВСЁ, ЧТО ХВАТИТ','st2.now':'Сейчас {a}, на следующем уровне {b}',
+  'st2.left':'Все оставшиеся вклады: {g} золота. Каждый сразу даёт +1% шага, остальное приносит стройка.',
+  'st2.building':'СТРОЙКА УРОВНЯ {n}','st2.making':'МАСТЕР ДЕЛАЕТ ИНСТРУМЕНТ {n}','st2.after':'После стройки: {v}',
+  'st2.wait':'ЖДЁТ БРИГАДУ','st2.waitI':'Все бригады заняты. Стройка начнётся, когда одна освободится.','st2.max':'МАКСИМАЛЬНЫЙ УРОВЕНЬ',
+  'st2.lastRes':'Последний вклад: золото и материалы для инструмента.',
+  'ms.toolsI':'20 вкладов, потом мастер делает инструмент. Ниже шанс хорошего и безупречного.',
+  'tl.done':'{m}: инструменты уровня {n}',
+  'v15.title':'ПРОМЫСЛЫ','v15.body':'<p>Возле таверны теперь можно ставить промыслы: лесопилку, огород, охотничий двор, а позже ловца духов. Шахта тоже стала промыслом и копает уже не только уголь. Ресурс начинает добываться, когда открыт тракт, где он водится.</p><p>Улучшения идут по стадиям: 20 вкладов золотом, каждый сразу немного прибавляет, потом бригада строит следующий уровень. Инструменты мастеров улучшаются так же. Конюшня с возчиком сама свозит запас на склад.</p>',
+  'lbl.build':'стройка','lbl.wait':'ждёт','off.prod':'Возчик привёз с промыслов'
+});
+I18n.add('en',{
+  'pd.saw':'SAWMILL','pd.mine':'MINE','pd.hunt':'HUNTING LODGE','pd.farm':'GARDEN','pd.ghost':'SPIRIT TRAP','pd.stable':'STABLE',
+  'pd.saw.d':'Saws wood on its own. Collect the stock to the store.',
+  'pd.mine.d':'Coal right away, iron from the summer tract, silver and crystals from the pass.',
+  'pd.hunt.d':'Hunters bring hide, and bone and silk after the autumn tract opens.',
+  'pd.farm.d':'Herbs from the beds, and spores from the mushroom cellar once the swamp opens.',
+  'pd.ghost.d':'Traps in the swamp collect ectoplasm.',
+  'pd.stable.d':'A carter with a wagon tours the workshops and takes the stock to the store.',
+  'pd.needTract':'Opens after the tract "{t}"','pd.lineTract':'opens: {t}','pd.perH':'{n} per hour',
+  'pd.full':'Stock is full, the line has stopped','pd.storeFull':'No room in the store','pd.nothing':'Nothing to collect yet',
+  'pd.crews':'BUILDING CREWS','pd.crewsNow':'Busy {a} of {b}. One crew builds one building at a time.',
+  'pd.queue':'Waiting for a crew: {l}','pd.crewBuy':'ONE MORE CREW','pd.collectAll':'COLLECT ALL','pd.started':'{b}: construction ordered',
+  'pd.cartNow':'The carter makes a round every {m} min.','pd.cartNext':'Next round in {m}','pd.every':'every {m} min.',
+  'pd.got':'To the store: {l}','pd.cart':'The carter brought: {l}','pd.built':'{b}: level {n}','pd.builtNew':'{b} is built',
+  'st2.toNext':'TO LEVEL {n}','st2.invest':'INVEST','st2.max5':'AS MUCH AS I CAN','st2.now':'Now {a}, next level {b}',
+  'st2.left':'All remaining contributions: {g} gold. Each one adds +1% of the step right away, construction brings the rest.',
+  'st2.building':'BUILDING LEVEL {n}','st2.making':'MASTER IS MAKING TOOLS {n}','st2.after':'After construction: {v}',
+  'st2.wait':'WAITING FOR A CREW','st2.waitI':'All crews are busy. Construction starts when one is free.','st2.max':'MAXIMUM LEVEL',
+  'st2.lastRes':'Last contribution: gold and materials for the tools.',
+  'ms.toolsI':'20 contributions, then the master makes the tools. Below: good and flawless chance.',
+  'tl.done':'{m}: tools level {n}',
+  'v15.title':'WORKSHOPS','v15.body':'<p>You can now set up workshops near the tavern: a sawmill, a garden, a hunting lodge and later a spirit trap. The mine is a workshop too and digs more than coal now. A resource starts flowing once its tract is open.</p><p>Upgrades go in stages: 20 gold contributions, each adds a little right away, then a crew builds the next level. Master tools upgrade the same way. A stable with a carter takes the stock to the store by itself.</p>',
+  'lbl.build':'building','lbl.wait':'waiting','off.prod':'The carter brought from the workshops'
+});
 })();

@@ -104,6 +104,17 @@ game.on('petFound',function(id){petSync();save();if(!game.silent){Sound.sfx('win
 game.on('petLevel',function(e){save();UI.toast(UI.t('pt.lvlUp',{p:UI.t('pet.'+e.id),n:e.lvl}));UI.panel();});
 game.on('petTrain',function(){save();});
 game.on('coll',function(e){Sound.sfx('capture');UI.toast(e.done?UI.t('coll.full',{m:UI.t('ms.'+e.m)}):UI.t('coll.got',{r:UI.itemName(e.r)}));save();UI.panel();});
+/* промыслы и стадии (v15) */
+function resLine(m){var a=[];for(var k in m)if(m[k])a.push('+'+D.fmt(m[k])+' '+UI.t('res.'+k));return a.join(', ');}
+game.on('prodGot',function(e){Sound.sfx('capture');UI.toast(UI.t('pd.got',{l:resLine(e.got)}));save();});
+game.on('cart',function(e){if(S.place!=='road')UI.toast(UI.t('pd.cart',{l:resLine(e.got)}));save();});
+game.on('built',function(e){
+  save();Sound.sfx('win');
+  if(e.kind==='tools')UI.toast(UI.t('tl.done',{m:UI.t('ms.'+e.id),n:e.lvl}));
+  else UI.toast(e.lvl===1?UI.t('pd.builtNew',{b:UI.prodName(e.id)}):UI.t('pd.built',{b:UI.prodName(e.id),n:e.lvl}));
+  UI.panel();
+});
+['invest','stage','crew'].forEach(function(n){game.on(n,function(){save();});});
 ['hire','learn','build','equip','order'].forEach(function(n){game.on(n,function(){save();});});
 var scenePlace=null;
 function sceneMode(place){return place==='road'?'walk':'tavern';}
@@ -145,6 +156,7 @@ UI.toggleView=function(){if(S.place==='road')game.goHome();else game.goTrip();};
 if(window.Tavern3D){
   Tavern3D.onPick(function(kind,id){
     if(kind==='store')UI.openTab('store');
+    else if(kind==='prod')UI.openTab('city',id);
     else UI.openTab('tavern');
     Sound.sfx('select');
   });
@@ -222,12 +234,13 @@ function begin(){
       showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
     if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
-    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
-    else if(!S.seenV10){S.seenV10=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
+    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
+    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
+    else if(!S.seenV15){S.seenV15=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV8b=true;S.seenV10=true;save();UI.rebuild();
+      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;save();UI.rebuild();
       setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }

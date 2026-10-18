@@ -684,3 +684,7 @@ body:not(.view-tavern) .qbar{display:none;}
 .wk-row span{flex:1;}
 .wk-row small{color:#7aa0b4;font-size:12px;}
 .bar.stgb.thin{height:4px;margin:2px 0 6px;}
+/* v17: укусы питомца и элита */
+.pop.pet{color:#ffb050;font-size:14px;}
+.pop.pet.crit{color:#ff8a20;font-size:18px;}
+#en-name .elite{color:#ffc840;}

@@ -46,6 +46,22 @@ D.TRACTS=[
   {id:'swamp', biome:2,res:['spore','ecto','herb'],      rare:'pearl',   boss:{type:'ghost', cols:['#c0d0ff','#eef4ff']}},
   {id:'pass',  biome:3,res:['crystal','silver','iron'],  rare:'starice', boss:{type:'eye',   cols:['#2a3a5a','#9fe8ff']}}
 ];
+/* v17: кто водится в тракте. Обычный монстр - случайный из списка по ресурсу; элита (с 30-й волны) крупнее, со свечением,
+   вдвое крепче и даёт вдвое больше добычи; боссы: mini - волны 10-40 и 60-90, mid - 50-я, main - 100-я. Ключи - модели adventure.js */
+D.ROSTER=[
+  {mobs:{wood:['snake','goleling'],iron:['orc','ninja'],herb:['frog','greenblob','mushnub'],hide:['bunny','rat','birb']},
+   elite:{wood:'goleling_ev',herb:'mushnub_ev'},boss:{mini:'goleling_ev',mid:'mushnub_ev',main:'orc_skull'}},
+  {mobs:{bone:['dino','tribal'],silk:['spider','armabee'],hide:['bunny','alpaking','rat']},
+   elite:{silk:'armabee_ev',hide:'alpaking_ev'},boss:{mini:'alpaking_ev',mid:'tribal',main:'monkroose'}},
+  {mobs:{spore:['wasp','spikyblob','mushnub'],ecto:['ghost','ghost_skull'],herb:['frog','glub','squidle']},
+   elite:{herb:'glub_ev',spore:'mushnub_ev'},boss:{mini:'glub_ev',mid:'mushking',main:'bigfrog'}},
+  {mobs:{crystal:['bluedemon','hywirl'],silver:['yeti','alien'],iron:['orc','cactoro','ninja']},
+   elite:{},boss:{mini:'hywirl',mid:'wizard',main:'demon'}}
+];
+D.ELITE_FROM=30;D.ELITE_HP=2;
+D.eliteChance=function(w){return w<D.ELITE_FROM?0:0.05+0.1*Math.min(1,(w-D.ELITE_FROM)/70);};
+D.bossRole=function(w){return w>=D.WAVES?'main':w===50?'mid':'mini';};
+D.PET_BITE=2.6;   // питомец кусает раз в столько секунд (v17: его бонус урона стал его собственными ударами)
 D.WAVES=100;
 D.MOBS=6;                 // монстров в волне
 D.WALK_TIME=2.2;          // тень вдали собирается в монстра
@@ -65,7 +81,7 @@ D.HP0=100;D.HP_GROW=1.07;
 D.maxHp=function(lvl){return Math.round(D.HP0*Math.pow(D.HP_GROW,lvl-1));};
 D.LV_T=14;D.LV_W=12;
 D.recLevel=function(t,w){return Math.max(1,Math.round(1+D.LV_T*t+D.LV_W*(w-1)/99));};
-D.BOSS_HIT=1.8;D.RAGE_T=60;D.RAGE_MULT=2;
+D.BOSS_HIT=1.8;D.BOSS_WIND=0.55;D.RAGE_T=60;D.RAGE_MULT=2;
 /* с рекомендуемой силой бой 45 с снимает 60% здоровья */
 D.bossDps=function(t,w){return D.maxHp(D.recLevel(t,w))*0.6/D.BOSS_T;};
 

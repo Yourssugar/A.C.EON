@@ -420,7 +420,7 @@ function refreshHud(){
   var e=R.enemy,showE=!!(road&&e&&(R.phase==='fight'||(R.phase==='walk'&&e.boss)));
   H.enemy.classList.toggle('hidden',!showE);
   if(showE){
-    setHTML(H['en-name'],(e.boss?t('en.boss')+' · ':'')+esc(t(e.name))+' '+resIcon(e.res)+' · '+t('hud.waveShort')+' '+e.L);
+    setHTML(H['en-name'],(e.boss?t('en.boss')+' · ':e.elite?'<span class="elite">'+t('en.elite')+'</span> · ':'')+esc(t(e.name))+' '+resIcon(e.res)+' · '+t('hud.waveShort')+' '+e.L);
     H['en-hp'].style.width=(e.hp/e.max*100).toFixed(1)+'%';
     setText(H['en-hp-txt'],D.fmt(e.hp)+' / '+D.fmt(e.max));
     H.enemy.classList.toggle('boss',!!e.boss);
@@ -491,6 +491,7 @@ function enemyPos(){
 }
 function onHit(h){
   var p=enemyPos();
+  if(h.pet){pop('pet'+(h.crit?' crit':''),D.fmt(h.dmg)+(h.crit?'!':''),p.x-40+(Math.random()-0.5)*30,p.y+20+(Math.random()-0.5)*16);return;}
   pop(h.big?'big':h.crit?'crit':h.click?'clk':'stf',D.fmt(h.dmg)+(h.crit?'!':''),p.x+(Math.random()-0.5)*70,p.y+(Math.random()-0.5)*20);
 }
 var lootQ=0;

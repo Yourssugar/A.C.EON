@@ -79,18 +79,21 @@ P.skillOn=function(id){return this.S.skills[id].act>0;};
 P.skillUnlocked=function(s){return this.S.mlvl>=s.unlock;};
 P.skillPow=function(id){return D.skillPow(this.skillDef(id),this.S.skills[id].l);};
 P.skillPoints=function(){return this.S.mlvl-1-this.S.spent;};
-P.dmgMult=function(){
+P.baseMult=function(){
   var m=D.fatigueMult(this.S.fatigue);
   if(this.skillOn('overload'))m*=this.skillPow('overload');
   if(this.S.rested>0)m*=D.REST_BUFF_MULT;
-  return m*(1+this.eff('dmg'));
+  return m;
 };
+P.dmgMult=function(){return this.baseMult()*(1+this.eff('dmg'));};
+/* v17: бонус урона питомца - его собственные укусы (раньше прибавлялся к посоху); в сумме столько же */
+P.petDps=function(){return this.rawDps()*this.baseMult()*this.petEff('dmg');};
 /* сумма бонусов надетых вещей и зелий текущего похода */
 P.eff=function(k){
   var S=this.S,v=0;
   for(var sl in S.equip){var it=S.equip[sl];if(!it)continue;var gd=D.GOOD_BY[it.id];if(gd&&gd.eff&&gd.eff[k])v+=gd.eff[k]*D.QUAL[it.q];}
   if(S.trip&&S.trip.buff&&S.trip.buff[k])v+=S.trip.buff[k];
-  v+=this.petEff(k);
+  if(k!=='dmg')v+=this.petEff(k);
   return v;
 };
 P.rawDps=function(){return D.staffDps(this.S.staff,this.S.mlvl);};
@@ -99,7 +102,7 @@ P.dps=function(){return this.rawDps()*this.dmgMult()*this.staffRate()/D.STAFF_RA
 P.critChance=function(){var c=D.CRIT_CHANCE+this.eff('crit');if(this.skillOn('focus'))c+=this.skillPow('focus');return Math.min(1,c);};
 P.critMult=function(){return D.CRIT_MULT;};
 P.critFactor=function(){return 1+this.critChance()*(this.critMult()-1);};
-P.effDps=function(){return this.dps()*this.critFactor();};
+P.effDps=function(){return (this.dps()+this.petDps())*this.critFactor();};
 P.clickDmg=function(){return (this.S.mlvl+this.rawDps()*D.CLICK_DPS_SHARE)*this.dmgMult();};
 P.maxHp=function(){return Math.round(D.maxHp(this.S.mlvl)*(1+this.eff('hp')));};
 P.awakeH=function(){return D.AWAKE_H/(1-Math.min(0.6,this.eff('fat')));};
@@ -191,13 +194,16 @@ P.startTrip=function(){
   this.spawn();
 };
 P.makeEnemy=function(){
-  var tr=this.S.trip,T=D.TRACTS[tr.t];
+  var tr=this.S.trip,T=D.TRACTS[tr.t],RO=D.ROSTER[tr.t]||{mobs:{},elite:{},boss:{}};
   if(tr.boss){
-    var hp=D.bossHp(tr.t,tr.w);
-    return {L:tr.w,hp:hp,max:hp,boss:true,type:T.boss.type,cols:T.boss.cols,res:T.rare,biome:T.biome,t:tr.t,name:'boss.'+T.id};
+    var hp=D.bossHp(tr.t,tr.w),role=D.bossRole(tr.w);
+    return {L:tr.w,hp:hp,max:hp,boss:true,role:role,v:RO.boss[role],type:T.boss.type,cols:T.boss.cols,res:T.rare,biome:T.biome,t:tr.t,
+      name:role==='main'?'boss.'+T.id:'bs.'+T.id+'.'+role};
   }
   var res=T.res[Math.floor(Math.random()*T.res.length)],mon=D.MON[res],mhp=D.mobHp(tr.t,tr.w);
-  return {L:tr.w,hp:mhp,max:mhp,boss:false,type:mon.type,cols:mon.cols,res:res,biome:T.biome,t:tr.t,name:'mon.'+res};
+  var list=RO.mobs[res]||[],elite=Math.random()<D.eliteChance(tr.w),v=elite&&RO.elite[res]?RO.elite[res]:list[Math.floor(Math.random()*list.length)];
+  if(elite)mhp*=D.ELITE_HP;
+  return {L:tr.w,hp:mhp,max:mhp,boss:false,elite:elite,v:v,type:mon.type,cols:mon.cols,res:res,biome:T.biome,t:tr.t,name:v?'mv.'+v:'mon.'+res};
 };
 P.spawn=function(){
   var R=this.R,tr=this.S.trip;
@@ -233,9 +239,10 @@ P.applyKill=function(e){
   var S=this.S,tr=S.trip,T=D.TRACTS[tr.t];
   S.stats.kills++;tr.kills++;
   if(this.rep)this.rep.kills++;
-  this.addXp(D.xpMob(tr.t,tr.w)*(e.boss?D.XP_BOSS:1));
+  this.addXp(D.xpMob(tr.t,tr.w)*(e.boss?D.XP_BOSS:e.elite?D.ELITE_HP:1));
   if(!e.boss){
-    if(Math.random()<this.dropChance(tr.t,tr.w))this.bagAdd(e.res,1);
+    if(e.elite){this.bagAdd(e.res,1);if(Math.random()<this.dropChance(tr.t,tr.w))this.bagAdd(e.res,1);}
+    else if(Math.random()<this.dropChance(tr.t,tr.w))this.bagAdd(e.res,1);
     tr.m++;
     if(tr.m>=D.MOBS){
       tr.m=0;tr.best=tr.w;
@@ -369,7 +376,7 @@ P.applyHit=function(h){
   var R=this.R,e=R.enemy;
   if(R.phase!=='fight'||!e||e.hp<=0)return;
   e.hp=Math.max(0,e.hp-h.dmg);
-  this.emit('hit',{dmg:h.dmg,crit:h.crit,click:!!h.click,big:!!h.big});
+  this.emit('hit',{dmg:h.dmg,crit:h.crit,click:!!h.click,big:!!h.big,pet:!!h.pet});
   if(e.hp<=0)this.kill();
 };
 P.kill=function(){
@@ -442,7 +449,7 @@ P.update=function(dt){
       R.t-=dt;
       if(R.t<=0){
         R.phase='fight';
-        if(R.enemy&&R.enemy.boss){R.bossT=0;R.hitT=D.BOSS_HIT;R.mhp=this.maxHp();this.emit('bossStart',R.enemy);}
+        if(R.enemy&&R.enemy.boss){R.bossT=0;R.hitT=D.BOSS_HIT;R.wind=false;R.mhp=this.maxHp();this.emit('bossStart',R.enemy);}
         this.emit('fight',R.enemy);
       }
       break;
@@ -450,11 +457,19 @@ P.update=function(dt){
       R.staffT+=dt*this.staffRate();
       var guard=0;
       while(R.staffT>=1&&guard++<20){R.staffT-=1;this.fireStaff();}
+      /* питомец: укус раз в D.PET_BITE с; урон приходит, когда он добегает (0.45 с) */
+      if(this.pets().active){
+        R.petT=(R.petT===undefined?D.PET_BITE*0.5:R.petT)-dt;
+        if(R.petT<=0){R.petT+=D.PET_BITE;var pd=this.petDps()*D.PET_BITE,pr=pd>0?this.roll(pd):{dmg:0,crit:false};
+          if(pd>0)R.hits.push({t:0.45,dmg:pr.dmg,crit:pr.crit,pet:true});
+          this.emit('petBite',{crit:pr.crit,dmg:pr.dmg});}
+      }
       if(R.enemy&&R.enemy.boss){
         R.bossT+=dt;R.hitT-=dt;
+        if(R.hitT<=D.BOSS_WIND&&!R.wind&&R.enemy.hp>0){R.wind=true;this.emit('bossWind',{rage:R.bossT>D.RAGE_T});}
         if(R.hitT<=0&&R.enemy.hp>0){
           var tr=S.trip,dmg=D.bossDps(tr.t,tr.w)*D.BOSS_HIT*(R.bossT>D.RAGE_T?D.RAGE_MULT:1);
-          R.hitT+=D.BOSS_HIT;R.mhp=Math.max(0,R.mhp-dmg);
+          R.hitT+=D.BOSS_HIT;R.wind=false;R.mhp=Math.max(0,R.mhp-dmg);
           this.emit('mageHit',{dmg:dmg,hp:R.mhp,max:this.maxHp(),rage:R.bossT>D.RAGE_T});
           if(R.mhp<=0){this.bossFail();return;}
         }

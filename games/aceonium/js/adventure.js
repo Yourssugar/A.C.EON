@@ -132,14 +132,26 @@ function loadGround(b){
 }
 
 /* ════════ МОНСТРЫ ════════ */
-/* ресурс или босс тракта -> модель. h - рост в метрах, fly - висит над землёй, tint - перекрас главного материала */
-var MAP={
-  wood:{id:'snake',h:0.9},iron:{id:'orc',h:1.55},herb:{id:'frog',h:0.7},hide:{id:'bunny',h:1.5},
-  bone:{id:'dino',h:1.5},silk:{id:'spider',h:0.8,tint:{Material:'#e8e8f0'}},spore:{id:'wasp',h:0.8,fly:0.8},
-  crystal:{id:'bluedemon',h:1.6},silver:{id:'yeti',h:1.7},
-  'boss.summer':{id:'orc_skull',h:2.5},'boss.autumn':{id:'monkroose',h:2.4},'boss.swamp':{id:'bigfrog',h:2.3},'boss.pass':{id:'demon',h:2.6}
+/* модели врагов (v17). h - рост в метрах в обычной роли, fly - висит над землёй, tint - перекрас материала,
+   fx - чем летит при попадании: chips щепки, slime брызги, spark искры, wisp дымка, fur клочья */
+var MODELS={
+  snake:{h:0.9,fx:'chips'},orc:{h:1.55,fx:'spark'},frog:{h:0.7,fx:'slime'},bunny:{h:1.5,fx:'fur'},dino:{h:1.5,fx:'fur'},
+  spider:{h:0.8,tint:{Material:'#e8e8f0'},fx:'fur'},wasp:{h:0.8,fly:0.8,fx:'slime'},bluedemon:{h:1.6,fx:'spark'},yeti:{h:1.7,fx:'fur'},
+  orc_skull:{h:2.5,fx:'spark'},monkroose:{h:2.4,fx:'fur'},bigfrog:{h:2.3,fx:'slime'},demon:{h:2.6,fx:'spark'},
+  goleling:{h:1.2,fly:0.35,fx:'chips'},goleling_ev:{h:1.5,fly:0.35,fx:'chips'},ninja:{h:1.5,fx:'spark'},greenblob:{h:0.8,fx:'slime'},
+  mushnub:{h:0.85,fx:'slime'},mushnub_ev:{h:1.3,fx:'slime'},rat:{h:0.55,fx:'fur'},birb:{h:1.2,fx:'fur'},tribal:{h:1.6,fx:'chips'},
+  armabee:{h:0.9,fly:0.7,fx:'spark'},armabee_ev:{h:1.15,fly:0.7,fx:'spark'},alpaking:{h:1.3,fly:0.35,fx:'fur'},alpaking_ev:{h:1.55,fly:0.35,fx:'fur'},
+  spikyblob:{h:0.9,fx:'slime'},ghost:{h:1.3,fly:0.45,fx:'wisp'},ghost_skull:{h:1.4,fly:0.45,fx:'wisp'},glub:{h:0.9,fly:0.45,fx:'slime'},
+  glub_ev:{h:1.25,fly:0.45,fx:'slime'},squidle:{h:1.0,fly:0.45,fx:'slime'},mushking:{h:1.7,fx:'slime'},hywirl:{h:1.3,fly:0.45,fx:'wisp'},
+  alien:{h:1.4,fx:'slime'},cactoro:{h:1.5,fx:'chips'},wizard:{h:1.1,fx:'wisp'}
 };
-var TRACT_MON=[['wood','iron','herb','hide','boss.summer'],['bone','silk','hide','boss.autumn'],['spore','herb','boss.swamp'],['crystal','silver','iron','boss.pass']];
+/* во сколько раз больше в особой роли */
+var ROLE_MULT={mob:1,elite:1.25,mini:1.6,mid:1.75,main:1};
+function tractModels(t){
+  var R=window.AcData&&AcData.ROSTER&&AcData.ROSTER[t];if(!R)return [];
+  var out={},k;for(k in R.mobs)R.mobs[k].forEach(function(id){out[id]=1;});for(k in R.elite)out[R.elite[k]]=1;for(k in R.boss)out[R.boss[k]]=1;
+  return Object.keys(out).filter(function(id){return MODELS[id];});
+}
 function loadMonster(id){
   if(MONP[id])return MONP[id];
   MONP[id]=fetchBuf('models/mon_'+id+'.glb').then(parse).then(function(g){
@@ -152,11 +164,12 @@ function loadMonster(id){
   MONP[id].catch(function(e){console.warn('[adventure] monster',id,e);delete MONP[id];});
   return MONP[id];
 }
-function loadTract(t){return Promise.all((TRACT_MON[t]||[]).map(function(k){return loadMonster(MAP[k].id);}));}
+function loadTract(t){return Promise.all(tractModels(t).map(function(id){return loadMonster(id).catch(function(){});}));}
 /* копия монстра: свой скелет, свои материалы (для вспышки), микшер с клипами */
-function monster(key){
-  var d=MAP[key];if(!d)return null;
-  var src=MON[d.id];if(!src)return null;
+function monster(id,role){
+  var d=MODELS[id];if(!d)return null;
+  var src=MON[id];if(!src)return null;
+  var rm=ROLE_MULT[role||'mob']||1;
   var o=SKU.clone(src.scene),mats=[];
   o.traverse(function(m){
     if(!m.isMesh)return;
@@ -166,10 +179,10 @@ function monster(key){
     m.material=arr.length===1?arr[0]:arr;
     m.castShadow=true;
   });
-  var k=d.h/src.h;o.scale.setScalar(k);o.position.y=-src.minY*k+(d.fly||0);
+  var hh=d.h*rm,fl=(d.fly||0)*Math.sqrt(rm),k=hh/src.h;o.scale.setScalar(k);o.position.y=-src.minY*k+fl;
   var mixer=new T.AnimationMixer(o),acts={};
   src.clips.forEach(function(c){acts[c.name]=mixer.clipAction(c);});
-  return {root:o,mixer:mixer,acts:acts,mats:mats,h:d.h+(d.fly||0),fly:d.fly||0};
+  return {root:o,mixer:mixer,acts:acts,mats:mats,h:hh+fl,fly:fl,fx:d.fx||'spark'};
 }
 
 /* ════════ ПИТОМЦЫ (v14) ════════ */
@@ -230,6 +243,6 @@ function loadBase(resolution){
 function loadBiome(b,t){return Promise.all([loadGround(b),loadTract(t===undefined?b:t)]);}
 
 window.Adventure={init:init,loadBase:loadBase,parts:parts,loadPet:loadPet,pet:pet,hasPet:function(id){return !!PET[id];},loadBiome:loadBiome,loadGround:loadGround,loadTract:loadTract,kinds:kinds,groundSet:groundSet,monster:monster,
-  hasMonster:function(key){var d=MAP[key];return !!(d&&MON[d.id]);},MAP:MAP,
+  hasMonster:function(id){return !!(id&&MON[id]);},MODELS:MODELS,
   get ready(){return baseReady;},get res(){return res;}};
 })();

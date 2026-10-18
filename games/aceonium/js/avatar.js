@@ -186,6 +186,8 @@ function clips(){
     by.idle=merged('idle','Idle_Loop','Idle_Torch_Loop');
     by.fight=by.Spell_Simple_Idle_Loop;
     by.cast=by.Spell_Simple_Shoot;
+    by.hurt=by.Hit_Chest;                 /* босс попал: маг вздрагивает */
+    by.victory=by.Spell_Simple_Enter;     /* босс повержен: маг поднимает посох */
     by.wardrobe=by.Idle_Loop;   /* в гардеробе рука свободна, посох стоит рядом на земле */
     return by;
   });
@@ -339,7 +341,7 @@ P.play=function(name,fade){
     if(!a){a=self.mixer.clipAction(clip);self.actions[name]=a;}
     if(self.cur===a)return;
     a.reset();a.enabled=true;a.setEffectiveWeight(1);
-    if(name==='Sitting_Enter'||name==='cast'||name==='Sitting_Exit'||name==='Death01'){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true;}
+    if(name==='Sitting_Enter'||name==='cast'||name==='Sitting_Exit'||name==='Death01'||name==='hurt'||name==='victory'){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true;}
     else a.setLoop(T.LoopRepeat,Infinity);
     a.play();
     if(self.cur&&fade!==0)self.cur.crossFadeTo(a,fade||0.35,false);
@@ -348,6 +350,12 @@ P.play=function(name,fade){
   });
 };
 var MODE_CLIP={walk:'walk',fight:'fight',idle:'idle',wardrobe:'wardrobe'};
+/* короткая реакция в бою (удар, победа), потом обратно к анимации режима */
+P.react=function(name,ms){
+  var self=this;if(this.mode!=='fight'&&name==='hurt')return;
+  this.castT=Math.max(this.castT||0,ms/1000);this.play(name,0.08);
+  clearTimeout(this.castBack);this.castBack=setTimeout(function(){self.play(MODE_CLIP[self.mode]||'idle',0.3);},ms);
+};
 P.update=function(dt,mode,fat){
   if(!this.mixer)return;
   /* жители таверны: анимацию выбирает tavern3d через play(), здесь только шаг микшера */

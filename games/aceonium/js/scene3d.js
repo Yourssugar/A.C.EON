@@ -333,21 +333,36 @@ function updateMonster(E,dt,fighting){
   E.t+=dt;
   var t=E.t;
   if(E.mixer){
-    /* модель: пока идёт к магу - ходьба, в бою стоит и иногда бьёт, при смерти свой клип */
+    /* модель: идёт к магу, в бою стоит; обычный монстр сам замахивается и бьёт по щиту мага, босс бьёт по сигналу логики (bossWind) */
+    var atk=E.acts.Attack?'Attack':E.acts.Punch?'Punch':null;
     if(E.die<0&&E.gone<0){
       if(!E.form&&E.cur!==idleAct(E)&&!(E.curOnce&&E.acts[E.cur].isRunning()))playAct(E,idleAct(E),0.25);
-      if(fighting){E.lungeT-=dt;if(E.lungeT<=0){E.lungeT=1.8+Math.random()*1.8;var at=E.acts.Punch?'Punch':E.acts.Attack?'Attack':null;if(at)playAct(E,at,0.12);}}
-      if(E.lunge>0.95&&E.acts.HitReact&&E.cur!=='HitReact'&&!E.curOnce)playAct(E,E.acts.Punch?'Punch':'HitReact',0.1);
+      if(fighting&&!E.boss&&atk){
+        E.lungeT-=dt;
+        if(E.lungeT<=0&&E.wind<=0){E.lungeT=2.2+Math.random()*1.6;E.wind=0.32;}
+      }
+      if(E.wind>0){
+        E.wind-=dt;
+        if(E.wind<=0){E.wind=0;if(atk)playAct(E,atk,0.08);E.hitAt=0.3;}
+      }
+      if(E.hitAt>0){E.hitAt-=dt;if(E.hitAt<=0){E.hitAt=0;if(!E.boss)shieldFx();}}
     }
     E.mixer.update(dt);
+    /* замах: монстр отклоняется назад и чуть приседает */
+    var wk=E.wind>0?Math.sin((1-E.wind/0.32)*Math.PI*0.5):0;
+    E.body.position.z=-wk*0.28;E.body.scale.y=(1/E.scale)*(1-wk*0.08);
     if(E.float!==undefined)E.body.position.y=Math.sin(t*2)*0.06;
     if(E.aura){E.aura.rotation.z=t*0.6;E.aura.material.opacity=0.45+Math.sin(t*3)*0.15;}
     E.lunge=Math.max(0,E.lunge-dt*2.5);
+    E.kb=Math.max(0,E.kb-dt*3.2);
     E.body.position.x=E.shake>0?(Math.random()-0.5)*0.08*E.shake:0;
     E.shake=Math.max(0,E.shake-dt*6);
     E.flash=Math.max(0,E.flash-dt*8);
+    var rp=E.rage?0.25+0.2*Math.sin(t*9):0;
     for(var mi=0;mi<E.mats.length;mi++){var mm=E.mats[mi];if(!mm.emissive)continue;if(mm.userData.e===undefined){mm.userData.e=mm.emissive.clone();mm.userData.ei=mm.emissiveIntensity;}
-      if(E.flash>0){if(mm.emissiveMap)mm.emissive.setRGB(1,1,1);else mm.emissive.copy(mm.color);mm.emissiveIntensity=E.flash*0.45;}else{mm.emissive.copy(mm.userData.e);mm.emissiveIntensity=mm.userData.ei;}}
+      if(E.flash>0){if(mm.emissiveMap)mm.emissive.setRGB(1,1,1);else mm.emissive.copy(mm.color);mm.emissiveIntensity=E.flash*0.45;}
+      else if(rp>0){mm.emissive.setRGB(1,0.1,0.05);mm.emissiveIntensity=rp;}
+      else{mm.emissive.copy(mm.userData.e);mm.emissiveIntensity=mm.userData.ei;}}
     return;
   }
   if(E.blob){E.blob.scale.y=0.78+Math.sin(t*4)*0.06;E.blob.scale.x=E.blob.scale.z=1-Math.sin(t*4)*0.04;}
@@ -605,7 +620,7 @@ function init(host,quality){
   host.appendChild(renderer.domElement);
   var scene=new THREE.Scene();
   var camera=new THREE.PerspectiveCamera(50,1,0.1,400);
-  R={host:host,renderer:renderer,scene:scene,camera:camera,mode:'walk',fat:0,biome:-1,enemy:null,dead:[],bolts:[],parts:[],pool:[],
+  R={host:host,renderer:renderer,scene:scene,camera:camera,mode:'walk',fat:0,biome:-1,enemy:null,dead:[],bolts:[],parts:[],pool:[],rings:[],fire:[],stopT:0,slowT:0,
      shakeT:0,t:0,zz:[],zzT:0,camBase:new THREE.Vector3(),camTarget:new THREE.Vector3(),mist:[],smokePool:[]};
 
   R.hemi=new THREE.HemisphereLight(0xc8d4e0,0x3a4a28,1.0);scene.add(R.hemi);
@@ -849,20 +864,50 @@ function applyPet(){
     R.scene.add(P.root);P.play('idle',0);
   },function(){});
 }
+var PET_HOME=null;
 function updatePet(dt){
   var P=R.pet;if(!P)return;
+  PET_HOME=PET_HOME||new THREE.Vector3(MAGE_POS.x-1.0,0,MAGE_POS.z-0.6);
   P.root.visible=R.mode!=='tavern'&&R.view!=='tavern';
-  if(R.mode==='walk'){if(!P.busy())P.play('run',0.2);P.root.rotation.y=Math.PI;}
+  var J=R.petJob;
+  if(J&&(R.mode!=='fight'||!R.enemy)){R.petJob=J=null;P.root.position.x=PET_HOME.x;P.root.position.z=PET_HOME.z;}
+  if(R.mode==='walk'){if(!P.busy())P.play('run',0.2);P.root.rotation.y=Math.PI;P.root.position.x=PET_HOME.x;P.root.position.z=PET_HOME.z;}
   else if(R.mode==='fight'){
-    R.petAtk-=dt;
-    if(R.petAtk<=0&&R.enemy&&!R.enemy.form){R.petAtk=2.2+Math.random()*1.6;P.play('attack',0.1);}
-    else if(!P.busy())P.play('idle',0.25);
-    P.root.rotation.y=Math.PI-0.25;
+    if(J){
+      J.t+=dt;
+      var eh=R.enemy?R.enemy.h*R.enemy.root.scale.x:1;
+      var tgt=new THREE.Vector3(ENEMY_POS.x-0.35,0,ENEMY_POS.z+0.75+Math.min(1.2,eh*0.22));
+      if(P.fly){
+        /* дракончик: на месте, пламя летит к врагу */
+        if(J.t<0.05)P.play('attack',0.1);
+        if(J.t>0.15&&J.t<0.45){J.ft=(J.ft||0)-dt;if(J.ft<=0){J.ft=0.03;var from=P.root.position.clone();from.y+=0.5;from.z-=0.3;
+          var to=enemyCenter(new THREE.Vector3());to.x+=(Math.random()-0.5)*0.4;to.y+=(Math.random()-0.5)*0.4;
+          var fs=getSprite(Math.random()<0.5?0xff7a20:0xffc040,0.25,1);fs.position.copy(from);R.fire.push({s:fs,a:from,b:to,t:0,dur:0.3,size:0.28});}}
+        if(J.t>=0.45&&!J.hit){J.hit=true;onPetHit(J.crit);}
+        if(J.t>0.9)R.petJob=null;
+        P.root.rotation.y=Math.PI-0.25;
+      }else{
+        var go=Math.min(1,J.t/0.3),back=Math.max(0,Math.min(1,(J.t-0.6)/0.4));
+        var k=go*(1-back);
+        P.root.position.x=PET_HOME.x+(tgt.x-PET_HOME.x)*k;P.root.position.z=PET_HOME.z+(tgt.z-PET_HOME.z)*k;
+        if(J.t<0.3){if(P.role!=='run')P.play('run',0.08);P.root.rotation.y=Math.atan2(tgt.x-PET_HOME.x,tgt.z-PET_HOME.z);}
+        else if(J.t<0.6){if(P.role!=='attack')P.play('attack',0.06);P.root.rotation.y=Math.PI;}
+        else if(J.t<1.0){if(P.role!=='run')P.play('run',0.08);P.root.rotation.y=Math.atan2(PET_HOME.x-tgt.x,PET_HOME.z-tgt.z);}
+        else{R.petJob=null;P.play('idle',0.2);}
+        if(J.t>=0.45&&!J.hit){J.hit=true;onPetHit(J.crit);}
+      }
+    }else{if(!P.busy())P.play('idle',0.25);P.root.rotation.y=Math.PI-0.25;}
   }else if(!P.busy())P.play('low',0.4);
   P.mixer.update(dt);
   P.root.position.y=P.fly?P.fly+Math.sin(R.t*2.2)*0.08:0;
 }
-
+function onPetHit(crit){
+  var E=R.enemy;if(!E||E.form)return;
+  var c=enemyCenter(new THREE.Vector3());c.y-=0.2;
+  burst(c,R.pet&&R.pet.fly?0xff8a30:0xffe0b0,crit?12:6,2.6,0.12);
+  E.flash=Math.max(E.flash,0.6);E.shake=Math.max(E.shake,0.8);
+  if(E.acts&&E.acts.HitReact&&!E.curOnce&&!E.wind&&Math.random()<0.35)playAct(E,'HitReact',0.06);
+}
 /* таверна на слабой графике: без постобработки и с пиксельным коэффициентом не выше 1 (телефоны) */
 function tavLite(){return R.qName!=='high'&&R.qName!=='ultra';}
 function curPr(){return R.view==='tavern'&&tavLite()?Math.min(R.pr||1,1):(R.pr||1);}
@@ -947,18 +992,21 @@ function bolt(kind,crit){
 function bez(o,a,c,b,t){var u=1-t;o.set(u*u*a.x+2*u*t*c.x+t*t*b.x,u*u*a.y+2*u*t*c.y+t*t*b.y,u*u*a.z+2*u*t*c.z+t*t*b.z);return o;}
 
 /* монстр из моделей приключения: та же структура E, что у нарисованного, плюс микшер анимаций */
-function buildModelMonster(key,boss,biome){
-  var A=Adventure.monster(key);if(!A)return null;
-  var E={root:new THREE.Group(),body:new THREE.Group(),type:'model',model:A,mixer:A.mixer,acts:A.acts,mats:A.mats,t:Math.random()*10,flash:0,shake:0,lunge:0,lungeT:1+Math.random()*2,die:-1,gone:-1,cur:null};
+function buildModelMonster(e){
+  var role=e.boss?(e.role||'main'):e.elite?'elite':'mob',boss=!!e.boss;
+  var A=Adventure.monster(e.v,role);if(!A)return null;
+  var E={root:new THREE.Group(),body:new THREE.Group(),type:'model',model:A,mixer:A.mixer,acts:A.acts,mats:A.mats,t:Math.random()*10,flash:0,shake:0,lunge:0,lungeT:1.4+Math.random()*1.5,die:-1,gone:-1,cur:null,
+    boss:boss,role:role,fx:A.fx,kb:0,wind:0,rage:false};
   E.scale=boss?2.0:1.35;
   /* рост модели задан в метрах: внутри делим на масштаб, который растит монстра при появлении */
   E.body.scale.setScalar(1/E.scale);E.body.add(A.root);E.root.add(E.body);
   E.h=A.h/E.scale;E.float=A.fly?A.fly/E.scale:undefined;
   A.root.traverse(function(o){if(o.isMesh)o.userData.shared=true;});
-  if(boss){
-    E.aura=mesh(new THREE.RingGeometry(0.7,0.85,40),new THREE.MeshBasicMaterial({color:0xff2d4a,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}),0,0.03,0);
+  if(boss||role==='elite'){
+    var col=role==='elite'?0xffc840:0xff2d4a,rr=role==='elite'?0.55:0.7;
+    E.aura=mesh(new THREE.RingGeometry(rr,rr+0.15,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}),0,0.03,0);
     E.aura.rotation.x=-Math.PI/2;E.root.add(E.aura);
-    var ag2=glowSprite(0xff2d4a,2.4,0.25);ag2.position.y=E.h*0.5;E.root.add(ag2);
+    var ag2=glowSprite(col,role==='elite'?1.5:2.4,role==='elite'?0.2:0.25);ag2.position.y=E.h*0.5;E.root.add(ag2);
   }
   E.shadow=mesh(new THREE.CircleGeometry(0.55,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.4,depthWrite:false}),0,0.012,0);
   E.shadow.rotation.x=-Math.PI/2;E.root.add(E.shadow);
@@ -979,8 +1027,8 @@ function spawn(e,walkT){
   if(!R)return;
   if(R.enemy)dropEnemy(R.enemy,'gone');
   setBiome(e.biome||0);
-  var key=e.boss?e.name:e.res,E=null;
-  if(window.Adventure&&Adventure.hasMonster&&Adventure.hasMonster(key))E=buildModelMonster(key,e.boss,e.biome);
+  var E=null;
+  if(window.Adventure&&Adventure.hasMonster&&Adventure.hasMonster(e.v))E=buildModelMonster(e);
   else if(window.Adventure&&Adventure.ready&&e.t!==undefined)Adventure.loadTract(e.t);
   if(!E)E=buildMonster(e.type,e.boss,e.biome,e.cols);
   E.root.rotation.y=0;
@@ -1011,11 +1059,60 @@ function dropEnemy(E,how){
 function hurt(){
   if(!R||!R.mage)return;
   var p=new THREE.Vector3();R.mage.root.getWorldPosition(p);p.y+=1.2;
-  burst(p,0xff2d4a,14,2.4,0.12);
-  R.shakeT=Math.max(R.shakeT||0,0.25);
-  if(R.enemy)R.enemy.lunge=1;
+  burst(p,0xff2d4a,18,2.6,0.13);
+  R.shakeT=Math.max(R.shakeT||0,0.35);R.stopT=0.07;
+  ring(MAGE_POS.x,MAGE_POS.z,'wave',0xff6040,0.5,0.3,3.2,0.9);
+  if(R.mage.react)R.mage.react('hurt',650);
+  else R.mage.kick=1.4;
 }
-function kill(){if(R&&R.enemy){var E=R.enemy;dropEnemy(E,'die');if(E.scale>1.5)R.shakeT=0.5;}}
+/* кольцо на земле: warn - мигает перед ударом, wave - расходится */
+function ring(x,z,kind,color,dur,s0,s1,op){
+  var m=mesh(new THREE.RingGeometry(0.75,1.0,48),new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:op||0.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}),x,0.04,z);
+  m.rotation.x=-Math.PI/2;m.material.fog=false;R.scene.add(m);
+  R.rings.push({m:m,t:0,dur:dur,kind:kind,s0:s0||0.4,s1:s1||2,op:op||0.8});
+}
+/* босс замахнулся: удар придёт через D.BOSS_WIND с */
+function bossWind(rage){
+  if(!R||!R.enemy||R.enemy.form)return;
+  var E=R.enemy;E.rage=!!rage;
+  var atk=E.acts&&(E.acts.Attack?'Attack':E.acts.Punch?'Punch':null);
+  if(atk)playAct(E,atk,0.08);else E.lunge=1;
+  var d=(window.AcData&&AcData.BOSS_WIND)||0.55;
+  ring(MAGE_POS.x,MAGE_POS.z,'warn',rage?0xff2020:0xff6a30,d,0.4,0.8,0.7);
+}
+/* удар обычного монстра гасит щит мага: голубая вспышка перед ним */
+function shieldFx(){
+  if(!R||!R.mage)return;
+  var p=new THREE.Vector3(MAGE_POS.x+0.15,1.15,MAGE_POS.z-0.7);
+  var col=R.mage.coreMat?R.mage.coreMat.color.getHex():0x7fd8ff;
+  var sh=getSprite(col,0.3,0.9);sh.position.copy(p);
+  R.parts.push({s:sh,v:new THREE.Vector3(0,0,0),life:0.35,max:0.35,g:0,grow:6});
+  burst(p,col,6,1.6,0.08);
+  if(R.mage.react&&Math.random()<0.5)R.mage.kick=Math.max(R.mage.kick||0,0.4);
+}
+/* попадание: частицы по виду монстра, реакция, отброс; на крите стоп-кадр */
+var FX={chips:[0x8a5a2a,true,5],slime:[0x6fd84a,true,3],spark:[0xffd060,false,8],wisp:[0x8ff0ff,false,-1.5],fur:[0xe8d8b8,true,4]};
+function onHit(h){
+  if(!R||!R.enemy||R.enemy.form)return;
+  var E=R.enemy,f=FX[E.fx]||FX.spark,c=enemyCenter(new THREE.Vector3());
+  burst(c,f[0],h.crit?12:5,h.crit?3.6:2.4,f[1]?0.16:0.1,f[1],f[2]);
+  if(h.crit||h.big){E.kb=Math.min(1,(E.kb||0)+(E.boss?0.35:0.8));R.stopT=Math.max(R.stopT,0.05);}
+  if(E.acts&&E.acts.HitReact&&!E.curOnce&&!E.wind&&(h.crit||Math.random()<(E.boss?0.12:0.3)))playAct(E,'HitReact',0.06);
+}
+/* укус питомца: бежит к врагу, кусает, возвращается; дракончик плюётся огнём */
+function petBite(crit){
+  if(!R||!R.pet||!R.enemy||R.enemy.form||R.mode!=='fight')return;
+  R.petJob={t:0,crit:!!crit,hit:false};
+}
+/* победа над боссом: замедление, золотые искры, маг поднимает посох */
+function victory(){
+  if(!R||!R.mage)return;
+  R.slowT=0.9;
+  var p=new THREE.Vector3(MAGE_POS.x,1.6,MAGE_POS.z);burst(p,0xffd56a,30,3.2,0.14,false,1.2);
+  if(R.mage.react)setTimeout(function(){if(R&&R.mage.react)R.mage.react('victory',1500);},250);
+}
+function setRage(on){if(R&&R.enemy)R.enemy.rage=!!on;}
+function kill(){if(R&&R.enemy){var E=R.enemy;dropEnemy(E,'die');if(E.scale>1.5){R.shakeT=0.5;R.slowT=Math.max(R.slowT,0.6);}}}
 function retreat(){if(R&&R.enemy)dropEnemy(R.enemy,'gone');}
 
 var _v=null;
@@ -1080,6 +1177,9 @@ function frame(dt,real){
     return;
   }
   real=real===undefined?dt:Math.min(real,1);
+  /* стоп-кадр на крите и ударе босса, замедление на смерти босса */
+  if(R.stopT>0){R.stopT-=real;dt*=0.06;}
+  else if(R.slowT>0){R.slowT-=real;dt*=0.35;}
   R.t+=dt;
   var walking=R.mode==='walk';
   var b=R.biomeObj;
@@ -1135,7 +1235,7 @@ function frame(dt,real){
       var form=Math.max(0,(p-0.78)/0.22);
       E.root.scale.setScalar(Math.max(0.001,E.scale*form*form*(3-2*form)));
       if(p>=1){burst(enemyCenter(new THREE.Vector3()),0x120818,14,2.4,0.55,true,-0.5);endForm(E);}
-    }else E.root.position.set(ENEMY_POS.x,0,ENEMY_POS.z);
+    }else E.root.position.set(ENEMY_POS.x,0,ENEMY_POS.z-(E.kb||0)*0.45);
     updateMonster(E,dt,R.mode==='fight');
   }
   for(var di=R.dead.length-1;di>=0;di--){
@@ -1168,6 +1268,15 @@ function frame(dt,real){
       putSprite(B.head);B.trail.forEach(putSprite);R.bolts.splice(bi,1);
     }
   }
+  /* круг-предупреждение под магом перед ударом босса, волна от удара, щит */
+  for(var ri=R.rings.length-1;ri>=0;ri--){
+    var G=R.rings[ri];G.t+=dt;var gq=G.t/G.dur;
+    if(G.kind==='warn'){G.m.scale.setScalar(0.4+gq*0.8);G.m.material.opacity=0.25+0.5*Math.abs(Math.sin(G.t*14));}
+    else{G.m.scale.setScalar(G.s0+gq*G.s1);G.m.material.opacity=Math.max(0,1-gq)*G.op;}
+    if(gq>=1){R.scene.remove(G.m);G.m.geometry.dispose();G.m.material.dispose();R.rings.splice(ri,1);}
+  }
+  if(R.fire)for(var fi=R.fire.length-1;fi>=0;fi--){var Fp=R.fire[fi];Fp.t+=dt;var fq=Math.min(1,Fp.t/Fp.dur);Fp.s.position.lerpVectors(Fp.a,Fp.b,fq);Fp.s.position.y+=Math.sin(fq*Math.PI)*0.2;
+    var fsz=Fp.size*(0.6+fq*0.9);Fp.s.scale.set(fsz,fsz,1);Fp.s.material.opacity=1-fq*0.7;if(fq>=1){putSprite(Fp.s);R.fire.splice(fi,1);}}
   /* частицы */
   for(var pi=R.parts.length-1;pi>=0;pi--){
     var q=R.parts[pi];q.life-=dt;
@@ -1297,6 +1406,6 @@ function preview(canvas){
 }
 
 window.Scene3D={setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
-  setView:setView,setPet:setPet,get view(){return R?R.view||'road':'road';},spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
-  get ready(){return !!R;}};
+  setView:setView,setPet:setPet,get view(){return R?R.view||'road':'road';},spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,bossWind:bossWind,onHit:onHit,petBite:petBite,victory:victory,setRage:setRage,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
+  get ready(){return !!R;},get _r(){return R;}};
 })();

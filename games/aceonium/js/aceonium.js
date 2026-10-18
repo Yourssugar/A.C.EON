@@ -66,11 +66,13 @@ game.on('bolt',function(b){
   if(has3d)Scene3D.bolt(b.kind,b.crit);
   var now=performance.now();if(now-sfxT>70){sfxT=now;Sound.sfx(b.kind==='click'?'select':'move');}
 });
-game.on('hit',UI.onHit);
+game.on('hit',function(h){UI.onHit(h);if(has3d&&Scene3D.onHit&&!h.pet)Scene3D.onHit(h);});
+game.on('petBite',function(b){if(has3d&&Scene3D.petBite)Scene3D.petBite(b.crit);});
+game.on('bossWind',function(w){if(has3d&&Scene3D.bossWind)Scene3D.bossWind(w.rage);});
 game.on('kill',function(k){if(has3d)Scene3D.kill();UI.onKill(k);Sound.sfx('capture');});
 game.on('loot',UI.onLoot);
 game.on('bossStart',function(){UI.banner(UI.t('boss.start'),'','red');Sound.sfx('check');});
-game.on('bossWin',function(e){UI.banner(UI.t('boss.win'),bossWinText(e),'gold');Sound.sfx('win');save();});
+game.on('bossWin',function(e){UI.banner(UI.t('boss.win'),bossWinText(e),'gold');Sound.sfx('win');if(has3d&&Scene3D.victory)Scene3D.victory();save();});
 game.on('bossFail',function(){if(has3d)Scene3D.retreat();Sound.sfx('lose');});
 game.on('mageHit',function(h){UI.onMageHit(h);if(has3d&&Scene3D.hurt)Scene3D.hurt();});
 game.on('home',function(r){UI.onHome(r);if(UI.tab==='store'||UI.tab==='path')UI.rebuild();save();});
@@ -240,14 +242,15 @@ function begin(){
       showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
     if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
-    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
-    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
-    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
-    else if(!S.seenV16){S.seenV16=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body'));}
+    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
+    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
+    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
+    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
+    else if(!S.seenV17){S.seenV17=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;save();UI.rebuild();
+      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;save();UI.rebuild();
       setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }

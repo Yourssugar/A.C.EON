@@ -683,4 +683,32 @@ I18n.add('en',{
   'lbl.tools':'tools','lbl.kitchen':'kitchen','off.tav':'Seated guests brought {g} gold',
   'v16.title':'THE VILLAGE','v16.body':'<p>The tavern is bigger now: a 10 meter hall, and hall levels add a kitchen and a veranda. Guests sit at tables, buy more seats on the TAVERN tab.</p><p>The brewer and the cook work in batches and keep half of the takings. When they save enough they expand by themselves, and you hire them helpers. Every master now has a house next to his workshop, with the tools level above it.</p>'
 });
+
+/* v17: новые монстры, элита, боссы по ролям */
+I18n.add('ru',{
+  'en.elite':'ЭЛИТА',
+  'mv.snake':'ДРЕВЕСНЫЙ ЗМЕЙ','mv.goleling':'ЛЕСНОЙ ГОЛЕМ','mv.goleling_ev':'ДРЕВНИЙ ГОЛЕМ','mv.orc':'ОРК-РУДОКОП','mv.ninja':'ТЕНЕВОЙ НИНДЗЯ',
+  'mv.frog':'ТРАВЯНАЯ ЖАБА','mv.greenblob':'ЗЕЛЁНЫЙ СЛИЗЕНЬ','mv.mushnub':'ГРИБНИК','mv.mushnub_ev':'ГРИБНОЙ СТАРЕЙШИНА','mv.bunny':'КРОЛИК-ГРОМИЛА',
+  'mv.rat':'ЛЕСНАЯ КРЫСА','mv.birb':'ПТИЦА-ЗАДИРА','mv.dino':'КОСТОГРЫЗ','mv.tribal':'ШАМАН ПЛЕМЕНИ','mv.spider':'ПАУК-ТКАЧ','mv.armabee':'ЖУК-ТКАЧ',
+  'mv.armabee_ev':'КОРОЛЕВСКИЙ ЖУК','mv.alpaking':'АЛЬПАКА-ВОИН','mv.alpaking_ev':'АЛЬПАКА-ВОЖДЬ','mv.wasp':'СПОРОВАЯ ОСА','mv.spikyblob':'КОЛЮЧИЙ СЛИЗЕНЬ',
+  'mv.ghost':'БОЛОТНЫЙ ПРИЗРАК','mv.ghost_skull':'ЧЕРЕПНОЙ ПРИЗРАК','mv.glub':'ТОПЯНИК','mv.glub_ev':'ТОПЯНОЙ ЦАРЬ','mv.squidle':'КАЛЬМАРИК',
+  'mv.mushking':'ГРИБНОЙ КОРОЛЬ','mv.bluedemon':'ЛЕДЯНОЙ БЕС','mv.hywirl':'ГОРНЫЙ ВИХРЬ','mv.yeti':'СЕРЕБРИСТЫЙ ЙЕТИ','mv.alien':'ЗВЁЗДНЫЙ ГОСТЬ',
+  'mv.cactoro':'КАМЕННЫЙ КАКТУС','mv.wizard':'ГОРНЫЙ КОЛДУН',
+  'bs.summer.mini':'ДРЕВНИЙ ГОЛЕМ','bs.summer.mid':'ГРИБНОЙ СТАРЕЙШИНА','bs.autumn.mini':'АЛЬПАКА-ВОЖДЬ','bs.autumn.mid':'ВЕРХОВНЫЙ ШАМАН',
+  'bs.swamp.mini':'ТОПЯНОЙ ЦАРЬ','bs.swamp.mid':'ГРИБНОЙ КОРОЛЬ','bs.pass.mini':'ГОРНЫЙ ВИХРЬ','bs.pass.mid':'ГОРНЫЙ КОЛДУН',
+  'v17.title':'НОВЫЕ МОНСТРЫ','v17.body':'<p>В каждом тракте теперь больше монстров, с 30-й волны попадается элита: крупнее, со свечением, крепче вдвое и с двойной добычей. Боссы на волнах 10-40 и 60-90 разные, на 50-й особый.</p><p>Бой живее: монстры замахиваются перед ударом, босс подсвечивает место удара, на крите стоп-кадр и отброс. Питомец сам подбегает и кусает, его урон теперь виден отдельными цифрами (в сумме он тот же).</p>'
+});
+I18n.add('en',{
+  'en.elite':'ELITE',
+  'mv.snake':'TREE SNAKE','mv.goleling':'FOREST GOLEM','mv.goleling_ev':'ANCIENT GOLEM','mv.orc':'ORC MINER','mv.ninja':'SHADOW NINJA',
+  'mv.frog':'HERB TOAD','mv.greenblob':'GREEN SLIME','mv.mushnub':'MUSHLING','mv.mushnub_ev':'MUSHROOM ELDER','mv.bunny':'BRUTE BUNNY',
+  'mv.rat':'FOREST RAT','mv.birb':'BULLY BIRD','mv.dino':'BONE GNAWER','mv.tribal':'TRIBE SHAMAN','mv.spider':'WEAVER SPIDER','mv.armabee':'WEAVER BEETLE',
+  'mv.armabee_ev':'ROYAL BEETLE','mv.alpaking':'ALPACA WARRIOR','mv.alpaking_ev':'ALPACA CHIEF','mv.wasp':'SPORE WASP','mv.spikyblob':'SPIKY SLIME',
+  'mv.ghost':'MARSH GHOST','mv.ghost_skull':'SKULL GHOST','mv.glub':'BOGLING','mv.glub_ev':'BOG KING','mv.squidle':'SQUIDLING',
+  'mv.mushking':'MUSHROOM KING','mv.bluedemon':'ICE IMP','mv.hywirl':'MOUNTAIN WHIRL','mv.yeti':'SILVER YETI','mv.alien':'STAR VISITOR',
+  'mv.cactoro':'STONE CACTUS','mv.wizard':'MOUNTAIN WARLOCK',
+  'bs.summer.mini':'ANCIENT GOLEM','bs.summer.mid':'MUSHROOM ELDER','bs.autumn.mini':'ALPACA CHIEF','bs.autumn.mid':'HIGH SHAMAN',
+  'bs.swamp.mini':'BOG KING','bs.swamp.mid':'MUSHROOM KING','bs.pass.mini':'MOUNTAIN WHIRL','bs.pass.mid':'MOUNTAIN WARLOCK',
+  'v17.title':'NEW MONSTERS','v17.body':'<p>Every tract has more monsters now, and from wave 30 elites appear: bigger, glowing, twice as tough, with double loot. Bosses on waves 10-40 and 60-90 differ, wave 50 has a special one.</p><p>Combat is livelier: monsters wind up before striking, the boss marks where it will hit, crits freeze the frame and knock back. The pet runs in and bites on its own, its damage shows as separate numbers (the total is the same).</p>'
+});
 })();

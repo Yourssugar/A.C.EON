@@ -1,0 +1,182 @@
+/* A.C.EON SNAKE: меню, поле, HUD, крестовина.
+   Размер поля считает snake.js (fit), поэтому вёрстка не зависит от aspect-ratio и container queries. */
+
+body{display:flex;flex-direction:column;}
+body.screen-menu #game{display:none;}
+body.screen-game #menu{display:none;}
+
+/* ════════ МЕНЮ ════════ */
+.sn-menu{flex:1 0 auto;display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px 14px 0;
+  min-height:calc(100vh - var(--top-h));min-height:calc(100dvh - var(--top-h));
+  background:radial-gradient(ellipse at 50% 15%,rgba(0,229,255,.10),transparent 55%),radial-gradient(ellipse at 50% 110%,rgba(255,45,120,.14),transparent 60%);}
+.sn-head{text-align:center;}
+.sn-title{display:flex;flex-direction:column;align-items:center;gap:10px;font-weight:normal;
+  font-size:26px;font-size:clamp(26px,6vw,52px);letter-spacing:.12em;color:var(--pri);
+  text-shadow:0 0 18px rgba(0,229,255,.8),0 0 46px rgba(0,229,255,.35);}
+.sn-brand{font-size:9px;letter-spacing:.5em;color:var(--pink);text-shadow:0 0 12px var(--pink);padding-left:.5em;}
+.sn-sub{margin-top:12px;font-size:8px;letter-spacing:.3em;color:#5f8fa6;}
+
+.sn-card{width:100%;max-width:560px;background:linear-gradient(160deg,rgba(4,16,30,.92),rgba(2,8,16,.92));
+  border:2px solid var(--bdr);border-top:3px solid var(--pri);padding:16px;display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 0 30px rgba(0,229,255,.08),inset 0 0 30px rgba(0,0,0,.5);}
+.sn-h{font-weight:normal;font-size:9px;letter-spacing:.3em;color:var(--pri);text-shadow:0 0 8px rgba(0,229,255,.6);}
+.sn-h2{margin-top:6px;}
+
+/* режимы */
+.mode-list{display:flex;flex-direction:column;gap:8px;}
+.mode-card{position:relative;display:flex;flex-direction:column;gap:8px;width:100%;padding:13px 60px 13px 12px;text-align:left;
+  background:#020c18;border:1px solid var(--bdr);border-left:4px solid var(--pri-d);color:#bfe3f2;cursor:pointer;
+  transition:background .12s,box-shadow .15s;}
+.mode-card:hover{background:#06182b;}
+.mode-card.sel{background:#062234;border-left-color:var(--pri);color:#fff;box-shadow:0 0 0 1px var(--pri),0 0 18px rgba(0,229,255,.3);}
+.mode-name{font-size:9px;letter-spacing:1px;}
+.mode-desc{font-family:Tahoma,Arial,sans-serif;font-size:13px;line-height:1.45;color:#9cc0d2;letter-spacing:0;}
+.mode-card.sel .mode-desc{color:#cfe6f2;}
+.mode-ico{position:absolute;right:12px;top:50%;width:32px;height:32px;margin-top:-16px;border:2px solid var(--pri);}
+.mode-ico-wrap{border-style:dashed;opacity:.8;}
+.mode-ico::after{content:'';position:absolute;left:5px;top:12px;width:16px;height:6px;background:var(--pri);box-shadow:0 0 6px var(--pri);}
+
+/* переключатель */
+.seg{display:flex;gap:4px;flex-wrap:wrap;}
+.seg-btn{flex:1 1 auto;padding:10px 8px;background:#020c18;border:1px solid var(--bdr);color:#8fb6c9;font-size:8px;letter-spacing:1px;cursor:pointer;}
+.seg-btn:hover{border-color:var(--pri);color:#fff;}
+.seg-btn.sel{background:var(--bdr);border-color:var(--pri);color:#fff;box-shadow:0 0 10px rgba(0,229,255,.3);}
+
+/* рекорды */
+.best-table{display:flex;flex-direction:column;gap:4px;}
+.bt-row{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));gap:4px;align-items:center;}
+.bt-row>*{padding:8px 6px;background:#020c18;border:1px solid #0e2538;font-size:8px;letter-spacing:1px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bt-row>span:first-child{text-align:left;color:#8fb6c9;}
+.bt-head>*{background:none;border-color:transparent;color:#5f8fa6;}
+.bt-row b{font-weight:normal;color:#fff;}
+.bt-row b.cur{border-color:var(--pri);color:var(--pri-b);box-shadow:0 0 8px rgba(0,229,255,.3);}
+
+/* кнопка «Играть» всегда видна внизу экрана */
+.sn-actions{position:sticky;bottom:0;z-index:20;width:100%;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  padding:12px 0;padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(to bottom,rgba(5,5,16,0),rgba(5,5,16,.92) 35%);}
+.sn-play{padding:16px 40px;font-size:12px;letter-spacing:3px;border-color:var(--pri);color:#fff;
+  background:linear-gradient(180deg,#003a55,#001a2a);animation:snGlow 2s ease-in-out infinite;}
+@keyframes snGlow{0%,100%{box-shadow:0 0 12px rgba(0,229,255,.35);}50%{box-shadow:0 0 28px rgba(0,229,255,.7);}}
+.sn-cont{padding:16px 24px;font-size:9px;}
+.sn-keys{font-size:8px;letter-spacing:1px;color:#3f6478;text-align:center;line-height:1.8;padding:0 10px 18px;}
+@media (pointer:coarse){.sn-keys{display:none;}}
+
+/* ════════ ИГРА ════════ */
+.sn-game{flex:1 0 auto;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px;}
+.hud{width:100%;max-width:900px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.hud-cell{display:flex;align-items:baseline;gap:8px;padding:8px 12px;background:#020c18;border:1px solid var(--bdr);border-left:3px solid var(--pri);
+  font-size:8px;letter-spacing:1px;color:#6a93a8;}
+.hud-cell b{font-weight:normal;font-size:14px;color:#fff;text-shadow:0 0 8px rgba(0,229,255,.5);min-width:3ch;}
+.hud-mode{flex:1 1 auto;font-size:8px;letter-spacing:1px;color:#5f8fa6;text-align:center;}
+.hud-btns{display:flex;gap:6px;}
+
+.board-wrap{position:relative;width:200px;height:200px;max-width:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#board{display:block;box-shadow:0 0 30px rgba(0,229,255,.18);}
+.board-msg{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:rgba(2,6,14,.55);text-align:center;padding:16px;pointer-events:none;}
+.board-msg b{font-weight:normal;font-size:14px;letter-spacing:3px;color:var(--pri);text-shadow:0 0 12px rgba(0,229,255,.8);}
+.board-msg span{font-size:8px;letter-spacing:1px;line-height:1.8;color:#cfe6f2;max-width:90%;}
+.board-msg.hidden{display:none;}
+
+/* крестовина: на сенсорных экранах */
+.dpad{display:none;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,56px);gap:6px;
+  grid-template-areas:". u ." "l . r" ". d .";padding-bottom:env(safe-area-inset-bottom);}
+@media (pointer:coarse){.dpad{display:grid;}}
+.dp{background:#021222;border:1px solid var(--bdr);border-bottom:3px solid var(--pri-d);color:var(--pri-b);font-size:18px;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;}
+.dp:active{background:var(--bdr);color:#fff;box-shadow:0 0 12px rgba(0,229,255,.5);}
+.dp-u{grid-area:u;}.dp-l{grid-area:l;}.dp-r{grid-area:r;}.dp-d{grid-area:d;}
+
+/* телефон: компактный HUD */
+@media (max-width:600px){
+  .sn-game{padding:8px;gap:8px;}
+  .hud-mode{display:none;}
+  .hud-cell{padding:7px 9px;}
+  .hud-cell b{font-size:12px;}
+  .hud-btns{margin-left:auto;}
+}
+/* телефон или планшет боком: поле слева, крестовина справа */
+@media (orientation:landscape) and (max-height:600px) and (pointer:coarse){
+  .sn-game{display:grid;grid-template-columns:auto auto;grid-template-areas:"hud hud" "board pad";justify-content:center;align-items:center;column-gap:20px;}
+  .hud{grid-area:hud;}
+  .board-wrap{grid-area:board;}
+  .dpad{grid-area:pad;}
+}
+
+/* конец игры */
+.over-box{max-width:420px;display:flex;flex-direction:column;gap:14px;}
+.over-title{font-size:18px;letter-spacing:3px;color:var(--err);text-shadow:0 0 14px rgba(255,51,68,.7);}
+.over-record{font-size:10px;letter-spacing:2px;color:#ffd23a;text-shadow:0 0 10px rgba(255,210,58,.7);animation:snGlow 1.2s ease-in-out infinite;}
+.over-rows{display:flex;flex-direction:column;gap:6px;}
+.ov-row{display:flex;justify-content:space-between;gap:12px;padding:8px 11px;background:#081420;border:1px solid #002a44;border-left:3px solid #00557a;
+  font-size:8px;letter-spacing:1px;color:#6a93a8;}
+.ov-row b{font-weight:normal;color:#cfeaff;}
+.over-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.over-btns .btn{padding:12px 18px;}
+
+@media (pointer:coarse){.btn{min-height:40px;}}
+/* низкий экран телефона: крестовина компактнее, поле крупнее */
+@media (max-height:680px) and (pointer:coarse){
+  .dpad{grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,44px);gap:4px;}
+}
+
+/* ── настройки: скорость, бонусы, уровни, вид ── */
+.opt{display:flex;flex-direction:column;gap:10px;}
+.opt.hidden{display:none;}
+.bonus-help{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-family:Tahoma,Arial,sans-serif;font-size:12px;color:#9cc0d2;}
+.bonus-help>span{display:flex;align-items:center;gap:8px;}
+.bi{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex-shrink:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  font-style:normal;font-weight:bold;font-size:10px;color:#050510;}
+.bi{font-family:Tahoma,Arial,sans-serif;}
+.bi-gold{background:#ffd23a;box-shadow:0 0 8px #ffd23a;}.bi-slow{background:#4fb8ff;box-shadow:0 0 8px #4fb8ff;}
+.bi-cut{background:#ff8800;box-shadow:0 0 8px #ff8800;}.bi-ghost{background:#d6c4ff;box-shadow:0 0 8px #d6c4ff;}
+.level-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;}
+.lv-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px;background:#020c18;border:1px solid var(--bdr);color:#cfe6f2;cursor:pointer;}
+.lv-btn b{font-weight:normal;font-size:12px;}
+.lv-btn small{font-size:8px;color:#6a93a8;letter-spacing:0;white-space:nowrap;}
+.lv-btn:hover{border-color:var(--pri);}
+.lv-btn.done{border-color:#00664a;}
+.lv-btn.done b{color:#00ff88;}
+.lv-btn.sel{background:var(--bdr);border-color:var(--pri);box-shadow:0 0 10px rgba(0,229,255,.35);}
+.lv-btn.locked{opacity:.3;cursor:default;}
+.level-help{font-family:Tahoma,Arial,sans-serif;font-size:12px;line-height:1.45;color:#9cc0d2;}
+.seg-btn.off,.seg-btn:disabled{opacity:.35;cursor:default;}
+.bt-lv{grid-template-columns:minmax(0,1.4fr) minmax(0,3fr);}
+.mode-ico-levels{border-color:#ffd23a;}
+.mode-ico-levels::after{background:#ffd23a;box-shadow:0 0 6px #ffd23a;width:6px;height:16px;left:11px;top:6px;}
+
+/* ── HUD: таймер уровня и действующие бонусы ── */
+.hud-time{display:none;border-left-color:#ffd23a;}
+body.mode-levels .hud-time{display:flex;}
+.hud-time.low b{color:#ff3344;animation:snGlow .8s ease-in-out infinite;}
+.hud-fx{display:flex;gap:6px;}
+.fx{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#020c18;border:1px solid var(--bdr);font-size:9px;color:#fff;}
+.fx i{font-style:normal;font-family:Tahoma,Arial,sans-serif;font-weight:bold;font-size:11px;}
+.fx-slow{border-color:#4fb8ff;}.fx-slow i{color:#4fb8ff;}
+.fx-ghost{border-color:#d6c4ff;}.fx-ghost i{color:#d6c4ff;}
+.board-msg span{white-space:pre-line;}
+.over-title.ok{color:#00ff88;text-shadow:0 0 14px rgba(0,255,136,.7);}
+
+/* ── 3D ── */
+.b3-canvas{position:absolute;left:0;top:0;display:none;}
+body.view-3d #board{visibility:hidden;}
+.b3-load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;background:rgba(2,10,20,.9);
+  border:1px solid var(--pri);font-size:8px;letter-spacing:2px;color:var(--pri);white-space:nowrap;pointer-events:none;}
+.b3-load.hidden{display:none;}
+.board-msg{z-index:2;}
+.btn-view{min-width:44px;}
+@media (max-width:600px){.hud-fx .fx{padding:5px 6px;}}
+/* таблица рекордов и уровни на узком экране: название режима отдельной строкой, ничего не обрезается */
+.bt-row>span:first-child{white-space:normal;overflow:visible;line-height:1.5;}
+.bt-row>*{padding:8px 4px;}
+@media (max-width:500px){
+  .bt-row{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .bt-row>span:first-child{grid-column:1/-1;padding:6px 2px 0;background:none;border:0;}
+  .bt-head>span:first-child{display:none;}
+  .bt-lv{grid-template-columns:1fr 1fr;}
+  .bt-lv>span:first-child{grid-column:auto;padding:8px 2px;}
+  .bt-row>*{font-size:8px;letter-spacing:0;}
+  .lv-btn small{letter-spacing:0;}
+  .level-grid{gap:4px;}
+}

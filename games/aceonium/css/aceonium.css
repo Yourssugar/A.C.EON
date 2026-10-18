@@ -23,9 +23,9 @@ body.ac{overflow:hidden;height:100vh;height:100dvh;}
 
 /* ── сцена ── */
 .stage{position:relative;flex:0 0 auto;height:56%;min-height:300px;overflow:hidden;background:#050510;
-  touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:crosshair;}
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;}
 @media (min-width:900px){.stage{flex:1 1 auto;height:auto;}}
-.canvas-host{position:absolute;inset:0;}
+.canvas-host{position:absolute;inset:0;touch-action:none;}
 .canvas-host canvas{display:block;}
 .no3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;
   color:var(--txt);font-size:15px;line-height:1.45;background:radial-gradient(circle at 50% 60%,#0b1a33,#050510 70%);}

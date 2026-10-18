@@ -162,8 +162,11 @@ D.wardrobePrice=function(needLvl){return 50*needLvl*needLvl;};
    Золото (gold) в ценах лежит рядом с ресурсами: {gold:100,wood:20}. */
 
 /* качество изделия: множитель цены и силы */
+/* v13: обычное / хорошее / безупречное / легендарное. Шанс зависит от инструментов мастера и его коллекции:
+   база 87/8/4/1, каждый уровень инструментов +0.6% хорошего и +0.4% безупречного (10 ур.: 77/14/8/1),
+   собранная коллекция +2% легендарного (75/14/8/3). */
 D.QUAL=[1,1.25,1.5,2];
-D.qualChance=function(lvl){return [0,0.12+0.01*lvl,0.03+0.005*lvl,0.005+0.002*lvl];};
+D.qualChance=function(tools,coll){var t=Math.min(tools||0,D.TOOLS_MAX);return [0,0.08+0.006*t,0.04+0.004*t,0.01+(coll?0.02:0)];};
 
 /* мастера: живут в своих домах и мастерских в городе, нанимаются за золото.
    Инструменты за ресурсы ускоряют работу, очередь заказов расширяется за золото. */
@@ -175,13 +178,21 @@ D.MASTERS=[
   {id:'jeweler',  hire:200,tools:{iron:10,herb:5}}
 ];
 D.MASTER_BY={};D.MASTERS.forEach(function(m){D.MASTER_BY[m.id]=m;});
-D.TOOLS_MAX=5;
-D.toolsCost=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]*Math.pow(1.8,l));c.gold=Math.ceil(50*Math.pow(2.2,l));return c;};
+D.TOOLS_MAX=10;
+D.toolsCost=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]*Math.pow(1.45,l));c.gold=Math.ceil(50*Math.pow(1.9,l));return c;};
 /* общая очередь крафта (v11): одна на всех, мастера работают параллельно, каждый над первой своей вещью */
 D.QSLOTS0=8;D.QSLOTS_MAX=30;
 D.qSlotCost=function(n){return {gold:Math.ceil(80*Math.pow(1.6,n-D.QSLOTS0))};};
 D.mXpNeed=function(l){return Math.ceil(20*Math.pow(1.35,l-1));};
-D.mSpeed=function(lvl,tools){return (1+0.04*(lvl-1))*(1+0.1*tools);};
+/* скорость мастера: уровень +2% за уровень, не больше +40% (к 21-му), собранная коллекция ещё +10% */
+D.mSpeed=function(lvl,coll){return (1+0.02*Math.min(20,lvl-1))*(coll?1.1:1);};
+/* освоение вещи (v13): каждая сделанная копия ускоряет только работу руками, процесс (варка, нагрев, сушка) не ускоряется.
+   Кривая обучения: время работы руками = (копия)^-b, к 60-й копии ровно вдвое быстрее, дальше не ускоряется. */
+D.WORK_SHARE={herbalist:0.4,smith:0.55,carpenter:0.7,tanner:0.75,jeweler:0.85,mage:0.9};
+D.MASTERY_CAP=60;
+D.masteryMult=function(n){return Math.max(0.5,Math.pow(Math.min(n,D.MASTERY_CAP-1)+1,-Math.log(2)/Math.log(D.MASTERY_CAP)));};
+D.craftTime=function(gd,n){var w=D.WORK_SHARE[gd.m]||0.6;return gd.time*(1-w)+gd.time*w*D.masteryMult(n||0);};
+D.COLL_PRICE=1.1;   // собранная коллекция мастера: его вещи дороже на 10%
 /* учитель: пока учит, мастер не работает */
 D.teachTime=function(lvl){return 600*lvl;}
 D.PAUSE_AWAY=600;   // сек: столько игрока нет, и маг сам продолжает поход, начатый паузой;
@@ -232,6 +243,17 @@ D.GOODS=[
 ];
 D.MAGE_SPEED=1;
 D.GOOD_BY={};D.GOODS.forEach(function(x){D.GOOD_BY[x.id]=x;});
+/* v13: цена = стоимость ресурсов + стоимость времени работы. Минута дорожает с уровнем рецепта,
+   свитки мага за полцены минуты (их ценность в опыте мага). Цены из таблицы выше заменяются этими. */
+D.RES_VALUE={wood:2.5,iron:2.5,herb:2.5,hide:2.5,coal:4,bone:6,silk:6,spore:10,ecto:10,crystal:18,silver:18,ironwood:25,amber:60,pearl:80,starice:150};
+D.MIN_RATE=[0,8,10,12,15,18,21,25,30];
+D.priceOf=function(g){
+  var rv=0;for(var k in g.cost)rv+=(D.RES_VALUE[k]||5)*g.cost[k];
+  var lvl=g.m==='mage'?Math.min(8,Math.ceil(g.lvl/5)):g.lvl;
+  var tv=g.time/60*(D.MIN_RATE[Math.min(8,lvl)]||30)*(g.m==='mage'?0.5:1),p=rv+tv;
+  return p>100?Math.round(p/10)*10:Math.max(3,Math.round(p));
+};
+D.GOODS.forEach(function(x){x.price=D.priceOf(x);});
 D.SLOTS=['head','body','belt','feet','ring'];
 /* с чего начинает новый маг: хватает на первые заказы, пока не вернулся первый поход */
 D.START={gold:150,store:{wood:20,iron:15,herb:20,hide:15}};
@@ -261,6 +283,22 @@ D.MINE={
   cap:function(l){return 120*l;},
   cost:function(l){return {gold:Math.ceil(250*Math.pow(2.8,l)),wood:Math.ceil(30*Math.pow(1.7,l)),iron:Math.ceil(20*Math.pow(1.7,l))};}
 };
+
+/* ════════ ПИТОМЦЫ (v14) ════════
+   Лису даёт мастер питомцев при найме. Остальных маг находит, пройдя главу (тракт) до 100-й волны:
+   шанс 70% за каждое полное прохождение, пока питомец не найден. Бонус = eff * уровень, уровень до 20.
+   Активен один питомец. Тренировка у мастера питомцев: золото и лакомства (травы, кожа), время. */
+D.PETS=[
+  {id:'fox',   start:true,eff:{dmg:0.02,chance:0.005},h:0.6, anim:{idle:'Idle',low:'Idle_2_HeadLow',run:'Gallop',attack:'Attack'},tint:{Main:'#ff6a10',Main_Light:'#fff3e2'}},
+  {id:'shiba', tract:0,eff:{chance:0.012},              h:0.55,anim:{idle:'Idle',low:'Idle_2_HeadLow',run:'Gallop',attack:'Attack'}},
+  {id:'cat',   tract:1,eff:{crit:0.004,dmg:0.01},       h:0.5, anim:{idle:'Idle',low:'Idle',run:'Walk',attack:'Bite_Front'}},
+  {id:'wolf',  tract:2,eff:{dmg:0.03},                  h:0.75,anim:{idle:'Idle',low:'Idle_2_HeadLow',run:'Gallop',attack:'Attack'}},
+  {id:'dragon',tract:3,eff:{dmg:0.025,hp:0.02},         h:0.42,fly:1.3,anim:{idle:'Flying_Idle',low:'Flying_Idle',run:'Fast_Flying',attack:'Punch'}}
+];
+D.PET_BY={};D.PETS.forEach(function(p){D.PET_BY[p.id]=p;});
+D.PET_MAX=20;D.PET_FIND=0.7;D.PETMASTER_HIRE=300;
+D.petCost=function(l){return {gold:Math.ceil(120*Math.pow(1.6,l-1)),herb:Math.ceil(4*Math.pow(1.3,l-1)),hide:Math.ceil(4*Math.pow(1.3,l-1))};};
+D.petTime=function(l){return 600*l;};   // сек тренировки до следующего уровня
 
 /* покупатели */
 /* v11: путников в МИНУТУ, от 1 на старте до 5 (зал и репутация) */

@@ -7,11 +7,12 @@
    Sound.music('menu')                              включить плейлист (плавно)
    Sound.duck(0.3, 2000)                            приглушить музыку на время
    Sound.sfx('move')                                эффект
-   Sound.define('eat', fn(t, tone, noise))          свой эффект игры
    Sound.setVolume('music'|'sfx', 0..1)
 
    Без своих треков страница играет общий плейлист аркады, и трек продолжается
-   с того же места при переходе между страницами (sessionStorage 'aceon_music'). */
+   с того же места при переходе между страницами (sessionStorage 'aceon_music').
+   Свой плейлист при возврате к нему продолжается с того места, где его прервали.
+   Треки сменяются наплывом за XF секунд до конца. Во фоне (вкладка скрыта) музыка на паузе. */
 (function(){
 'use strict';
 
@@ -22,6 +23,7 @@ var site=Store.get('site');
 var ctx=null,musicGain=null,sfxGain=null,unlocked=false;
 var lists={arcade:ARCADE},want=null,cur=null;   // cur: {name,list,idx,deck}
 var decks=[];                                     // два <audio> для плавной смены
+var XF=3,pos={};                                  // наплыв, сек; где остановились в каждом плейлисте
 
 function ensureCtx(){
   if(ctx)return ctx;
@@ -35,7 +37,14 @@ function ensureCtx(){
     src.connect(g);g.connect(musicGain);
     decks.push({el:el,gain:g});
   }
-  decks.forEach(function(d){d.el.addEventListener('ended',function(){if(cur&&cur.deck===d)next();});});
+  decks.forEach(function(d){
+    d.el.addEventListener('ended',function(){if(cur&&cur.deck===d)next();});
+    d.el.addEventListener('timeupdate',function(){
+      if(!cur||cur.deck!==d||cur.xf)return;
+      var left=d.el.duration-d.el.currentTime;
+      if(isFinite(left)&&d.el.duration>XF*4&&left<XF){cur.xf=true;next();}
+    });
+  });
   return ctx;
 }
 
@@ -56,32 +65,46 @@ function fade(g,to,sec){
   g.gain.setValueAtTime(g.gain.value,now);
   g.gain.linearRampToValueAtTime(to,now+sec);
 }
-function loadSaved(list){
-  if(list!==ARCADE)return {idx:0,t:0};
+function loadSaved(list,name){
+  if(list!==ARCADE)return pos[name]||{idx:0,t:0};
   try{var s=JSON.parse(sessionStorage.getItem('aceon_music')||'null');if(s)return {idx:s.idx||0,t:s.t||0};}catch(e){}
   return {idx:0,t:0};
 }
-function playOn(deck,url,t){
+function playOn(deck,url,t,sec){
   var el=deck.el;
   el.src=url;
-  if(t)el.addEventListener('loadedmetadata',function f(){el.removeEventListener('loadedmetadata',f);try{el.currentTime=t;}catch(e){}});
-  el.play().catch(function(){});
-  fade(deck.gain,1,1.2);
+  var tok=el._tok=(el._tok||0)+1;
+  if(t)el.addEventListener('loadedmetadata',function f(){el.removeEventListener('loadedmetadata',f);if(el._tok!==tok)return;try{el.currentTime=t;}catch(e){}});
+  if(!document.hidden)el.play().catch(function(){});
+  fade(deck.gain,1,sec||1.2);
+}
+function remember(){
+  if(cur&&cur.list!==ARCADE)pos[cur.name]={idx:cur.idx,t:cur.deck.el.currentTime||0};
+}
+function swapTo(url,t,sec){
+  var old=cur.deck,deck=decks[old===decks[0]?1:0];
+  cur.deck=deck;
+  fade(old.gain,0,sec);
+  setTimeout(function(){if(cur.deck!==old)old.el.pause();},sec*1000+100);
+  playOn(deck,url,t,sec);
 }
 function start(name){
   var list=resolve(name);
   if(cur&&cur.list===list){cur.name=name;return;}         // тот же плейлист: не перезапускать
-  var old=cur&&cur.deck;
-  var deck=decks[old===decks[0]?1:0];
-  var pos=loadSaved(list);
-  cur={name:name,list:list,idx:pos.idx%list.length,deck:deck};
-  if(old){fade(old.gain,0,1.2);setTimeout(function(){if(cur.deck!==old)old.el.pause();},1300);}
-  playOn(deck,list[cur.idx],pos.t);
+  remember();
+  var p=loadSaved(list,name);
+  if(!cur){
+    cur={name:name,list:list,idx:p.idx%list.length,deck:decks[0]};
+    playOn(cur.deck,list[cur.idx],p.t);return;
+  }
+  cur.name=name;cur.list=list;cur.idx=p.idx%list.length;cur.xf=false;
+  swapTo(list[cur.idx],p.t,1.5);
 }
 function next(){
   if(!cur)return;
   cur.idx=(cur.idx+1)%cur.list.length;
-  playOn(cur.deck,cur.list[cur.idx],0);
+  swapTo(cur.list[cur.idx],0,XF);
+  setTimeout(function(){if(cur)cur.xf=false;},XF*1000+200);
 }
 
 function music(name){want=name;if(unlocked)start(name);}
@@ -103,6 +126,12 @@ function setVolume(kind,v){
 }
 function volume(kind){return site[kind];}
 
+/* вкладка скрыта или телефон заблокирован: музыка на паузе, потом продолжается */
+document.addEventListener('visibilitychange',function(){
+  if(!ctx||!cur)return;
+  if(document.hidden){decks.forEach(function(d){d.el.pause();});}
+  else{if(ctx.state==='suspended')ctx.resume();cur.deck.el.play().catch(function(){});}
+});
 window.addEventListener('pagehide',function(){
   if(cur&&cur.list===ARCADE){
     try{sessionStorage.setItem('aceon_music',JSON.stringify({idx:cur.idx,t:cur.deck.el.currentTime||0}));}catch(e){}
@@ -140,8 +169,5 @@ function sfx(name){
   try{SFX[name](ctx.currentTime+0.01);}catch(e){}
 }
 
-/* свой эффект игры: Sound.define('eat', function(t, tone, noise){ tone(t, 660, 0.08, 'square', 0.06); }) */
-function define(name,fn){SFX[name]=function(t){fn(t,tone,noise);};}
-
-window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,define:define,setVolume:setVolume,volume:volume};
+window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,setVolume:setVolume,volume:volume};
 })();

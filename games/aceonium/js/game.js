@@ -20,6 +20,8 @@ function prodDefaults(){
   p.stable={lvl:0,st:0,bt:null,cart:0};
   return p;
 }
+function workerDefaults(){return {hired:false,lvl:1,save:0,help:0,stock:0,t:0,bt:null,miss:0,served:0,earned:0};}
+function tavDefaults(){return {seats:D.SEATS0,guests:[],acc:0,brewer:workerDefaults(),cook:workerDefaults(),inc:0};}
 function defaults(){
   var skills={};D.SKILLS.forEach(function(s){skills[s.id]={l:1,cd:0,act:0};});
   return {
@@ -47,7 +49,9 @@ function defaults(){
     mageCraft:{done:{},coll:{}},                    // освоение и коллекция свитков мага
     pets:{hired:false,own:{},active:null,train:null}, // питомцы: own[id]={lvl}, train={id,t,T}
     build:{forge:0,tannery:0,jewelry:0,hall:0,bedroom:0,decor:0},
-    prod:prodDefaults(),crews:1,crewQ:[],                 // промыслы (v15) и бригады строителей
+    prod:prodDefaults(),crews:1,crewQ:[],
+    tav:tavDefaults(),                              // v16: места, гости, повар и пивовар
+                    // промыслы (v15) и бригады строителей
     cust:[],custAcc:0,custId:0,rep:0,
     seenV8b:false,
     stats:{clicks:0,kills:0,bosses:0,bossFails:0,trips:0,lostBags:0,lostItems:0,gathered:0,play:0,rest:0,sold:0,goldEarned:0,crafted:0},
@@ -854,6 +858,7 @@ P.sellTo=function(c,mode){
   if(this.rep){this.rep.sold++;this.rep.gold+=price;}
   this.custRemove(c);
   this.emit('sale',{c:c,price:price,q:q,mode:mode||'sell'});
+  this.guestTry(c);
   return true;
 };
 P.refuse=function(c){if(!c)return false;this.custRemove(c);this.emit('custLeft',{c:c,why:'refuse'});return true;};
@@ -866,7 +871,7 @@ P.tickCustomers=function(dt){
     S.custAcc-=1;
     if(off){   /* офлайн: хозяйка продаёт сразу, если нужная вещь есть, иначе путник уходит */
       var oc=this.spawnCustomer();if(!oc)break;
-      if(this.custQual(oc)>=0)this.sellTo(oc,'hostess');else this.custRemove(oc);
+      if(this.custQual(oc)>=0)this.sellTo(oc,'hostess');else{this.custRemove(oc);this.guestTry(oc);}
       continue;
     }
     if(S.cust.length<max)this.spawnCustomer();
@@ -874,10 +879,81 @@ P.tickCustomers=function(dt){
   for(var i=S.cust.length-1;i>=0;i--){
     var c=S.cust[i];c.wait+=dt;
     if((off||c.wait>=D.HOSTESS_AFTER)&&this.custQual(c)>=0){this.sellTo(c,'hostess');continue;}
-    if(c.wait>=D.CUST_PATIENCE||(off&&this.custQual(c)<0)){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});}
+    if(c.wait>=D.CUST_PATIENCE||(off&&this.custQual(c)<0)){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});this.guestTry(c);}
   }
 };
-P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickCustomers(dt);this.tickPets(dt);};
+P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickCustomers(dt);this.tickTav(dt);this.tickPets(dt);};
+
+/* ════════ ГОСТИ, ПОВАР И ПИВОВАР (v16) ════════ */
+P.tav=function(){var S=this.S;if(!S.tav)S.tav=tavDefaults();return S.tav;};
+P.worker=function(w){return this.tav()[w];};
+P.seatCost=function(){var T=this.tav();return T.seats>=D.seatMax(this.buildLvl('hall'))?null:D.seatCost(T.seats);};
+P.buySeat=function(){var c=this.seatCost();if(!c||!this.pay(c))return false;this.tav().seats++;this.emit('seat',this.tav().seats);return true;};
+/* свободное место: номер стула от 0 до мест-1 */
+P.freeSeat=function(){var T=this.tav(),used={};T.guests.forEach(function(x){used[x.seat]=1;});for(var i=0;i<T.seats;i++)if(!used[i])return i;return -1;};
+/* путник садится за стол; садясь, заказывает пиво и, может быть, блюдо */
+P.guestTry=function(c){
+  if(!this.isOpen()||Math.random()>=D.GUEST_CHANCE)return false;
+  var T=this.tav(),seat=this.freeSeat();if(seat<0)return false;
+  var gst={id:c.id,who:c.who,seat:seat,t:D.GUEST_SIT};T.guests.push(gst);
+  this.serve('brewer');
+  if(Math.random()<D.GUEST_FOOD)this.serve('cook');
+  this.emit('guest',gst);return true;
+};
+P.workerEff=function(w){
+  var o=this.worker(w);if(!o.hired)return 0;
+  if(o.bt)return o.lvl+D.STAGE_STEP*D.STAGES;
+  if(o.lvl>=D.WORKER_MAX)return o.lvl;
+  return o.lvl+D.STAGE_STEP*Math.min(D.STAGES,Math.floor(o.save/D.workerUp(o.lvl)*D.STAGES));
+};
+P.portionPrice=function(w){return D.WORKERS[w].price*this.workerEff(w);};
+P.batchSize=function(w){var d=D.WORKERS[w],o=this.worker(w);return d.batch+d.per*o.help;};
+P.stockCap=function(w){return this.batchSize(w)*2;};
+P.capacityH=function(w){return this.worker(w).hired?this.batchSize(w)*3600/D.WORKERS[w].time:0;};
+P.serve=function(w){
+  var o=this.worker(w);if(!o.hired)return false;
+  if(o.stock<1){o.miss++;return false;}
+  o.stock--;o.served++;
+  var price=this.portionPrice(w),mine=price*(1-D.WORKER_SHARE),T=this.tav();
+  o.save+=price*D.WORKER_SHARE;o.earned+=price*D.WORKER_SHARE;
+  T.acc+=mine;var whole=Math.floor(T.acc);
+  if(whole>0){T.acc-=whole;this.S.gold+=whole;this.S.stats.goldEarned+=whole;T.inc+=whole;if(this.rep)this.rep.tav=(this.rep.tav||0)+whole;}
+  if(!o.bt&&o.lvl<D.WORKER_MAX&&o.save>=D.workerUp(o.lvl)){o.save-=D.workerUp(o.lvl);var Tb=D.workerBuild(o.lvl);o.bt={t:Tb,T:Tb};this.emit('wStage',{w:w,lvl:o.lvl});}
+  return true;
+};
+P.workerBlock=function(w){
+  var o=this.worker(w),d=D.WORKERS[w];
+  if(o.hired)return 'hired';
+  if(this.buildLvl('hall')<d.hall)return 'hall';
+  if(!this.canPay({gold:d.hire}))return 'cost';
+  return '';
+};
+P.workerHire=function(w){if(this.workerBlock(w))return false;this.pay({gold:D.WORKERS[w].hire});this.worker(w).hired=true;this.emit('wHire',w);return true;};
+P.helpCost=function(w){var o=this.worker(w);if(!o.hired||o.help>=D.helpSlots(o.lvl))return null;return D.helpCost(w,o.help);};
+P.hireHelp=function(w){var c=this.helpCost(w);if(!c||!this.pay(c))return false;this.worker(w).help++;this.emit('wHelp',w);return true;};
+/* сколько гостей в час приходит за столы и сколько им нужно порций: для подсказок */
+P.guestsH=function(){var T=this.tav(),flow=D.custRate(this.buildLvl('hall'),this.S.rep)*60*D.GUEST_CHANCE;return Math.min(flow,T.seats*3600/D.GUEST_SIT);};
+P.needH=function(w){return this.guestsH()*(w==='cook'?D.GUEST_FOOD:1);};
+P.tavIncomeH=function(){
+  var self=this,v=0;
+  D.WORKER_ORDER.forEach(function(w){if(!self.worker(w).hired)return;v+=Math.min(self.needH(w),self.capacityH(w))*self.portionPrice(w)*(1-D.WORKER_SHARE);});
+  return v;
+};
+P.tickTav=function(dt){
+  var T=this.tav(),self=this;
+  for(var i=T.guests.length-1;i>=0;i--){var gs=T.guests[i];gs.t-=dt;if(gs.t<=0){T.guests.splice(i,1);this.emit('guestLeft',gs);}}
+  D.WORKER_ORDER.forEach(function(w){
+    var o=T[w];if(!o.hired)return;
+    if(o.bt){o.bt.t-=dt;if(o.bt.t<=0){o.bt=null;o.lvl=Math.min(D.WORKER_MAX,o.lvl+1);self.emit('wLevel',{w:w,lvl:o.lvl});
+      if(o.lvl<D.WORKER_MAX&&o.save>=D.workerUp(o.lvl)){o.save-=D.workerUp(o.lvl);var Tb=D.workerBuild(o.lvl);o.bt={t:Tb,T:Tb};}}}
+    var cap=self.stockCap(w);
+    if(o.stock>=cap){o.t=0;return;}
+    o.t+=dt;var tm=D.WORKERS[w].time;
+    while(o.t>=tm&&o.stock<cap){o.t-=tm;o.stock=Math.min(cap,o.stock+self.batchSize(w));}
+    if(o.stock>=cap)o.t=0;
+    o.miss=Math.max(0,o.miss-dt/600);   // счётчик нехватки тает за 10 минут
+  });
+};
 
 /* ── питомцы ── */
 P.pets=function(){var S=this.S;if(!S.pets)S.pets={hired:false,own:{},active:null,train:null};return S.pets;};
@@ -969,6 +1045,10 @@ P.sanitize=function(){
   delete S.mine;
   if(!S.crews)S.crews=1;
   if(!S.crewQ)S.crewQ=[];
+  if(!S.tav)S.tav=tavDefaults();
+  var td=tavDefaults();for(k in td)if(S.tav[k]===undefined)S.tav[k]=td[k];
+  D.WORKER_ORDER.forEach(function(w){var wd=workerDefaults();for(var j in wd)if(S.tav[w][j]===undefined)S.tav[w][j]=wd[j];});
+  S.tav.guests=S.tav.guests.filter(function(x){return x.seat<S.tav.seats;});
   if(S.use.p_heal===undefined)S.use.p_heal=true;
   S.cust=S.cust.filter(function(c){return D.GOOD_BY[c.item];});
 };

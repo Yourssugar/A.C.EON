@@ -647,4 +647,40 @@ I18n.add('en',{
   'v15.title':'WORKSHOPS','v15.body':'<p>You can now set up workshops near the tavern: a sawmill, a garden, a hunting lodge and later a spirit trap. The mine is a workshop too and digs more than coal now. A resource starts flowing once its tract is open.</p><p>Upgrades go in stages: 20 gold contributions, each adds a little right away, then a crew builds the next level. Master tools upgrade the same way. A stable with a carter takes the stock to the store by itself.</p>',
   'lbl.build':'building','lbl.wait':'waiting','off.prod':'The carter brought from the workshops'
 });
+
+/* v16: посёлок, зал, повар и пивовар */
+I18n.add('ru',{
+  'wk.hall':'ЗАЛ','wk.seats':'мест {a} из {b}','wk.guestsNow':'Гостей за столами: {n}','wk.incH':'тебе примерно {g} в час',
+  'wk.hallI':'Путник после покупки садится за стол с шансом 60% и сидит 15 минут. Сейчас за столы садится около {h} гостей в час.',
+  'wk.buySeat':'ЕЩЁ МЕСТО','wk.seatsHall':'Больше мест после улучшения зала','wk.seatsMax':'Все места куплены','wk.incTotal':'Зал уже принёс: {g} золота',
+  'wk.brewer':'ПИВОВАР','wk.cook':'ПОВАР',
+  'wk.brewer.d':'Варит пиво партиями. Каждый гость за столом берёт кружку.',
+  'wk.cook.d':'Готовит блюда партиями. Каждый второй гость за столом заказывает еду.',
+  'wk.needHall':'Нужна кухня: зал {n}-го уровня','wk.brewer.unit':'пиво','wk.cook.unit':'блюда','wk.batch':'{n} за {t}',
+  'wk.price':'Порция стоит {p}, тебе {m}, остальное работнику в сбережения.',
+  'wk.flow':'Гостям нужно около {a} в час, готовится до {b} в час.','wk.short':'Не хватает: найми помощника, иначе часть гостей уходит ни с чем.',
+  'wk.helpers':'Помощники: {a} из {b}','wk.hireHelp':'НАНЯТЬ ПОМОЩНИКА','wk.helpLater':'Места для помощников прибавятся, когда работник расширится',
+  'wk.savings':'СБЕРЕЖЕНИЯ ДО УРОВНЯ {n}','wk.savingsI':'Работник копит свою половину выручки. Каждые 5% сразу немного поднимают цену, а накопив всё, он сам расширяется.',
+  'wk.expanding':'РАСШИРЯЕТСЯ ДО УРОВНЯ {n}',
+  'wk.hired':'{w} нанят','wk.lvlUp':'{w} расширился: уровень {n}','wk.helpHired':'{w}: новый помощник','wk.seatGot':'Мест в зале: {n}',
+  'lbl.tools':'инструмент','lbl.kitchen':'кухня','off.tav':'Гости за столами принесли {g} золота',
+  'v16.title':'ПОСЁЛОК','v16.body':'<p>Таверна стала больше: зал на 10 метров, с уровнями зала появляются кухня и веранда. Гости садятся за столы, места докупаются во вкладке ТАВЕРНА.</p><p>Пивовар и повар готовят партиями и забирают себе половину выручки. Накопив, они сами расширяются, а ты нанимаешь им помощников. У каждого мастера теперь свой дом рядом с его промыслом, над домом уровень инструментов.</p>'
+});
+I18n.add('en',{
+  'wk.hall':'HALL','wk.seats':'{a} of {b} seats','wk.guestsNow':'Guests at the tables: {n}','wk.incH':'about {g} per hour for you',
+  'wk.hallI':'After buying, a traveler sits down with a 60% chance and stays 15 minutes. About {h} guests per hour take a seat now.',
+  'wk.buySeat':'ONE MORE SEAT','wk.seatsHall':'More seats after the hall upgrade','wk.seatsMax':'All seats bought','wk.incTotal':'The hall has brought: {g} gold',
+  'wk.brewer':'BREWER','wk.cook':'COOK',
+  'wk.brewer.d':'Brews beer in batches. Every seated guest takes a mug.',
+  'wk.cook.d':'Cooks dishes in batches. Every second seated guest orders food.',
+  'wk.needHall':'Needs a kitchen: hall level {n}','wk.brewer.unit':'beer','wk.cook.unit':'dishes','wk.batch':'{n} per {t}',
+  'wk.price':'A portion costs {p}, {m} for you, the rest goes to the worker\'s savings.',
+  'wk.flow':'Guests need about {a} per hour, up to {b} per hour is made.','wk.short':'Not enough: hire a helper, or some guests leave with nothing.',
+  'wk.helpers':'Helpers: {a} of {b}','wk.hireHelp':'HIRE A HELPER','wk.helpLater':'More helper places appear when the worker expands',
+  'wk.savings':'SAVINGS TO LEVEL {n}','wk.savingsI':'The worker keeps his half of the takings. Every 5% raises the price a little, and when he has enough he expands by himself.',
+  'wk.expanding':'EXPANDING TO LEVEL {n}',
+  'wk.hired':'{w} hired','wk.lvlUp':'{w} expanded: level {n}','wk.helpHired':'{w}: new helper','wk.seatGot':'Seats in the hall: {n}',
+  'lbl.tools':'tools','lbl.kitchen':'kitchen','off.tav':'Seated guests brought {g} gold',
+  'v16.title':'THE VILLAGE','v16.body':'<p>The tavern is bigger now: a 10 meter hall, and hall levels add a kitchen and a veranda. Guests sit at tables, buy more seats on the TAVERN tab.</p><p>The brewer and the cook work in batches and keep half of the takings. When they save enough they expand by themselves, and you hire them helpers. Every master now has a house next to his workshop, with the tools level above it.</p>'
+});
 })();

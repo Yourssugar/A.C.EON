@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 
-var T=null,GLTF=null,loader=null,BASE='assets/tavern/',SIZES={};
+var T=null,GLTF=null,SKU=null,loader=null,BASE='assets/tavern/',SIZES={};
 var KIT={},TEXC={},MATS={},res='1k';
 var V=null;                 // всё, что относится к построенной сцене
 var readyFlag=false,loading=null;
@@ -115,7 +115,9 @@ function load(resolution,onProgress){
 /* копия модели из набора с нашими материалами */
 function model(name){
   var src=KIT[name];if(!src){console.warn('[tavern3d] нет модели',name);return new T.Group();}
-  var o=src.clone(true);
+  /* модели со скелетом (сундук) копируем вместе с костями, иначе они рисуются в начале координат */
+  if(src.userData.skinned===undefined){var sk=false;src.traverse(function(m){if(m.isSkinnedMesh)sk=true;});src.userData.skinned=sk;}
+  var o=src.userData.skinned&&window.AcSkel?(SKU||(SKU=window.AcSkel(T))).clone(src):src.clone(true);
   o.traverse(function(m){
     if(!m.isMesh)return;
     var nm=Array.isArray(m.material)?m.material[0].name:m.material.name;
@@ -128,18 +130,19 @@ function model(name){
 }
 
 /* ════════ ПЛАН ТАВЕРНЫ ════════
-   Сетка 2 м. X вправо, Z к зрителю. Главный дом X[-6,6] Z[-4,4]: комната мага слева, зал справа.
-   Пристройки появляются после покупки: кузня (восток, север), дубильня (восток, юг), ювелирная (север).
-   Двор на юге: дорога, столярный навес, шахта, склад под навесом слева от дома. */
-var DOOR={x:1,z:4};
-var PATH_IN=[[1,16.5],[1,5.2],[1,2.8]];
+   Сетка 2 м. X вправо, Z к зрителю. Главный дом X[-6,8] Z[-5,5]: комната мага слева, зал справа (v16).
+   Кухня за северной стеной (зал 1), пивоварня у восточной (после найма пивовара), веранда у входа (зал 2).
+   Двор на юге: дорога, склад под навесом слева от дома. Промыслы и дома мастеров вокруг (SITES, HOUSES). */
+var DOOR={x:1,z:5};
+var PATH_IN=[[1,16.5],[1,6.2],[1,4.4],[2.4,3.6],[2.4,0.2]];
+var PATH_OUT=[[2.4,0.2],[2.4,3.6],[1,4.4],[1,6.2]];
 var ROAD_Z=16.5,ROAD_END=28;   // путники идут по дороге из-за края и сворачивают к двери
 function place(o,x,z,rot,y){o.position.set(x,y||0,z);o.rotation.y=rot||0;return o;}
 
 function build(renderer){
   if(V)return V;
   V={renderer:renderer,scene:new T.Scene(),camera:new T.PerspectiveCamera(40,1,0.1,240),walls:[],npcs:{},cust:{},pool:[],sig:'',
-     az:0.5,pol:0.9,dist:30,target:new T.Vector3(0.5,0,1.5),goal:{az:0.5,pol:0.9,dist:30,target:new T.Vector3(0.5,0,1.5)},
+     az:0.5,pol:0.9,dist:32,target:new T.Vector3(2,0,0.5),goal:{az:0.5,pol:0.9,dist:32,target:new T.Vector3(2,0,0.5)},
      t:0,night:false,labels:{},active:false,fires:[]};
   var s=V.scene;
   s.background=new T.Color(0x8fb4cc);s.fog=new T.Fog(0x8fb4cc,45,125);
@@ -147,7 +150,7 @@ function build(renderer){
   V.sun=new T.DirectionalLight(0xfff0d8,1.7);V.sun.position.set(14,26,18);V.sun.target.position.set(0,0,6);s.add(V.sun);s.add(V.sun.target);
   V.sun.castShadow=true;var sc=V.sun.shadow.camera;sc.left=-38;sc.right=38;sc.top=38;sc.bottom=-38;sc.near=1;sc.far=90;
   var hq=window.Scene3D&&(Scene3D.quality==='high'||Scene3D.quality==='ultra');V.sun.shadow.mapSize.set(hq?2048:1024,hq?2048:1024);V.sun.shadow.bias=-0.0005;V.sun.shadow.normalBias=0.04;
-  V.inner=new T.PointLight(0xffb060,0,16,1.6);V.inner.position.set(1,2.6,-2.5);s.add(V.inner);
+  V.inner=new T.PointLight(0xffb060,0,18,1.6);V.inner.position.set(2,2.8,-1);s.add(V.inner);
   /* земля и двор */
   var gm=mat('grass');gm.color.set('#c8dc9c');
   var grass=plane(320,320,gm,64);grass.position.y=-0.03;s.add(grass);
@@ -204,90 +207,110 @@ function room(G,x0,x1,z0,z1,kind,o){
 }
 function prop(G,name,x,z,rot,y,sc){var o=place(model(name),x,z,rot,y);if(sc)o.scale.setScalar(sc);G.add(o);return o;}
 
-/* полная пересборка по состоянию игры */
+/* полная пересборка по состоянию игры (v16: дом больше, кухня, пивоварня, веранда, столы по местам) */
+/* столы: 3 в зале, 2 на веранде (с зала 2). Место гостя: номер стола floor(seat/4), по 4 места за столом */
+var TABLES=[[0.4,2.6],[4.4,2.6],[0.4,-1.6],[3.8,7.2],[6.6,7.2]];
+function seatPos(i){
+  var tb=TABLES[Math.floor(i/4)]||TABLES[0],k=i%4;
+  return {x:tb[0]+(k%2?0.55:-0.55),z:tb[1]+(k<2?-0.85:0.85),rot:k<2?0:Math.PI,out:Math.floor(i/4)>=3};
+}
 function layout(S){
   var G=V.layout;
   G.traverse(function(o){if(o.userData&&o.userData.merged)o.geometry.dispose();});
   while(G.children.length)G.remove(G.children[0]);
   V.walls.length=0;V.fires.length=0;
-  var B=S.build,mk=function(id){return S.masters[id]&&S.masters[id].hired;};
-  /* мастера живут в своих мастерских в городе: в таверне только зал, комната мага, двор и склад */
-  var forge=false,tannery=false,jewelry=false,hall=B.hall||0,bed=B.bedroom||0,decor=B.decor||0;
-  var st=V.st={};
-  /* главный дом */
-  room(G,-6,6,-4,4,'plaster',{
-    N:{win:[-3,3],door:jewelry?[-1]:[]},
-    S:{win:[-5,-1,3,5],door:[1]},
-    W:{win:[-1,1]},
-    E:{door:[forge?-3:99,tannery?1:99].filter(function(v){return v!==99;}),win:[forge?99:-1,tannery?99:3]}
+  var B=S.build,TV=S.tav||{seats:2,brewer:{},cook:{}};
+  var hall=B.hall||0,bed=B.bedroom||0,decor=B.decor||0,kitchen=hall>=1,brew=!!(TV.brewer&&TV.brewer.hired),veranda=hall>=2;
+  var st=V.st={},keep=[];V.wpiles={brewer:[],cook:[]};V.vroof=null;
+  /* главный дом: X[-6,8] Z[-5,5], комната мага слева до X=-2, зал 10 x 10 */
+  room(G,-6,8,-5,5,'plaster',{
+    N:{skip:true},
+    S:{win:[-5,-3,3,5,7],door:[1]},
+    W:{win:[-2,2]},
+    E:{skip:true}
+  });
+  /* стены к кухне и пивоварне низкие (как перегородка у мага), чтобы сверху было видно, кто там работает */
+  [-5,-3,-1,1,3,5,7].forEach(function(x){
+    var shared=kitchen&&x>=-1&&x<=3;
+    if(shared&&x===-1)return;
+    wall(G,'plaster',x,-5,Math.PI,{win:!shared&&x!==-1&&x!==1&&x!==3,inner:shared});
+  });
+  [-4,-2,0,2,4].forEach(function(z){
+    var shared=brew&&z<=0;
+    if(shared&&z===0)return;
+    wall(G,'plaster',8,z,Math.PI/2,{win:!shared&&(z===-2||z===2||z===4&&brew),inner:shared});
   });
   /* стена между комнатой мага и залом: низкая, с проходом */
-  for(var zz=-3;zz<4;zz+=2)if(zz!==1)wall(G,'plaster',-2,zz,Math.PI/2,{inner:true});
-  /* камин в зале у северной стены */
-  var hearth=box(2.2,1.2,0.8,mat('stone'),1);place(hearth,1,-3.45,0,0.6);G.add(hearth);
-  var mouth=box(1.1,0.75,0.3,new T.MeshBasicMaterial({color:0x140804}));place(mouth,1,-3.1,0,0.42);G.add(mouth);
-  var mantel=box(2.5,0.14,0.95,mat('dwood'),1);place(mantel,1,-3.4,0,1.27);G.add(mantel);
-  var chim=box(1.2,1.9,0.6,mat('stone'),1);place(chim,1,-3.65,0,2.15);G.add(chim);
-  fire(G,1,0.18,-3.0,1.0);
+  for(var zz=-4;zz<5;zz+=2)if(zz!==2)wall(G,'plaster',-2,zz,Math.PI/2,{inner:true});
+  /* камин у северной стены */
+  var hearth=box(2.2,1.2,0.8,mat('stone'),1);place(hearth,3,-4.45,0,0.6);G.add(hearth);
+  var mouth=box(1.1,0.75,0.3,new T.MeshBasicMaterial({color:0x140804}));place(mouth,3,-4.1,0,0.42);G.add(mouth);
+  var mantel=box(2.5,0.14,0.95,mat('dwood'),1);place(mantel,3,-4.4,0,1.27);G.add(mantel);
+  var chim=box(1.2,1.9,0.6,mat('stone'),1);place(chim,3,-4.65,0,2.15);G.add(chim);
+  fire(G,3,0.18,-4.0,1.0);
   /* стойка и хозяйка */
-  var cnt=box(2.8,1.0,0.6,mat('fwood'),1.2);place(cnt,4.3,-1.75,0,0.5);G.add(cnt);
-  var top=box(3.0,0.08,0.75,mat('dwood'),1.2);place(top,4.3,-1.75,0,1.04);G.add(top);
-  prop(G,'Mug',3.6,-1.7,0,1.08);prop(G,'Mug',4.9,-1.8,0.6,1.08);
-  prop(G,'Shelf_Simple',4.4,-3.75,0,1.4);prop(G,'Barrel_Holder',5.3,-3.3,0);prop(G,'Bottle_1',4.0,-3.7,0,1.45);
-  st.hostess={x:4.3,z:-2.75,rot:0};
-  /* травница: котёл и полка у стены комнаты мага */
-  prop(G,'Cauldron',-0.9,-2.7,0);prop(G,'Shelf_Small_Bottles',-1.6,-1.4,Math.PI/2,0.9);prop(G,'Potion_2',-0.2,-3.5,0,0);
-  st.herbalist={x:-0.85,z:-1.75,rot:Math.PI};
-  /* столы зала: больше с уровнем зала */
-  var tables=[[0.4,1.9],[0.4,-0.3],[4.6,2.3]].slice(0,1+Math.min(2,hall));
-  tables.forEach(function(p,i){
+  var cnt=box(2.8,1.0,0.6,mat('fwood'),1.2);place(cnt,6.0,-2.6,0,0.5);G.add(cnt);
+  var top=box(3.0,0.08,0.75,mat('dwood'),1.2);place(top,6.0,-2.6,0,1.04);G.add(top);
+  prop(G,'Mug',5.3,-2.55,0,1.08);prop(G,'Mug',6.6,-2.65,0.6,1.08);
+  prop(G,'Shelf_Simple',6.1,-4.75,0,1.4);prop(G,'Barrel_Holder',7.3,-4.2,0);prop(G,'Bottle_1',5.7,-4.7,0,1.45);
+  st.hostess={x:6.0,z:-3.6,rot:0};
+  /* столы: сколько нужно под купленные места */
+  var nT=Math.min(veranda?5:3,Math.ceil((TV.seats||2)/4));
+  for(var ti=0;ti<nT;ti++){
+    var p=TABLES[ti];
     prop(G,'Table_Large',p[0],p[1],0);prop(G,'Bench',p[0],p[1]-0.85,0);prop(G,'Bench',p[0],p[1]+0.85,Math.PI);
     prop(G,'Mug',p[0]-0.6,p[1],0,0.82);prop(G,'Table_Plate',p[0]+0.5,p[1]+0.1,0,0.82);
     if(decor>=1)prop(G,'CandleStick_Triple',p[0],p[1]-0.1,0,0.82);
-  });
-  if(hall>=2){prop(G,'Stool',2.6,0.8,0);prop(G,'Stool',3.2,3.2,0);}
-  if(hall>=3)prop(G,'Chandelier',1.5,0.6,0,3.05);
-  if(hall>=4)prop(G,'Barrel',5.4,0.4,0);
-  if(hall>=5)prop(G,'rug_rectangle_stripes_A',1.6,0.6,Math.PI/2,0.02,1.6);
-  /* комната мага: кровать, сундук, кресло; спальня добавляет уют */
-  var bedName=bed>=3?'Bed_Twin2':'Bed_Twin1';
-  prop(G,bedName,-4.6,-2.6,Math.PI/2);
-  prop(G,'Nightstand_Shelf',-5.55,-0.95,Math.PI/2);prop(G,'Candle_1',-5.55,-0.95,0,0.6);
-  prop(G,'Chest_Wood',-2.8,-3.4,0);
-  prop(G,'Chair_1',-3.4,2.4,Math.PI*0.8);prop(G,'Table_Plate',-3.0,3.3,0,0);
-  st.mageSit={x:-3.4,z:2.4,rot:Math.PI*0.8};
-  st.mageBed={x:-4.6,z:-2.6,rot:Math.PI/2};
-  if(bed>=1)prop(G,'rug_oval_A',-4,0.8,0,0.02,1.4);
-  if(bed>=2)prop(G,'Bookcase_2',-5.6,2.2,Math.PI/2);
-  if(bed>=4)prop(G,'CandleStick',-3.2,-3.5,0,0.69);
+  }
+  if(hall>=3){prop(G,'Chandelier',2.4,0.6,0,3.05);prop(G,'rug_oval_A',3.6,-1.2,0,0.02,1.1);prop(G,'Stool',3.6,-1.2,0);prop(G,'Barrel',4.4,-0.6,0);}
+  if(hall>=4){prop(G,'Barrel',-1.4,4.3,0);prop(G,'Stool',-1.0,0.8,0);}
+  if(hall>=5)prop(G,'rug_rectangle_stripes_A',2.4,0.8,Math.PI/2,0.02,1.6);
+  /* комната мага */
+  prop(G,bed>=3?'Bed_Twin2':'Bed_Twin1',-4.6,-3.6,Math.PI/2);
+  prop(G,'Nightstand_Shelf',-5.55,-1.95,Math.PI/2);prop(G,'Candle_1',-5.55,-1.95,0,0.6);
+  prop(G,'Chest_Wood',-2.9,-4.4,0);
+  prop(G,'Chair_1',-3.4,3.6,Math.PI*0.8);prop(G,'Table_Plate',-3.0,4.4,0,0);
+  st.mageSit={x:-3.4,z:3.6,rot:Math.PI*0.8};
+  st.mageBed={x:-4.6,z:-3.6,rot:Math.PI/2};
+  if(bed>=1)prop(G,'rug_oval_A',-4,1.0,0,0.02,1.4);
+  if(bed>=2)prop(G,'Bookcase_2',-5.6,3.0,Math.PI/2);
+  if(bed>=4)prop(G,'CandleStick',-3.2,-4.5,0,0.69);
   /* убранство */
-  if(decor>=1){prop(G,'Banner_1',3,-3.82,0,1.2);}
-  if(decor>=2){prop(G,'Lantern_Wall',-1.8,3.75,Math.PI,1.9);prop(G,'Lantern_Wall',5.8,0,-Math.PI/2,1.9);}
-  if(decor>=3){prop(G,'Banner_2',-3,-3.82,0,1.2);prop(G,'Prop_Vine2',-6.1,4.1,0);}
-  if(decor>=4){prop(G,'rug_rectangle_A',-4.2,-0.6,0,0.02,1.3);prop(G,'Vase_2',5.5,3.5,0);}
-  if(decor>=5){prop(G,'Prop_Vine5',6.1,4.1,0);prop(G,'Chalice',4.6,-1.75,0,1.08);}
-  /* кузня */
-  if(forge){
-    room(G,6,10,-4,0,'brick',{W:{skip:true},S:{inner:tannery,win:tannery?[]:[9]},floor:'cobble',E:{win:[-1]}});
-    prop(G,'Anvil_Log',8,-1.9,0);prop(G,'Anvil',8,-1.9,0,0.55);
-    prop(G,'Whetstone',9.3,-3.2,0);prop(G,'WeaponStand',9.2,-0.9,-Math.PI/2);prop(G,'Barrel',6.7,-0.6,0);
-    var fh=box(1.4,1.0,1.0,mat('stone'),1);place(fh,6.9,-3.4,0,0.5);G.add(fh);fire(G,6.9,1.02,-3.4,0.8);
-    st.smith={x:8,z:-1.05,rot:Math.PI};
-  }else st.smith=null;
-  /* дубильня */
-  if(tannery){
-    room(G,6,10,0,4,'grid',{W:{skip:true},N:{skip:forge},S:{win:[9]},E:{win:[3]}});
-    prop(G,'Workbench_Drawers',8.4,3.3,Math.PI);prop(G,'Textiles_Stack_Small',9.3,1.1,0);prop(G,'Peg_Rack',9.85,2.2,-Math.PI/2,1.6);
-    prop(G,'Dummy',7.0,0.9,Math.PI*0.75);prop(G,'Rope_1',9.6,3.4,0,0);
-    st.tanner={x:8.4,z:2.4,rot:0};
-  }else st.tanner=null;
-  /* ювелирная */
-  if(jewelry){
-    room(G,-2,2,-8,-4,'plaster',{S:{skip:true},N:{win:[1]},W:{win:[-7]}});
-    prop(G,'BookStand',-0.5,-6.8,0);prop(G,'Chest_Wood',1.2,-7.3,0);prop(G,'Coin_Pile',1.2,-7.3,0,0.7);
-    prop(G,'Bookcase_2',-1.65,-5.2,Math.PI/2);prop(G,'CandleStick_Triple',0.4,-6.9,0,0);
-    st.jeweler={x:-0.5,z:-6.0,rot:Math.PI};
-  }else st.jeweler=null;
+  if(decor>=1)prop(G,'Banner_1',5,-4.82,0,1.2);
+  if(decor>=2){prop(G,'Lantern_Wall',-1.8,4.75,Math.PI,1.9);prop(G,'Lantern_Wall',7.8,2.6,-Math.PI/2,1.9);}
+  if(decor>=3){prop(G,'Banner_2',-1,-4.82,0,1.2);prop(G,'Prop_Vine2',-6.1,5.1,0);}
+  if(decor>=4){prop(G,'rug_rectangle_A',-4.2,-0.6,0,0.02,1.3);prop(G,'Vase_2',-1.5,-4.4,0);}
+  if(decor>=5){prop(G,'Prop_Vine5',8.1,5.1,0);prop(G,'Chalice',6.6,-2.6,0,1.08);}
+  /* кухня (зал 1): за северной стеной */
+  if(kitchen){
+    room(G,-2,4,-9,-5,'brick',{S:{skip:true},N:{win:[1]},W:{win:[-7]},E:{win:[-7]},floor:'cobble'});
+    var stove=box(1.6,0.9,0.9,mat('stone'),1);place(stove,2.6,-8.4,0,0.45);G.add(stove);
+    fireSprite(G,2.6,0.92,-8.3,0.8);
+    prop(G,'Cauldron',0.4,-8.3,0);prop(G,'Table_Large',0.8,-6.6,Math.PI/2);prop(G,'Shelf_Simple',3.95,-6.8,-Math.PI/2,1.4);
+    prop(G,'Barrel',3.4,-5.6,0);prop(G,'FarmCrate_Apple',-1.3,-8.3,0.2);prop(G,'Crate_Wooden',-1.3,-7.2,0.5);
+    /* запас блюд на столе */
+    [[0.6,-7.2],[0.6,-6.6],[0.6,-6.0],[1.0,-7.0],[1.0,-6.3],[1.0,-5.9]].forEach(function(q,i){var o=place(model(i%2?'Pot_1':'Table_Plate'),q[0],q[1],i*0.7,0.82);G.add(o);V.wpiles.cook.push(o);keep.push(o);});
+    st.cook={x:2.6,z:-7.6,rot:Math.PI};
+    st.cookHelp=[[1.6,-6.6,-Math.PI/2],[0.4,-7.6,Math.PI],[-1.0,-7.6,Math.PI/2],[3.2,-6.4,Math.PI/2],[-0.6,-5.8,0]];
+  }else st.cook=null;
+  /* пивоварня (после найма пивовара): к восточной стене зала */
+  if(brew){
+    room(G,8,12,-4,2,'grid',{W:{skip:true},E:{win:[-1]},S:{win:[11]},N:{}});
+    var kettle=place(model('Cauldron'),9.4,-3.0,0);kettle.scale.setScalar(1.4);G.add(kettle);fireSprite(G,9.4,0.1,-2.8,0.7);
+    prop(G,'Barrel_Holder',11.3,-3.0,-Math.PI/2);prop(G,'Bucket_Wooden_1',10.6,-3.4,0);
+    [[11.4,-1.4],[11.4,-0.4],[11.4,0.6],[10.5,1.3],[9.5,1.3],[11.4,1.4]].forEach(function(q,i){var o=place(model('Barrel'),q[0],q[1],i,0);G.add(o);V.wpiles.brewer.push(o);keep.push(o);});
+    st.brewer={x:9.4,z:-1.9,rot:Math.PI};
+    st.brewHelp=[[10.6,-2.2,Math.PI/2],[10.4,0.2,Math.PI/2],[9.0,0.4,-Math.PI/2],[10.2,-0.9,0],[8.8,-0.8,Math.PI]];
+  }else st.brewer=null;
+  /* веранда (зал 2): настил и навес у входа */
+  if(veranda){
+    var deck=plane(6.4,4.4,mat('floor'),2.6,1.8);place(deck,5.2,7.2,0,0.04);G.add(deck);
+    var roofv=box(6.8,0.08,4.6,mat('fwood'),1);place(roofv,5.2,7.1,0,2.75);roofv.rotation.x=0.12;G.add(roofv);keep.push(roofv);V.vroof=roofv;
+    [[2.2,9.2],[8.2,9.2],[2.2,5.3],[8.2,5.3]].forEach(function(c){var po=box(0.14,2.7,0.14,mat('dwood'),1);place(po,c[0],c[1],0,1.35);G.add(po);});
+    prop(G,'Prop_WoodenFence_Single',3.2,9.4,0);prop(G,'Prop_WoodenFence_Extension1',7.2,9.4,0);prop(G,'Prop_WoodenFence_Single',8.4,7.2,Math.PI/2);
+    if(hall>=5){prop(G,'Lantern_Wall',2.3,9.1,0,2.2);prop(G,'Lantern_Wall',8.1,9.1,0,2.2);}
+  }
+  if(hall>=5){prop(G,'Banner_2',1,5.12,0,2.2);var fl=natObj('Flower_3_Group',-0.6,5.8,0.6,0,'#7aa834');if(fl)G.add(fl);var fl2=natObj('Flower_4_Group',2.6,5.8,0.55,1,'#86b03e');if(fl2)G.add(fl2);}
   /* склад под навесом слева: по стопке на уровень склада */
   var stacks=['Wood_Log_Stack','Stone_Chunks_Large','Iron_Bars_Stack_Small','Textiles_Stack_Small','Wood_Planks_Stack_Medium','Silver_Bars_Stack_Small','Gold_Bars_Stack_Small'];
   var sx=-8.6;
@@ -300,20 +323,25 @@ function layout(S){
   st.store={x:sx,z:-0.6};
   /* забор вдоль дороги, проход к двери */
   for(var fx=-9;fx<=9;fx+=2)if(Math.abs(fx-1)>1)prop(G,'Prop_WoodenFence_Single',fx,12.4,0);
-  prop(G,'Barrel_Apples',2.6,5.0,0);prop(G,'Crate_Wooden',-0.6,5.0,0.3);
+  prop(G,'Barrel_Apples',-1.2,5.7,0);prop(G,'Crate_Wooden',-2.2,5.7,0.3);
   if(decor>=2)prop(G,'Stall_Cart_Empty',-2.8,9.8,Math.PI*0.35,0,0.9);
   /* очередь путников перед стойкой */
-  st.queue=[[4.3,-0.9],[4.3,0.2],[3.4,1.0],[2.6,1.8],[2.0,2.9],[2.8,3.4],[3.8,3.3],[5.0,3.2]];
-  /* неподвижное склеиваем по материалам: сотни мешей превращаются в пару десятков вызовов отрисовки */
-  mergeStatic(G);
+  st.queue=[[6.0,-1.6],[6.6,-0.6],[7.1,0.4],[7.1,1.4],[7.1,2.4],[7.1,3.4],[6.4,4.2],[5.6,4.3]];
+  mergeStatic(G,null,keep);
   var n=!!V.night;V.night=null;setNight(n);
 }
-
-function mergeStatic(G,keepList){
+/* огонь без своего света: светящееся пятно (лишние точечные лампы дорого стоят на телефонах) */
+function fireSprite(G,x,y,z,size){
+  var sp=new T.Sprite(new T.SpriteMaterial({map:glowTex(),color:0xff9040,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));
+  sp.position.set(x,y+0.25,z+0.15);sp.scale.set(size,size*0.8,1);G.add(sp);
+  V.fires.push({l:null,s:sp,base:1.6,size:size});
+}
+function mergeStatic(G,keepList,extra){
   G.updateMatrixWorld(true);
   var keep=new Set();
   if(!keepList){V.walls.forEach(function(w){w.o.traverse(function(o){keep.add(o);});});}
   else keepList.forEach(function(k){k.traverse(function(o){keep.add(o);});});
+  if(extra)extra.forEach(function(k){k.traverse(function(o){keep.add(o);});});
   var buckets={},victims=[];
   G.traverse(function(o){
     if(!o.isMesh||o.isSkinnedMesh||keep.has(o))return;
@@ -384,6 +412,16 @@ var SITES={
   ghost: {x:22, z:29, rot:Math.PI+0.3,r:7,  wall:'brick'},
   stable:{x:5,  z:27, rot:Math.PI,   r:7.5,wall:'plaster'}
 };
+/* дома мастеров (v16): рядом со своим сырьём; дверь (открытая сторона) смотрит на таверну */
+var HOUSES={
+  herbalist:{x:-8, z:27, r:6,wall:'plaster'},
+  carpenter:{x:-21,z:-6, r:6,wall:'plaster'},
+  smith:    {x:11, z:-16,r:6,wall:'brick'},
+  tanner:   {x:-8, z:-17,r:6,wall:'grid'},
+  jeweler:  {x:20, z:3,  r:6,wall:'plaster'},
+  pets:     {x:2,  z:-18,r:7,wall:'grid'}
+};
+(function(){for(var id in HOUSES){var h=HOUSES[id];h.rot=Math.atan2(-h.x,-h.z);}})();
 var NAT_TINT={};
 /* модель из набора природы (adventure.js) как обычный меш; листва красится в свой цвет */
 function natObj(name,x,z,sc,ry,tint){
@@ -480,16 +518,47 @@ function dressing(G,w,d,lvl,o){
 }
 /* штабели запаса: piles[i] показывается, когда запас больше i/n */
 function pile(P,G,name,x,z,ry,y,sc){var o=place(model(name),x,z,ry,y||0);if(sc)o.scale.setScalar(sc);G.add(o);P.push(o);return o;}
+/* обстановка мастерской: внутри открытого домика 4 x 4 (дверь-проём на +Z) */
+function houseProps(H,id,tl,keep){
+  if(id==='herbalist'){prop(H,'Cauldron',0.9,-0.9,0);prop(H,'Shelf_Small_Bottles',-1.85,-0.4,Math.PI/2,0.9);prop(H,'Potion_2',1.5,-1.6,0,0);prop(H,'Barrel',-1.3,-1.4,0);
+    if(tl>=4)prop(H,'SmallBottles_1',-1.3,-1.4,0,1.0);if(tl>=7)prop(H,'Bookcase_2',1.75,0.6,-Math.PI/2);}
+  else if(id==='carpenter'){prop(H,'Workbench',0.6,-1.2,0);prop(H,'Wood_Planks_Stack_Medium',-1.2,-1.2,0.2);prop(H,'Axe_Bronze',0.4,-1.3,0.4,0.95);
+    if(tl>=4)prop(H,'Wood_Log_Stack',2.9,0.8,0.1);if(tl>=7)prop(H,'Workbench_Drawers',-1.4,0.4,Math.PI/2);}
+  else if(id==='smith'){prop(H,'Anvil_Log',0.4,-0.3,0);prop(H,'Anvil',0.4,-0.3,0,0.55);var fh=box(1.3,0.9,1.0,mat('stone'),1);place(fh,-1.2,-1.3,0,0.45);H.add(fh);fireSprite(H,-1.2,0.92,-1.3,0.7);
+    prop(H,'Whetstone',1.4,-1.3,0);if(tl>=4)prop(H,'WeaponStand',1.75,0.6,-Math.PI/2);if(tl>=7)prop(H,'Shield_Wooden',-1.88,0.4,Math.PI/2,1.5);}
+  else if(id==='tanner'){prop(H,'Workbench_Drawers',0.5,-1.3,0);prop(H,'Peg_Rack',-1.85,-0.3,Math.PI/2,1.6);prop(H,'Textiles_Stack_Small',1.4,0.3,0);
+    if(tl>=4)prop(H,'Dummy',2.9,1.2,-0.5);if(tl>=7)prop(H,'Textiles_Stack_Large_Colored',-1.2,0.6,0.3);}
+  else if(id==='jeweler'){prop(H,'BookStand',0.5,-1.0,0);prop(H,'Chest_Wood',-1.2,-1.3,0);prop(H,'Coin_Pile',-1.2,-1.3,0,0.7);prop(H,'CandleStick_Triple',1.4,-1.4,0,0);
+    if(tl>=4)prop(H,'Bookcase_2',1.75,0.4,-Math.PI/2);if(tl>=7)prop(H,'Coin_Pile_2',0.9,0.4,0);}
+  else if(id==='pets'){
+    /* вольер перед псарней */
+    for(var a=0;a<10;a++){var ang=a/10*Math.PI*2,fx=Math.cos(ang)*3.4,fz=4.4+Math.sin(ang)*2.4;var fo=place(model('Prop_WoodenFence_Single'),fx,fz,-ang+Math.PI/2);fo.scale.x=0.95;if(a!==7)H.add(fo);}
+    prop(H,'Bucket_Wooden_1',-1.0,2.4,0);prop(H,'Barrel_Apples',1.4,-1.2,0);var hay=box(1.4,0.6,1.0,mat('thatch'),1);place(hay,-0.8,-1.2,0.2,0.3);H.add(hay);
+    /* питомцы, которые сейчас не с магом, гуляют в вольере */
+    var S=V.S||{},P2=S.pets||{},q=(window.Scene3D&&Scene3D.quality)||'medium',lim=q==='low'?0:q==='medium'?1:3,n=0;
+    if(window.Adventure&&Adventure.ready)Object.keys(P2.own||{}).forEach(function(pid){
+      if(pid===P2.active||n>=lim)return;
+      if(!Adventure.hasPet(pid)){Adventure.loadPet(pid).then(function(){if(V)V.prodSig='';},function(){});return;}
+      var pp=Adventure.pet(pid);if(!pp)return;
+      pp.root.position.set(-1.6+n*1.6,pp.fly||0,4.3+(n%2)*0.8);pp.root.rotation.y=0.8+n;H.add(pp.root);pp.play('idle',0);
+      V.penPets.push(pp);keep.push(pp.root);n++;
+    });
+  }
+}
 function prodSig(S){
   var g=window.acGame,out=[!!(window.Adventure&&Adventure.ready)];
   for(var id in SITES){var o=S.prod&&S.prod[id];if(!o){out.push(0);continue;}
     var lines=id==='stable'?0:D().PROD_BY[id].lines.filter(function(r){return g&&g.lineOpen(r);}).length;
     out.push(o.lvl+(o.bt?'b':'')+lines);}
+  for(var hid in HOUSES){
+    if(hid==='pets'){var P2=S.pets||{};out.push((P2.hired?1:0)+':'+Object.keys(P2.own||{}).length+':'+(P2.active||''));continue;}
+    var m=S.masters[hid];out.push(m&&m.hired?m.tools:'-');
+  }
   return out.join(',');
 }
 function buildProd(S){
   if(V.prodG){V.prodG.traverse(function(o){if(o.userData&&o.userData.merged)o.geometry.dispose();});V.scene.remove(V.prodG);}
-  var G=new T.Group();V.prodG=G;V.scene.add(G);V.piles={};V.prodFx=[];
+  var G=new T.Group();V.prodG=G;V.scene.add(G);V.piles={};V.prodFx=[];if(!V.penPets)V.penPets=[];
   var keep=[],g=window.acGame;
   for(var id in SITES){
     var si=SITES[id],o=S.prod&&S.prod[id]||{lvl:0},H=new T.Group();
@@ -560,6 +629,22 @@ function buildProd(S){
     }
     P.forEach(function(x){keep.push(x);});
   }
+  /* дома мастеров */
+  V.mst={};V.penPets.forEach(function(pp){pp.dispose&&pp.dispose();});V.penPets=[];
+  for(var hid in HOUSES){
+    var hs=HOUSES[hid],HG=new T.Group();HG.position.set(hs.x,0,hs.z);HG.rotation.y=hs.rot;G.add(HG);
+    var yg2=new T.CircleGeometry(hs.r*0.8,24);yg2.rotateX(-Math.PI/2);var yuv2=yg2.attributes.uv;for(var y2=0;y2<yuv2.count;y2++)yuv2.setXY(y2,yuv2.getX(y2)*hs.r*0.45,yuv2.getY(y2)*hs.r*0.45);
+    var yard2=new T.Mesh(yg2,mat('yard'));yard2.receiveShadow=true;place(yard2,0,0.5,0,-0.017);HG.add(yard2);
+    var hired=hid==='pets'?!!(S.pets&&S.pets.hired):!!(S.masters[hid]&&S.masters[hid].hired);
+    if(!hired){plot(HG,4,4);continue;}
+    var tl=hid==='pets'?Math.min(10,1+Math.floor(Object.keys(S.pets.own||{}).length*2)):Math.min(10,1+(S.masters[hid].tools||0));
+    shed(HG,hs.wall,4,4,{openFront:true,shutters:tl>=6});
+    roof(HG,4,4,tl<=4?1:-1,tl>=3);
+    dressing(HG,4,4,tl,{noFence:hid==='pets'});
+    houseProps(HG,hid,tl,keep);
+    var wp=new T.Vector3(0,0,0.55);HG.updateMatrixWorld(true);HG.localToWorld(wp);
+    V.mst[hid]={x:wp.x,z:wp.z,rot:hs.rot};
+  }
   mergeStatic(G,keep);
   if(V.renderer)V.renderer.shadowMap.needsUpdate=true;
 }
@@ -579,6 +664,11 @@ function syncProd(S){
     var P=V.piles[id],k=prodFill(S,id),n=k<0.02?0:Math.max(1,Math.ceil(k*P.length));
     P.forEach(function(o,i){var v=i<n;if(o.visible!==v){o.visible=v;changed=true;}});
   }
+  var g=window.acGame;
+  if(V.wpiles&&g&&S.tav)['brewer','cook'].forEach(function(w){
+    var P=V.wpiles[w]||[],o=S.tav[w],k=o&&o.hired?o.stock/Math.max(1,g.stockCap(w)):0,n=Math.ceil(k*P.length);
+    P.forEach(function(x,i){var v=i<n;if(x.visible!==v){x.visible=v;changed=true;}});
+  });
   if(changed&&V.renderer)V.renderer.shadowMap.needsUpdate=true;
 }
 
@@ -589,9 +679,12 @@ var MASTER_LOOK={
   smith:    {gender:'m',skin:3,hair:'none',hairColor:0,beard:'beard',body:'ranger',arms:'peasant',legs:'ranger',feet:'ranger',colors:{ranger:1,peasant:0}},
   tanner:   {gender:'f',skin:1,hair:'buns',hairColor:3,beard:'none',body:'ranger',arms:'ranger',legs:'peasant',feet:'ranger',colors:{ranger:0,peasant:1}},
   jeweler:  {gender:'m',skin:0,hair:'parted',hairColor:6,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:1}},
-  hostess:  {gender:'f',skin:1,hair:'buns',hairColor:2,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:0}}
+  hostess:  {gender:'f',skin:1,hair:'buns',hairColor:2,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:0}},
+  cook:     {gender:'m',skin:2,hair:'none',hairColor:0,beard:'beard',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:1}},
+  brewer:   {gender:'m',skin:0,hair:'long',hairColor:4,beard:'beard',body:'ranger',arms:'peasant',legs:'peasant',feet:'ranger',colors:{ranger:0,peasant:0}},
+  pets:     {gender:'f',skin:3,hair:'parted',hairColor:7,beard:'none',body:'ranger',arms:'ranger',legs:'ranger',feet:'ranger',colors:{ranger:1}}
 };
-var WORK={herbalist:'Interact',carpenter:'PickUp_Table',smith:'Sword_Attack',tanner:'Fixing_Kneeling',jeweler:'Interact'};
+var WORK={herbalist:'Interact',carpenter:'PickUp_Table',smith:'Sword_Attack',tanner:'Fixing_Kneeling',jeweler:'Interact',pets:'Interact'};
 var TRAV_G=['m','f','m','f','m','m','f','m','m','f','m','m'];
 function fullLook(l){
   var b=Avatar.defaults(l.gender);
@@ -629,10 +722,12 @@ function goTo(N,pts){N.path=pts.map(function(p){return {x:p[0],z:p[1]};});}
 
 /* ════════ СИНХРОНИЗАЦИЯ С ИГРОЙ ════════ */
 function signature(S){
-  return JSON.stringify([S.build.hall,S.build.bedroom,S.build.decor,S.storeLvl]);
+  var T=S.tav||{};
+  return JSON.stringify([S.build.hall,S.build.bedroom,S.build.decor,S.storeLvl,T.seats,T.brewer&&T.brewer.hired,T.cook&&T.cook.hired]);
 }
 function sync(S){
   if(!V||!readyFlag)return;
+  V.S=S;
   var sig=signature(S);
   if(sig!==V.sig){V.sig=sig;layout(S);placeMasters(S,true);if(V.pendingMage&&mageRef){V.pendingMage=false;setMage(mageRef,mageMode);}}
   setNight(S.place==='sleep');
@@ -645,16 +740,67 @@ function sync(S){
 }
 function D(){return window.AcData;}
 function placeMasters(S,moved){
-  var st=V.st;
+  var st=V.st,q=(window.Scene3D&&Scene3D.quality)||'medium',g=window.acGame;
   var h=V.npcs.hostess;
   if(!h)h=spawnNpc('hostess',fullLook(MASTER_LOOK.hostess),st.hostess.x,st.hostess.z,st.hostess.rot);
+  if(moved){h.x=st.hostess.x;h.z=st.hostess.z;h.rot=st.hostess.rot;}
   setAnim(h,S.cust.length&&S.place!=='sleep'?'Idle_Talking_Loop':'Idle_Loop');
+  var want={};
+  /* повар, пивовар и их помощники */
+  var TV=S.tav;
+  if(TV)['brewer','cook'].forEach(function(w){
+    var o=TV[w],pos=st[w];if(!o||!o.hired||!pos)return;
+    var busy=g&&o.stock<g.stockCap(w)&&S.place!=='sleep';
+    var key='w:'+w;want[key]=1;
+    var N=V.npcs[key]||spawnNpc(key,fullLook(MASTER_LOOK[w]),pos.x,pos.z,pos.rot);
+    if(moved){N.x=pos.x;N.z=pos.z;N.rot=pos.rot;}
+    setAnim(N,busy?(w==='cook'?'Interact':'Fixing_Kneeling'):'Idle_Loop');
+    var hp=st[w==='cook'?'cookHelp':'brewHelp'],nh=Math.min(o.help,HELP_VIS[q]||0,hp.length);
+    for(var i=0;i<nh;i++){
+      var hk='h:'+w+':'+i;want[hk]=1;var hpos=hp[i];
+      var H=V.npcs[hk]||spawnNpc(hk,helperLook(w,i),hpos[0],hpos[1],hpos[2]);
+      if(moved){H.x=hpos[0];H.z=hpos[1];H.rot=hpos[2];}
+      setAnim(H,busy?(i%2?'PickUp_Table':'Interact'):'Idle_Loop');
+    }
+  });
+  /* мастера в своих домах (не на слабой графике) */
+  if(q!=='low'&&V.mst)for(var mid in V.mst){
+    var m=mid==='pets'?(S.pets&&S.pets.hired?{hired:true,teach:null}:null):S.masters[mid],mp=V.mst[mid];if(!m||!m.hired||!MASTER_LOOK[mid])continue;
+    var mk='m:'+mid;want[mk]=1;
+    var M=V.npcs[mk]||spawnNpc(mk,fullLook(MASTER_LOOK[mid]),mp.x,mp.z,mp.rot);
+    if(M.x!==mp.x||M.z!==mp.z){M.x=mp.x;M.z=mp.z;M.rot=mp.rot;}
+    var work=mid==='pets'?!!(S.pets.train):g&&g.queueOf(mid).length&&g.canWork(mid);
+    setAnim(M,m.teach?'Idle_Talking_Loop':work?WORK[mid]:'Idle_Loop');
+  }
+  for(var k in V.npcs){if((k[0]==='w'||k[0]==='h'||k[0]==='m')&&k[1]===':'&&!want[k])removeNpc(V.npcs[k]);}
+}
+var HELP_VIS={low:0,medium:1,high:2,ultra:3};
+function helperLook(w,i){
+  return fullLook({gender:i%2?'f':'m',skin:(i*2+(w==='cook'?1:3))%5,hair:i%2?'buns':'buzzed',hairColor:(i*3+2)%9,beard:'none',
+    body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:(i+(w==='cook'?0:1))%2}});
 }
 /* сколько путников рисовать: каждый это полноценный персонаж, на слабой графике меньше */
 var CUST_MAX={low:2,medium:4,high:6,ultra:8};
+var GUEST_MAX={low:2,medium:4,high:8,ultra:12};
+/* путь от места к выходу и от очереди к месту */
+function seatPath(sp){
+  var appr=[sp.x,sp.out?(sp.rot===0?5.7:8.9):(sp.rot===0?sp.z-0.9:sp.z+0.9)];
+  if(!sp.out)return [[2.4,0.2],[2.4,appr[1]],appr,[sp.x,sp.z]];
+  return PATH_OUT.concat([[appr[0],6.2],appr,[sp.x,sp.z]]);
+}
+function leavePath(N,out){
+  var tail=[PATH_IN[1],PATH_IN[0],[out*ROAD_END,ROAD_Z]];
+  if(N.guest&&N.seat){
+    var sp=N.seat,appr=[sp.x,sp.out?(sp.rot===0?5.7:8.9):(sp.rot===0?sp.z-0.9:sp.z+0.9)];
+    if(sp.out)return [appr,[appr[0],6.2],[1,6.2]].concat(tail.slice(1));
+    return [appr,[2.4,appr[1]],[2.4,3.6],[1,4.4]].concat(tail);
+  }
+  return [[2.4,2.8],[1,4.4]].concat(tail);
+}
 function syncCustomers(S){
-  var seen={},lim=CUST_MAX[window.Scene3D&&Scene3D.quality]||5,live=0;
-  for(var k0 in V.npcs)if(V.npcs[k0].cust)live++;
+  var seen={},lim=CUST_MAX[window.Scene3D&&Scene3D.quality]||5,glim=GUEST_MAX[window.Scene3D&&Scene3D.quality]||4,live=0,gl=0;
+  var guests={};(S.tav&&S.tav.guests||[]).forEach(function(x){guests[x.id]=x;});
+  for(var k0 in V.npcs){var N0=V.npcs[k0];if(N0.cust&&!N0.guest)live++;if(N0.guest&&!N0.leaving)gl++;}
   S.cust.forEach(function(c,i){
     if(i>=lim)return;
     seen[c.id]=1;
@@ -670,7 +816,19 @@ function syncCustomers(S){
     var N=V.npcs[key];
     if(!N.cust||N.leaving)continue;
     var id=+key.slice(2);
-    if(!seen[id]){N.leaving=true;N.speed=2.6;var out=-(N.side||1);goTo(N,[[2.4,2.8],PATH_IN[1],PATH_IN[0],[out*ROAD_END,ROAD_Z]]);}
+    if(seen[id])continue;
+    var gs=guests[id];
+    if(gs&&!N.guest&&gl<glim){N.guest=true;gl++;N.seat=seatPos(gs.seat);N.speed=1.8;goTo(N,seatPath(N.seat));continue;}
+    if(gs&&N.guest)continue;
+    N.leaving=true;N.speed=2.6;N.y=0;goTo(N,leavePath(N,-(N.side||1)));
+  }
+  /* гости без фигуры (пришли, пока таверны не было на экране): сразу за столом */
+  for(var gid in guests){
+    if(gl>=glim)break;
+    var gk='c:'+gid;if(V.npcs[gk])continue;
+    var gx=guests[gid],sp=seatPos(gx.seat);
+    var NG=spawnNpc(gk,travelerLook({id:+gid,who:gx.who}),sp.x,sp.z,sp.rot);
+    NG.cust=true;NG.guest=true;NG.seat=sp;NG.side=rnd(+gid*3.1)<0.5?-1:1;NG.sitNow=true;gl++;
   }
 }
 
@@ -683,7 +841,7 @@ function syncPet(S){
   if(!id||!window.Adventure||!Adventure.ready)return;
   if(!Adventure.hasPet(id)){Adventure.loadPet(id).then(function(){if(V&&V.petId===id)V.petId='-';},function(){});return;}
   var P=Adventure.pet(id);if(!P)return;
-  V.pet=P;P.root.position.set(2.3,0,-2.35);P.root.rotation.y=-2.3;
+  V.pet=P;P.root.position.set(4.2,0,-3.6);P.root.rotation.y=-2.3;
   if(P.fly)P.root.position.y=P.fly;
   V.scene.add(P.root);P.play('low',0);
 }
@@ -704,8 +862,9 @@ var NAT_DENS={low:{tree:0.4,bush:0.5,rock:1,small:0.5,grass:0},medium:{tree:0.65
 var LEAF_PAL=['#6a9a2a','#7aa834','#5c8c26','#86b03e'];
 /* занятые места: дом со складом, двор с забором, дорожка, дорога (деревья и кусты туда не ставим) */
 function natFree(x,z,kind){
-  if(x>-12&&x<8&&z>-7&&z<14)return false;
+  if(x>-12&&x<14&&z>-11&&z<14)return false;
   for(var id in SITES){var st=SITES[id],r=st.r+(kind==='grass'?-1.5:kind==='tree'?2.5:0.5);if(Math.hypot(x-st.x,z-st.z)<r)return false;}
+  for(var hid in HOUSES){var hs=HOUSES[hid],hr=hs.r+(kind==='grass'?-1.5:kind==='tree'?2.5:0.5);if(Math.hypot(x-hs.x,z-hs.z)<hr)return false;}
   if(kind!=='grass'&&z>13.6&&z<19.4)return false;
   if(kind==='grass'&&z>14.3&&z<18.7)return false;
   return true;
@@ -833,6 +992,9 @@ function anchors(){
   var out=[],st=V.st||{};
   if(V.npcs.hostess)out.push({kind:'hostess',id:'hostess',x:st.hostess.x,y:2.25,z:st.hostess.z});
   for(var pid in SITES){var si=SITES[pid];out.push({kind:'prod',id:pid,x:si.x,y:si.ly||6.3,z:si.z,pick:si.r*0.6});}
+  for(var hid in HOUSES){var hs=HOUSES[hid];out.push({kind:'house',id:hid,x:hs.x,y:6.2,z:hs.z,pick:hs.r*0.6});}
+  if(st.cook&&V.npcs['w:cook'])out.push({kind:'worker',id:'cook',x:st.cook.x,y:2.4,z:st.cook.z});
+  if(st.brewer&&V.npcs['w:brewer'])out.push({kind:'worker',id:'brewer',x:st.brewer.x,y:2.4,z:st.brewer.z});
   if(st.store)out.push({kind:'store',id:'store',x:st.store.x,y:2.9,z:st.store.z});
   return out;
 }
@@ -867,7 +1029,8 @@ function update(dt){
   if(!V)return;
   V.t+=dt;
   updateCamera(dt);updateWalls(dt);
-  V.fires.forEach(function(f,i){var fl=0.8+Math.sin(V.t*13+i)*0.12+Math.random()*0.12;f.l.intensity=f.base*fl*(V.night?1.4:1);f.s.scale.set(f.size*fl,f.size*0.8*fl,1);});
+  if(V.vroof)V.vroof.visible=V.dist>36;   // навес веранды прячется, когда смотрим в зал
+  V.fires.forEach(function(f,i){var fl=0.8+Math.sin(V.t*13+i)*0.12+Math.random()*0.12;if(f.l)f.l.intensity=f.base*fl*(V.night?1.4:1);f.s.scale.set(f.size*fl,f.size*0.8*fl,1);});
   for(var key in V.npcs){
     var N=V.npcs[key];
     if(N.path.length){
@@ -878,13 +1041,19 @@ function update(dt){
       if(N.av&&N.av.curName!=='Walk_Loop')N.av.play('Walk_Loop',0.2);
       if(!N.path.length){
         if(N.leaving){removeNpc(N);continue;}
-        N.rot=N.cust?Math.PI:N.rot;
-        if(N.av)N.av.play(N.cust?(N.slot===0?'Idle_Talking_Loop':'Idle_Loop'):N.anim,0.3);
+        if(N.guest)N.sitNow=true;
+        else{N.rot=N.cust?Math.PI:N.rot;if(N.av)N.av.play(N.cust?(N.slot===0?'Idle_Talking_Loop':'Idle_Loop'):N.anim,0.3);}
       }
-    }else if(N.cust&&N.av){var a=N.slot===0?'Idle_Talking_Loop':'Idle_Loop';if(N.av.curName!==a)N.av.play(a,0.3);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
-    if(N.av){N.av.root.position.set(N.x,0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}
+    }
+    if(N.sitNow&&N.av&&!N.path.length){
+      N.sitNow=false;N.x=N.seat.x;N.z=N.seat.z;N.rot=N.seat.rot;N.y=0.05;
+      N.av.play(rnd(+key.slice(2)*1.7)<0.5?'Sitting_Talking_Loop':'Sitting_Idle_Loop',0.3);
+    }else if(N.guest&&!N.path.length){/* сидит */}
+    else if(N.cust&&N.av&&!N.path.length){var a=N.slot===0?'Idle_Talking_Loop':'Idle_Loop';if(N.av.curName!==a)N.av.play(a,0.3);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
+    if(N.av){N.av.root.position.set(N.x,N.y||0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}
   }
   if(V.prodFx)V.prodFx.forEach(function(f,i){f.s.position.y=f.y+Math.sin(V.t*1.6+i*2.1)*0.35;f.s.material.opacity=0.55+Math.sin(V.t*2.3+i)*0.25;});
+  if(V.penPets)V.penPets.forEach(function(pp){pp.mixer.update(dt);});
   if(V.pet){V.pet.mixer.update(dt);if(V.pet.fly)V.pet.root.position.y=V.pet.fly+Math.sin(V.t*2)*0.06;}
   if(mageRef){mageRef.update(dt,'npc');
     if(mageMode==='sleep'){zzT-=dt;if(zzT<=0&&mageRef.head)zzT=1.2,spawnZ();}
@@ -907,11 +1076,11 @@ function setActive(on,host){
   if(labelHost)labelHost.style.display=on?'':'none';
   V.renderer.shadowMap.needsUpdate=true;
 }
-function resetView(){if(!V)return;V.goal.az=0.5;V.goal.pol=0.9;V.goal.dist=30;V.goal.target.set(0.5,0,1.5);}
+function resetView(){if(!V)return;V.goal.az=0.5;V.goal.pol=0.9;V.goal.dist=32;V.goal.target.set(2,0,0.5);}
 
 window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_LOOK[id]):null;},init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
   resetView:resetView,bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});var np=Object.keys(V.npcs),nr=np.filter(function(k){return V.npcs[k].ready;}).length;return {npcs:np.length,npcReady:nr,npcPos:np.map(function(k){var N=V.npcs[k];return k+':'+N.x.toFixed(1)+','+N.z.toFixed(1);}).join(' '),meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
   onPick:function(fn){onPickCb=fn;},setLabeler:function(fn){labeler=fn;},
   get ready(){return readyFlag;},get loading(){return !!loading&&!readyFlag;},get scene(){return V&&V.scene;},get camera(){return V&&V.camera;},
-  get active(){return !!(V&&V.active);},get built(){return !!V;}};
+  get active(){return !!(V&&V.active);},get built(){return !!V;},get _v(){return V;}};
 })();

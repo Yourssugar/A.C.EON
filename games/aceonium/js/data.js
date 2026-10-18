@@ -304,6 +304,26 @@ D.STABLE={build:{gold:1500,wood:60},c0:150,max:5,every:[60,40,25,15,10]};
 D.TOOLS_C0=5;
 D.toolsRes=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]*Math.pow(1.45,l));return c;};
 
+/* ════════ ГОСТИ, ПОВАР И ПИВОВАР (v16) ════════
+   Путник после покупки (или устав ждать) садится за свободный стол с шансом 60% и сидит 15 минут.
+   Садясь, берёт кружку у пивовара и с шансом 50% блюдо у повара, если готовое есть.
+   Половина выручки идёт игроку, половина в сбережения работника. Накопив на расширение, работник сам
+   расширяет кухню или пивоварню (недолгая стройка без бригады). Уровень даёт цену, помощники - порции за партию. */
+D.SEATS0=2;D.SEATS_MAX=20;
+D.seatMax=function(hall){return Math.min(D.SEATS_MAX,5+3*(hall||0));};
+D.seatCost=function(n){return {gold:Math.ceil(150*Math.pow(1.4,n-D.SEATS0))};};   // n - сколько мест уже есть
+D.GUEST_CHANCE=0.6;D.GUEST_SIT=900;D.GUEST_FOOD=0.5;
+D.WORKERS={
+  brewer:{hire:200,hall:0,batch:6,per:6,time:900, price:2,help:300},
+  cook:  {hire:500,hall:1,batch:4,per:4,time:1800,price:4,help:500}
+};
+D.WORKER_ORDER=['brewer','cook'];
+D.WORKER_MAX=10;D.WORKER_SHARE=0.5;D.HELP_MAX=5;
+D.workerUp=function(L){return Math.ceil(300*Math.pow(2,L-1));};          // сбережения на расширение до L+1
+D.workerBuild=function(L){return 600*L;};                                 // расширение: 10 мин x уровень
+D.helpSlots=function(L){return Math.min(D.HELP_MAX,Math.ceil(L/2));};
+D.helpCost=function(w,n){return {gold:Math.ceil(D.WORKERS[w].help*Math.pow(2,n))};};
+
 /* ════════ ПИТОМЦЫ (v14) ════════
    Лису даёт мастер питомцев при найме. Остальных маг находит, пройдя главу (тракт) до 100-й волны:
    шанс 70% за каждое полное прохождение, пока питомец не найден. Бонус = eff * уровень, уровень до 20.

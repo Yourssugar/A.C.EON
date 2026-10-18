@@ -695,8 +695,58 @@ function tabTavern(){
     var c=g.custById(+ds.id);if(!c)return;
     if(act==='sell')g.sellTo(c);else if(act==='up')g.sellTo(c,'up');else if(act==='down')g.sellTo(c,'down');else g.refuse(c);
   }));
+  add(hallBlock());
+  D.WORKER_ORDER.forEach(function(w){add(workerBlock(w));});
 }
 
+/* ── зал: места и гости, повар и пивовар (v16) ── */
+function savingsHtml(w){
+  var o=g.worker(w);
+  if(o.lvl>=D.WORKER_MAX)return '<div class="stg"><div class="stg-t"><span>'+t('st2.max')+'</span></div></div>';
+  if(o.bt){var k=1-o.bt.t/o.bt.T;return '<div class="stg"><div class="stg-t"><span>'+t('wk.expanding',{n:o.lvl+1})+'</span><b>'+ft(o.bt.t)+'</b></div><div class="bar stgb"><i style="width:'+(k*100).toFixed(1)+'%"></i></div></div>';}
+  var need=D.workerUp(o.lvl),k2=Math.min(1,o.save/need),n=Math.floor(k2*D.STAGES),segs='';
+  for(var i=0;i<D.STAGES;i++)segs+='<i'+(i<n?' class="on"':'')+'></i>';
+  return '<div class="stg"><div class="stg-t"><span>'+t('wk.savings',{n:o.lvl+1})+'</span><b>'+D.fmt(Math.floor(o.save))+' / '+D.fmt(need)+'</b></div><div class="stg-s">'+segs+'</div>'+
+    '<p class="note">'+t('wk.savingsI')+'</p></div>';
+}
+function workerBlock(w){
+  return actBlock(function(){
+    var o=g.worker(w),d=D.WORKERS[w];
+    var h='<div class="pd-head"><b>'+t('wk.'+w)+'</b><span>'+(o.hired?t('ms.lvl',{n:o.lvl}):'')+'</span></div>';
+    if(!o.hired){
+      var blk=g.workerBlock(w);
+      h+='<p class="note">'+t('wk.'+w+'.d')+'</p>';
+      if(blk==='hall')return h+'<p class="bad">'+t('wk.needHall',{n:d.hall})+'</p>';
+      return h+'<div class="stg-b"><button type="button" class="btn sm" data-act="hire"'+(blk?' disabled':'')+'>'+t('pt.hire')+' '+costHtml({gold:d.hire})+'</button></div>';
+    }
+    var cap=g.stockCap(w),need=g.needH(w),capH=g.capacityH(w),bs=g.batchSize(w);
+    h+='<div class="wk-row"><span>'+t('wk.'+w+'.unit')+'</span><b>'+Math.floor(o.stock)+' / '+cap+'</b><small>'+t('wk.batch',{n:bs,t:ft(d.time)})+'</small></div>'+
+      '<div class="bar pdb"><i style="width:'+Math.min(100,o.stock/cap*100).toFixed(1)+'%"></i></div>'+
+      '<div class="bar stgb thin"><i style="width:'+(o.stock>=cap?100:Math.min(100,o.t/d.time*100)).toFixed(1)+'%"></i></div>'+
+      '<p>'+t('wk.price',{p:rate2(g.portionPrice(w)),m:rate2(g.portionPrice(w)*(1-D.WORKER_SHARE))})+'</p>'+
+      '<p class="note">'+t('wk.flow',{a:rate2(need),b:rate2(capH)})+'</p>';
+    if(need>capH*1.02)h+='<p class="bad">'+t('wk.short')+'</p>';
+    var hc=g.helpCost(w),slots=D.helpSlots(o.lvl);
+    h+='<div class="stg-b"><span>'+t('wk.helpers',{a:o.help,b:slots})+'</span>'+(hc?'<button type="button" class="btn sm" data-act="help"'+(g.canPay(hc)?'':' disabled')+'>'+t('wk.hireHelp')+' '+costHtml(hc)+'</button>':
+      (o.help>=D.HELP_MAX?'':'<span class="note">'+t('wk.helpLater')+'</span>'))+'</div>';
+    return h+savingsHtml(w);
+  },function(act){
+    if(act==='hire')g.workerHire(w);
+    else if(act==='help')g.hireHelp(w);
+  },'pd wk-'+w);
+}
+function hallBlock(){
+  return actBlock(function(){
+    var T=g.tav(),max=D.seatMax(g.buildLvl('hall')),sc=g.seatCost();
+    var h='<div class="pd-head"><b>'+t('wk.hall')+'</b><span>'+t('wk.seats',{a:T.seats,b:max})+'</span></div>'+
+      '<p>'+t('wk.guestsNow',{n:T.guests.length})+' · '+t('wk.incH',{g:D.fmt(Math.round(g.tavIncomeH()))})+'</p>'+
+      '<p class="note">'+t('wk.hallI',{h:rate2(g.guestsH())})+'</p>';
+    h+='<div class="stg-b">'+(sc?'<button type="button" class="btn sm" data-act="seat"'+(g.canPay(sc)?'':' disabled')+'>'+t('wk.buySeat')+' '+costHtml(sc)+'</button>':
+      '<span class="note">'+t(T.seats>=D.SEATS_MAX?'wk.seatsMax':'wk.seatsHall')+'</span>')+'</div>';
+    if(T.inc)h+='<p class="note">'+t('wk.incTotal',{g:D.fmt(T.inc)})+'</p>';
+    return h;
+  },function(act){if(act==='seat')g.buySeat();},'pd wk-hall');
+}
 /* ── КРАФТ: две вкладки, изделия с картинками и мастера ── */
 var craftSub='make',curItem=null;
 function allRecipes(){
@@ -1126,6 +1176,20 @@ function openTab(tab,sub){
 function tavernLabel(kind,id){
   if(kind==='hostess')return '<b>'+t('lbl.hostess')+'</b>'+(S.cust.length?' · '+t('lbl.cust',{n:S.cust.length}):'');
   if(kind==='store')return '<b>'+t('store.title')+'</b>';
+  if(kind==='worker'){
+    var ow=g.worker(id);if(!ow||!ow.hired)return '';
+    var wt=ow.bt?'<i>'+t('lbl.build')+' '+ft(ow.bt.t)+'</i>':ow.lvl>=D.WORKER_MAX?'':'<i>'+Math.floor(Math.min(1,ow.save/D.workerUp(ow.lvl))*100)+'%</i>';
+    var wk=ow.bt?1-ow.bt.t/ow.bt.T:Math.min(1,ow.save/D.workerUp(ow.lvl));
+    return '<b class="pl-l">'+ow.lvl+'</b> '+t('wk.'+id)+' '+wt+'<span class="pl-bar"><s style="width:'+Math.round(wk*100)+'%"'+(ow.bt?' class="b"':'')+'></s></span>';
+  }
+  if(kind==='house'){
+    if(id==='pets'){var P2=g.pets();return P2.hired?'<b>'+t('pt.title')+'</b>':'<span class="pl-n">'+t('pt.title')+'</span>';}
+    var m=g.master(id);if(!m)return '';
+    if(!m.hired)return '<span class="pl-n">'+t('ms.'+id)+'</span>';
+    var tt=m.tbt?'<i>'+t('lbl.tools')+' '+ft(m.tbt.t)+'</i>':m.tools>=D.TOOLS_MAX?'':'<i>'+Math.round((m.tst||0)/D.STAGES*100)+'%</i>';
+    var tk=m.tbt?1-m.tbt.t/m.tbt.T:(m.tst||0)/D.STAGES;
+    return '<b class="pl-l">'+m.tools+'</b> '+t('ms.'+id)+' '+tt+'<span class="pl-bar"><s style="width:'+Math.round(tk*100)+'%"'+(m.tbt?' class="b"':'')+'></s></span>';
+  }
   if(kind==='prod'){
     var o=g.prod(id);if(!o)return '';
     if(!o.lvl&&!o.bt)return '<span class="pl-n">'+prodName(id)+'</span>';
@@ -1191,6 +1255,7 @@ function offlineReport(rep){
   var any=false;for(var k in rep.got)if(rep.got[k]){any=true;break;}
   rows.push('<p class="lbl">'+t('off.got')+'</p><div class="res-line">'+(any?resList(rep.got):'<span class="note">'+t('st.none')+'</span>')+'</div>');
   if(rep.lostBags)rows.push('<p class="bad">'+t('off.lost',{n:rep.lostBags,i:rep.lost})+'</p>');
+  if(rep.tav)rows.push('<p>'+t('off.tav',{g:D.fmt(rep.tav)})+'</p>');
   if(rep.prod)rows.push('<p class="lbl">'+t('off.prod')+'</p><div class="res-line">'+resList(rep.prod)+'</div>');
   if(rep.crafted)rows.push('<p>'+t('off.crafted',{n:rep.crafted})+'</p>');
   if(rep.pet)rows.push('<p class="ok">'+t('pt.found',{p:t('pet.'+rep.pet)})+'</p>');

@@ -829,11 +829,38 @@ function loadAdventure(){
   if(!window.Adventure||R.advLoading)return;
   R.advLoading=true;
   var res=(R.qName==='high'||R.qName==='ultra')?'2k':'1k';
-  Adventure.init(THREE).then(function(){return Adventure.loadBase(res);}).then(function(){
+  Adventure.init(THREE).then(function(){R.advInit=true;applyPet();return Adventure.loadBase(res);}).then(function(){
     var id=R.biome;R.biome=-1;setBiome(id<0?0:id);
     /* монстры других трактов: только открытых, остальные докачаются, когда маг туда пойдёт */
     var g=window.acGame;for(var t=0;t<4;t++)if(t!==id&&g&&g.tractOpen&&g.tractOpen(t))Adventure.loadTract(t);
   },function(e){console.warn('[scene3d] adventure',e);R.advLoading=false;});
+}
+
+/* ── питомец на дороге (v14): бежит рядом с магом, в бою иногда бросается, на привале лежит ── */
+function setPet(id){if(!R)return;R.petWant=id||null;applyPet();}
+function applyPet(){
+  var id=R.petWant;if(R.pet&&R.pet.id===id)return;
+  if(R.pet){R.scene.remove(R.pet.root);R.pet.dispose();R.pet=null;}
+  if(!id||!R.advInit||!window.Adventure)return;
+  Adventure.loadPet(id).then(function(){
+    if(R.petWant!==id||R.pet)return;
+    var P=Adventure.pet(id);if(!P)return;
+    R.pet=P;R.petAtk=2;P.root.position.set(MAGE_POS.x-1.0,0,MAGE_POS.z-0.6);P.root.rotation.y=Math.PI;
+    R.scene.add(P.root);P.play('idle',0);
+  },function(){});
+}
+function updatePet(dt){
+  var P=R.pet;if(!P)return;
+  P.root.visible=R.mode!=='tavern'&&R.view!=='tavern';
+  if(R.mode==='walk'){if(!P.busy())P.play('run',0.2);P.root.rotation.y=Math.PI;}
+  else if(R.mode==='fight'){
+    R.petAtk-=dt;
+    if(R.petAtk<=0&&R.enemy&&!R.enemy.form){R.petAtk=2.2+Math.random()*1.6;P.play('attack',0.1);}
+    else if(!P.busy())P.play('idle',0.25);
+    P.root.rotation.y=Math.PI-0.25;
+  }else if(!P.busy())P.play('low',0.4);
+  P.mixer.update(dt);
+  P.root.position.y=P.fly?P.fly+Math.sin(R.t*2.2)*0.08:0;
 }
 
 /* таверна на слабой графике: без постобработки и с пиксельным коэффициентом не выше 1 (телефоны) */
@@ -1075,6 +1102,7 @@ function frame(dt,real){
   R.mist.forEach(function(m,i){m.position.x+=Math.sin(R.t*0.1+i)*dt*0.3;});
   /* маг */
   updateMage(R.mage,dt,R.mode==='tavern'?'sit':R.mode,R.fat);
+  updatePet(dt);
   R.mageShadow.visible=R.mode!=='tavern'&&!R.shadowOn;
   if(R.mode==='tavern'){if(!R.avatar)R.mage.root.position.y+=0.42;R.tavern.update(dt);}
   if(R.seat)R.seat.visible=R.mode==='sit'&&!!R.avatar;
@@ -1269,6 +1297,6 @@ function preview(canvas){
 }
 
 window.Scene3D={setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
-  setView:setView,get view(){return R?R.view||'road':'road';},spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
+  setView:setView,setPet:setPet,get view(){return R?R.view||'road':'road';},spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
   get ready(){return !!R;}};
 })();

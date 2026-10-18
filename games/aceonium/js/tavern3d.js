@@ -952,28 +952,50 @@ function releaseMage(){
 }
 
 /* ════════ КАМЕРА ════════ */
-var ptr={},dragD=0,pinch=0,lastPick=null,onPickCb=null;
+/* Ввод: мышь (левая крутит, правая или Shift двигает, колесо приближает) и касания
+   (один палец крутит, два пальца: щипок приближает, сдвиг двигает, поворот крутит).
+   На канвасе touch-action:none, иначе браузер забирает жест себе и шлёт pointercancel. */
+var ptr={},dragD=0,multi=false,g2=null,lastPick=null,onPickCb=null;
 function bindInput(el){
   if(V.bound)return;V.bound=el;
-  el.addEventListener('pointerdown',function(e){if(!V.active)return;ptr[e.pointerId]={x:e.clientX,y:e.clientY,b:e.button};dragD=0;el.setPointerCapture&&el.setPointerCapture(e.pointerId);});
+  el.style.touchAction='none';
+  el.addEventListener('pointerdown',function(e){
+    if(!V.active)return;
+    ptr[e.pointerId]={x:e.clientX,y:e.clientY,b:e.button,touch:e.pointerType!=='mouse'};
+    var n=Object.keys(ptr).length;
+    if(n===1){dragD=0;multi=false;}else{multi=true;g2=null;}
+    try{el.setPointerCapture&&el.setPointerCapture(e.pointerId);}catch(err){}
+  });
   el.addEventListener('pointermove',function(e){
     if(!V.active||!ptr[e.pointerId])return;
-    var p=ptr[e.pointerId],dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;dragD+=Math.abs(dx)+Math.abs(dy);
+    var p=ptr[e.pointerId],dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
     var ids=Object.keys(ptr);
-    if(ids.length===2){
-      var a=ptr[ids[0]],b=ptr[ids[1]],d=Math.hypot(a.x-b.x,a.y-b.y);
-      if(pinch)V.goal.dist=clamp(V.goal.dist*pinch/d,7,62);
-      pinch=d;return;
+    if(ids.length>=2){
+      var a=ptr[ids[0]],b=ptr[ids[1]],d=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
+      var mx=(a.x+b.x)/2,my=(a.y+b.y)/2,ang=Math.atan2(b.y-a.y,b.x-a.x);
+      if(g2){
+        V.goal.dist=clamp(V.goal.dist*g2.d/d,7,62);
+        pan(mx-g2.mx,my-g2.my);
+        var da=ang-g2.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;
+        V.goal.az-=da;
+      }
+      g2={d:d,mx:mx,my:my,a:ang};return;
     }
+    if(multi)return;              /* после щипка остался один палец: ждём, пока отпустят все */
+    dragD+=Math.abs(dx)+Math.abs(dy);
     if(p.b===2||e.shiftKey){pan(dx,dy);return;}
-    V.goal.az-=dx*0.006;V.goal.pol=clamp(V.goal.pol-dy*0.004,0.42,1.3);
+    var k=p.touch?0.008:0.006;
+    V.goal.az-=dx*k;V.goal.pol=clamp(V.goal.pol-dy*k*0.7,0.42,1.3);
   });
-  function up(e){
+  function up(e,cancel){
     if(!ptr[e.pointerId])return;
-    var was=ptr[e.pointerId];delete ptr[e.pointerId];pinch=0;
-    if(V.active&&dragD<6&&was.b!==2)pick(e);
+    var was=ptr[e.pointerId];delete ptr[e.pointerId];g2=null;
+    if(Object.keys(ptr).length)return;
+    if(!cancel&&V.active&&!multi&&dragD<(was.touch?10:6)&&was.b!==2)pick(e);
+    multi=false;
   }
-  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+  el.addEventListener('pointerup',function(e){up(e,false);});
+  el.addEventListener('pointercancel',function(e){up(e,true);});
   el.addEventListener('contextmenu',function(e){if(V.active)e.preventDefault();});
   el.addEventListener('wheel',function(e){if(!V.active)return;e.preventDefault();V.goal.dist=clamp(V.goal.dist*(e.deltaY>0?1.12:0.89),7,62);},{passive:false});
 }

@@ -737,4 +737,11 @@ I18n.add('en',{
   'ms3.mageD':'The mage writes scrolls himself while sitting in the tavern. New scrolls open with his level.','ms3.mageLater':'OPEN LATER','ms3.mageAwayS':'on a trip',
   'store.noItems':'Nothing yet. Order items in a master window (CRAFT tab, MASTERS).','v18.title':'BOOK AND PICTURES','v18.body':'<p>All items and resources have pictures rendered from 3D now. Collections moved into a separate book: a button on the CRAFT tab and in the master window.</p><p>Items are ordered in the master window (the mage is there too, with his scrolls). The CRAFT tab keeps your last 10 orders and pinned items. Staff, bag and store are upgraded on the TOWN tab. Seated guests eat and drink at the tables.</p>'
 });
+/* v19: музыка, касания */
+I18n.add('ru',{
+  'v19.title':'СВОЯ МУЗЫКА','v19.body':'<p>У Aceonium теперь своя музыка вместо общей аркадной: тема при создании персонажа и в гардеробе, дневной посёлок, ночная таверна, свой трек у каждого тракта и отдельный, когда маг идёт по плану через несколько трактов.</p><p>На телефоне посёлок крутится одним пальцем, двумя пальцами приближается, двигается и поворачивается. Страница браузера больше не масштабируется.</p>'
+});
+I18n.add('en',{
+  'v19.title':'OUR OWN MUSIC','v19.body':'<p>Aceonium has its own music now instead of the arcade playlist: a theme for character creation and the wardrobe, the town by day, the tavern at night, a track for every tract and one more for plan runs across several tracts.</p><p>On phones the town turns with one finger; two fingers zoom, move and rotate. The browser page no longer zooms.</p>'
+});
 })();

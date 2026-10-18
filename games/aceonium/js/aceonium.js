@@ -180,6 +180,9 @@ stage.addEventListener('pointerdown',function(e){
     var r=stage.getBoundingClientRect();UI.ripple(e.clientX-r.left,e.clientY-r.top);
   }
 });
+/* телефон: щипок и жесты над сценой не должны масштабировать страницу (iOS Safari) */
+stage.addEventListener('gesturestart',function(e){e.preventDefault();});
+stage.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
 document.addEventListener('keydown',function(e){
   if(e.target.closest&&e.target.closest('input,textarea'))return;
   if(!S.profile)return;
@@ -187,6 +190,39 @@ document.addEventListener('keydown',function(e){
   var n=parseInt(e.key,10);
   if(n>=1&&n<=D.SKILLS.length)game.useSkill(D.SKILLS[n-1].id);
 });
+
+/* ── музыка (v19) ──
+   spark: создание персонажа и гардероб; day: посёлок днём (два трека по очереди);
+   night: маг спит; four: поход по плану из нескольких трактов; tr0-tr3: свой трек тракта.
+   Смена ждёт, пока место не устоится: короткая остановка дома между походами музыку не сбивает. */
+var MU='assets/music/';
+Sound.playlists({spark:[MU+'spark.mp3'],day:[MU+'city.mp3',MU+'tavern_day.mp3'],night:[MU+'tavern_night.mp3'],
+  four:[MU+'four.mp3'],tr0:[MU+'summer.mp3'],tr1:[MU+'autumn.mp3'],tr2:[MU+'swamp.mp3'],tr3:[MU+'pass.mp3']});
+Sound.music('spark');
+var mu={cur:'spark',cand:'',t:0,tripAt:0,mixed:false,live:false};
+function planMixed(){
+  var p=S.plan,tr=S.trip,n=0;
+  for(var i=0;i<p.c.length;i++)if(p.c[i]>0&&game.tractOpen(i))n++;
+  return n>=2&&p.i<D.TRACTS.length&&tr&&tr.t===p.i;
+}
+function musicWant(){
+  if(!S.profile||(window.Wardrobe&&Wardrobe.isOpen))return 'spark';
+  if(S.place==='sleep')return 'night';
+  if(S.place==='road'&&S.trip){
+    if(S.trip.at!==mu.tripAt){mu.tripAt=S.trip.at;mu.mixed=planMixed();}
+    return mu.mixed?'four':'tr'+S.trip.t;
+  }
+  return 'day';
+}
+function musicTick(dt,now){
+  if(!mu.live)return;
+  var w=musicWant();
+  if(w===mu.cur){mu.cand='';return;}
+  if(w!==mu.cand){mu.cand=w;mu.t=0;}
+  mu.t+=dt;
+  var need=now||w==='spark'||mu.cur==='spark'?0:w==='day'?10:2;
+  if(mu.t>=need){mu.cur=w;mu.cand='';Sound.music(w);}
+}
 
 /* ── главный цикл ── */
 var last=performance.now(),lastWall=Date.now(),uiT=0,tavT=0;
@@ -208,7 +244,7 @@ function loop(now){
   if(has3d)fpsWatch(dt);
   tavT+=dt;if(tavT>0.3){tavT=0;if(has3d&&Scene3D.view==='tavern')Tavern3D.sync(S);}
   uiT+=dt;
-  if(uiT>0.1){uiT=0;UI.hud();}
+  if(uiT>0.1){musicTick(uiT);uiT=0;UI.hud();}
   requestAnimationFrame(loop);
 }
 setInterval(function(){UI.panel();},250);
@@ -242,16 +278,17 @@ function begin(){
       showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
     if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
-    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
-    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
-    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
-    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;S.seenV18=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
-    else if(!S.seenV17){S.seenV17=true;S.seenV18=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body')+UI.t('v18.body'));}
-    else if(!S.seenV18){S.seenV18=true;save();UI.modal(UI.t('v18.title'),UI.t('v18.body'));}
+    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
+    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
+    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
+    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
+    else if(!S.seenV17){S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body')+UI.t('v18.body')+UI.t('v19.body'));}
+    else if(!S.seenV18){S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v18.title'),UI.t('v18.body')+UI.t('v19.body'));}
+    else if(!S.seenV19){S.seenV19=true;save();UI.modal(UI.t('v19.title'),UI.t('v19.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;save();UI.rebuild();
+      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.rebuild();
       setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }
@@ -261,7 +298,7 @@ function begin(){
   /* таверну качаем заранее в фоне (на слабой графике только когда понадобится) */
   if(has3d&&Scene3D.quality!=='low')setTimeout(function(){ensureTavern().catch(function(){});},12000);
   if(has3d&&S.place!=='road')ensureTavern().catch(function(){});
-  Sound.music('game');
+  mu.live=true;musicTick(0,true);
 }
 
 function no3d(){

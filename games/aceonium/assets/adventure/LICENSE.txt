@@ -4,3 +4,4 @@
 - Easy Animated Enemy Pack by Quaternius
 - Текстуры земли и дороги Poly Haven, https://polyhaven.com: grass_ground, forest_leaves_04, brown_mud_leaves_01, stony_dirt_path, rock_path, aerial_ground_rock
 Сборка: /home/claude/pipe/build_adventure.mjs (модели без картинок, текстуры webp 1k/2k).
+Питомцы (v14), CC0: Animated Animal Pack by Quaternius (лиса, шиба, волк), Ultimate Monsters Blob (кот) и Flying (дракончик) by Quaternius.

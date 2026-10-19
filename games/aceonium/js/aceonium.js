@@ -15,6 +15,7 @@ if(game.sanitize)game.sanitize();   // старые сохранения: сло
 window.acGame=game;   // для отладки из консоли
 
 Arcade.topbar('ac.title');
+if(window.Help)Help.addToSettings();
 document.title='ACEONIUM';
 UI.init(game);
 
@@ -96,7 +97,8 @@ game.on('custLeft',function(e){if(e.why==='haggle')UI.toast(UI.t('tv.left'));});
 game.on('customer',function(){if(S.place!=='road')Sound.sfx('select');});
 game.on('crafted',function(e){
   if(e.r==='staff'||e.r==='bag'||e.r==='store'){UI.toast(UI.t('ord.done.'+e.r,{n:e.r==='staff'?S.staff:e.r==='bag'?S.bagLvl:S.storeLvl}));save();}
-  else if(e.q>=2)UI.toast(UI.t('ms.qual',{m:UI.t('ms.'+e.m),r:UI.itemName(e.r),q:UI.t('q.'+e.q)}));
+  else if(e.q===3&&!game.silent){Sound.sfx('win');UI.toast(UI.t('lg.got',{m:UI.t(e.m==='mage'?'ms.mage':'ms.'+e.m),r:UI.itemName(e.r)})+(game.bookNeed(e.r,3)?' '+UI.t('lg.kept'):''));save();}
+  else if(e.q===2)UI.toast(UI.t('ms.qual',{m:UI.t(e.m==='mage'?'ms.mage':'ms.'+e.m),r:UI.itemName(e.r),q:UI.t('q.'+e.q)}));
 });
 game.on('mLevel',function(e){UI.toast(UI.t('ms.lvlUp',{m:UI.t('ms.'+e.m),n:e.lvl}));});
 function petSync(){if(has3d&&Scene3D.setPet)Scene3D.setPet(S.pets&&S.pets.active);}
@@ -105,7 +107,15 @@ game.on('petHire',function(id){petSync();save();Sound.sfx('win');UI.toast(UI.t('
 game.on('petFound',function(id){petSync();save();if(!game.silent){Sound.sfx('win');UI.modal(UI.t('pt.foundT'),'<p>'+UI.t('pt.found',{p:UI.t('pet.'+id)})+'</p>');}});
 game.on('petLevel',function(e){save();UI.toast(UI.t('pt.lvlUp',{p:UI.t('pet.'+e.id),n:e.lvl}));UI.panel();});
 game.on('petTrain',function(){save();});
-game.on('coll',function(e){Sound.sfx('capture');UI.toast(e.done?UI.t('coll.full',{m:UI.t('ms.'+e.m)}):UI.t('coll.got',{r:UI.itemName(e.r)}));save();UI.panel();});
+game.on('coll',function(e){
+  var mn=UI.t(e.m==='mage'?'ms.mage':'ms.'+e.m);
+  if(e.gold){Sound.sfx('win');UI.toast(UI.t('bk.goldDone',{m:mn}));}
+  else if(e.done){Sound.sfx('win');UI.toast(UI.t('coll.full',{m:mn}));}
+  else{Sound.sfx('capture');UI.toast(UI.t('coll.gotQ',{r:UI.itemName(e.r),q:UI.t('q.'+e.q)}));}
+  save();UI.panel();
+});
+game.on('lock',function(){save();UI.panel();});
+game.on('toolsStart',function(e){if(!game.silent)UI.toast(UI.t('ms4.started',{m:UI.t('ms.'+e.id)}));save();});
 /* промыслы и стадии (v15) */
 function resLine(m){var a=[];for(var k in m)if(m[k])a.push('+'+D.fmt(m[k])+' '+UI.t('res.'+k));return a.join(', ');}
 game.on('prodGot',function(e){Sound.sfx('capture');UI.toast(UI.t('pd.got',{l:resLine(e.got)}));save();});
@@ -278,17 +288,18 @@ function begin(){
       showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
     if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
-    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
-    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
-    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
-    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
-    else if(!S.seenV17){S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body')+UI.t('v18.body')+UI.t('v19.body'));}
-    else if(!S.seenV18){S.seenV18=true;S.seenV19=true;save();UI.modal(UI.t('v18.title'),UI.t('v18.body')+UI.t('v19.body'));}
-    else if(!S.seenV19){S.seenV19=true;save();UI.modal(UI.t('v19.title'),UI.t('v19.body'));}
+    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
+    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
+    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
+    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
+    else if(!S.seenV17){S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body')+UI.t('v18.body')+UI.t('v19.body'));}
+    else if(!S.seenV18){S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v18.title'),UI.t('v18.body')+UI.t('v19.body')+UI.t('v20.body'));}
+    else if(!S.seenV19){S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v19.title'),UI.t('v19.body')+UI.t('v20.body'));}
+    else if(!S.seenV20){S.seenV20=true;save();UI.modal(UI.t('v20.title'),UI.t('v20.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;save();UI.rebuild();
+      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.rebuild();
       setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }

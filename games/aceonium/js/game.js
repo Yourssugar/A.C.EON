@@ -11,7 +11,7 @@ function masterDefaults(){
   var m={};
   D.MASTERS.forEach(function(d){
     var known=D.GOODS.filter(function(x){return x.m===d.id&&x.teach===0;}).map(function(x){return x.id;});
-    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,tst:0,tbt:null,known:known,teach:null,done:{},coll:{}};
+    m[d.id]={hired:d.hire===0,lvl:1,xp:0,tools:0,tst:0,tbt:null,known:known,teach:null,done:{},coll:{},sav:0,inc:0};
   });
   return m;
 }
@@ -52,6 +52,7 @@ function defaults(){
     prod:prodDefaults(),crews:1,crewQ:[],
     tav:tavDefaults(),
     recent:[],pinned:[],                            // v18: недавние заказы во вкладке КРАФТ и закреплённые вещи
+    locked:{},bookFree:{},                          // v20: вещи с замком; копии, с которых снята пометка "нужна для книги"
                                  // v16: места, гости, повар и пивовар
                     // промыслы (v15) и бригады строителей
     cust:[],custAcc:0,custId:0,rep:0,
@@ -182,8 +183,8 @@ P.startTrip=function(){
   /* зелья с собой: по одному каждого отмеченного, лучшего качества */
   var self=this;
   D.GOODS.forEach(function(gd){
-    if((gd.kind!=='potion'&&gd.kind!=='scroll')||!S.use[gd.id])return;
-    var q=self.invTake(gd.id,true);if(q<0)return;
+    if((gd.kind!=='potion'&&gd.kind!=='scroll')||!S.use[gd.id]||self.isLocked(gd.id))return;
+    var q=self.invTakeFree(gd.id,true);if(q<0)return;
     for(var k in gd.eff)S.trip.buff[k]=(S.trip.buff[k]||0)+gd.eff[k]*D.QUAL[q];
     S.trip.drank.push(gd.id);
   });
@@ -271,7 +272,7 @@ P.returnHome=function(why){
   var got={},lost=0,over=0,n=0;
   if(tr){
     /* оберег сумки: при поражении сгорает и сохраняет половину */
-    var ward=why==='defeat'&&S.use.p_ward&&this.invTake('p_ward',false)>=0;
+    var ward=why==='defeat'&&S.use.p_ward&&!this.isLocked('p_ward')&&this.invTakeFree('p_ward',false)>=0;
     for(var k in tr.bag){
       var v=tr.bag[k];if(!v)continue;
       if(why==='defeat'){
@@ -585,17 +586,62 @@ P.hire=function(id){var d=D.MASTER_BY[id];if(!d||!this.canHire(id)||!this.pay({g
 P.mSpeed=function(id){var c=this.collDone(id);if(id==='mage')return D.MAGE_SPEED*(c?1.1:1);var m=this.master(id);return D.mSpeed(m.lvl,c);};
 /* освоение: сколько копий вещи сделал этот мастер; время вещи с учётом освоения (без общей скорости мастера) */
 P.mastery=function(mid,rid){var m=this.master(mid);return m&&m.done?(m.done[rid]||0):0;};
-P.craftTime=function(mid,rid){var gd=D.GOOD_BY[rid];return gd?D.craftTime(gd,this.mastery(mid,rid)):this.orderTime(rid);};
-/* коллекция мастера: по одной вещи каждого его рецепта; собранная даёт +2% легендарного, +10% скорости и +10% к цене */
+P.craftTime=function(mid,rid){var gd=D.GOOD_BY[rid];return gd?D.craftTime(gd,this.mastery(mid,rid))/(this.collQ(mid,rid,3)?D.COLL_LEG_SPEED:1):this.orderTime(rid);};
+/* коллекция (v20): у каждой вещи 4 ячейки по качеству, m.coll[rid] - битовая маска (бит q).
+   Старое значение 1 совпадает с маской "обычное". Страница вещи открыта, если есть хоть одна ячейка.
+   Все страницы мастера открыты: +2% легендарного, +10% скорости, +10% к цене (как раньше).
+   Ячейки дают бонус своей вещи: хорошее +3% безупречного, безупречное +1% легендарного,
+   легендарное +10% к цене и скорости. Все 4 ячейки у всех вещей мастера ("золотая страница"): +1% легендарного всем его вещам. */
 P.collList=function(mid){return D.GOODS.filter(function(x){return x.m===mid;}).map(function(x){return x.id;});};
-P.collHas=function(mid,rid){var m=this.master(mid);return !!(m&&m.coll&&m.coll[rid]);};
+P.collMask=function(mid,rid){var m=this.master(mid);return m&&m.coll?(m.coll[rid]|0):0;};
+P.collQ=function(mid,rid,q){return !!(this.collMask(mid,rid)&(1<<q));};
+P.collHas=function(mid,rid){return this.collMask(mid,rid)>0;};
 P.collCount=function(mid){var self=this;return this.collList(mid).filter(function(r){return self.collHas(mid,r);}).length;};
 P.collDone=function(mid){var l=this.collList(mid);return l.length>0&&this.collCount(mid)===l.length;};
-P.collAdd=function(rid){
+P.collSlots=function(mid){var n=0,self=this;this.collList(mid).forEach(function(r){var k=self.collMask(mid,r);for(var q=0;q<4;q++)if(k&(1<<q))n++;});return n;};
+P.collGold=function(mid){var l=this.collList(mid);return l.length>0&&this.collSlots(mid)===l.length*4;};
+P.collAdd=function(rid,q){
   var gd=D.GOOD_BY[rid];if(!gd)return false;
-  var m=this.master(gd.m);if(!m||this.collHas(gd.m,rid)||this.invCount(rid)<1)return false;
-  this.invTake(rid,false);m.coll[rid]=1;
-  this.emit('coll',{m:gd.m,r:rid,done:this.collDone(gd.m)});return true;
+  if(q===undefined||q===null){for(q=0;q<4;q++)if(!this.collQ(gd.m,rid,q)&&this.S.inv[rid+':'+q]>0)break;}
+  q=q|0;
+  var m=this.master(gd.m),k=rid+':'+q;
+  if(!m||q<0||q>3||this.collQ(gd.m,rid,q)||!(this.S.inv[k]>0))return false;
+  var page=this.collDone(gd.m),gold=this.collGold(gd.m);
+  this.S.inv[k]--;if(!this.S.inv[k])delete this.S.inv[k];
+  m.coll[rid]=this.collMask(gd.m,rid)|(1<<q);
+  if(this.S.bookFree)delete this.S.bookFree[k];
+  this.emit('coll',{m:gd.m,r:rid,q:q,done:!page&&this.collDone(gd.m),gold:!gold&&this.collGold(gd.m)});return true;
+};
+/* шансы качества для конкретной вещи */
+P.qualChance=function(mid,rid){
+  var ch=D.qualChance(this.toolsEff(mid),this.collDone(mid));
+  if(rid&&D.GOOD_BY[rid]){
+    if(this.collQ(mid,rid,1))ch[2]+=D.COLL_Q1;
+    if(this.collQ(mid,rid,2))ch[3]+=D.COLL_Q2;
+  }
+  if(this.collGold(mid))ch[3]+=D.COLL_GOLD;
+  return ch;
+};
+P.itemPriceMult=function(rid){
+  var gd=D.GOOD_BY[rid];if(!gd)return 1;
+  return (this.collDone(gd.m)?D.COLL_PRICE:1)*(this.collQ(gd.m,rid,3)?D.COLL_LEG_PRICE:1);
+};
+/* защита (v20): одна копия хорошего, безупречного или легендарного качества, которого нет в книге, "нужна для книги" (если игрок не снял пометку);
+   вещь с замком хозяйка не продаёт и маг не берёт в поход. */
+P.bookNeed=function(rid,q){
+  var gd=D.GOOD_BY[rid];if(!gd||q<1||this.collQ(gd.m,rid,q))return false;   /* обычных копий много, их не держим */
+  return !(this.S.bookFree&&this.S.bookFree[rid+':'+q]);
+};
+P.freeCount=function(rid,q){var n=this.S.inv[rid+':'+q]||0;return Math.max(0,n-(n>0&&this.bookNeed(rid,q)?1:0));};
+P.freeTotal=function(rid){var n=0;for(var q=0;q<D.QUAL.length;q++)n+=this.freeCount(rid,q);return n;};
+P.setBookFree=function(rid,q,on){var S=this.S;if(!S.bookFree)S.bookFree={};var k=rid+':'+q;if(on)S.bookFree[k]=1;else delete S.bookFree[k];};
+P.isLocked=function(rid){return !!(this.S.locked&&this.S.locked[rid]);};
+P.toggleLock=function(rid){var S=this.S;if(!S.locked)S.locked={};if(S.locked[rid])delete S.locked[rid];else S.locked[rid]=1;this.emit('lock',rid);return !!S.locked[rid];};
+/* взять свободную копию (не нужную книге): best - лучшую, иначе худшую */
+P.invTakeFree=function(id,best){
+  var S=this.S;
+  for(var i=0;i<D.QUAL.length;i++){var q=best?D.QUAL.length-1-i:i,k=id+':'+q;if(this.freeCount(id,q)>0){S.inv[k]--;if(!S.inv[k])delete S.inv[k];return q;}}
+  return -1;
 };
 P.orderCost=function(rid){
   var S=this.S;
@@ -662,8 +708,22 @@ P.toolsCost=function(mid){
 P.buyTools=function(mid){
   var c=this.toolsCost(mid),m=this.master(mid);if(!c||!this.pay(c))return false;
   m.tst++;
-  if(m.tst>=D.STAGES){var T=D.stageTime(m.tools);m.tbt={t:T,T:T};}
+  if(m.tst>=D.STAGES)this.toolsTryStart(mid);
   this.emit('invest',{kind:'tools',id:mid});return true;
+};
+/* v20: доля мастера. С каждой продажи его вещи мастер откладывает D.MASTER_SHARE цены (у игрока ничего не забирается).
+   Новый инструмент мастер начинает делать, когда игрок сделал 20 вкладов и у мастера накоплена его часть. */
+P.toolsPart=function(mid){var m=this.master(mid);return m&&m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0;};
+P.toolsTryStart=function(mid){
+  var m=this.master(mid);if(!m||m.tbt||m.tst<D.STAGES||m.tools>=D.TOOLS_MAX)return false;
+  var part=this.toolsPart(mid);if((m.sav||0)<part)return false;
+  m.sav-=part;var T=D.stageTime(m.tools);m.tbt={t:T,T:T};
+  this.emit('toolsStart',{id:mid});return true;
+};
+P.masterIncome=function(rid,price){
+  var gd=D.GOOD_BY[rid];if(!gd||gd.m==='mage')return;
+  var m=this.S.masters[gd.m];if(!m)return;
+  var v=price*D.MASTER_SHARE;m.sav=(m.sav||0)+v;m.inc=(m.inc||0)+v;
 };
 P.toolsEff=function(mid){var m=this.master(mid);return m?(m.tools||0)+D.STAGE_STEP*(m.tst||0):0;};
 P.qSlotCost=function(){var n=this.S.qSlots;return n>=D.QSLOTS_MAX?null:D.qSlotCost(n);};
@@ -676,8 +736,8 @@ P.learn=function(rid){
   var T=D.teachTime(gd.lvl);this.master(gd.m).teach={r:rid,t:T,T:T};
   this.emit('teachStart',rid);return true;
 };
-P.rollQual=function(mid){
-  var ch=D.qualChance(this.toolsEff(mid),this.collDone(mid)),r=Math.random();
+P.rollQual=function(mid,rid){
+  var ch=this.qualChance(mid,rid),r=Math.random();
   for(var q=D.QUAL.length-1;q>0;q--){if(r<ch[q])return q;r-=ch[q];}
   return 0;
 };
@@ -688,7 +748,8 @@ P.finishOrder=function(mid,o){
   if(o.r==='staff'){S.staff++;this.emit('buy','staff');}
   else if(o.r==='bag'){S.bagLvl++;this.emit('buy','bag');}
   else if(o.r==='store'){S.storeLvl++;this.emit('buy','store');}
-  else{q=this.rollQual(mid);this.invAdd(o.r,q,1);S.stats.crafted++;if(this.rep)this.rep.crafted++;
+  else{q=this.rollQual(mid,o.r);this.invAdd(o.r,q,1);S.stats.crafted++;if(this.rep){this.rep.crafted++;if(q===3)this.rep.legend=(this.rep.legend||0)+1;}
+    if(q===3)this.emit('legend',{m:mid,r:o.r});
     var mm=this.master(mid);if(mm&&mm.done)mm.done[o.r]=(mm.done[o.r]||0)+1;}
   if(mid==='mage')this.addXp(this.scrollXp(o.r));
   else{
@@ -827,7 +888,8 @@ P.tickProd=function(dt){
   if(st.lvl){st.cart=(st.cart||0)+dt;var ev=this.cartEvery()*60;if(st.cart>=ev){st.cart=0;var r=this.prodCollectAll(true);if(r.n)this.emit('cart',r);}}
   /* инструменты мастеров */
   for(var mid in S.masters){
-    var m=S.masters[mid];if(!m.tbt)continue;
+    var m=S.masters[mid];
+    if(!m.tbt){if(m.tst>=D.STAGES)this.toolsTryStart(mid);continue;}
     m.tbt.t-=dt;if(m.tbt.t>0)continue;
     m.tbt=null;m.tools=Math.min(D.TOOLS_MAX,m.tools+1);m.tst=0;
     this.emit('built',{kind:'tools',id:mid,lvl:m.tools});
@@ -850,7 +912,7 @@ P.knownGoods=function(){
 };
 P.spawnCustomer=function(){
   var S=this.S,known=this.knownGoods(),self=this;if(!known.length)return;
-  var stock=known.filter(function(r){return self.invCount(r)>0;});
+  var stock=known.filter(function(r){return self.freeTotal(r)>0&&!self.isLocked(r);});
   var pool=stock.length&&Math.random()<0.65?stock:known;
   var item=pool[Math.floor(Math.random()*pool.length)];
   var who=Math.floor(Math.random()*D.TRAVELERS);
@@ -860,10 +922,12 @@ P.spawnCustomer=function(){
   return c;
 };
 /* цена за вещь, которую отдадим этому покупателю (худшее качество из запаса) */
-P.custQual=function(c){for(var q=0;q<D.QUAL.length;q++)if(this.S.inv[c.item+':'+q]>0)return q;return -1;};
+P.custQual=function(c){for(var q=0;q<D.QUAL.length;q++)if(this.freeCount(c.item,q)>0)return q;return -1;};
+/* хозяйка продаёт сама только свободные копии и не трогает вещи с замком */
+P.hostessCan=function(c){return this.custQual(c)>=0&&!this.isLocked(c.item);};
 P.custPrice=function(c,by){
   var gd=D.GOOD_BY[c.item],q=Math.max(0,this.custQual(c));
-  var p=gd.price*D.QUAL[q]*D.decorMult(this.buildLvl('decor'))*(this.collDone(gd.m)?D.COLL_PRICE:1);
+  var p=gd.price*D.QUAL[q]*D.decorMult(this.buildLvl('decor'))*this.itemPriceMult(c.item);
   return Math.round(by==='hostess'?p:p*c.mood);
 };
 P.custRemove=function(c){var a=this.S.cust,i=a.indexOf(c);if(i>=0)a.splice(i,1);};
@@ -875,7 +939,8 @@ P.sellTo=function(c,mode){
     if(Math.random()<D.HAGGLE_FAIL){this.custRemove(c);S.rep=Math.max(0,S.rep-1);this.emit('custLeft',{c:c,why:'haggle'});return false;}
     price=Math.round(price*(1+D.HAGGLE_UP));
   }else if(mode==='down'){price=Math.round(price*(1-D.DISCOUNT));S.rep=Math.min(200,S.rep+2);}
-  var q=this.invTake(c.item,false);
+  var q=this.invTakeFree(c.item,false);
+  this.masterIncome(c.item,price);
   S.gold+=price;S.stats.sold++;S.stats.goldEarned+=price;S.rep=Math.min(200,S.rep+0.5);
   if(this.rep){this.rep.sold++;this.rep.gold+=price;}
   this.custRemove(c);
@@ -893,15 +958,15 @@ P.tickCustomers=function(dt){
     S.custAcc-=1;
     if(off){   /* офлайн: хозяйка продаёт сразу, если нужная вещь есть, иначе путник уходит */
       var oc=this.spawnCustomer();if(!oc)break;
-      if(this.custQual(oc)>=0)this.sellTo(oc,'hostess');else{this.custRemove(oc);this.guestTry(oc);}
+      if(this.hostessCan(oc))this.sellTo(oc,'hostess');else{this.custRemove(oc);this.guestTry(oc);}
       continue;
     }
     if(S.cust.length<max)this.spawnCustomer();
   }
   for(var i=S.cust.length-1;i>=0;i--){
     var c=S.cust[i];c.wait+=dt;
-    if((off||c.wait>=D.HOSTESS_AFTER)&&this.custQual(c)>=0){this.sellTo(c,'hostess');continue;}
-    if(c.wait>=D.CUST_PATIENCE||(off&&this.custQual(c)<0)){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});this.guestTry(c);}
+    if((off||c.wait>=D.HOSTESS_AFTER)&&this.hostessCan(c)){this.sellTo(c,'hostess');continue;}
+    if(c.wait>=D.CUST_PATIENCE||(off&&!this.hostessCan(c))){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});this.guestTry(c);}
   }
 };
 P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickCustomers(dt);this.tickTav(dt);this.tickPets(dt);};
@@ -1042,6 +1107,9 @@ P.sanitize=function(){
     if(!m.done)m.done={};if(!m.coll)m.coll={};
     m.tools=Math.min(m.tools||0,D.TOOLS_MAX);
     if(m.tst===undefined){m.tst=0;m.tbt=null;}
+    if(typeof m.sav!=='number'){m.sav=0;m.inc=0;
+      /* v20: чтобы уже начатые улучшения не встали, мастер сразу получает свою часть текущего уровня */
+      if(m.hired&&m.tools<D.TOOLS_MAX)m.sav=D.masterPart(m.tools);}
     m.known=m.known.filter(function(r){return D.GOOD_BY[r]&&D.GOOD_BY[r].m===k;});
     def[k].known.forEach(function(r){if(m.known.indexOf(r)<0)m.known.push(r);});
     var self=this;
@@ -1068,6 +1136,8 @@ P.sanitize=function(){
   if(!S.crews)S.crews=1;
   if(!S.crewQ)S.crewQ=[];
   if(!S.recent)S.recent=[];if(!S.pinned)S.pinned=[];
+  if(!S.locked||typeof S.locked!=='object')S.locked={};if(!S.bookFree||typeof S.bookFree!=='object')S.bookFree={};
+  for(var lk in S.locked)if(!D.GOOD_BY[lk])delete S.locked[lk];
   /* v18: при переходе недавние берём из очереди и из того, что лежит на складе */
   if(!S.recent.length&&!S.recentSeeded){S.recentSeeded=true;var self2=this;S.queue.forEach(function(o){if(D.GOOD_BY[o.r]&&S.recent.indexOf(o.r)<0)S.recent.push(o.r);});
     for(var ik in S.inv){var rid0=ik.split(':')[0];if(S.inv[ik]>0&&D.GOOD_BY[rid0]&&S.recent.indexOf(rid0)<0&&S.recent.length<10)S.recent.push(rid0);}}

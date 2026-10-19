@@ -208,6 +208,8 @@ D.MASTERY_CAP=60;
 D.masteryMult=function(n){return Math.max(0.5,Math.pow(Math.min(n,D.MASTERY_CAP-1)+1,-Math.log(2)/Math.log(D.MASTERY_CAP)));};
 D.craftTime=function(gd,n){var w=D.WORK_SHARE[gd.m]||0.6;return gd.time*(1-w)+gd.time*w*D.masteryMult(n||0);};
 D.COLL_PRICE=1.1;   // собранная коллекция мастера: его вещи дороже на 10%
+/* v20: ячейки качества в книге (бонус только своей вещи) и золотая страница мастера */
+D.COLL_Q1=0.03;D.COLL_Q2=0.01;D.COLL_LEG_PRICE=1.1;D.COLL_LEG_SPEED=1.1;D.COLL_GOLD=0.01;
 /* учитель: пока учит, мастер не работает */
 D.teachTime=function(lvl){return 600*lvl;}
 D.PAUSE_AWAY=600;   // сек: столько игрока нет, и маг сам продолжает поход, начатый паузой;
@@ -318,6 +320,9 @@ D.resTract=function(r){if(r==='coal')return 0;for(var i=0;i<D.TRACTS.length;i++)
 D.STABLE={build:{gold:1500,wood:60},c0:150,max:5,every:[60,40,25,15,10]};
 /* инструменты мастера на той же схеме: c0 золотом, последний вклад ещё и материалы */
 D.TOOLS_C0=5;
+/* v20: доля мастера с продаж (20% цены сверх дохода игрока) и его часть нового инструмента (в 1.5 раза больше вкладов игрока за уровень) */
+D.MASTER_SHARE=0.2;D.MASTER_PART=1.5;
+D.masterPart=function(L){var t=0;for(var i=0;i<D.STAGES;i++)t+=D.stageCost(D.TOOLS_C0,L,i);return Math.ceil(t*D.MASTER_PART);};
 D.toolsRes=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]*Math.pow(1.45,l));return c;};
 
 /* ════════ ГОСТИ, ПОВАР И ПИВОВАР (v16) ════════

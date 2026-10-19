@@ -37,7 +37,8 @@ function open(id){
     if(a==='learn')ok=g.learn(b.dataset.r);
     if(a==='tools'){var n=0;do{if(!g.buyTools(M.id))break;n++;}while(b.dataset.max&&n<D.STAGES);ok=n>0;}
     if(a==='slot')ok=g.buyQSlot();
-    if(a==='coll')ok=g.collAdd(b.dataset.r);
+    if(a==='coll')ok=g.collAdd(b.dataset.r,b.dataset.q===undefined?undefined:+b.dataset.q);
+    if(a==='lock'){g.toggleLock(b.dataset.r);ok=true;}
     if(a==='book'&&window.Book){Book.open(M.id);return;}
     if(a==='pin'){g.togglePin(b.dataset.r);ok=true;}
     if(a==='cancel')ok=g.cancel(+b.dataset.i);
@@ -132,7 +133,6 @@ function render(full){
   if(stEl._h!==stTxt){stEl._h=stTxt;stEl.innerHTML=stTxt;}
   anim();
   var body=M.q('.ms2-body'),h='';
-  h+='<p class="note">'+t(mage?'ms3.mageD':'ms.'+id+'.d')+'</p>';
   if(mage&&S.place!=='home')h+='<p class="bad">'+t('cr2.mageAway')+'</p>';
   if(!m.hired){
     h+='<button type="button" class="btn pink big" data-act="hire"'+(S.gold<d.hire?' disabled':'')+'>'+t('ms.hire')+' '+COIN+D.fmt(d.hire)+'</button>';
@@ -154,20 +154,21 @@ function render(full){
   /* учитель; у мага новые свитки открываются его уровнем */
   var rest=D.GOODS.filter(function(x){return x.m===id&&m.known.indexOf(x.id)<0;});
   if(rest.length){
-    h+='<div class="lbl full">'+t(mage?'ms3.mageLater':'ms.teacher')+'</div>'+(mage?'':'<p class="note">'+t('ms2.teacherD')+'</p>')+'<div class="ms2-grid">'+rest.map(function(x){return card(x.id,mage?'view':'learn');}).join('')+'</div>';
+    h+='<div class="lbl full">'+t(mage?'ms3.mageLater':'ms.teacher')+'</div><div class="ms2-grid">'+rest.map(function(x){return card(x.id,mage?'view':'learn');}).join('')+'</div>';
   }
   /* коллекция живёт в книге */
-  var cl=g.collList(id),cn=g.collCount(id);
-  h+='<div class="ms2-up"><div><b>'+t('bk.title')+'</b> '+cn+' / '+cl.length+'<small>'+t(g.collDone(id)?'coll.doneI':'bk.hint')+'</small></div><button type="button" class="btn sm" data-act="book">'+t('bk.open')+'</button></div>';
+  var cl=g.collList(id),cn=g.collCount(id),cs=g.collSlots(id);
+  h+='<div class="ms2-up"><div><b>'+t('bk.title')+UI.hb('book')+'</b> '+t('bk.pages',{n:cn,m:cl.length})+' · '+t('bk.slots',{n:cs,m:cl.length*4})+'</div><button type="button" class="btn sm" data-act="book">'+t('bk.open')+'</button></div>';
   if(mage){setBody(body,h);return;}
   /* улучшения мастера */
   var tc=g.toolsCost(id),sc=g.qSlotCost();
   h+='<div class="lbl full">'+t('ms2.upgrades')+'</div>'+
-    '<div class="ms2-up col"><div><b>'+t('ms.tools')+'</b> '+t('row.lvlMax',{n:m.tools,m:D.TOOLS_MAX})+'<small>'+t('ms.toolsI')+'</small></div>'+
+    '<div class="ms2-up col"><div><b>'+t('ms.tools')+UI.hb('tools')+'</b> '+t('row.lvlMax',{n:m.tools,m:D.TOOLS_MAX})+'</div>'+
       UI.stageHtml({kind:'tools',id:id,act:'tools',lvl:m.tools,max:D.TOOLS_MAX,st:m.tst||0,bt:m.tbt,cost:tc,
+        wait:!m.tbt&&(m.tst||0)>=D.STAGES,waitKey:'ms4.wait',save:m.tools<D.TOOLS_MAX&&!m.tbt?{have:m.sav||0,need:g.toolsPart(id)}:null,
         now:toolsQ(g,id,g.toolsEff(id)),next:toolsQ(g,id,Math.min(D.TOOLS_MAX,m.tools+1)),
         extra:(m.tst===D.STAGES-1?t('st2.lastRes'):'')})+'</div>'+
-    '<div class="ms2-up"><div><b>'+t('q2.slots')+'</b> '+t('row.lvlMax',{n:S.qSlots,m:D.QSLOTS_MAX})+'<small>'+t('q2.slotsI')+'</small></div>'+
+    '<div class="ms2-up"><div><b>'+t('q2.slots')+'</b> '+t('row.lvlMax',{n:S.qSlots,m:D.QSLOTS_MAX})+'</div>'+
       (sc?'<button type="button" class="btn sm" data-act="slot"'+(g.canPay(sc)?'':' disabled')+'>'+UI.costHtml(sc)+'</button>':'<span class="note">'+t('buy.done')+'</span>')+'</div>';
   setBody(body,h);
 }
@@ -189,14 +190,16 @@ function card(r,mode){
     var bl2=g.orderBlock(id,r);
     sub=UI.ft(g.craftTime(id,r)/g.mSpeed(id))+' · '+COIN+D.fmt(gd.price)+'<br>'+t('cr2.mastery',{n:Math.min(g.mastery(id,r),D.MASTERY_CAP),m:D.MASTERY_CAP});
     btn='<div class="cost">'+UI.costHtml(gd.cost)+'</div><button type="button" class="btn sm" data-act="order" data-r="'+r+'"'+(bl2?' disabled':'')+'>'+(bl2==='teaching'?t('ms2.studying'):bl2==='full'?t('ms.full'):t('ms2.do'))+'</button>'+
-      '<button type="button" class="pin-b'+(g.isPinned(r)?' on':'')+'" data-act="pin" data-r="'+r+'" title="'+t(g.isPinned(r)?'cr3.unpin':'cr3.pin')+'"></button>';
+      '<button type="button" class="pin-b'+(g.isPinned(r)?' on':'')+'" data-act="pin" data-r="'+r+'" title="'+t(g.isPinned(r)?'cr3.unpin':'cr3.pin')+'"></button>'+
+      '<button type="button" class="lk-b'+(g.isLocked(r)?' on':'')+'" data-act="lock" data-r="'+r+'" title="'+t('lk.title')+'">'+UI.LOCK_SVG+'</button>';
   }else if(mode==='learn'){
     var ok=g.canLearn(r);cls+=ok?'':' dim';
     sub=m.lvl>=gd.lvl?COIN+D.fmt(gd.price):t('ms.needLvl',{n:gd.lvl});
     btn='<button type="button" class="btn sm pink" data-act="learn" data-r="'+r+'"'+(ok&&g.S.gold>=gd.teach?'':' disabled')+'>'+t('ms.learn')+' '+COIN+D.fmt(gd.teach)+'</button><small>'+UI.ft(D.teachTime(gd.lvl))+'</small>';
   }else{sub=id==='mage'?t('cr2.needMage',{n:gd.lvl}):gd.lvl>1?t('ms.needLvl',{n:gd.lvl}):COIN+D.fmt(gd.price);cls+=' dim';}
   var eff=gd&&gd.eff?UI.effText(r,0):'';
-  return '<div class="'+cls+'">'+UI.orderIcon(r,true)+'<b>'+name+'</b><small>'+sub+'</small>'+(eff?'<em>'+eff+'</em>':'')+btn+'</div>';
+  var dots='';if(gd&&mode!=='view'&&mode!=='learn'){dots='<span class="bq-dots">';for(var q=0;q<4;q++)dots+='<i class="q'+q+(g.collQ(gd.m,r,q)?' on':'')+'"></i>';dots+='</span>';}
+  return '<div class="'+cls+'">'+dots+UI.orderIcon(r,true)+'<b>'+name+'</b><small>'+sub+'</small>'+(eff?'<em>'+eff+'</em>':'')+btn+'</div>';
 }
 function close(){
   if(!M)return;

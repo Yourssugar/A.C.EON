@@ -744,4 +744,108 @@ I18n.add('ru',{
 I18n.add('en',{
   'v19.title':'OUR OWN MUSIC','v19.body':'<p>Aceonium has its own music now instead of the arcade playlist: a theme for character creation and the wardrobe, the town by day, the tavern at night, a track for every tract and one more for plan runs across several tracts.</p><p>On phones the town turns with one finger; two fingers zoom, move and rotate. The browser page no longer zooms.</p>'
 });
+/* v20: книга по качеству, замок, доля мастеров, справка */
+I18n.add('ru',{
+  'bq.in':'в книге','bq.add':'+ вложить ({n})','bq.needT':'есть копия, нужная книге',
+  'lk.title':'Хозяйка не продаёт эту вещь, маг не берёт её в поход','lk.off':'НЕ ПРОДАВАТЬ','lk.on':'НЕ ПРОДАЁТСЯ',
+  'bk.total':'ячеек {n} из {m}','bk.pages':'страниц {n}/{m}','bk.slots':'ячеек {n}/{m}',
+  'bk.rwPages':'Все страницы: легендарное +2%, скорость +10%, цена +10%.','bk.rwGold':'Все ячейки (золотая страница): ещё +1% легендарного.',
+  'bk.b1':'хорошее в книге: +3% безупречного','bk.b2':'безупречное в книге: +1% легендарного','bk.b3':'легендарное в книге: цена и скорость +10%',
+  'bk.kept':'{q}: одна копия держится для книги','bk.freed':'{q}: пометка снята, можно продать','bk.freeB':'ОТПУСТИТЬ','bk.keepB':'ДЕРЖАТЬ',
+  'bag.info':'Шанс добычи: x{p}','wk.hallI':'За столы садится около {h} гостей в час.',
+  'bk.goldDone':'Золотая страница: {m}. Легендарное +1% на все его вещи',
+  'coll.gotQ':'В книге: {r}, {q}','coll.full':'Все страницы собраны: {m}. Легендарное +2%, скорость +10%, цена +10%',
+  'lg.got':'Легендарное! {m}: {r}','lg.kept':'Держится для книги.','off.legend':'Легендарных вещей: {n}',
+  'ms4.part':'часть мастера','ms4.wait':'МАСТЕР КОПИТ СВОЮ ЧАСТЬ','ms4.started':'{m} начал новый инструмент',
+  'st2.wait':'ЖДЁТ БРИГАДУ',
+  'hp.menu':'СПРАВКА ПО ИГРЕ','hp.title':'СПРАВКА',
+  'hp.trip.t':'Поход','hp.bag.t':'Сумка и склад','hp.tavern.t':'Таверна','hp.hall.t':'Зал и работники','hp.craft.t':'Крафт','hp.tools.t':'Инструменты и доля мастера',
+  'hp.book.t':'Книга коллекций','hp.city.t':'Город','hp.mage.t':'Маг','hp.pets.t':'Питомцы','hp.save.t':'Сохранение',
+  'hp.trip':'<p>Маг идёт по тракту волнами, на каждой 10-й волне босс, на 100-й главный босс. Первое прохождение тракта открывает следующий.</p>'+
+    '<p>Маг устаёт: чем выше усталость, тем слабее удар. Уставший маг возвращается и спит, после сна какое-то время бьёт сильнее.</p>'+
+    '<p>План походов: отметь, сколько раз пройти каждый тракт. Маг идёт по плану сверху вниз, между походами спит, когда устал. Пройдя план, повторяет последний тракт. "Идти сюда" отправляет сразу, план не трогает.</p>'+
+    '<p>Проигрыш боссу стоит сумки. Зелье оберега спасает её один раз.</p>',
+  'hp.bag':'<p>Монстры роняют ресурсы с шансом, он растёт с волной и после первого прохождения тракта. Сумка ограничена, лишнее пропадает.</p>'+
+    '<p>В таверне маг выгружает сумку на склад. У склада свой предел на каждый ресурс. Сумку и склад улучшают во вкладке ГОРОД.</p>',
+  'hp.tavern':'<p>Путник просит одну вещь. Если она есть, её можно продать: ДОРОЖЕ (+30%, но с шансом 35% путник уйдёт), СКИДКА (-20%, растёт репутация) или по обычной цене.</p>'+
+    '<p>Через 30 секунд хозяйка продаёт сама по обычной цене. Она отдаёт копию худшего качества и не трогает вещи с замком и копии, которые держатся для книги.</p>'+
+    '<p>Пока маг спит, таверна закрыта. Пока тебя нет, хозяйка продаёт сразу, а путник без своей вещи уходит.</p>',
+  'hp.hall':'<p>Путник после покупки садится за стол с шансом 60% и сидит 15 минут. Мест сначала 2, их покупают за золото, предел зависит от уровня зала.</p>'+
+    '<p>Каждый гость берёт кружку у пивовара и с шансом 50% блюдо у повара. Работники готовят партиями, помощники увеличивают партию.</p>'+
+    '<p>Половина выручки твоя, половина идёт работнику в сбережения. Сбережения понемногу поднимают цену, а накопив сумму, работник сам расширяется. Места для помощников прибавляются с его уровнем.</p>',
+  'hp.craft':'<p>Вещи заказывают в окне мастера. Во вкладке КРАФТ остаются 10 последних заказанных и закреплённые, второе нажатие на выбранную вещь ставит её в очередь.</p>'+
+    '<p>Очередь одна на всех. Каждый мастер берёт первую свою вещь, мастера работают одновременно. Нажми на вещь в очереди, чтобы отменить и вернуть ресурсы.</p>'+
+    '<p>Освоение: каждая копия ускоряет работу руками, к 60-й вдвое. Варка, нагрев и сушка не ускоряются. Новые рецепты даёт учитель за золото, когда мастер дорос до уровня вещи.</p>',
+  'hp.tools':'<p>Инструменты поднимают шанс хорошего и безупречного качества. Уровень берётся в 20 вкладов золотом, каждый следующий на 5% дороже и сразу даёт 1% шага. Последний вклад ещё и с материалами.</p>'+
+    '<p>С каждой продажи своей вещи мастер откладывает 20% её цены. У тебя это не забирается: цена, которую ты видишь, и есть твой доход.</p>'+
+    '<p>Новый инструмент мастер начинает делать, когда сделаны 20 вкладов и у него накоплена своя часть. Потом нужно время. Чем больше продаётся его вещей, тем быстрее он готов к следующему уровню.</p>',
+  'hp.book':'<p>У каждой вещи 4 ячейки: обычное, хорошее, безупречное, легендарное. Вкладывается одна копия нужного качества.</p>'+
+    '<p>Ячейки дают бонус своей вещи: хорошее +3% к шансу безупречного, безупречное +1% к шансу легендарного, легендарное +10% к цене и скорости изготовления.</p>'+
+    '<p>Все страницы мастера (хоть одна ячейка у каждой вещи): легендарное +2%, скорость +10%, цена +10%. Все ячейки у всех его вещей: ещё +1% легендарного.</p>'+
+    '<p>Копия хорошего, безупречного или легендарного качества, которого ещё нет в книге, держится для неё: хозяйка её не продаёт, маг не берёт в поход. Пометку можно снять в книге. Замок "НЕ ПРОДАВАТЬ" закрывает вещь целиком.</p>',
+  'hp.city':'<p>Промыслы добывают ресурсы сами, но только с открытых трактов. Запас копится на 6 часов работы, его забирают тапом по зданию или кнопкой. Возчик свозит запас сам.</p>'+
+    '<p>Здания улучшают 20 вкладами, потом бригада строит по времени. Бригада строит одно здание, остальные ждут очереди. Вторую и третью бригаду можно нанять.</p>'+
+    '<p>Наверху вкладки заказы посоха, сумки и склада.</p>',
+  'hp.mage':'<p>Навыки открываются уровнем мага и качаются очками, 1 очко за уровень. Клавиши 1-5, пробел: удар.</p>'+
+    '<p>Отмеченные зелья маг берёт в поход по одному, лучшего свободного качества. Вещи с замком и копии для книги он не берёт.</p>'+
+    '<p>Снаряжение надевается во вкладке МАГ. Вещи гардероба открываются уровнем мага и покупаются за золото таверны.</p>',
+  'hp.pets':'<p>Мастер питомцев растит зверей, которые ходят с магом и кусают врагов. При найме он дарит лису, других можно найти в походах. Питомцев тренируют за золото.</p>',
+  'hp.save':'<p>Прогресс хранится в этом браузере. Экспорт во вкладке ИНФО помогает перенести его на другое устройство или сохранить копию.</p>'
+});
+I18n.add('en',{
+  'bq.in':'in book','bq.add':'+ add ({n})','bq.needT':'has a copy the book needs',
+  'lk.title':'The hostess does not sell it, the mage does not take it on trips','lk.off':'DO NOT SELL','lk.on':'NOT FOR SALE',
+  'bk.total':'{n} of {m} slots','bk.pages':'pages {n}/{m}','bk.slots':'slots {n}/{m}',
+  'bk.rwPages':'All pages: legendary +2%, speed +10%, price +10%.','bk.rwGold':'All slots (golden page): +1% legendary more.',
+  'bk.b1':'good in book: +3% flawless','bk.b2':'flawless in book: +1% legendary','bk.b3':'legendary in book: price and speed +10%',
+  'bk.kept':'{q}: one copy is kept for the book','bk.freed':'{q}: released, can be sold','bk.freeB':'RELEASE','bk.keepB':'KEEP',
+  'bag.info':'Drop chance: x{p}','wk.hallI':'About {h} guests an hour sit down.',
+  'bk.goldDone':'Golden page: {m}. Legendary +1% on all their items',
+  'coll.gotQ':'In the book: {r}, {q}','coll.full':'All pages collected: {m}. Legendary +2%, speed +10%, price +10%',
+  'lg.got':'Legendary! {m}: {r}','lg.kept':'Kept for the book.','off.legend':'Legendary items: {n}',
+  'ms4.part':'craftsman share','ms4.wait':'CRAFTSMAN IS SAVING UP','ms4.started':'{m} started new tools',
+  'st2.wait':'WAITING FOR A CREW',
+  'hp.menu':'GAME GUIDE','hp.title':'GUIDE',
+  'hp.trip.t':'Trips','hp.bag.t':'Bag and store','hp.tavern.t':'Tavern','hp.hall.t':'Hall and workers','hp.craft.t':'Craft','hp.tools.t':'Tools and craftsman share',
+  'hp.book.t':'Collection book','hp.city.t':'Town','hp.mage.t':'Mage','hp.pets.t':'Pets','hp.save.t':'Saving',
+  'hp.trip':'<p>The mage walks a tract in waves, a boss every 10th wave and the main boss at 100. Clearing a tract once opens the next.</p>'+
+    '<p>The mage gets tired and hits weaker. A tired mage goes home and sleeps, and hits harder for a while after rest.</p>'+
+    '<p>Trip plan: set how many runs of each tract. The mage follows it top to bottom and sleeps between trips when tired. After the plan the last tract repeats. "Go here" sends him at once and keeps the plan.</p>'+
+    '<p>Losing to a boss costs the bag. A ward potion saves it once.</p>',
+  'hp.bag':'<p>Monsters drop resources by chance; it grows with the wave and after the first clear. The bag is limited, extra is lost.</p>'+
+    '<p>In the tavern the mage unloads the bag into the store. The store has a limit per resource. Bag and store upgrades are on the TOWN tab.</p>',
+  'hp.tavern':'<p>A traveler asks for one item. If you have it: HIGHER (+30%, 35% chance he leaves), DISCOUNT (-20%, reputation up) or the normal price.</p>'+
+    '<p>After 30 seconds the hostess sells at the normal price. She gives the lowest quality copy and skips locked items and copies kept for the book.</p>'+
+    '<p>While the mage sleeps the tavern is closed. While you are away the hostess sells at once and travelers without their item leave.</p>',
+  'hp.hall':'<p>After buying, a traveler sits down with a 60% chance for 15 minutes. You start with 2 seats and buy more for gold; the hall level sets the limit.</p>'+
+    '<p>Every guest takes a mug from the brewer and, with a 50% chance, a dish from the cook. Workers cook in batches, helpers make batches bigger.</p>'+
+    '<p>Half the revenue is yours, half goes to the worker\'s savings. Savings raise the price a little, and with enough saved the worker expands on his own. Helper slots grow with his level.</p>',
+  'hp.craft':'<p>Items are ordered in the master window. The CRAFT tab keeps the last 10 ordered and pinned ones; a second tap on the selected item queues it.</p>'+
+    '<p>One queue for everyone. Each master takes his first item, masters work at the same time. Tap an item in the queue to cancel and get the resources back.</p>'+
+    '<p>Mastery: every copy speeds up the hand work, twice as fast by the 60th. Brewing, heating and drying do not speed up. New recipes come from a teacher for gold once the master reaches the item level.</p>',
+  'hp.tools':'<p>Tools raise the chance of good and flawless quality. A level takes 20 gold contributions, each 5% dearer and giving 1% of the step at once. The last one needs materials too.</p>'+
+    '<p>From every sale of his item the master puts aside 20% of its price. Nothing is taken from you: the price you see is your income.</p>'+
+    '<p>The master starts new tools when the 20 contributions are done and his own share is saved. Then it takes time. The more of his items sell, the sooner he is ready.</p>',
+  'hp.book':'<p>Every item has 4 slots: common, good, flawless, legendary. One copy of that quality goes in.</p>'+
+    '<p>Slots boost their own item: good +3% flawless chance, flawless +1% legendary chance, legendary +10% price and craft speed.</p>'+
+    '<p>All pages of a master (at least one slot per item): legendary +2%, speed +10%, price +10%. All slots of all his items: +1% legendary more.</p>'+
+    '<p>A good, flawless or legendary copy whose slot is still empty is kept for the book: the hostess will not sell it and the mage will not take it. You can release it in the book. The DO NOT SELL lock closes the whole item.</p>',
+  'hp.city':'<p>Production buildings gather resources by themselves, only from open tracts. Stock fills for 6 hours of work; collect it with a tap or the button. The carter collects on his own.</p>'+
+    '<p>Buildings level up with 20 contributions, then a crew builds over time. A crew builds one building, others wait. You can hire a second and third crew.</p>'+
+    '<p>Staff, bag and store orders are at the top of the tab.</p>',
+  'hp.mage':'<p>Skills open with the mage level and grow with points, 1 point per level. Keys 1-5, space: hit.</p>'+
+    '<p>Marked potions go on trips one each, the best free quality. Locked items and copies for the book stay home.</p>'+
+    '<p>Gear is equipped on the MAGE tab. Wardrobe items open with the mage level and cost tavern gold.</p>',
+  'hp.pets':'<p>The pet master raises animals that walk with the mage and bite enemies. On hire he gives a fox; others can be found on trips. Pets train for gold.</p>',
+  'hp.save':'<p>Progress is kept in this browser. Export on the INFO tab helps move it to another device or keep a copy.</p>'
+});
+/* v20: новости */
+I18n.add('ru',{
+  'tv.noCust':'Пока никого.',
+  'v20.title':'КНИГА ПО КАЧЕСТВУ','v20.body':'<p>У каждой вещи в книге теперь 4 ячейки: обычное, хорошее, безупречное и легендарное. Каждая ячейка даёт бонус своей вещи. Новая хорошая, безупречная или легендарная копия держится для книги: хозяйка её не продаст, маг не возьмёт в поход. На любую вещь можно повесить замок "НЕ ПРОДАВАТЬ".</p><p>Мастера откладывают 20% цены с продаж своих вещей (у тебя это не забирается) и вкладывают эту часть в новые инструменты вместе с тобой.</p><p>Пояснения к механикам переехали в справку: шестерёнка вверху и кнопки "?" у блоков.</p>'
+});
+I18n.add('en',{
+  'tv.noCust':'Nobody yet.',
+  'v20.title':'BOOK BY QUALITY','v20.body':'<p>Every item in the book has 4 slots now: common, good, flawless and legendary. Each slot boosts its own item. A new good, flawless or legendary copy is kept for the book: the hostess will not sell it and the mage will not take it. Any item can be locked with DO NOT SELL.</p><p>Masters put aside 20% of the price of their sold items (nothing is taken from you) and add that share to new tools together with you.</p><p>Mechanics explanations moved to the guide: the gear at the top and the "?" buttons.</p>'
+});
 })();

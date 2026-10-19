@@ -906,4 +906,27 @@ I18n.add('en',{'fu.title':'DESIGN','fu.btn':'DESIGN','fu.open':'DESIGN MODE','fu
     '<p>The hostess counter gives reputation for every sale. Reputation is now spent on furniture and upgrades together with gold. Furniture cannot block the way to the counter, the queue or the door, and every table seat must be reachable.</p>',
   'v25.title':'DESIGN MODE','v25.body':'<p>The tavern has a DESIGN button: furniture stands on a grid, you can move, rotate and upgrade it and buy new pieces for gold and reputation.</p><p>Seats come from tables, set up by the building crew. Your seats have been turned into tables and the decor level into decor items. The mage now rests by the fireplace.</p><p>Reputation no longer stops at 200: it is spent on furniture, and the hostess counter gives it for every sale.</p>'
 });
+/* v26: полки, витрины, грузчик */
+I18n.add('ru',{'fu.potshelf':'ПОЛКА С ЗЕЛЬЯМИ','fu.jcase':'ВИТРИНА','fu.tab.shelf':'ВИТРИНЫ','fu.slotsN':'{c}: {n} мест','fu.shelfUsed':'{c} на полках: {a} / {b}',
+  'sh.title':'ПОЛКИ','sh.cat.pot':'Зелья и свитки','sh.cat.weap':'Оружие','sh.cat.arm':'Доспехи и одежда','sh.cat.jew':'Украшения',
+  'sh.noCase':'нет витрины','sh.inStore':'ещё {n} на складе','sh.fill':'ВЫЛОЖИТЬ СО СКЛАДА','sh.filled':'Выложено на полки: {n}','sh.nothing':'Нечего выкладывать или нет места',
+  'sh.onShelf':'на полке {n}','sh.onShelfS':'полка {n}','sh.noShelfT':'Нет витрины для вида "{c}": вещь осталась на складе. Купи её в режиме дизайна',
+  'ld.title':'ГРУЗЧИК','ld.d':'Сам носит вещи со склада на полки, пока тебя нет. Без него полки пополняешь ты кнопкой "выложить со склада".',
+  'ld.rate':'Переносит {n} вещей в час','ld.moved':'всего перенёс {n}','ld.next':'до {n}/ч',
+  'hp.shelf.t':'Полки и грузчик','hp.shelf':'<p>Путники просят только то, что лежит на полках, и хозяйка продаёт только с полок. Готовая вещь сразу ложится на полку своего вида, если там есть место, иначе остаётся на складе.</p>'+
+    '<p>Витрины: полка с зельями (зелья и свитки), стойка с оружием, манекен (доспехи и одежда), витрина (украшения). Покупаются и улучшаются в режиме дизайна, улучшение даёт больше мест. Нанятый мастер приносит свою витрину, если такой ещё нет.</p>'+
+    '<p>Со склада на полки: кнопка ВЫЛОЖИТЬ СО СКЛАДА в окне ЗАЛ или СКЛАД, либо грузчик. Грузчик переносит ограниченное число вещей в час и работает, пока тебя нет. Вещи с замком и копии для книги на полки не попадают.</p>',
+  'v26.title':'ПОЛКИ И ГРУЗЧИК','v26.body':'<p>Товар теперь лежит на витринах. Путники просят и хозяйка продаёт только то, что выложено на полки. Готовая вещь кладётся на полку сама, если есть место.</p><p>Витрины для твоих мастеров уже стоят в зале, запас со склада выложен. Повар и пивовар сами носят еду и пиво хозяйке.</p><p>В окне ЗАЛ можно нанять грузчика: он пополняет полки со склада, пока тебя нет.</p>'
+});
+I18n.add('en',{'fu.potshelf':'POTION SHELF','fu.jcase':'DISPLAY CASE','fu.tab.shelf':'DISPLAYS','fu.slotsN':'{c}: {n} slots','fu.shelfUsed':'{c} on shelves: {a} / {b}',
+  'sh.title':'SHELVES','sh.cat.pot':'Potions and scrolls','sh.cat.weap':'Weapons','sh.cat.arm':'Armor and clothes','sh.cat.jew':'Jewelry',
+  'sh.noCase':'no display','sh.inStore':'{n} more in store','sh.fill':'PUT OUT FROM STORE','sh.filled':'Put on shelves: {n}','sh.nothing':'Nothing to put out or no room',
+  'sh.onShelf':'on shelf {n}','sh.onShelfS':'shelf {n}','sh.noShelfT':'No display for "{c}": the item stays in store. Buy one in design mode',
+  'ld.title':'LOADER','ld.d':'Carries items from the store to the shelves while you are away. Without him you restock with the "put out from store" button.',
+  'ld.rate':'Moves {n} items per hour','ld.moved':'moved {n} in total','ld.next':'to {n}/h',
+  'hp.shelf.t':'Shelves and loader','hp.shelf':'<p>Travelers only ask for what is on the shelves, and the hostess only sells from the shelves. A finished item goes straight onto a shelf of its kind if there is room, otherwise it stays in store.</p>'+
+    '<p>Displays: potion shelf (potions and scrolls), weapon rack, dummy (armor and clothes), display case (jewelry). Buy and upgrade them in design mode; upgrades give more slots. A newly hired master brings his own display if you have none.</p>'+
+    '<p>From store to shelves: the PUT OUT FROM STORE button in the HALL or STORE window, or the loader. The loader moves a limited number of items per hour and works while you are away. Locked items and book copies never go on shelves.</p>',
+  'v26.title':'SHELVES AND LOADER','v26.body':'<p>Goods now sit on displays. Travelers ask for and the hostess sells only what is on the shelves. A finished item goes on a shelf by itself if there is room.</p><p>Displays for your masters are already in the hall and your stock is put out. The cook and the brewer carry food and beer to the hostess themselves.</p><p>You can hire a loader in the HALL window: he restocks the shelves from the store while you are away.</p>'
+});
 })();

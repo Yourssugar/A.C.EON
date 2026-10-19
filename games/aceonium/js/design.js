@@ -140,6 +140,7 @@ function costHtml(c){return UI.costHtml(c);}
 function bonusText(tp,lv){
   var d=D.FURN[tp];
   if(d.seats)return t('fu.seatsN',{n:d.seats[lv-1]});
+  if(d.shelf)return t('fu.slotsN',{n:d.slots[lv-1],c:t('sh.cat.'+d.shelf)});
   return t('fu.ptsN',{n:d.pts[lv-1]});
 }
 function renderInfo(){
@@ -158,6 +159,7 @@ function renderInfo(){
       var d=D.FURN[it.t],why=Z.chk&&(Z.chk.bad[it.id]||(Z.chk.blocked?'block':''));
       h='<div class="dsg-card'+(why?' bad':'')+'"><b>'+name(it.t)+'</b><span class="dsg-lv">'+t('ms.lvl',{n:it.lv})+'</span>'+
         '<p>'+bonusText(it.t,it.lv)+(it.lv<D.FURN_LV?' · <em>'+t('fu.next')+' '+bonusText(it.t,it.lv+1)+'</em>':'')+'</p>';
+      if(d.shelf)h+='<p class="dsg-note">'+t('fu.shelfUsed',{c:t('sh.cat.'+d.shelf),a:G.shelfUsed(d.shelf),b:G.shelfCap(d.shelf)})+'</p>';
       if(it.q)h+='<p class="dsg-note">'+t('fu.waitCrew')+'</p>';
       else if(it.bt)h+='<p class="dsg-note">'+t('fu.building',{t:UI.ft(it.bt.t)})+'</p><div class="bar"><i style="width:'+((1-it.bt.t/it.bt.T)*100).toFixed(1)+'%"></i></div>';
       if(why)h+='<p class="dsg-why">'+t(WHY[why]||WHY.other)+'</p>';
@@ -195,7 +197,7 @@ function renderShop(force){
   Z.box.classList.toggle('shop',Z.shop);
   if(!Z.shop)return;
   var G=g(),stored=G.S.furn.filter(function(x){return x.st;});
-  var tabs=[['table','fu.tab.table'],['decor','fu.tab.decor']];if(stored.length||Z.tab==='store')tabs.push(['store','fu.tab.store']);
+  var tabs=[['table','fu.tab.table'],['shelf','fu.tab.shelf'],['decor','fu.tab.decor']];if(stored.length||Z.tab==='store')tabs.push(['store','fu.tab.store']);
   var th='';tabs.forEach(function(k){th+='<button type="button" class="dsg-tb'+(Z.tab===k[0]?' sel':'')+'" data-act="tab" data-t="'+k[0]+'">'+t(k[1])+(k[0]==='store'?' ('+stored.length+')':'')+'</button>';});
   var tb=sh.querySelector('.dsg-tabs');if(tb._h!==th){tb._h=th;tb.innerHTML=th;}
   var ch='';
@@ -208,7 +210,7 @@ function renderShop(force){
     });
   }else{
     D.FURN_ORDER.forEach(function(tp){
-      var d=D.FURN[tp];if((Z.tab==='table')!==(d.cat==='table'))return;
+      var d=D.FURN[tp];if(d.cat!==Z.tab)return;
       var c=G.furnBuyCost(tp),bl=G.furnBuyBlock(tp),need=D.furnHall(tp,1);
       ch+='<div class="crf-c dsg-c'+(bl?' off':' can')+'"><button type="button" class="crf-main" data-act="buy" data-t="'+tp+'">'+
         '<span class="crf-ic dsg-ic"><img alt="" src="'+Tavern3D.thumb(tp,1)+'"></span><b class="crf-n">'+name(tp)+'</b>'+

@@ -386,13 +386,24 @@ D.FURN={
   crate:   {cat:'decor',fp:[[1,1]],pts:[1,2,4],c:[100,10]},
   vase:    {cat:'decor',fp:[[1,1]],pts:[2,4,7],c:[200,20]},
   chest:   {cat:'decor',fp:[[2,1]],pts:[3,6,10],c:[450,45]},
-  dummy:   {cat:'decor',fp:[[1,1]],pts:[3,6,10],c:[600,60],hall:[1]},
-  weapons: {cat:'decor',fp:[[2,1]],pts:[4,8,13],c:[900,90],hall:[1]},
+  /* v26: витрины. Готовая вещь ложится на полку своего вида, путники просят только то, что лежит на полках */
+  potshelf:{cat:'shelf',shelf:'pot', fp:[[2,1]],slots:[6,12,20],pts:[1,2,3],c:[150,10]},
+  weapons: {cat:'shelf',shelf:'weap',fp:[[2,1]],slots:[4,8,14],pts:[2,3,5],c:[250,20]},
+  dummy:   {cat:'shelf',shelf:'arm', fp:[[1,1]],slots:[3,6,10],pts:[2,3,5],c:[250,20]},
+  jcase:   {cat:'shelf',shelf:'jew', fp:[[2,1]],slots:[4,8,14],pts:[2,3,5],c:[400,40]},
   bookcase:{cat:'decor',fp:[[2,1]],pts:[5,9,15],c:[1200,120],hall:[2]},
   armchair:{cat:'decor',fp:[[2,2]],pts:[5,10,16],c:[2000,200],hall:[2]},
   chandelier:{cat:'decor',layer:'ceil',fp:[[1,1]],pts:[6,12,20],c:[4000,400],hall:[3]}
 };
-D.FURN_ORDER=['table','rug','barrel','crate','vase','chest','dummy','weapons','bookcase','armchair','chandelier'];
+D.FURN_ORDER=['table','potshelf','weapons','dummy','jcase','rug','barrel','crate','vase','chest','bookcase','armchair','chandelier'];
+/* вид полки для вещи: зелья и свитки, оружие, доспехи и одежда, украшения */
+D.SHELF_CATS=['pot','weap','arm','jew'];
+D.SHELF_OF={pot:'potshelf',weap:'weapons',arm:'dummy',jew:'jcase'};
+D.shelfCat=function(rid){var g=D.GOOD_BY[rid];if(!g)return null;return g.kind==='potion'||g.kind==='ward'||g.kind==='scroll'?'pot':g.kind==='goods'?'weap':g.kind==='armor'?'arm':g.kind==='ring'?'jew':null;};
+/* какую витрину мастер приносит с собой при найме, если такой ещё нет */
+D.MASTER_SHELF={herbalist:'pot',carpenter:'weap',smith:'weap',tanner:'arm',jeweler:'jew'};
+/* грузчик: сколько вещей в час переносит со склада на полки; найм и улучшения */
+D.LOADER={hire:400,rate:[8,15,25,40,60],up:[{gold:1500,rep:100},{gold:6000,rep:400},{gold:24000,rep:1500},{gold:80000,rep:5000}]};
 D.FURN_LV=3;
 D.furnHall=function(t,lv){var h=D.FURN[t].hall;return h?(h[lv-1]!==undefined?h[lv-1]:h[h.length-1]):0;};
 /* цена декора: lv - какой уровень покупаем (1 - новый предмет), own - сколько таких уже есть */

@@ -58,6 +58,7 @@ function defaults(){
                     // промыслы (v15) и бригады строителей
     cust:[],custAcc:0,custId:0,rep:0,repEarned:0,
     furn:[{id:1,t:'table',lv:1,x:2,z:-1,r:0}],furnId:1,counter:1,   // v25: мебель зала и уровень стойки
+    shelf:{},loader:{hired:false,lvl:1,acc:0,moved:0},               // v26: что лежит на полках ('id:кач' -> сколько), грузчик
     seenV8b:false,
     stats:{clicks:0,kills:0,bosses:0,bossFails:0,trips:0,lostBags:0,lostItems:0,gathered:0,play:0,rest:0,sold:0,goldEarned:0,crafted:0},
     lastSeen:0,
@@ -588,7 +589,7 @@ P.master=function(id){
   return {hired:true,lvl:S.mlvl,xp:0,tools:0,teach:null,done:S.mageCraft.done,coll:S.mageCraft.coll,known:D.GOODS.filter(function(x){return x.m==='mage'&&x.lvl<=S.mlvl;}).map(function(x){return x.id;})};
 };
 P.canHire=function(id){return id!=='mage'&&!this.master(id).hired;};
-P.hire=function(id){var d=D.MASTER_BY[id];if(!d||!this.canHire(id)||!this.pay({gold:d.hire}))return false;this.master(id).hired=true;this.emit('hire',id);return true;};
+P.hire=function(id){var d=D.MASTER_BY[id];if(!d||!this.canHire(id)||!this.pay({gold:d.hire}))return false;this.master(id).hired=true;this.giveShelf(D.MASTER_SHELF[id]);this.emit('hire',id);return true;};
 P.mSpeed=function(id){var c=this.collDone(id);if(id==='mage')return D.MAGE_SPEED*(c?1.1:1);var m=this.master(id);return D.mSpeed(m.lvl,c);};
 /* освоение: сколько копий вещи сделал этот мастер; время вещи с учётом освоения (без общей скорости мастера) */
 P.mastery=function(mid,rid){var m=this.master(mid);return m&&m.done?(m.done[rid]||0):0;};
@@ -756,7 +757,9 @@ P.finishOrder=function(mid,o){
   else if(o.r==='store'){S.storeLvl++;this.emit('buy','store');}
   else{q=this.rollQual(mid,o.r);this.invAdd(o.r,q,1);S.stats.crafted++;if(this.rep){this.rep.crafted++;if(q===3)this.rep.legend=(this.rep.legend||0)+1;}
     if(q===3)this.emit('legend',{m:mid,r:o.r});
-    var mm=this.master(mid);if(mm&&mm.done)mm.done[o.r]=(mm.done[o.r]||0)+1;}
+    var mm=this.master(mid);if(mm&&mm.done)mm.done[o.r]=(mm.done[o.r]||0)+1;
+    /* v26: сразу на полку своего вида, если там есть место (копия для книги и вещь с замком остаются на складе) */
+    if(!this.shelfPut(o.r,q,1)&&!this.shelfCap(D.shelfCat(o.r)))this.emit('noShelf',D.shelfCat(o.r));}
   if(mid==='mage')this.addXp(this.scrollXp(o.r));
   else{
     var m=this.master(mid);m.xp+=o.T/10;
@@ -923,8 +926,9 @@ P.knownGoods=function(){
 };
 P.spawnCustomer=function(){
   var S=this.S,known=this.knownGoods(),self=this;if(!known.length)return;
-  var stock=known.filter(function(r){return self.freeTotal(r)>0&&!self.isLocked(r);});
-  var pool=stock.length&&Math.random()<0.65?stock:known;
+  /* v26: путник просит то, что лежит на полках; полки пустые - что-нибудь из известного (подождёт и уйдёт) */
+  var stock=known.filter(function(r){return self.shelfTotal(r)>0;});
+  var pool=stock.length?stock:known;
   var item=pool[Math.floor(Math.random()*pool.length)];
   var who=Math.floor(Math.random()*D.TRAVELERS);
   var c={id:++S.custId,who:who,item:item,wait:0,mood:0.9+Math.random()*0.4};
@@ -933,7 +937,7 @@ P.spawnCustomer=function(){
   return c;
 };
 /* цена за вещь, которую отдадим этому покупателю (худшее качество из запаса) */
-P.custQual=function(c){for(var q=0;q<D.QUAL.length;q++)if(this.freeCount(c.item,q)>0)return q;return -1;};
+P.custQual=function(c){for(var q=0;q<D.QUAL.length;q++)if(this.shelfN(c.item,q)>0)return q;return -1;};   // v26: только с полки
 /* хозяйка продаёт сама только свободные копии и не трогает вещи с замком */
 P.hostessCan=function(c){return this.custQual(c)>=0&&!this.isLocked(c.item);};
 P.custPrice=function(c,by){
@@ -950,7 +954,7 @@ P.sellTo=function(c,mode){
     if(Math.random()<D.HAGGLE_FAIL){this.custRemove(c);S.rep=Math.max(0,S.rep-1);this.emit('custLeft',{c:c,why:'haggle'});return false;}
     price=Math.round(price*(1+D.HAGGLE_UP));
   }else if(mode==='down'){price=Math.round(price*(1-D.DISCOUNT));this.addRep(2);}
-  var q=this.invTakeFree(c.item,false);
+  var q=this.shelfSell(c.item);
   this.masterIncome(c.item,price);
   S.gold+=price;S.stats.sold++;S.stats.goldEarned+=price;this.addRep(D.counterRep(S.counter));
   if(this.rep){this.rep.sold++;this.rep.gold+=price;}
@@ -979,6 +983,76 @@ P.tickCustomers=function(dt){
     if((off||c.wait>=D.HOSTESS_AFTER)&&this.hostessCan(c)){this.sellTo(c,'hostess');continue;}
     if(c.wait>=D.CUST_PATIENCE||(off&&!this.hostessCan(c))){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});this.guestTry(c);}
   }
+};
+
+/* ════════ ПОЛКИ И ГРУЗЧИК (v26) ════════
+   S.shelf - часть запаса S.inv, которая выложена на полки. Продажа берёт с полки; поход, книга и снаряжение
+   берут из запаса, и если вещей стало меньше, чем на полке, полка сама укорачивается (shelfFix). */
+P.shelfCap=function(cat){var n=0;HL.placed(this.S.furn||[]).forEach(function(it){var d=D.FURN[it.t];if(d.shelf&&d.shelf===cat)n+=d.slots[it.lv-1];});return n;};
+P.shelfUsed=function(cat){var n=0,S=this.S;for(var k in S.shelf)if(D.shelfCat(k.split(':')[0])===cat)n+=S.shelf[k];return n;};
+P.shelfN=function(rid,q){return (this.S.shelf&&this.S.shelf[rid+':'+q])||0;};
+P.shelfTotal=function(rid){var n=0;for(var q=0;q<D.QUAL.length;q++)n+=this.shelfN(rid,q);return n;};
+/* сколько копий можно выложить со склада: свободные (не для книги), без замка, ещё не на полке */
+P.storeFree=function(rid,q){return this.isLocked(rid)?0:Math.max(0,this.freeCount(rid,q)-this.shelfN(rid,q));};
+P.storeFreeTotal=function(rid){var n=0;for(var q=0;q<D.QUAL.length;q++)n+=this.storeFree(rid,q);return n;};
+P.shelfPut=function(rid,q,n){
+  var cat=D.shelfCat(rid);if(!cat)return 0;
+  var k=Math.min(n,this.shelfCap(cat)-this.shelfUsed(cat),this.storeFree(rid,q));if(k<=0)return 0;
+  var key=rid+':'+q;this.S.shelf[key]=(this.S.shelf[key]||0)+k;return k;
+};
+/* продажа с полки: худшее качество, которое там лежит */
+P.shelfSell=function(rid){
+  var S=this.S;
+  for(var q=0;q<D.QUAL.length;q++){var k=rid+':'+q;if((S.shelf[k]||0)>0&&(S.inv[k]||0)>0){S.shelf[k]--;if(!S.shelf[k])delete S.shelf[k];S.inv[k]--;if(!S.inv[k])delete S.inv[k];return q;}}
+  return -1;
+};
+/* полка не больше свободного запаса и вместимости витрин: лишнее молча остаётся на складе (сначала дешёвое) */
+P.shelfFix=function(){
+  var S=this.S,self=this;if(!S.shelf)S.shelf={};
+  for(var k in S.shelf){var p=k.split(':'),rid=p[0],q=+p[1],mx=self.isLocked(rid)?0:self.freeCount(rid,q);if(!D.GOOD_BY[rid])mx=0;
+    if(S.shelf[k]>mx)S.shelf[k]=mx;if(!(S.shelf[k]>0))delete S.shelf[k];}
+  D.SHELF_CATS.forEach(function(cat){
+    var over=self.shelfUsed(cat)-self.shelfCap(cat);if(over<=0)return;
+    var keys=Object.keys(S.shelf).filter(function(k){return D.shelfCat(k.split(':')[0])===cat;});
+    keys.sort(function(a,b){return D.GOOD_BY[a.split(':')[0]].price-D.GOOD_BY[b.split(':')[0]].price;});
+    for(var i=0;i<keys.length&&over>0;i++){var t=Math.min(over,S.shelf[keys[i]]);S.shelf[keys[i]]-=t;over-=t;if(!S.shelf[keys[i]])delete S.shelf[keys[i]];}
+  });
+};
+/* выложить со склада до n вещей: сначала то, чего на полках нет совсем (больше разных просьб), потом дорогое */
+P.shelfFill=function(n){
+  var self=this,moved=0,ids=D.GOODS.map(function(g){return g.id;}).filter(function(r){return self.storeFreeTotal(r)>0;});
+  ids.sort(function(a,b){return D.GOOD_BY[b].price-D.GOOD_BY[a].price;});
+  for(var round=0;moved<n&&round<200;round++){
+    var any=false;
+    for(var i=0;i<ids.length&&moved<n;i++){
+      var r=ids[i];if(self.shelfTotal(r)>round)continue;
+      for(var q=0;q<D.QUAL.length;q++)if(self.shelfPut(r,q,1)){moved++;any=true;break;}
+    }
+    if(!any){var left=ids.some(function(r){return self.storeFreeTotal(r)>0&&self.shelfCap(D.shelfCat(r))>self.shelfUsed(D.shelfCat(r));});if(!left)break;}
+  }
+  if(moved)this.emit('shelf',moved);
+  return moved;
+};
+/* витрина в подарок (мастер при найме приносит свою), если такой ещё нет совсем */
+P.giveShelf=function(cat){
+  var t=cat&&D.SHELF_OF[cat],S=this.S;if(!t||!S.furn)return null;
+  if(S.furn.some(function(x){return x.t===t;}))return null;
+  var it={id:(S.furnId||0)+1,t:t,lv:1,x:0,z:0,r:0},sp=HL.findSpot(S.furn,this.buildLvl('hall'),it);
+  if(sp){it.x=sp.x;it.z=sp.z;it.r=sp.r;}else it.st=1;
+  S.furnId=it.id;S.furn.push(it);this.emit('furn',{act:'gift',id:it.id});return it;
+};
+/* грузчик */
+P.loader=function(){var S=this.S;if(!S.loader)S.loader={hired:false,lvl:1,acc:0,moved:0};return S.loader;};
+P.loaderRate=function(){var L=this.loader();return L.hired?D.LOADER.rate[L.lvl-1]:0;};
+P.loaderHireCost=function(){return this.loader().hired?null:{gold:D.LOADER.hire};};
+P.loaderUpCost=function(){var L=this.loader();return L.hired&&L.lvl<D.LOADER.rate.length?D.LOADER.up[L.lvl-1]:null;};
+P.loaderHire=function(){var c=this.loaderHireCost();if(!c||!this.pay(c))return false;this.loader().hired=true;this.emit('loader','hire');return true;};
+P.loaderUp=function(){var c=this.loaderUpCost();if(!c||!this.pay(c))return false;this.loader().lvl++;this.emit('loader','up');return true;};
+P.tickLoader=function(dt){
+  var L=this.loader();if(!L.hired)return;
+  L.acc=Math.min(L.acc+this.loaderRate()/3600*dt,Math.max(1,this.loaderRate()/3600*dt+1));
+  var n=Math.floor(L.acc);if(n<1)return;
+  var m=this.shelfFill(n);L.acc-=n;if(m)L.moved=(L.moved||0)+m;
 };
 
 /* ════════ МЕБЕЛЬ ЗАЛА И РЕЖИМ ДИЗАЙНА (v25) ════════ */
@@ -1109,8 +1183,18 @@ P.furnSanitize=function(){
     bad.forEach(function(it){var sp=HL.findSpot(S.furn,hall,it);if(sp){it.x=sp.x;it.z=sp.z;it.r=sp.r;delete it.st;}});
   }
   if(S.tav)S.tav.seats=this.seatCount();
+  /* v26: витрины для нанятых мастеров, запас со склада на полки */
+  if(!S.shelf||typeof S.shelf!=='object')S.shelf={};
+  this.loader();
+  if(!S.v26){
+    S.v26=1;
+    this.giveShelf('pot');
+    for(var mid in D.MASTER_SHELF)if(S.masters[mid]&&S.masters[mid].hired)this.giveShelf(D.MASTER_SHELF[mid]);
+    if(this.freeTotal&&S.inv)this.shelfFill(9999);
+  }
+  this.shelfFix();
 };
-P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickFurn(dt);this.tickCustomers(dt);this.tickTav(dt);this.tickPets(dt);};
+P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickFurn(dt);this.shelfFix();this.tickLoader(dt);this.tickCustomers(dt);this.tickTav(dt);this.tickPets(dt);};
 
 /* ════════ ГОСТИ, ПОВАР И ПИВОВАР (v16) ════════ */
 P.tav=function(){var S=this.S;if(!S.tav)S.tav=tavDefaults();return S.tav;};

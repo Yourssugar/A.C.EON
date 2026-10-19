@@ -700,7 +700,7 @@ function tabTavern(){
     S.cust.forEach(function(c){
       var q=g.custQual(c),has=q>=0,price=g.custPrice(c),left=Math.max(0,D.HOSTESS_AFTER-c.wait);
       h+='<div class="cust"><div class="cu-item">'+itemIcon(c.item,0,true)+'</div><div class="cu-main"><div class="cu-top"><b>'+t('trav.'+c.who)+'</b><span>'+(has?t('tv.hostessIn',{s:Math.ceil(left)}):t('tv.leaveIn',{t:ft(Math.max(0,D.CUST_PATIENCE-c.wait))}))+'</span></div>'+
-        '<div class="cu-want">'+itemName(c.item)+' · '+t('tv.stock',{n:g.invCount(c.item)})+'</div>'+
+        '<div class="cu-want">'+itemName(c.item)+' · '+t('sh.onShelf',{n:g.shelfTotal(c.item)})+(g.storeFreeTotal(c.item)?' · '+t('tv.stock',{n:g.storeFreeTotal(c.item)}):'')+'</div>'+
         '<div class="cu-btns">'+
           '<button type="button" class="btn sm" data-act="sell" data-id="'+c.id+'"'+(has?'':' disabled')+'>'+COIN+D.fmt(price)+'</button>'+
           '<button type="button" class="btn sm" data-act="up" data-id="'+c.id+'"'+(has?'':' disabled')+' title="'+esc(t('tv.upT',{p:Math.round(D.HAGGLE_FAIL*100)}))+'">'+t('tv.up')+'</button>'+
@@ -713,6 +713,8 @@ function tabTavern(){
     if(act==='sell')g.sellTo(c);else if(act==='up')g.sellTo(c,'up');else if(act==='down')g.sellTo(c,'down');else g.refuse(c);
   }));
   add(hallBlock());
+  add(shelfBlock());
+  add(loaderBlock());
   D.WORKER_ORDER.forEach(function(w){add(workerBlock(w));});
 }
 
@@ -1073,6 +1075,34 @@ function buildVal(id){
   return '';
 }
 
+/* ── полки и грузчик (v26): что выложено, сколько места, кнопка "выложить всё" ── */
+function shelfBlock(){
+  return actBlock(function(){
+    var h='<div class="pd-head"><b>'+t('sh.title')+hb('shelf')+'</b></div><div class="sh-row">',wait=0;
+    D.SHELF_CATS.forEach(function(cat){
+      var cap=g.shelfCap(cat),used=g.shelfUsed(cat),st=0;
+      D.GOODS.forEach(function(gd){if(D.shelfCat(gd.id)===cat)st+=g.storeFreeTotal(gd.id);});wait+=Math.min(st,Math.max(0,cap-used));
+      h+='<div class="sh-c'+(cap?'':' none')+(cap&&used>=cap?' full':'')+'"><b>'+t('sh.cat.'+cat)+'</b><span>'+(cap?used+' / '+cap:t('sh.noCase'))+'</span>'+(st?'<small>'+t('sh.inStore',{n:st})+'</small>':'')+'</div>';
+    });
+    h+='</div><div class="stg-b"><button type="button" class="btn sm pink" data-act="fill"'+(wait?'':' disabled')+'>'+t('sh.fill')+(wait?' ('+wait+')':'')+'</button>'+
+      '<button type="button" class="btn sm" data-act="design">'+t('fu.open')+'</button></div>';
+    return h;
+  },function(act){
+    if(act==='fill'){var n=g.shelfFill(9999);toast(n?t('sh.filled',{n:n}):t('sh.nothing'));}
+    else if(act==='design'&&window.Design)Design.open();
+  },'pd sh-blk');
+}
+function loaderBlock(){
+  return actBlock(function(){
+    var L=g.loader(),h='<div class="pd-head"><b>'+t('ld.title')+hb('shelf')+'</b><span>'+(L.hired?t('ms.lvl',{n:L.lvl}):'')+'</span></div>';
+    if(!L.hired)return h+'<p class="note">'+t('ld.d')+'</p><div class="stg-b"><button type="button" class="btn sm" data-act="hire"'+(g.canPay(g.loaderHireCost())?'':' disabled')+'>'+t('pt.hire')+' '+costHtml(g.loaderHireCost())+'</button></div>';
+    h+='<p>'+t('ld.rate',{n:g.loaderRate()})+(L.moved?' · '+t('ld.moved',{n:D.fmt(L.moved)}):'')+'</p>';
+    var uc=g.loaderUpCost();
+    h+='<div class="stg-b">'+(uc?'<button type="button" class="btn sm" data-act="up"'+(g.canPay(uc)?'':' disabled')+'>'+t('buy.up')+' '+t('ld.next',{n:D.LOADER.rate[L.lvl]})+' '+costHtml(uc)+'</button>':'<span class="note">'+t('st2.max')+'</span>')+'</div>';
+    return h;
+  },function(act){if(act==='hire')g.loaderHire();else if(act==='up')g.loaderUp();},'pd ld-blk');
+}
+
 /* ── СКЛАД: ресурсы и изделия ── */
 function tabStore(){
   add(liveBlock(function(){
@@ -1083,6 +1113,7 @@ function tabStore(){
     });
     return h+'</div>';
   }));
+  add(shelfBlock());
   add(actBlock(function(){
     var h='<div class="lbl full">'+t('store.items')+hb('book')+'</div><div class="it-grid">',any=false;
     D.GOODS.forEach(function(gd){
@@ -1091,7 +1122,7 @@ function tabStore(){
       for(var q=D.QUAL.length-1;q>0;q--)if(S.inv[gd.id+':'+q]){best=q;break;}
       for(q=0;q<4;q++){var k=S.inv[gd.id+':'+q]||0;if(k)qs+='<i class="q'+q+'">'+k+'</i>';if(k&&g.bookNeed(gd.id,q))need=true;}
       h+='<button type="button" class="it-card st-it" data-act="bk" data-r="'+gd.id+'">'+(g.isLocked(gd.id)?'<i class="lk-c">'+LOCK_SVG+'</i>':'')+(need?'<i class="bk-n" title="'+t('bq.needT')+'"></i>':'')+
-        itemIcon(gd.id,best,true)+'<span>'+itemName(gd.id)+'</span><small class="st-q">'+qs+'</small></button>';
+        itemIcon(gd.id,best,true)+'<span>'+itemName(gd.id)+'</span><small class="st-q">'+qs+'</small>'+(g.shelfTotal(gd.id)?'<small class="st-sh">'+t('sh.onShelfS',{n:g.shelfTotal(gd.id)})+'</small>':'')+'</button>';
     });
     return h+'</div>'+(any?'':'<p class="note">'+t('store.noItems')+'</p>');
   },function(act,ds){if(act==='bk'&&window.Book){var gd=D.GOOD_BY[ds.r];Book.open(gd.m,ds.r);}}));

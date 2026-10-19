@@ -146,7 +146,7 @@ function build(renderer){
   if(V)return V;
   V={renderer:renderer,scene:new T.Scene(),camera:new T.PerspectiveCamera(40,1,0.1,240),walls:[],npcs:{},cust:{},pool:[],sig:'',
      mode:'tavern',az:0.5,pol:0.82,dist:19,target:new T.Vector3(2.2,0,0),goal:{az:0.5,pol:0.82,dist:19,target:new T.Vector3(2.2,0,0)},
-     t:0,night:false,labels:{},active:false,fires:[]};
+     t:0,night:false,labels:{},active:false,fires:[],lastStock:{}};
   var s=V.scene;
   s.background=new T.Color(0x8fb4cc);s.fog=new T.Fog(0x8fb4cc,45,125);
   V.hemi=new T.HemisphereLight(0xe0ecff,0x4a5a30,1.3);s.add(V.hemi);
@@ -262,6 +262,9 @@ function layout(S){
   if(cl>=4){prop(G,'CandleStick_Triple',4.9,-2.6,0,1.08);wprop(G,'Shelf_Small_Bottles',6.1,-4.82,0,1.9,0,-1);}
   if(cl>=5){prop(G,'Coin_Pile',6.2,-2.6,0,1.08);wprop(G,'Banner_1',3.9,-4.82,0,2.2,0,-1);}
   st.hostess={x:6.0,z:-3.6,rot:0};
+  /* v26: еду и пиво повар с пивоваром приносят хозяйке: запас виден на стойке */
+  [[6.95,-2.62],[7.15,-2.48],[6.8,-2.45]].forEach(function(q,i){var o=prop(G,'Mug',q[0],q[1],i,1.08);V.wpiles.brewer.push(o);keep.push(o);});
+  [[4.95,-2.62],[5.2,-2.48]].forEach(function(q,i){var o=place(model('food_stew'),q[0],q[1],i,1.08);o.scale.setScalar(0.26);G.add(o);V.wpiles.cook.push(o);keep.push(o);});
   /* уголок мага у камина (v25): стул, ковёр, столик */
   var MG=HL().MAGE;
   prop(G,'Chair_1',MG.x,MG.z,MG.rot);var hr=rugMesh(1,1.7,0.9);place(hr,2.3,-3.5,0.1,0.02);G.add(hr);
@@ -422,9 +425,13 @@ function setNight(on){
 /* ════════ МЕБЕЛЬ ЗАЛА (v25) ════════
    Каждый предмет - своя группа (не сливается с домом), чтобы в режиме дизайна его можно было двигать.
    Пересобирается только тот предмет, у которого сменился вид (тип, уровень, стройка). */
-function furnModel(it,G){
+function furnModel(it,G,marks){
   var t=it.t,lv=it.lv||1;
   function p(n,x,z,r,y,sc){return prop(G,n,x,z,r,y,sc);}
+  /* метка товара на витрине: видна, когда на полке есть вещи (shelfVis) */
+  function mk(o){if(marks)marks.push(o);return o;}
+  function mp(n,x,z,r,y,sc){return mk(p(n,x,z,r,y,sc));}
+  function mkk(n,x,z,r,y,sc,rx){return mk(kprop(G,n,x,z,r,y,sc,rx));}
   if(t==='table'){
     if(it.bt||it.q){   /* ещё не поставлен: доски, козлы, молоток */
       p('Wood_Planks_Stack_Small',0,0,0.3);kprop(G,'hammer',0.5,0.4,0.6,0.02,0.35,-Math.PI/2);
@@ -448,8 +455,38 @@ function furnModel(it,G){
     if(lv>=2){var fl=natObj('Flower_3_Group',0,0,lv>=3?0.5:0.4,0.3,'#7aa834');if(fl){fl.position.y=lv>=3?0.6:0.45;G.add(fl);}else p('Candle_1',0,0,0,0.5);}
     return;}
   if(t==='chest'){p('Chest_Wood',0,-0.15,0);if(lv>=2)p('Coin_Pile',0.75,0.2,0);if(lv>=3)p('CandleStick',-0.2,-0.1,0,0.44);return;}
-  if(t==='dummy'){p('Dummy',0,0,0);if(lv>=2)kprop(G,'shield_B',0.35,0.15,0.5,0.02,0.45);if(lv>=3)kprop(G,'sword_B',-0.35,0.2,-0.4,0.02,0.4);return;}
-  if(t==='weapons'){p('WeaponStand',0,0,0);if(lv>=2)kprop(G,'axe_A',0.75,0.1,0.3,0.02,0.42);if(lv>=3)kprop(G,'shield_B',-0.8,0.15,-0.3,0.02,0.45);return;}
+  /* v26: витрины с товаром */
+  if(t==='potshelf'){
+    p('Cabinet',0,-0.3,0);
+    var PT=['Potion_1','Potion_2','SmallBottles_1','Potion_4','Scroll_1','Bottle_1'];
+    PT.forEach(function(n,i){mp(n,-0.5+i*0.2,-0.3,i*0.7,1.0);});
+    if(lv>=2){var bp=box(1.3,lv>=3?1.3:0.8,0.05,mat('dwood'),1);place(bp,0,-0.47,0,lv>=3?1.65:1.4);G.add(bp);p('Shelf_Simple',0,-0.46,0,1.55);['Potion_2','Potion_1','Book_Stack_1','Potion_4'].forEach(function(n,i){mp(n,-0.42+i*0.28,-0.3,i,1.66);});}
+    if(lv>=3){p('Shelf_Simple',0,-0.46,0,2.05);['SmallBottles_1','Potion_1','Scroll_1','Potion_2'].forEach(function(n,i){mp(n,-0.42+i*0.28,-0.3,i*1.3,2.16);});}
+    return;
+  }
+  if(t==='weapons'){
+    p('WeaponStand',0,0,0);
+    /* оружие стоит в стойке, чуть наклонено */
+    function tilt(o){o.rotation.x=-0.2;return o;}
+    tilt(mp('Sword_Bronze',-0.45,0.05,0,0.22));tilt(mkk('sword_B',-0.15,0.05,0,0.24,0.6));tilt(mp('Axe_Bronze',0.15,0.05,0,0.4));tilt(mkk('staff_B',0.45,0.05,0,0.5,0.55));
+    if(lv>=2){tilt(mkk('dagger_A',-0.62,0.05,0,0.16,0.55));mp('Shield_Wooden',0.78,0.3,-0.2,0.31);}
+    if(lv>=3){tilt(mkk('axe_A',0.62,0.0,0,0.2,0.55));mkk('bow_A_withString',-0.8,0.3,0.3,0.4,0.5,Math.PI/2);}
+    return;
+  }
+  if(t==='dummy'){
+    p('Dummy',0,-0.05,0);
+    mkk('shield_B',0.0,0.2,0,0.95,0.42);mp('Textiles_Stack_Small',-0.32,0.28,0.4,0,0.55);
+    if(lv>=2){mp('Bag',0.3,0.3,0.6,0);mp('Shield_Wooden',0.4,-0.25,-0.6,0,0.75);}
+    if(lv>=3){mp('Textiles_A',-0.35,-0.25,0.3,0.6,0.6);mp('Pouch_Large',0.05,0.38,0,0);}
+    return;
+  }
+  if(t==='jcase'){
+    p('Cabinet',0,-0.3,0);
+    [['Coin_Pile',-0.45],['Chalice',-0.15],['Pouch_Large',0.12],['Coin_Pile_2',0.42]].forEach(function(j,i){mp(j[0],j[1],-0.3,i,1.0,j[0]==='Coin_Pile_2'?0.6:0);});
+    if(lv>=2){var bj=box(1.3,0.8,0.05,mat('dwood'),1);place(bj,0,-0.47,0,1.4);G.add(bj);p('Shelf_Simple',0,-0.46,0,1.55);mp('Chalice',-0.3,-0.3,0,1.66);mp('Coin_Pile',0.25,-0.3,1,1.66,0.7);}
+    if(lv>=3){mp('Gold_Bars_Stack_Small',0.75,0.1,0.3,0,0.45);mp('Silver_Bars_Stack_Small',-0.75,0.1,-0.3,0,0.45);}
+    return;
+  }
   if(t==='bookcase'){p('Bookcase_2',0,-0.25,0);if(lv>=2)p('SmallBottles_1',0.3,-0.25,0,1.02);if(lv>=3)p('Chalice',-0.4,-0.25,0,1.62);return;}
   if(t==='armchair'){var ac=p('armchair',0,0,0,0,0.85);ac.traverse(function(o){if(o.isMesh)o.material=leatherMat();});if(lv>=2)p('pillow_A',0.1,0.05,0.3,0.55);if(lv>=3){var rg=rugMesh(1,1.7,1.2);rg.position.set(0,0.012,0.2);G.add(rg);}return;}
   if(t==='chandelier'){var ch=p('Chandelier',0,0,0,3.05);if(lv>=2)ch.scale.setScalar(lv>=3?1.4:1.2);return;}
@@ -494,13 +531,27 @@ function furnSync(items){
     seen[it.id]=1;var rec=V.furn[it.id],sg=furnSig(it);
     if(!rec||rec.sig!==sg){
       if(rec)V.furnG.remove(rec.g);
-      var g=new T.Group();furnModel(it,g);g.userData.fid=it.id;V.furnG.add(g);rec=V.furn[it.id]={g:g,sig:sg,pos:''};changed=true;
+      var g=new T.Group(),mks=[];furnModel(it,g,mks);g.userData.fid=it.id;V.furnG.add(g);rec=V.furn[it.id]={g:g,sig:sg,pos:'',marks:mks,t:it.t,lv:it.lv};changed=true;V.shelfSig='';
     }
     var c=HL().center(it),ps=c.x+','+c.z+','+c.rot;
     if(rec.pos!==ps){rec.pos=ps;rec.base=c.z>5?0.04:0;rec.g.position.set(c.x,rec.base,c.z);rec.g.rotation.y=c.rot;changed=true;}   /* на веранде настил выше пола */
   });
   for(var id in V.furn)if(!seen[id]){V.furnG.remove(V.furn[id].g);delete V.furn[id];changed=true;}
   if(changed&&V.renderer)V.renderer.shadowMap.needsUpdate=true;
+}
+/* v26: товар на витринах. Вещи вида распределяются по витринам по порядку, метки видны по заполненности */
+function shelfVis(){
+  var g=window.acGame;if(!V||!V.furn||!g||!g.shelfUsed)return;
+  var used={},sig='';D().SHELF_CATS.forEach(function(c){used[c]=g.shelfUsed(c);sig+=used[c]+',';});
+  sig+=Object.keys(V.furn).join(',');
+  if(sig===V.shelfSig)return;V.shelfSig=sig;
+  Object.keys(V.furn).map(Number).sort(function(a,b){return a-b;}).forEach(function(id){
+    var r=V.furn[id],d=D().FURN[r.t];if(!d||!d.shelf||!r.marks.length)return;
+    var cap=d.slots[(r.lv||1)-1],n=Math.min(used[d.shelf],cap);used[d.shelf]-=n;
+    var vis=n?Math.max(1,Math.round(n/cap*r.marks.length)):0;
+    r.marks.forEach(function(o,i){o.visible=i<vis;});
+  });
+  if(V.renderer)V.renderer.shadowMap.needsUpdate=true;
 }
 /* мебель, по которой сейчас ходят гости: из игры (черновик дизайна на ходьбу не влияет) */
 function liveFurn(){return (V&&V.S&&V.S.furn)||[];}
@@ -912,6 +963,7 @@ function spawnNpc(key,look,x,z,rot){
 }
 function removeNpc(N){
   if(N.meal){V.scene.remove(N.meal);N.meal=null;}
+  if(N.carry){V.scene.remove(N.carry);N.carry=null;}
   N.alive=false;
   if(N.av){V.scene.remove(N.av.root);}
   delete V.npcs[N.key];
@@ -970,6 +1022,7 @@ function sync(S){
   if(sig!==V.sig){V.sig=sig;layout(S);placeMasters(S,true);if(V.pendingMage&&mageRef){V.pendingMage=false;setMage(mageRef,mageMode);}}
   setNight(S.place==='sleep');
   if(!V.design)furnSync(S.furn);
+  shelfVis();
   placeMasters(S,false);
   syncCustomers(S);
   buildNature();
@@ -992,8 +1045,11 @@ function placeMasters(S,moved){
     var busy=g&&o.stock<g.stockCap(w)&&S.place!=='sleep';
     var key='w:'+w;want[key]=1;
     var N=V.npcs[key]||spawnNpc(key,fullLook(MASTER_LOOK[w]),pos.x,pos.z,pos.rot);
-    if(moved){N.x=pos.x;N.z=pos.z;N.rot=pos.rot;}
+    if(moved){N.x=pos.x;N.z=pos.z;N.rot=pos.rot;N.path=[];N.waitT=0;if(N.carry){V.scene.remove(N.carry);N.carry=null;}}
     setAnim(N,busy?ACT[w]:ACT.rest);
+    /* v26: партия готова - несёт хозяйке */
+    var ls=V.lastStock[w];V.lastStock[w]=o.stock;
+    if(ls!==undefined&&o.stock>ls+0.5&&q!=='low'&&N.ready&&!N.path.length&&!(N.waitT>0)&&V.mode!=='city')deliver(N,w,pos);
     var hp=st[w==='cook'?'cookHelp':'brewHelp'],nh=Math.min(o.help,HELP_VIS[q]||0,hp.length);
     for(var i=0;i<nh;i++){
       var hk='h:'+w+':'+i;want[hk]=1;var hpos=hp[i];
@@ -1002,6 +1058,16 @@ function placeMasters(S,moved){
       setAnim(H,busy?ACT.helper:ACT.rest);
     }
   });
+  /* v26: грузчик у склада, носит ящики на витрины */
+  var LD=S.loader;
+  if(LD&&LD.hired&&q!=='low'&&st.store){
+    var lk='w:loader',lp={x:st.store.x+1.3,z:st.store.z+0.6,rot:Math.PI/2};want[lk]=1;
+    var LN=V.npcs[lk]||spawnNpc(lk,fullLook({gender:'m',skin:2,hair:'buzzed',hairColor:3,beard:'beard',body:'peasant',arms:'peasant',legs:'ranger',feet:'peasant',colors:{peasant:1,ranger:1}}),lp.x,lp.z,lp.rot);
+    if(moved){LN.x=lp.x;LN.z=lp.z;LN.rot=lp.rot;LN.path=[];LN.waitT=0;if(LN.carry){V.scene.remove(LN.carry);LN.carry=null;}}
+    setAnim(LN,ACT.rest);
+    var lm=V.lastMoved;V.lastMoved=LD.moved||0;
+    if(lm!==undefined&&V.lastMoved>lm&&LN.ready&&!LN.path.length&&!(LN.waitT>0)&&V.mode!=='city')loaderRun(LN,lp);
+  }
   /* мастера в своих домах (не на слабой графике) */
   if(q!=='low'&&V.mst)for(var mid in V.mst){
     var m=mid==='pets'?(S.pets&&S.pets.hired?{hired:true,teach:null}:null):S.masters[mid],mp=V.mst[mid];if(!m||!m.hired||!MASTER_LOOK[mid])continue;
@@ -1021,6 +1087,25 @@ function placeMasters(S,moved){
   for(var k in V.npcs){if((k[0]==='w'||k[0]==='h'||k[0]==='m'||k[0]==='p')&&k[1]===':'&&!want[k])removeNpc(V.npcs[k]);}
 }
 var HELP_VIS={low:0,medium:1,high:2,ultra:3};
+/* v26: доставка хозяйке. Повар идёт из кухни в проход у западной стены и вдоль камина, пивовар через дверь пивоварни вдоль очереди */
+var DELIVER={cook:[[1.0,-6.4],[-1,-5.6],[-1,-4.4],[-0.6,-2.6],[4.2,-2.6],[4.35,-3.3],[5.1,-3.7]],
+             brewer:[[9.0,-0.2],[7.7,0.0],[7.75,-1.6],[7.75,-2.4],[7.55,-3.3],[6.8,-3.65]]};
+function carryObj(name,sc){var o=model(name);o.scale.setScalar(sc);o.traverse(function(m){if(m.isMesh)m.castShadow=false;});V.scene.add(o);return o;}
+function pathTo(pts,last){var out=pts.map(function(p){return {x:p[0],z:p[1]};});if(last)for(var k in last)out[out.length-1][k]=last[k];return out;}
+function deliver(N,w,pos){
+  var go=DELIVER[w];if(!go||!window.acGame||!acGame.worker(w).hired)return;
+  N.carry=carryObj(w==='cook'?'food_stew':'Barrel',w==='cook'?0.3:0.42);N.carryY=w==='cook'?1.05:0.75;
+  var back=go.slice(0,-1).reverse().concat([[pos.x,pos.z]]);
+  N.path=pathTo(go,{w:1.3,drop:true}).concat(pathTo(back));N.endRot=pos.rot;N.speed=1.6;
+}
+function loaderRun(N,home){
+  var F=liveFurn().filter(function(it){return !it.st&&D().FURN[it.t].shelf;});if(!F.length)return;
+  var it=F[Math.floor(Math.random()*F.length)],a=HL().near(liveFurn(),hallLvl(),it);if(!a)return;
+  var out=[[home.x,home.z+2],[home.x+1,6.5],[1,6.4],[IN_PT.x,IN_PT.z]],inn=hallPath(IN_PT,a);
+  N.carry=carryObj('Crate_Wooden',0.45);N.carryY=0.95;
+  N.path=pathTo(out.concat(inn),{w:1.5,drop:true}).concat(pathTo(hallPath(a,IN_PT).concat([[1,6.4],[home.x+1,6.5],[home.x,home.z+2],[home.x,home.z]])));
+  N.endRot=home.rot;N.speed=2.0;
+}
 var WORK_LOOK={saw:[0,'m',2,'buzzed'],mine:[1,'m',4,'none'],hunt:[2,'m',1,'parted'],farm:[3,'f',3,'buns'],ghost:[4,'f',0,'long'],stable:[1,'m',3,'parted']};
 function workerLook(id){
   var w=WORK_LOOK[id]||[0,'m',0,'buzzed'];
@@ -1356,16 +1441,21 @@ function update(dt){
   V.fires.forEach(function(f,i){var fl=0.8+Math.sin(V.t*13+i)*0.12+Math.random()*0.12;if(f.l)f.l.intensity=f.base*fl*(V.night?1.4:1);f.s.scale.set(f.size*fl,f.size*0.8*fl,1);});
   for(var key in V.npcs){
     var N=V.npcs[key];
-    if(N.path.length){
+    if(N.waitT>0){N.waitT-=dt;}
+    else if(N.path.length){
       var tg=N.path[0],dx=tg.x-N.x,dz=tg.z-N.z,d=Math.hypot(dx,dz),step=N.speed*dt;
-      if(d<=step){N.x=tg.x;N.z=tg.z;N.path.shift();}
+      if(d<=step){N.x=tg.x;N.z=tg.z;N.path.shift();
+        /* v26: остановка с передачей (хозяйке или на витрину) */
+        if(tg.drop&&N.carry){V.scene.remove(N.carry);N.carry=null;}
+        if(tg.w){N.waitT=tg.w;if(N.av)N.av.play('Interact',0.2);}
+      }
       else{N.x+=dx/d*step;N.z+=dz/d*step;}
       var want=Math.atan2(dx,dz),dr=((want-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr*Math.min(1,dt*10);
       if(N.av&&N.av.curName!=='Walk_Loop')N.av.play('Walk_Loop',0.2);
       if(!N.path.length){
         if(N.leaving){removeNpc(N);continue;}
         if(N.guest)N.sitNow=true;
-        else{N.rot=N.cust?Math.PI:N.rot;if(N.cust)setAnim(N,N.slot===0?ACT.custTalk:ACT.custWait);if(N.cyc)N.cycT=0;else if(N.av)N.av.play(N.anim,0.3);}
+        else{N.rot=N.cust?Math.PI:N.endRot!==undefined?N.endRot:N.rot;N.endRot=undefined;if(N.cust)setAnim(N,N.slot===0?ACT.custTalk:ACT.custWait);if(N.cyc)N.cycT=0;else if(N.av)N.av.play(N.anim,0.3);}
       }
     }
     if(N.sitNow&&N.av&&!N.path.length){
@@ -1376,6 +1466,7 @@ function update(dt){
     }else if(N.guest&&!N.path.length){/* сидит */}
     else if(N.cust&&N.av&&!N.path.length){setAnim(N,N.slot===0?ACT.custTalk:ACT.custWait);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
     if(N.cyc&&N.av&&!N.path.length&&!N.sitNow){N.cycT-=dt;if(N.cycT<=0)pickCyc(N);}
+    if(N.carry){var cr=N.rot;N.carry.position.set(N.x+Math.sin(cr)*0.32,N.carryY||1,N.z+Math.cos(cr)*0.32);N.carry.rotation.y=cr;N.carry.visible=onScreen(key);}
     if(N.av){var vis=onScreen(key);N.av.root.visible=vis;if(N.meal)N.meal.visible=vis;
       if(vis){N.av.root.position.set(N.x,N.y||0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}}
   }
@@ -1414,5 +1505,5 @@ window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_
   onPick:function(fn){onPickCb=fn;},setLabeler:function(fn){labeler=fn;},
   get ready(){return readyFlag;},get loading(){return !!loading&&!readyFlag;},get scene(){return V&&V.scene;},get camera(){return V&&V.camera;},
   get active(){return !!(V&&V.active);},get built(){return !!V;},get _v(){return V;},
-  furnShow:function(items){furnSync(items);},designMark:designMark,setDesign:setDesign,get design(){return !!(V&&V.design);},groundAt:groundAt,thumb:thumb,_box:function(n){var o=model(n),b=new T.Box3().setFromObject(o);return [b.min.x,b.min.y,b.min.z,b.max.x,b.max.y,b.max.z].map(function(v){return +v.toFixed(2);});},get _kit(){return Object.keys(KIT);}};
+  furnShow:function(items){furnSync(items);shelfVis();},designMark:designMark,setDesign:setDesign,get design(){return !!(V&&V.design);},groundAt:groundAt,thumb:thumb,_box:function(n){var o=model(n),b=new T.Box3().setFromObject(o);return [b.min.x,b.min.y,b.min.z,b.max.x,b.max.y,b.max.z].map(function(v){return +v.toFixed(2);});},get _kit(){return Object.keys(KIT);}};
 })();

@@ -42,6 +42,19 @@ function shop(){
     var r=best.buy?g.furnBuy(best.buy):g.furnUp(best.up);if(typeof r!=='object')break;
   }
   var cc=g.counterCost();if(cc&&g.canPay(cc)&&S.gold>cc.gold*2)g.counterUp();
+  /* v26: витрины и грузчик. Игрок в сети сам выкладывает всё со склада */
+  if(!process.env.NOSHELF){
+    D.SHELF_CATS.forEach(function(cat){
+      var waiting=D.GOODS.some(function(gd){return D.shelfCat(gd.id)===cat&&g.storeFreeTotal(gd.id)>0;});
+      if(!waiting||g.shelfUsed(cat)<g.shelfCap(cat))return;
+      var t=D.SHELF_OF[cat],own=S.furn.filter(function(x){return x.t===t&&!x.st&&x.lv<3;})[0];
+      var c=own?g.furnUpCost(own):g.furnBuyCost(t);
+      if(c&&g.canPay(c)&&S.gold>c.gold*3){if(own)g.furnUp(own);else g.furnBuy(t);}
+    });
+    if(!g.loader().hired&&S.gold>D.LOADER.hire*3)g.loaderHire();
+    var lc=g.loaderUpCost();if(lc&&g.canPay(lc)&&S.gold>lc.gold*4)g.loaderUp();
+  }
+  g.shelfFill(9999);
   /* общая очередь и инструменты */
   var qc=g.qSlotCost();if(qc&&S.gold>qc.gold*3)g.buyQSlot();
   /* товар: по кругу мастерам самый дорогой из известных, но не трогая запас на посох */
@@ -118,7 +131,7 @@ while(T<DAYS*86400){
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+
-      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+g.seatCount()+'м d'+g.decorPts()+' c'+S.counter+' rep'+Math.floor(S.rep)+' '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join('')+' wait '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.tst>=D.STAGES&&!m.tbt?'W':'')+Math.round(m.sav||0)+'/'+(m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0);}).join(' '));
+      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+g.seatCount()+'м d'+g.decorPts()+' c'+S.counter+' rep'+Math.floor(S.rep)+' L'+(S.loader.hired?S.loader.lvl:0)+' sh'+D.SHELF_CATS.map(function(c){return g.shelfUsed(c)+'/'+g.shelfCap(c);}).join(',')+' '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join('')+' wait '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.tst>=D.STAGES&&!m.tbt?'W':'')+Math.round(m.sav||0)+'/'+(m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0);}).join(' '));
     gold0=S.stats.goldEarned;sold0=S.stats.sold;global.__tinc=S.tav.inc;
   }
 }

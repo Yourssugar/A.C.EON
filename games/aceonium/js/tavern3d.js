@@ -144,7 +144,7 @@ function place(o,x,z,rot,y){o.position.set(x,y||0,z);o.rotation.y=rot||0;return 
 function build(renderer){
   if(V)return V;
   V={renderer:renderer,scene:new T.Scene(),camera:new T.PerspectiveCamera(40,1,0.1,240),walls:[],npcs:{},cust:{},pool:[],sig:'',
-     az:0.5,pol:0.9,dist:32,target:new T.Vector3(2,0,0.5),goal:{az:0.5,pol:0.9,dist:32,target:new T.Vector3(2,0,0.5)},
+     mode:'tavern',az:0.5,pol:0.82,dist:19,target:new T.Vector3(2.2,0,0),goal:{az:0.5,pol:0.82,dist:19,target:new T.Vector3(2.2,0,0)},
      t:0,night:false,labels:{},active:false,fires:[]};
   var s=V.scene;
   s.background=new T.Color(0x8fb4cc);s.fog=new T.Fog(0x8fb4cc,45,125);
@@ -337,6 +337,14 @@ function layout(S){
   if(decor>=2)prop(G,'Stall_Cart_Empty',-2.8,9.8,Math.PI*0.35,0,0.9);
   /* очередь путников перед стойкой */
   st.queue=[[6.0,-1.6],[6.6,-0.6],[7.1,0.4],[7.1,1.4],[7.1,2.4],[7.1,3.4],[6.4,4.2],[5.6,4.3]];
+  /* v22: крыша над домом, кухней и пивоварней; видна только на экране ГОРОД */
+  var RG=new T.Group();V.roofG=RG;G.add(RG);keep.push(RG);
+  function roofAt(cx,cz,w,d,rot){var H=new T.Group();H.position.set(cx,0,cz);H.rotation.y=rot;RG.add(H);roof(H,w,d,-1,false);}
+  roofAt(1,0,10,14,Math.PI/2);
+  if(kitchen)roofAt(1,-7,4,6,Math.PI/2);
+  if(brew)roofAt(10,-1,4,6,0);
+  RG.traverse(function(o){if(o.isMesh){o.castShadow=true;}});
+  RG.visible=V.mode==='city';
   mergeStatic(G,null,keep);
   var n=!!V.night;V.night=null;setNight(n);
 }
@@ -570,7 +578,7 @@ function prodSig(S){
 }
 function buildProd(S){
   if(V.prodG){V.prodG.traverse(function(o){if(o.userData&&o.userData.merged)o.geometry.dispose();});V.scene.remove(V.prodG);}
-  var G=new T.Group();V.prodG=G;V.scene.add(G);V.piles={};V.prodFx=[];V.work={};if(!V.penPets)V.penPets=[];
+  var G=new T.Group();V.prodG=G;G.visible=V.mode==='city';V.scene.add(G);V.piles={};V.prodFx=[];V.work={};if(!V.penPets)V.penPets=[];
   var keep=[],g=window.acGame;
   for(var id in SITES){
     var si=SITES[id],o=S.prod&&S.prod[id]||{lvl:0},H=new T.Group();
@@ -1031,7 +1039,7 @@ function bindInput(el){
       var a=ptr[ids[0]],b=ptr[ids[1]],d=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
       var mx=(a.x+b.x)/2,my=(a.y+b.y)/2,ang=Math.atan2(b.y-a.y,b.x-a.x);
       if(g2){
-        V.goal.dist=clamp(V.goal.dist*g2.d/d,7,62);
+        V.goal.dist=clamp(V.goal.dist*g2.d/d,lim().d[0],lim().d[1]);
         pan(mx-g2.mx,my-g2.my);
         var da=ang-g2.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;
         V.goal.az-=da;
@@ -1054,13 +1062,31 @@ function bindInput(el){
   el.addEventListener('pointerup',function(e){up(e,false);});
   el.addEventListener('pointercancel',function(e){up(e,true);});
   el.addEventListener('contextmenu',function(e){if(V.active)e.preventDefault();});
-  el.addEventListener('wheel',function(e){if(!V.active)return;e.preventDefault();V.goal.dist=clamp(V.goal.dist*(e.deltaY>0?1.12:0.89),7,62);},{passive:false});
+  el.addEventListener('wheel',function(e){if(!V.active)return;e.preventDefault();V.goal.dist=clamp(V.goal.dist*(e.deltaY>0?1.12:0.89),lim().d[0],lim().d[1]);},{passive:false});
 }
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+/* v22: два экрана одной сцены. ТАВЕРНА: камера в зале, жители зала. ГОРОД: посёлок, дом под крышей, внутри никого. */
+var LIM={tavern:{d:[7,26],x:[-7,12],z:[-9,10]},city:{d:[14,62],x:[-28,28],z:[-20,34]}};
+var VIEW0={tavern:{az:0.5,pol:0.82,dist:19,t:[2.2,0,0]},city:{az:0.5,pol:0.9,dist:46,t:[1,0,6]}};
+function lim(){return LIM[V&&V.mode==='city'?'city':'tavern'];}
+function setMode(m){
+  if(!V)return;m=m==='city'?'city':'tavern';
+  if(V.mode===m)return;
+  V.mode=m;var v0=VIEW0[m];
+  V.goal.az=v0.az;V.goal.pol=v0.pol;V.goal.dist=v0.dist;V.goal.target.set(v0.t[0],v0.t[1],v0.t[2]);
+  V.az=v0.az;V.pol=v0.pol;V.dist=v0.dist;V.target.copy(V.goal.target);
+  if(V.roofG)V.roofG.visible=m==='city';
+  if(V.prodG)V.prodG.visible=m==='city';
+  if(V.renderer)V.renderer.shadowMap.needsUpdate=true;
+  if(labelHost)for(var k in labelEls){labelEls[k].remove();delete labelEls[k];}
+}
+/* кто на каком экране: зал (хозяйка, путники, гости, повар, пивовар, помощники) или город (мастера, работники промыслов) */
+function onScreen(key){var inside=key==='hostess'||/^[cwh]:/.test(key);return V.mode==='city'?!inside:inside;}
 function pan(dx,dy){
   var k=V.dist*0.0018,ca=Math.cos(V.az),sa=Math.sin(V.az);
-  V.goal.target.x=clamp(V.goal.target.x-(dx*ca-dy*sa)*k,-28,28);
-  V.goal.target.z=clamp(V.goal.target.z-(-dx*sa-dy*ca)*k,-20,34);
+  var L=lim();
+  V.goal.target.x=clamp(V.goal.target.x-(dx*ca-dy*sa)*k,L.x[0],L.x[1]);
+  V.goal.target.z=clamp(V.goal.target.z-(-dx*sa-dy*ca)*k,L.z[0],L.z[1]);
 }
 function updateCamera(dt){
   var k=Math.min(1,dt*8),g=V.goal;
@@ -1078,7 +1104,7 @@ function updateWalls(dt){
   _d.set(Math.sin(V.az),0,Math.cos(V.az));
   for(var i=0;i<V.walls.length;i++){
     var w=V.walls[i];
-    var front=w.inner?false:w.n.dot(_d)>0.25;
+    var front=w.inner||V.mode==='city'?false:w.n.dot(_d)>0.25;
     var goal=w.inner?0.42:front?0.1:1;
     w.k+=(goal-w.k)*Math.min(1,dt*6);
     w.o.scale.y=w.k;
@@ -1094,11 +1120,15 @@ function screenOf(x,y,z){
 }
 function anchors(){
   var out=[],st=V.st||{};
-  if(V.npcs.hostess)out.push({kind:'hostess',id:'hostess',x:st.hostess.x,y:2.25,z:st.hostess.z});
-  for(var pid in SITES){var si=SITES[pid];out.push({kind:'prod',id:pid,x:si.x,y:si.ly||6.3,z:si.z,pick:si.r*0.6});}
-  for(var hid in HOUSES){var hs=HOUSES[hid];out.push({kind:'house',id:hid,x:hs.x,y:6.2,z:hs.z,pick:hs.r*0.6});}
-  if(st.cook&&V.npcs['w:cook'])out.push({kind:'worker',id:'cook',x:st.cook.x,y:2.4,z:st.cook.z});
-  if(st.brewer&&V.npcs['w:brewer'])out.push({kind:'worker',id:'brewer',x:st.brewer.x,y:2.4,z:st.brewer.z});
+  if(V.mode==='city'){
+    out.push({kind:'tavern',id:'tavern',x:1,y:6.6,z:0,pick:5});
+    for(var pid in SITES){var si=SITES[pid];out.push({kind:'prod',id:pid,x:si.x,y:si.ly||6.3,z:si.z,pick:si.r*0.6});}
+    for(var hid in HOUSES){var hs=HOUSES[hid];out.push({kind:'house',id:hid,x:hs.x,y:6.2,z:hs.z,pick:hs.r*0.6});}
+  }else{
+    if(V.npcs.hostess)out.push({kind:'hostess',id:'hostess',x:st.hostess.x,y:2.25,z:st.hostess.z});
+    if(st.cook&&V.npcs['w:cook'])out.push({kind:'worker',id:'cook',x:st.cook.x,y:2.4,z:st.cook.z});
+    if(st.brewer&&V.npcs['w:brewer'])out.push({kind:'worker',id:'brewer',x:st.brewer.x,y:2.4,z:st.brewer.z});
+  }
   if(st.store)out.push({kind:'store',id:'store',x:st.store.x,y:2.9,z:st.store.z});
   return out;
 }
@@ -1133,7 +1163,7 @@ function update(dt){
   if(!V)return;
   V.t+=dt;
   updateCamera(dt);updateWalls(dt);
-  if(V.vroof)V.vroof.visible=V.dist>36;   // навес веранды прячется, когда смотрим в зал
+  if(V.vroof)V.vroof.visible=V.mode==='city';   // навес веранды виден только в городе
   V.fires.forEach(function(f,i){var fl=0.8+Math.sin(V.t*13+i)*0.12+Math.random()*0.12;if(f.l)f.l.intensity=f.base*fl*(V.night?1.4:1);f.s.scale.set(f.size*fl,f.size*0.8*fl,1);});
   for(var key in V.npcs){
     var N=V.npcs[key];
@@ -1157,12 +1187,15 @@ function update(dt){
     }else if(N.guest&&!N.path.length){/* сидит */}
     else if(N.cust&&N.av&&!N.path.length){setAnim(N,N.slot===0?ACT.custTalk:ACT.custWait);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
     if(N.cyc&&N.av&&!N.path.length&&!N.sitNow){N.cycT-=dt;if(N.cycT<=0)pickCyc(N);}
-    if(N.av){N.av.root.position.set(N.x,N.y||0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}
+    if(N.av){var vis=onScreen(key);N.av.root.visible=vis;if(N.meal)N.meal.visible=vis;
+      if(vis){N.av.root.position.set(N.x,N.y||0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}}
   }
   if(V.prodFx)V.prodFx.forEach(function(f,i){f.s.position.y=f.y+Math.sin(V.t*1.6+i*2.1)*0.35;f.s.material.opacity=0.55+Math.sin(V.t*2.3+i)*0.25;});
-  if(V.penPets)V.penPets.forEach(function(pp){pp.mixer.update(dt);});
-  if(V.pet){V.pet.mixer.update(dt);if(V.pet.fly)V.pet.root.position.y=V.pet.fly+Math.sin(V.t*2)*0.06;}
-  if(mageRef){mageRef.update(dt,'npc');
+  var city=V.mode==='city';
+  if(V.penPets)V.penPets.forEach(function(pp){pp.root.visible=city;if(city)pp.mixer.update(dt);});
+  if(V.pet){V.pet.root.visible=!city;if(!city){V.pet.mixer.update(dt);if(V.pet.fly)V.pet.root.position.y=V.pet.fly+Math.sin(V.t*2)*0.06;}}
+  if(mageRef)mageRef.root.visible=!city;
+  if(mageRef&&!city){mageRef.update(dt,'npc');
     /* v21: маг за столом иногда отпивает из кружки */
     if(mageMode==='sit'){mageCycT-=dt;if(mageCycT<=0){var dk=mageRef.curName!=='sitDrink'&&Math.random()<0.5;mageRef.play(dk?'sitDrink':'Sitting_Idle_Loop',0.35);mageCycT=dk?2.66:6+Math.random()*8;}}
     if(mageMode==='sleep'){zzT-=dt;if(zzT<=0&&mageRef.head)zzT=1.2,spawnZ();}
@@ -1185,10 +1218,10 @@ function setActive(on,host){
   if(labelHost)labelHost.style.display=on?'':'none';
   V.renderer.shadowMap.needsUpdate=true;
 }
-function resetView(){if(!V)return;V.goal.az=0.5;V.goal.pol=0.9;V.goal.dist=32;V.goal.target.set(2,0,0.5);}
+function resetView(){if(!V)return;var v0=VIEW0[V.mode==='city'?'city':'tavern'];V.goal.az=v0.az;V.goal.pol=v0.pol;V.goal.dist=v0.dist;V.goal.target.set(v0.t[0],v0.t[1],v0.t[2]);}
 
 window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_LOOK[id]):null;},init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
-  resetView:resetView,bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});var np=Object.keys(V.npcs),nr=np.filter(function(k){return V.npcs[k].ready;}).length;return {npcs:np.length,npcReady:nr,npcPos:np.map(function(k){var N=V.npcs[k];return k+':'+N.x.toFixed(1)+','+N.z.toFixed(1);}).join(' '),meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
+  resetView:resetView,setMode:setMode,get mode(){return V?V.mode:'tavern';},bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});var np=Object.keys(V.npcs),nr=np.filter(function(k){return V.npcs[k].ready;}).length;return {npcs:np.length,npcReady:nr,npcPos:np.map(function(k){var N=V.npcs[k];return k+':'+N.x.toFixed(1)+','+N.z.toFixed(1);}).join(' '),meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
   onPick:function(fn){onPickCb=fn;},setLabeler:function(fn){labeler=fn;},
   get ready(){return readyFlag;},get loading(){return !!loading&&!readyFlag;},get scene(){return V&&V.scene;},get camera(){return V&&V.camera;},
   get active(){return !!(V&&V.active);},get built(){return !!V;},get _v(){return V;}};

@@ -364,6 +364,11 @@ function initHud(){
   var sb=el('button','view-btn sleep-btn');sb.type='button';sb.id='sleep-btn';
   sb.addEventListener('click',function(e){e.stopPropagation();g.sleepNow();Sound.sfx('select');refreshHud();});
   vbox.appendChild(vb);vbox.appendChild(sb);H.stage.appendChild(vbox);H.view=vb;H.sleep=sb;
+  /* v22: экраны ПОХОД / ТАВЕРНА / ГОРОД */
+  var scn=el('div','scn-box');
+  ['road','tavern','city'].forEach(function(k){var b=el('button','scn-b');b.type='button';b.dataset.s=k;scn.appendChild(b);});
+  scn.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;e.stopPropagation();if(UI.goScreen)UI.goScreen(b.dataset.s);Sound.sfx('select');paintScreen();});
+  H.stage.appendChild(scn);H.scn=scn;
   /* очередь крафта внизу экрана таверны */
   var qb=el('div','qbar hidden');qb.id='qbar';
   qb.addEventListener('click',function(e){e.stopPropagation();openTab('craft','make');Sound.sfx('select');});
@@ -558,7 +563,7 @@ function modal(title,body,buttons){
 var TABSETS={road:['path','bag','skills','wardrobe','stats'],tavern:['tavern','craft','city','store','gear','stats']};
 var TABS=['path','bag','skills','wardrobe','tavern','craft','city','store','gear','stats'];
 var curTab='path',rows=[],tabCleanup=null,tabSet='road',lastTab={road:'path',tavern:'tavern'};
-function placeSet(){return S.place==='road'?'road':'tavern';}
+function placeSet(){return viewNow?(viewNow==='road'?'road':'tavern'):(S.place==='road'?'road':'tavern');}
 
 /* строка улучшения: o.cost() даёт ресурсы {wood:3} или {points:n} */
 function row(o){
@@ -1225,8 +1230,17 @@ function initPanel(){
   tabSet=placeSet();curTab=lastTab[tabSet];
   paintTabs();
 }
-var viewNow='road',viewLoad=-1;
-function setViewBtn(v){viewNow=v;paintView();}
+var viewNow=null,viewLoad=-1;
+function setViewBtn(v){viewNow=v;paintView();checkTabSet();}
+var screenNow='road';
+function setScreen(sc){screenNow=sc;paintScreen();}
+function paintScreen(){
+  if(!H.scn)return;
+  [].forEach.call(H.scn.children,function(b){
+    var k=b.dataset.s;setText(b,t('scn.'+k));
+    b.classList.toggle('sel',k===screenNow);b.classList.toggle('hidden',k==='road'&&S.place!=='road');
+  });
+}
 function paintView(){
   if(!H.view)return;
   if(viewLoad>=0&&viewLoad<1){setText(H.view,t('view.loading',{p:Math.round(viewLoad*100)}));H.view.disabled=true;return;}
@@ -1236,6 +1250,7 @@ function paintView(){
   H.view.classList.toggle('on',!road);
   H.sleep.classList.toggle('hidden',S.place!=='home');
   H.sleep.disabled=S.fatigue<0.02;
+  paintScreen();
 }
 function viewProgress(p){viewLoad=p;paintView();}
 /* открыть вкладку (например, по клику на мастера в 3D-таверне) */
@@ -1251,6 +1266,7 @@ function openTab(tab,sub){
 function tavernLabel(kind,id){
   if(kind==='hostess')return '<b>'+t('lbl.hostess')+'</b>'+(S.cust.length?' · '+t('lbl.cust',{n:S.cust.length}):'');
   if(kind==='store')return '<b>'+t('store.title')+'</b>';
+  if(kind==='tavern'){var gt=(S.tav&&S.tav.guests||[]).length;return '<b>'+t('tl.tavern')+'</b>'+(S.cust.length||gt?' · '+t('lbl.cust',{n:S.cust.length+gt}):'');}
   if(kind==='worker'){
     var ow=g.worker(id);if(!ow||!ow.hired)return '';
     var wt=ow.bt?'<i>'+t('lbl.build')+' '+ft(ow.bt.t)+'</i>':ow.lvl>=D.WORKER_MAX?'':'<i>'+Math.floor(Math.min(1,ow.save/D.workerUp(ow.lvl))*100)+'%</i>';
@@ -1354,7 +1370,7 @@ function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
-  showCreate:showCreate,hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
+  showCreate:showCreate,setScreen:setScreen,hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

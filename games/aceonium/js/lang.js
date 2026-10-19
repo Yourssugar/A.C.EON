@@ -848,4 +848,9 @@ I18n.add('en',{
   'tv.noCust':'Nobody yet.',
   'v20.title':'BOOK BY QUALITY','v20.body':'<p>Every item in the book has 4 slots now: common, good, flawless and legendary. Each slot boosts its own item. A new good, flawless or legendary copy is kept for the book: the hostess will not sell it and the mage will not take it. Any item can be locked with DO NOT SELL.</p><p>Masters put aside 20% of the price of their sold items (nothing is taken from you) and add that share to new tools together with you.</p><p>Mechanics explanations moved to the guide: the gear at the top and the "?" buttons.</p>'
 });
+/* v22: экраны */
+I18n.add('ru',{'scn.road':'ПОХОД','scn.tavern':'ТАВЕРНА','scn.city':'ГОРОД','tl.tavern':'ТАВЕРНА',
+  'v22.title':'ТАВЕРНА И ГОРОД','v22.body':'<p>Таверна и посёлок теперь отдельные экраны: кнопки ТАВЕРНА и ГОРОД слева сверху. В городе дом таверны под крышей, в таверне камера в зале. Пока маг в походе, можно зайти и в таверну, и в город, а кнопка ПОХОД вернёт к бою.</p>'});
+I18n.add('en',{'scn.road':'TRIP','scn.tavern':'TAVERN','scn.city':'TOWN','tl.tavern':'TAVERN',
+  'v22.title':'TAVERN AND TOWN','v22.body':'<p>The tavern and the town are separate screens now: TAVERN and TOWN buttons at the top left. In town the tavern has a roof; in the tavern the camera is inside the hall. While the mage is on a trip you can visit both, and TRIP takes you back to the fight.</p>'});
 })();

@@ -143,7 +143,11 @@ function showPlace(place,instant){
   if(!instant&&prev!==null&&prev!==mode&&Scene3D.view==='road'){portalBusy=true;Scene3D.portal(function(){portalBusy=false;Scene3D.setMode(mode);applyView();});}
   else{Scene3D.setMode(mode);applyView();}
 }
-game.on('place',function(place){if(place!=='road')ensureTavern();showPlace(place);UI.hud();save();});
+game.on('place',function(place){
+  if(place==='road'&&screen==='tavern')screen='road';
+  if(place!=='road'&&screen==='road')screen='tavern';
+  if(place!=='road')ensureTavern();showPlace(place);UI.hud();save();
+});
 
 /* ── таверна в 3D: вид сверху, включается, когда маг дома или спит ── */
 var tavLoad=null;
@@ -158,22 +162,37 @@ function ensureTavern(){
   }
   return tavLoad;
 }
-function wantView(){return S.place==='road'?'road':'tavern';}
+/* v22: три экрана. ПОХОД есть, только пока маг в походе; ТАВЕРНА и ГОРОД доступны всегда.
+   screen - что выбрал игрок; маг ушёл из таверны: экран переходит на дорогу (если игрок не в городе),
+   вернулся: с дороги переходит в таверну. */
+var screen=S.place==='road'?'road':'tavern';
+function curScreen(){return S.place==='road'?screen:(screen==='road'?'tavern':screen);}
+function wantView(){return curScreen()==='road'?'road':'tavern';}
 function applyView(){
   if(!has3d)return;
-  var v=wantView();
-  if(v==='tavern'&&!(window.Tavern3D&&Tavern3D.ready))v='road';
-  if(v==='tavern'){Tavern3D.sync(S);Scene3D.setView('tavern',S.place==='road'?null:S.place);}
+  var v=wantView(),sc=curScreen();
+  if(v==='tavern'&&!(window.Tavern3D&&Tavern3D.ready)){if(S.place!=='road')v='road';else{v='road';sc='road';ensureTavern().catch(function(){});}}
+  if(v==='tavern'){Tavern3D.setMode(sc==='city'?'city':'tavern');Tavern3D.sync(S);Scene3D.setView('tavern',S.place==='road'?null:S.place);}
   else Scene3D.setView('road');
   document.body.classList.toggle('view-tavern',v==='tavern');
-  UI.setView(v);
+  document.body.classList.toggle('view-city',v==='tavern'&&sc==='city');
+  UI.setView(v);UI.setScreen(sc);
 }
+UI.goScreen=function(sc){
+  if(sc==='road'&&S.place!=='road')return;
+  screen=sc;
+  if(sc!=='road')ensureTavern().then(applyView,function(){});
+  applyView();
+  if(sc==='city')UI.openTab('city');else if(sc==='tavern')UI.openTab('tavern');
+};
+UI.screenNow=curScreen;
 UI.toggleView=function(){if(S.place==='road')game.goHome();else game.goTrip();};
 if(window.Tavern3D){
   Tavern3D.onPick(function(kind,id){
     if(kind==='store')UI.openTab('store');
     else if(kind==='prod')UI.openTab('city',id);
     else if(kind==='house'){if(id==='pets'&&window.Pets)Pets.open();else if(window.Masters)Masters.open(id);}
+    else if(kind==='tavern'){UI.goScreen('tavern');}
     else if(kind==='worker')UI.openTab('tavern');
     else UI.openTab('tavern');
     Sound.sfx('select');
@@ -288,18 +307,19 @@ function begin(){
       showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
     if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
-    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
-    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
-    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
-    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
-    else if(!S.seenV17){S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body')+UI.t('v18.body')+UI.t('v19.body'));}
-    else if(!S.seenV18){S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v18.title'),UI.t('v18.body')+UI.t('v19.body')+UI.t('v20.body'));}
-    else if(!S.seenV19){S.seenV19=true;S.seenV20=true;save();UI.modal(UI.t('v19.title'),UI.t('v19.body')+UI.t('v20.body'));}
-    else if(!S.seenV20){S.seenV20=true;save();UI.modal(UI.t('v20.title'),UI.t('v20.body'));}
+    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
+    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
+    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
+    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
+    else if(!S.seenV17){S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body')+UI.t('v18.body')+UI.t('v19.body'));}
+    else if(!S.seenV18){S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v18.title'),UI.t('v18.body')+UI.t('v19.body')+UI.t('v20.body'));}
+    else if(!S.seenV19){S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v19.title'),UI.t('v19.body')+UI.t('v20.body')+UI.t('v22.body'));}
+    else if(!S.seenV20){S.seenV20=true;S.seenV22=true;save();UI.modal(UI.t('v20.title'),UI.t('v20.body')+UI.t('v22.body'));}
+    else if(!S.seenV22){S.seenV22=true;save();UI.modal(UI.t('v22.title'),UI.t('v22.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;save();UI.rebuild();
+      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;save();UI.rebuild();
       setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }

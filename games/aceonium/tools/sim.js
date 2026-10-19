@@ -1,4 +1,4 @@
-/* Проверка баланса v15 (промыслы: NOPROD=1 отключает): node tools/sim.js [дней] [осторожность 1|0] [заходов в день]
+/* Проверка баланса v15-v20 (промыслы: NOPROD=1 отключает): node tools/sim.js [дней] [осторожность 1|0] [заходов в день]
    Игрок заходит каждый час с 7 до 23 (по умолчанию): забирает уголь, учит рецепты, нанимает,
    строит, заказывает улучшения посоха/сумки/склада, забивает очереди мастеров товаром,
    надевает лучшее и отправляет мага на дальний открытый тракт.
@@ -74,8 +74,12 @@ function shop(){
   if(S.pets.hired&&S.pets.active){var pc=g.petCost(S.pets.active);if(pc&&S.gold>pc.gold*3)g.petTrain(S.pets.active);}
   /* лучший питомец: у кого больше урона на текущем уровне */
   var best=S.pets.active,bv=-1;for(var pid in S.pets.own){var dd=D.PET_BY[pid],v=(dd.eff.dmg||0)*S.pets.own[pid].lvl;if(v>bv){bv=v;best=pid;}}if(best)S.pets.active=best;
-  /* коллекции: по одной вещи каждого рецепта */
-  D.GOODS.forEach(function(gd){if(g.invCount(gd.id)>1)g.collAdd(gd.id);});
+  /* коллекции: обычная копия, когда их две и больше */
+  D.GOODS.forEach(function(gd){
+    if(g.invCount(gd.id)>1&&!g.collQ(gd.m,gd.id,0)&&S.inv[gd.id+':0']>0)g.collAdd(gd.id,0);
+    /* v20: копии, которые держатся для книги, игрок сразу вкладывает (SIMFREE=1: отпускает в продажу) */
+    for(var q=1;q<4;q++)if(S.inv[gd.id+':'+q]>0&&g.bookNeed(gd.id,q)){if(process.env.SIMFREE)g.setBookFree(gd.id,q,true);else g.collAdd(gd.id,q);}
+  });
   /* надеть лучшее */
   D.GOODS.forEach(function(gd){if(!gd.slot||!g.invCount(gd.id))return;var cur=S.equip[gd.slot],cv=cur?(D.GOOD_BY[cur.id].price*D.QUAL[cur.q]):0;if(gd.price>cv)g.equipItem(gd.id);});
   D.SKILLS.forEach(function(s){while(g.buySkill(s.id));});
@@ -98,7 +102,7 @@ while(T<DAYS*86400){
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+
-      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+S.tav.seats+'м '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join(''));
+      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+S.tav.seats+'м '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join('')+' wait '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.tst>=D.STAGES&&!m.tbt?'W':'')+Math.round(m.sav||0)+'/'+(m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0);}).join(' '));
     gold0=S.stats.goldEarned;sold0=S.stats.sold;global.__tinc=S.tav.inc;
   }
 }

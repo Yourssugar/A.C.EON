@@ -29,7 +29,7 @@
  "models/male_ranger_feet_boots.glb": 399132,
  "models/male_ranger_head_hood.glb": 71016,
  "models/male_ranger_legs.glb": 45880,
- "models/anims.glb": 296680,
+ "models/anims.glb": 319004,
  "tex/ranger_color_2k.webp": 179618,
  "tex/ranger_color_1k.webp": 71096,
  "tex/ranger_color3_2k.webp": 147962,
@@ -86,5 +86,7 @@
  "tex/eye_color_1k.webp": 2040,
  "tex/eye_normal_2k.webp": 1146,
  "tex/eye_normal_1k.webp": 1146,
- "models/anims_tavern.glb": 299028
+ "models/anims_tavern.glb": 356836,
+ "models/anims2.glb": 208408,
+ "models/anims_tavern2.glb": 226968
 }

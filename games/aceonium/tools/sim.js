@@ -4,6 +4,7 @@
    надевает лучшее и отправляет мага на дальний открытый тракт.
    Время между заходами считается через game.offline(), то есть по офлайн-правилам. */
 var D=require('../js/data.js');
+global.AcData=D;global.AcHall=require('../js/hall.js');
 var G=require('../js/game.js');
 if(process.env.OV){var ov=JSON.parse(process.env.OV);for(var k in ov)D[k]=ov[k];}
 
@@ -31,7 +32,16 @@ function shop(){
   /* рецепты: всё, что по карману, но не больше трети золота */
   D.GOODS.forEach(function(gd){if(g.canLearn(gd.id)&&gd.teach<=S.gold*0.5)g.learn(gd.id);});
   /* постройки таверны, если золота много */
-  ['hall','bedroom','decor'].forEach(function(b){var c=g.buildCost(b);if(c&&S.gold>c.gold*2)g.buildUp(b);});
+  ['hall','bedroom'].forEach(function(b){var c=g.buildCost(b);if(c&&S.gold>c.gold*2)g.buildUp(b);});
+  /* v25: декор и стойка за золото и репутацию (вместо уровней убранства) */
+  for(var di=0;di<4;di++){
+    var best=null,bc=null;
+    D.FURN_ORDER.forEach(function(t){if(t==='table'||g.furnBuyBlock(t))return;var c=g.furnBuyCost(t);if(!bc||c.gold<bc.gold){bc=c;best={buy:t};}});
+    S.furn.forEach(function(it){if(D.FURN[it.t].cat==='table'||it.st||g.furnUpBlock(it))return;var c=g.furnUpCost(it);if(!bc||c.gold<bc.gold){bc=c;best={up:it};}});
+    if(!best||S.gold<bc.gold*6)break;
+    var r=best.buy?g.furnBuy(best.buy):g.furnUp(best.up);if(typeof r!=='object')break;
+  }
+  var cc=g.counterCost();if(cc&&g.canPay(cc)&&S.gold>cc.gold*2)g.counterUp();
   /* общая очередь и инструменты */
   var qc=g.qSlotCost();if(qc&&S.gold>qc.gold*3)g.buyQSlot();
   /* товар: по кругу мастерам самый дорогой из известных, но не трогая запас на посох */
@@ -67,7 +77,13 @@ function shop(){
       if(!o.hired){if(g.workerBlock(w)===''&&S.gold>D.WORKERS[w].hire*3&&g.workerHire(w))mark('w'+w,'нанят '+w);return;}
       var hc=g.helpCost(w);if(hc&&g.needH(w)>g.capacityH(w)&&S.gold>hc.gold*3&&g.hireHelp(w))mark('h'+w+o.help,w+' помощник '+o.help);
     });
-    for(var si=0;si<5;si++){var sc=g.seatCost();if(!sc||S.gold<sc.gold*4)break;g.buySeat();}
+    for(var si=0;si<5;si++){
+      var opt=null,oc=null;
+      if(!g.furnBuyBlock('table')||g.furnBuyBlock('table')==='cost'){if(g.furnBuyBlock('table')!=='seats'){oc=g.furnBuyCost('table');opt={buy:1};}}
+      S.furn.forEach(function(it){if(it.t!=='table'||it.st)return;var bl=g.furnUpBlock(it);if(bl&&bl!=='cost')return;var c=g.furnUpCost(it);if(!oc||c.gold<oc.gold){oc=c;opt={up:it};}});
+      if(!opt||!g.canPay(oc)||S.gold<oc.gold*4)break;
+      var rr=opt.buy?g.furnBuy('table'):g.furnUp(opt.up);if(typeof rr!=='object')break;
+    }
   }
   /* питомцы: нанять мастера, когда есть лишнее золото, тренировать активного */
   if(!S.pets.hired&&S.gold>D.PETMASTER_HIRE*2&&g.petHire())mark('pets','мастер питомцев');
@@ -102,7 +118,7 @@ while(T<DAYS*86400){
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+
-      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+S.tav.seats+'м '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join('')+' wait '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.tst>=D.STAGES&&!m.tbt?'W':'')+Math.round(m.sav||0)+'/'+(m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0);}).join(' '));
+      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+g.seatCount()+'м d'+g.decorPts()+' c'+S.counter+' rep'+Math.floor(S.rep)+' '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join('')+' wait '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.tst>=D.STAGES&&!m.tbt?'W':'')+Math.round(m.sav||0)+'/'+(m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0);}).join(' '));
     gold0=S.stats.goldEarned;sold0=S.stats.sold;global.__tinc=S.tav.inc;
   }
 }

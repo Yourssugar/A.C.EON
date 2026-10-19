@@ -837,3 +837,12 @@ body:not(.view-tavern) .qbar{display:none;}
   .bq-c b{font-size:10.5px;white-space:normal;overflow:visible;line-height:1.15;word-break:break-word;}
   .bq-c small{font-size:10px;}
 }
+
+/* ── v22: экраны ПОХОД / ТАВЕРНА / ГОРОД ── */
+.scn-box{position:absolute;left:10px;top:118px;z-index:7;display:flex;gap:0;border:1px solid var(--pri-d);background:rgba(4,20,42,.85);}
+.scn-b{font:inherit;font-size:12px;letter-spacing:1px;padding:7px 10px;background:transparent;color:#8fb0c0;border:0;border-right:1px solid var(--pri-d);cursor:pointer;}
+.scn-b:last-child{border-right:0;}
+.scn-b:hover{color:#fff;}
+.scn-b.sel{background:var(--pri-d);color:#fff;}
+@media (max-width:600px){.scn-box{top:124px;}}
+.tv-lbl.pl-tavern{font-size:15px;padding:5px 10px;border-color:rgba(255,200,90,.6);}

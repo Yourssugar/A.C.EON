@@ -291,7 +291,7 @@ D.BUILD={
   bedroom:{max:4,cost:function(l){var c={gold:Math.ceil(300*Math.pow(2.5,l)),hide:Math.ceil(30*Math.pow(1.8,l))};if(l>=2)c.silk=20*l;return c;}},
   decor:  {max:5,cost:function(l){var c={gold:Math.ceil(500*Math.pow(2.8,l))},r=['ironwood','ironwood','amber','pearl','starice'][l];c[r]=3+2*l;return c;}}
 };
-D.BUILD_ORDER=['hall','bedroom','decor'];
+D.BUILD_ORDER=['hall','bedroom'];   // v25: убранство теперь мебелью в режиме дизайна
 
 /* шахта: уголь в минуту, предел вагонеток, улучшения дорожают быстрее, чем растёт добыча */
 /* ════════ УЛУЧШЕНИЯ СТАДИЯМИ (v15) ════════
@@ -332,7 +332,8 @@ D.toolsRes=function(m,l){var c={};for(var k in m.tools)c[k]=Math.ceil(m.tools[k]
    Половина выручки идёт игроку, половина в сбережения работника. Накопив на расширение, работник сам
    расширяет кухню или пивоварню (недолгая стройка без бригады). Уровень даёт цену, помощники - порции за партию. */
 D.SEATS0=2;D.SEATS_MAX=20;
-D.seatMax=function(hall){return Math.min(D.SEATS_MAX,5+3*(hall||0));};
+/* v25: места дают только столы; предел по уровню зала (чётный: столы на 2, 4, 6 мест) */
+D.seatMax=function(hall){return [6,8,12,14,18,20][Math.max(0,Math.min(5,hall||0))];};
 D.seatCost=function(n){return {gold:Math.ceil(150*Math.pow(1.4,n-D.SEATS0))};};   // n - сколько мест уже есть
 D.GUEST_CHANCE=0.6;D.GUEST_SIT=900;D.GUEST_FOOD=0.5;
 D.WORKERS={
@@ -365,13 +366,45 @@ D.petTime=function(l){return 600*l;};   // сек тренировки до сл
 /* покупатели */
 /* v11: путников в МИНУТУ, от 1 на старте до 5 (зал и репутация) */
 D.CUST_MAX_RATE=5;
-D.custRate=function(hall,rep){return Math.min(D.CUST_MAX_RATE,(1+0.8*hall)*(1+Math.min(0.25,rep/400)));};
+/* v25: второй множитель от убранства (очки мебели), а не от репутации: репутация теперь тратится */
+D.custRate=function(hall,k){return Math.min(D.CUST_MAX_RATE,(1+0.8*hall)*(1+(k||0)));};
 D.custMax=function(hall){return 6+2*hall;};   // сколько ждут одновременно
 D.CUST_PATIENCE=180;      // сколько ждёт покупатель, если нужной вещи нет
 D.HOSTESS_AFTER=30;       // через сколько хозяйка продаёт сама (по базовой цене)
 D.HAGGLE_UP=0.3;D.HAGGLE_FAIL=0.35;D.DISCOUNT=0.2;
 D.TRAVELERS=12;           // типов путников в текстах (trav.0..11)
-D.decorMult=function(l){return 1+0.06*l;};
+D.decorMult=function(l){return 1+0.06*l;};   // до v25: уровень убранства (для перевода сохранений)
+/* ════════ МЕБЕЛЬ ЗАЛА (v25) ════════
+   Столы дают места (ставит бригада строителей), декор даёт очки убранства, стойка даёт репутацию с продажи.
+   fp - размер в клетках по уровням [ширина по x, глубина по z], seatPos - места относительно центра стола.
+   Цена декора: c=[золото, репутация] за первый уровень; каждый следующий уровень x3, каждый следующий такой же предмет x1.35. */
+D.FURN={
+  table:   {cat:'table',fp:[[2,2],[3,3],[4,3]],seats:[2,4,6],bt:[120,600,1800],hall:[0,1,3],
+            seatPos:[[[0,-0.72],[0,0.72]],[[-0.6,-0.85],[0.6,-0.85],[-0.6,0.85],[0.6,0.85]],[[-1.2,-0.85],[0,-0.85],[1.2,-0.85],[-1.2,0.85],[0,0.85],[1.2,0.85]]]},
+  rug:     {cat:'decor',layer:'floor',fp:[[3,2]],pts:[3,6,10],c:[300,30]},
+  barrel:  {cat:'decor',fp:[[1,1]],pts:[1,2,4],c:[80,8]},
+  crate:   {cat:'decor',fp:[[1,1]],pts:[1,2,4],c:[100,10]},
+  vase:    {cat:'decor',fp:[[1,1]],pts:[2,4,7],c:[200,20]},
+  chest:   {cat:'decor',fp:[[2,1]],pts:[3,6,10],c:[450,45]},
+  dummy:   {cat:'decor',fp:[[1,1]],pts:[3,6,10],c:[600,60],hall:[1]},
+  weapons: {cat:'decor',fp:[[2,1]],pts:[4,8,13],c:[900,90],hall:[1]},
+  bookcase:{cat:'decor',fp:[[2,1]],pts:[5,9,15],c:[1200,120],hall:[2]},
+  armchair:{cat:'decor',fp:[[2,2]],pts:[5,10,16],c:[2000,200],hall:[2]},
+  chandelier:{cat:'decor',layer:'ceil',fp:[[1,1]],pts:[6,12,20],c:[4000,400],hall:[3]}
+};
+D.FURN_ORDER=['table','rug','barrel','crate','vase','chest','dummy','weapons','bookcase','armchair','chandelier'];
+D.FURN_LV=3;
+D.furnHall=function(t,lv){var h=D.FURN[t].hall;return h?(h[lv-1]!==undefined?h[lv-1]:h[h.length-1]):0;};
+/* цена декора: lv - какой уровень покупаем (1 - новый предмет), own - сколько таких уже есть */
+D.decorCost=function(t,lv,own){var c=D.FURN[t].c,k=Math.pow(3,lv-1)*(lv===1?Math.pow(1.35,own||0):1);return {gold:Math.ceil(c[0]*k),rep:Math.ceil(c[1]*k)};};
+/* убранство: очки -> надбавка к цене и к потоку путников (как раньше 5 уровней убранства и репутация 100) */
+D.DECOR_PRICE=0.005;D.DECOR_PRICE_MAX=0.3;D.DECOR_FLOW=0.004;D.DECOR_FLOW_MAX=0.25;
+D.decorPrice=function(pts){return 1+Math.min(D.DECOR_PRICE_MAX,pts*D.DECOR_PRICE);};
+D.decorFlow=function(pts){return Math.min(D.DECOR_FLOW_MAX,pts*D.DECOR_FLOW);};
+/* стойка хозяйки: репутация с каждой продажи по уровню */
+D.COUNTER_MAX=5;D.counterRep=function(l){return l||1;};
+D.counterCost=function(l){return {gold:Math.ceil(800*Math.pow(5,l-1)),rep:Math.ceil(80*Math.pow(5,l-1))};};   // с уровня l на l+1
+D.TABLE_REP=0.05;   // улучшение стола: репутация как доля золота
 D.BED_STEP=0.5;
 
 /* ── формат чисел ── */

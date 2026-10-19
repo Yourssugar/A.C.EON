@@ -136,8 +136,9 @@ function model(name){
    Кухня за северной стеной (зал 1), пивоварня у восточной (после найма пивовара), веранда у входа (зал 2).
    Двор на юге: дорога, склад под навесом слева от дома. Промыслы и дома мастеров вокруг (SITES, HOUSES). */
 var DOOR={x:1,z:5};
-var PATH_IN=[[1,16.5],[1,6.2],[1,4.4],[2.4,3.6],[2.4,0.2]];
-var PATH_OUT=[[2.4,0.2],[2.4,3.6],[1,4.4],[1,6.2]];
+var PATH_IN=[[1,16.5],[1,6.2]];          // с дороги к двери; дальше по сетке зала (hall.js)
+var IN_PT={x:1,z:5.6};                   // точка сразу за дверью снаружи
+function HL(){return window.AcHall;}
 var ROAD_Z=16.5,ROAD_END=28;   // путники идут по дороге из-за края и сворачивают к двери
 function place(o,x,z,rot,y){o.position.set(x,y||0,z);o.rotation.y=rot||0;return o;}
 
@@ -208,23 +209,21 @@ function room(G,x0,x1,z0,z1,kind,o){
   if(o.corners!==false)[[x0,z0],[x1,z0],[x0,z1],[x1,z1]].forEach(function(c){G.add(place(model(kind==='brick'?'Corner_Exterior_Brick':'Corner_Exterior_Wood'),c[0],c[1]));});
 }
 function prop(G,name,x,z,rot,y,sc){var o=place(model(name),x,z,rot,y);if(sc)o.scale.setScalar(sc);G.add(o);return o;}
+/* v25: вещь на стене (флаг, фонарь, полка): прячется вместе со стеной, когда та опускается к камере. nx, nz - наружу от стены */
+function wprop(G,name,x,z,rot,y,nx,nz,sc){var o=prop(G,name,x,z,rot,y,sc);V.walls.push({o:o,n:new T.Vector3(nx,0,nz),prop:true,k:1});return o;}
 /* мелочь KayKit (еда, инструменты, оружие): в паке всё примерно вдвое крупнее нашего масштаба */
 function kprop(G,name,x,z,rot,y,sc,rx){var o=prop(G,name,x,z,rot,y,sc||0.35);if(rx)o.rotation.x=rx;return o;}
 
-/* полная пересборка по состоянию игры (v16: дом больше, кухня, пивоварня, веранда, столы по местам) */
-/* столы: 3 в зале, 2 на веранде (с зала 2). Место гостя: номер стола floor(seat/4), по 4 места за столом */
-var TABLES=[[0.4,2.6],[4.4,2.6],[0.4,-1.6],[3.8,7.2],[6.6,7.2]];
-function seatPos(i){
-  var tb=TABLES[Math.floor(i/4)]||TABLES[0],k=i%4;
-  return {x:tb[0]+(k%2?0.55:-0.55),z:tb[1]+(k<2?-0.85:0.85),rot:k<2?0:Math.PI,out:Math.floor(i/4)>=3};
-}
+/* полная пересборка по состоянию игры (v16: дом больше, кухня, пивоварня, веранда).
+   v25: столы и декор стоят по S.furn (мебель зала, js/hall.js), рисуются отдельно от неподвижной части (furnSync) */
+function decorTier(S){var p=window.acGame?acGame.decorPts():0;return p>=45?3:p>=25?2:p>=10?1:0;}
 function layout(S){
   var G=V.layout;
   G.traverse(function(o){if(o.userData&&o.userData.merged)o.geometry.dispose();});
   while(G.children.length)G.remove(G.children[0]);
   V.walls.length=0;V.fires.length=0;
   var B=S.build,TV=S.tav||{seats:2,brewer:{},cook:{}};
-  var hall=B.hall||0,bed=B.bedroom||0,decor=B.decor||0,kitchen=hall>=1,brew=!!(TV.brewer&&TV.brewer.hired),veranda=hall>=2;
+  var hall=B.hall||0,bed=B.bedroom||0,decor=decorTier(S),kitchen=hall>=1,brew=!!(TV.brewer&&TV.brewer.hired),veranda=hall>=2,cl=S.counter||1;
   var st=V.st={},keep=[];V.wpiles={brewer:[],cook:[]};V.vroof=null;
   /* главный дом: X[-6,8] Z[-5,5], комната мага слева до X=-2, зал 10 x 10 */
   room(G,-6,8,-5,5,'plaster',{
@@ -256,35 +255,37 @@ function layout(S){
   var cnt=box(2.8,1.0,0.6,mat('fwood'),1.2);place(cnt,6.0,-2.6,0,0.5);G.add(cnt);
   var top=box(3.0,0.08,0.75,mat('dwood'),1.2);place(top,6.0,-2.6,0,1.04);G.add(top);
   prop(G,'Mug',5.3,-2.55,0,1.08);prop(G,'Mug',6.6,-2.65,0.6,1.08);
-  prop(G,'Shelf_Simple',6.1,-4.75,0,1.4);prop(G,'Barrel_Holder',7.3,-4.2,0);prop(G,'Bottle_1',5.7,-4.7,0,1.45);
+  wprop(G,'Shelf_Simple',6.1,-4.75,0,1.4,0,-1);prop(G,'Barrel_Holder',7.3,-4.2,0);wprop(G,'Bottle_1',5.7,-4.7,0,1.45,0,-1);
+  /* стойка по уровню (v25): больше посуды, бочек и блеска */
+  if(cl>=2){prop(G,'Mug',5.8,-2.5,1.2,1.08);wprop(G,'Shelf_Simple',4.9,-4.75,0,1.4,0,-1);wprop(G,'Bottle_1',4.7,-4.7,0,1.45,0,-1);wprop(G,'Bottle_1',5.1,-4.7,0.5,1.45,0,-1);}
+  if(cl>=3){prop(G,'Barrel_Holder',4.7,-4.2,0);prop(G,'Chalice',7.0,-2.6,0,1.08);}
+  if(cl>=4){prop(G,'CandleStick_Triple',4.9,-2.6,0,1.08);wprop(G,'Shelf_Small_Bottles',6.1,-4.82,0,1.9,0,-1);}
+  if(cl>=5){prop(G,'Coin_Pile',6.2,-2.6,0,1.08);wprop(G,'Banner_1',3.9,-4.82,0,2.2,0,-1);}
   st.hostess={x:6.0,z:-3.6,rot:0};
-  /* столы: сколько нужно под купленные места */
-  var nT=Math.min(veranda?5:3,Math.ceil((TV.seats||2)/4));
-  for(var ti=0;ti<nT;ti++){
-    var p=TABLES[ti];
-    prop(G,'Table_Large',p[0],p[1],0);prop(G,'Bench',p[0],p[1]-0.85,0);prop(G,'Bench',p[0],p[1]+0.85,Math.PI);
-    prop(G,'Mug',p[0]-0.6,p[1],0,0.82);prop(G,'Table_Plate',p[0]+0.5,p[1]+0.1,0,0.82);
-    if(decor>=1)prop(G,'CandleStick_Triple',p[0],p[1]-0.1,0,0.82);
+  /* уголок мага у камина (v25): стул, ковёр, столик */
+  var MG=HL().MAGE;
+  prop(G,'Chair_1',MG.x,MG.z,MG.rot);var hr=rugMesh(1,1.7,0.9);place(hr,2.3,-3.5,0.1,0.02);G.add(hr);
+  prop(G,'Nightstand_Shelf',0.45,-4.55,0.3);prop(G,'Candle_1',0.45,-4.55,0,1.21);prop(G,'Mug',0.35,-4.5,0,1.21);
+  /* хлам в западной части зала до первого улучшения */
+  if(!hall){
+    prop(G,'Crate_Wooden',-1.4,-3.2,0.3);prop(G,'Crate_Wooden',-1.5,-2.3,1.1);prop(G,'Prop_Crate',-0.7,-0.6,0.4);prop(G,'Barrel',-1.5,0.6,0);
+    prop(G,'Wood_Planks_Stack_Small',-1.0,2.2,0.2);prop(G,'Barrel',-0.5,3.2,0.7);prop(G,'Crate_Wooden',-1.5,4.2,0.6);prop(G,'Bucket_Wooden_1',-0.4,-1.8,0);
+    var cob=box(1.9,0.03,9.6,new T.MeshStandardMaterial({color:0x5a4a3a,roughness:1,transparent:true,opacity:0.35}));cob.castShadow=false;place(cob,-1,0,0,0.02);G.add(cob);
   }
-  if(hall>=3){prop(G,'Chandelier',2.4,0.6,0,3.05);prop(G,'rug_oval_A',3.6,-1.2,0,0.02,1.1);prop(G,'Stool',3.6,-1.2,0);prop(G,'Barrel',4.4,-0.6,0);}
-  if(hall>=4){prop(G,'Barrel',-1.4,4.3,0);prop(G,'Stool',-1.0,0.8,0);}
-  if(hall>=5)prop(G,'rug_rectangle_stripes_A',2.4,0.8,Math.PI/2,0.02,1.6);
   /* комната мага */
   prop(G,bed>=3?'Bed_Twin2':'Bed_Twin1',-4.6,-3.6,Math.PI/2);
   prop(G,'Nightstand_Shelf',-5.55,-1.95,Math.PI/2);prop(G,'Candle_1',-5.55,-1.95,0,0.6);
   prop(G,'Chest_Wood',-2.9,-4.4,0);
   prop(G,'Chair_1',-3.4,3.6,Math.PI*0.8);prop(G,'Table_Plate',-3.0,4.4,0,0);
-  st.mageSit={x:-3.4,z:3.6,rot:Math.PI*0.8};
+  st.mageSit={x:MG.x,z:MG.z,rot:MG.rot};
   st.mageBed={x:-4.6,z:-3.6,rot:Math.PI/2};
-  if(bed>=1)prop(G,'rug_oval_A',-4,1.0,0,0.02,1.4);
+  if(bed>=1){var br=rugMesh(1,2.6,1.7);place(br,-4,1.0,0,0.02);G.add(br);}
   if(bed>=2)prop(G,'Bookcase_2',-5.6,3.0,Math.PI/2);
   if(bed>=4)prop(G,'CandleStick',-3.2,-4.5,0,0.69);
-  /* убранство */
-  if(decor>=1)prop(G,'Banner_1',5,-4.82,0,1.2);
-  if(decor>=2){prop(G,'Lantern_Wall',-1.8,4.75,Math.PI,1.9);prop(G,'Lantern_Wall',7.8,2.6,-Math.PI/2,1.9);}
-  if(decor>=3){prop(G,'Banner_2',-1,-4.82,0,1.2);prop(G,'Prop_Vine2',-6.1,5.1,0);}
-  if(decor>=4){prop(G,'rug_rectangle_A',-4.2,-0.6,0,0.02,1.3);prop(G,'Vase_2',-1.5,-4.4,0);}
-  if(decor>=5){prop(G,'Prop_Vine5',8.1,5.1,0);prop(G,'Chalice',6.6,-2.6,0,1.08);}
+  /* убранство на стенах растёт с очками декора (v25) */
+  if(decor>=1){wprop(G,'Banner_1',-1.6,-4.82,0,2.2,0,-1);wprop(G,'Lantern_Wall',7.8,2.6,-Math.PI/2,1.9,1,0);}
+  if(decor>=2){wprop(G,'Lantern_Wall',-1.8,4.75,Math.PI,1.9,0,1);prop(G,'Prop_Vine2',-6.1,5.1,0);var mr=rugMesh(2,2.6,1.8);place(mr,-4.2,-0.6,0,0.02);G.add(mr);}
+  if(decor>=3){wprop(G,'Banner_2',0.2,-4.82,0,2.2,0,-1);prop(G,'Prop_Vine5',8.1,5.1,0);}
   /* кухня (зал 1): за северной стеной */
   if(kitchen){
     room(G,-2,4,-9,-5,'brick',{S:{skip:true},N:{win:[1]},W:{win:[-7]},E:{win:[-7]},floor:'cobble'});
@@ -335,8 +336,8 @@ function layout(S){
   for(var fx=-9;fx<=9;fx+=2)if(Math.abs(fx-1)>1)prop(G,'Prop_WoodenFence_Single',fx,12.4,0);
   prop(G,'Barrel_Apples',-1.2,5.7,0);prop(G,'Crate_Wooden',-2.2,5.7,0.3);
   if(decor>=2)prop(G,'Stall_Cart_Empty',-2.8,9.8,Math.PI*0.35,0,0.9);
-  /* очередь путников перед стойкой */
-  st.queue=[[6.0,-1.6],[6.6,-0.6],[7.1,0.4],[7.1,1.4],[7.1,2.4],[7.1,3.4],[6.4,4.2],[5.6,4.3]];
+  /* очередь путников перед стойкой: клетки под ней свободны от мебели (hall.js) */
+  st.queue=HL().QUEUE;
   /* v22: крыша над домом, кухней и пивоварней; видна только на экране ГОРОД */
   var RG=new T.Group();V.roofG=RG;G.add(RG);keep.push(RG);
   function roofAt(cx,cz,w,d,rot){var H=new T.Group();H.position.set(cx,0,cz);H.rotation.y=rot;RG.add(H);roof(H,w,d,-1,false);}
@@ -416,6 +417,182 @@ function setNight(on){
   V.scene.background.set(on?0x0b1426:0x8fb4cc);V.scene.fog.color.set(on?0x0b1426:0x8fb4cc);
   V.inner.intensity=on?2.2:0.8;
   if(V.glass){V.glass.emissiveIntensity=on?1.2:0;}
+}
+
+/* ════════ МЕБЕЛЬ ЗАЛА (v25) ════════
+   Каждый предмет - своя группа (не сливается с домом), чтобы в режиме дизайна его можно было двигать.
+   Пересобирается только тот предмет, у которого сменился вид (тип, уровень, стройка). */
+function furnModel(it,G){
+  var t=it.t,lv=it.lv||1;
+  function p(n,x,z,r,y,sc){return prop(G,n,x,z,r,y,sc);}
+  if(t==='table'){
+    if(it.bt||it.q){   /* ещё не поставлен: доски, козлы, молоток */
+      p('Wood_Planks_Stack_Small',0,0,0.3);kprop(G,'hammer',0.5,0.4,0.6,0.02,0.35,-Math.PI/2);
+      var w=lv===1?1.4:lv===2?2.6:3.6;[-1,1].forEach(function(sd){var b=box(w,0.06,0.08,mat('fwood'),1);place(b,0,sd*0.6,0,0.04);G.add(b);});
+      return;
+    }
+    var sx=lv===1?0.55:lv===3?1.35:1;
+    var tb=p('Table_Large',0,0,0);tb.scale.x=sx;
+    if(lv===1){p('Stool',0,-0.72,0);p('Stool',0,0.72,0);p('Mug',-0.25,0,0.4,0.82);p('Table_Plate',0.3,0.05,0,0.82);}
+    else{
+      var b1=p('Bench',0,-0.85,0),b2=p('Bench',0,0.85,Math.PI);b1.scale.x=sx;b2.scale.x=sx;
+      p('Mug',-0.6*sx,0.05,0,0.82);p('Table_Plate',0.5*sx,0.1,0,0.82);p('CandleStick_Triple',0,-0.1,0,0.82);
+      if(lv===3){p('Mug',1.5,-0.1,1,0.82);p('Table_Plate',-1.4,0.1,0,0.82);p('Bottle_1',0.6,-0.2,0,0.82);}
+    }
+    return;
+  }
+  if(t==='rug'){var rg0=rugMesh(lv,2.9,1.9);rg0.position.y=0.015+(it.id%5)*0.002;G.add(rg0);return;}
+  if(t==='barrel'){p(lv>=2?'Barrel_Apples':'Barrel',0,0,0);if(lv>=3)p('CandleStick',0,0,0,0.9);return;}
+  if(t==='crate'){p('Crate_Wooden',0,0,0);if(lv>=2)p('Mug',0.15,0.1,0,0.88);if(lv>=3){var c2=p('Crate_Wooden',-0.05,-0.05,0.5,0.88);c2.scale.setScalar(0.6);}return;}
+  if(t==='vase'){var v=p('Vase_2',0,0,0);if(lv>=3)v.scale.setScalar(1.25);
+    if(lv>=2){var fl=natObj('Flower_3_Group',0,0,lv>=3?0.5:0.4,0.3,'#7aa834');if(fl){fl.position.y=lv>=3?0.6:0.45;G.add(fl);}else p('Candle_1',0,0,0,0.5);}
+    return;}
+  if(t==='chest'){p('Chest_Wood',0,-0.15,0);if(lv>=2)p('Coin_Pile',0.75,0.2,0);if(lv>=3)p('CandleStick',-0.2,-0.1,0,0.44);return;}
+  if(t==='dummy'){p('Dummy',0,0,0);if(lv>=2)kprop(G,'shield_B',0.35,0.15,0.5,0.02,0.45);if(lv>=3)kprop(G,'sword_B',-0.35,0.2,-0.4,0.02,0.4);return;}
+  if(t==='weapons'){p('WeaponStand',0,0,0);if(lv>=2)kprop(G,'axe_A',0.75,0.1,0.3,0.02,0.42);if(lv>=3)kprop(G,'shield_B',-0.8,0.15,-0.3,0.02,0.45);return;}
+  if(t==='bookcase'){p('Bookcase_2',0,-0.25,0);if(lv>=2)p('SmallBottles_1',0.3,-0.25,0,1.02);if(lv>=3)p('Chalice',-0.4,-0.25,0,1.62);return;}
+  if(t==='armchair'){var ac=p('armchair',0,0,0,0,0.85);ac.traverse(function(o){if(o.isMesh)o.material=leatherMat();});if(lv>=2)p('pillow_A',0.1,0.05,0.3,0.55);if(lv>=3){var rg=rugMesh(1,1.7,1.2);rg.position.set(0,0.012,0.2);G.add(rg);}return;}
+  if(t==='chandelier'){var ch=p('Chandelier',0,0,0,3.05);if(lv>=2)ch.scale.setScalar(lv>=3?1.4:1.2);return;}
+}
+var LEATHER=null;
+function leatherMat(){return LEATHER||(LEATHER=new T.MeshStandardMaterial({color:0x7a3424,roughness:0.75,metalness:0}));}
+/* ковры рисуем сами: у KayKit они плоские жёлтые и выбиваются из текстур зала */
+var RUGM={};
+function rugMat(lv){
+  if(RUGM[lv])return RUGM[lv];
+  var W=256,H=176,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
+  var P=[{b:'#6e4228',e:'#4a2a18',f:'#a8734a',g:'#8a5634'},{b:'#7e231d',e:'#3a0f0c',f:'#e0a848',g:'#a83a2a'},{b:'#1d3566',e:'#0e1a36',f:'#f0c060',g:'#3a5aa0'}][lv-1]||{b:'#6e4228',e:'#4a2a18',f:'#a8734a',g:'#8a5634'};
+  x.fillStyle=P.b;x.fillRect(0,0,W,H);
+  if(lv===1){for(var i=0;i<H;i+=10){x.fillStyle=i%20?P.g:P.e;x.globalAlpha=0.45;x.fillRect(0,i,W,5);}x.globalAlpha=1;
+    x.strokeStyle=P.e;x.lineWidth=7;x.beginPath();x.ellipse(W/2,H/2,W/2-14,H/2-14,0,0,Math.PI*2);x.stroke();}
+  else{
+    x.fillStyle=P.e;x.fillRect(0,0,W,16);x.fillRect(0,H-16,W,16);x.fillRect(0,0,16,H);x.fillRect(W-16,0,16,H);
+    x.strokeStyle=P.f;x.lineWidth=4;x.strokeRect(20,20,W-40,H-40);x.lineWidth=2;x.strokeRect(28,28,W-56,H-56);
+    x.fillStyle=P.g;for(var k=0;k<W;k+=16){x.beginPath();x.moveTo(k,8);x.lineTo(k+8,2);x.lineTo(k+16,8);x.lineTo(k+8,14);x.fill();x.beginPath();x.moveTo(k,H-8);x.lineTo(k+8,H-14);x.lineTo(k+16,H-8);x.lineTo(k+8,H-2);x.fill();}
+    x.fillStyle=P.f;x.beginPath();x.moveTo(W/2,H/2-44);x.lineTo(W/2+70,H/2);x.lineTo(W/2,H/2+44);x.lineTo(W/2-70,H/2);x.closePath();x.fill();
+    x.fillStyle=P.b;x.beginPath();x.moveTo(W/2,H/2-30);x.lineTo(W/2+48,H/2);x.lineTo(W/2,H/2+30);x.lineTo(W/2-48,H/2);x.closePath();x.fill();
+    if(lv===3){x.fillStyle=P.f;x.beginPath();x.arc(W/2,H/2,14,0,Math.PI*2);x.fill();[[50,48],[W-50,48],[50,H-48],[W-50,H-48]].forEach(function(q){x.beginPath();x.arc(q[0],q[1],9,0,Math.PI*2);x.fill();});}
+    else{x.fillStyle=P.g;x.beginPath();x.arc(W/2,H/2,10,0,Math.PI*2);x.fill();}
+  }
+  /* немного шума, чтобы было похоже на ткань */
+  var d=x.getImageData(0,0,W,H),a=d.data;for(var j=0;j<a.length;j+=4){var n=(Math.random()-0.5)*18;a[j]+=n;a[j+1]+=n;a[j+2]+=n;}x.putImageData(d,0,0);
+  var t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;
+  return (RUGM[lv]=new T.MeshStandardMaterial({map:t,roughness:1,metalness:0}));
+}
+function rugMesh(lv,w,d){
+  var g=lv===1?new T.CircleGeometry(0.5,40):new T.PlaneGeometry(1,1);
+  g.rotateX(-Math.PI/2);var m=new T.Mesh(g,rugMat(lv));m.scale.set(w,1,d);m.receiveShadow=true;return m;
+}
+function furnSig(it){return it.t+':'+(it.lv||1)+':'+(it.bt||it.q?'b':'');}
+/* items - что рисовать (мебель из игры или черновик режима дизайна) */
+function furnSync(items){
+  if(!V)return;
+  if(!V.furnG){V.furnG=new T.Group();V.scene.add(V.furnG);V.furn={};}
+  var seen={},changed=false;
+  (items||[]).forEach(function(it){
+    if(it.st)return;
+    seen[it.id]=1;var rec=V.furn[it.id],sg=furnSig(it);
+    if(!rec||rec.sig!==sg){
+      if(rec)V.furnG.remove(rec.g);
+      var g=new T.Group();furnModel(it,g);g.userData.fid=it.id;V.furnG.add(g);rec=V.furn[it.id]={g:g,sig:sg,pos:''};changed=true;
+    }
+    var c=HL().center(it),ps=c.x+','+c.z+','+c.rot;
+    if(rec.pos!==ps){rec.pos=ps;rec.base=c.z>5?0.04:0;rec.g.position.set(c.x,rec.base,c.z);rec.g.rotation.y=c.rot;changed=true;}   /* на веранде настил выше пола */
+  });
+  for(var id in V.furn)if(!seen[id]){V.furnG.remove(V.furn[id].g);delete V.furn[id];changed=true;}
+  if(changed&&V.renderer)V.renderer.shadowMap.needsUpdate=true;
+}
+/* мебель, по которой сейчас ходят гости: из игры (черновик дизайна на ходьбу не влияет) */
+function liveFurn(){return (V&&V.S&&V.S.furn)||[];}
+function hallLvl(){return (V&&V.S&&V.S.build&&V.S.build.hall)||0;}
+/* путь по залу между точками (обе внутри сетки или у двери) */
+function hallPath(from,to){return HL().path(liveFurn(),hallLvl(),from,to);}
+
+/* ── режим дизайна: сетка, подсветка, ввод ── */
+var gridTexC=null;
+function gridTex(){
+  if(gridTexC)return gridTexC;
+  var c=document.createElement('canvas');c.width=c.height=64;var x=c.getContext('2d');
+  x.fillStyle='rgba(255,255,255,0.10)';x.fillRect(0,0,64,64);x.strokeStyle='rgba(255,255,255,0.75)';x.lineWidth=3;x.strokeRect(1.5,1.5,61,61);
+  gridTexC=new T.CanvasTexture(c);return gridTexC;
+}
+function buildGrid(){
+  if(V.gridG){V.scene.remove(V.gridG);V.gridG.traverse(function(o){if(o.geometry)o.geometry.dispose();});}
+  var G=new T.Group();V.gridG=G;V.scene.add(G);
+  var hall=hallLvl(),cols={free:null,walk:0xffc040,junk:0xff4040};
+  var free=[],walk=[],junk=[];
+  for(var cz=-5;cz<=9;cz++)for(var cx=-2;cx<=7;cx++){var ty=HL().cell(cx,cz,hall);if(ty==='free')free.push([cx,cz]);else if(ty==='walk')walk.push([cx,cz]);else if(ty==='junk')junk.push([cx,cz]);}
+  function quads(list,m,y){
+    if(!list.length)return;
+    var g=new T.PlaneGeometry(0.96,0.96);g.rotateX(-Math.PI/2);
+    var im=new T.InstancedMesh(g,m,list.length),mm=new T.Matrix4();
+    list.forEach(function(c,i){mm.makeTranslation(c[0]+0.5,y,c[1]+0.5);im.setMatrixAt(i,mm);});
+    im.renderOrder=2;G.add(im);
+  }
+  quads(free,new T.MeshBasicMaterial({map:gridTex(),transparent:true,depthWrite:false,opacity:0.8}),0.065);
+  quads(walk,new T.MeshBasicMaterial({color:cols.walk,transparent:true,opacity:0.3,depthWrite:false}),0.065);
+  quads(junk,new T.MeshBasicMaterial({color:cols.junk,transparent:true,opacity:0.42,depthWrite:false}),0.065);
+  V.selG=new T.Group();G.add(V.selG);
+}
+/* подсветка клеток выбранного предмета: зелёная, если можно, красная, если нельзя */
+var selMat=null;
+function designMark(it,ok){
+  if(!V||!V.selG)return;
+  while(V.selG.children.length){var o=V.selG.children[0];V.selG.remove(o);o.geometry.dispose();}
+  /* предмет приподнят, пока выбран */
+  for(var id in V.furn){var r=V.furn[id];r.g.position.y=(r.base||0)+((it&&+id===it.id&&HL().layer(it)!=='floor')?0.12:0);}
+  if(!it)return;
+  selMat=selMat||{ok:new T.MeshBasicMaterial({color:0x40ff70,transparent:true,opacity:0.45,depthWrite:false}),no:new T.MeshBasicMaterial({color:0xff3030,transparent:true,opacity:0.5,depthWrite:false})};
+  HL().cells(it).forEach(function(c){var g=new T.PlaneGeometry(0.98,0.98);g.rotateX(-Math.PI/2);var m=new T.Mesh(g,ok?selMat.ok:selMat.no);m.position.set(c[0]+0.5,0.075,c[1]+0.5);m.renderOrder=3;V.selG.add(m);});
+}
+var designCb=null;
+function setDesign(on,cb){
+  if(!V)return;
+  V.design=!!on;designCb=on?cb:null;
+  if(on){
+    V.preDesign={az:V.goal.az,pol:V.goal.pol,dist:V.goal.dist,t:V.goal.target.clone()};
+    var hall=hallLvl(),wide=V.camera.aspect<0.9;
+    V.goal.az=0;V.goal.pol=0.36;V.goal.dist=wide?(hall>=2?36:28):(hall>=2?23:16.5);V.goal.target.set(hall?2.9:3.9,0,hall>=2?2.8:0);
+    buildGrid();
+    if(labelHost)labelHost.style.display='none';
+  }else{
+    if(V.gridG){V.scene.remove(V.gridG);V.gridG=null;V.selG=null;}
+    if(V.preDesign){V.goal.az=V.preDesign.az;V.goal.pol=V.preDesign.pol;V.goal.dist=V.preDesign.dist;V.goal.target.copy(V.preDesign.t);}
+    if(labelHost&&V.active)labelHost.style.display='';
+    furnSync(liveFurn());for(var id in V.furn)V.furn[id].g.position.y=V.furn[id].base||0;
+  }
+  if(V.renderer)V.renderer.shadowMap.needsUpdate=true;
+}
+var _ray=null,_ndc=null,_pl=null,_hit=null;
+function groundAt(cx,cy){
+  if(!V)return null;
+  _ray=_ray||new T.Raycaster();_ndc=_ndc||new T.Vector2();_pl=_pl||new T.Plane(new T.Vector3(0,1,0),0);_hit=_hit||new T.Vector3();
+  var r=V.renderer.domElement.getBoundingClientRect();
+  _ndc.set((cx-r.left)/r.width*2-1,-((cy-r.top)/r.height)*2+1);
+  _ray.setFromCamera(_ndc,V.camera);
+  return _ray.ray.intersectPlane(_pl,_hit)?{x:_hit.x,z:_hit.z}:null;
+}
+/* картинка предмета для магазина: рисуем в маленький кадр тем же рендерером */
+var THUMB={};
+function thumb(t,lv){
+  var key=t+':'+lv;if(THUMB[key])return THUMB[key];
+  if(!V||!readyFlag)return '';
+  var S=128,rt=new T.WebGLRenderTarget(S,S),sc=new T.Scene(),G=new T.Group();
+  sc.add(new T.HemisphereLight(0xfff4e0,0x5a4a3a,2.2));var dl=new T.DirectionalLight(0xffffff,1.6);dl.position.set(3,6,4);sc.add(dl);
+  furnModel({t:t,lv:lv,id:0},G);sc.add(G);
+  var b=new T.Box3().setFromObject(G),sz=b.getSize(new T.Vector3()),c=b.getCenter(new T.Vector3()),R=Math.max(sz.x,sz.y,sz.z)*0.62+0.2;
+  var cam=new T.PerspectiveCamera(30,1,0.05,60);cam.position.set(c.x+R*2.2,c.y+R*2.0,c.z+R*2.6);cam.lookAt(c);
+  var rr=V.renderer,old=rr.getRenderTarget(),oc=new T.Color();rr.getClearColor(oc);var oa=rr.getClearAlpha();
+  rr.setRenderTarget(rt);rr.setClearColor(0x000000,0);rr.clear();rr.render(sc,cam);
+  var px=new Uint8Array(S*S*4);rr.readRenderTargetPixels(rt,0,0,S,S,px);
+  rr.setRenderTarget(old);rr.setClearColor(oc,oa);rt.dispose();
+  var cv=document.createElement('canvas');cv.width=cv.height=S;var x=cv.getContext('2d'),im=x.createImageData(S,S);
+  for(var y=0;y<S;y++)im.data.set(px.subarray((S-1-y)*S*4,(S-y)*S*4),y*S*4);
+  x.putImageData(im,0,0);
+  /* цвета в кадре линейные: переводим в sRGB */
+  var d=x.getImageData(0,0,S,S),a=d.data;for(var i=0;i<a.length;i+=4)for(var k=0;k<3;k++){var v=a[i+k]/255;a[i+k]=Math.round(255*(v<=0.0031308?v*12.92:1.055*Math.pow(v,1/2.4)-0.055));}
+  x.putImageData(d,0,0);
+  return (THUMB[key]=cv.toDataURL('image/png'));
 }
 
 /* ════════ ПРОМЫСЛЫ (v15) ════════
@@ -784,7 +961,7 @@ function goTo(N,pts){N.path=pts.map(function(p){return {x:p[0],z:p[1]};});}
 /* ════════ СИНХРОНИЗАЦИЯ С ИГРОЙ ════════ */
 function signature(S){
   var T=S.tav||{};
-  return JSON.stringify([S.build.hall,S.build.bedroom,S.build.decor,S.storeLvl,T.seats,T.brewer&&T.brewer.hired,T.cook&&T.cook.hired]);
+  return JSON.stringify([S.build.hall,S.build.bedroom,decorTier(S),S.counter||1,S.storeLvl,T.brewer&&T.brewer.hired,T.cook&&T.cook.hired]);
 }
 function sync(S){
   if(!V||!readyFlag)return;
@@ -792,6 +969,7 @@ function sync(S){
   var sig=signature(S);
   if(sig!==V.sig){V.sig=sig;layout(S);placeMasters(S,true);if(V.pendingMage&&mageRef){V.pendingMage=false;setMage(mageRef,mageMode);}}
   setNight(S.place==='sleep');
+  if(!V.design)furnSync(S.furn);
   placeMasters(S,false);
   syncCustomers(S);
   buildNature();
@@ -864,27 +1042,25 @@ function mealFor(N,id){
   if(N.meal){V.scene.remove(N.meal);N.meal=null;}
   var gs=null;(V.S&&V.S.tav&&V.S.tav.guests||[]).forEach(function(x){if(x.id===id)gs=x;});
   if(!gs||(!gs.beer&&!gs.food)||!KIT.food_stew)return;
-  var G=new T.Group(),dz=N.seat.rot===0?0.42:-0.42;
-  if(gs.food){var f=model(MEALS[id%MEALS.length]);f.scale.setScalar(MEALS[id%MEALS.length]==='food_dinner'?0.2:0.26);place(f,N.seat.x,N.seat.z+dz,id,0.82);G.add(f);}
-  if(gs.beer){var m=model('Mug');place(m,N.seat.x+(gs.food?0.22:0),N.seat.z+dz*0.8,id*1.3,0.82);G.add(m);}
+  /* перед гостем на стол: вдоль взгляда, кружка чуть сбоку */
+  var G=new T.Group(),fx=Math.sin(N.seat.rot),fz=Math.cos(N.seat.rot),sx=fz,sz=-fx;
+  if(gs.food){var f=model(MEALS[id%MEALS.length]);f.scale.setScalar(MEALS[id%MEALS.length]==='food_dinner'?0.2:0.26);place(f,N.seat.x+fx*0.42,N.seat.z+fz*0.42,id,0.82);G.add(f);}
+  if(gs.beer){var k=gs.food?0.22:0,m=model('Mug');place(m,N.seat.x+fx*0.34+sx*k,N.seat.z+fz*0.34+sz*k,id*1.3,0.82);G.add(m);}
   G.traverse(function(o){if(o.isMesh)o.castShadow=false;});
   V.scene.add(G);N.meal=G;
   return !!gs.beer;
 }
-/* путь от места к выходу и от очереди к месту */
-function seatPath(sp){
-  var appr=[sp.x,sp.out?(sp.rot===0?5.7:8.9):(sp.rot===0?sp.z-0.9:sp.z+0.9)];
-  if(!sp.out)return [[2.4,0.2],[2.4,appr[1]],appr,[sp.x,sp.z]];
-  return PATH_OUT.concat([[appr[0],6.2],appr,[sp.x,sp.z]]);
+/* v25: пути по сетке зала (hall.js). Внутрь: с дороги к двери, дальше A* до места или очереди. Наружу: обратно к двери и на дорогу */
+function roadOut(out){return [PATH_IN[1],PATH_IN[0],[out*ROAD_END,ROAD_Z]];}
+function seatPath(N,key){
+  var r=HL().seatPath(liveFurn(),hallLvl(),{x:N.x,z:N.z},key);
+  if(!r)return null;N.seat=r.seat;N.appr=r.appr;return r.path;
 }
 function leavePath(N,out){
-  var tail=[PATH_IN[1],PATH_IN[0],[out*ROAD_END,ROAD_Z]];
-  if(N.guest&&N.seat){
-    var sp=N.seat,appr=[sp.x,sp.out?(sp.rot===0?5.7:8.9):(sp.rot===0?sp.z-0.9:sp.z+0.9)];
-    if(sp.out)return [appr,[appr[0],6.2],[1,6.2]].concat(tail.slice(1));
-    return [appr,[2.4,appr[1]],[2.4,3.6],[1,4.4]].concat(tail);
-  }
-  return [[2.4,2.8],[1,4.4]].concat(tail);
+  var from={x:N.x,z:N.z},pts=[];
+  if(N.guest&&N.seat){var a=N.appr||HL().apprOf(liveFurn(),hallLvl(),N.seat);pts.push([a.x,a.z]);from=a;}
+  if(from.z<5.2)pts=pts.concat(hallPath(from,IN_PT));
+  return pts.concat(roadOut(out));
 }
 function syncCustomers(S){
   var seen={},lim=CUST_MAX[window.Scene3D&&Scene3D.quality]||5,glim=GUEST_MAX[window.Scene3D&&Scene3D.quality]||4,live=0,gl=0;
@@ -898,8 +1074,10 @@ function syncCustomers(S){
     if(!N&&live>=lim+1){delete seen[c.id];return;}
     if(!N){live++;
       var side=rnd(c.id*3.1)<0.5?-1:1;N=spawnNpc(key,travelerLook(c),side*ROAD_END,ROAD_Z+(rnd(c.id)-0.5)*1.4,side>0?-Math.PI/2:Math.PI/2);
-      goTo(N,PATH_IN.concat([slot]));N.slot=i;N.cust=true;N.speed=2.6;N.side=side;
-    }else if(N.slot!==i&&!N.leaving){N.slot=i;goTo(N,[slot]);}
+      goTo(N,PATH_IN.concat([[IN_PT.x,IN_PT.z]]).concat(hallPath(IN_PT,{x:slot[0],z:slot[1]})));N.slot=i;N.cust=true;N.speed=2.6;N.side=side;
+    }else if(N.slot!==i&&!N.leaving){N.slot=i;
+      /* ещё идёт к очереди: путь до нового места пересчитывать не нужно, хватит последней точки */
+      if(N.path.length>1)N.path[N.path.length-1]={x:slot[0],z:slot[1]};else goTo(N,[slot]);}
   });
   for(var key in V.npcs){
     var N=V.npcs[key];
@@ -907,17 +1085,18 @@ function syncCustomers(S){
     var id=+key.slice(2);
     if(seen[id])continue;
     var gs=guests[id];
-    if(gs&&!N.guest&&gl<glim){N.guest=true;gl++;N.seat=seatPos(gs.seat);N.speed=1.8;goTo(N,seatPath(N.seat));continue;}
-    if(gs&&N.guest)continue;
+    if(gs&&!N.guest&&gl<glim){var sp=seatPath(N,gs.seat);if(sp){N.guest=true;gl++;N.speed=1.8;goTo(N,sp);continue;}}
+    if(gs&&N.guest&&N.seatKey!==undefined&&N.seatKey!==gs.seat){/* место переехало (дизайн) */}
+    if(gs&&N.guest){N.seatKey=gs.seat;continue;}
     N.leaving=true;N.speed=2.6;N.y=0;if(N.meal){V.scene.remove(N.meal);N.meal=null;}goTo(N,leavePath(N,-(N.side||1)));
   }
   /* гости без фигуры (пришли, пока таверны не было на экране): сразу за столом */
   for(var gid in guests){
     if(gl>=glim)break;
     var gk='c:'+gid;if(V.npcs[gk])continue;
-    var gx=guests[gid],sp=seatPos(gx.seat);
-    var NG=spawnNpc(gk,travelerLook({id:+gid,who:gx.who}),sp.x,sp.z,sp.rot);
-    NG.cust=true;NG.guest=true;NG.seat=sp;NG.side=rnd(+gid*3.1)<0.5?-1:1;NG.sitNow=true;gl++;
+    var gx=guests[gid],st2=HL().seatByKey(liveFurn(),gx.seat);if(!st2)continue;
+    var NG=spawnNpc(gk,travelerLook({id:+gid,who:gx.who}),st2.x,st2.z,st2.rot);
+    NG.cust=true;NG.guest=true;NG.seat=st2;NG.seatKey=gx.seat;NG.side=rnd(+gid*3.1)<0.5?-1:1;NG.sitNow=true;gl++;
   }
 }
 
@@ -930,7 +1109,7 @@ function syncPet(S){
   if(!id||!window.Adventure||!Adventure.ready)return;
   if(!Adventure.hasPet(id)){Adventure.loadPet(id).then(function(){if(V&&V.petId===id)V.petId='-';},function(){});return;}
   var P=Adventure.pet(id);if(!P)return;
-  V.pet=P;P.root.position.set(4.2,0,-3.6);P.root.rotation.y=-2.3;
+  var PP=HL().PET;V.pet=P;P.root.position.set(PP.x,0,PP.z);P.root.rotation.y=PP.rot;
   if(P.fly)P.root.position.y=P.fly;
   V.scene.add(P.root);P.play('low',0);
 }
@@ -1028,7 +1207,12 @@ function bindInput(el){
     if(!V.active)return;
     ptr[e.pointerId]={x:e.clientX,y:e.clientY,b:e.button,touch:e.pointerType!=='mouse'};
     var n=Object.keys(ptr).length;
-    if(n===1){dragD=0;multi=false;}else{multi=true;g2=null;}
+    if(n===1){dragD=0;multi=false;
+      /* дизайн: нажатие на предмет берёт его, иначе палец двигает камеру */
+      if(V.design&&designCb){var gp=groundAt(e.clientX,e.clientY);ptr[e.pointerId].cap=!!(gp&&designCb.down(gp));}
+    }else{multi=true;g2=null;
+      for(var pk in ptr)if(ptr[pk].cap){ptr[pk].cap=false;if(designCb)designCb.up(null,false);}
+    }
     try{el.setPointerCapture&&el.setPointerCapture(e.pointerId);}catch(err){}
   });
   el.addEventListener('pointermove',function(e){
@@ -1048,6 +1232,7 @@ function bindInput(el){
     }
     if(multi)return;              /* после щипка остался один палец: ждём, пока отпустят все */
     dragD+=Math.abs(dx)+Math.abs(dy);
+    if(V.design){if(p.cap){var gp2=groundAt(e.clientX,e.clientY);if(gp2&&designCb)designCb.move(gp2);}else pan(dx,dy);return;}
     if(p.b===2||e.shiftKey){pan(dx,dy);return;}
     var k=p.touch?0.008:0.006;
     V.goal.az-=dx*k;V.goal.pol=clamp(V.goal.pol-dy*k*0.7,0.42,1.3);
@@ -1056,7 +1241,9 @@ function bindInput(el){
     if(!ptr[e.pointerId])return;
     var was=ptr[e.pointerId];delete ptr[e.pointerId];g2=null;
     if(Object.keys(ptr).length)return;
-    if(!cancel&&V.active&&!multi&&dragD<(was.touch?10:6)&&was.b!==2)pick(e);
+    var tap=!cancel&&!multi&&dragD<(was.touch?10:6)&&was.b!==2;
+    if(V.design){if(designCb){if(was.cap)designCb.up(groundAt(e.clientX,e.clientY),tap);else if(tap)designCb.tap(groundAt(e.clientX,e.clientY));}multi=false;return;}
+    if(tap&&V.active)pick(e);
     multi=false;
   }
   el.addEventListener('pointerup',function(e){up(e,false);});
@@ -1105,7 +1292,8 @@ function updateWalls(dt){
   for(var i=0;i<V.walls.length;i++){
     var w=V.walls[i];
     var front=w.inner||V.mode==='city'?false:w.n.dot(_d)>0.25;
-    var goal=w.inner?0.42:front?0.1:1;
+    if(w.prop){w.o.visible=!(front||V.design&&V.mode!=='city');continue;}
+    var goal=w.inner?0.42:(front||V.design)?0.1:1;
     w.k+=(goal-w.k)*Math.min(1,dt*6);
     w.o.scale.y=w.k;
   }
@@ -1128,6 +1316,7 @@ function anchors(){
     if(V.npcs.hostess)out.push({kind:'hostess',id:'hostess',x:st.hostess.x,y:2.25,z:st.hostess.z});
     if(st.cook&&V.npcs['w:cook'])out.push({kind:'worker',id:'cook',x:st.cook.x,y:2.4,z:st.cook.z});
     if(st.brewer&&V.npcs['w:brewer'])out.push({kind:'worker',id:'brewer',x:st.brewer.x,y:2.4,z:st.brewer.z});
+    liveFurn().forEach(function(it){if(it.st||!(it.bt||it.q))return;var c=HL().center(it);out.push({kind:'furn',id:it.id,x:c.x,y:1.5,z:c.z});});
   }
   if(st.store)out.push({kind:'store',id:'store',x:st.store.x,y:2.9,z:st.store.z});
   return out;
@@ -1224,5 +1413,6 @@ window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_
   resetView:resetView,setMode:setMode,get mode(){return V?V.mode:'tavern';},bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});var np=Object.keys(V.npcs),nr=np.filter(function(k){return V.npcs[k].ready;}).length;return {npcs:np.length,npcReady:nr,npcPos:np.map(function(k){var N=V.npcs[k];return k+':'+N.x.toFixed(1)+','+N.z.toFixed(1);}).join(' '),meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
   onPick:function(fn){onPickCb=fn;},setLabeler:function(fn){labeler=fn;},
   get ready(){return readyFlag;},get loading(){return !!loading&&!readyFlag;},get scene(){return V&&V.scene;},get camera(){return V&&V.camera;},
-  get active(){return !!(V&&V.active);},get built(){return !!V;},get _v(){return V;}};
+  get active(){return !!(V&&V.active);},get built(){return !!V;},get _v(){return V;},
+  furnShow:function(items){furnSync(items);},designMark:designMark,setDesign:setDesign,get design(){return !!(V&&V.design);},groundAt:groundAt,thumb:thumb,_box:function(n){var o=model(n),b=new T.Box3().setFromObject(o);return [b.min.x,b.min.y,b.min.z,b.max.x,b.max.y,b.max.z].map(function(v){return +v.toFixed(2);});},get _kit(){return Object.keys(KIT);}};
 })();

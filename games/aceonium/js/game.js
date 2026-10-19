@@ -6,6 +6,7 @@
 'use strict';
 
 var D=root.AcData||(typeof require!=='undefined'?require('./data.js'):null);
+var HL=root.AcHall||(typeof require!=='undefined'?require('./hall.js'):null);
 
 function masterDefaults(){
   var m={};
@@ -55,7 +56,8 @@ function defaults(){
     locked:{},bookFree:{},                          // v20: вещи с замком; копии, с которых снята пометка "нужна для книги"
                                  // v16: места, гости, повар и пивовар
                     // промыслы (v15) и бригады строителей
-    cust:[],custAcc:0,custId:0,rep:0,
+    cust:[],custAcc:0,custId:0,rep:0,repEarned:0,
+    furn:[{id:1,t:'table',lv:1,x:2,z:-1,r:0}],furnId:1,counter:1,   // v25: мебель зала и уровень стойки
     seenV8b:false,
     stats:{clicks:0,kills:0,bosses:0,bossFails:0,trips:0,lostBags:0,lostItems:0,gathered:0,play:0,rest:0,sold:0,goldEarned:0,crafted:0},
     lastSeen:0,
@@ -74,6 +76,7 @@ function Game(S){
 var P=Game.prototype;
 
 P.on=function(name,fn){(this.ev[name]=this.ev[name]||[]).push(fn);};
+P.off=function(name,fn){var l=this.ev[name];if(l){var i=l.indexOf(fn);if(i>=0)l.splice(i,1);}};
 P.emit=function(name,data){if(this.silent)return;var l=this.ev[name];if(l)for(var i=0;i<l.length;i++)l[i](data);};
 
 /* ── производные величины ── */
@@ -118,10 +121,10 @@ P.pickMult=function(){return this.bag().pick*(1+this.eff('chance')+this.eff('pic
 P.tractOpen=function(t){return t===0||(t<D.TRACTS.length&&this.S.tracts[t-1].clears>0);};
 P.dropChance=function(t,w){return Math.min(0.95,D.chance(w,this.S.tracts[t].clears>0)*this.pickMult());};
 P.restBuffFor=function(hours){return Math.min(D.REST_BUFF_MAX,hours*D.REST_BUFF_PER_H);};
-P.have=function(id){return id==='gold'?this.S.gold:(this.S.store[id]||0);};
+P.have=function(id){return id==='gold'?this.S.gold:id==='rep'?Math.floor(this.S.rep||0):(this.S.store[id]||0);};
 P.canPay=function(cost){if(!cost)return false;for(var k in cost)if(this.have(k)<cost[k])return false;return true;};
-P.pay=function(cost){if(!this.canPay(cost))return false;for(var k in cost){if(k==='gold')this.S.gold-=cost[k];else this.S.store[k]-=cost[k];}return true;};
-P.refund=function(cost){for(var k in cost){if(k==='gold')this.S.gold+=cost[k];else this.S.store[k]=this.have(k)+cost[k];}};
+P.pay=function(cost){if(!this.canPay(cost))return false;for(var k in cost){if(k==='gold')this.S.gold-=cost[k];else if(k==='rep')this.S.rep-=cost[k];else this.S.store[k]-=cost[k];}return true;};
+P.refund=function(cost){for(var k in cost){if(k==='gold')this.S.gold+=cost[k];else if(k==='rep')this.S.rep+=cost[k];else this.S.store[k]=this.have(k)+cost[k];}};
 
 /* ── опыт ── */
 P.addXp=function(n){
@@ -798,7 +801,7 @@ P.prodEff=function(id){var o=this.prod(id);return o.lvl?o.lvl+D.STAGE_STEP*o.st:
 P.lineOpen=function(r){return this.tractOpen(D.resTract(r));};
 P.lineRate=function(id,r,eff){if(!this.lineOpen(r))return 0;return D.PROD_BASE[r]*(eff===undefined?this.prodEff(id):eff);};   // в час
 P.lineCap=function(id,r){return Math.max(10,Math.ceil(D.PROD_BASE[r]*Math.max(1,this.prod(id).lvl)*D.PROD_KEEP));};
-P.crewsBusy=function(){var n=0,S=this.S;for(var id in S.prod)if(S.prod[id].bt)n++;return n;};
+P.crewsBusy=function(){var n=0,S=this.S;for(var id in S.prod)if(S.prod[id].bt)n++;(S.furn||[]).forEach(function(it){if(it.bt)n++;});return n;};
 P.crewFree=function(){return this.crewsBusy()<(this.S.crews||1);};
 P.crewCost=function(){var n=this.S.crews||1;return n>=D.CREW_COST.length?null:{gold:D.CREW_COST[n]};};
 P.buyCrew=function(){var c=this.crewCost();if(!c||!this.pay(c))return false;this.S.crews=(this.S.crews||1)+1;this.emit('crew',this.S.crews);this.prodStartWaiting();return true;};
@@ -837,7 +840,12 @@ P.crewQueued=function(id){return this.crewQ().indexOf(id)>=0;};
 P.prodStartWaiting=function(){
   var q=this.crewQ();
   while(q.length&&this.crewFree()){
-    var id=q.shift(),o=this.prod(id);if(!o||o.bt)continue;
+    var id=q.shift();
+    if(String(id).slice(0,2)==='f:'){   /* v25: стол ставит та же бригада */
+      var it=this.furnById(+id.slice(2));if(!it||it.bt||!it.q)continue;
+      var Tf=D.FURN[it.t].bt[it.lv-1];delete it.q;it.bt={t:Tf,T:Tf};this.emit('stage',{kind:'furn',id:it.id,lvl:it.lv});continue;
+    }
+    var o=this.prod(id);if(!o||o.bt)continue;
     var T=D.stageTime(o.lvl);o.bt={t:T,T:T};this.emit('stage',{kind:'prod',id:id,lvl:o.lvl});
   }
 };
@@ -930,7 +938,7 @@ P.custQual=function(c){for(var q=0;q<D.QUAL.length;q++)if(this.freeCount(c.item,
 P.hostessCan=function(c){return this.custQual(c)>=0&&!this.isLocked(c.item);};
 P.custPrice=function(c,by){
   var gd=D.GOOD_BY[c.item],q=Math.max(0,this.custQual(c));
-  var p=gd.price*D.QUAL[q]*D.decorMult(this.buildLvl('decor'))*this.itemPriceMult(c.item);
+  var p=gd.price*D.QUAL[q]*D.decorPrice(this.decorPts())*this.itemPriceMult(c.item);
   return Math.round(by==='hostess'?p:p*c.mood);
 };
 P.custRemove=function(c){var a=this.S.cust,i=a.indexOf(c);if(i>=0)a.splice(i,1);};
@@ -941,10 +949,10 @@ P.sellTo=function(c,mode){
   if(mode==='up'){
     if(Math.random()<D.HAGGLE_FAIL){this.custRemove(c);S.rep=Math.max(0,S.rep-1);this.emit('custLeft',{c:c,why:'haggle'});return false;}
     price=Math.round(price*(1+D.HAGGLE_UP));
-  }else if(mode==='down'){price=Math.round(price*(1-D.DISCOUNT));S.rep=Math.min(200,S.rep+2);}
+  }else if(mode==='down'){price=Math.round(price*(1-D.DISCOUNT));this.addRep(2);}
   var q=this.invTakeFree(c.item,false);
   this.masterIncome(c.item,price);
-  S.gold+=price;S.stats.sold++;S.stats.goldEarned+=price;S.rep=Math.min(200,S.rep+0.5);
+  S.gold+=price;S.stats.sold++;S.stats.goldEarned+=price;this.addRep(D.counterRep(S.counter));
   if(this.rep){this.rep.sold++;this.rep.gold+=price;}
   this.custRemove(c);
   this.emit('sale',{c:c,price:price,q:q,mode:mode||'sell'});
@@ -956,7 +964,7 @@ P.tickCustomers=function(dt){
   var S=this.S,off=!!this.rep;
   if(!this.isOpen()){if(S.cust.length){S.cust.length=0;this.emit('closed');}S.custAcc=0;return;}
   var max=D.custMax(this.buildLvl('hall'));
-  S.custAcc+=D.custRate(this.buildLvl('hall'),S.rep)/60*dt;
+  S.custAcc+=this.custRate()/60*dt;
   while(S.custAcc>=1){
     S.custAcc-=1;
     if(off){   /* офлайн: хозяйка продаёт сразу, если нужная вещь есть, иначе путник уходит */
@@ -972,19 +980,147 @@ P.tickCustomers=function(dt){
     if(c.wait>=D.CUST_PATIENCE||(off&&!this.hostessCan(c))){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});this.guestTry(c);}
   }
 };
-P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickCustomers(dt);this.tickTav(dt);this.tickPets(dt);};
+
+/* ════════ МЕБЕЛЬ ЗАЛА И РЕЖИМ ДИЗАЙНА (v25) ════════ */
+P.addRep=function(n){var S=this.S;S.rep=(S.rep||0)+n;S.repEarned=(S.repEarned||0)+n;};
+P.furnById=function(id){var L=this.S.furn||[];for(var i=0;i<L.length;i++)if(L[i].id===id)return L[i];return null;};
+P.furnOwn=function(t){return (this.S.furn||[]).filter(function(x){return x.t===t;}).length;};
+P.seatCount=function(){return HL.seatCount(this.S.furn||[]);};
+/* мест у всех столов в зале, включая те, что ещё строятся (для предела зала) */
+P.seatCap=function(){var n=0;HL.placed(this.S.furn||[]).forEach(function(it){var d=D.FURN[it.t];if(d.seats)n+=d.seats[it.lv-1];});return n;};
+P.seatMax=function(){return D.seatMax(this.buildLvl('hall'));};
+P.decorPts=function(){return HL.decorPts(this.S.furn||[]);};
+P.custRate=function(){return D.custRate(this.buildLvl('hall'),D.decorFlow(this.decorPts()));};
+/* стол: золото как за места раньше (каждое следующее место дороже), за улучшение ещё и репутация */
+P.tableCost=function(it){
+  var d=D.FURN.table,lv=it?it.lv+1:1,add=d.seats[lv-1]-(it?d.seats[it.lv-1]:0),cap=this.seatCap(),gold=0;
+  for(var i=0;i<add;i++)gold+=D.seatCost(Math.max(D.SEATS0,cap+i)).gold;
+  var c={gold:gold};if(it)c.rep=Math.ceil(gold*D.TABLE_REP);return c;
+};
+P.furnBuyCost=function(t){return t==='table'?this.tableCost(null):D.decorCost(t,1,this.furnOwn(t));};
+P.furnUpCost=function(it){if(!it||it.lv>=D.FURN_LV)return null;return it.t==='table'?this.tableCost(it):D.decorCost(it.t,it.lv+1);};
+/* причина, почему нельзя: '' можно; hall - нужен уровень зала; seats - предел мест зала; max; busy - строится; cost; space */
+P.furnBuyBlock=function(t){
+  var d=D.FURN[t];if(!d)return 'max';
+  if(this.buildLvl('hall')<D.furnHall(t,1))return 'hall';
+  if(d.seats&&this.seatCap()+d.seats[0]>this.seatMax())return 'seats';
+  if(!this.canPay(this.furnBuyCost(t)))return 'cost';
+  return '';
+};
+P.furnUpBlock=function(it){
+  if(!it)return 'max';var d=D.FURN[it.t];
+  if(it.lv>=D.FURN_LV)return 'max';
+  if(it.bt||it.q)return 'busy';
+  if(this.buildLvl('hall')<D.furnHall(it.t,it.lv+1))return 'hall';
+  if(d.seats&&this.seatCap()+d.seats[it.lv]-d.seats[it.lv-1]>this.seatMax())return 'seats';
+  if(!this.canPay(this.furnUpCost(it)))return 'cost';
+  return '';
+};
+P.releaseGuests=function(fid){var T=this.tav(),pre=fid+':',self=this;T.guests=T.guests.filter(function(x){var out=String(x.seat).indexOf(pre)===0;if(out)self.emit('guestLeft',x);return !out;});};
+P.furnBuy=function(t){
+  var bl=this.furnBuyBlock(t);if(bl)return bl;
+  var S=this.S,it={id:(S.furnId||0)+1,t:t,lv:1,x:0,z:0,r:0};
+  var sp=HL.findSpot(S.furn,this.buildLvl('hall'),it);if(!sp)return 'space';
+  this.pay(this.furnBuyCost(t));
+  it.x=sp.x;it.z=sp.z;it.r=sp.r;S.furnId=it.id;S.furn.push(it);
+  if(D.FURN[t].seats){it.q=1;this.crewQ().push('f:'+it.id);this.prodStartWaiting();}
+  this.emit('furn',{act:'buy',id:it.id});
+  return it;
+};
+P.furnUp=function(it){
+  var bl=this.furnUpBlock(it);if(bl)return bl;
+  var S=this.S,hall=this.buildLvl('hall'),cand={id:it.id,t:it.t,lv:it.lv+1,x:it.x,z:it.z,r:it.r};
+  var others=S.furn.filter(function(x){return x!==it;});
+  if(!HL.check(others.concat([cand]),hall).ok){
+    /* больше не помещается: пробуем развернуть или сдвинуть на свободное место */
+    var sp=HL.findSpot(S.furn,hall,cand);if(!sp)return 'space';
+    cand.x=sp.x;cand.z=sp.z;cand.r=sp.r;
+  }
+  this.pay(this.furnUpCost(it));
+  it.lv++;it.x=cand.x;it.z=cand.z;it.r=cand.r;
+  if(D.FURN[it.t].seats){this.releaseGuests(it.id);it.q=1;this.crewQ().push('f:'+it.id);this.prodStartWaiting();}
+  this.emit('furn',{act:'up',id:it.id});
+  return it;
+};
+/* убрать на склад мебели и поставить обратно */
+P.furnStore=function(it){
+  if(!it||it.st)return false;if(it.bt||it.q)return 'busy';
+  if(D.FURN[it.t].seats&&HL.placed(this.S.furn).filter(function(x){return D.FURN[x.t].seats;}).length<=1)return 'last';
+  this.releaseGuests(it.id);it.st=1;this.emit('furn',{act:'store',id:it.id});return true;
+};
+P.furnPlace=function(it){
+  if(!it||!it.st)return false;
+  var d=D.FURN[it.t];if(d.seats&&this.seatCap()+d.seats[it.lv-1]>this.seatMax())return 'seats';
+  var sp=HL.findSpot(this.S.furn,this.buildLvl('hall'),it);if(!sp)return 'space';
+  it.x=sp.x;it.z=sp.z;it.r=sp.r;delete it.st;this.emit('furn',{act:'place',id:it.id});return true;
+};
+/* применить расстановку из режима дизайна: moves = {id:{x,z,r}}. Гости за сдвинутыми столами уходят */
+P.furnApply=function(moves){
+  var S=this.S,self=this,list=S.furn.map(function(it){var m=moves[it.id];if(!m)return it;var c={};for(var k in it)c[k]=it[k];c.x=m.x;c.z=m.z;c.r=m.r;return c;});
+  if(!HL.check(list,this.buildLvl('hall')).ok)return false;
+  S.furn.forEach(function(it){var m=moves[it.id];if(!m||(m.x===it.x&&m.z===it.z&&m.r===it.r))return;it.x=m.x;it.z=m.z;it.r=m.r;if(D.FURN[it.t].seats)self.releaseGuests(it.id);});
+  this.emit('furn',{act:'move'});
+  return true;
+};
+P.counterCost=function(){var l=this.S.counter||1;return l>=D.COUNTER_MAX?null:D.counterCost(l);};
+P.counterUp=function(){var c=this.counterCost();if(!c||!this.pay(c))return false;this.S.counter=(this.S.counter||1)+1;this.emit('furn',{act:'counter'});return true;};
+P.tickFurn=function(dt){
+  var self=this,done=false;
+  (this.S.furn||[]).forEach(function(it){
+    if(!it.bt)return;it.bt.t-=dt;if(it.bt.t>0)return;
+    it.bt=null;done=true;self.emit('built',{kind:'furn',id:it.id,lvl:it.lv});
+  });
+  if(done)this.prodStartWaiting();
+};
+/* сохранения до v25: места -> столы, уровень убранства -> декор. Испорченная расстановка чинится */
+P.furnSanitize=function(){
+  var S=this.S,hall=this.buildLvl('hall'),self=this;
+  /* Store дописывает furn из дефолтов, поэтому переход отмечаем своим флагом */
+  if(!S.v25||!Array.isArray(S.furn)){
+    S.v25=1;S.furn=[];S.furnId=0;S.repEarned=S.rep||0;
+    if(!S.counter)S.counter=1;
+    var n=Math.max(D.SEATS0,(S.tav&&S.tav.seats)||D.SEATS0),max=D.seatMax(hall);
+    var SPOTS=[[2,-2,0],[2,2,0],[-2,-2,0],[-2,1,0],[5,0,1],[3,6,0],[5,6,0]];
+    var add=function(t,lv){var it={id:++S.furnId,t:t,lv:lv,x:0,z:0,r:0},sp=null;
+      if(t==='table')for(var j=0;j<SPOTS.length&&!sp;j++){var c={id:it.id,t:t,lv:lv,x:SPOTS[j][0],z:SPOTS[j][1],r:SPOTS[j][2]};if(HL.check(S.furn.concat([c]),hall).ok)sp={x:c.x,z:c.z,r:c.r};}
+      if(!sp)sp=HL.findSpot(S.furn,hall,it);if(sp){it.x=sp.x;it.z=sp.z;it.r=sp.r;}else it.st=1;S.furn.push(it);return it;};
+    while(n>0){
+      var lv=n>=5&&hall>=3?3:n>=3&&hall>=1?2:1;
+      if(self.seatCap()+D.FURN.table.seats[lv-1]>max&&lv>1)lv=1;
+      add('table',lv);n-=D.FURN.table.seats[lv-1];
+      if(self.seatCap()>=max)break;
+    }
+    var dl=S.build&&S.build.decor||0,want=12*dl;
+    var lvd=Math.min(3,dl),plan=['rug','bookcase','weapons','dummy','chest','vase','vase','barrel','crate','barrel','crate'].filter(function(t){return hall>=D.furnHall(t,1);}).map(function(t){return [t,lvd];});
+    for(var i=0;i<plan.length&&self.decorPts()<want;i++){var it=add(plan[i][0],plan[i][1]);if(it.st){S.furn.pop();break;}}
+    S.tav.guests=[];
+  }
+  if(!S.counter)S.counter=1;
+  if(S.repEarned===undefined)S.repEarned=S.rep||0;
+  S.furn=S.furn.filter(function(it){return it&&D.FURN[it.t];});
+  S.furn.forEach(function(it){it.lv=Math.max(1,Math.min(D.FURN_LV,it.lv|0||1));it.r=(it.r|0)&3;if(it.q&&!self.crewQueued('f:'+it.id)&&!it.bt)self.crewQ().push('f:'+it.id);});
+  S.furnId=Math.max(S.furnId||0,S.furn.reduce(function(a,it){return Math.max(a,it.id);},0));
+  /* что не помещается (меньше зал, порча): ставим заново или убираем на склад */
+  var chk=HL.check(S.furn,hall);
+  if(!chk.ok){
+    var bad=S.furn.filter(function(it){return !it.st&&chk.bad[it.id];});
+    if(chk.blocked&&!bad.length)bad=S.furn.filter(function(it){return !it.st&&D.FURN[it.t].cat!=='table';});
+    bad.forEach(function(it){it.st=1;});
+    bad.forEach(function(it){var sp=HL.findSpot(S.furn,hall,it);if(sp){it.x=sp.x;it.z=sp.z;it.r=sp.r;delete it.st;}});
+  }
+  if(S.tav)S.tav.seats=this.seatCount();
+};
+P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickFurn(dt);this.tickCustomers(dt);this.tickTav(dt);this.tickPets(dt);};
 
 /* ════════ ГОСТИ, ПОВАР И ПИВОВАР (v16) ════════ */
 P.tav=function(){var S=this.S;if(!S.tav)S.tav=tavDefaults();return S.tav;};
 P.worker=function(w){return this.tav()[w];};
-P.seatCost=function(){var T=this.tav();return T.seats>=D.seatMax(this.buildLvl('hall'))?null:D.seatCost(T.seats);};
-P.buySeat=function(){var c=this.seatCost();if(!c||!this.pay(c))return false;this.tav().seats++;this.emit('seat',this.tav().seats);return true;};
-/* свободное место: номер стула от 0 до мест-1 */
-P.freeSeat=function(){var T=this.tav(),used={};T.guests.forEach(function(x){used[x.seat]=1;});for(var i=0;i<T.seats;i++)if(!used[i])return i;return -1;};
+/* v25: места дают столы. Свободное место: ключ 'стол:место' или null */
+P.freeSeat=function(){var T=this.tav(),used={};T.guests.forEach(function(x){used[x.seat]=1;});var L=HL.seats(this.S.furn);for(var i=0;i<L.length;i++)if(!used[L[i].key])return L[i].key;return null;};
 /* путник садится за стол; садясь, заказывает пиво и, может быть, блюдо */
 P.guestTry=function(c){
   if(!this.isOpen()||Math.random()>=D.GUEST_CHANCE)return false;
-  var T=this.tav(),seat=this.freeSeat();if(seat<0)return false;
+  var T=this.tav(),seat=this.freeSeat();if(seat===null)return false;
   var gst={id:c.id,who:c.who,seat:seat,t:D.GUEST_SIT};T.guests.push(gst);
   gst.beer=this.serve('brewer');
   if(Math.random()<D.GUEST_FOOD)gst.food=this.serve('cook');
@@ -1022,7 +1158,7 @@ P.workerHire=function(w){if(this.workerBlock(w))return false;this.pay({gold:D.WO
 P.helpCost=function(w){var o=this.worker(w);if(!o.hired||o.help>=D.helpSlots(o.lvl))return null;return D.helpCost(w,o.help);};
 P.hireHelp=function(w){var c=this.helpCost(w);if(!c||!this.pay(c))return false;this.worker(w).help++;this.emit('wHelp',w);return true;};
 /* сколько гостей в час приходит за столы и сколько им нужно порций: для подсказок */
-P.guestsH=function(){var T=this.tav(),flow=D.custRate(this.buildLvl('hall'),this.S.rep)*60*D.GUEST_CHANCE;return Math.min(flow,T.seats*3600/D.GUEST_SIT);};
+P.guestsH=function(){var flow=this.custRate()*60*D.GUEST_CHANCE;return Math.min(flow,this.seatCount()*3600/D.GUEST_SIT);};
 P.needH=function(w){return this.guestsH()*(w==='cook'?D.GUEST_FOOD:1);};
 P.tavIncomeH=function(){
   var self=this,v=0;
@@ -1148,7 +1284,9 @@ P.sanitize=function(){
   if(!S.tav)S.tav=tavDefaults();
   var td=tavDefaults();for(k in td)if(S.tav[k]===undefined)S.tav[k]=td[k];
   D.WORKER_ORDER.forEach(function(w){var wd=workerDefaults();for(var j in wd)if(S.tav[w][j]===undefined)S.tav[w][j]=wd[j];});
-  S.tav.guests=S.tav.guests.filter(function(x){return x.seat<S.tav.seats;});
+  this.furnSanitize();
+  var seatOk={};HL.seats(S.furn).forEach(function(x){seatOk[x.key]=1;});
+  S.tav.guests=S.tav.guests.filter(function(x){return seatOk[x.seat];});
   if(S.use.p_heal===undefined)S.use.p_heal=true;
   S.cust=S.cust.filter(function(c){return D.GOOD_BY[c.item];});
 };

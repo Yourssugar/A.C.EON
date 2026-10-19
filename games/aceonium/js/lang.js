@@ -770,7 +770,7 @@ I18n.add('ru',{
   'hp.tavern':'<p>Путник просит одну вещь. Если она есть, её можно продать: ДОРОЖЕ (+30%, но с шансом 35% путник уйдёт), СКИДКА (-20%, растёт репутация) или по обычной цене.</p>'+
     '<p>Через 30 секунд хозяйка продаёт сама по обычной цене. Она отдаёт копию худшего качества и не трогает вещи с замком и копии, которые держатся для книги.</p>'+
     '<p>Пока маг спит, таверна закрыта. Пока тебя нет, хозяйка продаёт сразу, а путник без своей вещи уходит.</p>',
-  'hp.hall':'<p>Путник после покупки садится за стол с шансом 60% и сидит 15 минут. Мест сначала 2, их покупают за золото, предел зависит от уровня зала.</p>'+
+  'hp.hall':'<p>Путник после покупки садится за стол с шансом 60% и сидит 15 минут. Места дают столы: их покупают и улучшают в режиме дизайна, ставит бригада строителей. Предел мест зависит от уровня зала.</p>'+
     '<p>Каждый гость берёт кружку у пивовара и с шансом 50% блюдо у повара. Работники готовят партиями, помощники увеличивают партию.</p>'+
     '<p>Половина выручки твоя, половина идёт работнику в сбережения. Сбережения понемногу поднимают цену, а накопив сумму, работник сам расширяется. Места для помощников прибавляются с его уровнем.</p>',
   'hp.craft':'<p>Вещи заказывают в окне мастера. Во вкладке КРАФТ остаются 10 последних заказанных и закреплённые, второе нажатие на выбранную вещь ставит её в очередь.</p>'+
@@ -817,7 +817,7 @@ I18n.add('en',{
   'hp.tavern':'<p>A traveler asks for one item. If you have it: HIGHER (+30%, 35% chance he leaves), DISCOUNT (-20%, reputation up) or the normal price.</p>'+
     '<p>After 30 seconds the hostess sells at the normal price. She gives the lowest quality copy and skips locked items and copies kept for the book.</p>'+
     '<p>While the mage sleeps the tavern is closed. While you are away the hostess sells at once and travelers without their item leave.</p>',
-  'hp.hall':'<p>After buying, a traveler sits down with a 60% chance for 15 minutes. You start with 2 seats and buy more for gold; the hall level sets the limit.</p>'+
+  'hp.hall':'<p>After buying, a traveler sits down with a 60% chance for 15 minutes. Seats come from tables: buy and upgrade them in design mode, the building crew sets them up. The hall level sets the seat limit.</p>'+
     '<p>Every guest takes a mug from the brewer and, with a 50% chance, a dish from the cook. Workers cook in batches, helpers make batches bigger.</p>'+
     '<p>Half the revenue is yours, half goes to the worker\'s savings. Savings raise the price a little, and with enough saved the worker expands on his own. Helper slots grow with his level.</p>',
   'hp.craft':'<p>Items are ordered in the master window. The CRAFT tab keeps the last 10 ordered and pinned ones; a second tap on the selected item queues it.</p>'+
@@ -865,4 +865,45 @@ I18n.add('ru',{'cr4.fav':'ИЗБРАННОЕ','cr4.toMaster':'МАСТЕР','cr4
 I18n.add('en',{'cr4.fav':'FAVORITES','cr4.toMaster':'MASTER','cr4.favEmpty':'Pinned and recently ordered items show up here.','cr4.learning':'Master is learning: {r}',
   'st3.to':'TO LEVEL {n}','st3.you':'you {a} / {b}','st3.master':'master {a} / {b}','st3.invest':'INVEST','st3.max':'MAX','st3.res':'+ materials',
   'v24.title':'CRAFT AND BUILDINGS','v24.body':'<p>The CRAFT button opens a strip of cards at the bottom: tabs per master and favorites. Tap a card to queue the item; resources and the queue are on top (tap an item in the queue to cancel it).</p><p>Buildings and tools now upgrade with one bar: choose how many contributions to make at once and press INVEST. For tools the master\'s share shows in the same bar.</p>'});
+/* v25: режим дизайна и мебель */
+I18n.add('ru',{'fu.title':'ДИЗАЙН','fu.btn':'ДИЗАЙН','fu.open':'РЕЖИМ ДИЗАЙНА','fu.wait':'Таверна ещё грузится',
+  'fu.back':'НАЗАД','fu.close':'ЗАКРЫТЬ','fu.shop':'МАГАЗИН','fu.ok':'ГОТОВО','fu.rot':'ПОВЕРНУТЬ','fu.up':'УЛУЧШИТЬ','fu.store':'УБРАТЬ','fu.put':'ПОСТАВИТЬ',
+  'fu.tab.table':'СТОЛЫ','fu.tab.decor':'ДЕКОР','fu.tab.store':'УБРАНО','fu.storeEmpty':'Убранной мебели нет.',
+  'fu.stat':'места <b>{a}</b> / {b} · декор <b>{p}</b>: цены +{pr}%, путники +{fl}%',
+  'fu.hallLine':'Декор {p}: цены +{pr}%, путников +{fl}%. Стойка: +{c} репутации с продажи.',
+  'fu.hint':'Нажми на предмет и тащи. Зелёное можно, красное нельзя. Стойку можно улучшить.',
+  'fu.next':'дальше','fu.seatsN':'мест: {n}','fu.ptsN':'декор +{n}','fu.floor':'на пол','fu.ceil':'под потолок','fu.own':'есть: {n}',
+  'fu.counter':'СТОЙКА ХОЗЯЙКИ','fu.counterRep':'+{n} репутации с продажи','fu.counterUp':'Стойка улучшена до {n}',
+  'fu.waitCrew':'Ждёт свободную бригаду строителей','fu.waitCrewS':'ждёт бригаду','fu.building':'Бригада ставит: {t}',
+  'fu.bought':'Куплено: {n}','fu.bought.crew':'{n}: бригада начнёт, как освободится',
+  'fu.fixFirst':'Сначала поставь всё на зелёные клетки',
+  'fu.why.zone':'Здесь ставить нельзя','fu.why.overlap':'Мешает другой предмет','fu.why.block':'Перекрывает проход к стойке или двери','fu.why.seat':'К местам за столом не подойти','fu.why.other':'Другой предмет стоит неправильно','fu.why.any':'Что-то стоит неправильно',
+  'fu.bl.hall':'Нужен выше уровень зала','fu.bl.hallN':'нужен зал {n}','fu.bl.seats':'Мест больше не вместить, улучши зал','fu.bl.max':'Максимум','fu.bl.busy':'Сейчас строится','fu.bl.cost':'Не хватает','fu.bl.space':'Нет места, подвинь мебель','fu.bl.last':'Последний стол убрать нельзя',
+  'fu.table':'СТОЛ','fu.rug':'КОВЁР','fu.barrel':'БОЧКА','fu.crate':'ЯЩИК','fu.vase':'ВАЗА','fu.chest':'СУНДУК','fu.dummy':'МАНЕКЕН','fu.weapons':'СТОЙКА С ОРУЖИЕМ','fu.bookcase':'КНИЖНЫЙ ШКАФ','fu.armchair':'КРЕСЛО','fu.chandelier':'ЛЮСТРА',
+  'hp.design.t':'Дизайн','hp.design':'<p>Кнопка ДИЗАЙН на экране таверны: камера над залом, пол в клетку. Нажми на предмет и тащи, ПОВЕРНУТЬ крутит его. Зелёные клетки значат можно, красные нельзя. ГОТОВО сохраняет расстановку, НАЗАД отменяет сдвиги.</p>'+
+    '<p>Места для гостей дают только столы. Стол покупается в МАГАЗИНЕ, ставит его бригада строителей (та же, что строит промыслы). Улучшенный стол больше и вмещает больше гостей. Предел мест растёт с уровнем зала, зал 1 убирает хлам в западной части.</p>'+
+    '<p>Декор (ковры, бочки, вазы, шкафы, люстры) даёт очки: каждое очко +0,5% к цене (до 30%) и +0,4% к потоку путников (до 25%). На стенах появляются флаги и фонари.</p>'+
+    '<p>Стойка хозяйки даёт репутацию с каждой продажи. Репутация теперь тратится: на мебель и улучшения вместе с золотом. Мебель нельзя ставить на проход к стойке, очередь и дверь, и к каждому месту за столом должен быть подход.</p>',
+  'v25.title':'РЕЖИМ ДИЗАЙНА','v25.body':'<p>В таверне появилась кнопка ДИЗАЙН: мебель стоит на сетке, её можно двигать, поворачивать, улучшать и покупать новую за золото и репутацию.</p><p>Места дают столы, их ставит бригада строителей. Твои места уже превращены в столы, а уровень убранства в декор. Маг теперь отдыхает у камина.</p><p>Репутация больше не копится до 200: она тратится на мебель, а стойка хозяйки даёт её с каждой продажи.</p>'
+});
+I18n.add('en',{'fu.title':'DESIGN','fu.btn':'DESIGN','fu.open':'DESIGN MODE','fu.wait':'The tavern is still loading',
+  'fu.back':'BACK','fu.close':'CLOSE','fu.shop':'SHOP','fu.ok':'DONE','fu.rot':'ROTATE','fu.up':'UPGRADE','fu.store':'REMOVE','fu.put':'PLACE',
+  'fu.tab.table':'TABLES','fu.tab.decor':'DECOR','fu.tab.store':'REMOVED','fu.storeEmpty':'No removed furniture.',
+  'fu.stat':'seats <b>{a}</b> / {b} · decor <b>{p}</b>: prices +{pr}%, travelers +{fl}%',
+  'fu.hallLine':'Decor {p}: prices +{pr}%, travelers +{fl}%. Counter: +{c} reputation per sale.',
+  'fu.hint':'Press an item and drag it. Green is fine, red is not. The counter can be upgraded.',
+  'fu.next':'next','fu.seatsN':'seats: {n}','fu.ptsN':'decor +{n}','fu.floor':'floor','fu.ceil':'ceiling','fu.own':'owned: {n}',
+  'fu.counter':'HOSTESS COUNTER','fu.counterRep':'+{n} reputation per sale','fu.counterUp':'Counter upgraded to {n}',
+  'fu.waitCrew':'Waiting for a free building crew','fu.waitCrewS':'waiting for crew','fu.building':'The crew is setting it up: {t}',
+  'fu.bought':'Bought: {n}','fu.bought.crew':'{n}: the crew will start when free',
+  'fu.fixFirst':'Put everything on green cells first',
+  'fu.why.zone':'Cannot be placed here','fu.why.overlap':'Another item is in the way','fu.why.block':'Blocks the way to the counter or door','fu.why.seat':'The table seats cannot be reached','fu.why.other':'Another item is misplaced','fu.why.any':'Something is misplaced',
+  'fu.bl.hall':'Needs a higher hall level','fu.bl.hallN':'needs hall {n}','fu.bl.seats':'No room for more seats, upgrade the hall','fu.bl.max':'Maximum','fu.bl.busy':'Being built','fu.bl.cost':'Not enough','fu.bl.space':'No room, move some furniture','fu.bl.last':'The last table cannot be removed',
+  'fu.table':'TABLE','fu.rug':'RUG','fu.barrel':'BARREL','fu.crate':'CRATE','fu.vase':'VASE','fu.chest':'CHEST','fu.dummy':'DUMMY','fu.weapons':'WEAPON RACK','fu.bookcase':'BOOKCASE','fu.armchair':'ARMCHAIR','fu.chandelier':'CHANDELIER',
+  'hp.design.t':'Design','hp.design':'<p>The DESIGN button on the tavern screen: the camera goes above the hall and the floor turns into a grid. Press an item and drag it, ROTATE turns it. Green cells mean OK, red ones mean no. DONE saves the layout, BACK cancels the moves.</p>'+
+    '<p>Only tables give guest seats. Buy a table in the SHOP; the building crew (the same one that builds workshops) sets it up. An upgraded table is bigger and seats more. The seat limit grows with the hall level; hall 1 clears the junk in the west part.</p>'+
+    '<p>Decor (rugs, barrels, vases, bookcases, chandeliers) gives points: each point is +0.5% to prices (up to 30%) and +0.4% to the traveler flow (up to 25%). Banners and lanterns appear on the walls.</p>'+
+    '<p>The hostess counter gives reputation for every sale. Reputation is now spent on furniture and upgrades together with gold. Furniture cannot block the way to the counter, the queue or the door, and every table seat must be reachable.</p>',
+  'v25.title':'DESIGN MODE','v25.body':'<p>The tavern has a DESIGN button: furniture stands on a grid, you can move, rotate and upgrade it and buy new pieces for gold and reputation.</p><p>Seats come from tables, set up by the building crew. Your seats have been turned into tables and the decor level into decor items. The mage now rests by the fireplace.</p><p>Reputation no longer stops at 200: it is spent on furniture, and the hostess counter gives it for every sale.</p>'
+});
 })();

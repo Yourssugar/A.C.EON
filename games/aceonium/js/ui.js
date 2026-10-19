@@ -52,7 +52,7 @@ var RES_SVG={
   coal:'<path d="M2 11l3-6 4-2 5 3 1 6-4 3H5z" fill="C"/><path d="M6 6l3-1 2 3" stroke="#9aa0aa" stroke-opacity=".6" fill="none"/>'
 };
 /* v18: картинки из 3D, один атлас assets/icons/icons.webp (сетка 8 x 7 по 128 px) */
-var SPR_IDS=["r_wood", "r_iron", "r_herb", "r_hide", "r_bone", "r_silk", "r_spore", "r_ecto", "r_crystal", "r_silver", "r_coal", "r_ironwood", "r_amber", "r_pearl", "r_starice", "p_heal", "p_str", "p_luck", "p_vigor", "p_spore", "p_ward", "c_bow", "c_shield", "c_wand", "s_sword", "s_axe", "s_helm", "s_mail", "s_blade", "t_cloak", "t_belt", "t_boots", "t_hood", "t_silk", "j_ring", "j_bone", "j_crys", "j_amber", "j_star", "sc_spark", "sc_guard", "sc_wind", "sc_seek", "sc_fire", "sc_storm", "sc_star", "o_staff", "o_bag", "o_store", "o_coin", "o_book"],SPR_COLS=8,SPR_ROWS=7,SPR={};SPR_IDS.forEach(function(id,i){SPR[id]=i;});
+var SPR_IDS=["r_wood", "r_iron", "r_herb", "r_hide", "r_bone", "r_silk", "r_spore", "r_ecto", "r_crystal", "r_silver", "r_coal", "r_ironwood", "r_amber", "r_pearl", "r_starice", "p_heal", "p_str", "p_luck", "p_vigor", "p_spore", "p_ward", "c_bow", "c_shield", "c_wand", "s_sword", "s_axe", "s_helm", "s_mail", "s_blade", "t_cloak", "t_belt", "t_boots", "t_hood", "t_silk", "j_ring", "j_bone", "j_crys", "j_amber", "j_star", "sc_spark", "sc_guard", "sc_wind", "sc_seek", "sc_fire", "sc_storm", "sc_star", "o_staff", "o_bag", "o_store", "o_coin", "o_book", "u_map", "u_mug", "u_house", "u_anvil", "u_chalice", "u_hammer", "u_journal", "u_star", "u_bed"],SPR_COLS=8,SPR_ROWS=8,SPR={};SPR_IDS.forEach(function(id,i){SPR[id]=i;});
 function spr(id,cls){
   var i=SPR[id];if(i===undefined)return '';
   var c=i%SPR_COLS,r=Math.floor(i/SPR_COLS);
@@ -356,6 +356,9 @@ function initHud(){
   var dots='';for(var i=0;i<10;i++)dots+='<i'+(i===9?' class="b"':'')+'></i>';H['h-dots'].innerHTML=dots;
   H.dots=[].slice.call(H['h-dots'].children);
   $('h-bag-i').innerHTML=BAG_SVG;
+  /* v23: золото и репутация пилюлями, золото картинкой монет */
+  var gl=document.querySelector('.goldline');
+  if(gl){gl.querySelector('.coin').outerHTML=spr('o_coin','hud-i');var rl=el('div','repline');rl.innerHTML=spr('u_star','hud-i')+'<b id="h-rep">0</b>';rl.title=t('tv.repT');gl.parentNode.insertBefore(rl,gl.nextSibling);H.rep=rl.querySelector('b');}
   H['h-place'].addEventListener('click',function(){if(S.place==='road')g.goHome();else g.goTrip();});
   /* переключатель вида: дорога / таверна сверху */
   var vbox=el('div','view-box');
@@ -364,15 +367,12 @@ function initHud(){
   var sb=el('button','view-btn sleep-btn');sb.type='button';sb.id='sleep-btn';
   sb.addEventListener('click',function(e){e.stopPropagation();g.sleepNow();Sound.sfx('select');refreshHud();});
   vbox.appendChild(vb);vbox.appendChild(sb);H.stage.appendChild(vbox);H.view=vb;H.sleep=sb;
-  /* v22: экраны ПОХОД / ТАВЕРНА / ГОРОД */
-  var scn=el('div','scn-box');
-  ['road','tavern','city'].forEach(function(k){var b=el('button','scn-b');b.type='button';b.dataset.s=k;scn.appendChild(b);});
-  scn.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;e.stopPropagation();if(UI.goScreen)UI.goScreen(b.dataset.s);Sound.sfx('select');paintScreen();});
-  H.stage.appendChild(scn);H.scn=scn;
-  /* очередь крафта внизу экрана таверны */
+
+  /* очередь крафта: в нижней панели рядом с кнопкой СОЗДАТЬ (v23) */
   var qb=el('div','qbar hidden');qb.id='qbar';
   qb.addEventListener('click',function(e){e.stopPropagation();openTab('craft','make');Sound.sfx('select');});
-  H.stage.appendChild(qb);H.qbar=qb;
+  H.qbar=qb;
+  initBar();
   H['rest-road'].addEventListener('click',function(){g.goTrip();});
   H['rest-tav'].addEventListener('click',function(){g.sleepNow();});
   /* умения */
@@ -406,8 +406,8 @@ function refreshHud(){
   H['h-bag'].parentNode.classList.toggle('full',n>=cap);
   setText(H['h-rate'],t('hud.dps')+' '+D.fmt(g.dps())+'  '+t('hud.click')+' '+D.fmt(g.clickDmg()));
   setText(H['h-gold'],D.fmt(S.gold));
-  var tb=$('tabs').querySelector('[data-tab="tavern"]');
-  if(tb){var n=S.cust.length,lbl=t('tab.tavern')+(n?' ('+n+')':'');setText(tb,lbl);tb.classList.toggle('alert',n>0);}
+  if(H.rep)setText(H.rep,D.fmt(Math.floor(S.rep||0)));
+  paintBar();
   /* усталость */
   var f=S.fatigue,st=D.fatigueState(f);
   var label=S.place==='sleep'?t('fat.sleep'):S.place==='home'?t('fat.home'):tg('fat.'+st);
@@ -431,7 +431,7 @@ function refreshHud(){
     setText(H['rest-road'],t('rest.wake'));
     H['rest-tav'].classList.add('hidden');
   }
-  paintQbar(road);
+  paintQbar(false);
   /* враг */
   var e=R.enemy,showE=!!(road&&e&&(R.phase==='fight'||(R.phase==='walk'&&e.boss)));
   H.enemy.classList.toggle('hidden',!showE);
@@ -476,7 +476,7 @@ function paintQbar(road){
     });
     h=h?h+'<span class="qb-n">'+S.queue.length+'/'+S.qSlots+'</span>':'<span class="qb-empty">'+t('qb.empty')+'</span>';
   }
-  q.classList.toggle('hidden',road);
+  q.classList.toggle('hidden',false);
   setHTML(q,h);
 }
 /* какой тракт будет следующим (без изменения плана) */
@@ -592,6 +592,7 @@ function block(html,cls){var b=el('div','blk'+(cls?' '+cls:''),html);return {el:
 function liveBlock(fn,cls){var b=el('div','blk'+(cls?' '+cls:''));return {el:b,update:function(){setHTML(b,fn());}};}
 
 function buildTab(){
+  if(!win)return;
   if(tabCleanup){tabCleanup();tabCleanup=null;}
   var body=$('tab-body');body.innerHTML='';rows=[];
   ({path:tabPath,bag:tabBag,tavern:tabTavern,craft:tabCraft,city:tabCity,store:tabStore,gear:tabGear,skills:tabSkills,wardrobe:tabWardrobe,stats:tabStats})[curTab](body);
@@ -1209,26 +1210,73 @@ function debugBlock(){
 }
 
 function refresh(){
-  if(!g)return;
+  if(!g||!win)return;
   rows.forEach(function(r){r.update();});
 }
 
+/* v23: панель стала окном поверх сцены. Кнопки внизу открывают группы вкладок. */
+var GROUPS={mage:{tabs:['path','bag','skills','gear','wardrobe'],icon:'o_staff'},hall:{tabs:['tavern'],icon:'u_chalice'},
+  build:{tabs:['city'],icon:'u_hammer'},store:{tabs:['store'],icon:'o_store'},craft:{tabs:['craft'],icon:'u_anvil'},info:{tabs:['stats'],icon:'u_journal'}};
+var BAR=['mage','hall','build','store','book','info'],win=null;
+function groupOf(tab){for(var k in GROUPS)if(GROUPS[k].tabs.indexOf(tab)>=0)return k;return 'info';}
+function openWin(gk,tab){
+  var G=GROUPS[gk];if(!G)return;
+  win=gk;curTab=tab&&G.tabs.indexOf(tab)>=0?tab:(G.last||G.tabs[0]);G.last=curTab;
+  document.body.classList.add('win-open');
+  setText(H.winT,t('grp.'+gk));
+  paintTabs();buildTab();paintBar();
+}
+function closeWin(){
+  if(!win)return;win=null;
+  document.body.classList.remove('win-open');
+  if(tabCleanup){tabCleanup();tabCleanup=null;}
+  $('tab-body').innerHTML='';rows=[];paintBar();
+}
 function initPanel(){
-  /* кнопка: спрятать / показать панель, чтобы сцена заняла весь экран */
-  var tgl=el('button','panel-toggle');tgl.type='button';tgl.id='panel-toggle';
-  tgl.innerHTML='<svg viewBox="0 0 8 12" aria-hidden="true"><path d="M2 0h2v2h2v2h2v4H6v2H4v2H2v-2h2V8h2V4H4V2H2z" fill="currentColor"/></svg>';
-  function applyPanel(){document.body.classList.toggle('panel-off',!!S.settings.panel);}
-  tgl.addEventListener('click',function(e){e.stopPropagation();S.settings.panel=!S.settings.panel;applyPanel();Sound.sfx('select');
-    setTimeout(function(){window.dispatchEvent(new Event('resize'));},50);});
-  H.stage.appendChild(tgl);applyPanel();
-  var tabs=$('tabs');
+  var panel=document.querySelector('.panel'),tabs=$('tabs');
+  var head=el('div','win-h');head.innerHTML='<b class="win-t"></b><button type="button" class="win-x" aria-label="close"></button>';
+  panel.insertBefore(head,tabs);H.winT=head.querySelector('.win-t');
+  head.querySelector('.win-x').addEventListener('click',function(){closeWin();Sound.sfx('select');});
   TABS.forEach(function(id){
     var b=el('button','tab');b.type='button';b.dataset.tab=id;b.dataset.i18n='tab.'+id;b.textContent=t('tab.'+id);
-    b.addEventListener('click',function(){curTab=id;lastTab[tabSet]=id;paintTabs();buildTab();Sound.sfx('select');});
+    b.addEventListener('click',function(){curTab=id;if(win)GROUPS[win].last=id;paintTabs();buildTab();Sound.sfx('select');});
     tabs.appendChild(b);
   });
-  tabSet=placeSet();curTab=lastTab[tabSet];
-  paintTabs();
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&win&&!document.querySelector('.hp-wrap,.bk-wrap,.wd2,.ms2'))closeWin();});
+}
+/* нижняя панель: экраны слева столбиком, меню внизу, очередь и СОЗДАТЬ справа */
+function initBar(){
+  var scn=el('div','scn-col');
+  [['road','u_map'],['tavern','u_mug'],['city','u_house']].forEach(function(k){var b=el('button','scn-b');b.type='button';b.dataset.s=k[0];b.innerHTML=spr(k[1],'bb-i')+'<b></b>';scn.appendChild(b);});
+  scn.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;e.stopPropagation();if(UI.goScreen)UI.goScreen(b.dataset.s);Sound.sfx('select');paintScreen();});
+  H.stage.appendChild(scn);H.scn=scn;
+  var bb=el('div','bbar');
+  BAR.forEach(function(k){
+    var b=el('button','bb-b');b.type='button';b.dataset.g=k;
+    b.innerHTML=spr(k==='book'?'o_book':GROUPS[k].icon,'bb-i')+'<b data-i18n="grp.'+k+'">'+t('grp.'+k)+'</b><i class="bb-n hidden"></i>';
+    bb.appendChild(b);
+  });
+  bb.addEventListener('click',function(e){
+    var b=e.target.closest('.bb-b');if(!b)return;e.stopPropagation();Sound.sfx('select');
+    var k=b.dataset.g;
+    if(k==='book'){if(window.Book)Book.open();return;}
+    if(win===k)closeWin();else openWin(k);
+  });
+  var right=el('div','bb-right');right.appendChild(H.qbar);
+  var cr=el('button','bb-create');cr.type='button';cr.innerHTML=spr('u_anvil','bb-ci')+'<b data-i18n="grp.craft">'+t('grp.craft')+'</b>';
+  cr.addEventListener('click',function(e){e.stopPropagation();Sound.sfx('select');if(win==='craft')closeWin();else openWin('craft');});
+  right.appendChild(cr);
+  H.stage.appendChild(bb);H.stage.appendChild(right);H.bbar=bb;H.bcreate=cr;
+}
+function paintBar(){
+  if(!H.bbar)return;
+  [].forEach.call(H.bbar.children,function(b){
+    var k=b.dataset.g,n=0;b.classList.toggle('sel',win===k);
+    if(k==='hall')n=S.cust.length;
+    if(k==='mage')n=g.skillPoints()>0?'!':0;
+    var bn=b.querySelector('.bb-n');if(bn){setText(bn,n||'');bn.classList.toggle('hidden',!n);}
+  });
+  if(H.bcreate)H.bcreate.classList.toggle('sel',win==='craft');
 }
 var viewNow=null,viewLoad=-1;
 function setViewBtn(v){viewNow=v;paintView();checkTabSet();}
@@ -1237,7 +1285,7 @@ function setScreen(sc){screenNow=sc;paintScreen();}
 function paintScreen(){
   if(!H.scn)return;
   [].forEach.call(H.scn.children,function(b){
-    var k=b.dataset.s;setText(b,t('scn.'+k));
+    var k=b.dataset.s;setText(b.querySelector('b'),t('scn.'+k));
     b.classList.toggle('sel',k===screenNow);b.classList.toggle('hidden',k==='road'&&S.place!=='road');
   });
 }
@@ -1256,11 +1304,9 @@ function viewProgress(p){viewLoad=p;paintView();}
 /* открыть вкладку (например, по клику на мастера в 3D-таверне) */
 function openTab(tab,sub){
   if(tab==='craft'&&sub)craftSub=sub;
-  if(TABSETS[tabSet].indexOf(tab)<0)return;
-  curTab=tab;lastTab[tabSet]=tab;paintTabs();buildTab();
+  openWin(groupOf(tab),tab);
   /* тап по зданию в 3D: прокрутить к его карточке и подсветить */
   if(tab==='city'&&sub){var bx=document.querySelector('#tab-body .pd-'+sub);if(bx){bx.scrollIntoView({block:'start',behavior:'smooth'});bx.classList.add('flash');setTimeout(function(){bx.classList.remove('flash');},1200);}}
-  if(S.settings.panel){S.settings.panel=false;document.body.classList.remove('panel-off');setTimeout(function(){window.dispatchEvent(new Event('resize'));},50);}
 }
 /* подписи над жителями таверны */
 function tavernLabel(kind,id){
@@ -1295,12 +1341,14 @@ function tavernLabel(kind,id){
   return '';
 }
 function paintTabs(){
-  var set=TABSETS[tabSet];
+  var set=win?GROUPS[win].tabs:[];
   [].forEach.call($('tabs').children,function(b){b.classList.toggle('sel',b.dataset.tab===curTab);b.classList.toggle('hidden',set.indexOf(b.dataset.tab)<0);});
+  $('tabs').classList.toggle('hidden',set.length<2);
 }
 /* маг ушёл в таверну или вернулся в поход: меняем набор вкладок */
 function checkTabSet(){
-  var s2=placeSet();if(s2===tabSet)return;
+  var s2=placeSet();document.body.classList.toggle('at-home',S.place!=='road');if(s2===tabSet)return;
+  tabSet=s2;return;   /* v23: вкладки живут в окнах и от места мага не зависят */
   tabSet=s2;
   if(TABSETS[s2].indexOf(curTab)<0)curTab=lastTab[s2];
   document.body.classList.toggle('at-home',s2==='tavern');
@@ -1360,17 +1408,18 @@ function offlineReport(rep){
 
 function init(game){
   g=game;S=game.S;
-  initHud();initPanel();buildTab();
+  initPanel();initHud();
   I18n.onChange(function(){
     [].forEach.call(document.querySelectorAll('[data-i18n]'),function(e){e.textContent=t(e.dataset.i18n);});
-    buildTab();
+    if(win)setText(H.winT,t('grp.'+win));
+    buildTab();paintScreen();
   });
 }
 function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
-  showCreate:showCreate,setScreen:setScreen,hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
+  showCreate:showCreate,setScreen:setScreen,openWin:openWin,closeWin:closeWin,get win(){return win;},hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

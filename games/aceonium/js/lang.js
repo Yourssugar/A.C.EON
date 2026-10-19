@@ -853,4 +853,9 @@ I18n.add('ru',{'scn.road':'ПОХОД','scn.tavern':'ТАВЕРНА','scn.city':
   'v22.title':'ТАВЕРНА И ГОРОД','v22.body':'<p>Таверна и посёлок теперь отдельные экраны: кнопки ТАВЕРНА и ГОРОД слева сверху. В городе дом таверны под крышей, в таверне камера в зале. Пока маг в походе, можно зайти и в таверну, и в город, а кнопка ПОХОД вернёт к бою.</p>'});
 I18n.add('en',{'scn.road':'TRIP','scn.tavern':'TAVERN','scn.city':'TOWN','tl.tavern':'TAVERN',
   'v22.title':'TAVERN AND TOWN','v22.body':'<p>The tavern and the town are separate screens now: TAVERN and TOWN buttons at the top left. In town the tavern has a roof; in the tavern the camera is inside the hall. While the mage is on a trip you can visit both, and TRIP takes you back to the fight.</p>'});
+/* v23: окна и нижняя панель */
+I18n.add('ru',{'grp.mage':'МАГ','grp.hall':'ЗАЛ','grp.build':'СТРОЙКА','grp.store':'СКЛАД','grp.craft':'СОЗДАТЬ','grp.info':'ИНФО','grp.book':'КНИГА','tv.repT':'Репутация',
+  'tab.gear':'СНАРЯЖЕНИЕ','v23.title':'НОВЫЙ ИНТЕРФЕЙС','v23.body':'<p>Боковой панели больше нет: сцена на весь экран. Внизу кнопки МАГ, ЗАЛ, СТРОЙКА, СКЛАД, КНИГА и ИНФО открывают окна поверх сцены, справа очередь мастеров и кнопка СОЗДАТЬ. Слева столбиком экраны: ПОХОД, ТАВЕРНА, ГОРОД.</p>'});
+I18n.add('en',{'grp.mage':'MAGE','grp.hall':'HALL','grp.build':'BUILD','grp.store':'STORE','grp.craft':'CRAFT','grp.info':'INFO','grp.book':'BOOK','tv.repT':'Reputation',
+  'tab.gear':'GEAR','v23.title':'NEW INTERFACE','v23.body':'<p>The side panel is gone: the scene fills the screen. The MAGE, HALL, BUILD, STORE, BOOK and INFO buttons at the bottom open windows over the scene; on the right are the craft queue and the CRAFT button. Screens are stacked on the left: TRIP, TAVERN, TOWN.</p>'});
 })();

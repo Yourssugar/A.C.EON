@@ -337,7 +337,7 @@ function orderIcon(rid,big,extra){
 /* блок, который перерисовывается целиком, а кнопки внутри ловятся через data-act */
 function actBlock(fn,onAct,cls){
   var b=el('div','blk'+(cls?' '+cls:''));
-  b.addEventListener('click',function(e){var x=e.target.closest('[data-act]');if(!x||x.disabled)return;onAct(x.dataset.act,x.dataset,e);Sound.sfx('select');refresh();});
+  b.addEventListener('click',function(e){var x=e.target.closest('[data-act]');if(!x||x.disabled)return;if(x.dataset.act==='stamt'){stageAmt(x.dataset);Sound.sfx('select');refresh();return;}onAct(x.dataset.act,x.dataset,e);Sound.sfx('select');refresh();});
   b.addEventListener('change',function(e){var x=e.target.closest('[data-act]');if(!x)return;onAct(x.dataset.act,x.dataset,e);refresh();});
   return {el:b,update:function(){setHTML(b,fn());}};
 }
@@ -939,7 +939,6 @@ function tabCraftMasters(){
 /* ── ГОРОД: промыслы, бригады, конюшня и постройки таверны ── */
 /* полоска 20 вкладов: o={st,bt,lvl,max,cost,now,next,wait,act,id,extra} */
 function stageHtml(o){
-  var segs='';for(var i=0;i<D.STAGES;i++)segs+='<i'+(i<o.st?' class="on"':'')+'></i>';
   var h='<div class="stg">';
   if(o.lvl>=o.max&&!o.bt)return h+'<div class="stg-t"><span>'+t('st2.max')+'</span></div></div>';
   if(o.bt){
@@ -947,14 +946,36 @@ function stageHtml(o){
     return h+'<div class="stg-t"><span>'+t(o.kind==='tools'?'st2.making':'st2.building',{n:o.lvl+1})+'</span><b>'+ft(o.bt.t)+'</b></div>'+
       '<div class="bar stgb"><i style="width:'+(k*100).toFixed(1)+'%"></i></div>'+(o.next?'<p class="note">'+t('st2.after',{v:o.next})+'</p>':'')+'</div>';
   }
-  if(o.wait)return h+'<div class="stg-t"><span>'+t(o.waitKey||'st2.wait')+'</span></div>'+(o.save?saveHtml(o.save):'')+'</div>';
-  h+='<div class="stg-t"><span>'+t('st2.toNext',{n:o.lvl+1})+'</span><b>'+o.st+' / '+D.STAGES+'</b></div><div class="stg-s">'+segs+'</div>';
+  if(o.wait&&!o.save)return h+'<div class="stg-t"><span>'+t(o.waitKey||'st2.wait')+'</span></div></div>';
+  /* v24: одна полоса. Вложено золотом из всей суммы за уровень; у инструментов в той же полосе часть мастера. */
+  if(o.c0===undefined)return h+'</div>';
+  var paid=0,total=0,i;
+  for(i=0;i<D.STAGES;i++){var c=D.stageCost(o.c0,o.L,i);total+=c;if(i<o.st)paid+=c;}
+  var sv=o.save,mp=sv?Math.min(sv.have,sv.need):0,all=total+(sv?sv.need:0);
+  h+='<div class="stg-t st3"><span>'+t('st3.to',{n:o.lvl+1})+'</span><b>'+D.fmt(paid+mp)+' / '+D.fmt(all)+'</b></div>'+
+    '<div class="bar st3b"><i class="p" style="width:'+(paid/all*100).toFixed(1)+'%"></i>'+(sv?'<i class="m" style="width:'+(mp/all*100).toFixed(1)+'%"></i>':'')+'</div>';
+  if(sv)h+='<div class="st3-leg"><span class="p">'+t('st3.you',{a:D.fmt(paid),b:D.fmt(total)})+'</span><span class="m">'+t('st3.master',{a:D.fmt(Math.floor(mp)),b:D.fmt(sv.need)})+'</span></div>';
   if(o.now)h+='<p class="note">'+t('st2.now',{a:o.now,b:o.next})+'</p>';
-  if(o.cost)h+='<div class="stg-b"><button type="button" class="btn sm" data-act="'+o.act+'" data-id="'+o.id+'"'+(g.canPay(o.cost)?'':' disabled')+'>'+t('st2.invest')+' '+costHtml(o.cost)+'</button>'+
-    '<button type="button" class="btn sm ghost" data-act="'+o.act+'" data-id="'+o.id+'" data-max="1"'+(g.canPay(o.cost)?'':' disabled')+'>'+t('st2.max5')+'</button></div>';
-  if(o.save)h+=saveHtml(o.save);
+  if(o.wait)return h+'<p class="note">'+t(o.waitKey||'st2.wait')+'</p></div>';
+  var left=D.STAGES-o.st;
+  if(left>0&&o.cost){
+    var key=o.kind+':'+o.id,n=Math.max(1,Math.min(left,stageN[key]||1)),sum=0;
+    for(i=o.st;i<o.st+n;i++)sum+=D.stageCost(o.c0,o.L,i);
+    var can=S.gold>=sum,last=o.st+n>=D.STAGES&&o.lastRes;
+    h+='<div class="st3-buy"><button type="button" class="st3-a" data-act="stamt" data-k="'+key+'" data-d="-1"'+(n<=1?' disabled':'')+'>-</button>'+
+      '<span class="st3-n">x'+n+'</span><button type="button" class="st3-a" data-act="stamt" data-k="'+key+'" data-d="1"'+(n>=left?' disabled':'')+'>+</button>'+
+      '<button type="button" class="st3-a mx" data-act="stamt" data-k="'+key+'" data-d="max" data-l="'+left+'" data-c0="'+o.c0+'" data-lv="'+o.L+'" data-st="'+o.st+'">'+t('st3.max')+'</button>'+
+      '<button type="button" class="btn pink st3-go" data-act="'+o.act+'" data-id="'+o.id+'" data-n="'+n+'"'+(can?'':' disabled')+'>'+t('st3.invest')+' '+costHtml({gold:sum})+(last?' <small>'+t('st3.res')+'</small>':'')+'</button></div>';
+  }
   if(o.extra)h+='<p class="note">'+o.extra+'</p>';
   return h+'</div>';
+}
+/* сколько вкладов за раз (по зданию); МАКС: сколько хватает золота */
+var stageN={};
+function stageAmt(ds){
+  var k=ds.k,cur=stageN[k]||1;
+  if(ds.d==='max'){var c0=+ds.c0,L=+ds.lv,st=+ds.st,l=+ds.l,sum=0,n=0;while(n<l){var c=D.stageCost(c0,L,st+n);if(sum+c>S.gold)break;sum+=c;n++;}stageN[k]=Math.max(1,n);}
+  else stageN[k]=Math.max(1,cur+(+ds.d));
 }
 /* v20: часть мастера на новый инструмент (копится с продаж его вещей) */
 function saveHtml(sv){
@@ -978,7 +999,7 @@ function prodBlock(id){
     if(id==='stable'){
       var ev=g.cartEvery(),nx=D.STABLE.every[Math.min(o.lvl,D.STABLE.max-1)];
       h+='<p>'+t('pd.cartNow',{m:Math.round(ev)})+'</p><p class="note">'+t('pd.cartNext',{m:Math.round(ev*60-(o.cart||0))>0?ft(ev*60-(o.cart||0)):'0'})+'</p>';
-      return h+stageHtml({kind:'prod',id:id,act:'inv',lvl:o.lvl,max:D.STABLE.max,st:o.st,bt:o.bt,cost:g.prodCost(id),wait:q,
+      return h+stageHtml({kind:'prod',id:id,act:'inv',lvl:o.lvl,max:D.STABLE.max,st:o.st,bt:o.bt,cost:g.prodCost(id),wait:q,c0:d.c0,L:o.lvl-1,
         now:o.lvl<D.STABLE.max?t('pd.every',{m:Math.round(ev)}):'',next:t('pd.every',{m:nx})});
     }
     var any=false;
@@ -992,13 +1013,12 @@ function prodBlock(id){
     h+='<div class="stg-b"><button type="button" class="btn sm" data-act="collect" data-id="'+id+'"'+(any?'':' disabled')+'>'+t('mine.collect')+'</button>'+(g.prodFull(id)?'<span class="bad">'+t('pd.full')+'</span>':'')+'</div>';
     var ln=d.lines.filter(function(r){return g.lineOpen(r);})[0]||d.lines[0];
     var nowV=rate2(g.lineRate(id,ln)),nextV=rate2(D.PROD_BASE[ln]*(o.lvl+1));
-    return h+stageHtml({kind:'prod',id:id,act:'inv',lvl:o.lvl,max:D.PROD_MAX,st:o.st,bt:o.bt,cost:g.prodCost(id),wait:q,
-      now:resIcon(ln)+t('pd.perH',{n:nowV}),next:resIcon(ln)+t('pd.perH',{n:nextV}),
-      extra:o.st<D.STAGES&&!o.bt&&o.lvl<D.PROD_MAX?t('st2.left',{g:D.fmt(g.prodCostLeft(id))}):''});
+    return h+stageHtml({kind:'prod',id:id,act:'inv',lvl:o.lvl,max:D.PROD_MAX,st:o.st,bt:o.bt,cost:g.prodCost(id),wait:q,c0:d.c0,L:o.lvl-1,
+      now:resIcon(ln)+t('pd.perH',{n:nowV}),next:resIcon(ln)+t('pd.perH',{n:nextV})});
   },function(act,ds){
     var id2=ds.id;
     if(act==='build'){if(g.prodBuild(id2))toast(t('pd.started',{b:prodName(id2)}));}
-    else if(act==='inv'){var n=0;do{if(!g.prodInvest(id2))break;n++;}while(ds.max&&n<D.STAGES);}
+    else if(act==='inv'){var n=0,want=+ds.n||1;while(n<want&&g.prodInvest(id2))n++;stageN['prod:'+id2]=1;}
     else if(act==='collect'){var r=g.prodCollect(id2);if(!Object.keys(r).length)toast(t('pd.storeFull'));}
   },'pd pd-'+id);
 }
@@ -1220,7 +1240,9 @@ var GROUPS={mage:{tabs:['path','bag','skills','gear','wardrobe'],icon:'o_staff'}
 var BAR=['mage','hall','build','store','book','info'],win=null;
 function groupOf(tab){for(var k in GROUPS)if(GROUPS[k].tabs.indexOf(tab)>=0)return k;return 'info';}
 function openWin(gk,tab){
+  if(gk==='craft'&&window.Craft){closeWin();Craft.open(tab&&tab!=='craft'?tab:null);paintBar();return;}   /* v24: крафт лентой */
   var G=GROUPS[gk];if(!G)return;
+  if(window.Craft&&Craft.isOpen)Craft.close();
   win=gk;curTab=tab&&G.tabs.indexOf(tab)>=0?tab:(G.last||G.tabs[0]);G.last=curTab;
   document.body.classList.add('win-open');
   setText(H.winT,t('grp.'+gk));
@@ -1264,7 +1286,7 @@ function initBar(){
   });
   var right=el('div','bb-right');right.appendChild(H.qbar);
   var cr=el('button','bb-create');cr.type='button';cr.innerHTML=spr('u_anvil','bb-ci')+'<b data-i18n="grp.craft">'+t('grp.craft')+'</b>';
-  cr.addEventListener('click',function(e){e.stopPropagation();Sound.sfx('select');if(win==='craft')closeWin();else openWin('craft');});
+  cr.addEventListener('click',function(e){e.stopPropagation();Sound.sfx('select');if(window.Craft&&Craft.isOpen)Craft.close();else openWin('craft');});
   right.appendChild(cr);
   H.stage.appendChild(bb);H.stage.appendChild(right);H.bbar=bb;H.bcreate=cr;
 }
@@ -1276,7 +1298,7 @@ function paintBar(){
     if(k==='mage')n=g.skillPoints()>0?'!':0;
     var bn=b.querySelector('.bb-n');if(bn){setText(bn,n||'');bn.classList.toggle('hidden',!n);}
   });
-  if(H.bcreate)H.bcreate.classList.toggle('sel',win==='craft');
+  if(H.bcreate)H.bcreate.classList.toggle('sel',!!(window.Craft&&Craft.isOpen));
 }
 var viewNow=null,viewLoad=-1;
 function setViewBtn(v){viewNow=v;paintView();checkTabSet();}
@@ -1303,7 +1325,7 @@ function paintView(){
 function viewProgress(p){viewLoad=p;paintView();}
 /* открыть вкладку (например, по клику на мастера в 3D-таверне) */
 function openTab(tab,sub){
-  if(tab==='craft'&&sub)craftSub=sub;
+  if(tab==='craft'){if(window.Craft){closeWin();Craft.open(sub&&sub!=='make'&&sub!=='masters'?sub:null);}return;}
   openWin(groupOf(tab),tab);
   /* тап по зданию в 3D: прокрутить к его карточке и подсветить */
   if(tab==='city'&&sub){var bx=document.querySelector('#tab-body .pd-'+sub);if(bx){bx.scrollIntoView({block:'start',behavior:'smooth'});bx.classList.add('flash');setTimeout(function(){bx.classList.remove('flash');},1200);}}
@@ -1419,7 +1441,7 @@ function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
   onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
-  showCreate:showCreate,setScreen:setScreen,openWin:openWin,closeWin:closeWin,get win(){return win;},hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
+  showCreate:showCreate,stageAmt:stageAmt,setScreen:setScreen,openWin:openWin,closeWin:closeWin,get win(){return win;},hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};
 })();

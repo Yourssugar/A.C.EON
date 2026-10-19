@@ -35,7 +35,8 @@ function open(id){
     if(a==='hire')ok=g.hire(M.id);
     if(a==='order')ok=g.order(M.id,b.dataset.r);
     if(a==='learn')ok=g.learn(b.dataset.r);
-    if(a==='tools'){var n=0;do{if(!g.buyTools(M.id))break;n++;}while(b.dataset.max&&n<D.STAGES);ok=n>0;}
+    if(a==='stamt'){UI.stageAmt(b.dataset);Sound.sfx('select');render(true);return;}
+    if(a==='tools'){var n=0,want=+b.dataset.n||1;while(n<want&&g.buyTools(M.id))n++;ok=n>0;}
     if(a==='slot')ok=g.buyQSlot();
     if(a==='coll')ok=g.collAdd(b.dataset.r,b.dataset.q===undefined?undefined:+b.dataset.q);
     if(a==='lock'){g.toggleLock(b.dataset.r);ok=true;}
@@ -173,7 +174,7 @@ function render(full){
   h+='<div class="lbl full">'+t('ms2.upgrades')+'</div>'+
     '<div class="ms2-up col"><div><b>'+t('ms.tools')+UI.hb('tools')+'</b> '+t('row.lvlMax',{n:m.tools,m:D.TOOLS_MAX})+'</div>'+
       UI.stageHtml({kind:'tools',id:id,act:'tools',lvl:m.tools,max:D.TOOLS_MAX,st:m.tst||0,bt:m.tbt,cost:tc,
-        wait:!m.tbt&&(m.tst||0)>=D.STAGES,waitKey:'ms4.wait',save:m.tools<D.TOOLS_MAX&&!m.tbt?{have:m.sav||0,need:g.toolsPart(id)}:null,
+        wait:!m.tbt&&(m.tst||0)>=D.STAGES,waitKey:'ms4.wait',save:m.tools<D.TOOLS_MAX&&!m.tbt?{have:m.sav||0,need:g.toolsPart(id)}:null,c0:D.TOOLS_C0,L:m.tools,lastRes:true,
         now:toolsQ(g,id,g.toolsEff(id)),next:toolsQ(g,id,Math.min(D.TOOLS_MAX,m.tools+1)),
         extra:(m.tst===D.STAGES-1?t('st2.lastRes'):'')})+'</div>'+
     '<div class="ms2-up"><div><b>'+t('q2.slots')+'</b> '+t('row.lvlMax',{n:S.qSlots,m:D.QSLOTS_MAX})+'</div>'+

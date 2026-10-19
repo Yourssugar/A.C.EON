@@ -570,7 +570,7 @@ function prodSig(S){
 }
 function buildProd(S){
   if(V.prodG){V.prodG.traverse(function(o){if(o.userData&&o.userData.merged)o.geometry.dispose();});V.scene.remove(V.prodG);}
-  var G=new T.Group();V.prodG=G;V.scene.add(G);V.piles={};V.prodFx=[];if(!V.penPets)V.penPets=[];
+  var G=new T.Group();V.prodG=G;V.scene.add(G);V.piles={};V.prodFx=[];V.work={};if(!V.penPets)V.penPets=[];
   var keep=[],g=window.acGame;
   for(var id in SITES){
     var si=SITES[id],o=S.prod&&S.prod[id]||{lvl:0},H=new T.Group();
@@ -597,6 +597,7 @@ function buildProd(S){
       dressing(H,w,d,lvl,{});
     }
     if(o.bt)scaffold(H,w,d);
+    else if(WORK_SPOT[id]){var ws=WORK_SPOT[id],wv=new T.Vector3(ws[0],0,ws[1]);H.updateMatrixWorld(true);H.localToWorld(wv);V.work[id]={x:wv.x,z:wv.z,rot:si.rot+ws[2]};}
     var hx=w/2,hz=d/2;
     if(id==='saw'){
       prop(H,'Workbench',hx+2.2,hz-0.6,Math.PI/2);prop(H,'Axe_Bronze',hx+2.1,hz-0.9,0.3,0.95);kprop(H,'saw',hx+2.3,hz-0.1,0.2,0.95,0.32,-Math.PI/2);
@@ -730,7 +731,46 @@ function removeNpc(N){
   if(N.av){V.scene.remove(N.av.root);}
   delete V.npcs[N.key];
 }
-function setAnim(N,a){if(N.anim===a)return;N.anim=a;if(N.av)N.av.play(a,0.3);}
+function setAnim(N,a){
+  if(Array.isArray(a)){if(N.cyc===a)return;N.cyc=a;N.cycT=0;return;}   /* набор движений: меняются сами (v21) */
+  N.cyc=null;if(N.anim===a)return;N.anim=a;if(N.av)N.av.play(a,0.3);
+}
+/* v21: жители не стоят одной позой. Набор: [клип, вес, от с, до с]; следующий выбирается случайно, по весу,
+   по возможности не тот же самый. Одноразовые клипы (сундук, кивок) длятся ровно свою длину. */
+var ACT={
+  rest:[['Idle_Loop',3,5,10],['Idle_FoldArms_Loop',2,5,10],['Idle_Talking_Loop',1,3,6]],
+  hostIdle:[['Idle_Loop',3,5,10],['Idle_FoldArms_Loop',2,5,9],['Interact',1,2.5,4]],
+  hostTalk:[['Idle_Talking_Loop',4,4,8],['Yes',1,2.5,2.5],['Interact',1,2,3]],
+  brewer:[['Fixing_Kneeling',3,5,9],['Interact',2,3,6],['Chest_Open',1,1.37,1.37],['PickUp_Table',1,2,4]],
+  cook:[['Interact',3,4,8],['PickUp_Table',2,2,4],['Chest_Open',1,1.37,1.37],['Farm_Watering',1,3.8,3.8]],
+  helper:[['PickUp_Table',2,3,6],['Interact',2,3,6],['Chest_Open',1,1.37,1.37],['Crouch_Idle_Loop',1,3,5]],
+  herbalist:[['Farm_Harvest',2,2.5,5],['Farm_PlantSeed',2,2.77,5.5],['Farm_Watering',2,3.8,7.6],['Interact',1,3,6]],
+  carpenter:[['PickUp_Table',2,3,6],['TreeChopping_Loop',2,3,6],['Fixing_Kneeling',1,4,8]],
+  smith:[['Sword_Attack',3,3,7],['Fixing_Kneeling',1,4,7],['Interact',1,3,5]],
+  tanner:[['Fixing_Kneeling',2,4,8],['Interact',2,3,6],['PickUp_Table',1,3,5]],
+  jeweler:[['Interact',3,4,8],['Idle_FoldArms_Loop',1,3,6],['Fixing_Kneeling',1,4,7]],
+  pets:[['Interact',2,3,6],['Crouch_Idle_Loop',2,3,6],['Yes',1,2.5,2.5]],
+  teach:[['Idle_Talking_Loop',3,4,8],['Yes',1,2.5,2.5],['Idle_FoldArms_Loop',1,3,5]],
+  custTalk:[['Idle_Talking_Loop',4,4,8],['Yes',1,2.5,2.5]],
+  custWait:[['Idle_Loop',3,4,8],['Idle_FoldArms_Loop',2,4,8],['Idle_No_Loop',0.5,2.5,2.5]],
+  sit:[['Sitting_Idle_Loop',3,5,10],['Sitting_Talking_Loop',2,5,10]],
+  sitFed:[['Sitting_Idle_Loop',3,5,10],['Sitting_Talking_Loop',2,5,10],['sitDrink',2,1.33,2.66]],
+  /* работники на промыслах */
+  w_saw:[['TreeChopping_Loop',4,4,9],['PickUp_Table',1,2,4],['Idle_Loop',1,2,4]],
+  w_mine:[['TreeChopping_Loop',3,4,8],['Crouch_Idle_Loop',1,3,5],['PickUp_Table',1,2,4]],
+  w_hunt:[['Fixing_Kneeling',3,5,9],['PickUp_Table',1,2,4],['Interact',1,3,5]],
+  w_farm:[['Farm_Harvest',2,2.5,5],['Farm_PlantSeed',2,2.77,5.5],['Farm_Watering',2,3.8,7.6]],
+  w_ghost:[['Idle_Lantern_Loop',4,5,10],['Interact',1,3,5]],
+  w_stable:[['Idle_FoldArms_Loop',1,4,8],['Interact',2,3,6],['PickUp_Table',1,2,4]]
+};
+function pickCyc(N){
+  var L=N.cyc,tot=0,i;
+  for(i=0;i<L.length;i++)if(L[i][0]!==N.anim||L.length===1)tot+=L[i][1];
+  var r=Math.random()*tot,e=L[0];
+  for(i=0;i<L.length;i++){if(L[i][0]===N.anim&&L.length>1)continue;r-=L[i][1];if(r<=0){e=L[i];break;}}
+  N.anim=e[0];N.cycT=e[2]+Math.random()*(e[3]-e[2]);
+  if(N.av)N.av.play(e[0],0.35);
+}
 function goTo(N,pts){N.path=pts.map(function(p){return {x:p[0],z:p[1]};});}
 
 /* ════════ СИНХРОНИЗАЦИЯ С ИГРОЙ ════════ */
@@ -757,7 +797,7 @@ function placeMasters(S,moved){
   var h=V.npcs.hostess;
   if(!h)h=spawnNpc('hostess',fullLook(MASTER_LOOK.hostess),st.hostess.x,st.hostess.z,st.hostess.rot);
   if(moved){h.x=st.hostess.x;h.z=st.hostess.z;h.rot=st.hostess.rot;}
-  setAnim(h,S.cust.length&&S.place!=='sleep'?'Idle_Talking_Loop':'Idle_Loop');
+  setAnim(h,S.cust.length&&S.place!=='sleep'?ACT.hostTalk:ACT.hostIdle);
   var want={};
   /* повар, пивовар и их помощники */
   var TV=S.tav;
@@ -767,13 +807,13 @@ function placeMasters(S,moved){
     var key='w:'+w;want[key]=1;
     var N=V.npcs[key]||spawnNpc(key,fullLook(MASTER_LOOK[w]),pos.x,pos.z,pos.rot);
     if(moved){N.x=pos.x;N.z=pos.z;N.rot=pos.rot;}
-    setAnim(N,busy?(w==='cook'?'Interact':'Fixing_Kneeling'):'Idle_Loop');
+    setAnim(N,busy?ACT[w]:ACT.rest);
     var hp=st[w==='cook'?'cookHelp':'brewHelp'],nh=Math.min(o.help,HELP_VIS[q]||0,hp.length);
     for(var i=0;i<nh;i++){
       var hk='h:'+w+':'+i;want[hk]=1;var hpos=hp[i];
       var H=V.npcs[hk]||spawnNpc(hk,helperLook(w,i),hpos[0],hpos[1],hpos[2]);
       if(moved){H.x=hpos[0];H.z=hpos[1];H.rot=hpos[2];}
-      setAnim(H,busy?(i%2?'PickUp_Table':'Interact'):'Idle_Loop');
+      setAnim(H,busy?ACT.helper:ACT.rest);
     }
   });
   /* мастера в своих домах (не на слабой графике) */
@@ -783,11 +823,26 @@ function placeMasters(S,moved){
     var M=V.npcs[mk]||spawnNpc(mk,fullLook(MASTER_LOOK[mid]),mp.x,mp.z,mp.rot);
     if(M.x!==mp.x||M.z!==mp.z){M.x=mp.x;M.z=mp.z;M.rot=mp.rot;}
     var work=mid==='pets'?!!(S.pets.train):g&&g.queueOf(mid).length&&g.canWork(mid);
-    setAnim(M,m.teach?'Idle_Talking_Loop':work?WORK[mid]:'Idle_Loop');
+    setAnim(M,m.teach?ACT.teach:work?ACT[mid]||WORK[mid]:ACT.rest);
   }
-  for(var k in V.npcs){if((k[0]==='w'||k[0]==='h'||k[0]==='m')&&k[1]===':'&&!want[k])removeNpc(V.npcs[k]);}
+  /* работники на промыслах (v21): только на высокой графике, когда здание построено */
+  if((q==='high'||q==='ultra')&&V.work)for(var wid in V.work){
+    var wp=V.work[wid],wk='p:'+wid;want[wk]=1;
+    var Wn=V.npcs[wk]||spawnNpc(wk,workerLook(wid),wp.x,wp.z,wp.rot);
+    if(Wn.x!==wp.x||Wn.z!==wp.z){Wn.x=wp.x;Wn.z=wp.z;Wn.rot=wp.rot;}
+    setAnim(Wn,ACT['w_'+wid]||ACT.rest);
+  }
+  for(var k in V.npcs){if((k[0]==='w'||k[0]==='h'||k[0]==='m'||k[0]==='p')&&k[1]===':'&&!want[k])removeNpc(V.npcs[k]);}
 }
 var HELP_VIS={low:0,medium:1,high:2,ultra:3};
+var WORK_LOOK={saw:[0,'m',2,'buzzed'],mine:[1,'m',4,'none'],hunt:[2,'m',1,'parted'],farm:[3,'f',3,'buns'],ghost:[4,'f',0,'long'],stable:[1,'m',3,'parted']};
+function workerLook(id){
+  var w=WORK_LOOK[id]||[0,'m',0,'buzzed'];
+  return fullLook({gender:w[1],skin:w[2],hair:w[3],hairColor:(w[0]*3+1)%9,beard:w[1]==='m'&&w[0]%2?'beard':'none',
+    body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:w[0]%2}});
+}
+/* где стоит работник промысла: в координатах участка (x, z, поворот) */
+var WORK_SPOT={saw:[3.9,-0.2,Math.PI/2],mine:[3.1,-1.9,Math.PI],hunt:[4.4,-0.4,-Math.PI/2],farm:[-0.9,5.2,Math.PI/2],ghost:[2.5,3.4,Math.PI/2],stable:[1.7,5.2,-Math.PI/2]};
 function helperLook(w,i){
   return fullLook({gender:i%2?'f':'m',skin:(i*2+(w==='cook'?1:3))%5,hair:i%2?'buns':'buzzed',hairColor:(i*3+2)%9,beard:'none',
     body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:(i+(w==='cook'?0:1))%2}});
@@ -806,6 +861,7 @@ function mealFor(N,id){
   if(gs.beer){var m=model('Mug');place(m,N.seat.x+(gs.food?0.22:0),N.seat.z+dz*0.8,id*1.3,0.82);G.add(m);}
   G.traverse(function(o){if(o.isMesh)o.castShadow=false;});
   V.scene.add(G);N.meal=G;
+  return !!gs.beer;
 }
 /* путь от места к выходу и от очереди к месту */
 function seatPath(sp){
@@ -927,7 +983,7 @@ function buildNature(){
 }
 
 /* ════════ МАГ В ТАВЕРНЕ ════════ */
-var mageRef=null,mageMode='';
+var mageRef=null,mageMode='',mageCycT=0;
 function setMage(av,mode){
   if(!V)return;
   if(mageRef&&mageRef!==av)releaseMage();
@@ -939,7 +995,8 @@ function setMage(av,mode){
   var p=mode==='sleep'?V.st.mageBed:V.st.mageSit;
   av.root.position.set(p.x,mode==='sleep'?0.55:0.05,p.z);av.root.rotation.set(0,p.rot,0);
   if(av.staffHolder)av.staffHolder.visible=false;
-  if(mode==='sleep')av.play('Death01',0.3);else av.play('Sitting_Idle_Loop',0.4);
+  if(mode==='sleep')av.play('sleep',0.3);else av.play('Sitting_Idle_Loop',0.4);
+  mageCycT=6+Math.random()*6;
 }
 function releaseMage(){
   var av=mageRef;mageRef=null;mageMode='';
@@ -1089,21 +1146,25 @@ function update(dt){
       if(!N.path.length){
         if(N.leaving){removeNpc(N);continue;}
         if(N.guest)N.sitNow=true;
-        else{N.rot=N.cust?Math.PI:N.rot;if(N.av)N.av.play(N.cust?(N.slot===0?'Idle_Talking_Loop':'Idle_Loop'):N.anim,0.3);}
+        else{N.rot=N.cust?Math.PI:N.rot;if(N.cust)setAnim(N,N.slot===0?ACT.custTalk:ACT.custWait);if(N.cyc)N.cycT=0;else if(N.av)N.av.play(N.anim,0.3);}
       }
     }
     if(N.sitNow&&N.av&&!N.path.length){
       N.sitNow=false;N.x=N.seat.x;N.z=N.seat.z;N.rot=N.seat.rot;N.y=0.05;
-      mealFor(N,+key.slice(2));
-      N.av.play(rnd(+key.slice(2)*1.7)<0.5?'Sitting_Talking_Loop':'Sitting_Idle_Loop',0.3);
+      var fed=mealFor(N,+key.slice(2));
+      N.anim=rnd(+key.slice(2)*1.7)<0.5?'Sitting_Talking_Loop':'Sitting_Idle_Loop';N.av.play(N.anim,0.3);
+      N.cyc=fed?ACT.sitFed:ACT.sit;N.cycT=4+Math.random()*6;
     }else if(N.guest&&!N.path.length){/* сидит */}
-    else if(N.cust&&N.av&&!N.path.length){var a=N.slot===0?'Idle_Talking_Loop':'Idle_Loop';if(N.av.curName!==a)N.av.play(a,0.3);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
+    else if(N.cust&&N.av&&!N.path.length){setAnim(N,N.slot===0?ACT.custTalk:ACT.custWait);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
+    if(N.cyc&&N.av&&!N.path.length&&!N.sitNow){N.cycT-=dt;if(N.cycT<=0)pickCyc(N);}
     if(N.av){N.av.root.position.set(N.x,N.y||0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}
   }
   if(V.prodFx)V.prodFx.forEach(function(f,i){f.s.position.y=f.y+Math.sin(V.t*1.6+i*2.1)*0.35;f.s.material.opacity=0.55+Math.sin(V.t*2.3+i)*0.25;});
   if(V.penPets)V.penPets.forEach(function(pp){pp.mixer.update(dt);});
   if(V.pet){V.pet.mixer.update(dt);if(V.pet.fly)V.pet.root.position.y=V.pet.fly+Math.sin(V.t*2)*0.06;}
   if(mageRef){mageRef.update(dt,'npc');
+    /* v21: маг за столом иногда отпивает из кружки */
+    if(mageMode==='sit'){mageCycT-=dt;if(mageCycT<=0){var dk=mageRef.curName!=='sitDrink'&&Math.random()<0.5;mageRef.play(dk?'sitDrink':'Sitting_Idle_Loop',0.35);mageCycT=dk?2.66:6+Math.random()*8;}}
     if(mageMode==='sleep'){zzT-=dt;if(zzT<=0&&mageRef.head)zzT=1.2,spawnZ();}
   }
   for(var i=zz.length-1;i>=0;i--){var z=zz[i];z.t+=dt;z.s.position.y+=dt*0.4;z.s.material.opacity=1-z.t/2.2;if(z.t>2.2){V.scene.remove(z.s);z.s.material.dispose();zz.splice(i,1);}}

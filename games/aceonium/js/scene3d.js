@@ -326,7 +326,7 @@ function buildMonster(type,boss,biome,cols){
   E.shadow=mesh(new THREE.CircleGeometry(0.55,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.4,depthWrite:false}),0,0.012,0);
   E.shadow.rotation.x=-Math.PI/2;E.root.add(E.shadow);
   E.root.rotation.y=-0.85;
-  E.scale=boss?2.0:1.35;
+  E.scale=(boss?2.0:1.35)*ROAD_SIZE;
   return E;
 }
 function updateMonster(E,dt,fighting){
@@ -884,7 +884,7 @@ function updatePet(dt){
           var to=enemyCenter(new THREE.Vector3());to.x+=(Math.random()-0.5)*0.4;to.y+=(Math.random()-0.5)*0.4;
           var fs=getSprite(Math.random()<0.5?0xff7a20:0xffc040,0.25,1);fs.position.copy(from);R.fire.push({s:fs,a:from,b:to,t:0,dur:0.3,size:0.28});}}
         if(J.t>=0.45&&!J.hit){J.hit=true;onPetHit(J.crit);}
-        if(J.t>0.9)R.petJob=null;
+        if(J.t>0.9){var nx2=J.next;R.petJob=nx2?{t:0,crit:nx2.crit,hit:false}:null;}
         P.root.rotation.y=Math.PI-0.25;
       }else{
         var go=Math.min(1,J.t/0.3),back=Math.max(0,Math.min(1,(J.t-0.6)/0.4));
@@ -893,7 +893,7 @@ function updatePet(dt){
         if(J.t<0.3){if(P.role!=='run')P.play('run',0.08);P.root.rotation.y=Math.atan2(tgt.x-PET_HOME.x,tgt.z-PET_HOME.z);}
         else if(J.t<0.6){if(P.role!=='attack')P.play('attack',0.06);P.root.rotation.y=Math.PI;}
         else if(J.t<1.0){if(P.role!=='run')P.play('run',0.08);P.root.rotation.y=Math.atan2(PET_HOME.x-tgt.x,PET_HOME.z-tgt.z);}
-        else{R.petJob=null;P.play('idle',0.2);}
+        else{var nx=J.next;R.petJob=nx?{t:0,crit:nx.crit,hit:false}:null;if(!nx)P.play('idle',0.2);}
         if(J.t>=0.45&&!J.hit){J.hit=true;onPetHit(J.crit);}
       }
     }else{if(!P.busy())P.play('idle',0.25);P.root.rotation.y=Math.PI-0.25;}
@@ -988,10 +988,18 @@ function bolt(kind,crit){
   for(var i=0;i<7;i++)trail.push(getSprite(col,size*(0.85-i*0.1),0.6-i*0.08));
   R.bolts.push({head:head,trail:trail,from:from,to:to,ctrl:ctrl,t:0,dur:kind==='discharge'?0.45:kind==='click'?0.2:0.32,col:col,kind:kind,crit:crit});
   R.mage.kick=Math.min(1.4,R.mage.kick+(kind==='click'?0.5:0.8));
+  /* v21: иногда маг бросает искру свободной рукой (клик), разряд всегда бросок */
+  var M=R.mage;
+  if(M.react&&M.busyReact&&!M.busyReact()){
+    var now=performance.now();
+    if(kind==='discharge'){M.react('throw',1100);R.throwAt=now;}
+    else if(kind==='click'&&now-(R.throwAt||0)>2500&&Math.random()<0.3){M.react('throw',1000);R.throwAt=now;}
+  }
 }
 function bez(o,a,c,b,t){var u=1-t;o.set(u*u*a.x+2*u*t*c.x+t*t*b.x,u*u*a.y+2*u*t*c.y+t*t*b.y,u*u*a.z+2*u*t*c.z+t*t*b.z);return o;}
 
 /* монстр из моделей приключения: та же структура E, что у нарисованного, плюс микшер анимаций */
+var ROAD_SIZE=1.5;   /* v21: монстры на дороге в 1.5 раза крупнее (и нарисованные, и модели) */
 function buildModelMonster(e){
   var role=e.boss?(e.role||'main'):e.elite?'elite':'mob',boss=!!e.boss;
   var A=Adventure.monster(e.v,role);if(!A)return null;
@@ -1056,14 +1064,17 @@ function dropEnemy(E,how){
   if(R.enemy===E)R.enemy=null;
 }
 /* босс попал по магу: красные искры у мага и лёгкая тряска */
-function hurt(){
+function hurt(h){
   if(!R||!R.mage)return;
   var p=new THREE.Vector3();R.mage.root.getWorldPosition(p);p.y+=1.2;
   burst(p,0xff2d4a,18,2.6,0.13);
   R.shakeT=Math.max(R.shakeT||0,0.35);R.stopT=0.07;
   ring(MAGE_POS.x,MAGE_POS.z,'wave',0xff6040,0.5,0.3,3.2,0.9);
-  if(R.mage.react)R.mage.react('hurt',650);
-  else R.mage.kick=1.4;
+  /* v21: в ярости босс иногда сбивает мага с ног, тот встаёт; обычные удары чередуют попадание в грудь и в голову */
+  var M=R.mage,now=performance.now();
+  if(M.reactSeq&&h&&h.rage&&now-(R.knockAt||0)>9000&&Math.random()<0.35){R.knockAt=now;M.reactSeq([['knock',800],['getup',1500]]);}
+  else if(M.react)M.react((R.hurtN=(R.hurtN||0)+1)%2?'hurt':'hurt2',650);
+  else M.kick=1.4;
 }
 /* кольцо на земле: warn - мигает перед ударом, wave - расходится */
 function ring(x,z,kind,color,dur,s0,s1,op){
@@ -1079,6 +1090,8 @@ function bossWind(rage){
   if(atk)playAct(E,atk,0.08);else E.lunge=1;
   var d=(window.AcData&&AcData.BOSS_WIND)||0.55;
   ring(MAGE_POS.x,MAGE_POS.z,'warn',rage?0xff2020:0xff6a30,d,0.4,0.8,0.7);
+  /* v21: маг иногда закрывается от замаха */
+  if(R.mage&&R.mage.react&&R.mage.busyReact&&!R.mage.busyReact()&&Math.random()<0.35)R.mage.react('block',d*1000+150);
 }
 /* удар обычного монстра гасит щит мага: голубая вспышка перед ним */
 function shieldFx(){
@@ -1102,6 +1115,7 @@ function onHit(h){
 /* укус питомца: бежит к врагу, кусает, возвращается; дракончик плюётся огнём */
 function petBite(crit){
   if(!R||!R.pet||!R.enemy||R.enemy.form||R.mode!=='fight')return;
+  if(R.petJob&&R.petJob.t<1){R.petJob.next={crit:!!crit};return;}
   R.petJob={t:0,crit:!!crit,hit:false};
 }
 /* победа над боссом: замедление, золотые искры, маг поднимает посох */
@@ -1109,7 +1123,9 @@ function victory(){
   if(!R||!R.mage)return;
   R.slowT=0.9;
   var p=new THREE.Vector3(MAGE_POS.x,1.6,MAGE_POS.z);burst(p,0xffd56a,30,3.2,0.14,false,1.2);
-  if(R.mage.react)setTimeout(function(){if(R&&R.mage.react)R.mage.react('victory',1500);},250);
+  /* v21: разная радость: посох вверх, большой палец или танец */
+  var vv=[['victory',1500],['yes',2400],['Dance_Loop',2600]][Math.floor(Math.random()*3)];
+  if(R.mage.react)setTimeout(function(){if(R&&R.mage.react){R.mage.seqUntil=0;R.mage.react(vv[0],vv[1]);}},250);
 }
 function setRage(on){if(R&&R.enemy)R.enemy.rage=!!on;}
 function kill(){if(R&&R.enemy){var E=R.enemy;dropEnemy(E,'die');if(E.scale>1.5){R.shakeT=0.5;R.slowT=Math.max(R.slowT,0.6);}}}

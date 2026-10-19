@@ -85,7 +85,7 @@ function needs(look,res,forGame){
   var hd=listDef(CATALOG.hair,look.hair);if(hd.model){models.push(hd.model);sets[/long|buns/.test(hd.id)?'hair2':'hair1']=0;}
   var bd=listDef(CATALOG.beard,look.beard);if(bd.model&&g==='m')models.push(bd.model);
   var files=models.map(function(m){return 'models/'+m+'.glb';});
-  files.push('models/anims.glb');
+  files.push('models/anims.glb','models/anims2.glb');
   Object.keys(sets).forEach(function(k){
     var S=CATALOG.sets[k];
     files.push('tex/'+S.color[Math.min(sets[k],S.color.length-1)]+'_'+res+'.webp');
@@ -174,8 +174,9 @@ var L_ARM=/^(clavicle_l|upperarm_l|lowerarm_l|hand_l|(index|middle|pinky|ring|th
 function boneOf(track){return track.name.split('.')[0];}
 function clips(){
   if(clipCache)return clipCache;
-  clipCache=loadGLB('models/anims.glb',function(){}).then(function(g){
-    var by={};g.animations.forEach(function(c){by[c.name]=c;});
+  /* v21: anims2.glb - вторая библиотека (тот же скелет): отброс, бросок, блок, сон, питьё */
+  clipCache=Promise.all([loadGLB('models/anims.glb',function(){}),loadGLB('models/anims2.glb',function(){}).catch(function(){return {animations:[]};})]).then(function(r){
+    var by={};r[0].animations.concat(r[1].animations).forEach(function(c){by[c.name]=c;});
     /* ходьба с посохом: ноги и тело от ходьбы, правая рука держит посох как факел */
     function merged(name,baseName,armName){
       var base=by[baseName],arm=by[armName];if(!base||!arm)return base;
@@ -189,6 +190,17 @@ function clips(){
     by.hurt=by.Hit_Chest;                 /* босс попал: маг вздрагивает */
     by.victory=by.Spell_Simple_Enter;     /* босс повержен: маг поднимает посох */
     by.wardrobe=by.Idle_Loop;   /* в гардеробе рука свободна, посох стоит рядом на земле */
+    /* v21: больше движений в бою и в таверне */
+    by.hurt2=by.Hit_Head||by.Hit_Chest;
+    by.knock=by.Hit_Knockback;by.getup=by.LayToIdle;
+    by.throw=by.OverhandThrow;by.block=by.Sword_Block;by.yes=by.Yes;
+    if(by.LayToIdle){by.sleep=T.AnimationUtils.subclip(by.LayToIdle,'sleep',0,2,30);by.wake=by.LayToIdle;}
+    /* сидя пьёт: ноги и спина от сидения, руки и голова от питья */
+    if(by.Consume&&by.Sitting_Idle_Loop){
+      var UP=/^(clavicle|upperarm|lowerarm|hand|index|middle|pinky|ring|thumb|neck|head)/;
+      var sit=by.Sitting_Idle_Loop,dr=by.Consume;
+      by.sitDrink=new T.AnimationClip('sitDrink',dr.duration,sit.tracks.filter(function(t){return !UP.test(boneOf(t));}).concat(dr.tracks.filter(function(t){return UP.test(boneOf(t));})));
+    }
     return by;
   });
   return clipCache;
@@ -198,8 +210,8 @@ function clips(){
 var extraClips=null;
 function loadExtraClips(){
   if(extraClips)return extraClips;
-  extraClips=Promise.all([clips(),loadGLB('models/anims_tavern.glb',function(){})]).then(function(r){
-    r[1].animations.forEach(function(c){r[0][c.name]=c;});
+  extraClips=Promise.all([clips(),loadGLB('models/anims_tavern.glb',function(){}),loadGLB('models/anims_tavern2.glb',function(){}).catch(function(){return {animations:[]};})]).then(function(r){
+    r[1].animations.concat(r[2].animations).forEach(function(c){r[0][c.name]=c;});
     return r[0];
   });
   extraClips.catch(function(){extraClips=null;});
@@ -341,7 +353,7 @@ P.play=function(name,fade){
     if(!a){a=self.mixer.clipAction(clip);self.actions[name]=a;}
     if(self.cur===a)return;
     a.reset();a.enabled=true;a.setEffectiveWeight(1);
-    if(name==='Sitting_Enter'||name==='cast'||name==='Sitting_Exit'||name==='Death01'||name==='hurt'||name==='victory'){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true;}
+    if(ONCE[name]){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true;}
     else a.setLoop(T.LoopRepeat,Infinity);
     a.play();
     if(self.cur&&fade!==0)self.cur.crossFadeTo(a,fade||0.35,false);
@@ -349,13 +361,29 @@ P.play=function(name,fade){
     self.cur=a;self.curName=name;
   });
 };
+var ONCE={Sitting_Enter:1,cast:1,Sitting_Exit:1,Death01:1,hurt:1,hurt2:1,victory:1,knock:1,getup:1,throw:1,block:1,yes:1,wake:1,sleep:1};
 var MODE_CLIP={walk:'walk',fight:'fight',idle:'idle',wardrobe:'wardrobe'};
-/* короткая реакция в бою (удар, победа), потом обратно к анимации режима */
+/* короткая реакция в бою (удар, победа), потом обратно к анимации режима.
+   Пока идёт цепочка (отброс и подъём), другие реакции не перебивают её. */
 P.react=function(name,ms){
-  var self=this;if(this.mode!=='fight'&&name==='hurt')return;
+  var self=this;if(this.mode!=='fight'&&/^hurt|block|knock/.test(name))return;
+  if(this.seqUntil&&performance.now()<this.seqUntil)return;
   this.castT=Math.max(this.castT||0,ms/1000);this.play(name,0.08);
   clearTimeout(this.castBack);this.castBack=setTimeout(function(){self.play(MODE_CLIP[self.mode]||'idle',0.3);},ms);
 };
+/* цепочка реакций: [[клип, мс], ...] */
+P.reactSeq=function(list){
+  var self=this;if(this.mode!=='fight')return;
+  if(this.seqUntil&&performance.now()<this.seqUntil)return;
+  var total=list.reduce(function(a,x){return a+x[1];},0);
+  this.seqUntil=performance.now()+total;this.castT=Math.max(this.castT||0,total/1000);
+  clearTimeout(this.castBack);
+  var i=0;(function step(){
+    if(i>=list.length){self.seqUntil=0;self.play(MODE_CLIP[self.mode]||'idle',0.3);return;}
+    var x=list[i++];self.play(x[0],i===1?0.08:0.15);self.castBack=setTimeout(step,x[1]);
+  })();
+};
+P.busyReact=function(){return this.castT>0.05||(this.seqUntil&&performance.now()<this.seqUntil);};
 P.update=function(dt,mode,fat){
   if(!this.mixer)return;
   /* жители таверны: анимацию выбирает tavern3d через play(), здесь только шаг микшера */

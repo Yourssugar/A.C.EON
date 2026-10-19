@@ -460,10 +460,13 @@ P.update=function(dt){
       R.staffT+=dt*this.staffRate();
       var guard=0;
       while(R.staffT>=1&&guard++<20){R.staffT-=1;this.fireStaff();}
-      /* питомец: укус раз в D.PET_BITE с; урон приходит, когда он добегает (0.45 с) */
+      /* питомец: кусает через случайные 1-3 с (v21), урон за всё время с прошлого укуса (в среднем тот же урон в секунду);
+         урон приходит, когда он добегает (0.45 с) */
       if(this.pets().active){
-        R.petT=(R.petT===undefined?D.PET_BITE*0.5:R.petT)-dt;
-        if(R.petT<=0){R.petT+=D.PET_BITE;var pd=this.petDps()*D.PET_BITE,pr=pd>0?this.roll(pd):{dmg:0,crit:false};
+        if(R.petIv===undefined){R.petIv=D.PET_BITE_MIN+Math.random()*(D.PET_BITE_MAX-D.PET_BITE_MIN);R.petT=R.petIv*0.5;}
+        R.petT-=dt;
+        if(R.petT<=0){var iv=R.petIv;R.petIv=D.PET_BITE_MIN+Math.random()*(D.PET_BITE_MAX-D.PET_BITE_MIN);R.petT+=R.petIv;
+          var pd=this.petDps()*iv,pr=pd>0?this.roll(pd):{dmg:0,crit:false};
           if(pd>0)R.hits.push({t:0.45,dmg:pr.dmg,crit:pr.crit,pet:true});
           this.emit('petBite',{crit:pr.crit,dmg:pr.dmg});}
       }

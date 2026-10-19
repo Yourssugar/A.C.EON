@@ -91,6 +91,10 @@ function initStage(){
   requestAnimationFrame(loop);
 }
 var WORK={herbalist:'Interact',carpenter:'PickUp_Table',smith:'Fixing_Kneeling',tanner:'Interact',jeweler:'Interact',mage:'Interact'};
+/* v21: мастер на подиуме меняет движения: работа, отдых, разговор с учителем */
+var MOVES={herbalist:['Farm_Harvest','Farm_Watering','Interact','Farm_PlantSeed'],carpenter:['PickUp_Table','TreeChopping_Loop','Fixing_Kneeling'],
+  smith:['Fixing_Kneeling','Sword_Attack','Interact'],tanner:['Interact','Fixing_Kneeling','PickUp_Table'],jeweler:['Interact','Idle_FoldArms_Loop','Fixing_Kneeling'],
+  mage:['Interact','Spell_Simple_Idle_Loop'],rest:['Idle_Loop','Idle_FoldArms_Loop','Idle_Loop','Yes'],teach:['Idle_Talking_Loop','Yes','Idle_Talking_Loop']};
 function showMaster(){
   var st=M&&M.st;if(!st||!window.Tavern3D)return;
   var id=M.id,look=id==='mage'?window.acGame.S.look:Tavern3D.masterLook(id);if(!look)return;
@@ -109,8 +113,12 @@ function anim(){
   var A=M.st&&M.st.cur;if(!A)return;
   var m=window.acGame.master(M.id);
   var g=window.acGame,mine=g.queueOf(M.id).length;
-  var a=!m.hired?'Idle_Loop':m.teach?'Idle_Talking_Loop':mine?WORK[M.id]:'Idle_Loop';
-  if(A.curName!==a)A.play(a,0.3);
+  var set=!m.hired?'rest':m.teach?'teach':mine?M.id:'rest',now=performance.now();
+  if(M.set!==set||now>(M.cycAt||0)){
+    var L=MOVES[set]||MOVES.rest;if(M.set!==set)M.cycI=0;else M.cycI=((M.cycI||0)+1)%L.length;
+    M.set=set;var a=L[M.cycI];M.cycAt=now+(a==='Yes'?2500:4000+Math.random()*4000);
+    if(A.curName!==a)A.play(a,0.35);
+  }
 }
 
 /* ════════ СПИСОК ════════ */

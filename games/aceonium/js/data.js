@@ -62,6 +62,7 @@ D.ELITE_FROM=30;D.ELITE_HP=2;
 D.eliteChance=function(w){return w<D.ELITE_FROM?0:0.05+0.1*Math.min(1,(w-D.ELITE_FROM)/70);};
 D.bossRole=function(w){return w>=D.WAVES?'main':w===50?'mid':'mini';};
 D.PET_BITE=2.6;   // питомец кусает раз в столько секунд (v17: его бонус урона стал его собственными ударами)
+D.PET_BITE_MIN=1;D.PET_BITE_MAX=3;   // v21: укус через случайные 1-3 с, урон пропорционален паузе
 D.WAVES=100;
 D.MOBS=6;                 // монстров в волне
 D.WALK_TIME=2.2;          // тень вдали собирается в монстра

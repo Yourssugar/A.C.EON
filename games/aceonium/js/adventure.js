@@ -147,6 +147,7 @@ var MODELS={
 };
 /* во сколько раз больше в особой роли */
 var ROLE_MULT={mob:1,elite:1.25,mini:1.6,mid:1.75,main:1};
+var ROAD_SIZE=1.5;   /* v21: все монстры дороги в 1.5 раза крупнее */
 function tractModels(t){
   var R=window.AcData&&AcData.ROSTER&&AcData.ROSTER[t];if(!R)return [];
   var out={},k;for(k in R.mobs)R.mobs[k].forEach(function(id){out[id]=1;});for(k in R.elite)out[R.elite[k]]=1;for(k in R.boss)out[R.boss[k]]=1;
@@ -179,7 +180,7 @@ function monster(id,role){
     m.material=arr.length===1?arr[0]:arr;
     m.castShadow=true;
   });
-  var hh=d.h*rm,fl=(d.fly||0)*Math.sqrt(rm),k=hh/src.h;o.scale.setScalar(k);o.position.y=-src.minY*k+fl;
+  var hh=d.h*rm*ROAD_SIZE,fl=(d.fly||0)*Math.sqrt(rm)*ROAD_SIZE,k=hh/src.h;o.scale.setScalar(k);o.position.y=-src.minY*k+fl;
   var mixer=new T.AnimationMixer(o),acts={};
   src.clips.forEach(function(c){acts[c.name]=mixer.clipAction(c);});
   return {root:o,mixer:mixer,acts:acts,mats:mats,h:hh+fl,fly:fl,fx:d.fx||'spark'};

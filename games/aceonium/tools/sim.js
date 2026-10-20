@@ -10,7 +10,7 @@ if(process.env.OV){var ov=JSON.parse(process.env.OV);for(var k in ov)D[k]=ov[k];
 
 var DAYS=+process.argv[2]||10, CAUT=process.argv[3]!=='0';
 var S=G.defaults();S.profile={name:'sim',gender:'m'};S.cautious=CAUT;
-var g=new G.Game(S);g.start=function(){};
+var g=new G.Game(S);g.start=function(){};g.sanitize();
 var T=0,log=[];
 function fmtT(s){var d=Math.floor(s/86400),h=Math.floor(s%86400/3600);return 'd'+d+' '+(h<10?'0':'')+h+'h';}
 function lack(cost){for(var k in cost)if(g.have(k)<cost[k])return k;return null;}
@@ -28,7 +28,12 @@ function shop(){
   });
   if(S.masters.smith.hired&&!S.prod.mine.lvl&&!S.prod.mine.bt&&g.prodBuild('mine'))mark('pmine','построена шахта');
   /* улучшения мага заказом */
-  g.order('carpenter','staff');g.order('tanner','bag');g.order('carpenter','store');
+  g.order('carpenter','staff');g.order('tanner','bag');
+  /* v27: склад улучшает бригада; сундуки, когда места под вещи мало */
+  var stc=g.storeCost();if(stc&&g.canPay(stc)&&S.gold>stc.gold*2)g.buyStore();
+  if(g.chestRoom()<5){var own=S.furn.filter(function(x){return x.t==='schest'&&!x.st&&x.lv<3;}).sort(function(a,b){return a.lv-b.lv;})[0];
+    var bc=g.furnBuyBlock('schest')?null:g.furnBuyCost('schest'),uc=own?g.furnUpCost(own):null,pick=bc&&(!uc||bc.gold<=uc.gold)?'buy':uc?'up':null;
+    var cc2=pick==='buy'?bc:uc;if(pick&&g.canPay(cc2)&&S.gold>cc2.gold*2){if(pick==='buy')g.furnBuy('schest');else g.furnUp(own);}}
   /* рецепты: всё, что по карману, но не больше трети золота */
   D.GOODS.forEach(function(gd){if(g.canLearn(gd.id)&&gd.teach<=S.gold*0.5)g.learn(gd.id);});
   /* постройки таверны, если золота много */
@@ -114,7 +119,7 @@ function shop(){
   D.SKILLS.forEach(function(s){while(g.buySkill(s.id));});
   /* куда идти */
   var top=0;for(var t=0;t<D.TRACTS.length;t++)if(g.tractOpen(t))top=t;
-  var target=top,cands=S.tracts[top].clears?[g.staffCost(),g.orderCost('bag')||{},g.orderCost('store')||{}]:[g.staffCost()];
+  var target=top,cands=S.tracts[top].clears?[g.staffCost(),g.orderCost('bag')||{},g.storeCost()||{}]:[g.staffCost()];
   for(var j=0;j<cands.length;j++){var nd=lack(cands[j]);
     if(nd&&RES_TRACT[nd]!==undefined&&RES_TRACT[nd]<top&&!D.RES_BY[nd].rare){target=RES_TRACT[nd];break;}}
   S.lastTract=target;S.plan.c=[0,0,0,0];S.plan.i=4;
@@ -131,7 +136,7 @@ while(T<DAYS*86400){
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+
-      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+g.seatCount()+'м d'+g.decorPts()+' c'+S.counter+' rep'+Math.floor(S.rep)+' L'+(S.loader.hired?S.loader.lvl:0)+' sh'+D.SHELF_CATS.map(function(c){return g.shelfUsed(c)+'/'+g.shelfCap(c);}).join(',')+' '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join('')+' wait '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.tst>=D.STAGES&&!m.tbt?'W':'')+Math.round(m.sav||0)+'/'+(m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0);}).join(' '));
+      ' equip '+D.SLOTS.map(function(sl){return S.equip[sl]?S.equip[sl].id:'-';}).join(',')+' hp '+D.fmt(g.maxHp())+' tav '+g.seatCount()+'м d'+g.decorPts()+' c'+S.counter+' rep'+Math.floor(S.rep)+' L'+(S.loader.hired?S.loader.lvl:0)+' it'+g.itemCount()+'/'+g.itemCap()+' hold'+S.queue.filter(function(o){return o.hold;}).length+' sh'+D.SHELF_CATS.map(function(c){return g.shelfUsed(c)+'/'+g.shelfCap(c);}).join(',')+' '+(S.tav.brewer.hired?'b'+S.tav.brewer.lvl+'/'+S.tav.brewer.help:'-')+(S.tav.cook.hired?' c'+S.tav.cook.lvl+'/'+S.tav.cook.help:'')+' зал+'+D.fmt(S.tav.inc-(global.__tinc||0))+' tools '+Object.keys(S.masters).map(function(id){return S.masters[id].tools;}).join('')+' wait '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.tst>=D.STAGES&&!m.tbt?'W':'')+Math.round(m.sav||0)+'/'+(m.tools<D.TOOLS_MAX?D.masterPart(m.tools):0);}).join(' '));
     gold0=S.stats.goldEarned;sold0=S.stats.sold;global.__tinc=S.tav.inc;
   }
 }

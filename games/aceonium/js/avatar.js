@@ -48,8 +48,9 @@ var CATALOG={
         {id:'buzzed',model:'hair_buzzed'},{id:'buzzedf',model:'hair_buzzedfemale'}],
   beard:[{id:'none'},{id:'beard',model:'hair_beard'}],
   sets:{
-    ranger:{color:['ranger_color','ranger_color3'],normal:'ranger_normal',orm:'ranger_orm'},
-    peasant:{color:['peasant_color','peasant_color2'],normal:'peasant_normal',orm:'peasant_orm'},
+    /* v28: mask - зоны перекраски (R, G, B, A), L - средняя яркость зоны в исходной текстуре (линейная) */
+    ranger:{color:['ranger_color','ranger_color3'],normal:'ranger_normal',orm:'ranger_orm',mask:'ranger_mask',L:[0.0518,0.0104,0.0539,0.3289],zones:['top','legs','leather','metal']},
+    peasant:{color:['peasant_color','peasant_color2'],normal:'peasant_normal',orm:'peasant_orm',mask:'peasant_mask',L:[0.2531,0.0111,0.0412,0.0302],zones:['shirt','legs','boots','vest']},
     regm:{color:['regm_color'],normal:'regm_normal',rough:'regm_rough',skin:true},
     regf:{color:['regf_color'],normal:'regf_normal',rough:'regf_rough',skin:true},
     shm:{color:['shm_color'],normal:'shm_normal',rough:'shm_rough',skin:true},
@@ -62,12 +63,16 @@ var CATALOG={
           MI_Superhero_Male:'shm',MI_Superhero_Female:'shf',MI_Hair_1:'hair1',MI_Hair_2:'hair2',MI_Eyes:'eye'},
   skins:['#ffffff','#e8c8b0','#c09070','#8a6048','#5a3a2a'],
   hairColors:['#2a1c14','#5a3820','#8a5a2a','#c8a060','#e8d8b0','#9a9a9a','#e8e8e8','#7a2a1a','#2a3a5a'],
-  eyeColors:['#ffffff','#7ab0ff','#7ad08a','#c89a5a','#ff7a7a']
+  eyeColors:['#ffffff','#7ab0ff','#7ad08a','#c89a5a','#ff7a7a'],
+  /* v28: палитра перекраски одежды и головных уборов */
+  palette:['#b8312f','#e07a2e','#e8c547','#7fae45','#2f7d4f','#3aa3b8','#2e5aa8','#23306b','#6a3fb0','#c2569a','#f0e6d2','#9a9a9a','#2a2a30','#6e4428','#d4af37','#b8c4d0'],
+  hats:['none','wizard','straw','beret','bard','cap','headband','wreath','crown','goggles','catears','glasses']
 };
 function defaults(gender){
   return {gender:gender||'m',skin:1,hair:gender==='f'?'long':'parted',hairColor:gender==='f'?2:1,beard:gender==='f'?'none':'beard',eye:0,
     hood:'ranger',shoulders:'none',body:'ranger',arms:'ranger',legs:'ranger',feet:'ranger',
-    colors:{ranger:0,peasant:0},staff:'gnarled',hoodUp:true};
+    colors:{ranger:0,peasant:0},staff:'gnarled',hoodUp:true,
+    tint:{ranger:[null,null,null,null],peasant:[null,null,null,null]},hat:'none',hatC:[8,14]};
 }
 function partDef(slot,id){var l=CATALOG.parts[slot];for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return l[0];}
 function listDef(list,id){for(var i=0;i<list.length;i++)if(list[i].id===id)return list[i];return list[0];}
@@ -90,11 +95,13 @@ function needs(look,res,forGame){
     var S=CATALOG.sets[k];
     files.push('tex/'+S.color[Math.min(sets[k],S.color.length-1)]+'_'+res+'.webp');
     files.push('tex/'+S.normal+'_'+res+'.webp');
+    if(S.mask&&hasTint(look,k))files.push('tex/'+S.mask+'.webp');
     if(S.orm)files.push('tex/'+S.orm+'_'+res+'.webp');
     if(S.rough)files.push('tex/'+S.rough+'_'+res+'.webp');
   });
   return files;
 }
+function hasTint(look,set){var a=look.tint&&look.tint[set];return !!(a&&a.some(function(x){return x!==null&&x!==undefined;}));}
 function missing(look,res,forGame){
   var bytes=0;
   needs(look,res||'1k',forGame).forEach(function(f){if(!fetched[f])bytes+=SIZES[f]||0;});
@@ -127,11 +134,15 @@ function loadTex(p,srgb,onBytes){
   if(texCache[p])return texCache[p];
   texCache[p]=fetchBuf(p,onBytes).then(function(buf){
     var blob=new Blob([buf],{type:'image/webp'});
-    var make=window.createImageBitmap?createImageBitmap(blob,{imageOrientation:'none'}):new Promise(function(ok,bad){var im=new Image();im.onload=function(){ok(im);};im.onerror=bad;im.src=URL.createObjectURL(blob);});
+    /* маска зон: альфа - отдельная зона, браузер не должен её домножать */
+    var bo=/_mask/.test(p)?{imageOrientation:'none',premultiplyAlpha:'none',colorSpaceConversion:'none'}:{imageOrientation:'none'};
+    var make=window.createImageBitmap?createImageBitmap(blob,bo):new Promise(function(ok,bad){var im=new Image();im.onload=function(){ok(im);};im.onerror=bad;im.src=URL.createObjectURL(blob);});
     return make.then(function(img){
       var t=new T.Texture(img);t.flipY=false;           /* UV glTF: без переворота */
       if(srgb)t.colorSpace=T.SRGBColorSpace;
-      t.anisotropy=8;t.generateMipmaps=true;t.minFilter=T.LinearMipmapLinearFilter;t.needsUpdate=true;
+      t.anisotropy=8;t.generateMipmaps=true;t.minFilter=T.LinearMipmapLinearFilter;
+      if(/_mask/.test(p)){t.generateMipmaps=false;t.minFilter=T.LinearFilter;t.anisotropy=1;}
+      t.needsUpdate=true;
       return t;
     });
   });
@@ -155,16 +166,44 @@ function texFile(setKey,map,variant,res){
   var name=map==='color'?S.color[Math.min(variant||0,S.color.length-1)]:S[map];
   return 'tex/'+name+'_'+res+'.webp';
 }
-function makeMaterial(setKey,look,res){
+/* v28: мультяшный свет (только маг из другого мира): три ступени */
+var GRAD=null;
+function gradTex(){if(!GRAD){GRAD=new T.DataTexture(new Uint8Array([105,185,255]),3,1,T.RedFormat);GRAD.minFilter=GRAD.magFilter=T.NearestFilter;GRAD.generateMipmaps=false;GRAD.needsUpdate=true;}return GRAD;}
+/* перекраска по зонам: цвет зоны умножается на яркость исходной ткани, складки и тени остаются */
+function tintPatch(m,mask,L,tint){
+  var on=new T.Vector4(),c=[0,1,2,3].map(function(i){var v=tint&&tint[i];if(v!==null&&v!==undefined){on.setComponent(i,1);return new T.Color(typeof v==='number'?CATALOG.palette[v]:v);}return new T.Color(1,1,1);});
+  var U={tMask:{value:mask},tOn:{value:on},tL:{value:new T.Vector4(L[0],L[1],L[2],L[3])},tC0:{value:c[0]},tC1:{value:c[1]},tC2:{value:c[2]},tC3:{value:c[3]}};
+  m.onBeforeCompile=function(sh){
+    for(var k in U)sh.uniforms[k]=U[k];
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform sampler2D tMask;uniform vec4 tOn;uniform vec4 tL;uniform vec3 tC0;uniform vec3 tC1;uniform vec3 tC2;uniform vec3 tC3;')
+      .replace('#include <map_fragment>','#include <map_fragment>\n{vec4 zm=texture2D(tMask,vMapUv)*tOn;float gy=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722));vec3 cc=diffuseColor.rgb;'+
+        'cc=mix(cc,min(tC0*gy/tL.x,vec3(1.0)),zm.r);cc=mix(cc,min(tC1*gy/tL.y,vec3(1.0)),zm.g);cc=mix(cc,min(tC2*gy/tL.z,vec3(1.0)),zm.b);cc=mix(cc,min(tC3*gy/tL.w,vec3(1.0)),zm.a);diffuseColor.rgb=cc;}');
+  };
+  m.customProgramCacheKey=function(){return 'acTint1';};
+}
+/* контур для мультяшного мага: та же модель изнутри, раздута по нормалям в экранных координатах */
+var OUTLINE=null;
+function outlineMat(){
+  if(OUTLINE)return OUTLINE;
+  OUTLINE=new T.MeshBasicMaterial({color:0x1a1222,side:T.BackSide});
+  OUTLINE.onBeforeCompile=function(sh){
+    sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n{\n#ifdef USE_SKINNING\nvec3 oN=objectNormal;\n#else\nvec3 oN=normal;\n#endif\nvec4 cn=projectionMatrix*modelViewMatrix*vec4(oN,0.0);gl_Position.xy+=normalize(cn.xy+1e-6)*0.0055*gl_Position.w;}');
+  };
+  OUTLINE.customProgramCacheKey=function(){return 'acOutline1';};
+  return OUTLINE;
+}
+function makeMaterial(setKey,look,res,toon){
   var S=CATALOG.sets[setKey],variant=look.colors&&look.colors[setKey]||0;
-  var m=new T.MeshStandardMaterial({roughness:1,metalness:0,side:T.DoubleSide});
+  var m=toon?new T.MeshToonMaterial({side:T.DoubleSide,gradientMap:gradTex()}):new T.MeshStandardMaterial({roughness:1,metalness:0,side:T.DoubleSide});
   var jobs=[loadTex(texFile(setKey,'color',variant,res),true,function(){}).then(function(t){m.map=t;}),
             loadTex(texFile(setKey,'normal',0,res),false,function(){}).then(function(t){m.normalMap=t;})];
-  if(S.orm)jobs.push(loadTex(texFile(setKey,'orm',0,res),false,function(){}).then(function(t){m.roughnessMap=t;m.metalnessMap=t;m.aoMap=t;m.metalness=1;m.aoMapIntensity=0.8;}));
-  if(S.rough)jobs.push(loadTex(texFile(setKey,'rough',0,res),false,function(){}).then(function(t){m.roughnessMap=t;}));
+  if(S.mask&&hasTint(look,setKey))jobs.push(loadTex('tex/'+S.mask+'.webp',false,function(){}).then(function(t){tintPatch(m,t,S.L,look.tint[setKey]);}));
+  if(toon){}
+  else if(S.orm)jobs.push(loadTex(texFile(setKey,'orm',0,res),false,function(){}).then(function(t){m.roughnessMap=t;m.metalnessMap=t;m.aoMap=t;m.metalness=1;m.aoMapIntensity=0.8;}));
+  if(S.rough&&!toon)jobs.push(loadTex(texFile(setKey,'rough',0,res),false,function(){}).then(function(t){m.roughnessMap=t;}));
   if(S.skin)m.color.set(CATALOG.skins[look.skin||0]);
   if(S.hair){m.color.set(CATALOG.hairColors[look.hairColor||0]);m.roughness=0.75;}
-  if(S.eye){m.color.set(CATALOG.eyeColors[look.eye||0]);m.roughness=0.25;}
+  if(S.eye){m.color.set(CATALOG.eyeColors[look.eye||0]);m.roughness=0.25;if(toon)m.emissive=new T.Color(0x202028);}
   return Promise.all(jobs).then(function(){m.needsUpdate=true;return m;});
 }
 
@@ -257,6 +296,10 @@ P.attach=function(key,gltf,materials){
     var nm=mats.map(function(om){var set=CATALOG.matSet[om.name];return set&&materials[set]||om;});
     m.material=Array.isArray(m.material)?nm:nm[0];
     meshes.push(m);
+    if(self.toon&&!mats.some(function(om){return CATALOG.matSet[om.name]==='eye';})){
+      var o=new T.SkinnedMesh(m.geometry,outlineMat());o.bind(m.skeleton,m.bindMatrix);o.frustumCulled=false;o.castShadow=false;o.receiveShadow=false;o.userData.outline=true;
+      self.armature.add(o);meshes.push(o);
+    }
   });
   this.slots[key]=meshes;
 };
@@ -266,7 +309,7 @@ P.detach=function(key){
 };
 
 P.setLook=function(look,onProgress){
-  var self=this,g=look.gender==='f'?'f':'m',res=this.res;
+  var self=this,g=look.gender==='f'?'f':'m',res=this.res,tok=this.lookTok=(this.lookTok||0)+1;
   look=JSON.parse(JSON.stringify(look));
   var files=needs(look,res,this.forGame);
   return preload(files,onProgress).then(function(){
@@ -280,12 +323,11 @@ P.setLook=function(look,onProgress){
     var mats={},jobs=[];
     Object.keys(setKeys).forEach(function(k){
       var need=files.some(function(f){return f.indexOf('tex/'+CATALOG.sets[k].normal+'_')===0;});
-      if(need)jobs.push(makeMaterial(k,look,res).then(function(m){mats[k]=m;}));
+      if(need)jobs.push(makeMaterial(k,look,res,self.toon).then(function(m){mats[k]=m;}));
     });
     return Promise.all(jobs).then(function(){return mats;});
   }).then(function(mats){
     /* пересобрать все детали (быстро: модели уже в памяти) */
-    Object.keys(self.slots).forEach(function(k){self.detach(k);});
     var list=[['head','models/head_'+g+'.glb']];
     CATALOG.slots.forEach(function(s){
       var d=partDef(s,look[s]);if(!d[g])return;
@@ -296,8 +338,12 @@ P.setLook=function(look,onProgress){
     if(hd.model&&!self.hoodVisible(look))list.push(['hair','models/'+hd.model+'.glb']);
     var bd=listDef(CATALOG.beard,look.beard);if(bd.model&&g==='m')list.push(['beard','models/'+bd.model+'.glb']);
     return Promise.all(list.map(function(x){return loadGLB(x[1],function(){});})).then(function(gs){
+      /* v28: пока грузилось, мог прийти новый облик: старый не накладываем поверх (иначе детали двух обликов смешиваются) */
+      if(tok!==self.lookTok)return self;
+      Object.keys(self.slots).forEach(function(k){self.detach(k);});
       gs.forEach(function(gl,i){self.attach(list[i][0],gl,mats);});
       self.look=look;
+      self.setHat(look);
       self.setStaff(look.staff);
       self.play(self.mode||'idle',0);
       return self;
@@ -305,6 +351,39 @@ P.setLook=function(look,onProgress){
   });
 };
 P.hoodVisible=function(look){return look.hood!=='none'&&(this.forGame||look.hoodUp);};
+/* v28: головной убор на кости головы. Положение считается один раз на пол: макушка и ширина головы в позе привязки */
+var HAT_M={};
+P.headAnchor=function(){
+  var key=this.look&&this.look.gender==='f'?'f':'m';
+  if(HAT_M[key])return HAT_M[key];
+  var meshes=(this.slots.head||[]).filter(function(m){return m.isSkinnedMesh&&!m.userData.outline;});if(!meshes.length||!this.head)return null;
+  /* вершины головы в системе кости головы; оси "вверх" и "вперёд" берём от корня персонажа (он стоит прямо) */
+  this.root.updateMatrixWorld(true);
+  var hinv=new T.Matrix4().copy(this.head.matrixWorld).invert(),v=new T.Vector3(),pts=[];
+  meshes.forEach(function(m){var n=m.geometry.attributes.position.count,st=Math.max(1,Math.floor(n/1500));for(var i=0;i<n;i+=st){m.getVertexPosition(i,v);v.applyMatrix4(m.matrixWorld).applyMatrix4(hinv);pts.push(v.clone());}});
+  var rq=new T.Quaternion();this.root.getWorldQuaternion(rq);
+  var hq=new T.Quaternion();this.head.getWorldQuaternion(hq);var hqi=hq.clone().invert();
+  var up=new T.Vector3(0,1,0).applyQuaternion(rq).applyQuaternion(hqi).normalize();
+  var fw=new T.Vector3(0,0,1).applyQuaternion(rq).applyQuaternion(hqi);fw.sub(up.clone().multiplyScalar(fw.dot(up))).normalize();
+  var rt=new T.Vector3().crossVectors(up,fw).normalize();
+  var mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];
+  pts.forEach(function(p){var a=[p.dot(rt),p.dot(up),p.dot(fw)];for(var k=0;k<3;k++){if(a[k]<mn[k])mn[k]=a[k];if(a[k]>mx[k])mx[k]=a[k];}});
+  var W=Math.min(mx[0]-mn[0],(mx[2]-mn[2])*1.1);
+  var pos=new T.Vector3().addScaledVector(rt,(mn[0]+mx[0])/2).addScaledVector(up,mx[1]).addScaledVector(fw,(mn[2]+mx[2])/2);
+  var basis=new T.Matrix4().makeBasis(rt,up,fw),q=new T.Quaternion().setFromRotationMatrix(basis);
+  var M=new T.Matrix4().compose(pos,q,new T.Vector3(W,W,W));
+  HAT_M[key]=M;
+  return M;
+};
+P.setHat=function(look){
+  if(this.hat){if(this.hat.parent)this.hat.parent.remove(this.hat);this.hat=null;}
+  var id=look.hat;if(!id||id==='none'||!window.Hats||this.hoodVisible(look))return;
+  var M=this.headAnchor();if(!M)return;
+  var pal=CATALOG.palette,hc=look.hatC||[8,14];
+  var h=Hats.make(T,id,[pal[hc[0]]||pal[8],pal[hc[1]]||pal[14]],{toon:this.toon,grad:this.toon?gradTex():null});if(!h)return;
+  if(this.toon){var ol=[];h.traverse(function(o){if(o.isMesh&&!o.userData.outline)ol.push(o);});ol.forEach(function(o){var c=new T.Mesh(o.geometry,outlineMat());c.position.copy(o.position);c.rotation.copy(o.rotation);c.scale.copy(o.scale);c.userData.outline=true;o.parent.add(c);});}
+  h.matrixAutoUpdate=false;h.matrix.copy(M);this.head.add(h);this.hat=h;
+};
 P.setStaff=function(kind){
   /* жители таверны ходят без посоха */
   if(!kind||kind==='none'){if(this.staff&&this.staff.group.parent)this.staff.group.parent.remove(this.staff.group);this.staff=null;return;}
@@ -432,7 +511,7 @@ function init(THREE){
 }
 function create(look,opts){
   opts=opts||{};
-  var A=new Avatar();A.res=opts.res||'1k';A.forGame=opts.forGame!==false;
+  var A=new Avatar();A.res=opts.res||'1k';A.forGame=opts.forGame!==false;A.toon=!!opts.toon;
   return A.setLook(look,opts.onProgress);
 }
 

@@ -958,4 +958,13 @@ I18n.add('en',{'scn.store':'STORE','tv.walk':'walking, {s} s','tv.buying':'at th
   'v27r.title':'SAVES RESET','v27r.body':'<p>Progress starts over in this version. Your character, look and settings are kept.</p>',
   'v27.title':'STOREHOUSE AND YARD','v27.body':'<p>The hostess sells by herself: a traveler comes, stands at the counter and buys what is on the shelves. No more sell buttons.</p><p>New STORE screen: a stone storeroom with resource racks, later a cellar. Finished items are kept on the tavern shelves and in storehouse chests (up to five). The building crew upgrades the storehouse.</p><p>The tavern now has a yard with a well, a woodpile, herb beds and a hedge, also visible from the town.</p>'
 });
+/* v28: внешность: перекраска, головные уборы */
+I18n.add('ru',{'wd2.tColor':'ЦВЕТА','wd2.hat':'ГОЛОВНОЙ УБОР','wd2.hatC1':'ЦВЕТ УБОРА','wd2.hatC2':'ОТДЕЛКА','wd2.asIs':'как есть','wd2.tintReset':'ВСЁ КАК БЫЛО','wd2.tintRnd':'СЛУЧАЙНО',
+  'hat.none':'нет','hat.wizard':'колпак мага','hat.straw':'соломенная шляпа','hat.beret':'берет','hat.bard':'берет с пером','hat.cap':'вязаная шапка','hat.headband':'повязка',
+  'hat.wreath':'венок','hat.crown':'корона','hat.goggles':'гогглы','hat.catears':'кошачьи ушки','hat.glasses':'очки',
+  'zone.top':'Куртка и капюшон','zone.legs':'Штаны','zone.leather':'Кожа','zone.metal':'Металл','zone.shirt':'Рубаха','zone.boots':'Обувь и ремни','zone.vest':'Жилет'});
+I18n.add('en',{'wd2.tColor':'COLORS','wd2.hat':'HEADWEAR','wd2.hatC1':'HEADWEAR COLOR','wd2.hatC2':'TRIM','wd2.asIs':'as is','wd2.tintReset':'RESET ALL','wd2.tintRnd':'RANDOM',
+  'hat.none':'none','hat.wizard':'wizard hat','hat.straw':'straw hat','hat.beret':'beret','hat.bard':'feathered beret','hat.cap':'knit cap','hat.headband':'headband',
+  'hat.wreath':'wreath','hat.crown':'crown','hat.goggles':'goggles','hat.catears':'cat ears','hat.glasses':'glasses',
+  'zone.top':'Jacket and hood','zone.legs':'Trousers','zone.leather':'Leather','zone.metal':'Metal','zone.shirt':'Shirt','zone.boots':'Boots and belts','zone.vest':'Vest'});
 })();

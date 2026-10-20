@@ -1004,15 +1004,15 @@ function syncProd(S){
 
 /* ════════ ЖИТЕЛИ ════════ */
 var MASTER_LOOK={
-  herbalist:{gender:'f',skin:2,hair:'long',hairColor:5,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:1}},
-  carpenter:{gender:'m',skin:1,hair:'buzzed',hairColor:1,beard:'beard',body:'peasant',arms:'peasant',legs:'ranger',feet:'peasant',colors:{peasant:0,ranger:0}},
+  herbalist:{gender:'f',skin:2,hair:'long',hairColor:5,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:1},tint:{peasant:[10,4,null,3]},hat:'wreath',hatC:[9,2]},
+  carpenter:{gender:'m',skin:1,hair:'buzzed',hairColor:1,beard:'beard',body:'peasant',arms:'peasant',legs:'ranger',feet:'peasant',colors:{peasant:0,ranger:0},tint:{peasant:[2,null,null,13],ranger:[null,13,null,null]},hat:'cap',hatC:[1,13]},
   smith:    {gender:'m',skin:3,hair:'none',hairColor:0,beard:'beard',body:'ranger',arms:'peasant',legs:'ranger',feet:'ranger',colors:{ranger:1,peasant:0}},
-  tanner:   {gender:'f',skin:1,hair:'buns',hairColor:3,beard:'none',body:'ranger',arms:'ranger',legs:'peasant',feet:'ranger',colors:{ranger:0,peasant:1}},
-  jeweler:  {gender:'m',skin:0,hair:'parted',hairColor:6,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:1}},
-  hostess:  {gender:'f',skin:1,hair:'buns',hairColor:2,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:0}},
+  tanner:   {gender:'f',skin:1,hair:'buns',hairColor:3,beard:'none',body:'ranger',arms:'ranger',legs:'peasant',feet:'ranger',colors:{ranger:0,peasant:1},tint:{ranger:[13,null,null,null],peasant:[null,12,null,null]},hat:'headband',hatC:[0,2]},
+  jeweler:  {gender:'m',skin:0,hair:'parted',hairColor:6,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:1},tint:{peasant:[10,7,null,8]},hat:'glasses',hatC:[8,14]},
+  hostess:  {gender:'f',skin:1,hair:'buns',hairColor:2,beard:'none',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:0},tint:{peasant:[10,0,null,0]},hat:'headband',hatC:[0,2]},
   cook:     {gender:'m',skin:2,hair:'none',hairColor:0,beard:'beard',body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:1}},
   brewer:   {gender:'m',skin:0,hair:'long',hairColor:4,beard:'beard',body:'ranger',arms:'peasant',legs:'peasant',feet:'ranger',colors:{ranger:0,peasant:0}},
-  pets:     {gender:'f',skin:3,hair:'parted',hairColor:7,beard:'none',body:'ranger',arms:'ranger',legs:'ranger',feet:'ranger',colors:{ranger:1}}
+  pets:     {gender:'f',skin:3,hair:'parted',hairColor:7,beard:'none',body:'ranger',arms:'ranger',legs:'ranger',feet:'ranger',colors:{ranger:1},tint:{ranger:[5,13,null,null]},hat:'straw',hatC:[2,5]}
 };
 var WORK={herbalist:'Interact',carpenter:'PickUp_Table',smith:'Sword_Attack',tanner:'Fixing_Kneeling',jeweler:'Interact',pets:'Interact'};
 var TRAV_G=['m','f','m','f','m','m','f','m','m','f','m','m'];
@@ -1022,6 +1022,14 @@ function fullLook(l){
   b.hood='none';b.shoulders='none';b.staff='none';b.hoodUp=false;
   return b;
 }
+/* v28: жители разные: цвета одежды по зонам и головные уборы из той же системы, что у мага */
+var VILL_PAL=[0,1,2,3,4,5,6,7,8,10,11,12,13];
+var VILL_HAT=['straw','beret','cap','headband','wreath','bard'];
+function villTint(r,k0){
+  function c(k){return VILL_PAL[Math.floor(r(k)*VILL_PAL.length)];}
+  return {ranger:[r(k0)<0.85?c(k0+1):null,r(k0+2)<0.7?c(k0+3):null,r(k0+4)<0.3?13:null,null],
+          peasant:[r(k0+5)<0.6?c(k0+6):null,r(k0+7)<0.7?c(k0+8):null,null,r(k0+9)<0.7?c(k0+10):null]};
+}
 function rnd(seed){var x=Math.sin(seed*999.13)*43758.5453;return x-Math.floor(x);}
 function travelerLook(c){
   var g=TRAV_G[c.who%TRAV_G.length],r=function(k){return rnd(c.id*7.3+k);};
@@ -1029,7 +1037,7 @@ function travelerLook(c){
   var hairs=g==='f'?['long','buns','buzzedf','parted']:['parted','buzzed','none','long'];
   return fullLook({gender:g,skin:Math.floor(r(3)*5),hair:hairs[Math.floor(r(4)*hairs.length)],hairColor:Math.floor(r(5)*9),
     beard:g==='m'&&r(6)<0.5?'beard':'none',body:out,arms:out,legs:out2,feet:out2,colors:{ranger:Math.floor(r(7)*2),peasant:Math.floor(r(8)*2)},
-    hood:r(9)<0.25?'ranger':'none'});
+    tint:villTint(r,20),hat:r(10)<0.4?VILL_HAT[Math.floor(r(11)*VILL_HAT.length)]:'none',hatC:[VILL_PAL[Math.floor(r(12)*VILL_PAL.length)],VILL_PAL[Math.floor(r(13)*VILL_PAL.length)]]});
 }
 /* житель: аватар, позиция, путь, текущая анимация */
 function spawnNpc(key,look,x,z,rot){
@@ -1191,13 +1199,15 @@ var WORK_LOOK={saw:[0,'m',2,'buzzed'],mine:[1,'m',4,'none'],hunt:[2,'m',1,'parte
 function workerLook(id){
   var w=WORK_LOOK[id]||[0,'m',0,'buzzed'];
   return fullLook({gender:w[1],skin:w[2],hair:w[3],hairColor:(w[0]*3+1)%9,beard:w[1]==='m'&&w[0]%2?'beard':'none',
-    body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:w[0]%2}});
+    body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:w[0]%2},
+    tint:villTint(function(k){return rnd(w[0]*13.7+k);},40),hat:['cap','straw','headband','straw','none','beret'][w[0]%6],hatC:[VILL_PAL[(w[0]*5)%13],13]});
 }
 /* где стоит работник промысла: в координатах участка (x, z, поворот) */
 var WORK_SPOT={saw:[3.9,-0.2,Math.PI/2],mine:[3.1,-1.9,Math.PI],hunt:[4.4,-0.4,-Math.PI/2],farm:[-0.9,5.2,Math.PI/2],ghost:[2.5,3.4,Math.PI/2],stable:[1.7,5.2,-Math.PI/2]};
 function helperLook(w,i){
   return fullLook({gender:i%2?'f':'m',skin:(i*2+(w==='cook'?1:3))%5,hair:i%2?'buns':'buzzed',hairColor:(i*3+2)%9,beard:'none',
-    body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:(i+(w==='cook'?0:1))%2}});
+    body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:(i+(w==='cook'?0:1))%2},
+    tint:{peasant:[10,(i*5+3)%13,null,w==='cook'?10:(i*3+6)%13]},hat:w==='cook'?'cap':'headband',hatC:[10,w==='cook'?10:0]});
 }
 /* сколько путников рисовать: каждый это полноценный персонаж, на слабой графике меньше */
 var CUST_MAX={low:2,medium:4,high:6,ultra:8};

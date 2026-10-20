@@ -1357,7 +1357,7 @@ function setLook(look,onProgress){
   if(!look||!window.Avatar||!look.body){if(look&&!look.body&&R.mage.setLook&&!R.avatar)R.mage.setLook(look);return Promise.resolve();}
   if(R.avatar)return R.avatar.setLook(look,onProgress);
   if(R.avLoading)return R.avLoading.then(function(){return R.avatar.setLook(look,onProgress);});
-  R.avLoading=Avatar.init(THREE).then(function(){return Avatar.create(look,{res:avRes(),forGame:true,onProgress:onProgress});}).then(function(A){
+  R.avLoading=Avatar.init(THREE).then(function(){return Avatar.create(look,{res:avRes(),forGame:true,toon:true,onProgress:onProgress});}).then(function(A){
     var old=R.mage;
     A.root.position.copy(old.root.position);A.root.rotation.copy(old.root.rotation);
     R.scene.remove(old.root);R.scene.add(A.root);

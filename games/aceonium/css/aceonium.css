@@ -1200,3 +1200,8 @@ body.ac .btn.pink .cst.no{color:#a01800;}
 .sh-c.full{border-color:#e8b33a;}
 .sh-c.none span{font-size:12px;color:#ff9a8a;text-shadow:none;font-weight:700;}
 .st-sh{display:block;font-size:10px;color:#6ff0a0;font-weight:700;}
+
+/* ════════ v27: склад ════════ */
+button.crf-qs.hold{border-color:#ff5a46;box-shadow:0 0 0 2px rgba(255,90,70,.35);}
+.cust .bar.thin{height:5px;margin-top:4px;}
+.cust .bar.thin i{background:linear-gradient(90deg,#3fd890,#9ff7c0);}

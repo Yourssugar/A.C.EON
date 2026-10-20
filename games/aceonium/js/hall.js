@@ -11,11 +11,11 @@ var H={};
 /* очередь путников к стойке (точки в мире) и клетки под ней: мебель туда нельзя */
 H.QUEUE=[[6.0,-1.5],[7.4,-1.3],[7.5,-0.3],[7.5,0.7],[7.5,1.7],[7.5,2.7],[7.5,3.7],[6.5,4.4]];
 var WALK={'5,-2':1,'6,-2':1,'7,-2':1,'7,-1':1,'7,0':1,'7,1':1,'7,2':1,'7,3':1,'7,4':1,'6,4':1,'0,4':1,'1,4':1,'-1,-5':1,'-1,-4':1,'-1,-3':1};   // v26: повар идёт из кухни к хозяйке вдоль камина
-H.ENTRY=[1,5];
+H.ENTRY=[1,5];            // клетка сразу за дверью: отсюда считаются пути
 /* клетка рядом с предметом, куда можно подойти (для грузчика): центр клетки или null */
 H.near=function(items,hall,it){var seen=reach(H.placed(items),hall),f=H.fp(it),best=null;
   for(var x=it.x-1;x<=it.x+f[0];x++)for(var z=it.z-1;z<=it.z+f[1];z++){if(x>=it.x&&x<it.x+f[0]&&z>=it.z&&z<it.z+f[1])continue;if((x===it.x-1||x===it.x+f[0])&&(z===it.z-1||z===it.z+f[1]))continue;if(seen[x+','+z]){best={x:x+0.5,z:z+0.5};if(z>=it.z+f[1])return best;}}
-  return best;};            // клетка сразу за дверью: отсюда считаются пути
+  return best;};
 H.MAGE={x:1.25,z:-3.75,rot:2.0};   // кресло мага у камина
 H.PET={x:2.6,z:-3.45,rot:0.6};
 
@@ -65,7 +65,41 @@ H.seatsOf=function(it){
   });
   return out;
 };
-H.placed=function(items){return items.filter(function(it){return !it.st;});};
+H.zone=function(it){return D.FURN[it.t].zone||'hall';};
+H.placed=function(items){return items.filter(function(it){return !it.st&&H.zone(it)==='hall';});};
+
+/* ── склад (v27): своя сцена далеко от таверны, своя сетка ──
+   Каменная комната X[0,8) Z[0,6), проход в подвал в восточной стене, подвал X[9,17) Z[0,6) открывается с уровня D.STORE_CELLAR.
+   Стеллажи с ресурсами стоят у северных стен по уровню склада, сундуки игрок ставит сам (не больше D.CHEST_MAX). */
+H.STO={x:-300,z:0};                // где сцена склада в мире
+H.RACKS=[[0,0],[2,0],[4,0],[9,0],[11,0],[13,0],[15,0]];   // клетки стеллажей (2x1) по уровням склада
+H.STORE_DOOR=[2,5];                // дверь во двор
+H.scell=function(cx,cz,lvl){
+  var room=cx>=0&&cx<=7&&cz>=0&&cz<=5,cel=cx>=9&&cx<=16&&cz>=0&&cz<=5;
+  if(!room&&!cel)return 'wall';
+  if(cel&&lvl<D.STORE_CELLAR)return 'junk';
+  for(var i=0;i<Math.min(lvl||1,H.RACKS.length);i++){var r=H.RACKS[i];if(cz===r[1]&&(cx===r[0]||cx===r[0]+1))return 'fix';}
+  if(cz===5&&(cx===2||cx===3))return 'walk';     // у двери
+  if(room&&cx===7&&(cz===2||cz===3))return 'walk';  // проход в подвал
+  if(cel&&cx===9&&(cz===2||cz===3))return 'walk';
+  return 'free';
+};
+H.inStore=function(items){return items.filter(function(it){return !it.st&&H.zone(it)==='store';});};
+H.checkStore=function(items,lvl){
+  var P=H.inStore(items),bad={},occ={};
+  P.forEach(function(it){H.cells(it).forEach(function(c){var k=c[0]+','+c[1];if(H.scell(c[0],c[1],lvl)!=='free'&&!bad[it.id])bad[it.id]='zone';
+    if(occ[k]!==undefined){if(!bad[it.id])bad[it.id]='overlap';if(!bad[occ[k]])bad[occ[k]]='overlap';}else occ[k]=it.id;});});
+  return {ok:!Object.keys(bad).length,bad:bad,blocked:false};
+};
+H.findSpotStore=function(items,lvl,it){
+  var P=H.inStore(items).filter(function(x){return x.id!==it.id;});
+  for(var cz=4;cz>=1;cz--)for(var cx=0;cx<=16;cx++)for(var r=0;r<2;r++){   // сначала у южной стены, подальше от стеллажей
+    var c={id:it.id,t:it.t,lv:it.lv,x:cx,z:cz,r:r};
+    if(H.checkStore(P.concat([c]),lvl).ok)return {x:cx,z:cz,r:r};
+  }
+  return null;
+};
+H.chestSlots=function(items){var n=0;H.inStore(items).forEach(function(it){var d=D.FURN[it.t];if(d.slots)n+=d.slots[it.lv-1];});return n;};
 
 /* занятость клеток: solid - стол, бочка и т.п.; floor - ковёр; ceil - люстра */
 function occMap(items,skip){

@@ -697,20 +697,14 @@ function tabTavern(){
   add(actBlock(function(){
     var h='';
     if(!S.cust.length)return '<p class="note">'+t(g.isOpen()?'tv.noCust':'tv.night')+'</p>';
-    S.cust.forEach(function(c){
-      var q=g.custQual(c),has=q>=0,price=g.custPrice(c),left=Math.max(0,D.HOSTESS_AFTER-c.wait);
-      h+='<div class="cust"><div class="cu-item">'+itemIcon(c.item,0,true)+'</div><div class="cu-main"><div class="cu-top"><b>'+t('trav.'+c.who)+'</b><span>'+(has?t('tv.hostessIn',{s:Math.ceil(left)}):t('tv.leaveIn',{t:ft(Math.max(0,D.CUST_PATIENCE-c.wait))}))+'</span></div>'+
-        '<div class="cu-want">'+itemName(c.item)+' · '+t('sh.onShelf',{n:g.shelfTotal(c.item)})+(g.storeFreeTotal(c.item)?' · '+t('tv.stock',{n:g.storeFreeTotal(c.item)}):'')+'</div>'+
-        '<div class="cu-btns">'+
-          '<button type="button" class="btn sm" data-act="sell" data-id="'+c.id+'"'+(has?'':' disabled')+'>'+COIN+D.fmt(price)+'</button>'+
-          '<button type="button" class="btn sm" data-act="up" data-id="'+c.id+'"'+(has?'':' disabled')+' title="'+esc(t('tv.upT',{p:Math.round(D.HAGGLE_FAIL*100)}))+'">'+t('tv.up')+'</button>'+
-          '<button type="button" class="btn sm" data-act="down" data-id="'+c.id+'"'+(has?'':' disabled')+' title="'+esc(t('tv.downT'))+'">'+t('tv.down')+'</button>'+
-          '<button type="button" class="btn sm red" data-act="no" data-id="'+c.id+'">'+t('tv.no')+'</button></div></div></div>';
+    /* v27: хозяйка продаёт сама тем, кто дошёл до стойки; здесь только кто идёт и что хочет */
+    S.cust.forEach(function(c,i){
+      var has=g.custQual(c)>=0,st=c.walk>0?t('tv.walk',{s:Math.ceil(c.walk)}):i===0?t('tv.buying'):t('tv.inLine',{n:i});
+      h+='<div class="cust"><div class="cu-item">'+itemIcon(c.item,0,true)+'</div><div class="cu-main"><div class="cu-top"><b>'+t('trav.'+c.who)+'</b><span>'+st+'</span></div>'+
+        '<div class="cu-want">'+itemName(c.item)+' · '+(has?COIN+D.fmt(g.custPrice(c))+' · '+t('sh.onShelf',{n:g.shelfTotal(c.item)}):'<span class="bad">'+t('tv.noShelf')+'</span>')+'</div>'+
+        (i===0&&c.walk<=0?'<div class="bar thin"><i style="width:'+Math.min(100,(c.serve||0)/D.SERVE_T*100).toFixed(0)+'%"></i></div>':'')+'</div></div>';
     });
     return h;
-  },function(act,ds){
-    var c=g.custById(+ds.id);if(!c)return;
-    if(act==='sell')g.sellTo(c);else if(act==='up')g.sellTo(c,'up');else if(act==='down')g.sellTo(c,'down');else g.refuse(c);
   }));
   add(hallBlock());
   add(shelfBlock());
@@ -985,7 +979,7 @@ function saveHtml(sv){
   return '<div class="stg-t sv"><span>'+t('ms4.part')+'</span><b>'+D.fmt(Math.floor(Math.min(sv.have,sv.need)))+' / '+D.fmt(sv.need)+'</b></div><div class="bar svb'+(k>=1?' ok':'')+'"><i style="width:'+(k*100).toFixed(1)+'%"></i></div>';
 }
 function rate2(v){return v>=10?Math.round(v*10)/10:Math.round(v*100)/100;}
-function prodName(id){if(String(id).slice(0,2)==='f:'){var it=g.furnById(+id.slice(2));return it?t('fu.'+it.t)+' '+it.lv:'';}return t('pd.'+id);}
+function prodName(id){if(id==='store')return t('stu.name');if(String(id).slice(0,2)==='f:'){var it=g.furnById(+id.slice(2));return it?t('fu.'+it.t)+' '+it.lv:'';}return t('pd.'+id);}
 function prodBlock(id){
   return actBlock(function(){
     var d=g.prodDef(id),o=g.prod(id),built=o.lvl>0,q=g.crewQueued(id);
@@ -1028,7 +1022,7 @@ function prodBlock(id){
 function mageUpBlock(){
   return actBlock(function(){
     var h='<div class="pd-head"><b>'+t('cr2.ups')+'</b><span>'+t('q2.short',{n:S.queue.length,m:S.qSlots})+'</span></div>';
-    ['staff','bag','store'].forEach(function(r){
+    ['staff','bag'].forEach(function(r){
       var mid=D.ORDERS[r].m,m=g.master(mid),c=g.orderCost(r);
       h+='<div class="mu-row">'+orderIcon(r,true)+'<div class="mu-t"><b>'+orderName(r)+'</b><small>'+t('ms.lvl',{n:r==='staff'?S.staff:r==='bag'?S.bagLvl:S.storeLvl})+' · '+mName(mid)+(c?' · '+ft(g.craftTime(mid,r)/g.mSpeed(mid)):'')+'</small>'+(c?'<span class="mu-c">'+costHtml(c)+'</span>':'')+'</div>';
       if(!c){h+='<span class="note">'+t('buy.done')+'</span></div>';return;}
@@ -1044,10 +1038,12 @@ function mageUpBlock(){
 }
 function tabCity(){
   add(mageUpBlock());
+  add(storeUpBlock());
   add(actBlock(function(){
     var busy=g.crewsBusy(),n=S.crews||1,q=g.crewQ(),cc=g.crewCost();
     var h='<div class="lbl full">'+t('pd.crews')+hb('city')+'</div><p>'+t('pd.crewsNow',{a:busy,b:n})+'</p>';
     var list=[];for(var id in S.prod){var o=S.prod[id];if(o.bt)list.push(prodName(id)+' · '+ft(o.bt.t));}
+    if(S.storeBt)list.push(t('stu.name')+' · '+ft(S.storeBt.t));(S.furn||[]).forEach(function(it){if(it.bt)list.push(t('fu.'+it.t)+' · '+ft(it.bt.t));});
     if(list.length)h+='<p class="note">'+list.join('<br>')+'</p>';
     if(q.length)h+='<p class="note">'+t('pd.queue',{l:q.map(prodName).join(', ')})+'</p>';
     h+='<div class="stg-b">'+(cc?'<button type="button" class="btn sm" data-act="crew"'+(g.canPay(cc)?'':' disabled')+'>'+t('pd.crewBuy')+' '+costHtml(cc)+'</button>':'')+
@@ -1075,6 +1071,22 @@ function buildVal(id){
   return '';
 }
 
+/* ── склад (v27): уровень ставит бригада строителей, сундуки под вещи ── */
+function storeUpBlock(){
+  return actBlock(function(){
+    var lv=S.storeLvl,c=g.storeCost(),bl=g.storeBlock(),cel=lv>=D.STORE_CELLAR;
+    var h='<div class="pd-head"><b>'+t('stu.name')+hb('storage')+'</b><span>'+t('ms.lvl',{n:lv})+'</span></div>'+
+      '<p>'+t('stu.cap',{n:D.fmt(g.storeCap())})+' · '+t('stu.items',{a:g.chestUsed(),b:g.chestCap()})+'</p>';
+    if(S.storeBt){var k=1-S.storeBt.t/S.storeBt.T;h+='<div class="stg"><div class="stg-t"><span>'+t('stu.building',{n:lv+1})+'</span><b>'+ft(S.storeBt.t)+'</b></div><div class="bar stgb"><i style="width:'+(k*100).toFixed(1)+'%"></i></div></div>';}
+    else if(bl==='max')h+='<p class="note">'+t('st2.max')+'</p>';
+    else{
+      h+='<p class="note">'+t(lv+1>=D.STORE_CELLAR?(cel?'stu.nextCel':'stu.openCel'):'stu.nextRoom',{n:D.fmt(D.STORE[lv].cap)})+'</p>';
+      h+='<div class="stg-b"><button type="button" class="btn sm" data-act="up"'+(bl&&bl!=='cost'||!g.canPay(c)?' disabled':'')+'>'+(bl==='queue'?t('stu.queued'):t('buy.up')+' '+costHtml(c))+'</button>'+
+        '<button type="button" class="btn sm" data-act="go">'+t('stu.go')+'</button></div>';
+    }
+    return h;
+  },function(act){if(act==='up'){if(g.buyStore())toast(t('stu.ordered'));}else if(act==='go'){closeWin();if(UI.goScreen)UI.goScreen('store');}},'pd stu-blk');
+}
 /* ── полки и грузчик (v26): что выложено, сколько места, кнопка "выложить всё" ── */
 function shelfBlock(){
   return actBlock(function(){
@@ -1105,6 +1117,7 @@ function loaderBlock(){
 
 /* ── СКЛАД: ресурсы и изделия ── */
 function tabStore(){
+  add(storeUpBlock());
   add(liveBlock(function(){
     var cap=g.storeCap(),h='<div class="lbl full">'+t('store.title')+' · '+t('store.capS',{n:D.fmt(cap)})+'</div><div class="res-grid">';
     D.RES.forEach(function(r){
@@ -1115,7 +1128,7 @@ function tabStore(){
   }));
   add(shelfBlock());
   add(actBlock(function(){
-    var h='<div class="lbl full">'+t('store.items')+hb('book')+'</div><div class="it-grid">',any=false;
+    var h='<div class="lbl full">'+t('store.items')+' · '+t('stu.items',{a:g.chestUsed(),b:g.chestCap()})+hb('book')+'</div><div class="it-grid">',any=false;
     D.GOODS.forEach(function(gd){
       var n=g.invCount(gd.id);if(!n)return;any=true;
       var best=0,qs='',need=false;
@@ -1300,7 +1313,7 @@ function initPanel(){
 /* нижняя панель: экраны слева столбиком, меню внизу, очередь и СОЗДАТЬ справа */
 function initBar(){
   var scn=el('div','scn-col');
-  [['road','u_map'],['tavern','u_mug'],['city','u_house'],['design','u_hammer']].forEach(function(k){var b=el('button','scn-b'+(k[0]==='design'?' scn-dsg':''));b.type='button';b.dataset.s=k[0];b.innerHTML=spr(k[1],'bb-i')+'<b></b>';scn.appendChild(b);});
+  [['road','u_map'],['tavern','u_mug'],['city','u_house'],['store','o_store'],['design','u_hammer']].forEach(function(k){var b=el('button','scn-b'+(k[0]==='design'?' scn-dsg':''));b.type='button';b.dataset.s=k[0];b.innerHTML=spr(k[1],'bb-i')+'<b></b>';scn.appendChild(b);});
   scn.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;e.stopPropagation();Sound.sfx('select');
     if(b.dataset.s==='design'){if(window.Design)Design.open();return;}
     if(UI.goScreen)UI.goScreen(b.dataset.s);paintScreen();});
@@ -1342,7 +1355,7 @@ function paintScreen(){
   [].forEach.call(H.scn.children,function(b){
     var k=b.dataset.s;setText(b.querySelector('b'),t(k==='design'?'fu.btn':'scn.'+k));
     if(k==='design'&&!b._img&&window.Tavern3D&&Tavern3D.ready&&Tavern3D.built){var src=Tavern3D.thumb('table',2);if(src){b._img=1;var ic=b.querySelector('.bb-i');if(ic)ic.outerHTML='<img class="dsg-img" alt="" src="'+src+'">';}}
-    b.classList.toggle('sel',k===screenNow);b.classList.toggle('hidden',k==='road'&&S.place!=='road'||k==='design'&&screenNow!=='tavern');
+    b.classList.toggle('sel',k===screenNow);b.classList.toggle('hidden',k==='road'&&S.place!=='road'||k==='design'&&screenNow!=='tavern'&&screenNow!=='store');
   });
 }
 function paintView(){
@@ -1368,6 +1381,7 @@ function openTab(tab,sub){
 function tavernLabel(kind,id){
   if(kind==='hostess')return '<b>'+t('lbl.hostess')+'</b>'+(S.cust.length?' · '+t('lbl.cust',{n:S.cust.length}):'');
   if(kind==='store')return '<b>'+t('store.title')+'</b>';
+  if(kind==='rack')return '<b>'+t('lbl.rack')+'</b> <i>'+t('lbl.rackS',{n:D.fmt(g.storeCap())})+'</i>';
   if(kind==='furn'){var fi=g.furnById(id);if(!fi)return '';
     if(fi.q)return '<b>'+t('fu.'+fi.t)+'</b> <i>'+t('fu.waitCrewS')+'</i>';
     if(fi.bt)return '<b class="pl-l">'+fi.lv+'</b> '+t('fu.'+fi.t)+' <i>'+ft(fi.bt.t)+'</i><span class="pl-bar"><s class="b" style="width:'+Math.round((1-fi.bt.t/fi.bt.T)*100)+'%"></s></span>';

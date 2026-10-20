@@ -8,7 +8,7 @@ window.__aceoniumStarted=true;
 var D=window.AcData;
 window.AC_DEBUG=/[?&]debug\b/.test(location.search);
 
-Store.define('aceonium',{version:2,defaults:AcGame.defaults(),migrate:AcGame.migrate});
+Store.define('aceonium',{version:3,defaults:AcGame.defaults(),migrate:AcGame.migrate});
 var S=Store.get('aceonium');
 var game=new AcGame.Game(S);
 if(game.sanitize)game.sanitize();   // старые сохранения: слоты, рецепты, очереди
@@ -94,6 +94,7 @@ game.on('look',function(){if(has3d&&S.profile)Scene3D.setLook(lookNow());UI.pane
 /* таверна */
 game.on('sale',function(e){if(e.mode!=='hostess'){Sound.sfx('capture');UI.toast(UI.t('tv.sold',{r:UI.itemName(e.c.item),g:D.fmt(e.price)}));}});
 game.on('custLeft',function(e){if(e.why==='haggle')UI.toast(UI.t('tv.left'));});
+var fullT=0;game.on('storeFull',function(){if(game.silent)return;var n=Date.now();if(n-fullT<120000)return;fullT=n;UI.toast(UI.t('stu.fullT'));});
 var noShelfT={};game.on('noShelf',function(cat){if(!cat||game.silent)return;var n=Date.now();if(noShelfT[cat]&&n-noShelfT[cat]<120000)return;noShelfT[cat]=n;UI.toast(UI.t('sh.noShelfT',{c:UI.t('sh.cat.'+cat)}));});
 game.on('customer',function(){if(S.place!=='road')Sound.sfx('select');});
 game.on('crafted',function(e){
@@ -172,12 +173,13 @@ function wantView(){return curScreen()==='road'?'road':'tavern';}
 function applyView(){
   if(!has3d)return;
   var v=wantView(),sc=curScreen();
-  if(window.Design&&Design.isOpen&&sc!=='tavern')Design.close(false);
+  if(window.Design&&Design.isOpen&&sc!==(Design.zone==='store'?'store':'tavern'))Design.close(false);
   if(v==='tavern'&&!(window.Tavern3D&&Tavern3D.ready)){if(S.place!=='road')v='road';else{v='road';sc='road';ensureTavern().catch(function(){});}}
-  if(v==='tavern'){Tavern3D.setMode(sc==='city'?'city':'tavern');Tavern3D.sync(S);Scene3D.setView('tavern',S.place==='road'?null:S.place);}
+  if(v==='tavern'){Tavern3D.setMode(sc==='city'||sc==='store'?sc:'tavern');Tavern3D.sync(S);Scene3D.setView('tavern',S.place==='road'?null:S.place);}
   else Scene3D.setView('road');
   document.body.classList.toggle('view-tavern',v==='tavern');
   document.body.classList.toggle('view-city',v==='tavern'&&sc==='city');
+  document.body.classList.toggle('view-store',v==='tavern'&&sc==='store');
   UI.setView(v);UI.setScreen(sc);
 }
 UI.goScreen=function(sc){
@@ -190,7 +192,8 @@ UI.screenNow=curScreen;
 UI.toggleView=function(){if(S.place==='road')game.goHome();else game.goTrip();};
 if(window.Tavern3D){
   Tavern3D.onPick(function(kind,id){
-    if(kind==='store')UI.openTab('store');
+    if(kind==='store')UI.goScreen('store');
+    else if(kind==='rack')UI.openTab('store');
     else if(kind==='prod')UI.openTab('city',id);
     else if(kind==='house'){if(id==='pets'&&window.Pets)Pets.open();else if(window.Masters)Masters.open(id);}
     else if(kind==='tavern'){UI.goScreen('tavern');}
@@ -308,24 +311,13 @@ function begin(){
     if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
       showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
-    if(S.migratedV8){delete S.migratedV8;S.seenV8b=true;save();UI.modal(UI.t('mig.title'),UI.t('mig.body')+UI.t('v8b.body'));}
-    else if(!S.seenV8b){S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));}
-    else if(!S.seenV10){S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v10.title'),UI.t('v10.body'));}
-    else if(!S.seenV15){S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v15.title'),UI.t('v15.body')+UI.t('v16.body'));}
-    else if(!S.seenV16){S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v16.title'),UI.t('v16.body')+UI.t('v17.body'));}
-    else if(!S.seenV17){S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v17.title'),UI.t('v17.body')+UI.t('v18.body')+UI.t('v19.body'));}
-    else if(!S.seenV18){S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v18.title'),UI.t('v18.body')+UI.t('v19.body')+UI.t('v20.body'));}
-    else if(!S.seenV19){S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v19.title'),UI.t('v19.body')+UI.t('v20.body')+UI.t('v22.body'));}
-    else if(!S.seenV20){S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v20.title'),UI.t('v20.body')+UI.t('v22.body'));}
-    else if(!S.seenV22){S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v23.title'),UI.t('v23.body')+UI.t('v24.body'));}
-    else if(!S.seenV23){S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v23.title'),UI.t('v23.body')+UI.t('v24.body'));}
-    else if(!S.seenV24){S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v24.title'),UI.t('v24.body')+UI.t('v25.body'));}
-    else if(!S.seenV25){S.seenV25=true;S.seenV26=true;save();UI.modal(UI.t('v25.title'),UI.t('v25.body')+UI.t('v26.body'));}
-    else if(!S.seenV26){S.seenV26=true;save();UI.modal(UI.t('v26.title'),UI.t('v26.body'));}
+    /* v27: сохранения сброшены (персонаж и облик остались), дальше обычные новости версий */
+    if(S.resetV27){delete S.resetV27;S.seenV27=true;save();UI.modal(UI.t('v27r.title'),UI.t('v27r.body')+UI.t('v27.body'));}
+    else if(!S.seenV27){S.seenV27=true;save();UI.modal(UI.t('v27.title'),UI.t('v27.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV8b=true;S.seenV10=true;S.seenV15=true;S.seenV16=true;S.seenV17=true;S.seenV18=true;S.seenV19=true;S.seenV20=true;S.seenV22=true;S.seenV23=true;S.seenV24=true;S.seenV25=true;S.seenV26=true;save();UI.rebuild();
+      game.start();S.seenV27=true;save();UI.rebuild();
       setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
     });
   }

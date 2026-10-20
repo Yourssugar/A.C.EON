@@ -100,7 +100,7 @@ function render(force){
   var act=g.activeSet(),qh='';
   for(var i=0;i<S.qSlots;i++){
     var o=S.queue[i];
-    qh+=o?'<button type="button" class="crf-qs'+(act[i]?' on':'')+'" data-act="cancel" data-i="'+i+'" title="'+t('q2.cancel')+'">'+UI.orderIcon(o.r)+(act[i]&&o.T?'<i style="height:'+((1-o.t/o.T)*100).toFixed(0)+'%"></i>':'')+'</button>':'<span class="crf-qs"></span>';
+    qh+=o?'<button type="button" class="crf-qs'+(act[i]?' on':'')+(o.hold?' hold':'')+'" data-act="cancel" data-i="'+i+'" title="'+(o.hold?t('stu.holdT'):t('q2.cancel'))+'">'+UI.orderIcon(o.r)+(act[i]&&o.T?'<i style="height:'+((1-o.t/o.T)*100).toFixed(0)+'%"></i>':'')+'</button>':'<span class="crf-qs"></span>';
   }
   set(C.box.querySelector('.crf-q'),qh);
   /* ресурсы: что нужно рецептам на экране, плюс то, что есть на складе */

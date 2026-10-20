@@ -557,8 +557,10 @@ P.staffCost=function(){return D.staffCost(this.S.staff);};
 P.buyStaff=function(){if(!this.pay(this.staffCost()))return false;this.S.staff++;this.emit('buy','staff');return true;};
 P.bagCost=function(){var b=D.BAG[this.S.bagLvl];return b?b.cost:null;};
 P.buyBag=function(){var c=this.bagCost();if(!c||!this.pay(c))return false;this.S.bagLvl++;this.emit('buy','bag');return true;};
-P.storeCost=function(){var b=D.STORE[this.S.storeLvl];return b?b.cost:null;};
-P.buyStore=function(){var c=this.storeCost();if(!c||!this.pay(c))return false;this.S.storeLvl++;this.emit('buy','store');return true;};
+/* v27: склад улучшает бригада строителей: стеллажи в каменной комнате, с 4-го уровня в подвале */
+P.storeCost=function(){var S=this.S,b=D.STORE[S.storeLvl];if(!b||S.storeBt||this.crewQueued('store'))return null;var c={gold:D.STORE_UP.gold(S.storeLvl)};for(var k in b.cost)c[k]=b.cost[k];return c;};
+P.storeBlock=function(){var S=this.S;if(!D.STORE[S.storeLvl])return 'max';if(S.storeBt)return 'busy';if(this.crewQueued('store'))return 'queue';if(!this.canPay(this.storeCost()))return 'cost';return '';};
+P.buyStore=function(){if(this.storeBlock())return false;this.pay(this.storeCost());this.crewQ().push('store');this.emit('invest',{kind:'store'});this.prodStartWaiting();return true;};
 
 /* ════════ ТАВЕРНА ════════ */
 
@@ -655,14 +657,12 @@ P.orderCost=function(rid){
   function withGold(c,g){if(!c)return null;var o={gold:g};for(var k in c)o[k]=c[k];return o;}
   if(rid==='staff')return withGold(D.staffCost(S.staff),D.ORDERS.staff.gold(S.staff));
   if(rid==='bag')return D.BAG[S.bagLvl]?withGold(D.BAG[S.bagLvl].cost,D.ORDERS.bag.gold(S.bagLvl)):null;
-  if(rid==='store')return D.STORE[S.storeLvl]?withGold(D.STORE[S.storeLvl].cost,D.ORDERS.store.gold(S.storeLvl)):null;
   var gd=D.GOOD_BY[rid];return gd?gd.cost:null;
 };
 P.orderTime=function(rid){
   var S=this.S;
   if(rid==='staff')return D.ORDERS.staff.time(S.staff);
   if(rid==='bag')return D.ORDERS.bag.time(S.bagLvl);
-  if(rid==='store')return D.ORDERS.store.time(S.storeLvl);
   return D.GOOD_BY[rid].time;
 };
 P.pending=function(rid){var q=this.S.queue;for(var i=0;i<q.length;i++)if(q[i].r===rid)return true;return false;};
@@ -754,8 +754,7 @@ P.finishOrder=function(mid,o){
   var S=this.S,q=-1;
   if(o.r==='staff'){S.staff++;this.emit('buy','staff');}
   else if(o.r==='bag'){S.bagLvl++;this.emit('buy','bag');}
-  else if(o.r==='store'){S.storeLvl++;this.emit('buy','store');}
-  else{q=this.rollQual(mid,o.r);this.invAdd(o.r,q,1);S.stats.crafted++;if(this.rep){this.rep.crafted++;if(q===3)this.rep.legend=(this.rep.legend||0)+1;}
+  else{q=o.q!==undefined?o.q:this.rollQual(mid,o.r);this.invAdd(o.r,q,1);S.stats.crafted++;if(this.rep){this.rep.crafted++;if(q===3)this.rep.legend=(this.rep.legend||0)+1;}
     if(q===3)this.emit('legend',{m:mid,r:o.r});
     var mm=this.master(mid);if(mm&&mm.done)mm.done[o.r]=(mm.done[o.r]||0)+1;
     /* v26: сразу на полку своего вида, если там есть место (копия для книги и вещь с замком остаются на складе) */
@@ -785,7 +784,11 @@ P.tickMasters=function(dt){
       if(k<0)break;
       var o=q[k];
       if(o.t>left){o.t-=left;left=0;}
-      else{left-=o.t;q.splice(k,1);this.finishOrder(id,o);}
+      else{
+        /* v27: вещь готова, но класть некуда: мастер ждёт, пока освободится место */
+        if(D.GOOD_BY[o.r]){if(o.q===undefined)o.q=this.rollQual(id,o.r);
+          if(!this.canAccept(o.r,o.q)){left=0;o.t=0;if(!o.hold){o.hold=true;this.emit('storeFull',{m:id,r:o.r});}break;}}
+        left-=o.t;q.splice(k,1);this.finishOrder(id,o);}
     }
   }
 };
@@ -804,7 +807,7 @@ P.prodEff=function(id){var o=this.prod(id);return o.lvl?o.lvl+D.STAGE_STEP*o.st:
 P.lineOpen=function(r){return this.tractOpen(D.resTract(r));};
 P.lineRate=function(id,r,eff){if(!this.lineOpen(r))return 0;return D.PROD_BASE[r]*(eff===undefined?this.prodEff(id):eff);};   // в час
 P.lineCap=function(id,r){return Math.max(10,Math.ceil(D.PROD_BASE[r]*Math.max(1,this.prod(id).lvl)*D.PROD_KEEP));};
-P.crewsBusy=function(){var n=0,S=this.S;for(var id in S.prod)if(S.prod[id].bt)n++;(S.furn||[]).forEach(function(it){if(it.bt)n++;});return n;};
+P.crewsBusy=function(){var n=0,S=this.S;for(var id in S.prod)if(S.prod[id].bt)n++;(S.furn||[]).forEach(function(it){if(it.bt)n++;});if(S.storeBt)n++;return n;};
 P.crewFree=function(){return this.crewsBusy()<(this.S.crews||1);};
 P.crewCost=function(){var n=this.S.crews||1;return n>=D.CREW_COST.length?null:{gold:D.CREW_COST[n]};};
 P.buyCrew=function(){var c=this.crewCost();if(!c||!this.pay(c))return false;this.S.crews=(this.S.crews||1)+1;this.emit('crew',this.S.crews);this.prodStartWaiting();return true;};
@@ -844,6 +847,7 @@ P.prodStartWaiting=function(){
   var q=this.crewQ();
   while(q.length&&this.crewFree()){
     var id=q.shift();
+    if(id==='store'){if(this.S.storeBt)continue;var Ts=D.STORE_UP.time(this.S.storeLvl);this.S.storeBt={t:Ts,T:Ts};this.emit('stage',{kind:'store'});continue;}
     if(String(id).slice(0,2)==='f:'){   /* v25: стол ставит та же бригада */
       var it=this.furnById(+id.slice(2));if(!it||it.bt||!it.q)continue;
       var Tf=D.FURN[it.t].bt[it.lv-1];delete it.q;it.bt={t:Tf,T:Tf};this.emit('stage',{kind:'furn',id:it.id,lvl:it.lv});continue;
@@ -931,7 +935,7 @@ P.spawnCustomer=function(){
   var pool=stock.length?stock:known;
   var item=pool[Math.floor(Math.random()*pool.length)];
   var who=Math.floor(Math.random()*D.TRAVELERS);
-  var c={id:++S.custId,who:who,item:item,wait:0,mood:0.9+Math.random()*0.4};
+  var c={id:++S.custId,who:who,item:item,wait:0,walk:D.CUST_WALK,serve:0,mood:1};
   S.cust.push(c);
   if(!this.silent)this.emit('customer',c);
   return c;
@@ -943,17 +947,13 @@ P.hostessCan=function(c){return this.custQual(c)>=0&&!this.isLocked(c.item);};
 P.custPrice=function(c,by){
   var gd=D.GOOD_BY[c.item],q=Math.max(0,this.custQual(c));
   var p=gd.price*D.QUAL[q]*D.decorPrice(this.decorPts())*this.itemPriceMult(c.item);
-  return Math.round(by==='hostess'?p:p*c.mood);
+  return Math.round(p);   // v27: продаёт только хозяйка, по обычной цене
 };
 P.custRemove=function(c){var a=this.S.cust,i=a.indexOf(c);if(i>=0)a.splice(i,1);};
 P.custById=function(id){var a=this.S.cust;for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];return null;};
 P.sellTo=function(c,mode){
   var S=this.S;if(!c||this.custQual(c)<0)return false;
   var price=this.custPrice(c,mode==='hostess'?'hostess':null);
-  if(mode==='up'){
-    if(Math.random()<D.HAGGLE_FAIL){this.custRemove(c);S.rep=Math.max(0,S.rep-1);this.emit('custLeft',{c:c,why:'haggle'});return false;}
-    price=Math.round(price*(1+D.HAGGLE_UP));
-  }else if(mode==='down'){price=Math.round(price*(1-D.DISCOUNT));this.addRep(2);}
   var q=this.shelfSell(c.item);
   this.masterIncome(c.item,price);
   S.gold+=price;S.stats.sold++;S.stats.goldEarned+=price;this.addRep(D.counterRep(S.counter));
@@ -964,25 +964,43 @@ P.sellTo=function(c,mode){
   return true;
 };
 P.refuse=function(c){if(!c)return false;this.custRemove(c);this.emit('custLeft',{c:c,why:'refuse'});return true;};
+/* v27: хозяйка продаёт сама и только тому, кто дошёл до стойки. Путник идёт от дороги D.CUST_WALK секунд,
+   встаёт в очередь; первый в очереди обслуживается D.SERVE_T секунд: есть вещь на полке - покупает, нет - уходит.
+   Время считается по цепочке, поэтому и большой шаг офлайна даёт столько же продаж, сколько живая игра. */
 P.tickCustomers=function(dt){
-  var S=this.S,off=!!this.rep;
+  var S=this.S,off=!!this.rep,self=this;
   if(!this.isOpen()){if(S.cust.length){S.cust.length=0;this.emit('closed');}S.custAcc=0;return;}
   var max=D.custMax(this.buildLvl('hall'));
   S.custAcc+=this.custRate()/60*dt;
-  while(S.custAcc>=1){
-    S.custAcc-=1;
-    if(off){   /* офлайн: хозяйка продаёт сразу, если нужная вещь есть, иначе путник уходит */
-      var oc=this.spawnCustomer();if(!oc)break;
-      if(this.hostessCan(oc))this.sellTo(oc,'hostess');else{this.custRemove(oc);this.guestTry(oc);}
-      continue;
-    }
-    if(S.cust.length<max)this.spawnCustomer();
+  while(S.custAcc>=1){S.custAcc-=1;if(S.cust.length<max||off)this.spawnCustomer();else S.custAcc=Math.min(S.custAcc,1);}
+  var tau=0;
+  while(S.cust.length){
+    var c=S.cust[0];if(c.walk===undefined){c.walk=0;c.serve=0;}
+    var start=Math.max(tau,c.walk),end=start+(D.SERVE_T-(c.serve||0));
+    if(end>dt){if(dt>start)c.serve=(c.serve||0)+(dt-start);break;}
+    tau=end;
+    if(this.hostessCan(c))this.sellTo(c,'hostess');
+    else{this.custRemove(c);this.emit('custLeft',{c:c,why:'none'});this.guestTry(c);}
   }
-  for(var i=S.cust.length-1;i>=0;i--){
-    var c=S.cust[i];c.wait+=dt;
-    if((off||c.wait>=D.HOSTESS_AFTER)&&this.hostessCan(c)){this.sellTo(c,'hostess');continue;}
-    if(c.wait>=D.CUST_PATIENCE||(off&&!this.hostessCan(c))){this.custRemove(c);this.emit('custLeft',{c:c,why:'wait'});this.guestTry(c);}
-  }
+  S.cust.forEach(function(x,i){
+    x.walk=Math.max(0,(x.walk||0)-dt);x.wait+=dt;
+    if(!off&&i>0&&x.walk<=0&&x.wait>=D.CUST_WALK+D.CUST_PATIENCE){self.custRemove(x);self.emit('custLeft',{c:x,why:'wait'});self.guestTry(x);}
+  });
+};
+/* ════════ СУНДУКИ И МЕСТО ПОД ВЕЩИ (v27) ════════
+   Готовые вещи лежат на полках таверны и в сундуках склада. Мест в сундуках не хватает - мастер держит готовую вещь у себя и ждёт. */
+P.itemCount=function(){var n=0,I=this.S.inv;for(var k in I)n+=I[k]||0;return n;};
+P.shelfUsedAll=function(){var self=this,n=0;D.SHELF_CATS.forEach(function(c){n+=self.shelfUsed(c);});return n;};
+P.chestCap=function(){return HL.chestSlots(this.S.furn||[]);};
+P.chestUsed=function(){return Math.max(0,this.itemCount()-this.shelfUsedAll());};
+P.chestRoom=function(){return this.chestCap()-this.chestUsed();};
+P.itemCap=function(){var self=this,n=this.chestCap();D.SHELF_CATS.forEach(function(c){n+=self.shelfCap(c);});return n;};
+/* поместится ли ещё одна копия: в сундук или сразу на полку (копия для книги и вещь с замком на полку не идут) */
+P.canAccept=function(rid,q){
+  if(this.chestRoom()>0)return true;
+  var cat=D.shelfCat(rid);if(!cat||this.isLocked(rid)||this.shelfCap(cat)-this.shelfUsed(cat)<=0)return false;
+  var n=this.S.inv[rid+':'+q]||0,res=this.bookNeed(rid,q)?1:0;
+  return Math.max(0,n+1-res)-this.shelfN(rid,q)>0;
 };
 
 /* ════════ ПОЛКИ И ГРУЗЧИК (v26) ════════
@@ -1071,13 +1089,14 @@ P.tableCost=function(it){
   for(var i=0;i<add;i++)gold+=D.seatCost(Math.max(D.SEATS0,cap+i)).gold;
   var c={gold:gold};if(it)c.rep=Math.ceil(gold*D.TABLE_REP);return c;
 };
-P.furnBuyCost=function(t){return t==='table'?this.tableCost(null):D.decorCost(t,1,this.furnOwn(t));};
-P.furnUpCost=function(it){if(!it||it.lv>=D.FURN_LV)return null;return it.t==='table'?this.tableCost(it):D.decorCost(it.t,it.lv+1);};
+P.furnBuyCost=function(t){return t==='table'?this.tableCost(null):t==='schest'?D.chestCost(1):D.decorCost(t,1,this.furnOwn(t));};
+P.furnUpCost=function(it){if(!it||it.lv>=D.FURN_LV)return null;return it.t==='table'?this.tableCost(it):it.t==='schest'?D.chestCost(it.lv+1):D.decorCost(it.t,it.lv+1);};
 /* причина, почему нельзя: '' можно; hall - нужен уровень зала; seats - предел мест зала; max; busy - строится; cost; space */
 P.furnBuyBlock=function(t){
   var d=D.FURN[t];if(!d)return 'max';
   if(this.buildLvl('hall')<D.furnHall(t,1))return 'hall';
   if(d.seats&&this.seatCap()+d.seats[0]>this.seatMax())return 'seats';
+  if(t==='schest'&&this.furnOwn(t)>=D.CHEST_MAX)return 'max';
   if(!this.canPay(this.furnBuyCost(t)))return 'cost';
   return '';
 };
@@ -1094,7 +1113,7 @@ P.releaseGuests=function(fid){var T=this.tav(),pre=fid+':',self=this;T.guests=T.
 P.furnBuy=function(t){
   var bl=this.furnBuyBlock(t);if(bl)return bl;
   var S=this.S,it={id:(S.furnId||0)+1,t:t,lv:1,x:0,z:0,r:0};
-  var sp=HL.findSpot(S.furn,this.buildLvl('hall'),it);if(!sp)return 'space';
+  var sp=D.FURN[t].zone==='store'?HL.findSpotStore(S.furn,S.storeLvl,it):HL.findSpot(S.furn,this.buildLvl('hall'),it);if(!sp)return 'space';
   this.pay(this.furnBuyCost(t));
   it.x=sp.x;it.z=sp.z;it.r=sp.r;S.furnId=it.id;S.furn.push(it);
   if(D.FURN[t].seats){it.q=1;this.crewQ().push('f:'+it.id);this.prodStartWaiting();}
@@ -1105,7 +1124,7 @@ P.furnUp=function(it){
   var bl=this.furnUpBlock(it);if(bl)return bl;
   var S=this.S,hall=this.buildLvl('hall'),cand={id:it.id,t:it.t,lv:it.lv+1,x:it.x,z:it.z,r:it.r};
   var others=S.furn.filter(function(x){return x!==it;});
-  if(!HL.check(others.concat([cand]),hall).ok){
+  if(HL.zone(it)==='hall'&&!HL.check(others.concat([cand]),hall).ok){
     /* больше не помещается: пробуем развернуть или сдвинуть на свободное место */
     var sp=HL.findSpot(S.furn,hall,cand);if(!sp)return 'space';
     cand.x=sp.x;cand.z=sp.z;cand.r=sp.r;
@@ -1125,21 +1144,23 @@ P.furnStore=function(it){
 P.furnPlace=function(it){
   if(!it||!it.st)return false;
   var d=D.FURN[it.t];if(d.seats&&this.seatCap()+d.seats[it.lv-1]>this.seatMax())return 'seats';
-  var sp=HL.findSpot(this.S.furn,this.buildLvl('hall'),it);if(!sp)return 'space';
+  var sp=HL.zone(it)==='store'?HL.findSpotStore(this.S.furn,this.S.storeLvl,it):HL.findSpot(this.S.furn,this.buildLvl('hall'),it);if(!sp)return 'space';
   it.x=sp.x;it.z=sp.z;it.r=sp.r;delete it.st;this.emit('furn',{act:'place',id:it.id});return true;
 };
 /* применить расстановку из режима дизайна: moves = {id:{x,z,r}}. Гости за сдвинутыми столами уходят */
 P.furnApply=function(moves){
   var S=this.S,self=this,list=S.furn.map(function(it){var m=moves[it.id];if(!m)return it;var c={};for(var k in it)c[k]=it[k];c.x=m.x;c.z=m.z;c.r=m.r;return c;});
-  if(!HL.check(list,this.buildLvl('hall')).ok)return false;
+  if(!this.furnCheck(list))return false;
   S.furn.forEach(function(it){var m=moves[it.id];if(!m||(m.x===it.x&&m.z===it.z&&m.r===it.r))return;it.x=m.x;it.z=m.z;it.r=m.r;if(D.FURN[it.t].seats)self.releaseGuests(it.id);});
   this.emit('furn',{act:'move'});
   return true;
 };
+P.furnCheck=function(list){return HL.check(list,this.buildLvl('hall')).ok&&HL.checkStore(list,this.S.storeLvl).ok;};
 P.counterCost=function(){var l=this.S.counter||1;return l>=D.COUNTER_MAX?null:D.counterCost(l);};
 P.counterUp=function(){var c=this.counterCost();if(!c||!this.pay(c))return false;this.S.counter=(this.S.counter||1)+1;this.emit('furn',{act:'counter'});return true;};
 P.tickFurn=function(dt){
-  var self=this,done=false;
+  var self=this,done=false,S=this.S;
+  if(S.storeBt){S.storeBt.t-=dt;if(S.storeBt.t<=0){S.storeBt=null;S.storeLvl++;done=true;this.emit('buy','store');this.emit('built',{kind:'store',lvl:S.storeLvl});}}
   (this.S.furn||[]).forEach(function(it){
     if(!it.bt)return;it.bt.t-=dt;if(it.bt.t>0)return;
     it.bt=null;done=true;self.emit('built',{kind:'furn',id:it.id,lvl:it.lv});
@@ -1178,7 +1199,7 @@ P.furnSanitize=function(){
   var chk=HL.check(S.furn,hall);
   if(!chk.ok){
     var bad=S.furn.filter(function(it){return !it.st&&chk.bad[it.id];});
-    if(chk.blocked&&!bad.length)bad=S.furn.filter(function(it){return !it.st&&D.FURN[it.t].cat!=='table';});
+    if(chk.blocked&&!bad.length)bad=S.furn.filter(function(it){return !it.st&&D.FURN[it.t].cat!=='table'&&HL.zone(it)==='hall';});
     bad.forEach(function(it){it.st=1;});
     bad.forEach(function(it){var sp=HL.findSpot(S.furn,hall,it);if(sp){it.x=sp.x;it.z=sp.z;it.r=sp.r;delete it.st;}});
   }
@@ -1192,6 +1213,10 @@ P.furnSanitize=function(){
     for(var mid in D.MASTER_SHELF)if(S.masters[mid]&&S.masters[mid].hired)this.giveShelf(D.MASTER_SHELF[mid]);
     if(this.freeTotal&&S.inv)this.shelfFill(9999);
   }
+  /* v27: первый сундук на складе */
+  if(!S.v27){S.v27=1;if(!S.furn.some(function(x){return x.t==='schest';})){var ch={id:(S.furnId||0)+1,t:'schest',lv:1,x:0,z:0,r:0},csp=HL.findSpotStore(S.furn,S.storeLvl,ch);if(csp){ch.x=csp.x;ch.z=csp.z;ch.r=csp.r;}else ch.st=1;S.furnId=ch.id;S.furn.push(ch);}}
+  if(S.storeBt&&!S.storeBt.T)S.storeBt=null;
+  S.cust.forEach(function(c){if(c.walk===undefined){c.walk=0;c.serve=0;}});
   this.shelfFix();
 };
 P.tavernTick=function(dt){this.tickMasters(dt);this.tickProd(dt);this.tickFurn(dt);this.shelfFix();this.tickLoader(dt);this.tickCustomers(dt);this.tickTav(dt);this.tickPets(dt);};
@@ -1376,11 +1401,11 @@ P.sanitize=function(){
 };
 
 /* сохранение v1 (золото, уровни) -> v2: персонаж и гардероб остаются, прогресс заново */
+/* v27 (версия 3): прогресс сбрасывается у всех (тестовая стадия), персонаж, облик, гардероб и настройки остаются */
 function migrate(old,v){
-  if(v>=2)return old;
-  var n={profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},
-    lastSeen:0,migratedV8:!!old.profile};
-  return n;
+  if(v>=3)return old;
+  return {profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},
+    lastSeen:0,resetV27:!!old.profile};
 }
 
 var api={Game:Game,defaults:defaults,migrate:migrate};

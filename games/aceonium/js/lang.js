@@ -767,9 +767,9 @@ I18n.add('ru',{
     '<p>Проигрыш боссу стоит сумки. Зелье оберега спасает её один раз.</p>',
   'hp.bag':'<p>Монстры роняют ресурсы с шансом, он растёт с волной и после первого прохождения тракта. Сумка ограничена, лишнее пропадает.</p>'+
     '<p>В таверне маг выгружает сумку на склад. У склада свой предел на каждый ресурс. Сумку и склад улучшают во вкладке ГОРОД.</p>',
-  'hp.tavern':'<p>Путник просит одну вещь. Если она есть, её можно продать: ДОРОЖЕ (+30%, но с шансом 35% путник уйдёт), СКИДКА (-20%, растёт репутация) или по обычной цене.</p>'+
-    '<p>Через 30 секунд хозяйка продаёт сама по обычной цене. Она отдаёт копию худшего качества и не трогает вещи с замком и копии, которые держатся для книги.</p>'+
-    '<p>Пока маг спит, таверна закрыта. Пока тебя нет, хозяйка продаёт сразу, а путник без своей вещи уходит.</p>',
+  'hp.tavern':'<p>Путник приходит с дороги, встаёт в очередь к стойке и просит одну вещь из тех, что лежат на полках. Хозяйка продаёт сама, по обычной цене, но только тому, кто дошёл до стойки. Нет вещи на полке: путник уходит.</p>'+
+    '<p>Хозяйка отдаёт копию худшего качества и не трогает вещи с замком и копии, которые держатся для книги.</p>'+
+    '<p>Пока маг спит, таверна закрыта. Пока тебя нет, всё работает так же.</p>',
   'hp.hall':'<p>Путник после покупки садится за стол с шансом 60% и сидит 15 минут. Места дают столы: их покупают и улучшают в режиме дизайна, ставит бригада строителей. Предел мест зависит от уровня зала.</p>'+
     '<p>Каждый гость берёт кружку у пивовара и с шансом 50% блюдо у повара. Работники готовят партиями, помощники увеличивают партию.</p>'+
     '<p>Половина выручки твоя, половина идёт работнику в сбережения. Сбережения понемногу поднимают цену, а накопив сумму, работник сам расширяется. Места для помощников прибавляются с его уровнем.</p>',
@@ -814,9 +814,9 @@ I18n.add('en',{
     '<p>Losing to a boss costs the bag. A ward potion saves it once.</p>',
   'hp.bag':'<p>Monsters drop resources by chance; it grows with the wave and after the first clear. The bag is limited, extra is lost.</p>'+
     '<p>In the tavern the mage unloads the bag into the store. The store has a limit per resource. Bag and store upgrades are on the TOWN tab.</p>',
-  'hp.tavern':'<p>A traveler asks for one item. If you have it: HIGHER (+30%, 35% chance he leaves), DISCOUNT (-20%, reputation up) or the normal price.</p>'+
-    '<p>After 30 seconds the hostess sells at the normal price. She gives the lowest quality copy and skips locked items and copies kept for the book.</p>'+
-    '<p>While the mage sleeps the tavern is closed. While you are away the hostess sells at once and travelers without their item leave.</p>',
+  'hp.tavern':'<p>A traveler comes from the road, queues at the counter and asks for one item from the shelves. The hostess sells by herself at the normal price, but only to someone standing at the counter. No item on the shelf: the traveler leaves.</p>'+
+    '<p>The hostess gives the lowest quality copy and skips locked items and copies kept for the book.</p>'+
+    '<p>While the mage sleeps the tavern is closed. While you are away everything works the same.</p>',
   'hp.hall':'<p>After buying, a traveler sits down with a 60% chance for 15 minutes. Seats come from tables: buy and upgrade them in design mode, the building crew sets them up. The hall level sets the seat limit.</p>'+
     '<p>Every guest takes a mug from the brewer and, with a 50% chance, a dish from the cook. Workers cook in batches, helpers make batches bigger.</p>'+
     '<p>Half the revenue is yours, half goes to the worker\'s savings. Savings raise the price a little, and with enough saved the worker expands on his own. Helper slots grow with his level.</p>',
@@ -854,9 +854,9 @@ I18n.add('ru',{'scn.road':'ПОХОД','scn.tavern':'ТАВЕРНА','scn.city':
 I18n.add('en',{'scn.road':'TRIP','scn.tavern':'TAVERN','scn.city':'TOWN','tl.tavern':'TAVERN',
   'v22.title':'TAVERN AND TOWN','v22.body':'<p>The tavern and the town are separate screens now: TAVERN and TOWN buttons at the top left. In town the tavern has a roof; in the tavern the camera is inside the hall. While the mage is on a trip you can visit both, and TRIP takes you back to the fight.</p>'});
 /* v23: окна и нижняя панель */
-I18n.add('ru',{'grp.mage':'МАГ','grp.hall':'ЗАЛ','grp.build':'СТРОЙКА','grp.store':'СКЛАД','grp.craft':'СОЗДАТЬ','grp.info':'ИНФО','grp.book':'КНИГА','tv.repT':'Репутация',
+I18n.add('ru',{'grp.mage':'МАГ','grp.hall':'ЗАЛ','grp.build':'СТРОЙКА','grp.store':'ЗАПАСЫ','grp.craft':'СОЗДАТЬ','grp.info':'ИНФО','grp.book':'КНИГА','tv.repT':'Репутация',
   'tab.gear':'СНАРЯЖЕНИЕ','v23.title':'НОВЫЙ ИНТЕРФЕЙС','v23.body':'<p>Боковой панели больше нет: сцена на весь экран. Внизу кнопки МАГ, ЗАЛ, СТРОЙКА, СКЛАД, КНИГА и ИНФО открывают окна поверх сцены, справа очередь мастеров и кнопка СОЗДАТЬ. Слева столбиком экраны: ПОХОД, ТАВЕРНА, ГОРОД.</p>'});
-I18n.add('en',{'grp.mage':'MAGE','grp.hall':'HALL','grp.build':'BUILD','grp.store':'STORE','grp.craft':'CRAFT','grp.info':'INFO','grp.book':'BOOK','tv.repT':'Reputation',
+I18n.add('en',{'grp.mage':'MAGE','grp.hall':'HALL','grp.build':'BUILD','grp.store':'SUPPLIES','grp.craft':'CRAFT','grp.info':'INFO','grp.book':'BOOK','tv.repT':'Reputation',
   'tab.gear':'GEAR','v23.title':'NEW INTERFACE','v23.body':'<p>The side panel is gone: the scene fills the screen. The MAGE, HALL, BUILD, STORE, BOOK and INFO buttons at the bottom open windows over the scene; on the right are the craft queue and the CRAFT button. Screens are stacked on the left: TRIP, TAVERN, TOWN.</p>'});
 /* v24: лента СОЗДАТЬ, окно здания */
 I18n.add('ru',{'cr4.fav':'ИЗБРАННОЕ','cr4.toMaster':'МАСТЕР','cr4.favEmpty':'Здесь будут закреплённые и последние заказанные вещи.','cr4.learning':'Мастер учит: {r}',
@@ -928,5 +928,34 @@ I18n.add('en',{'fu.potshelf':'POTION SHELF','fu.jcase':'DISPLAY CASE','fu.tab.sh
     '<p>Displays: potion shelf (potions and scrolls), weapon rack, dummy (armor and clothes), display case (jewelry). Buy and upgrade them in design mode; upgrades give more slots. A newly hired master brings his own display if you have none.</p>'+
     '<p>From store to shelves: the PUT OUT FROM STORE button in the HALL or STORE window, or the loader. The loader moves a limited number of items per hour and works while you are away. Locked items and book copies never go on shelves.</p>',
   'v26.title':'SHELVES AND LOADER','v26.body':'<p>Goods now sit on displays. Travelers ask for and the hostess sells only what is on the shelves. A finished item goes on a shelf by itself if there is room.</p><p>Displays for your masters are already in the hall and your stock is put out. The cook and the brewer carry food and beer to the hostess themselves.</p><p>You can hire a loader in the HALL window: he restocks the shelves from the store while you are away.</p>'
+});
+/* v27: склад, сундуки, хозяйка продаёт сама */
+I18n.add('ru',{'scn.store':'СКЛАД','tv.walk':'идёт, {s} с','tv.buying':'у стойки','tv.inLine':'в очереди: {n}','tv.noShelf':'нет на полке',
+  'stu.name':'СКЛАД','stu.cap':'ресурсов до {n} каждого','stu.items':'вещей в сундуках {a} / {b}','stu.building':'Бригада ставит стеллажи до ур. {n}',
+  'stu.nextRoom':'Дальше: стеллажи в каменной комнате, до {n} каждого','stu.openCel':'Дальше: бригада расчистит подвал, до {n} каждого','stu.nextCel':'Дальше: стеллажи в подвале, до {n} каждого',
+  'stu.queued':'ЖДЁТ БРИГАДУ','stu.ordered':'Бригада займётся складом, как освободится','stu.go':'НА СКЛАД',
+  'stu.fullT':'В сундуках нет места: мастер держит готовую вещь у себя. Поставь или улучши сундук на складе','stu.holdT':'Готово, но некуда положить: нужен сундук на складе',
+  'fu.schest':'СУНДУК','fu.tab.chest':'СУНДУКИ','fu.chestN':'вещей: {n}','fu.bl.chestMax':'не больше {n}',
+  'fu.statStore':'сундуки <b>{a}</b> / {b} · вещей {u} / {c} · ресурсов до {r}','fu.hintStore':'Сундуки хранят готовые вещи, которые не поместились на полки. Стеллажи с ресурсами ставит бригада строителей.',
+  'lbl.rack':'СТЕЛЛАЖИ','lbl.rackS':'до {n} каждого',
+  'hp.storage.t':'Склад','hp.storage':'<p>Склад - отдельный экран (кнопка СКЛАД слева). Это каменная кладовая у таверны, позже к ней добавляется подвал.</p>'+
+    '<p>Ресурсы лежат на стеллажах. Новые стеллажи ставит бригада строителей: улучшение склада в окне СТРОЙКА или ЗАПАСЫ. Первые уровни в каменной комнате, с 4-го бригада расчищает подвал.</p>'+
+    '<p>Готовые вещи лежат на полках таверны и в сундуках склада, сундуков не больше пяти, у каждого три уровня. Если класть некуда, мастер держит готовую вещь у себя и не начинает следующую.</p>',
+  'v27r.title':'СОХРАНЕНИЯ СБРОШЕНЫ','v27r.body':'<p>Для этой версии прогресс начинается заново. Персонаж, облик и настройки остались.</p>',
+  'v27.title':'СКЛАД И ДВОР','v27.body':'<p>Хозяйка продаёт сама: путник приходит, встаёт к стойке и покупает то, что лежит на полках. Кнопок продажи больше нет.</p><p>Новый экран СКЛАД: каменная кладовая со стеллажами ресурсов, позже подвал. Готовые вещи хранятся на полках таверны и в сундуках склада (до пяти). Склад улучшает бригада строителей.</p><p>Вокруг таверны появился двор с колодцем, поленницей, грядками и изгородью, его видно и из города.</p>'
+});
+I18n.add('en',{'scn.store':'STORE','tv.walk':'walking, {s} s','tv.buying':'at the counter','tv.inLine':'in line: {n}','tv.noShelf':'not on shelf',
+  'stu.name':'STOREHOUSE','stu.cap':'resources up to {n} each','stu.items':'items in chests {a} / {b}','stu.building':'The crew is building racks to lv. {n}',
+  'stu.nextRoom':'Next: racks in the stone room, up to {n} each','stu.openCel':'Next: the crew clears the cellar, up to {n} each','stu.nextCel':'Next: racks in the cellar, up to {n} each',
+  'stu.queued':'WAITING FOR CREW','stu.ordered':'The crew will work on the storehouse when free','stu.go':'TO THE STORE',
+  'stu.fullT':'No room in the chests: the master keeps the finished item. Place or upgrade a chest in the store','stu.holdT':'Done, but nowhere to put it: a chest is needed',
+  'fu.schest':'CHEST','fu.tab.chest':'CHESTS','fu.chestN':'items: {n}','fu.bl.chestMax':'max {n}',
+  'fu.statStore':'chests <b>{a}</b> / {b} · items {u} / {c} · resources up to {r}','fu.hintStore':'Chests keep finished items that did not fit on the shelves. The building crew sets up resource racks.',
+  'lbl.rack':'RACKS','lbl.rackS':'up to {n} each',
+  'hp.storage.t':'Storehouse','hp.storage':'<p>The storehouse is a separate screen (STORE button on the left): a stone storeroom next to the tavern, later with a cellar.</p>'+
+    '<p>Resources sit on racks. The building crew sets up new racks: upgrade the storehouse in the BUILD or SUPPLIES window. The first levels go into the stone room, from level 4 the crew clears the cellar.</p>'+
+    '<p>Finished items sit on the tavern shelves and in storehouse chests, up to five chests with three levels each. When there is nowhere to put an item, the master keeps it and does not start the next one.</p>',
+  'v27r.title':'SAVES RESET','v27r.body':'<p>Progress starts over in this version. Your character, look and settings are kept.</p>',
+  'v27.title':'STOREHOUSE AND YARD','v27.body':'<p>The hostess sells by herself: a traveler comes, stands at the counter and buys what is on the shelves. No more sell buttons.</p><p>New STORE screen: a stone storeroom with resource racks, later a cellar. Finished items are kept on the tavern shelves and in storehouse chests (up to five). The building crew upgrades the storehouse.</p><p>The tavern now has a yard with a well, a woodpile, herb beds and a hedge, also visible from the town.</p>'
 });
 })();

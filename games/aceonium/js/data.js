@@ -96,6 +96,9 @@ D.BAG=[
   {cap:600,pick:1.1, cost:{hide:150,silk:100,amber:10}},
   {cap:900,pick:1.2, cost:{silk:250,ecto:150,pearl:10}}
 ];
+/* склад ресурсов: уровень даёт стеллажи (v27 их ставит бригада строителей: сначала в каменной комнате, с 4-го уровня в подвале) */
+D.STORE_UP={gold:function(l){return Math.ceil(100*Math.pow(3,l-1));},time:function(l){return 600*l;}};
+D.STORE_CELLAR=4;   // с какого уровня открывается подвал
 D.STORE=[
   {cap:200,  cost:null},
   {cap:400,  cost:{wood:40,iron:20}},
@@ -278,7 +281,6 @@ D.START={gold:150,store:{wood:20,iron:15,herb:20,hide:15}};
 /* улучшения мага тоже идут заказом у мастера */
 D.ORDERS={
   staff:{m:'carpenter',time:function(s){return 20+15*s;},gold:function(s){return Math.ceil(10*Math.pow(1.16,s));}},
-  store:{m:'carpenter',time:function(l){return 180*l;},gold:function(l){return Math.ceil(100*Math.pow(3,l-1));}},
   bag:  {m:'tanner',   time:function(l){return 120*l;},gold:function(l){return Math.ceil(150*Math.pow(3.2,l-1));}}
 };
 
@@ -369,7 +371,9 @@ D.CUST_MAX_RATE=5;
 /* v25: второй множитель от убранства (очки мебели), а не от репутации: репутация теперь тратится */
 D.custRate=function(hall,k){return Math.min(D.CUST_MAX_RATE,(1+0.8*hall)*(1+(k||0)));};
 D.custMax=function(hall){return 6+2*hall;};   // сколько ждут одновременно
-D.CUST_PATIENCE=180;      // сколько ждёт покупатель, если нужной вещи нет
+D.CUST_PATIENCE=180;      // сколько ждёт в очереди
+D.CUST_WALK=18;           // v27: сколько идёт от дороги до стойки
+D.SERVE_T=4;              // v27: сколько хозяйка обслуживает одного (продаёт сама, только у стойки)
 D.HOSTESS_AFTER=30;       // через сколько хозяйка продаёт сама (по базовой цене)
 D.HAGGLE_UP=0.3;D.HAGGLE_FAIL=0.35;D.DISCOUNT=0.2;
 D.TRAVELERS=12;           // типов путников в текстах (trav.0..11)
@@ -393,9 +397,11 @@ D.FURN={
   jcase:   {cat:'shelf',shelf:'jew', fp:[[2,1]],slots:[4,8,14],pts:[2,3,5],c:[400,40]},
   bookcase:{cat:'decor',fp:[[2,1]],pts:[5,9,15],c:[1200,120],hall:[2]},
   armchair:{cat:'decor',fp:[[2,2]],pts:[5,10,16],c:[2000,200],hall:[2]},
-  chandelier:{cat:'decor',layer:'ceil',fp:[[1,1]],pts:[6,12,20],c:[4000,400],hall:[3]}
+  chandelier:{cat:'decor',layer:'ceil',fp:[[1,1]],pts:[6,12,20],c:[4000,400],hall:[3]},
+  /* v27: сундук на складе (своя сцена, своя сетка): хранит готовые вещи, которые не поместились на полки */
+  schest:  {cat:'chest',zone:'store',fp:[[2,1]],slots:[20,40,80]}
 };
-D.FURN_ORDER=['table','potshelf','weapons','dummy','jcase','rug','barrel','crate','vase','chest','bookcase','armchair','chandelier'];
+D.FURN_ORDER=['schest','table','potshelf','weapons','dummy','jcase','rug','barrel','crate','vase','chest','bookcase','armchair','chandelier'];
 /* вид полки для вещи: зелья и свитки, оружие, доспехи и одежда, украшения */
 D.SHELF_CATS=['pot','weap','arm','jew'];
 D.SHELF_OF={pot:'potshelf',weap:'weapons',arm:'dummy',jew:'jcase'};
@@ -405,6 +411,8 @@ D.MASTER_SHELF={herbalist:'pot',carpenter:'weap',smith:'weap',tanner:'arm',jewel
 /* грузчик: сколько вещей в час переносит со склада на полки; найм и улучшения */
 D.LOADER={hire:400,rate:[8,15,25,40,60],up:[{gold:1500,rep:100},{gold:6000,rep:400},{gold:24000,rep:1500},{gold:80000,rep:5000}]};
 D.FURN_LV=3;
+D.CHEST_MAX=5;
+D.chestCost=function(lv){var k=Math.pow(3,lv-1),r=Math.pow(2,lv-1);return {gold:Math.ceil(200*k),wood:Math.ceil(20*r),iron:Math.ceil(10*r)};};
 D.furnHall=function(t,lv){var h=D.FURN[t].hall;return h?(h[lv-1]!==undefined?h[lv-1]:h[h.length-1]):0;};
 /* цена декора: lv - какой уровень покупаем (1 - новый предмет), own - сколько таких уже есть */
 D.decorCost=function(t,lv,own){var c=D.FURN[t].c,k=Math.pow(3,lv-1)*(lv===1?Math.pow(1.35,own||0):1);return {gold:Math.ceil(c[0]*k),rep:Math.ceil(c[1]*k)};};

@@ -15,16 +15,22 @@ function hall(){return g().buildLvl('hall');}
 function draft(){
   return g().S.furn.map(function(it){var m=Z.moves[it.id];if(!m)return it;var c={};for(var k in it)c[k]=it[k];c.x=m.x;c.z=m.z;c.r=m.r;return c;});
 }
-function selItem(L){if(Z.sel===null||Z.sel==='counter')return null;L=L||draft();for(var i=0;i<L.length;i++)if(L[i].id===Z.sel&&!L[i].st)return L[i];return null;}
+function selItem(L){if(Z.sel===null||Z.sel==='counter')return null;L=L||draft();for(var i=0;i<L.length;i++)if(L[i].id===Z.sel&&!L[i].st&&HL.zone(L[i])===Z.zone)return L[i];return null;}
+/* v27: две сетки: зал таверны и склад (своя сцена далеко в стороне) */
+function off(){return Z.zone==='store'?HL.STO:{x:0,z:0};}
+function loc(pt){var o=off();return pt?{x:pt.x-o.x,z:pt.z-o.z}:null;}
+function checkNow(L){return Z.zone==='store'?HL.checkStore(L,g().S.storeLvl):HL.check(L,hall());}
 function name(tp){return t('fu.'+tp);}
 
 function open(sel){
   if(Z){if(sel!==undefined){Z.sel=sel;render();}return;}
   if(!window.Tavern3D||!Tavern3D.ready||!Tavern3D.built){UI.toast(t('fu.wait'));return;}
-  if(UI.screenNow&&UI.screenNow()!=='tavern'&&UI.goScreen)UI.goScreen('tavern');
+  var it0=sel!==undefined&&g().furnById(sel),zone=it0?(HL.zone(it0)==='store'?'store':'hall'):(UI.screenNow&&UI.screenNow()==='store'?'store':'hall');
+  var want=zone==='store'?'store':'tavern';
+  if(UI.screenNow&&UI.screenNow()!==want&&UI.goScreen)UI.goScreen(want);
   if(UI.closeWin)UI.closeWin();
   if(window.Craft&&Craft.isOpen)Craft.close();
-  Z={moves:{},sel:sel===undefined?null:sel,drag:null,shop:false,tab:'table'};
+  Z={moves:{},sel:sel===undefined?null:sel,drag:null,shop:false,tab:zone==='store'?'chest':'table',zone:zone};
   var box=document.createElement('div');box.className='dsg';
   box.innerHTML='<div class="dsg-top"><b class="dsg-t">'+t('fu.title')+'</b><span class="dsg-stat"></span>'+
     '<button type="button" class="hlp" data-help="design" aria-label="?">?</button></div>'+
@@ -37,7 +43,7 @@ function open(sel){
   document.body.classList.add('dsg-open');
   box.addEventListener('click',onClick);
   document.addEventListener('keydown',onKey);
-  Tavern3D.setDesign(true,{down:onDown,move:onMove,up:onUp,tap:onTap});
+  Tavern3D.setDesign(true,{down:onDown,move:onMove,up:onUp,tap:onTap},Z.zone);
   Z.timer=setInterval(function(){if(!Z.drag)render();},500);
   g().on('furn',onGame);
   render();
@@ -61,29 +67,32 @@ function commit(){
 
 /* ── ввод с канваса ── */
 function hit(pt){
+  pt=loc(pt);
   var cx=Math.floor(pt.x),cz=Math.floor(pt.z),L=draft(),best=null,pri={solid:3,ceil:2,floor:1};
   L.forEach(function(it){
-    if(it.st)return;
+    if(it.st||HL.zone(it)!==Z.zone)return;
     var inside=HL.cells(it).some(function(c){return c[0]===cx&&c[1]===cz;});
     if(inside&&(!best||pri[HL.layer(it)]>pri[HL.layer(best)]))best=it;
   });
   if(best)return best;
-  if(cx>=4&&cx<=7&&cz>=-4&&cz<=-3)return 'counter';
+  if(Z.zone==='hall'&&cx>=4&&cx<=7&&cz>=-4&&cz<=-3)return 'counter';
   return null;
 }
 function onDown(pt){
   var h=hit(pt);
   if(h==='counter'){Z.sel='counter';render();return false;}
   if(!h)return false;
-  Z.sel=h.id;var c=HL.center(h);Z.drag={id:h.id,ox:c.x-pt.x,oz:c.z-pt.z};
+  Z.sel=h.id;var c=HL.center(h),lp=loc(pt);Z.drag={id:h.id,ox:c.x-lp.x,oz:c.z-lp.z};
   Sound.sfx('select');render();
   return true;
 }
 function onMove(pt){
   if(!Z.drag)return;
   var it=selItem();if(!it)return;
+  pt=loc(pt);
   var f=HL.fp(it),x=Math.round(pt.x+Z.drag.ox-f[0]/2),z=Math.round(pt.z+Z.drag.oz-f[1]/2);
-  x=Math.max(-3,Math.min(9-f[0],x));z=Math.max(-6,Math.min(10-f[1],z));
+  if(Z.zone==='store'){x=Math.max(-1,Math.min(18-f[0],x));z=Math.max(-1,Math.min(7-f[1],z));}
+  else{x=Math.max(-3,Math.min(9-f[0],x));z=Math.max(-6,Math.min(10-f[1],z));}
   if(x===it.x&&z===it.z)return;
   Z.moves[it.id]={x:x,z:z,r:it.r||0};
   renderScene();
@@ -130,7 +139,7 @@ function onClick(e){
 /* ── отрисовка ── */
 function render(){if(!Z)return;renderScene();renderInfo();renderBar();renderShop();}
 function renderScene(){
-  var L=draft(),it=selItem(L),chk=HL.check(L,hall());
+  var L=draft(),it=selItem(L),chk=checkNow(L);
   Z.chk=chk;
   Tavern3D.furnShow(L);
   Tavern3D.designMark(it,it?!(chk.bad[it.id]||chk.blocked):true);
@@ -140,13 +149,15 @@ function costHtml(c){return UI.costHtml(c);}
 function bonusText(tp,lv){
   var d=D.FURN[tp];
   if(d.seats)return t('fu.seatsN',{n:d.seats[lv-1]});
+  if(d.cat==='chest')return t('fu.chestN',{n:d.slots[lv-1]});
   if(d.shelf)return t('fu.slotsN',{n:d.slots[lv-1],c:t('sh.cat.'+d.shelf)});
   return t('fu.ptsN',{n:d.pts[lv-1]});
 }
 function renderInfo(){
   if(!Z)return;
   var G=g(),pts=G.decorPts(),st=Z.box.querySelector('.dsg-stat');
-  var sh=t('fu.stat',{a:G.seatCount(),b:G.seatMax(),p:pts,pr:Math.round((D.decorPrice(pts)-1)*100),fl:Math.round(D.decorFlow(pts)*100)});
+  var sh=Z.zone==='store'?t('fu.statStore',{a:G.furnOwn('schest'),b:D.CHEST_MAX,u:G.chestUsed(),c:G.chestCap(),r:D.fmt(G.storeCap())}):
+    t('fu.stat',{a:G.seatCount(),b:G.seatMax(),p:pts,pr:Math.round((D.decorPrice(pts)-1)*100),fl:Math.round(D.decorFlow(pts)*100)});
   if(st._h!==sh){st._h=sh;st.innerHTML=sh;}
   var box=Z.box.querySelector('.dsg-info'),h='';
   if(Z.sel==='counter'){
@@ -165,7 +176,7 @@ function renderInfo(){
       if(why)h+='<p class="dsg-why">'+t(WHY[why]||WHY.other)+'</p>';
       h+='</div>';
     }else if(Z.chk&&!Z.chk.ok)h='<div class="dsg-card bad"><p class="dsg-why">'+t(Z.chk.blocked?'fu.why.block':'fu.why.any')+'</p></div>';
-    else h='<div class="dsg-hint">'+t('fu.hint')+'</div>';
+    else h='<div class="dsg-hint">'+t(Z.zone==='store'?'fu.hintStore':'fu.hint')+'</div>';
   }
   if(box._h!==h){box._h=h;box.innerHTML=h;}
 }
@@ -196,8 +207,8 @@ function renderShop(force){
   var sh=Z.box.querySelector('.dsg-shop');sh.classList.toggle('hidden',!Z.shop);
   Z.box.classList.toggle('shop',Z.shop);
   if(!Z.shop)return;
-  var G=g(),stored=G.S.furn.filter(function(x){return x.st;});
-  var tabs=[['table','fu.tab.table'],['shelf','fu.tab.shelf'],['decor','fu.tab.decor']];if(stored.length||Z.tab==='store')tabs.push(['store','fu.tab.store']);
+  var G=g(),stored=G.S.furn.filter(function(x){return x.st&&(HL.zone(x)==='store')===(Z.zone==='store');});
+  var tabs=Z.zone==='store'?[['chest','fu.tab.chest']]:[['table','fu.tab.table'],['shelf','fu.tab.shelf'],['decor','fu.tab.decor']];if(stored.length||Z.tab==='store')tabs.push(['store','fu.tab.store']);
   var th='';tabs.forEach(function(k){th+='<button type="button" class="dsg-tb'+(Z.tab===k[0]?' sel':'')+'" data-act="tab" data-t="'+k[0]+'">'+t(k[1])+(k[0]==='store'?' ('+stored.length+')':'')+'</button>';});
   var tb=sh.querySelector('.dsg-tabs');if(tb._h!==th){tb._h=th;tb.innerHTML=th;}
   var ch='';
@@ -215,8 +226,8 @@ function renderShop(force){
       ch+='<div class="crf-c dsg-c'+(bl?' off':' can')+'"><button type="button" class="crf-main" data-act="buy" data-t="'+tp+'">'+
         '<span class="crf-ic dsg-ic"><img alt="" src="'+Tavern3D.thumb(tp,1)+'"></span><b class="crf-n">'+name(tp)+'</b>'+
         '<em class="crf-eff">'+bonusText(tp,1)+(d.layer==='floor'?' · '+t('fu.floor'):d.layer==='ceil'?' · '+t('fu.ceil'):'')+'</em>'+
-        (bl==='hall'?'<span class="crf-need">'+t('fu.bl.hallN',{n:need})+'</span>':bl==='seats'?'<span class="crf-need">'+t('fu.bl.seats')+'</span>':'<span class="crf-cost">'+costHtml(c)+'</span>')+
-        '<small class="dsg-own">'+t('fu.own',{n:G.furnOwn(tp)})+'</small></button></div>';
+        (bl==='hall'?'<span class="crf-need">'+t('fu.bl.hallN',{n:need})+'</span>':bl==='seats'?'<span class="crf-need">'+t('fu.bl.seats')+'</span>':tp==='schest'&&bl==='max'?'<span class="crf-need">'+t('fu.bl.chestMax',{n:D.CHEST_MAX})+'</span>':'<span class="crf-cost">'+costHtml(c)+'</span>')+
+        '<small class="dsg-own">'+t('fu.own',{n:G.furnOwn(tp)})+(tp==='schest'?' / '+D.CHEST_MAX:'')+'</small></button></div>';
     });
   }
   var cards=sh.querySelector('.dsg-cards');
@@ -224,5 +235,5 @@ function renderShop(force){
   if(cards._h!==ch){var sl=cards.scrollLeft;cards._h=ch;cards.innerHTML=ch;if(!force)cards.scrollLeft=sl;else cards.scrollLeft=0;}
 }
 
-window.Design={open:open,close:close,get isOpen(){return !!Z;}};
+window.Design={open:open,close:close,get isOpen(){return !!Z;},get zone(){return Z?Z.zone:null;}};
 })();

@@ -229,7 +229,7 @@ function layout(S){
   room(G,-6,8,-5,5,'plaster',{
     N:{skip:true},
     S:{win:[-5,-3,3,5,7],door:[1]},
-    W:{win:[-2,2]},
+    W:{win:[4]},   // v27: к западной стене пристроена кладовая
     E:{skip:true}
   });
   /* стены к кухне и пивоварне низкие (как перегородка у мага), чтобы сверху было видно, кто там работает */
@@ -325,16 +325,16 @@ function layout(S){
     if(hall>=5){prop(G,'Lantern_Wall',2.3,9.1,0,2.2);prop(G,'Lantern_Wall',8.1,9.1,0,2.2);}
   }
   if(hall>=5){prop(G,'Banner_2',1,5.12,0,2.2);var fl=natObj('Flower_3_Group',-0.6,5.8,0.6,0,'#7aa834');if(fl)G.add(fl);var fl2=natObj('Flower_4_Group',2.6,5.8,0.55,1,'#86b03e');if(fl2)G.add(fl2);}
-  /* склад под навесом слева: по стопке на уровень склада */
-  var stacks=['Wood_Log_Stack','Stone_Chunks_Large','Iron_Bars_Stack_Small','Textiles_Stack_Small','Wood_Planks_Stack_Medium','Silver_Bars_Stack_Small','Gold_Bars_Stack_Small'];
-  var sx=-8.6;
-  var sroof=box(3.4,0.12,6.4,mat('thatch'),1.4);place(sroof,sx,-0.6,0,2.6);sroof.rotation.z=0.16;G.add(sroof);
-  prop(G,'Prop_Support',sx+1.5,-3.6,-Math.PI/2);prop(G,'Prop_Support',sx+1.5,2.4,-Math.PI/2);
-  for(var i=0;i<Math.min(stacks.length,S.storeLvl+1);i++){
-    var px=sx+(i%2)*1.3-0.6,pz=-3+Math.floor(i/2)*1.5;
-    prop(G,'Pallet_Wood',px,pz,0);prop(G,stacks[i],px,pz,0.2,0.14);
-  }
-  st.store={x:sx,z:-0.6};
+  /* v27: кладовая - каменная пристройка к комнате мага (внутри её не видно: крыша всегда на месте, стены не опускаются).
+     Сам склад со стеллажами и сундуками - отдельная сцена (экран СКЛАД), см. buildStore */
+  var nw=V.walls.length;
+  room(G,-12,-6,-4,2,'brick',{E:{skip:true},S:{door:[-9]},W:{win:[-1]},N:{},floor:false});
+  V.walls.length=nw;
+  var pr=new T.Group();pr.position.set(-9,0,-1);G.add(pr);roof(pr,6,6,-1,false);
+  G.add(place(model('Door_1_Flat'),-9.5,2,0));
+  prop(G,'Barrel',-11.4,2.7,0.4);prop(G,'Crate_Wooden',-10.6,2.8,0.2);prop(G,'Bag',-7.5,2.6,0.8);
+  st.store={x:-9,z:2.7};
+  yard(G);
   /* забор вдоль дороги, проход к двери */
   for(var fx=-9;fx<=9;fx+=2)if(Math.abs(fx-1)>1)prop(G,'Prop_WoodenFence_Single',fx,12.4,0);
   prop(G,'Barrel_Apples',-1.2,5.7,0);prop(G,'Crate_Wooden',-2.2,5.7,0.3);
@@ -349,8 +349,73 @@ function layout(S){
   if(brew)roofAt(10,-1,4,6,0);
   RG.traverse(function(o){if(o.isMesh){o.castShadow=true;}});
   RG.visible=V.mode==='city';
+  buildStore(G,S,keep);
   mergeStatic(G,null,keep);
   var n=!!V.night;V.night=null;setNight(n);
+}
+/* v27: склад - отдельная сцена в стороне от посёлка (экран СКЛАД). Каменная комната со стеллажами,
+   с уровня D.STORE_CELLAR открывается подвал. Стеллажи ставит бригада (уровень склада), сундуки - игрок в режиме дизайна */
+var RACK_RES=[['Wood_Planks_Stack_Medium','Wood_Log_Stack'],['Iron_Bars_Stack_Small','Iron_Nuggets'],['Textiles_Stack_Small','Stone_Chunks_Small'],
+  ['Silver_Bars_Stack_Small','Copper_Nuggets'],['Gold_Bars_Stack_Small','Textiles_Stack_Large_Colored'],['Stone_Chunks_Large','Iron_Bars_Stack_Small'],['Silver_Bars_Stack_Small','Gold_Bars_Stack_Small']];
+function rack(G,x,z,i,keep){
+  var R=new T.Group();R.position.set(x+1,0,z+0.42);G.add(R);
+  [[-0.92,-0.27],[0.92,-0.27],[-0.92,0.27],[0.92,0.27]].forEach(function(c){var po=box(0.08,2.3,0.08,mat('dwood'),1);place(po,c[0],c[1],0,1.15);R.add(po);});
+  [0.45,1.15,1.85].forEach(function(y){var sh=box(1.92,0.05,0.62,mat('fwood'),1);place(sh,0,0,0,y);R.add(sh);});
+  var rs=RACK_RES[i%RACK_RES.length];
+  [0.47,1.17,1.87].forEach(function(y,k){[-0.48,0.48].forEach(function(dx,j){var o=place(model(rs[(k+j)%2]),dx,0,(k+j)*0.7,y);o.scale.setScalar(0.32);R.add(o);});});
+}
+function buildStore(G,S,keep){
+  var O=HL().STO,ox=O.x,oz=O.z,lvl=S.storeLvl||1,open=lvl>=D().STORE_CELLAR;
+  V.storeLights=[];
+  room(G,ox,ox+8,oz,oz+6,'brick',{E:{gap:[oz+3]},S:{door:[ox+3]},floor:'stone'});
+  if(open){
+    room(G,ox+9,ox+17,oz,oz+6,'brick',{W:{gap:[oz+3]},floor:'cobble'});
+    var cor=plane(1,2,mat('stone'),0.5,1);place(cor,ox+8.5,oz+3,0,0.01);G.add(cor);
+    [oz+1.95,oz+4.05].forEach(function(z){var w=box(1,2.6,0.2,mat('stone'),1);place(w,ox+8.5,z,0,1.3);G.add(w);});
+    var lc=new T.PointLight(0xffa860,4,18,1.3);lc.position.set(ox+13,2.4,oz+3);G.add(lc);V.storeLights.push(lc);
+    [[ox+12,oz+0.12,0],[ox+15,oz+5.88,Math.PI]].forEach(function(tq){prop(G,'Torch_Metal',tq[0],tq[1],tq[2],1.8);fireSprite(G,tq[0],1.95,tq[1]+(tq[2]?-0.3:0.3),0.5);});
+  }else{
+    /* проход в подвал заколочен */
+    [2.4,3.0,3.6].forEach(function(z,i){var b=box(0.08,0.2,0.9,mat('fwood'),1);b.rotation.x=(i-1)*0.25;place(b,ox+8.15,oz+z,0,0.7+i*0.55);G.add(b);});
+    var dk=box(0.1,2.6,2,new T.MeshBasicMaterial({color:0x050302}));place(dk,ox+8.3,oz+3,0,1.3);G.add(dk);
+  }
+  var lr=new T.PointLight(0xffb070,4,18,1.3);lr.position.set(ox+4,2.5,oz+3);G.add(lr);V.storeLights.push(lr);
+  [[ox+0.12,oz+3,Math.PI/2],[ox+7.88,oz+1,-Math.PI/2]].forEach(function(tq){prop(G,'Torch_Metal',tq[0],tq[1],tq[2],1.8);fireSprite(G,tq[0]+(tq[2]>0?0.3:-0.3),1.95,tq[1],0.5);});
+  for(var i=0;i<Math.min(lvl,HL().RACKS.length);i++){var rc=HL().RACKS[i];rack(G,ox+rc[0],oz+rc[1],i,keep);}
+  /* мелочь у двери (на клетках прохода) */
+  prop(G,'Bag',ox+2.3,oz+5.5,0.4);prop(G,'Bucket_Wooden_1',ox+3.7,oz+5.6,0);
+  (V.storeLights||[]).forEach(function(l){l.visible=V.mode==='store';});
+}
+/* v27: двор вокруг таверны. Одинаковый на экранах ТАВЕРНА и ГОРОД, чтобы вещи не появлялись и не пропадали */
+function yard(G){
+  /* колодец: каменное кольцо, столбы, навес, ворот, ведро */
+  var wx=-5,wz=8.6;
+  var ring=new T.Mesh(new T.CylinderGeometry(0.75,0.82,0.8,14,1,true),mat('stone'));ring.position.set(wx,0.4,wz);ring.castShadow=ring.receiveShadow=true;G.add(ring);
+  var cap=new T.Mesh(new T.TorusGeometry(0.78,0.09,6,16),mat('stone'));cap.rotation.x=Math.PI/2;cap.position.set(wx,0.8,wz);G.add(cap);
+  var wat=new T.Mesh(new T.CircleGeometry(0.7,14),new T.MeshStandardMaterial({color:0x1d3a4a,roughness:0.2}));wat.rotation.x=-Math.PI/2;wat.position.set(wx,0.35,wz);G.add(wat);
+  [-0.85,0.85].forEach(function(dx){var po=box(0.12,1.9,0.12,mat('dwood'),1);place(po,wx+dx,wz,0,0.95);G.add(po);});
+  var axl=box(1.8,0.08,0.08,mat('dwood'),1);place(axl,wx,wz,0,1.55);G.add(axl);
+  [-1,1].forEach(function(sd){var rf=box(2.1,0.06,0.8,mat('fwood'),1);rf.position.set(wx,2.0,wz+sd*0.3);rf.rotation.x=sd*0.55;G.add(rf);});
+  prop(G,'Bucket_Wooden_1',wx+0.95,wz+0.5,0.3);
+  /* поленница и колода для колки у кладовой */
+  prop(G,'Wood_Log_Stack',-13.2,-2.5,Math.PI/2);prop(G,'Wood_Log_Stack',-13.2,-0.6,Math.PI/2);
+  prop(G,'Wood_Log_A',-12.6,4.4,0.6);prop(G,'Axe_Bronze',-12.6,4.4,1.2,0.42);
+  /* грядки травницы за кладовой */
+  for(var b=0;b<3;b++){var bed=box(3.2,0.22,0.9,soilMat());place(bed,-9,-6.4-b*1.3,0,0.11);G.add(bed);
+    for(var k=0;k<4;k++){var pl=natObj(k%2?'Fern_1':'Plant_1_Big',-10.2+k*0.8,-6.4-b*1.3,0.3,k*1.3,'#6aa83a');if(pl){pl.position.y=0.2;G.add(pl);}}}
+  prop(G,'Bucket_Metal',-6.9,-6.2,0);
+  /* телега и сено у пивоварни, бочки у кухни */
+  prop(G,'Prop_Wagon',14.2,-5.2,Math.PI/2+0.25,0,0.85);
+  var hay=box(1.4,0.7,1.0,mat('thatch'),1);place(hay,13.6,-1.6,0.3,0.35);G.add(hay);
+  var hay2=box(1.0,0.55,0.9,mat('thatch'),1);place(hay2,14.4,-0.6,-0.2,0.28);G.add(hay2);
+  prop(G,'Barrel',-2.6,-9.7,0);prop(G,'Barrel',-1.8,-9.9,1);prop(G,'Crate_Wooden',4.8,-9.6,0.3);
+  /* верёвка с бельём */
+  var lx0=10.4,lx1=14.2,lz=5.2;
+  [lx0,lx1].forEach(function(x){var po=box(0.1,2.0,0.1,mat('dwood'),1);place(po,x,lz,0,1.0);G.add(po);});
+  var rope=box(lx1-lx0,0.025,0.025,new T.MeshStandardMaterial({color:0xd8c8a0,roughness:1}));rope.castShadow=false;place(rope,(lx0+lx1)/2,lz,0,1.9);G.add(rope);
+  ['#e8e0d0','#6a8ab0','#c86a5a','#e8e0d0'].forEach(function(cl,i){var c=new T.Mesh(new T.PlaneGeometry(0.55,0.7),new T.MeshStandardMaterial({color:cl,roughness:1,side:T.DoubleSide}));c.position.set(lx0+0.6+i*0.85,1.52,lz);c.castShadow=true;G.add(c);});
+  /* лавка у входа */
+  prop(G,'Bench',-3.8,7.2,0,0,0.8);
 }
 /* огонь без своего света: светящееся пятно (лишние точечные лампы дорого стоят на телефонах) */
 function fireSprite(G,x,y,z,size){
@@ -415,6 +480,12 @@ function fire(G,x,y,z,size){
 function setNight(on){
   if(!V||V.night===on)return;
   V.night=on;
+  var sto=V.mode==='store';
+  (V.storeLights||[]).forEach(function(l){l.visible=sto;});
+  if(sto){   /* склад: тёмный погреб, свет только от факелов */
+    V.hemi.intensity=0.95;V.hemi.color.set(0xc8b8a0);V.sun.intensity=0.25;V.inner.intensity=0;
+    V.scene.background.set(0x0c0806);V.scene.fog.color.set(0x0c0806);return;
+  }
   V.hemi.intensity=on?0.6:1.4;V.hemi.color.set(on?0x7088c0:0xe0ecff);
   V.sun.intensity=on?0.45:1.8;V.sun.color.set(on?0x9ab0e8:0xfff0d8);
   V.scene.background.set(on?0x0b1426:0x8fb4cc);V.scene.fog.color.set(on?0x0b1426:0x8fb4cc);
@@ -446,6 +517,12 @@ function furnModel(it,G,marks){
       p('Mug',-0.6*sx,0.05,0,0.82);p('Table_Plate',0.5*sx,0.1,0,0.82);p('CandleStick_Triple',0,-0.1,0,0.82);
       if(lv===3){p('Mug',1.5,-0.1,1,0.82);p('Table_Plate',-1.4,0.1,0,0.82);p('Bottle_1',0.6,-0.2,0,0.82);}
     }
+    return;
+  }
+  if(t==='schest'){
+    var ch=p('Chest_Wood',0,-0.2,0);ch.scale.setScalar(lv>=3?1.45:lv===2?1.32:1.2);
+    if(lv>=2){[-0.55,0.55].forEach(function(dx){var band=box(0.08,0.62,1.02,mat('MI_Trim_Metal'),1);place(band,dx,-0.05,0,0.31);G.add(band);});}
+    if(lv>=3){p('Coin_Pile',0.2,0.0,0,0.68,0.8);p('Chalice',-0.4,0.05,0,0.68);}
     return;
   }
   if(t==='rug'){var rg0=rugMesh(lv,2.9,1.9);rg0.position.y=0.015+(it.id%5)*0.002;G.add(rg0);return;}
@@ -533,8 +610,8 @@ function furnSync(items){
       if(rec)V.furnG.remove(rec.g);
       var g=new T.Group(),mks=[];furnModel(it,g,mks);g.userData.fid=it.id;V.furnG.add(g);rec=V.furn[it.id]={g:g,sig:sg,pos:'',marks:mks,t:it.t,lv:it.lv};changed=true;V.shelfSig='';
     }
-    var c=HL().center(it),ps=c.x+','+c.z+','+c.rot;
-    if(rec.pos!==ps){rec.pos=ps;rec.base=c.z>5?0.04:0;rec.g.position.set(c.x,rec.base,c.z);rec.g.rotation.y=c.rot;changed=true;}   /* на веранде настил выше пола */
+    var c=HL().center(it),O=HL().zone(it)==='store'?HL().STO:{x:0,z:0},ps=c.x+','+c.z+','+c.rot;
+    if(rec.pos!==ps){rec.pos=ps;rec.base=O.x===0&&c.z>5?0.04:0;rec.g.position.set(c.x+O.x,rec.base,c.z+O.z);rec.g.rotation.y=c.rot;changed=true;}   /* на веранде настил выше пола */
   });
   for(var id in V.furn)if(!seen[id]){V.furnG.remove(V.furn[id].g);delete V.furn[id];changed=true;}
   if(changed&&V.renderer)V.renderer.shadowMap.needsUpdate=true;
@@ -567,12 +644,14 @@ function gridTex(){
   x.fillStyle='rgba(255,255,255,0.10)';x.fillRect(0,0,64,64);x.strokeStyle='rgba(255,255,255,0.75)';x.lineWidth=3;x.strokeRect(1.5,1.5,61,61);
   gridTexC=new T.CanvasTexture(c);return gridTexC;
 }
-function buildGrid(){
+function buildGrid(zone){
   if(V.gridG){V.scene.remove(V.gridG);V.gridG.traverse(function(o){if(o.geometry)o.geometry.dispose();});}
   var G=new T.Group();V.gridG=G;V.scene.add(G);
   var hall=hallLvl(),cols={free:null,walk:0xffc040,junk:0xff4040};
-  var free=[],walk=[],junk=[];
-  for(var cz=-5;cz<=9;cz++)for(var cx=-2;cx<=7;cx++){var ty=HL().cell(cx,cz,hall);if(ty==='free')free.push([cx,cz]);else if(ty==='walk')walk.push([cx,cz]);else if(ty==='junk')junk.push([cx,cz]);}
+  var free=[],walk=[],junk=[],sl=(V.S&&V.S.storeLvl)||1;
+  function put(ty,cx,cz){if(ty==='free')free.push([cx,cz]);else if(ty==='walk')walk.push([cx,cz]);else if(ty==='junk')junk.push([cx,cz]);}
+  if(zone==='store'){var O=HL().STO;G.position.set(O.x,0,O.z);for(var sz=0;sz<=5;sz++)for(var sx=0;sx<=16;sx++)put(HL().scell(sx,sz,sl),sx,sz);}
+  else for(var cz=-5;cz<=9;cz++)for(var cx=-2;cx<=7;cx++)put(HL().cell(cx,cz,hall),cx,cz);
   function quads(list,m,y){
     if(!list.length)return;
     var g=new T.PlaneGeometry(0.96,0.96);g.rotateX(-Math.PI/2);
@@ -583,7 +662,7 @@ function buildGrid(){
   quads(free,new T.MeshBasicMaterial({map:gridTex(),transparent:true,depthWrite:false,opacity:0.8}),0.065);
   quads(walk,new T.MeshBasicMaterial({color:cols.walk,transparent:true,opacity:0.3,depthWrite:false}),0.065);
   quads(junk,new T.MeshBasicMaterial({color:cols.junk,transparent:true,opacity:0.42,depthWrite:false}),0.065);
-  V.selG=new T.Group();G.add(V.selG);
+  V.selG=new T.Group();V.scene.add(V.selG);V.selG.userData.grid=true;
 }
 /* подсветка клеток выбранного предмета: зелёная, если можно, красная, если нельзя */
 var selMat=null;
@@ -594,20 +673,22 @@ function designMark(it,ok){
   for(var id in V.furn){var r=V.furn[id];r.g.position.y=(r.base||0)+((it&&+id===it.id&&HL().layer(it)!=='floor')?0.12:0);}
   if(!it)return;
   selMat=selMat||{ok:new T.MeshBasicMaterial({color:0x40ff70,transparent:true,opacity:0.45,depthWrite:false}),no:new T.MeshBasicMaterial({color:0xff3030,transparent:true,opacity:0.5,depthWrite:false})};
-  HL().cells(it).forEach(function(c){var g=new T.PlaneGeometry(0.98,0.98);g.rotateX(-Math.PI/2);var m=new T.Mesh(g,ok?selMat.ok:selMat.no);m.position.set(c[0]+0.5,0.075,c[1]+0.5);m.renderOrder=3;V.selG.add(m);});
+  var O=HL().zone(it)==='store'?HL().STO:{x:0,z:0};
+  HL().cells(it).forEach(function(c){var g=new T.PlaneGeometry(0.98,0.98);g.rotateX(-Math.PI/2);var m=new T.Mesh(g,ok?selMat.ok:selMat.no);m.position.set(c[0]+0.5+O.x,0.075,c[1]+0.5+O.z);m.renderOrder=3;V.selG.add(m);});
 }
 var designCb=null;
-function setDesign(on,cb){
+function setDesign(on,cb,zone){
   if(!V)return;
   V.design=!!on;designCb=on?cb:null;
   if(on){
     V.preDesign={az:V.goal.az,pol:V.goal.pol,dist:V.goal.dist,t:V.goal.target.clone()};
     var hall=hallLvl(),wide=V.camera.aspect<0.9;
-    V.goal.az=0;V.goal.pol=0.36;V.goal.dist=wide?(hall>=2?36:28):(hall>=2?23:16.5);V.goal.target.set(hall?2.9:3.9,0,hall>=2?2.8:0);
-    buildGrid();
+    if(zone==='store'){var O=HL().STO,op=V.S&&V.S.storeLvl>=D().STORE_CELLAR;V.goal.az=0;V.goal.pol=0.36;V.goal.dist=wide?(op?40:24):(op?22:15);V.goal.target.set(O.x+(op?8.5:4),0,O.z+3);}
+    else{V.goal.az=0;V.goal.pol=0.36;V.goal.dist=wide?(hall>=2?36:28):(hall>=2?23:16.5);V.goal.target.set(hall?2.9:3.9,0,hall>=2?2.8:0);}
+    buildGrid(zone);
     if(labelHost)labelHost.style.display='none';
   }else{
-    if(V.gridG){V.scene.remove(V.gridG);V.gridG=null;V.selG=null;}
+    if(V.gridG){V.scene.remove(V.gridG);V.gridG=null;}if(V.selG){V.scene.remove(V.selG);V.selG=null;}
     if(V.preDesign){V.goal.az=V.preDesign.az;V.goal.pol=V.preDesign.pol;V.goal.dist=V.preDesign.dist;V.goal.target.copy(V.preDesign.t);}
     if(labelHost&&V.active)labelHost.style.display='';
     furnSync(liveFurn());for(var id in V.furn)V.furn[id].g.position.y=V.furn[id].base||0;
@@ -1061,7 +1142,7 @@ function placeMasters(S,moved){
   /* v26: грузчик у склада, носит ящики на витрины */
   var LD=S.loader;
   if(LD&&LD.hired&&q!=='low'&&st.store){
-    var lk='w:loader',lp={x:st.store.x+1.3,z:st.store.z+0.6,rot:Math.PI/2};want[lk]=1;
+    var lk='w:loader',lp={x:st.store.x+1.2,z:st.store.z+0.4,rot:0};want[lk]=1;
     var LN=V.npcs[lk]||spawnNpc(lk,fullLook({gender:'m',skin:2,hair:'buzzed',hairColor:3,beard:'beard',body:'peasant',arms:'peasant',legs:'ranger',feet:'peasant',colors:{peasant:1,ranger:1}}),lp.x,lp.z,lp.rot);
     if(moved){LN.x=lp.x;LN.z=lp.z;LN.rot=lp.rot;LN.path=[];LN.waitT=0;if(LN.carry){V.scene.remove(LN.carry);LN.carry=null;}}
     setAnim(LN,ACT.rest);
@@ -1101,9 +1182,9 @@ function deliver(N,w,pos){
 function loaderRun(N,home){
   var F=liveFurn().filter(function(it){return !it.st&&D().FURN[it.t].shelf;});if(!F.length)return;
   var it=F[Math.floor(Math.random()*F.length)],a=HL().near(liveFurn(),hallLvl(),it);if(!a)return;
-  var out=[[home.x,home.z+2],[home.x+1,6.5],[1,6.4],[IN_PT.x,IN_PT.z]],inn=hallPath(IN_PT,a);
+  var out=[[home.x,home.z+1.6],[-4.5,6.6],[1,6.4],[IN_PT.x,IN_PT.z]],inn=hallPath(IN_PT,a);
   N.carry=carryObj('Crate_Wooden',0.45);N.carryY=0.95;
-  N.path=pathTo(out.concat(inn),{w:1.5,drop:true}).concat(pathTo(hallPath(a,IN_PT).concat([[1,6.4],[home.x+1,6.5],[home.x,home.z+2],[home.x,home.z]])));
+  N.path=pathTo(out.concat(inn),{w:1.5,drop:true}).concat(pathTo(hallPath(a,IN_PT).concat([[1,6.4],[-4.5,6.6],[home.x,home.z+1.6],[home.x,home.z]])));
   N.endRot=home.rot;N.speed=2.0;
 }
 var WORK_LOOK={saw:[0,'m',2,'buzzed'],mine:[1,'m',4,'none'],hunt:[2,'m',1,'parted'],farm:[3,'f',3,'buns'],ghost:[4,'f',0,'long'],stable:[1,'m',3,'parted']};
@@ -1158,8 +1239,16 @@ function syncCustomers(S){
     /* уходящие тоже считаются: на слабой графике не больше lim+1 путников на экране */
     if(!N&&live>=lim+1){delete seen[c.id];return;}
     if(!N){live++;
-      var side=rnd(c.id*3.1)<0.5?-1:1;N=spawnNpc(key,travelerLook(c),side*ROAD_END,ROAD_Z+(rnd(c.id)-0.5)*1.4,side>0?-Math.PI/2:Math.PI/2);
-      goTo(N,PATH_IN.concat([[IN_PT.x,IN_PT.z]]).concat(hallPath(IN_PT,{x:slot[0],z:slot[1]})));N.slot=i;N.cust=true;N.speed=2.6;N.side=side;
+      var side=rnd(c.id*3.1)<0.5?-1:1;
+      if((c.walk||0)<=0.5){N=spawnNpc(key,travelerLook(c),slot[0],slot[1],Math.PI);N.slot=i;N.cust=true;N.speed=2.6;N.side=side;}
+      else{
+        /* v27: идёт ровно столько, сколько игра считает дорогу до стойки (продажа только у стойки) */
+        var sx0=side*ROAD_END,sz0=ROAD_Z+(rnd(c.id)-0.5)*1.4;
+        N=spawnNpc(key,travelerLook(c),sx0,sz0,side>0?-Math.PI/2:Math.PI/2);
+        var pts=PATH_IN.concat([[IN_PT.x,IN_PT.z]]).concat(hallPath(IN_PT,{x:slot[0],z:slot[1]})),len=0,px=sx0,pz=sz0;
+        pts.forEach(function(q){len+=Math.hypot(q[0]-px,q[1]-pz);px=q[0];pz=q[1];});
+        goTo(N,pts);N.slot=i;N.cust=true;N.side=side;N.speed=Math.max(1.6,Math.min(5,len/Math.max(2,c.walk-0.6)));
+      }
     }else if(N.slot!==i&&!N.leaving){N.slot=i;
       /* ещё идёт к очереди: путь до нового места пересчитывать не нужно, хватит последней точки */
       if(N.path.length>1)N.path[N.path.length-1]={x:slot[0],z:slot[1]};else goTo(N,[slot]);}
@@ -1215,19 +1304,41 @@ var NAT_DENS={low:{tree:0.4,bush:0.5,rock:1,small:0.5,grass:0},medium:{tree:0.65
 var LEAF_PAL=['#6a9a2a','#7aa834','#5c8c26','#86b03e'];
 /* занятые места: дом со складом, двор с забором, дорожка, дорога (деревья и кусты туда не ставим) */
 function natFree(x,z,kind){
-  if(x>-12&&x<14&&z>-11&&z<14)return false;
+  if(x>-16&&x<17&&z>-13.5&&z<14)return false;   // v27: двор с изгородью
   for(var id in SITES){var st=SITES[id],r=st.r+(kind==='grass'?-1.5:kind==='tree'?2.5:0.5);if(Math.hypot(x-st.x,z-st.z)<r)return false;}
   for(var hid in HOUSES){var hs=HOUSES[hid],hr=hs.r+(kind==='grass'?-1.5:kind==='tree'?2.5:0.5);if(Math.hypot(x-hs.x,z-hs.z)<hr)return false;}
   if(kind!=='grass'&&z>13.6&&z<19.4)return false;
   if(kind==='grass'&&z>14.3&&z<18.7)return false;
   return true;
 }
+function NATURE_PUT(G,ps,pos,kind){
+  if(!pos.length)return;
+  var m4=new T.Matrix4(),tr=new T.Matrix4(),qt=new T.Quaternion(),e=new T.Euler(),v=new T.Vector3(),sc=new T.Vector3(),col=new T.Color();
+  var pal=LEAF_PAL.map(function(h){return new T.Color(h);});
+  ps.forEach(function(p){
+    var im=new T.InstancedMesh(p.geo,p.mat,pos.length);
+    pos.forEach(function(o,i){
+      tr.compose(v.set(o.x,0,o.z),qt.setFromEuler(e.set(0,o.ry,0)),sc.set(o.s,o.s,o.s));
+      m4.multiplyMatrices(tr,p.m);im.setMatrixAt(i,m4);
+      if(p.leaf)col.copy(pal[o.pi%pal.length]).multiplyScalar(o.v);else col.setRGB(o.v,o.v,o.v);
+      im.setColorAt(i,col);
+    });
+    im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
+    im.castShadow=kind==='tree'||kind==='bush'||kind==='rock';im.receiveShadow=false;
+    G.add(im);
+  });
+}
 function buildNature(){
   if(!V||V.nature||!window.Adventure||!Adventure.ready||!Adventure.parts)return;
   var q=(window.Scene3D&&Scene3D.quality)||'medium',dens=NAT_DENS[q]||NAT_DENS.medium;
   var G=new T.Group();V.nature=G;V.scene.add(G);
-  var m4=new T.Matrix4(),tr=new T.Matrix4(),qt=new T.Quaternion(),e=new T.Euler(),v=new T.Vector3(),sc=new T.Vector3(),col=new T.Color();
-  var pal=LEAF_PAL.map(function(h){return new T.Color(h);});
+  /* v27: живая изгородь вокруг двора с проходами к посёлку (на западе, востоке и севере) */
+  var hedge=[],hs=777;
+  for(var hz=-11.6;hz<=11.5;hz+=1.05){if(Math.abs(hz-0.5)>1.6)hedge.push([-14.6,hz]);if(Math.abs(hz-3)>1.6)hedge.push([16.2,hz]);}
+  for(var hx=-13.6;hx<=15.4;hx+=1.05)if(hx<-2.6||hx>5.6)hedge.push([hx,-11.6]);
+  var hp={Bush_Common:[],Bush_Common_Flowers:[]};
+  hedge.forEach(function(p,i){hp[rnd(hs+i)<0.25?'Bush_Common_Flowers':'Bush_Common'].push({x:p[0]+(rnd(hs+i*3)-0.5)*0.3,z:p[1]+(rnd(hs+i*5)-0.5)*0.3,s:1.05+rnd(hs+i*7)*0.35,ry:rnd(hs+i*11)*6.28,v:0.85+rnd(hs+i*13)*0.2,pi:i%4});});
+  for(var hn in hp){var hps=Adventure.parts(hn);if(hps)NATURE_PUT(G,hps,hp[hn],'bush');}
   NATURE.forEach(function(d,ki){
     var ps=Adventure.parts(d[0]);if(!ps)return;
     var n=Math.round(d[1]*dens[d[4]]);if(!n)return;
@@ -1238,18 +1349,7 @@ function buildNature(){
       if(!natFree(x,z,d[4]))continue;
       pos.push({x:x,z:z,s:d[3][0]+rnd(seed++)*(d[3][1]-d[3][0]),ry:rnd(seed++)*6.283,v:0.85+rnd(seed++)*0.25,pi:Math.floor(rnd(seed++)*8)});
     }
-    ps.forEach(function(p){
-      var im=new T.InstancedMesh(p.geo,p.mat,pos.length);
-      pos.forEach(function(o,i){
-        tr.compose(v.set(o.x,0,o.z),qt.setFromEuler(e.set(0,o.ry,0)),sc.set(o.s,o.s,o.s));
-        m4.multiplyMatrices(tr,p.m);im.setMatrixAt(i,m4);
-        if(p.leaf)col.copy(pal[o.pi%pal.length]).multiplyScalar(o.v);else col.setRGB(o.v,o.v,o.v);
-        im.setColorAt(i,col);
-      });
-      im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
-      im.castShadow=d[4]==='tree'||d[4]==='bush'||d[4]==='rock';im.receiveShadow=false;
-      G.add(im);
-    });
+    NATURE_PUT(G,ps,pos,d[4]);
   });
   if(V.renderer)V.renderer.shadowMap.needsUpdate=true;
 }
@@ -1320,7 +1420,7 @@ function bindInput(el){
     if(V.design){if(p.cap){var gp2=groundAt(e.clientX,e.clientY);if(gp2&&designCb)designCb.move(gp2);}else pan(dx,dy);return;}
     if(p.b===2||e.shiftKey){pan(dx,dy);return;}
     var k=p.touch?0.008:0.006;
-    V.goal.az-=dx*k;V.goal.pol=clamp(V.goal.pol-dy*k*0.7,0.42,1.3);
+    V.goal.az-=dx*k;V.goal.pol=clamp(V.goal.pol-dy*k*0.7,0.42,lim().pol);
   });
   function up(e,cancel){
     if(!ptr[e.pointerId])return;
@@ -1338,13 +1438,17 @@ function bindInput(el){
 }
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 /* v22: два экрана одной сцены. ТАВЕРНА: камера в зале, жители зала. ГОРОД: посёлок, дом под крышей, внутри никого. */
-var LIM={tavern:{d:[7,26],x:[-7,12],z:[-9,10]},city:{d:[14,62],x:[-28,28],z:[-20,34]}};
-var VIEW0={tavern:{az:0.5,pol:0.82,dist:19,t:[2.2,0,0]},city:{az:0.5,pol:0.9,dist:46,t:[1,0,6]}};
-function lim(){return LIM[V&&V.mode==='city'?'city':'tavern'];}
+/* v27: таверна - наклон не больше 1.05 и ближе, чтобы за изгородь не заглянуть; склад - своя сцена в стороне */
+var LIM={tavern:{d:[7,22],x:[-8,12],z:[-8,9],pol:1.05},city:{d:[14,62],x:[-28,28],z:[-20,34],pol:1.3},
+  store:{d:[7,38],x:[-302,-282],z:[-2,8],pol:1.1}};
+var VIEW0={tavern:{az:0.5,pol:0.82,dist:19,t:[2.2,0,0]},city:{az:0.5,pol:0.9,dist:46,t:[1,0,6]},store:{az:0.35,pol:0.78,dist:16,t:[-295.5,0,3]}};
+function lim(){return LIM[V&&LIM[V.mode]?V.mode:'tavern'];}
 function setMode(m){
-  if(!V)return;m=m==='city'?'city':'tavern';
+  if(!V)return;m=m==='city'||m==='store'?m:'tavern';
   if(V.mode===m)return;
   V.mode=m;var v0=VIEW0[m];
+  if(m==='store'){var op=V.S&&V.S.storeLvl>=D().STORE_CELLAR,port=V.camera.aspect<0.9;v0={az:v0.az,pol:v0.pol,dist:port?(op?34:24):(op?19:15),t:[HL().STO.x+(op?8.5:4.2),0,HL().STO.z+3]};}
+  var nn=!!V.night;V.night=null;setNight(nn);
   V.goal.az=v0.az;V.goal.pol=v0.pol;V.goal.dist=v0.dist;V.goal.target.set(v0.t[0],v0.t[1],v0.t[2]);
   V.az=v0.az;V.pol=v0.pol;V.dist=v0.dist;V.target.copy(V.goal.target);
   if(V.roofG)V.roofG.visible=m==='city';
@@ -1353,7 +1457,7 @@ function setMode(m){
   if(labelHost)for(var k in labelEls){labelEls[k].remove();delete labelEls[k];}
 }
 /* кто на каком экране: зал (хозяйка, путники, гости, повар, пивовар, помощники) или город (мастера, работники промыслов) */
-function onScreen(key){var inside=key==='hostess'||/^[cwh]:/.test(key);return V.mode==='city'?!inside:inside;}
+function onScreen(key){if(V.mode==='store')return false;var inside=key==='hostess'||/^[cwh]:/.test(key);return V.mode==='city'?!inside:inside;}
 function pan(dx,dy){
   var k=V.dist*0.0018,ca=Math.cos(V.az),sa=Math.sin(V.az);
   var L=lim();
@@ -1367,7 +1471,10 @@ function updateCamera(dt){
   c.position.set(V.target.x+V.dist*sp*Math.sin(V.az),V.dist*Math.cos(V.pol)+0.5,V.target.z+V.dist*sp*Math.cos(V.az));
   c.lookAt(V.target.x,0.8,V.target.z);
   /* туман отодвигается вместе с камерой: на виде всего посёлка дома не тонут в дымке */
-  V.scene.fog.near=V.dist+18;V.scene.fog.far=V.dist+100;
+  /* v27: в таверне туман ближе, двор и изгородь видны, дальше дымка; на складе вокруг темнота */
+  if(V.mode==='store'){V.scene.fog.near=V.dist+4;V.scene.fog.far=V.dist+16;}
+  else if(V.mode==='tavern'){V.scene.fog.near=V.dist+6;V.scene.fog.far=V.dist+34;}
+  else{V.scene.fog.near=V.dist+18;V.scene.fog.far=V.dist+100;}
 }
 /* стены со стороны камеры опускаются до низкого бортика, как в The Sims */
 var _d=null;
@@ -1393,6 +1500,10 @@ function screenOf(x,y,z){
 }
 function anchors(){
   var out=[],st=V.st||{};
+  if(V.mode==='store'){
+    var O=HL().STO;out.push({kind:'rack',id:'rack',x:O.x+3,y:2.7,z:O.z+0.6,pick:3});
+    return out;
+  }
   if(V.mode==='city'){
     out.push({kind:'tavern',id:'tavern',x:1,y:6.6,z:0,pick:5});
     for(var pid in SITES){var si=SITES[pid];out.push({kind:'prod',id:pid,x:si.x,y:si.ly||6.3,z:si.z,pick:si.r*0.6});}
@@ -1473,9 +1584,10 @@ function update(dt){
   if(V.prodFx)V.prodFx.forEach(function(f,i){f.s.position.y=f.y+Math.sin(V.t*1.6+i*2.1)*0.35;f.s.material.opacity=0.55+Math.sin(V.t*2.3+i)*0.25;});
   var city=V.mode==='city';
   if(V.penPets)V.penPets.forEach(function(pp){pp.root.visible=city;if(city)pp.mixer.update(dt);});
-  if(V.pet){V.pet.root.visible=!city;if(!city){V.pet.mixer.update(dt);if(V.pet.fly)V.pet.root.position.y=V.pet.fly+Math.sin(V.t*2)*0.06;}}
-  if(mageRef)mageRef.root.visible=!city;
-  if(mageRef&&!city){mageRef.update(dt,'npc');
+  if(V.pet){V.pet.root.visible=tav;if(tav){V.pet.mixer.update(dt);if(V.pet.fly)V.pet.root.position.y=V.pet.fly+Math.sin(V.t*2)*0.06;}}
+  var tav=V.mode==='tavern';
+  if(mageRef)mageRef.root.visible=tav;
+  if(mageRef&&tav){mageRef.update(dt,'npc');
     /* v21: маг за столом иногда отпивает из кружки */
     if(mageMode==='sit'){mageCycT-=dt;if(mageCycT<=0){var dk=mageRef.curName!=='sitDrink'&&Math.random()<0.5;mageRef.play(dk?'sitDrink':'Sitting_Idle_Loop',0.35);mageCycT=dk?2.66:6+Math.random()*8;}}
     if(mageMode==='sleep'){zzT-=dt;if(zzT<=0&&mageRef.head)zzT=1.2,spawnZ();}
@@ -1498,7 +1610,7 @@ function setActive(on,host){
   if(labelHost)labelHost.style.display=on?'':'none';
   V.renderer.shadowMap.needsUpdate=true;
 }
-function resetView(){if(!V)return;var v0=VIEW0[V.mode==='city'?'city':'tavern'];V.goal.az=v0.az;V.goal.pol=v0.pol;V.goal.dist=v0.dist;V.goal.target.set(v0.t[0],v0.t[1],v0.t[2]);}
+function resetView(){if(!V)return;var v0=VIEW0[VIEW0[V.mode]?V.mode:'tavern'];V.goal.az=v0.az;V.goal.pol=v0.pol;V.goal.dist=v0.dist;V.goal.target.set(v0.t[0],v0.t[1],v0.t[2]);}
 
 window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_LOOK[id]):null;},init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
   resetView:resetView,setMode:setMode,get mode(){return V?V.mode:'tavern';},bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});var np=Object.keys(V.npcs),nr=np.filter(function(k){return V.npcs[k].ready;}).length;return {npcs:np.length,npcReady:nr,npcPos:np.map(function(k){var N=V.npcs[k];return k+':'+N.x.toFixed(1)+','+N.z.toFixed(1);}).join(' '),meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},

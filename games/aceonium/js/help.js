@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 var t=function(k,v){return I18n.t(k,v);};
-var TOPICS=['trip','bag','tavern','hall','design','shelf','craft','tools','book','city','mage','pets','save'];
+var TOPICS=['trip','bag','tavern','hall','design','shelf','storage','craft','tools','book','city','mage','pets','save'];
 var H=null;
 
 function open(topic){

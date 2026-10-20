@@ -1205,3 +1205,6 @@ body.ac .btn.pink .cst.no{color:#a01800;}
 button.crf-qs.hold{border-color:#ff5a46;box-shadow:0 0 0 2px rgba(255,90,70,.35);}
 .cust .bar.thin{height:5px;margin-top:4px;}
 .cust .bar.thin i{background:linear-gradient(90deg,#3fd890,#9ff7c0);}
+
+/* ════════ v28: внешность ════════ */
+.wd2-sub{margin:10px 0 2px;font-size:15px;}

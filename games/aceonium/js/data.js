@@ -156,12 +156,28 @@ D.SKILLS=[
   {id:'heal',  key:'1',unlock:1, dur:0,   cd:600,   lv:25,a:0.25,b:0.5, fat:1,min:0.5},   // +доля здоровья
   {id:'shield',key:'2',unlock:5, dur:1800,cd:21600, lv:20,a:0.3, b:0.5, fat:1},           // -доля входящего урона
   {id:'sleep', key:'3',unlock:8, dur:0,   cd:14400, lv:20,a:0.5, b:2,   fat:2},           // часов сна (снимает усталость)
-  {id:'haste', key:'4',unlock:12,dur:60,  cd:43200, lv:30,a:10,  b:100, fat:2,real:true}  // во сколько раз быстрее идёт время
+  {id:'haste', key:'4',unlock:12,dur:60,  cd:43200, lv:30,a:10,  b:100, fat:2,real:true}, // во сколько раз быстрее идёт время
+  {id:'clone', key:'5',unlock:15,dur:0,   cd:28800, lv:20,a:0.5, b:1,   fat:1}            // v33: двойник, сила от мага (урон оружия, здоровье)
 ];
+D.CLONE_HIT=1.3;   // двойник бьёт раз в столько секунд
 D.skillPointCost=function(l){return l+1;};      // с l на l+1: уровень n стоит n очков
 D.skillPow=function(s,l){return s.a+(s.b-s.a)*Math.min(1,Math.max(0,l-1)/Math.max(1,s.lv-1));};
 D.SKILL_PAY=0.5;
 D.skillPayH=function(s,cdLeft){return Math.max(s.min||0,cdLeft/3600*D.SKILL_PAY)*(s.fat||1);};
+/* v33: события на дороге. Только когда игрок смотрит поход: в начале волны с шансом EV_CHANCE, не чаще EV_GAP с.
+   На решение EV_TIME с, потом маг идёт мимо. Показываются 3D-дорогой, без боя. */
+D.EVENTS=[
+  {id:'chest', opts:['open','skip']},
+  {id:'spring',opts:['rest','skip']},
+  {id:'trader',opts:['sell','skip']},
+  {id:'fork',  opts:['short','skip']},
+  {id:'wisp',  opts:['follow','skip']},
+  {id:'hurt',  opts:['help','skip']}
+];
+/* v33: королевская награда: 1 золотой за каждого побеждённого монстра (босс тоже 1), выплата после похода */
+D.BOUNTY=1;
+D.EV_CHANCE=0.25;D.EV_GAP=480;D.EV_TIME=40;D.EV_SHOW=8;
+D.WISP_T=600;D.WISP_DMG=0.25;
 /* долги мага: каждый следующий чуть дороже, платятся золотом в долговой мешок */
 D.DEBT0=20;D.DEBT_GROW=1.0072;D.DEBT_PER_PT=10;
 D.debtCost=function(n){return Math.ceil(D.DEBT0*Math.pow(D.DEBT_GROW,n));};   // n - сколько уже выплачено
@@ -324,7 +340,13 @@ D.priceOf=function(g){
   return p>100?Math.round(p/10)*10:Math.max(3,Math.round(p));
 };
 D.GOODS.forEach(function(x){x.price=D.priceOf(x);});
-D.SLOTS=['head','body','belt','feet','ring'];
+D.SLOTS=['head','body','belt','feet','ring','hand'];
+/* v33: оружие для двойника. Маг бьёт посохом, оружие в руке нужно двойнику: wd - урон в секунду (растёт с уровнем вещи).
+   Множитель по виду: кинжал слабее, двуручные сильнее. Продаются как раньше, надетое из продажи уходит. */
+D.wdBase=function(tier){return 12*Math.pow(2.1,tier-1);};
+D.WEAPON={c_bow:0.9,c_spear:1,c_longbow:1,c_goldbow:1.05,c_darkbow:1.1,s_dagger:0.8,s_sword:1,s_axe:1.1,s_hammer:1.1,s_falchion:1,
+  s_broad:1.2,s_katana:1.15,s_claymore:1.2,s_daxe:1.2,s_blade:1.2,s_goldsword:1.25};
+Object.keys(D.WEAPON).forEach(function(id){var gd=D.GOOD_BY[id];if(!gd)return;gd.slot='hand';gd.eff={wd:Math.round(D.wdBase(gd.tier)*D.WEAPON[id])};});
 /* с чего начинает новый маг: хватает на первые заказы, пока не вернулся первый поход */
 D.START={gold:150,store:{wood:20,iron:15,herb:20,hide:15,hops:12}};
 /* улучшения мага тоже идут заказом у мастера */

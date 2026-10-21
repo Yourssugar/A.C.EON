@@ -324,6 +324,17 @@ function layout(S){
     prop(G,'Prop_WoodenFence_Single',3.2,9.4,0);prop(G,'Prop_WoodenFence_Extension1',7.2,9.4,0);prop(G,'Prop_WoodenFence_Single',8.4,7.2,Math.PI/2);
     if(hall>=5){prop(G,'Lantern_Wall',2.3,9.1,0,2.2);prop(G,'Lantern_Wall',8.1,9.1,0,2.2);}
   }
+  /* v33: доска наград у входа: королевский указ (нажатие - топ-100) */
+  (function(){
+    var bx=-1.7,bz=6.1;
+    [-0.62,0.62].forEach(function(dx){var po=box(0.12,2.1,0.12,mat('dwood'),1);place(po,bx+dx,bz,0,1.05);G.add(po);});
+    var bd=box(1.4,0.95,0.08,mat('fwood'),1);place(bd,bx,bz,0,1.45);G.add(bd);
+    var pm=new T.MeshStandardMaterial({color:0xf0e2bc,roughness:1});
+    [[-0.32,1.5,0.5,0.62],[0.3,1.42,0.44,0.52]].forEach(function(q){var pp=box(q[2],q[3],0.012,pm);pp.castShadow=false;place(pp,bx+q[0],bz+0.05,0,q[1]);G.add(pp);});
+    var seal=box(0.1,0.1,0.02,new T.MeshStandardMaterial({color:0xb02020,roughness:0.6}));place(seal,bx-0.32,bz+0.065,0,1.3);G.add(seal);
+    var rf=box(1.7,0.07,0.42,mat('dwood'),1);place(rf,bx,bz,0,2.08);rf.rotation.x=-0.25;G.add(rf);
+    st.board={x:bx,z:bz};
+  })();
   if(hall>=5){prop(G,'Banner_2',1,5.12,0,2.2);var fl=natObj('Flower_3_Group',-0.6,5.8,0.6,0,'#7aa834');if(fl)G.add(fl);var fl2=natObj('Flower_4_Group',2.6,5.8,0.55,1,'#86b03e');if(fl2)G.add(fl2);}
   /* v27: кладовая - каменная пристройка к комнате мага (внутри её не видно: крыша всегда на месте, стены не опускаются).
      Сам склад со стеллажами и сундуками - отдельная сцена (экран СКЛАД), см. buildStore */
@@ -1536,6 +1547,7 @@ function anchors(){
     liveFurn().forEach(function(it){if(it.st||!(it.bt||it.q))return;var c=HL().center(it);out.push({kind:'furn',id:it.id,x:c.x,y:1.5,z:c.z});});
   }
   if(st.store)out.push({kind:'store',id:'store',x:st.store.x,y:2.9,z:st.store.z});
+  if(st.board&&V.mode==='tavern')out.push({kind:'board',id:'board',x:st.board.x,y:2.6,z:st.board.z});
   return out;
 }
 function pick(e){

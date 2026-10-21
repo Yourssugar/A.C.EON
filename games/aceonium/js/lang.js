@@ -1132,3 +1132,61 @@ I18n.add('en',{
   'vsk.title':'SKILLS AND DEBTS',
   'vsk.body':'<p>New skills: heal, magic shield, mage nap and time haste. They work on the road and in the tavern. A ready skill is free, on cooldown it can be cast for awake time: the mage tires faster and goes to bed earlier.</p><p>Skill points now come from debts. The mage borrowed while studying: the SKILLS tab has a debt pouch, gold put there repays the debt. Every 10 repaid debts give a point, level n costs n points. Skill levels start over.</p>'
 });
+/* v33: двойник, оружие, события на дороге */
+I18n.add('ru',{
+  'sk.clone':'ДВОЙНИК','sk.clone.d':'призрак мага бьёт оружием из руки и принимает удары на себя, сила {p} от мага, до конца похода',
+  'sk.why.notrip':'Двойник вызывается только в походе','sk.why.noweapon':'Нужно оружие в руке (вкладка СНАРЯЖЕНИЕ)',
+  'cl.down':'Двойник рассеялся','slot8.hand':'РУКА','eff.wd':'урон двойника {v}/с',
+  'ev.next':'ДАЛЬШЕ','ev.skip':'Маг пошёл дальше.',
+  'ev.chest.t':'Сундук у обочины','ev.chest.d':'В кустах у дороги стоит старый сундук. Замок ржавый, крышка чуть приоткрыта.','ev.chest.open':'ОТКРЫТЬ','ev.chest.skip':'МИМО',
+  'ev.chest.ok':'Внутри {r}: {n} шт., всё в сумку.','ev.chest.trap':'Ловушка. Из-под крышки ударила игла, маг потерял {n} здоровья.',
+  'ev.spring.t':'Родник','ev.spring.d':'Под камнем бьёт холодный родник. Можно умыться и посидеть пару минут.','ev.spring.rest':'ОТДОХНУТЬ','ev.spring.skip':'ИДТИ ДАЛЬШЕ',
+  'ev.spring.ok':'Здоровье полное, усталость меньше на полчаса.',
+  'ev.trader.t':'Бродячий торговец','ev.trader.d':'Навстречу едет торговец с тележкой. Предлагает купить половину того, что в сумке.','ev.trader.sell':'ПРОДАТЬ','ev.trader.skip':'НЕТ',
+  'ev.trader.ok':'Торговец отсчитал {g} золота.','ev.trader.none':'В сумке нечего продать.',
+  'ev.fork.t':'Развилка','ev.fork.d':'Тропа уходит в сторону и срезает петлю дороги. Но там могут ждать.','ev.fork.short':'КОРОТКОЙ ТРОПОЙ','ev.fork.skip':'ПО ДОРОГЕ',
+  'ev.fork.ok':'Маг срезал путь: волн впереди на {n} меньше.','ev.fork.amb':'Засада. Следующий монстр будет элитным.',
+  'ev.wisp.t':'Блуждающий огонёк','ev.wisp.d':'Над травой висит огонёк и медленно уплывает в лес. Похоже, он зовёт.','ev.wisp.follow':'ПОЙТИ ЗА НИМ','ev.wisp.skip':'НЕ ОБРАЩАТЬ ВНИМАНИЯ',
+  'ev.wisp.ok':'Огонёк вошёл в посох. Урон +{p}% на {t} минут.','ev.wisp.lost':'Огонёк завёл в чащу и погас. Пока маг выбирался, устал на час.',
+  'ev.hurt.t':'Раненый путник','ev.hurt.d':'У дороги сидит путник, нога в крови. Просит помочь дойти до города.','ev.hurt.help':'ПОМОЧЬ','ev.hurt.skip':'ПРОЙТИ МИМО',
+  'ev.hurt.ok':'Маг перевязал путника и отдал часть своих сил. В городе о нём узнают: +{r} репутации.',
+  'vev.title':'ДВОЙНИК И СОБЫТИЯ',
+  'vev.body':'<p>Новое умение ДВОЙНИК (с 15 уровня мага, клавиша 5): призрак мага идёт рядом до конца похода, бьёт оружием и принимает удары на себя. Для него нужно оружие в руке: мечи, луки, топоры от мастеров теперь надеваются в слот РУКА во вкладке СНАРЯЖЕНИЕ.</p><p>На дороге случаются встречи: сундук, родник, торговец, развилка, огонёк, раненый путник. Только пока ты смотришь поход. На встрече показывается 3D-дорога и выбор, через 40 секунд маг сам идёт мимо. Кнопки 3D на дороге больше нет.</p>'
+});
+I18n.add('en',{
+  'sk.clone':'DOUBLE','sk.clone.d':'a ghost of the mage fights with the weapon in hand and takes hits first, {p} of the mage\'s power, until the trip ends',
+  'sk.why.notrip':'The double can only be called on a trip','sk.why.noweapon':'Needs a weapon in hand (GEAR tab)',
+  'cl.down':'The double faded away','slot8.hand':'HAND','eff.wd':'double damage {v}/s',
+  'ev.next':'NEXT','ev.skip':'The mage walked on.',
+  'ev.chest.t':'Roadside chest','ev.chest.d':'An old chest sits in the bushes by the road. The lock is rusty, the lid is ajar.','ev.chest.open':'OPEN','ev.chest.skip':'PASS',
+  'ev.chest.ok':'Inside: {r}, {n} pcs, into the bag.','ev.chest.trap':'A trap. A needle shot from under the lid, the mage lost {n} health.',
+  'ev.spring.t':'Spring','ev.spring.d':'A cold spring runs from under a stone. The mage could wash and sit for a couple of minutes.','ev.spring.rest':'REST','ev.spring.skip':'MOVE ON',
+  'ev.spring.ok':'Health is full, fatigue is half an hour less.',
+  'ev.trader.t':'Wandering trader','ev.trader.d':'A trader with a cart comes the other way. He offers to buy half of the bag.','ev.trader.sell':'SELL','ev.trader.skip':'NO',
+  'ev.trader.ok':'The trader counted out {g} gold.','ev.trader.none':'Nothing in the bag to sell.',
+  'ev.fork.t':'Fork','ev.fork.d':'A path leaves the road and cuts the loop short. Something may be waiting there.','ev.fork.short':'TAKE THE PATH','ev.fork.skip':'STAY ON THE ROAD',
+  'ev.fork.ok':'Shortcut taken: {n} fewer waves ahead.','ev.fork.amb':'Ambush. The next monster is elite.',
+  'ev.wisp.t':'Will-o\'-wisp','ev.wisp.d':'A light hangs over the grass and drifts into the woods. It seems to call.','ev.wisp.follow':'FOLLOW IT','ev.wisp.skip':'IGNORE IT',
+  'ev.wisp.ok':'The wisp entered the staff. Damage +{p}% for {t} minutes.','ev.wisp.lost':'The wisp led into the thicket and went out. Getting back took an hour of strength.',
+  'ev.hurt.t':'Wounded traveler','ev.hurt.d':'A traveler sits by the road with a bleeding leg and asks for help.','ev.hurt.help':'HELP','ev.hurt.skip':'WALK PAST',
+  'ev.hurt.ok':'The mage bandaged him and gave some of his strength. The town will hear of it: +{r} reputation.',
+  'vev.title':'DOUBLE AND EVENTS',
+  'vev.body':'<p>New skill DOUBLE (from mage level 15, key 5): a ghost of the mage walks along until the trip ends, fights with a weapon and takes hits first. It needs a weapon in hand: swords, bows and axes from the craftsmen now go into the HAND slot in the GEAR tab.</p><p>Encounters happen on the road: a chest, a spring, a trader, a fork, a wisp, a wounded traveler. Only while you watch the trip. An encounter shows the 3D road and a choice, after 40 seconds the mage walks on. The 3D button on the road is gone.</p>'
+});
+/* v33: королевская награда и доска наград */
+I18n.add('ru',{
+  'home.bounty':'награда {g} зол.','off.bounty':'Королевская награда за монстров: {g} золота',
+  'lb.lbl':'ДОСКА НАГРАД','lb.title':'ДОСКА НАГРАД',
+  'lb.decree':'Королевский указ: каждому, кто сражается с монстрами, казна платит 1 золотой за побеждённого. Хоть мышь, хоть босс, королю важно количество. Маг получает награду, когда возвращается из похода.',
+  'lb.name':'Имя','lb.kills':'Монстров','lb.gold':'Награда','lb.note':'Топ-100 охотников королевства. Пока в списке только твой маг, общий список появится позже.',
+  'vbn.title':'КОРОЛЕВСКАЯ НАГРАДА',
+  'vbn.body':'<p>Король объявил награду: 1 золотой за каждого побеждённого монстра, босс тоже считается за одного. Поэтому в таверну и потянулись путники за снаряжением. Маг получает награду, когда возвращается из похода. У входа в таверну висит доска наград с топ-100 охотников.</p>'
+});
+I18n.add('en',{
+  'home.bounty':'bounty {g} gold','off.bounty':'Royal bounty for monsters: {g} gold',
+  'lb.lbl':'BOUNTY BOARD','lb.title':'BOUNTY BOARD',
+  'lb.decree':'Royal decree: anyone who fights monsters gets 1 gold from the treasury per monster defeated. A rat or a boss, the king counts heads. The mage collects the bounty when he returns from a trip.',
+  'lb.name':'Name','lb.kills':'Monsters','lb.gold':'Bounty','lb.note':'Top 100 hunters of the kingdom. For now only your mage is listed, the shared list comes later.',
+  'vbn.title':'ROYAL BOUNTY',
+  'vbn.body':'<p>The king announced a bounty: 1 gold for every monster defeated, a boss counts as one. That is why travelers flock to the tavern for gear. The mage collects the bounty when he returns from a trip. The bounty board by the tavern door lists the top 100 hunters.</p>'
+});

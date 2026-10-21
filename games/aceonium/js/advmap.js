@@ -60,7 +60,7 @@ function arcFor(rd,w,m,boss){
 
 /* ════════ ПОХОД НА КАРТЕ ════════ */
 var V={on:false,cv:null,cx:null,W:0,H:0,dpr:1,t:-1,s:0,from:0,meet:0,walkT:1,cam:null,face:1,sc:1,icon:60,
-  mon:null,fx:[],time:0,lunge:0,flash:0,shake:0,hop:0,mpos:null,epos:null};
+  mon:null,fx:[],time:0,cl:{lunge:0,flash:0},lunge:0,flash:0,shake:0,hop:0,mpos:null,epos:null};
 
 function ensureCanvas(){
   if(V.cv)return;
@@ -218,6 +218,18 @@ function frame(dt){
   c.save();c.globalAlpha=0.35;c.fillStyle='#000';c.beginPath();c.ellipse(qm.x,qm.y+ih2*0.08,ih2*0.26,ih2*0.065,0,0,7);c.fill();c.restore();
   drawIcon(mage,mgx,mgy,ih2,V.face,mrot,{glow:'rgba(0,229,255,.55)',blur:10,flash:V.flash/0.25,fcol:'#ff3050'});
   V.mpos={x:mgx,y:mgy-ih2};
+  /* v33: двойник - фиолетовый призрак мага чуть впереди и ниже, принимает удары */
+  var cl=S.clone;
+  if(cl){
+    V.cl.lunge=Math.max(0,V.cl.lunge-dt*4);V.cl.flash=Math.max(0,V.cl.flash-dt);
+    var cx2=qm.x+ih2*0.32*V.face+Math.sin(V.cl.lunge*Math.PI)*ih2*0.3*V.face,cy2=qm.y+ih2*0.2-(walking?Math.abs(Math.sin(V.time*9+1.5))*3.5:0);
+    var crot=walking?Math.sin(V.time*9+1.5)*0.13:Math.sin(V.time*2.6+1)*0.05;
+    c.save();c.globalAlpha=0.3;c.fillStyle='#000';c.beginPath();c.ellipse(cx2,cy2+ih2*0.02,ih2*0.24,ih2*0.06,0,0,7);c.fill();c.restore();
+    drawIcon(mage,cx2,cy2,ih2*0.95,V.face,crot,{a:0.9,glow:'rgba(160,90,255,.9)',blur:14,flash:Math.max(0.55,V.cl.flash/0.2),fcol:V.cl.flash>0?'#ff3050':'#8a5cff'});
+    var bw2=ih2*0.55,f2=clamp(cl.hp/cl.max,0,1);
+    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(cx2-bw2/2-1,cy2-ih2*0.95-9,bw2+2,6);
+    c.fillStyle='#a070ff';c.fillRect(cx2-bw2/2,cy2-ih2*0.95-8,bw2*f2,4);
+  }
   /* заряды посоха и искры */
   for(var j=V.fx.length-1;j>=0;j--){
     var e=V.fx[j];e.t+=dt;
@@ -319,6 +331,8 @@ function closeWorld(quiet){
 function init(game){
   g=game;S=game.S;
   ensureCanvas();
+  g.on('cloneHit',function(){if(V.on)V.cl.lunge=1;if(V.mon)V.mon.kb=1;});
+  g.on('cloneHurt',function(h){if(!V.on)return;V.cl.flash=0.2;if(V.mon)V.mon.lunge=1;if(h.boss)V.shake=0.2;});
   g.on('bolt',onBolt);g.on('hit',onHit);g.on('mageHit',onMageHit);g.on('bossWind',onWind);
   g.on('tripStart',function(){V.mon=null;V.t=-1;});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&WM)closeWorld();});

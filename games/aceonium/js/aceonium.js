@@ -19,6 +19,7 @@ if(window.Help)Help.addToSettings();
 document.title='ACEONIUM';
 UI.init(game);
 if(window.AdvMap)AdvMap.init(game);
+if(window.RoadEv)RoadEv.init(game);
 
 var has3d=false,portalBusy=false;
 /* v29: экран загрузки сразу после загрузчика файлов, пока сцена не готова (вместо упрощённой графики) */
@@ -68,7 +69,9 @@ UI.catchUp=function(sec){catchUp(sec,false);};
 var sfxT=0;
 /* v31: события боя в 3D только когда поход показан 3D-дорогой (иначе снаряды копятся в стоящей сцене) */
 function s3(){return has3d&&!mapMode();}
-function mapMode(){return !!window.AdvMap&&S.settings.road!=='3d';}
+/* v33: 3D-дорога только на событиях, обычный поход всегда картой */
+function mapMode(){return !!window.AdvMap&&game.R.phase!=='event';}
+function biomeSync(){if(has3d&&S.trip&&Scene3D.setBiome)Scene3D.setBiome(D.TRACTS[S.trip.t].biome);}
 function bossWinText(e){return e.clear?(e.first?UI.t('boss.clearFirst',{t:UI.tractName(e.t)}):UI.t('boss.clear')):UI.t('boss.loot',{n:e.k});}
 game.on('spawn',function(e){if(s3())Scene3D.spawn(e,game.R.t);});
 game.on('bolt',function(b){
@@ -205,11 +208,14 @@ UI.goScreen=function(sc){
   applyView();
 };
 UI.screenNow=curScreen;
-UI.setRoadMode=function(m){S.settings.road=m==='3d'?'3d':'map';save();applyView();};
-UI.roadMode=function(){return mapMode()?'map':'3d';};
+game.on('event',function(){biomeSync();applyView();Sound.sfx('check');});
+game.on('eventEnd',function(){applyView();});
+game.on('tripStart',biomeSync);game.on('tripResume',biomeSync);
+game.on('cloneEnd',function(why){if(why==='down'){UI.toast(UI.t('cl.down'));Sound.sfx('lose');}});
 UI.toggleView=function(){if(S.place==='road')game.goHome();else game.goTrip();};
 if(window.Tavern3D){
   Tavern3D.onPick(function(kind,id){
+    if(kind==='board'){UI.leaders();Sound.sfx('select');return;}
     if(kind==='store')UI.goScreen('store');
     else if(kind==='rack')UI.openTab('store');
     else if(kind==='prod')UI.openTab('city',id);
@@ -294,7 +300,7 @@ function loop(now){
     }
   }
   if(has3d){
-    if(!portalBusy&&scenePlace==='road')Scene3D.setMode(game.R.phase==='walk'?'walk':'fight');
+    if(!portalBusy&&scenePlace==='road')Scene3D.setMode(game.R.phase==='walk'||game.R.phase==='event'?'walk':'fight');
     Scene3D.setFatigue(S.fatigue);
     var shut=(window.Wardrobe&&Wardrobe.isOpen)||(window.Masters&&Masters.isOpen)||(window.Pets&&Pets.isOpen)||(window.Book&&Book.isOpen);
     var vsp=S.profile&&game.hasteMult()>1?2:1;
@@ -319,6 +325,10 @@ function lsNeed(){
     var tt=S.trip?S.trip.t:0,ok=AdvMap.ready(tt);
     return {key:'road'+tt,ready:ok,p:ok?1:0.4};
   }
+  if(sc==='road'&&game.R.phase==='event'){
+    var se=Scene3D.loadState();if(!se)return null;
+    return {key:'road'+se.biome,ready:se.adv&&se.ground&&se.av,p:(se.adv?0.5:0)+(se.ground?0.4:0)+(se.av?0.1:0)};
+  }
   if(sc==='road'){
     var st=Scene3D.loadState();if(!st)return null;
     var p=(st.adv?0.45:0)+(st.ground?0.2:0)+(st.mon?0.25:0)+(st.av?0.1:0);
@@ -332,6 +342,10 @@ function holdNow(){game.hold=!!(S.profile&&window.Lore&&(Lore.busy||!S.lore.pro|
 function uiBlocked(){return !!(window.Masters&&Masters.isOpen||window.Pets&&Pets.isOpen)||[].some.call(document.querySelectorAll('.modal,.wd2,.bk-wrap,.hp-wrap,.create,.pro,.crf'),function(e){return e.offsetWidth>0;});}
 function lsWatch(dt){
   holdNow();
+  /* v33: событие на дороге только когда игрок смотрит поход и 3D-дорога этого тракта скачана */
+  var st3=has3d?Scene3D.loadState():null;
+  game.evOk=!!(S.profile&&S.place==='road'&&curScreen()==='road'&&!document.hidden&&!game.hold&&!uiBlocked()&&!UI.win&&!(window.Craft&&Craft.isOpen)&&
+    !(window.AdvMap&&AdvMap.worldOpen)&&!(window.LoadScreen&&LoadScreen.isOn)&&(!has3d||(st3&&st3.adv&&st3.ground&&st3.av&&S.trip&&st3.biome===D.TRACTS[S.trip.t].biome)));
   if(!window.LoadScreen)return;
   if(!has3d||!S.profile||(window.Lore&&Lore.inPrologue)){if(LoadScreen.isOn&&(!S.profile||(window.Lore&&Lore.inPrologue)))LoadScreen.hide(true);return;}
   var n=lsNeed();
@@ -384,20 +398,21 @@ function begin(){
     if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
       showPlace(S.place,true);petSync();}
     else showPlace(S.place,true);
-    holdNow();
+    holdNow();biomeSync();
     if(away>5)catchUp(away,false);else game.start();
     /* v27: сохранения сброшены (персонаж и облик остались), дальше обычные новости версий */
     /* v30: сохранения сброшены под новую экономику (персонаж, облик и пролог остались) */
-    if(!S.lore.pro){S.seenV31=true;S.seenMap=true;S.seenSk=true;delete S.resetV31;save();startPrologue();}
+    if(!S.lore.pro){S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;delete S.resetV31;save();startPrologue();}
     else if(S.resetV31){delete S.resetV31;S.seenV31=true;save();UI.modal(UI.t('v31r.title'),UI.t('v31r.body')+UI.t('v31.body'));}
-    else if(!S.seenV31){S.seenV31=true;S.seenMap=true;S.seenSk=true;save();UI.modal(UI.t('v31.title'),UI.t('v31.body'));}
-    else if(!S.seenMap){S.seenMap=true;S.seenSk=true;save();UI.modal(UI.t('vmap.title'),UI.t('vmap.body')+UI.t('vsk.body'));}
-    else if(!S.seenSk){S.seenSk=true;save();UI.modal(UI.t('vsk.title'),UI.t('vsk.body'));}
+    else if(!S.seenV31){S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;save();UI.modal(UI.t('v31.title'),UI.t('v31.body'));}
+    else if(!S.seenMap){S.seenMap=true;S.seenSk=true;S.seenEv=true;save();UI.modal(UI.t('vmap.title'),UI.t('vmap.body')+UI.t('vsk.body')+UI.t('vev.body')+UI.t('vbn.body'));}
+    else if(!S.seenSk){S.seenSk=true;S.seenEv=true;save();UI.modal(UI.t('vsk.title'),UI.t('vsk.body')+UI.t('vev.body')+UI.t('vbn.body'));}
+    else if(!S.seenEv){S.seenEv=true;save();UI.modal(UI.t('vev.title'),UI.t('vev.body')+UI.t('vbn.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);}
       showPlace(S.place,true);
-      S.seenV31=true;S.seenMap=true;S.seenSk=true;startPrologue();holdNow();
+      S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;startPrologue();holdNow();
       game.start();save();UI.rebuild();lastWall=Date.now();last=performance.now();
     });
   }

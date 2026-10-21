@@ -326,7 +326,7 @@ function qualTag(q){return q>0?' <span class="qt q'+q+'">'+t('q.'+q)+'</span>':'
 function effText(id,q){
   var gd=D.GOOD_BY[id];if(!gd||!gd.eff)return '';
   var m=D.QUAL[q||0],out=[];
-  for(var k in gd.eff)out.push(t('eff.'+k,{v:k==='arm'?Math.round(gd.eff[k]*m*10)/10:Math.round(gd.eff[k]*m*100)}));
+  for(var k in gd.eff)out.push(t('eff.'+k,{v:k==='wd'?D.fmt(gd.eff[k]*m):k==='arm'?Math.round(gd.eff[k]*m*10)/10:Math.round(gd.eff[k]*m*100)}));
   if(gd.kind==='ward')out.push(t('eff.ward'));
   return out.join(', ');
 }
@@ -380,11 +380,10 @@ function initHud(){
   /* v31: на дороге - карта мира (сменить район) и переключатель карта / 3D */
   var mb=el('button','view-btn map-btn');mb.type='button';mb.id='map-btn';
   mb.addEventListener('click',function(e){e.stopPropagation();openMap();Sound.sfx('select');});
-  var rb=el('button','view-btn mode-btn');rb.type='button';rb.id='mode-btn';
-  rb.addEventListener('click',function(e){e.stopPropagation();if(UI.setRoadMode)UI.setRoadMode(UI.roadMode()==='map'?'3d':'map');Sound.sfx('select');paintView();});
+
   var sb=el('button','view-btn sleep-btn');sb.type='button';sb.id='sleep-btn';
   sb.addEventListener('click',function(e){e.stopPropagation();g.sleepNow();Sound.sfx('select');refreshHud();});
-  vbox.appendChild(vb);vbox.appendChild(sb);vbox.appendChild(mb);vbox.appendChild(rb);H.stage.appendChild(vbox);H.view=vb;H.sleep=sb;H.mapb=mb;H.modeb=rb;
+  vbox.appendChild(vb);vbox.appendChild(sb);vbox.appendChild(mb);H.stage.appendChild(vbox);H.view=vb;H.sleep=sb;H.mapb=mb;
 
   /* очередь крафта: в нижней панели рядом с кнопкой СОЗДАТЬ (v23) */
   var qb=el('div','qbar hidden');qb.id='qbar';
@@ -474,11 +473,12 @@ function refreshHud(){
   H.sk.forEach(function(x){
     var st=S.skills[x.s.id],un=g.skillUnlocked(x.s),bl=g.skillBlock(x.s.id),conf=x.conf&&Date.now()<x.conf&&bl==='pay';
     if(!conf)x.conf=0;
-    var state=!un?'locked':st.act>0?'act':conf?'conf':st.cd>0?'cd':bl?'idle':'ready';
+    var cl=x.s.id==='clone'&&S.clone;
+    var state=!un?'locked':st.act>0||cl?'act':conf?'conf':st.cd>0?'cd':bl?'idle':'ready';
     if(x.b._st!==state){x.b._st=state;x.b.className='sk-btn '+state;x.ico.innerHTML=icon(un?x.s.id:'lock');}
     var full=g.skillCd(x.s);
-    x.b.style.setProperty('--cd',state==='cd'||state==='conf'?(st.cd/full).toFixed(3):state==='act'&&x.s.dur?(st.act/x.s.dur).toFixed(3):'0');
-    setText(x.t,!un?t('sk.lockedShort',{n:x.s.unlock}):state==='conf'?'-'+ft(g.skillPayH(x.s.id)*3600):state==='cd'?ft(st.cd):state==='act'?(x.s.real?Math.ceil(st.act)+t('u.s'):ft(st.act)):'');
+    x.b.style.setProperty('--cd',state==='cd'||state==='conf'?(st.cd/full).toFixed(3):cl?(S.clone.hp/S.clone.max).toFixed(3):state==='act'&&x.s.dur?(st.act/x.s.dur).toFixed(3):'0');
+    setText(x.t,!un?t('sk.lockedShort',{n:x.s.unlock}):state==='conf'?'-'+ft(g.skillPayH(x.s.id)*3600):state==='cd'?ft(st.cd):cl?Math.ceil(S.clone.hp/S.clone.max*100)+'%':state==='act'?(x.s.real?Math.ceil(st.act)+t('u.s'):ft(st.act)):'');
     x.b.title=t('sk.'+x.s.id)+': '+skillDesc(x.s,st.l)+(st.cd>0&&un?' · '+t('sk.payNow',{t:ft(g.skillPayH(x.s.id)*3600)}):'');
   });
   /* ускорение времени: плашка */
@@ -514,7 +514,7 @@ function nextTractPeek(){
 /* v32: сила умения на уровне l словами */
 function skillPowText(s,l){
   var p=D.skillPow(s,l);
-  if(s.id==='heal'||s.id==='shield')return Math.round(p*100)+'%';
+  if(s.id==='heal'||s.id==='shield'||s.id==='clone')return Math.round(p*100)+'%';
   if(s.id==='sleep')return ft(p*3600);
   return String(Math.round(p));
 }
@@ -550,6 +550,7 @@ function enemyPos(){
 function onHit(h){
   var p=enemyPos();
   if(h.pet){pop('pet'+(h.crit?' crit':''),D.fmt(h.dmg)+(h.crit?'!':''),p.x-40+(Math.random()-0.5)*30,p.y+20+(Math.random()-0.5)*16);return;}
+  if(h.clone){pop('cln'+(h.crit?' crit':''),D.fmt(h.dmg)+(h.crit?'!':''),p.x+20+(Math.random()-0.5)*40,p.y+12);return;}
   pop(h.big?'big':h.crit?'crit':h.click?'clk':'stf',D.fmt(h.dmg)+(h.crit?'!':''),p.x+(Math.random()-0.5)*70,p.y+(Math.random()-0.5)*20);
 }
 var lootQ=0;
@@ -566,8 +567,8 @@ function onMageHit(h){
   if(h.boss){H.stage.classList.remove('hurt');void H.stage.offsetWidth;H.stage.classList.add('hurt');}
 }
 function onHome(r){
-  if(r.why==='defeat'){banner(t(r.by==='mob'?'home.downMob':'boss.fail'),t('home.lostBag',{n:r.lost}),'red');return;}
-  var txt=t('home.back',{n:r.n})+' · '+t('why.'+r.why);
+  if(r.why==='defeat'){banner(t(r.by==='mob'?'home.downMob':'boss.fail'),t('home.lostBag',{n:r.lost})+(r.bounty?' · '+t('home.bounty',{g:D.fmt(r.bounty)}):''),'red');return;}
+  var txt=t('home.back',{n:r.n})+' · '+t('why.'+r.why)+(r.bounty?' · '+t('home.bounty',{g:D.fmt(r.bounty)}):'');
   if(r.over)txt+=' · '+t('home.over',{n:r.over});
   toast(txt);
 }
@@ -1431,7 +1432,6 @@ function paintView(){
   if(H.mapb){
     var onRoad=road&&screenNow==='road';
     setText(H.mapb,t('btn.map'));H.mapb.classList.toggle('hidden',!onRoad);
-    setText(H.modeb,UI.roadMode&&UI.roadMode()==='map'?'3D':t('btn.map2d'));H.modeb.classList.toggle('hidden',!onRoad||!window.Scene3D||!Scene3D.ready);
   }
   paintScreen();
 }
@@ -1447,6 +1447,7 @@ function openTab(tab,sub){
 function tavernLabel(kind,id){
   if(kind==='hostess')return '<b>'+t('lbl.hostess')+'</b>'+(S.cust.length?' · '+t('lbl.cust',{n:S.cust.length}):'');
   if(kind==='store')return '<b>'+t('store.title')+'</b>';
+  if(kind==='board')return '<b>'+t('lb.lbl')+'</b>';
   if(kind==='rack')return '<b>'+t('lbl.rack')+'</b> <i>'+t('lbl.rackS',{n:D.fmt(g.storeCap())})+'</i>';
   if(kind==='furn'){var fi=g.furnById(id);if(!fi)return '';
     if(fi.q)return '<b>'+t('fu.'+fi.t)+'</b> <i>'+t('fu.waitCrewS')+'</i>';
@@ -1527,6 +1528,13 @@ function showCreate(onDone){
   setTimeout(function(){inp.focus();},300);
 }
 
+/* v33: доска наград у входа в таверну: королевский указ и топ-100 */
+function leaders(){
+  var L=g.leaders().sort(function(a,b){return b.kills-a.kills;}).slice(0,100),h='<p>'+t('lb.decree')+'</p><table class="lb"><tr><th>#</th><th>'+t('lb.name')+'</th><th>'+t('lb.kills')+'</th><th>'+t('lb.gold')+'</th></tr>';
+  L.forEach(function(e,i){h+='<tr'+(e.me?' class="me"':'')+'><td>'+(i+1)+'</td><td>'+esc(e.name)+' <small>'+t('hud.mlvl',{n:e.lvl})+'</small></td><td>'+D.fmt(e.kills)+'</td><td>'+COIN+D.fmt(e.gold)+'</td></tr>';});
+  h+='</table><p class="note">'+t('lb.note')+'</p>';
+  modal(t('lb.title'),h);
+}
 function offlineReport(rep){
   var rows=['<p>'+t('off.away',{t:ft(rep.sec)})+'</p>'];
   if(rep.trips)rows.push('<p>'+tg('off.trips',{n:rep.trips})+'</p>');
@@ -1540,6 +1548,7 @@ function offlineReport(rep){
   if(rep.legend)rows.push('<p class="gold">'+t('off.legend',{n:rep.legend})+'</p>');
   if(rep.pet)rows.push('<p class="ok">'+t('pt.found',{p:t('pet.'+rep.pet)})+'</p>');
   if(rep.sold)rows.push('<p class="gold">'+COIN+t('off.sold',{n:rep.sold,g:D.fmt(rep.gold)})+'</p>');
+  if(rep.bounty)rows.push('<p class="gold">'+COIN+t('off.bounty',{g:D.fmt(rep.bounty)})+'</p>');
   if(rep.over)rows.push('<p class="note">'+t('off.over',{n:rep.over})+'</p>');
   if(S.mlvl>rep.lv0)rows.push('<p>'+t('off.lvl',{a:rep.lv0,b:S.mlvl})+'</p>');
   rows.push('<p class="note">'+statusLine()+'</p>');
@@ -1558,7 +1567,7 @@ function init(game){
 function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
-  skillKey:skillKey,onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
+  skillKey:skillKey,leaders:leaders,onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
   showCreate:showCreate,stageAmt:stageAmt,setScreen:setScreen,openWin:openWin,closeWin:closeWin,get win(){return win;},hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};

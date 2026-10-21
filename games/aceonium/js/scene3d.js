@@ -1162,7 +1162,7 @@ function setMode(m){
   R.camp.group.visible=m==='sit';
   if((m==='sit'||tav)&&R.enemy)dropEnemy(R.enemy,'gone');
   if(tav){R.scene.fog=new THREE.Fog(0x120a06,9,30);R.scene.background=new THREE.Color(0x120a06);}
-  else if(wasTavern){var b=R.biome;R.biome=-1;setBiome(b);}
+  else if(wasTavern){var b=R.nextBiome!==undefined?R.nextBiome:R.biome;R.nextBiome=undefined;R.biome=-1;setBiome(b);}
 }
 function endPortal(){
   var pf=R.portalFx;if(!pf)return;
@@ -1426,7 +1426,7 @@ function loadState(){
   if(!R)return null;var A=window.Adventure,b=R.biome<0?0:R.biome;
   return {adv:!!(A&&A.ready),ground:!!(A&&A.ready&&A.groundSet&&A.groundSet(b)),mon:!!(A&&A.ready&&A.tractReady&&A.tractReady(b)),av:!!R.avatar,biome:b};
 }
-window.Scene3D={loadState:loadState,setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
+window.Scene3D={setBiome:function(b){if(R&&R.mode!=='tavern')setBiome(b);else if(R)R.nextBiome=b;},loadState:loadState,setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
   setView:setView,setPet:setPet,get view(){return R?R.view||'road':'road';},spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,bossWind:bossWind,onHit:onHit,petBite:petBite,victory:victory,setRage:setRage,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
   get ready(){return !!R;},get _r(){return R;}};
 })();

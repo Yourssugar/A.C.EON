@@ -1372,3 +1372,25 @@ body.haste .stage::after{content:'';position:absolute;inset:0;pointer-events:non
 .bar.db{height:10px;}
 .bar.db i{background:linear-gradient(90deg,#c88a10,#ffcf4d);}
 .db-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+
+/* ── v33: события на дороге, двойник ── */
+.rev{position:absolute;left:50%;top:118px;transform:translateX(-50%);z-index:12;width:min(460px,calc(100% - 24px));padding:12px 14px 10px;border-radius:14px;
+  background:rgba(28,13,46,.94);border:2px solid #6b45a0;box-shadow:0 10px 30px rgba(0,0,0,.55);color:#efe4ff;cursor:default;}
+.rev-t{font-weight:800;font-size:18px;color:var(--gold,#ffcf4d);text-shadow:var(--out);margin-bottom:4px;}
+.rev p{margin:0 0 10px;font-size:14px;line-height:1.4;}
+.rev-res{color:#fff3d6;}
+.rev-b{display:flex;flex-wrap:wrap;gap:8px;}
+.rev-b .btn{flex:1 1 auto;}
+body.ac .rev-b .btn:not(.ghost){color:#3b1e00;background:linear-gradient(180deg,#ffe07a,#f2ae22);box-shadow:0 3px 0 #9a5c00;text-shadow:none;}
+.rev-bar{height:4px;margin-top:10px;border-radius:2px;background:#170a26;overflow:hidden;}
+.rev-bar i{display:block;height:100%;background:#a98fd0;transition:width .2s linear;}
+@media (max-width:700px){.rev{top:128px;}}
+@media (max-width:600px){body:not(.view-tavern) .rev{top:208px;}}
+.pop.cln{color:#c0a0ff;font-size:14px;}
+.pop.cln.crit{color:#e0c8ff;font-size:18px;}
+/* v33: доска наград */
+table.lb{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;}
+table.lb th{text-align:left;font-size:12px;color:#a98fd0;font-weight:600;padding:4px 6px;border-bottom:1px solid #43296a;}
+table.lb td{padding:5px 6px;border-bottom:1px solid #2f1a4a;}
+table.lb tr.me td{color:#ffcf4d;font-weight:700;}
+table.lb td small{color:#cbb6ec;font-weight:400;}

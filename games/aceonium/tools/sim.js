@@ -64,10 +64,10 @@ function shop(){
   var qc=g.qSlotCost();if(qc&&S.gold>qc.gold*3)g.buyQSlot();
   /* товар: по кругу мастерам самый дорогой из известных, но не трогая запас на посох */
   var reserve=g.orderCost('staff'),ids=Object.keys(S.masters).filter(function(id){return S.masters[id].hired;});
-  for(var round=0;round<20&&S.queue.length<S.qSlots-2;round++){
+  for(var round=0;round<20&&S.queue.length<S.qSlots;round++){
     var any=false;
     ids.forEach(function(id2){
-      if(S.queue.length>=S.qSlots-2||g.queueOf(id2).length>round)return;
+      if(S.queue.length>=S.qSlots||g.queueOf(id2).length>round)return;
       var list=S.masters[id2].known.map(function(r){return D.GOOD_BY[r];}).sort(function(a,b){return b.price-a.price;});
       for(var i=0;i<list.length;i++){
         var gd=list[i];if(g.invCount(gd.id)>=8)continue;

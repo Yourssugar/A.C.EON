@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="37" defer></script>
+<script src="../shared/boot.js" data-v="38" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
@@ -41,6 +41,7 @@
   {"src":"js/maps.js","kb":10},
   {"src":"js/advmap.js","kb":24},
   {"src":"js/roadev.js","kb":3},
+  {"src":"js/tutor.js","kb":4},
   {"src":"assets/char/sizes.json","kb":3,"prefetch":true,"optional":true},
   {"src":"assets/char/models/anims.glb","kb":312,"prefetch":true,"optional":true},
   {"src":"assets/char/models/anims2.glb","kb":204,"prefetch":true,"optional":true},
@@ -90,7 +91,7 @@
 <!-- Обложка загрузки: сфера-Ядро наполняется светом вместе с прогрессом (--p от загрузчика) -->
 <template id="boot-skin">
   <style>
-    #boot{background:#07060f url(assets/lore/load_boot.webp?v=37) center/cover no-repeat;}
+    #boot{background:#07060f url(assets/lore/load_boot.webp?v=38) center/cover no-repeat;}
     #boot::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,5,16,.55),rgba(5,5,16,.2) 40%,rgba(5,5,16,.85));pointer-events:none;}
     #boot>*{position:relative;}
     .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}

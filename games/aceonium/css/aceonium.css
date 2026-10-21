@@ -1356,3 +1356,19 @@ body.ac .wm-go:not(:disabled){color:#3b1e00;background:linear-gradient(180deg,#f
   .wm-lbl{font-size:11px;padding:3px 6px;gap:3px;}
   .wm-lbl i{font-size:10px;}
 }
+
+/* ── v32: умения доступны везде, цена на откате, ускорение времени, долговой мешок ── */
+body.ac.view-tavern .skills{display:flex;}
+body.ac .sk-btn.cd{color:#a890cc;}
+body.ac .sk-btn.idle{color:#a890cc;opacity:.75;}
+body.ac .sk-btn.conf{border-color:#ff9a3a;color:#ffd0a0;box-shadow:0 3px 0 #1c0e30,0 0 12px rgba(255,150,60,.6);animation:blink .8s infinite;}
+body.ac .sk-btn.conf .sk-t{font-size:10px;color:#ffd0a0;}
+.haste-tag{position:absolute;left:50%;top:150px;transform:translateX(-50%);z-index:7;padding:5px 14px;border-radius:12px;font-weight:800;letter-spacing:1px;color:#3b1e00;
+  background:linear-gradient(180deg,#ffe07a,#f2ae22);box-shadow:0 3px 0 #9a5c00,0 0 18px rgba(255,210,80,.6);pointer-events:none;}
+body.haste .stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:2;box-shadow:inset 0 0 80px rgba(255,200,80,.35);}
+.db-blk .db-h{display:flex;align-items:center;gap:6px;}
+.db-blk .db-h b{font-weight:800;color:var(--gold,#ffcf4d);letter-spacing:.5px;}
+.db-cur,.db-stat{font-size:13px;margin:4px 0;}
+.bar.db{height:10px;}
+.bar.db i{background:linear-gradient(90deg,#c88a10,#ffcf4d);}
+.db-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}

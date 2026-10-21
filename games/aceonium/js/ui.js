@@ -23,6 +23,10 @@ function pct(x){return Math.round(x*100)+'%';}
 
 /* ── пиксельные иконки умений (16x16) ── */
 var ICONS={
+  heal:'<path d="M6 2h4v4h4v4h-4v4H6v-4H2V6h4z"/>',
+  shield:'<path d="M8 1l6 2v5c0 4-3 6-6 7-3-1-6-3-6-7V3zM8 4v8c2-1 3-2 3-4V5z"/>',
+  sleep:'<path d="M9 2a6 6 0 1 0 5 9A5 5 0 0 1 9 2z"/><path d="M11 2h4v1l-2 2h2v1h-4V5l2-2h-2z"/>',
+  haste:'<path d="M5 1h6v2H9v1a5 5 0 1 1-2 0V3H5zM8 6a3.5 3.5 0 1 0 .01 0zM7.5 7h1v2.5l1.5 1-.5.8-2-1.3z"/>',
   overload:'<path d="M9 1L3 9h4l-1 6 6-8H8z"/>',
   focus:'<path fill-rule="evenodd" d="M7 1h2v2h2v1h1v1h1v2h2v2h-2v2h-1v1h-1v1H9v2H7v-2H5v-1H4v-1H3V9H1V7h2V5h1V4h1V3h2zM7 6v1H6v2h1v1h2V9h1V7H9V6z"/>',
   flurry:'<path d="M1 3h5l3 2-3 2H1l3-2zM4 9h5l3 2-3 2H4l3-2zM8 6h5l2 1-2 1H8l2-1z"/>',
@@ -390,13 +394,15 @@ function initHud(){
   H['rest-road'].addEventListener('click',function(){g.goTrip();});
   H['rest-tav'].addEventListener('click',function(){g.sleepNow();});
   /* умения */
+  H.haste=el('div','haste-tag hidden');H.stage.appendChild(H.haste);
   H.sk=[];
   D.SKILLS.forEach(function(s){
     var b=el('button','sk-btn','<span class="sk-ico">'+icon(s.id)+'</span><span class="sk-cd"></span><span class="sk-key">'+s.key+'</span><span class="sk-t"></span>');
     b.type='button';
-    b.addEventListener('click',function(e){e.stopPropagation();g.useSkill(s.id);});
+    var x={s:s,b:b,ico:b.querySelector('.sk-ico'),t:b.querySelector('.sk-t'),conf:0};
+    b.addEventListener('click',function(e){e.stopPropagation();skillPress(x);});
     H.skills.appendChild(b);
-    H.sk.push({s:s,b:b,ico:b.querySelector('.sk-ico'),t:b.querySelector('.sk-t')});
+    H.sk.push(x);
   });
 }
 function refreshHud(){
@@ -466,14 +472,19 @@ function refreshHud(){
   if(H.mhpT)setText(H.mhpT,hp<mx&&!road&&!rage?ft(g.healLeft()/g.fatigueScale):'');
   /* умения */
   H.sk.forEach(function(x){
-    var st=S.skills[x.s.id],un=g.skillUnlocked(x.s);
-    var state=!un?'locked':st.act>0?'act':st.cd>0?'cd':'ready';
+    var st=S.skills[x.s.id],un=g.skillUnlocked(x.s),bl=g.skillBlock(x.s.id),conf=x.conf&&Date.now()<x.conf&&bl==='pay';
+    if(!conf)x.conf=0;
+    var state=!un?'locked':st.act>0?'act':conf?'conf':st.cd>0?'cd':bl?'idle':'ready';
     if(x.b._st!==state){x.b._st=state;x.b.className='sk-btn '+state;x.ico.innerHTML=icon(un?x.s.id:'lock');}
     var full=g.skillCd(x.s);
-    x.b.style.setProperty('--cd',state==='cd'?(st.cd/full).toFixed(3):state==='act'&&x.s.dur?(st.act/x.s.dur).toFixed(3):'0');
-    setText(x.t,!un?t('sk.lockedShort',{n:x.s.unlock}):state==='cd'?ft(st.cd):state==='act'?Math.ceil(st.act)+t('u.s'):'');
-    x.b.title=t('sk.'+x.s.id)+': '+t('sk.'+x.s.id+'.d',skillVars(x.s));
+    x.b.style.setProperty('--cd',state==='cd'||state==='conf'?(st.cd/full).toFixed(3):state==='act'&&x.s.dur?(st.act/x.s.dur).toFixed(3):'0');
+    setText(x.t,!un?t('sk.lockedShort',{n:x.s.unlock}):state==='conf'?'-'+ft(g.skillPayH(x.s.id)*3600):state==='cd'?ft(st.cd):state==='act'?(x.s.real?Math.ceil(st.act)+t('u.s'):ft(st.act)):'');
+    x.b.title=t('sk.'+x.s.id)+': '+skillDesc(x.s,st.l)+(st.cd>0&&un?' · '+t('sk.payNow',{t:ft(g.skillPayH(x.s.id)*3600)}):'');
   });
+  /* ускорение времени: плашка */
+  var hm=g.hasteMult();
+  if(H.haste){H.haste.classList.toggle('hidden',hm<=1);if(hm>1)setText(H.haste,t('haste.tag',{p:Math.round(hm),s:Math.ceil(S.skills.haste.act)}));}
+  document.body.classList.toggle('haste',hm>1);
 }
 /* нижняя полоса: что сейчас делают мастера */
 function paintQbar(road){
@@ -500,10 +511,26 @@ function nextTractPeek(){
   while(i<D.TRACTS.length){if(p.c[i]>done&&g.tractOpen(i))return i;i++;done=0;}
   return g.tractOpen(S.lastTract)?S.lastTract:0;
 }
-function skillVars(s){
-  var p=g.skillPow(s.id);
-  return {p:s.id==='focus'?Math.round(p*100):(Math.round(p*100)/100),d:s.dur};
+/* v32: сила умения на уровне l словами */
+function skillPowText(s,l){
+  var p=D.skillPow(s,l);
+  if(s.id==='heal'||s.id==='shield')return Math.round(p*100)+'%';
+  if(s.id==='sleep')return ft(p*3600);
+  return String(Math.round(p));
 }
+function skillDesc(s,l){return t('sk.'+s.id+'.d',{p:skillPowText(s,l),d:ft(s.dur)});}
+/* нажатие на умение: готово - сразу; на откате - первое нажатие показывает цену, второе платит бодрствованием */
+function skillPress(x){
+  var s=x.s,b=g.skillBlock(s.id);
+  if(b===''){g.useSkill(s.id);x.conf=0;refreshHud();return;}
+  if(b==='pay'){
+    if(x.conf&&Date.now()<x.conf){var h=g.skillPayH(s.id);x.conf=0;if(g.useSkill(s.id,true))toast(t('sk.paid',{s:t('sk.'+s.id),t:ft(h*3600)}));}
+    else{x.conf=Date.now()+3000;toast(t('sk.payAsk',{s:t('sk.'+s.id),t:ft(g.skillPayH(s.id)*3600)}));Sound.sfx('select');}
+    refreshHud();return;
+  }
+  toast(t('sk.why.'+b,{n:s.unlock}));
+}
+function skillKey(i){var x=H.sk&&H.sk[i];if(x)skillPress(x);}
 
 /* ── всплывающие цифры и добыча ── */
 var fxCount=0;
@@ -1194,15 +1221,28 @@ function tabGear(){
 }
 
 function tabSkills(){
-  add(liveBlock(function(){return '<p>'+t('sk.points',{n:g.skillPoints()})+hb('mage')+'</p>';}));
+  /* долговой мешок */
+  add(actBlock(function(){
+    var d=S.debt,c=g.debtCost(),left=g.debtLeft(),tp=g.debtToPoint(),k=D.DEBT_PER_PT-d.n%D.DEBT_PER_PT;
+    var h='<div class="db-h"><b>'+t('db.title')+'</b>'+hb('mage')+'</div><p class="note">'+t('db.body')+'</p>'+
+      '<div class="db-cur">'+t('db.cur',{n:d.n+1,c:D.fmt(c),b:D.fmt(d.bag)})+'</div><div class="bar db"><i style="width:'+Math.min(100,d.bag/c*100).toFixed(1)+'%"></i></div>'+
+      '<div class="db-stat">'+t('db.stat',{n:d.n,k:k,g:D.fmt(tp)})+'</div><div class="db-btns">';
+    h+='<button type="button" class="btn sm" data-act="pay" data-v="'+left+'"'+(S.gold>=left?'':' disabled')+'>'+t('db.close')+' '+D.fmt(left)+'</button>';
+    h+='<button type="button" class="btn sm" data-act="pay" data-v="'+tp+'"'+(S.gold>=tp?'':' disabled')+'>'+t('db.point')+' '+D.fmt(tp)+'</button>';
+    [100,1000,10000].forEach(function(v){h+='<button type="button" class="btn sm ghost" data-act="pay" data-v="'+v+'"'+(S.gold>=v?'':' disabled')+'>+'+D.fmt(v)+'</button>';});
+    return h+'</div>';
+  },function(act,ds){if(act==='pay')g.payDebt(+ds.v);},'db-blk'));
+  add(liveBlock(function(){return '<p>'+t('sk.points',{n:g.skillPoints()})+'</p><p class="note">'+t('sk.payRule')+'</p>';}));
   D.SKILLS.forEach(function(s){
     add(row({cls:'sk-row',title:function(){return t('sk.'+s.id);},
-      lvl:function(){return g.skillUnlocked(s)?t('row.lvlMax',{n:S.skills[s.id].l,m:D.SKILL_MAX}):'';},
+      lvl:function(){return g.skillUnlocked(s)?t('row.lvlMax',{n:S.skills[s.id].l,m:s.lv}):'';},
       info:function(){
         if(!g.skillUnlocked(s))return t('sk.locked',{n:s.unlock});
-        return t('sk.'+s.id+'.d',skillVars(s))+'<br><small>'+t('sk.cd',{t:ft(g.skillCd(s))})+'</small>';
+        var l=S.skills[s.id].l,st=S.skills[s.id];
+        return skillDesc(s,l)+(l<s.lv?'<br><small>'+t('sk.next',{p:skillPowText(s,l+1)})+'</small>':'')+
+          '<br><small>'+t('sk.cd',{t:ft(g.skillCd(s))})+(st.cd>0?' · '+t('sk.payNow',{t:ft(g.skillPayH(s.id)*3600)}):'')+'</small>';
       },
-      locked:function(){return !g.skillUnlocked(s);},done:function(){return g.skillUnlocked(s)&&S.skills[s.id].l>=D.SKILL_MAX;},
+      locked:function(){return !g.skillUnlocked(s);},done:function(){return g.skillUnlocked(s)&&S.skills[s.id].l>=s.lv;},
       cost:function(){return {points:g.skillUpCost(s.id)};},buy:function(){return g.buySkill(s.id);}}));
   });
 }
@@ -1518,7 +1558,7 @@ function init(game){
 function rebuild(){buildTab();}
 
 window.UI={validName:validName,init:init,refresh:function(){refreshHud();refresh();},hud:refreshHud,panel:refresh,rebuild:rebuild,
-  onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
+  skillKey:skillKey,onHit:onHit,onKill:onKill,onLoot:onLoot,onMageHit:onMageHit,onHome:onHome,banner:banner,toast:toast,modal:modal,ripple:ripple,
   showCreate:showCreate,stageAmt:stageAmt,setScreen:setScreen,openWin:openWin,closeWin:closeWin,get win(){return win;},hb:hb,bookRow:bookRow,lockBtn:lockBtn,bookAct:bookAct,LOCK_SVG:LOCK_SVG,offlineReport:offlineReport,setView:setViewBtn,viewProgress:viewProgress,openTab:openTab,tavernLabel:tavernLabel,resIcon:resIcon,tractName:tractName,itemName:itemName,itemIcon:itemIcon,orderName:orderName,orderIcon:orderIcon,costHtml:costHtml,effText:effText,ft:ft,spr:spr,stageHtml:stageHtml,prodName:prodName,
   look:look,t:t,tg:tg,get tab(){return curTab;},
   exportSave:null,importSave:null,resetSave:null,catchUp:null};

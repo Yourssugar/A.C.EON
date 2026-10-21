@@ -30,6 +30,7 @@ function defaults(){
     look:null,                                      // облик 3D-персонажа (avatar.js)
     wardrobe:{owned:['wander','ash','night','moss'],robe:'wander'},
     mlvl:1,xp:0,spent:0,                            // уровень мага, опыт, потраченные очки умений
+    debt:{n:0,bag:0},                               // v32: выплачено долгов, золото в долговом мешке
     staff:0,bagLvl:1,storeLvl:1,
     store:JSON.parse(JSON.stringify(D.START.store)),   // склад: ресурс -> количество (новичку немного на первые заказы)
     tracts:[{best:0,clears:0},{best:0,clears:0},{best:0,clears:0},{best:0,clears:0}],
@@ -86,10 +87,9 @@ P.skillDef=function(id){for(var i=0;i<D.SKILLS.length;i++)if(D.SKILLS[i].id===id
 P.skillOn=function(id){return this.S.skills[id].act>0;};
 P.skillUnlocked=function(s){return this.S.mlvl>=s.unlock;};
 P.skillPow=function(id){return D.skillPow(this.skillDef(id),this.S.skills[id].l);};
-P.skillPoints=function(){return this.S.mlvl-1-this.S.spent;};
+P.skillPoints=function(){return Math.floor(this.S.debt.n/D.DEBT_PER_PT)-this.S.spent;};
 P.baseMult=function(){
   var m=D.fatigueMult(this.S.fatigue);
-  if(this.skillOn('overload'))m*=this.skillPow('overload');
   if(this.S.rested>0)m*=D.REST_BUFF_MULT;
   return m;
 };
@@ -105,9 +105,9 @@ P.eff=function(k){
   return v;
 };
 P.rawDps=function(){return D.staffDps(this.S.staff,this.S.mlvl);};
-P.staffRate=function(){return D.STAFF_RATE*(this.skillOn('flurry')?this.skillPow('flurry'):1);};
+P.staffRate=function(){return D.STAFF_RATE;};
 P.dps=function(){return this.rawDps()*this.dmgMult()*this.staffRate()/D.STAFF_RATE;};
-P.critChance=function(){var c=D.CRIT_CHANCE+this.eff('crit');if(this.skillOn('focus'))c+=this.skillPow('focus');return Math.min(1,c);};
+P.critChance=function(){var c=D.CRIT_CHANCE+this.eff('crit');return Math.min(1,c);};
 P.critMult=function(){return D.CRIT_MULT;};
 P.critFactor=function(){return 1+this.critChance()*(this.critMult()-1);};
 P.effDps=function(){return (this.dps()+this.petDps())*this.critFactor();};
@@ -118,8 +118,11 @@ P.hp=function(){var mx=this.maxHp();if(this.S.hp===null||this.S.hp===undefined||
 P.regen=function(dt){var mx=this.maxHp();this.S.hp=Math.min(mx,this.hp()+D.REGEN*mx*dt);};
 P.healLeft=function(){var mx=this.maxHp();return Math.max(0,(mx-this.hp())/(D.REGEN*mx));};
 /* удар обычного монстра и босса с учётом брони */
-P.mobHitDmg=function(t,w,elite){return D.armHit(D.mobDps(t,w)*D.MOB_HIT*(elite?D.ELITE_DMG:1),this.arm());};
-P.bossHitDmg=function(t,w,rage){return D.armHit(D.bossDps(t,w)*D.BOSS_HIT*(rage?D.RAGE_MULT:1),this.arm());};
+P.mobHitDmg=function(t,w,elite){return D.armHit(D.mobDps(t,w)*D.MOB_HIT*(elite?D.ELITE_DMG:1),this.arm())*this.shieldMult();};
+P.bossHitDmg=function(t,w,rage){return D.armHit(D.bossDps(t,w)*D.BOSS_HIT*(rage?D.RAGE_MULT:1),this.arm())*this.shieldMult();};
+/* v32: магическая защита и ускорение времени */
+P.shieldMult=function(){return this.skillOn('shield')?1-this.skillPow('shield'):1;};
+P.hasteMult=function(){return this.skillOn('haste')?this.skillPow('haste'):1;};
 /* бой с обычным монстром по текущей силе: сколько здоровья снимет (с восстановлением). Худший случай - элита */
 P.predictMob=function(hp){
   var tr=this.S.trip;if(!tr)return {win:true,dmg:0};
@@ -128,14 +131,14 @@ P.predictMob=function(hp){
   if(hp===undefined)hp=this.hp();
   return {win:dmg<hp*D.HP_LOW,dmg:dmg,T:T};
 };
-P.awakeH=function(){return D.AWAKE_H/(1-Math.min(0.6,this.eff('fat')));};
+P.awakeH=function(){return (24-this.restH())/(1-Math.min(0.6,this.eff('fat')));};
 P.restH=function(){return Math.max(D.REST_MIN_H,D.REST_H-D.BED_STEP*this.S.build.bedroom);};
-P.skillCd=function(s){return s.cd*(1-0.04*(this.S.skills[s.id].l-1));};
+P.skillCd=function(s){return s.cd;};
 P.bag=function(){return D.BAG[this.S.bagLvl-1];};
 /* v30.1: в дальних трактах с монстра падает больше единиц, сумка вмещает во столько же раз больше (тяжелее она не становится) */
 P.bagCap=function(){var tr=this.S.trip;return this.bag().cap*(tr?(D.TRACT_QTY[tr.t]||1):1);};
 P.storeCap=function(){return D.STORE[this.S.storeLvl-1].cap;};
-P.pickMult=function(){return this.bag().pick*(1+this.eff('chance')+this.eff('pick'))*(this.skillOn('harvest')?this.skillPow('harvest'):1);};
+P.pickMult=function(){return this.bag().pick*(1+this.eff('chance')+this.eff('pick'));};
 P.tractOpen=function(t){return t===0||(t<D.TRACTS.length&&this.S.tracts[t-1].clears>0);};
 P.dropChance=function(t,w){return Math.min(0.95,D.chance(w,this.S.tracts[t].clears>0)*this.pickMult());};
 P.restBuffFor=function(hours){return Math.min(D.REST_BUFF_MAX,hours*D.REST_BUFF_PER_H);};
@@ -450,32 +453,79 @@ P.updateFatigue=function(dt){
 };
 
 /* ── способности ── */
-P.useSkill=function(id){
-  var S=this.S,R=this.R,s=this.skillDef(id),st=S.skills[id];
-  if(!s||!this.skillUnlocked(s)||st.cd>0||S.place!=='road')return false;
-  if(R.phase!=='fight'&&R.phase!=='walk')return false;
-  st.cd=this.skillCd(s);st.act=s.dur;
-  if(id==='discharge'){
-    var dmg=this.rawDps()*this.dmgMult()*this.skillPow('discharge');
-    R.hits.push({t:(R.phase==='fight'?0:R.t)+0.45,dmg:dmg,crit:false,big:true});
+/* v32: что мешает применить умение: '' - можно бесплатно, 'pay' - на откате, можно за бодрствование */
+P.skillBlock=function(id){
+  var S=this.S,s=this.skillDef(id),st=S.skills[id];
+  if(!s||!S.profile)return 'none';
+  if(!this.skillUnlocked(s))return 'locked';
+  if(st.act>0)return 'active';
+  if(id==='sleep'&&(S.place==='sleep'||S.fatigue<=0.001))return S.place==='sleep'?'asleep':'fresh';
+  if(id==='heal'&&this.hp()>=this.maxHp())return 'full';
+  if(st.cd>0){
+    if(S.place==='sleep'&&id!=='haste')return 'asleep';
+    if(S.fatigue>=0.999)return 'tired';
+    return 'pay';
   }
-  this.emit('skill',id);
+  return '';
+};
+/* цена применения на откате, в часах бодрствования */
+P.skillPayH=function(id){var st=this.S.skills[id];return st.cd>0?D.skillPayH(this.skillDef(id),st.cd):0;};
+P.useSkill=function(id,pay){
+  var S=this.S,s=this.skillDef(id),st=S.skills[id],b=this.skillBlock(id);
+  if(b==='pay'&&!pay)return false;
+  if(b&&b!=='pay')return false;
+  var paid=0;
+  if(b==='pay'){paid=this.skillPayH(id);S.fatigue=Math.min(1,S.fatigue+paid/this.awakeH());}
+  st.cd=this.skillCd(s);st.act=s.dur;
+  var p=this.skillPow(id);
+  if(id==='heal')S.hp=Math.min(this.maxHp(),this.hp()+p*this.maxHp());
+  if(id==='sleep')S.fatigue=Math.max(0,S.fatigue-p/this.restH());
+  this.emit('skill',{id:id,paid:paid});
+  /* усталость дошла до конца: в походе зайдёт в таверну (updateFatigue), дома сразу спать */
+  if(S.fatigue>=0.999&&S.place==='home'&&!this.hold)this.sleep();
   return true;
 };
 P.skillUpCost=function(id){return D.skillPointCost(this.S.skills[id].l);};
 P.buySkill=function(id){
   var s=this.skillDef(id),st=this.S.skills[id],c=this.skillUpCost(id);
-  if(!this.skillUnlocked(s)||st.l>=D.SKILL_MAX||this.skillPoints()<c)return false;
+  if(!this.skillUnlocked(s)||st.l>=s.lv||this.skillPoints()<c)return false;
   st.l++;this.S.spent+=c;this.emit('buy','skill');return true;
 };
+/* v32: долговой мешок. Золото исчезает в уплату текущего долга, остаток идёт в следующий */
+P.debtCost=function(){return D.debtCost(this.S.debt.n);};
+P.debtLeft=function(){return Math.max(0,this.debtCost()-this.S.debt.bag);};
+/* сколько золота нужно до следующего очка умений */
+P.debtToPoint=function(){
+  var d=this.S.debt,k=D.DEBT_PER_PT-d.n%D.DEBT_PER_PT,sum=-d.bag;
+  for(var i=0;i<k;i++)sum+=D.debtCost(d.n+i);
+  return Math.max(0,sum);
+};
+P.payDebt=function(gold){
+  var S=this.S,d=S.debt;gold=Math.floor(Math.min(gold,S.gold));
+  if(gold<=0)return 0;
+  S.gold-=gold;d.bag+=gold;
+  var pts0=this.skillPoints(),paid=0,guard=0;
+  while(d.bag>=D.debtCost(d.n)&&guard++<100000){d.bag-=D.debtCost(d.n);d.n++;paid++;}
+  this.emit('debt',{gold:gold,paid:paid,pts:this.skillPoints()-pts0});
+  return gold;
+};
 
+/* таймеры умений: real=false - игровое время (всё, кроме ускорения), real=true - настоящее (ускорение) */
+P.skillTick=function(dt,real){
+  var S=this.S;
+  for(var i=0;i<D.SKILLS.length;i++){
+    var s=D.SKILLS[i],st=S.skills[s.id];if(!st||!!s.real!==real)continue;
+    if(st.cd>0)st.cd=Math.max(0,st.cd-dt);
+    if(st.act>0){st.act=Math.max(0,st.act-dt);if(!st.act)this.emit('skillEnd',s.id);}
+  }
+};
 /* ── главный шаг ── */
 P.update=function(dt){
   var S=this.S,R=this.R;
   if(!S.profile)return;
   R.clock+=dt;
   S.stats.play+=dt;
-  for(var id in S.skills){var st=S.skills[id];if(st.cd>0)st.cd=Math.max(0,st.cd-dt);if(st.act>0){st.act=Math.max(0,st.act-dt);if(!st.act)this.emit('skillEnd',id);}}
+  this.skillTick(dt,false);
   this.regen(dt*this.fatigueScale);
   this.updateFatigue(dt);
   this.tavernTick(dt*this.fatigueScale);
@@ -540,14 +590,19 @@ P.update=function(dt){
 };
 
 /* ── офлайн: те же правила, враг за врагом, время боя по среднему урону ── */
-P.offline=function(sec){
+P.offline=function(sec,inner){   // inner: v32, кусок ускорения времени (таймер ускорения не трогаем)
   var S=this.S,rep={sec:sec,trips:0,got:{},lost:0,lostBags:0,over:0,kills:0,bosses:0,xp:0,lv0:S.mlvl,road:0,sleep:0,home:0,sold:0,gold:0,crafted:0,j0:S.journal.length?S.journal[0].at:0};
   if(!S.profile||sec<=0)return rep;
   sec=Math.min(sec,D.OFFLINE_MAX_H*3600);
-  for(var id in S.skills){var st=S.skills[id];st.cd=Math.max(0,st.cd-sec);st.act=0;}
+  /* умения: откаты идут всё время, действие (защита) кончается по ходу нагона */
+  var acts={};
+  D.SKILLS.forEach(function(s){var st=S.skills[s.id];if(!st)return;
+    if(s.real){if(!inner){st.cd=Math.max(0,st.cd-sec);st.act=Math.max(0,st.act-sec);}return;}
+    st.cd=Math.max(0,st.cd-sec);acts[s.id]=st.act;});
   this.silent=true;this.rep=rep;
   var t=0,guard=0,R=this.R;
   while(t<sec&&guard++<2e6){
+    for(var ak in acts)S.skills[ak].act=Math.max(0,acts[ak]-t);
     if(S.place==='road'){
       R.enemy=null;   // офлайн враг живёт только внутри шага (иначе пауза считает, что идёт бой с боссом)
       if(!S.trip){S.place='home';R.homeT=D.HOME_TIME;continue;}
@@ -592,6 +647,7 @@ P.offline=function(sec){
       if(S.fatigue<=1e-9){S.fatigue=0;this.startTrip();}
     }
   }
+  for(var ak2 in acts)S.skills[ak2].act=Math.max(0,acts[ak2]-sec);
   this.silent=false;this.rep=null;
   R.enemy=null;R.hits.length=0;R.after=null;
   return rep;
@@ -1399,6 +1455,11 @@ P.setProfile=function(name,gender){
 /* сохранения прошлых версий: убрать вещи и рецепты, которых больше нет, новые слоты, рецепты 1 уровня */
 P.sanitize=function(){
   var S=this.S,k;
+  /* v32: умения по новому списку */
+  if(!S.skills||typeof S.skills!=='object')S.skills={};
+  for(k in S.skills)if(!D.SKILLS.some(function(x){return x.id===k;}))delete S.skills[k];
+  D.SKILLS.forEach(function(x){var st=S.skills[x.id];if(!st)S.skills[x.id]={l:1,cd:0,act:0};else st.l=Math.max(1,Math.min(x.lv,st.l|0));});
+  if(!S.debt)S.debt={n:0,bag:0};
   if(!S.queue)S.queue=[];
   var eq={head:null,body:null,belt:null,feet:null,ring:null};
   /* надетое: в слот по новой схеме (амулет стал кольцом), иначе обратно в инвентарь */
@@ -1466,7 +1527,9 @@ P.sanitize=function(){
 /* v30 (версия 4): новая экономика (уровни вещей, быстрый крафт), прогресс снова заново. Пролог второй раз не показываем, разговор с хозяйкой да */
 /* v30.1 (версия 5): новые ресурсы, прогресс снова заново */
 function migrate(old,v){
-  if(v>=6)return old;
+  if(v>=7)return old;
+  /* v32: новые умения (уровни с нуля), очки умений теперь от выплаченных долгов */
+  if(v===6){delete old.skills;old.spent=0;old.debt={n:0,bag:0};return old;}
   /* v31: здоровье стало постоянным, первый поход игрок начинает сам. Прогресс v30.1 не сбрасываем */
   if(v===5){old.hp=null;old.started=!!(old.stats&&old.stats.trips>0);return old;}
   return {profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},

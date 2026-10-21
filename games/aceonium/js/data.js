@@ -146,21 +146,29 @@ D.staffCost=function(s){
 D.CRIT_CHANCE=0.05;D.CRIT_MULT=3;
 D.CLICK_DPS_SHARE=0.05;    // клик: 5% урона посоха в секунду + уровень мага
 
-/* ── умения: открываются уровнем мага, качаются очками (1 очко за уровень) ── */
+/* ── умения (v32): открываются уровнем мага, уровни покупаются очками умений.
+   Очки дают выплаченные долги: каждые DEBT_PER_PT долгов = 1 очко. Уровень n стоит n очков.
+   a - сила на 1-м уровне, b - на последнем (lv), между ними поровну.
+   Готово - применяется бесплатно. На откате - за бодрствование: 2 ч оставшегося отката = 1 ч бодрствования (SKILL_PAY),
+   у сна и ускорения вдвое дороже (fat), лечение не дешевле 30 минут (min).
+   real - таймер идёт по настоящему времени (ускорение не ускоряет само себя). */
 D.SKILLS=[
-  {id:'overload', key:'1',unlock:3, dur:30,cd:300, pow:2,   step:0.5},   // x урон
-  {id:'focus',    key:'2',unlock:6, dur:30,cd:480, pow:0.5, step:0.1},   // + шанс крита
-  {id:'flurry',   key:'3',unlock:10,dur:20,cd:600, pow:3,   step:0.5},   // x скорость посоха
-  {id:'discharge',key:'4',unlock:15,dur:0, cd:900, pow:30,  step:10},    // мгновенно: секунд урона посоха
-  {id:'harvest',  key:'5',unlock:20,dur:60,cd:1200,pow:1.25,step:0.05}   // x шанс ресурса
+  {id:'heal',  key:'1',unlock:1, dur:0,   cd:600,   lv:25,a:0.25,b:0.5, fat:1,min:0.5},   // +доля здоровья
+  {id:'shield',key:'2',unlock:5, dur:1800,cd:21600, lv:20,a:0.3, b:0.5, fat:1},           // -доля входящего урона
+  {id:'sleep', key:'3',unlock:8, dur:0,   cd:14400, lv:20,a:0.5, b:2,   fat:2},           // часов сна (снимает усталость)
+  {id:'haste', key:'4',unlock:12,dur:60,  cd:43200, lv:30,a:10,  b:100, fat:2,real:true}  // во сколько раз быстрее идёт время
 ];
-D.SKILL_MAX=10;
-D.skillPointCost=function(l){return l;};      // с l на l+1
-D.skillPow=function(s,l){return s.pow+s.step*Math.max(0,l-1);};
+D.skillPointCost=function(l){return l+1;};      // с l на l+1: уровень n стоит n очков
+D.skillPow=function(s,l){return s.a+(s.b-s.a)*Math.min(1,Math.max(0,l-1)/Math.max(1,s.lv-1));};
+D.SKILL_PAY=0.5;
+D.skillPayH=function(s,cdLeft){return Math.max(s.min||0,cdLeft/3600*D.SKILL_PAY)*(s.fat||1);};
+/* долги мага: каждый следующий чуть дороже, платятся золотом в долговой мешок */
+D.DEBT0=20;D.DEBT_GROW=1.0072;D.DEBT_PER_PT=10;
+D.debtCost=function(n){return Math.ceil(D.DEBT0*Math.pow(D.DEBT_GROW,n));};   // n - сколько уже выплачено
 D.STAFF_RATE=1.0;
 
 /* ── усталость и сон (часы) ── */
-D.AWAKE_H=16;
+D.AWAKE_H=16;   // v32: бодрствование = 24 ч минус сон (16 ч на старте, 18 ч с полной спальней)
 D.REST_H=8;
 D.REST_MIN_H=6;
 D.OFFLINE_MAX_H=24*7;

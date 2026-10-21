@@ -786,7 +786,7 @@ I18n.add('ru',{
   'hp.city':'<p>Промыслы добывают ресурсы сами, но только с открытых трактов. Запас копится на 6 часов работы, его забирают тапом по зданию или кнопкой. Возчик свозит запас сам.</p>'+
     '<p>Здания улучшают 20 вкладами, потом бригада строит по времени. Бригада строит одно здание, остальные ждут очереди. Вторую и третью бригаду можно нанять.</p>'+
     '<p>Наверху вкладки заказы посоха, сумки и склада.</p>',
-  'hp.mage':'<p>Навыки открываются уровнем мага и качаются очками, 1 очко за уровень. Клавиши 1-5, пробел: удар.</p>'+
+  'hp.mage':'<p>Умения открываются уровнем мага, уровни покупаются очками умений. Очко дают каждые 10 выплаченных долгов (долговой мешок во вкладке УМЕНИЯ), уровень n стоит n очков. На откате умение можно применить за бодрствование. Клавиши 1-4, пробел: удар.</p>'+
     '<p>Отмеченные зелья маг берёт в поход по одному, лучшего свободного качества. Вещи с замком и копии для книги он не берёт.</p>'+
     '<p>Снаряжение надевается во вкладке МАГ. Вещи гардероба открываются уровнем мага и покупаются за золото таверны.</p>',
   'hp.pets':'<p>Мастер питомцев растит зверей, которые ходят с магом и кусают врагов. При найме он дарит лису, других можно найти в походах. Питомцев тренируют за золото.</p>',
@@ -833,7 +833,7 @@ I18n.add('en',{
   'hp.city':'<p>Production buildings gather resources by themselves, only from open tracts. Stock fills for 6 hours of work; collect it with a tap or the button. The carter collects on his own.</p>'+
     '<p>Buildings level up with 20 contributions, then a crew builds over time. A crew builds one building, others wait. You can hire a second and third crew.</p>'+
     '<p>Staff, bag and store orders are at the top of the tab.</p>',
-  'hp.mage':'<p>Skills open with the mage level and grow with points, 1 point per level. Keys 1-5, space: hit.</p>'+
+  'hp.mage':'<p>Skills open with the mage level, their levels cost skill points. Every 10 repaid debts give a point (debt pouch in the SKILLS tab), level n costs n points. On cooldown a skill can be cast for awake time. Keys 1-4, space: hit.</p>'+
     '<p>Marked potions go on trips one each, the best free quality. Locked items and copies for the book stay home.</p>'+
     '<p>Gear is equipped on the MAGE tab. Wardrobe items open with the mage level and cost tavern gold.</p>',
   'hp.pets':'<p>The pet master raises animals that walk with the mage and bite enemies. On hire he gives a fox; others can be found on trips. Pets train for gold.</p>',
@@ -1092,4 +1092,43 @@ I18n.add('en',{
   'wm.hurt':'The mage is wounded ({p}%), full health in {t}.','wm.switchN':'The trip on {t} ends, the bag goes to storage.',
   'vmap.title':'TRIP MAP',
   'vmap.body':'<p>The ADVENTURE button opens the world map. Tap a region to see what drops there, the chances, the rare boss resource and the power you need. Locked regions are hatched.</p><p>Trips are shown on the region map: the mage walks the road, bosses wait at the numbered circles. The old 3D road is still there, the 3D button turns it on.</p><p>Mage health is now permanent and always visible, it restores 3% every 10 seconds. Regular monsters hit too, armor on items takes part of every hit. A wounded mage goes back to the tavern and leaves again on his own only at full health, you can send him earlier. If health runs out, the bag is lost.</p>'
+});
+/* v32: умения и долги */
+I18n.add('ru',{
+  'sk.heal':'ЛЕЧЕНИЕ','sk.heal.d':'+{p} здоровья сразу',
+  'sk.shield':'МАГИЧЕСКАЯ ЗАЩИТА','sk.shield.d':'входящий урон меньше на {p}, действует {d}',
+  'sk.sleep':'СОН МАГА','sk.sleep.d':'снимает усталость, как {p} сна',
+  'sk.haste':'УСКОРЕНИЕ ВРЕМЕНИ','sk.haste.d':'всё идёт в {p} раз быстрее {d}',
+  'sk.next':'Следующий уровень: {p}','sk.payNow':'сейчас за {t} бодрствования',
+  'sk.points':'Очков умений: {n}. Очко дают каждые 10 выплаченных долгов, уровень n стоит n очков.',
+  'sk.payRule':'Готовое умение применяется бесплатно. На откате его можно применить за бодрствование: 2 ч оставшегося отката = 1 ч бодрствования, лечение не дешевле 30 минут, сон и ускорение вдвое дороже. Кончилось бодрствование: маг идёт спать.',
+  'sk.payAsk':'{s} на откате. Нажми ещё раз: применить за {t} бодрствования','sk.paid':'{s}: -{t} бодрствования',
+  'sk.why.active':'Уже действует','sk.why.full':'Здоровье и так полное','sk.why.fresh':'Маг не устал','sk.why.asleep':'Маг спит',
+  'sk.why.tired':'Маг слишком устал','sk.why.locked':'Откроется на {n} уровне мага','sk.why.none':'',
+  'sk.hint':'Клавиши 1-4. Пробел: удар.',
+  'haste.tag':'ВРЕМЯ x{p} · {s} с','haste.end':'Время снова идёт как обычно',
+  'db.title':'ДОЛГОВОЙ МЕШОК','db.body':'Маг назанимал, пока учился, и возвращает по договору. Золото, положенное в мешок, уходит в уплату долга.',
+  'db.cur':'Долг №{n}: {c} золота, в мешке {b}','db.stat':'Выплачено долгов: {n}. До очка умений: {k}, это {g} золота.',
+  'db.close':'ЗАКРЫТЬ ДОЛГ','db.point':'ДО ОЧКА','db.paid':'Выплачено долгов: {n}','db.pt':'Новое очко умений. Свободных очков: {n}',
+  'vsk.title':'УМЕНИЯ И ДОЛГИ',
+  'vsk.body':'<p>Умения новые: лечение, магическая защита, сон мага и ускорение времени. Ими можно пользоваться и в походе, и в таверне. Готовое умение бесплатно, на откате его можно применить за бодрствование: маг быстрее устанет и раньше ляжет спать.</p><p>Очки умений теперь дают долги. Маг назанимал, пока учился: во вкладке УМЕНИЯ есть долговой мешок, золото из него уходит в уплату. Каждые 10 выплаченных долгов дают очко, уровень n стоит n очков. Уровни умений начинаются заново.</p>'
+});
+I18n.add('en',{
+  'sk.heal':'HEAL','sk.heal.d':'+{p} health at once',
+  'sk.shield':'MAGIC SHIELD','sk.shield.d':'incoming damage reduced by {p} for {d}',
+  'sk.sleep':'MAGE NAP','sk.sleep.d':'removes fatigue like {p} of sleep',
+  'sk.haste':'TIME HASTE','sk.haste.d':'everything runs {p} times faster for {d}',
+  'sk.next':'Next level: {p}','sk.payNow':'now for {t} of awake time',
+  'sk.points':'Skill points: {n}. Every 10 repaid debts give a point, level n costs n points.',
+  'sk.payRule':'A ready skill is free. On cooldown it can be cast for awake time: 2 h of remaining cooldown = 1 h awake, heal costs at least 30 minutes, nap and haste cost twice as much. Out of awake time: the mage goes to sleep.',
+  'sk.payAsk':'{s} is on cooldown. Tap again to cast for {t} of awake time','sk.paid':'{s}: -{t} awake time',
+  'sk.why.active':'Already active','sk.why.full':'Health is already full','sk.why.fresh':'The mage is not tired','sk.why.asleep':'The mage is asleep',
+  'sk.why.tired':'The mage is too tired','sk.why.locked':'Unlocks at mage level {n}','sk.why.none':'',
+  'sk.hint':'Keys 1-4. Space: strike.',
+  'haste.tag':'TIME x{p} · {s} s','haste.end':'Time runs normally again',
+  'db.title':'DEBT POUCH','db.body':'The mage borrowed while studying and repays by contract. Gold put into the pouch goes to the debt.',
+  'db.cur':'Debt #{n}: {c} gold, {b} in the pouch','db.stat':'Debts repaid: {n}. To the next skill point: {k}, that is {g} gold.',
+  'db.close':'PAY THE DEBT','db.point':'TO A POINT','db.paid':'Debts repaid: {n}','db.pt':'New skill point. Free points: {n}',
+  'vsk.title':'SKILLS AND DEBTS',
+  'vsk.body':'<p>New skills: heal, magic shield, mage nap and time haste. They work on the road and in the tavern. A ready skill is free, on cooldown it can be cast for awake time: the mage tires faster and goes to bed earlier.</p><p>Skill points now come from debts. The mage borrowed while studying: the SKILLS tab has a debt pouch, gold put there repays the debt. Every 10 repaid debts give a point, level n costs n points. Skill levels start over.</p>'
 });

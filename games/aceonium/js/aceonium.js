@@ -8,7 +8,7 @@ window.__aceoniumStarted=true;
 var D=window.AcData;
 window.AC_DEBUG=/[?&]debug\b/.test(location.search);
 
-Store.define('aceonium',{version:5,defaults:AcGame.defaults(),migrate:AcGame.migrate});
+Store.define('aceonium',{version:7,defaults:AcGame.defaults(),migrate:AcGame.migrate});
 var S=Store.get('aceonium');
 var game=new AcGame.Game(S);
 if(game.sanitize)game.sanitize();   // старые сохранения: слоты, рецепты, очереди
@@ -18,6 +18,7 @@ Arcade.topbar('ac.title');
 if(window.Help)Help.addToSettings();
 document.title='ACEONIUM';
 UI.init(game);
+if(window.AdvMap)AdvMap.init(game);
 
 var has3d=false,portalBusy=false;
 /* v29: экран загрузки сразу после загрузчика файлов, пока сцена не готова (вместо упрощённой графики) */
@@ -65,21 +66,24 @@ UI.catchUp=function(sec){catchUp(sec,false);};
 
 /* ── события логики ── */
 var sfxT=0;
+/* v31: события боя в 3D только когда поход показан 3D-дорогой (иначе снаряды копятся в стоящей сцене) */
+function s3(){return has3d&&!mapMode();}
+function mapMode(){return !!window.AdvMap&&S.settings.road!=='3d';}
 function bossWinText(e){return e.clear?(e.first?UI.t('boss.clearFirst',{t:UI.tractName(e.t)}):UI.t('boss.clear')):UI.t('boss.loot',{n:e.k});}
-game.on('spawn',function(e){if(has3d)Scene3D.spawn(e,game.R.t);});
+game.on('spawn',function(e){if(s3())Scene3D.spawn(e,game.R.t);});
 game.on('bolt',function(b){
-  if(has3d)Scene3D.bolt(b.kind,b.crit);
+  if(s3())Scene3D.bolt(b.kind,b.crit);
   var now=performance.now();if(now-sfxT>70){sfxT=now;Sound.sfx(b.kind==='click'?'select':'move');}
 });
-game.on('hit',function(h){UI.onHit(h);if(has3d&&Scene3D.onHit&&!h.pet)Scene3D.onHit(h);});
-game.on('petBite',function(b){if(has3d&&Scene3D.petBite)Scene3D.petBite(b.crit);});
-game.on('bossWind',function(w){if(has3d&&Scene3D.bossWind)Scene3D.bossWind(w.rage);});
-game.on('kill',function(k){if(has3d)Scene3D.kill();UI.onKill(k);Sound.sfx('capture');});
+game.on('hit',function(h){UI.onHit(h);if(s3()&&Scene3D.onHit&&!h.pet)Scene3D.onHit(h);});
+game.on('petBite',function(b){if(s3()&&Scene3D.petBite)Scene3D.petBite(b.crit);});
+game.on('bossWind',function(w){if(s3()&&Scene3D.bossWind)Scene3D.bossWind(w.rage);});
+game.on('kill',function(k){if(s3())Scene3D.kill();UI.onKill(k);Sound.sfx('capture');});
 game.on('loot',UI.onLoot);
 game.on('bossStart',function(){UI.banner(UI.t('boss.start'),'','red');Sound.sfx('check');});
-game.on('bossWin',function(e){UI.banner(UI.t('boss.win'),bossWinText(e),'gold');Sound.sfx('win');if(has3d&&Scene3D.victory)Scene3D.victory();save();});
-game.on('bossFail',function(){if(has3d)Scene3D.retreat();Sound.sfx('lose');});
-game.on('mageHit',function(h){UI.onMageHit(h);if(has3d&&Scene3D.hurt)Scene3D.hurt(h);});
+game.on('bossWin',function(e){UI.banner(UI.t('boss.win'),bossWinText(e),'gold');Sound.sfx('win');if(s3()&&Scene3D.victory)Scene3D.victory();save();});
+game.on('bossFail',function(){if(s3())Scene3D.retreat();Sound.sfx('lose');});
+game.on('mageHit',function(h){UI.onMageHit(h);if(s3()&&Scene3D.hurt)Scene3D.hurt(h);});
 game.on('home',function(r){UI.onHome(r);if(UI.tab==='store'||UI.tab==='path')UI.rebuild();save();});
 game.on('tractOpen',function(t){UI.toast(UI.t('toast.tract',{t:UI.tractName(t)}));if(UI.tab==='path')UI.rebuild();});
 game.on('levelUp',function(n){
@@ -90,7 +94,9 @@ game.on('levelUp',function(n){
   });
   if(UI.tab==='skills')UI.rebuild();
 });
-game.on('skill',function(id){Sound.sfx('check');if(id==='discharge'&&has3d&&game.R.phase==='fight')Scene3D.bolt('discharge',false);});
+game.on('skill',function(e){Sound.sfx(e.id==='haste'||e.id==='shield'?'win':'check');save();UI.panel();});
+game.on('skillEnd',function(id){if(id==='haste'){UI.toast(UI.t('haste.end'));}});
+game.on('debt',function(e){Sound.sfx(e.pts?'win':'capture');if(e.pts)UI.toast(UI.t('db.pt',{n:game.skillPoints()}));else if(e.paid)UI.toast(UI.t('db.paid',{n:S.debt.n}));save();UI.panel();});
 game.on('unlock',function(id){setTimeout(function(){UI.toast(UI.t('toast.unlock',{s:UI.t('sk.'+id)}));},1600);if(UI.tab==='skills')UI.rebuild();});
 game.on('buy',function(kind){if(kind==='staff'&&has3d)Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);save();});
 game.on('rested',function(sec){UI.toast(UI.t('toast.rested',{m:D.REST_BUFF_MULT,t:D.fmtTime(sec,{h:UI.t('u.h'),m:UI.t('u.m'),s:UI.t('u.s')})}));});
@@ -141,12 +147,12 @@ game.on('seat',function(n){save();UI.toast(UI.t('wk.seatGot',{n:n}));});
 var scenePlace=null;
 function sceneMode(place){return place==='road'?'walk':'tavern';}
 function showPlace(place,instant){
-  if(!has3d)return;
+  if(!has3d){scenePlace=place;applyView();return;}
   var mode=sceneMode(place),prev=scenePlace===null?null:sceneMode(scenePlace);
   scenePlace=place;
   if(prev===mode&&!instant){applyView();return;}
   if(mode!=='walk')Scene3D.retreat();
-  if(!instant&&prev!==null&&prev!==mode&&Scene3D.view==='road'){portalBusy=true;Scene3D.portal(function(){portalBusy=false;Scene3D.setMode(mode);applyView();});}
+  if(!instant&&prev!==null&&prev!==mode&&Scene3D.view==='road'&&!(window.AdvMap&&AdvMap.active)){portalBusy=true;Scene3D.portal(function(){portalBusy=false;Scene3D.setMode(mode);applyView();});}
   else{Scene3D.setMode(mode);applyView();}
 }
 game.on('place',function(place){
@@ -175,7 +181,13 @@ var screen=S.place==='road'?'road':'tavern';
 function curScreen(){return S.place==='road'?screen:(screen==='road'?'tavern':screen);}
 function wantView(){return curScreen()==='road'?'road':'tavern';}
 function applyView(){
-  if(!has3d)return;
+  var sc0=curScreen(),mapOn=mapMode()&&sc0==='road';
+  if(window.AdvMap&&AdvMap.active!==mapOn){
+    AdvMap.setOn(mapOn);
+    /* вернулись на 3D-дорогу посреди боя: показать текущего врага */
+    if(!mapOn&&has3d&&S.place==='road'&&game.R.enemy)Scene3D.spawn(game.R.enemy,game.R.phase==='walk'?game.R.t:0);
+  }
+  if(!has3d){UI.setScreen(sc0);return;}
   var v=wantView(),sc=curScreen();
   if(window.Design&&Design.isOpen&&sc!==(Design.zone==='store'?'store':'tavern'))Design.close(false);
   if(v==='tavern'&&!(window.Tavern3D&&Tavern3D.ready)){if(S.place!=='road')v='road';else{v='road';sc='road';ensureTavern().catch(function(){});}}
@@ -193,6 +205,8 @@ UI.goScreen=function(sc){
   applyView();
 };
 UI.screenNow=curScreen;
+UI.setRoadMode=function(m){S.settings.road=m==='3d'?'3d':'map';save();applyView();};
+UI.roadMode=function(){return mapMode()?'map':'3d';};
 UI.toggleView=function(){if(S.place==='road')game.goHome();else game.goTrip();};
 if(window.Tavern3D){
   Tavern3D.onPick(function(kind,id){
@@ -226,7 +240,7 @@ document.addEventListener('keydown',function(e){
   if(!S.profile)return;
   if(e.code==='Space'){e.preventDefault();if(!e.repeat)game.click();}
   var n=parseInt(e.key,10);
-  if(n>=1&&n<=D.SKILLS.length)game.useSkill(D.SKILLS[n-1].id);
+  if(n>=1&&n<=D.SKILLS.length&&UI.skillKey)UI.skillKey(n-1);
 });
 
 /* ── музыка (v19) ──
@@ -263,22 +277,30 @@ function musicTick(dt,now){
 }
 
 /* ── главный цикл ── */
-var last=performance.now(),lastWall=Date.now(),uiT=0,tavT=0;
+var last=performance.now(),lastWall=Date.now(),uiT=0,tavT=0,HS={acc:0,t:0};
 function loop(now){
   var dt=(now-last)/1000;last=now;
   var wall=Date.now(),gap=(wall-lastWall)/1000;lastWall=wall;
   if(S.profile){
     if(gap>5&&!(game.hold&&S.place!=='road')){catchUp(gap,gap<120);dt=0.016;}
     else{
-      var left=Math.min(dt,5);
+      /* v32: ускорение времени. На экране игра идёт вдвое быстрее, остальное время каждые 3 с догоняется офлайн-расчётом рывком */
+      var rdt=Math.min(dt,5),hm=game.hasteMult(),vis=hm>1?Math.min(hm,2):1;
+      var left=rdt*vis;
       while(left>0){var st=Math.min(left,0.1);game.update(st);left-=st;}
+      game.skillTick(rdt,true);
+      if(hm>1){HS.acc+=rdt*(hm-vis);HS.t+=rdt;}
+      if(HS.acc>0&&(HS.t>=3||game.hasteMult()<=1)){var ac=HS.acc;HS.acc=0;HS.t=0;game.offline(ac,true);game.start();}
     }
   }
   if(has3d){
     if(!portalBusy&&scenePlace==='road')Scene3D.setMode(game.R.phase==='walk'?'walk':'fight');
     Scene3D.setFatigue(S.fatigue);
-    if(!(window.Wardrobe&&Wardrobe.isOpen)&&!(window.Masters&&Masters.isOpen)&&!(window.Pets&&Pets.isOpen)&&!(window.Book&&Book.isOpen))Scene3D.frame(Math.min(dt,0.05),dt);
+    var shut=(window.Wardrobe&&Wardrobe.isOpen)||(window.Masters&&Masters.isOpen)||(window.Pets&&Pets.isOpen)||(window.Book&&Book.isOpen);
+    var vsp=S.profile&&game.hasteMult()>1?2:1;
+    if(!shut&&!(window.AdvMap&&AdvMap.active))Scene3D.frame(Math.min(dt*vsp,0.05*vsp),dt);
   }
+  if(window.AdvMap&&AdvMap.active&&!AdvMap.worldOpen)AdvMap.frame(Math.min(dt,0.1)*(S.profile&&game.hasteMult()>1?2:1));
   if(has3d)fpsWatch(dt);
   tavT+=dt;if(tavT>0.3){tavT=0;if(has3d&&Scene3D.view==='tavern')Tavern3D.sync(S);}
   uiT+=dt;
@@ -293,6 +315,10 @@ setInterval(function(){UI.panel();},250);
 var LSW={bad:0,key:'',waited:0,gave:{},dlgT:0};
 function lsNeed(){
   var sc=curScreen();
+  if(sc==='road'&&window.AdvMap&&AdvMap.active){
+    var tt=S.trip?S.trip.t:0,ok=AdvMap.ready(tt);
+    return {key:'road'+tt,ready:ok,p:ok?1:0.4};
+  }
   if(sc==='road'){
     var st=Scene3D.loadState();if(!st)return null;
     var p=(st.adv?0.45:0)+(st.ground?0.2:0)+(st.mon?0.25:0)+(st.av?0.1:0);
@@ -357,17 +383,21 @@ function begin(){
     if(away<0){UI.toast(UI.t('toast.clock'));away=0;}
     if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
       showPlace(S.place,true);petSync();}
+    else showPlace(S.place,true);
     holdNow();
     if(away>5)catchUp(away,false);else game.start();
     /* v27: сохранения сброшены (персонаж и облик остались), дальше обычные новости версий */
     /* v30: сохранения сброшены под новую экономику (персонаж, облик и пролог остались) */
-    if(!S.lore.pro){S.seenV31=true;delete S.resetV31;save();startPrologue();}
+    if(!S.lore.pro){S.seenV31=true;S.seenMap=true;S.seenSk=true;delete S.resetV31;save();startPrologue();}
     else if(S.resetV31){delete S.resetV31;S.seenV31=true;save();UI.modal(UI.t('v31r.title'),UI.t('v31r.body')+UI.t('v31.body'));}
-    else if(!S.seenV31){S.seenV31=true;save();UI.modal(UI.t('v31.title'),UI.t('v31.body'));}
+    else if(!S.seenV31){S.seenV31=true;S.seenMap=true;S.seenSk=true;save();UI.modal(UI.t('v31.title'),UI.t('v31.body'));}
+    else if(!S.seenMap){S.seenMap=true;S.seenSk=true;save();UI.modal(UI.t('vmap.title'),UI.t('vmap.body')+UI.t('vsk.body'));}
+    else if(!S.seenSk){S.seenSk=true;save();UI.modal(UI.t('vsk.title'),UI.t('vsk.body'));}
   }else{
     UI.showCreate(function(){
-      if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      S.seenV31=true;startPrologue();holdNow();
+      if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);}
+      showPlace(S.place,true);
+      S.seenV31=true;S.seenMap=true;S.seenSk=true;startPrologue();holdNow();
       game.start();save();UI.rebuild();lastWall=Date.now();last=performance.now();
     });
   }

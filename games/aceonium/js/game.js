@@ -116,7 +116,8 @@ P.awakeH=function(){return D.AWAKE_H/(1-Math.min(0.6,this.eff('fat')));};
 P.restH=function(){return Math.max(D.REST_MIN_H,D.REST_H-D.BED_STEP*this.S.build.bedroom);};
 P.skillCd=function(s){return s.cd*(1-0.04*(this.S.skills[s.id].l-1));};
 P.bag=function(){return D.BAG[this.S.bagLvl-1];};
-P.bagCap=function(){return this.bag().cap;};
+/* v30.1: в дальних трактах с монстра падает больше единиц, сумка вмещает во столько же раз больше (тяжелее она не становится) */
+P.bagCap=function(){var tr=this.S.trip;return this.bag().cap*(tr?(D.TRACT_QTY[tr.t]||1):1);};
 P.storeCap=function(){return D.STORE[this.S.storeLvl-1].cap;};
 P.pickMult=function(){return this.bag().pick*(1+this.eff('chance')+this.eff('pick'))*(this.skillOn('harvest')?this.skillPow('harvest'):1);};
 P.tractOpen=function(t){return t===0||(t<D.TRACTS.length&&this.S.tracts[t-1].clears>0);};
@@ -248,8 +249,10 @@ P.applyKill=function(e){
   if(this.rep)this.rep.kills++;
   this.addXp(D.xpMob(tr.t,tr.w)*(e.boss?D.XP_BOSS:e.elite?D.ELITE_HP:1));
   if(!e.boss){
-    if(e.elite){this.bagAdd(e.res,1);if(Math.random()<this.dropChance(tr.t,tr.w))this.bagAdd(e.res,1);}
-    else if(Math.random()<this.dropChance(tr.t,tr.w))this.bagAdd(e.res,1);
+    /* v30.1: дальше тракт - больше единиц с одного монстра */
+    var qty=D.TRACT_QTY[tr.t]||1;
+    if(e.elite){this.bagAdd(e.res,qty);if(Math.random()<this.dropChance(tr.t,tr.w))this.bagAdd(e.res,qty);}
+    else if(Math.random()<this.dropChance(tr.t,tr.w))this.bagAdd(e.res,qty);
     tr.m++;
     if(tr.m>=D.MOBS){
       tr.m=0;tr.best=tr.w;
@@ -260,7 +263,7 @@ P.applyKill=function(e){
   }else{
     var k=tr.w/10;
     this.bagAdd(T.rare,k);
-    for(var i=0;i<2*k;i++)this.bagAdd(T.res[Math.floor(Math.random()*T.res.length)],1);
+    for(var i=0;i<2*k;i++)this.bagAdd(T.res[Math.floor(Math.random()*T.res.length)],D.TRACT_QTY[tr.t]||1);
     S.stats.bosses++;tr.bosses++;tr.boss=false;
     if(this.rep)this.rep.bosses++;
     var first=false;
@@ -898,7 +901,16 @@ P.tickProd=function(dt){
     var eff=self.prodEff(d.id);
     d.lines.forEach(function(r){
       var rt=self.lineRate(d.id,r,eff);if(!rt)return;
-      o.acc[r]=Math.min(self.lineCap(d.id,r),(o.acc[r]||0)+rt*dt/3600);
+      var add=Math.min(rt*dt/3600,Math.max(0,self.lineCap(d.id,r)-(o.acc[r]||0)));
+      /* v30.1: переработка (плавильня) берёт сырьё со склада, нет сырья - линия стоит */
+      var cv=D.CONVERT[r];
+      if(cv){
+        for(var k in cv)add=Math.min(add,self.have(k)/cv[k]);
+        if(!o.lack)o.lack={};o.lack[r]=add<rt*dt/3600*0.5&&(o.acc[r]||0)<self.lineCap(d.id,r);
+        if(add<=0)return;
+        for(var k2 in cv)S.store[k2]=Math.max(0,self.have(k2)-add*cv[k2]);
+      }
+      o.acc[r]=(o.acc[r]||0)+add;
     });
   });
   /* возчик */
@@ -1283,8 +1295,13 @@ P.tickTav=function(dt){
       if(o.lvl<D.WORKER_MAX&&o.save>=D.workerUp(o.lvl)){o.save-=D.workerUp(o.lvl);var Tb=D.workerBuild(o.lvl);o.bt={t:Tb,T:Tb};}}}
     var cap=self.stockCap(w);
     if(o.stock>=cap){o.t=0;return;}
-    o.t+=dt;var tm=D.WORKERS[w].time;
-    while(o.t>=tm&&o.stock<cap){o.t-=tm;o.stock=Math.min(cap,o.stock+self.batchSize(w));}
+    o.t+=dt;var tm=D.WORKERS[w].time;o.lack=false;
+    while(o.t>=tm&&o.stock<cap){
+      /* v30.1: партия тратит сырьё со склада; не хватает - работник ждёт */
+      var use=D.workerUse(w,self.batchSize(w));
+      if(!self.canPay(use)){o.t=tm;o.lack=true;break;}
+      self.pay(use);o.t-=tm;o.stock=Math.min(cap,o.stock+self.batchSize(w));
+    }
     if(o.stock>=cap)o.t=0;
     o.miss=Math.max(0,o.miss-dt/600);   // счётчик нехватки тает за 10 минут
   });
@@ -1403,10 +1420,11 @@ P.sanitize=function(){
 /* сохранение v1 (золото, уровни) -> v2: персонаж и гардероб остаются, прогресс заново */
 /* v27 (версия 3): прогресс сбрасывается у всех (тестовая стадия), персонаж, облик, гардероб и настройки остаются */
 /* v30 (версия 4): новая экономика (уровни вещей, быстрый крафт), прогресс снова заново. Пролог второй раз не показываем, разговор с хозяйкой да */
+/* v30.1 (версия 5): новые ресурсы, прогресс снова заново */
 function migrate(old,v){
-  if(v>=4)return old;
+  if(v>=5)return old;
   return {profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},
-    lastSeen:0,resetV30:!!old.profile,lore:{pro:old.lore&&old.lore.pro?1:0}};
+    lastSeen:0,resetV31:!!old.profile,lore:{pro:old.lore&&old.lore.pro?1:0}};
 }
 
 var api={Game:Game,defaults:defaults,migrate:migrate};

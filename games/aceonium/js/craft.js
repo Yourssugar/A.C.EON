@@ -8,7 +8,7 @@ var D=window.AcData;
 var t=function(k,v){return I18n.t(k,v);};
 var TABS=['fav','herbalist','carpenter','smith','tanner','jeweler','mage'];
 var TAB_ICON={fav:'u_star',herbalist:'p_heal',carpenter:'c_bow',smith:'s_sword',tanner:'t_cloak',jeweler:'j_ring',mage:'sc_spark'};
-var MAIN_RES=['wood','iron','herb','hide','coal','bone','silk','spore','ecto','silver','crystal','ironwood','amber','pearl','starice'];
+var MAIN_RES=['wood','iron','herb','hide','coal','steel','silver','gems','ironwood','meteor','stonehide','ecto'];
 var C=null;
 
 function mName(m){return m==='mage'?t('ms.mage'):t('ms.'+m);}

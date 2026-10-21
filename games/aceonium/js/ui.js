@@ -49,10 +49,17 @@ var RES_SVG={
   amber:'<path d="M8 14L2 8a3.2 3.2 0 0 1 6-4 3.2 3.2 0 0 1 6 4z" fill="C"/><circle cx="5.5" cy="6.5" r="1" fill="#fff" opacity=".8"/>',
   pearl:'<circle cx="8" cy="8" r="5.5" fill="C"/><circle cx="6" cy="6" r="1.6" fill="#fff"/>',
   starice:'<path d="M8 1l2 5h5l-4 3 2 6-5-4-5 4 2-6-4-3h5z" fill="C"/>',
+  meat:'<path d="M3 9a5 4 0 0 1 9-3l2 2-2 2a5 4 0 0 1-9-1z" fill="C"/><circle cx="13" cy="10" r="1.6" fill="#f4ecd8"/>',
+  hops:'<path d="M8 2c3 2 4 5 3 9-1 2-5 2-6 0-1-4 0-7 3-9z" fill="C"/><path d="M6 6h4M5.5 9h5" stroke="#000" stroke-opacity=".3"/>',
+  veg:'<path d="M4 6l8-2-6 10z" fill="C"/><path d="M11 4l3-3M11 4l1-3M11 4l3 0" stroke="#5ab030" stroke-width="1.4"/>',
+  steel:'<path d="M2 11l3-5h6l3 5z" fill="C"/><path d="M5 6h6l-1 2H6z" '+WH+'/>',
+  gems:'<path d="M8 1l4 5-4 9-4-9z" fill="C"/><path d="M8 1v14M4 6h8" stroke="#fff" stroke-opacity=".45"/>',
+  meteor:'<path d="M2 11l3-5h6l3 5z" fill="C"/><circle cx="8" cy="9" r="1.5" fill="#fff" opacity=".7"/>',
+  stonehide:'<path d="M4 2h8l2 3-1 3 1 5-3 1H5l-3-1 1-5-1-3z" fill="C"/><path d="M5 6h6M5 9h6" stroke="#000" stroke-opacity=".3"/>',
   coal:'<path d="M2 11l3-6 4-2 5 3 1 6-4 3H5z" fill="C"/><path d="M6 6l3-1 2 3" stroke="#9aa0aa" stroke-opacity=".6" fill="none"/>'
 };
-/* v18: картинки из 3D, один атлас assets/icons/icons.webp (сетка 8 x 7 по 128 px) */
-var SPR_IDS=["r_wood", "r_iron", "r_herb", "r_hide", "r_bone", "r_silk", "r_spore", "r_ecto", "r_crystal", "r_silver", "r_coal", "r_ironwood", "r_amber", "r_pearl", "r_starice", "p_heal", "p_str", "p_luck", "p_vigor", "p_spore", "p_ward", "c_bow", "c_shield", "c_wand", "s_sword", "s_axe", "s_helm", "s_mail", "s_blade", "t_cloak", "t_belt", "t_boots", "t_hood", "t_silk", "j_ring", "j_bone", "j_crys", "j_amber", "j_star", "sc_spark", "sc_guard", "sc_wind", "sc_seek", "sc_fire", "sc_storm", "sc_star", "o_staff", "o_bag", "o_store", "o_coin", "o_book", "u_map", "u_mug", "u_house", "u_anvil", "u_chalice", "u_hammer", "u_journal", "u_star", "u_bed"],SPR_COLS=8,SPR_ROWS=8,SPR={};SPR_IDS.forEach(function(id,i){SPR[id]=i;});
+/* v18: картинки из 3D, один атлас assets/icons/icons.webp (сетка 8 x N по 128 px, список в pipe/icons/list.js) */
+var SPR_IDS=["r_wood", "r_iron", "r_herb", "r_hide", "r_meat", "r_hops", "r_veg", "r_coal", "r_steel", "r_silver", "r_gems", "r_ironwood", "r_meteor", "r_stonehide", "r_ecto", "p_heal", "p_str", "p_luck", "p_vigor", "p_spore", "p_ward", "p_elixir", "c_bow", "c_shield", "c_wand", "c_spear", "c_arrows", "c_longbow", "c_rshield", "c_goldbow", "c_darkbow", "s_sword", "s_axe", "s_helm", "s_mail", "s_blade", "s_dagger", "s_hammer", "s_falchion", "s_broad", "s_kite", "s_katana", "s_claymore", "s_daxe", "s_goldsword", "t_cloak", "t_belt", "t_boots", "t_hood", "t_silk", "t_pouch", "t_jerkin", "t_scale", "t_ghost", "j_ring", "j_bone", "j_amulet", "j_chain", "j_crys", "j_amber", "j_star", "sc_spark", "sc_guard", "sc_wind", "sc_seek", "sc_fire", "sc_storm", "sc_star", "o_staff", "o_bag", "o_store", "o_coin", "o_book", "u_map", "u_mug", "u_house", "u_anvil", "u_chalice", "u_hammer", "u_journal", "u_star", "u_bed"],SPR_COLS=8,SPR_ROWS=11,SPR={};SPR_IDS.forEach(function(id,i){SPR[id]=i;});
 function spr(id,cls){
   var i=SPR[id];if(i===undefined)return '';
   var c=i%SPR_COLS,r=Math.floor(i/SPR_COLS);
@@ -738,6 +745,9 @@ function workerBlock(w){
       '<p>'+t('wk.price',{p:rate2(g.portionPrice(w)),m:rate2(g.portionPrice(w)*(1-D.WORKER_SHARE))})+'</p>'+
       '<p class="note">'+t('wk.flow',{a:rate2(need),b:rate2(capH)})+'</p>';
     if(need>capH*1.02)h+='<p class="bad">'+t('wk.short')+'</p>';
+    /* v30.1: сырьё на партию */
+    h+='<p class="note">'+t('wk.use')+' '+costHtml(D.workerUse(w,bs))+'</p>';
+    if(o.lack)h+='<p class="bad">'+t('wk.lack')+'</p>';
     var hc=g.helpCost(w),slots=D.helpSlots(o.lvl);
     h+='<div class="stg-b"><span>'+t('wk.helpers',{a:o.help,b:slots})+'</span>'+(hc?'<button type="button" class="btn sm" data-act="help"'+(g.canPay(hc)?'':' disabled')+'>'+t('wk.hireHelp')+' '+costHtml(hc)+'</button>':
       '')+'</div>';
@@ -1005,6 +1015,8 @@ function prodBlock(id){
       h+='<div class="pd-line'+(open?'':' off')+'">'+resIcon(r)+'<span>'+t('res.'+r)+'</span>'+
         (open?'<b>'+D.fmt(n)+' / '+D.fmt(cap)+'</b><small>'+t('pd.perH',{n:rate2(rt)})+'</small>':'<small>'+t('pd.lineTract',{t:tractName(D.resTract(r))})+'</small>')+'</div>'+
         (open?'<div class="bar pdb'+(n>=cap?' full':'')+'"><i style="width:'+Math.min(100,n/cap*100).toFixed(1)+'%"></i></div>':'');
+      /* v30.1: плавильня - из чего и хватает ли сырья */
+      if(open&&D.CONVERT[r])h+='<p class="note">'+t('pd.convert')+' '+costHtml(D.CONVERT[r])+'</p>'+(o.lack&&o.lack[r]?'<p class="bad">'+t('pd.noRaw')+'</p>':'');
     });
     h+='<div class="stg-b"><button type="button" class="btn sm" data-act="collect" data-id="'+id+'"'+(any?'':' disabled')+'>'+t('mine.collect')+'</button>'+(g.prodFull(id)?'<span class="bad">'+t('pd.full')+'</span>':'')+'</div>';
     var ln=d.lines.filter(function(r){return g.lineOpen(r);})[0]||d.lines[0];

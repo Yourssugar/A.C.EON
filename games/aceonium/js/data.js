@@ -6,22 +6,23 @@
 var D={};
 
 /* ── ресурсы ── */
+/* v30.1: основные (поход и промыслы), уголь, переработка (плавильня и шахта), для зала (повар и пивовар), редкие с боссов */
 D.RES=[
   {id:'wood',   c:'#b07a40'},
   {id:'iron',   c:'#9aa6b4'},
   {id:'herb',   c:'#6cc84a'},
   {id:'hide',   c:'#c08452'},
-  {id:'bone',   c:'#e8dfc4'},
-  {id:'silk',   c:'#dfe6ff'},
-  {id:'spore',  c:'#b77ae6'},
-  {id:'ecto',   c:'#6ff0d0'},
-  {id:'crystal',c:'#7fd8ff'},
-  {id:'silver', c:'#d6dde8'},
+  {id:'meat',   c:'#d0584a',tav:true},
+  {id:'hops',   c:'#a8c850',tav:true},
+  {id:'veg',    c:'#f09030',tav:true},
   {id:'coal',   c:'#4a4a52',mine:true},
+  {id:'steel',  c:'#8aa0c0'},
+  {id:'silver', c:'#d6dde8'},
+  {id:'gems',   c:'#7fd8ff'},
   {id:'ironwood',c:'#7a9a6a',rare:true},
-  {id:'amber',  c:'#ffaa30',rare:true},
-  {id:'pearl',  c:'#eef4ff',rare:true},
-  {id:'starice',c:'#9fe8ff',rare:true}
+  {id:'meteor', c:'#c060ff',rare:true},
+  {id:'stonehide',c:'#a0a4a8',rare:true},
+  {id:'ecto',   c:'#6ff0d0',rare:true}
 ];
 D.RES_BY={};D.RES.forEach(function(r){D.RES_BY[r.id]=r;});
 
@@ -31,31 +32,29 @@ D.MON={
   iron:   {type:'golem', cols:['#5c6068','#ff8a30']},
   herb:   {type:'slime', cols:['#4cc23a','#e0ffb0']},
   hide:   {type:'spider',cols:['#5a3a22','#ffb040']},
-  bone:   {type:'golem', cols:['#cfc6a8','#ff4040']},
-  silk:   {type:'spider',cols:['#e6e8f0','#a060ff']},
-  spore:  {type:'slime', cols:['#8a4ac0','#ffd0ff']},
-  ecto:   {type:'ghost', cols:['#7ff0d8','#20c0a0']},
-  crystal:{type:'eye',   cols:['#b8ecff','#2080ff']},
-  silver: {type:'golem', cols:['#c8d0dc','#80e8ff']}
+  meat:   {type:'spider',cols:['#8a3a2a','#ffd0a0']}
 };
 
 /* ── тракты ── */
+/* v30.1: во всех трактах основные ресурсы и мясо, у каждого свой перевес (повтор в списке = чаще).
+   Дальше тракт - больше единиц с монстра (D.TRACT_QTY). Боссы дают редкий ресурс своего тракта. */
 D.TRACTS=[
-  {id:'summer',biome:0,res:['wood','iron','herb','hide'],rare:'ironwood',boss:{type:'golem', cols:['#3e4a30','#b0ff60']}},
-  {id:'autumn',biome:1,res:['bone','silk','hide'],       rare:'amber',   boss:{type:'spider',cols:['#3a2010','#ffaa30']}},
-  {id:'swamp', biome:2,res:['spore','ecto','herb'],      rare:'pearl',   boss:{type:'ghost', cols:['#c0d0ff','#eef4ff']}},
-  {id:'pass',  biome:3,res:['crystal','silver','iron'],  rare:'starice', boss:{type:'eye',   cols:['#2a3a5a','#9fe8ff']}}
+  {id:'summer',biome:0,res:['wood','iron','herb','hide','meat'],             rare:'ironwood', boss:{type:'golem', cols:['#3e4a30','#b0ff60']}},
+  {id:'autumn',biome:1,res:['wood','wood','hide','iron','meat','herb'],      rare:'meteor',   boss:{type:'spider',cols:['#3a2010','#ffaa30']}},
+  {id:'swamp', biome:2,res:['herb','herb','hide','meat','meat','iron'],      rare:'stonehide',boss:{type:'ghost', cols:['#c0d0ff','#eef4ff']}},
+  {id:'pass',  biome:3,res:['iron','iron','wood','hide','meat','herb'],      rare:'ecto',     boss:{type:'eye',   cols:['#2a3a5a','#9fe8ff']}}
 ];
+D.TRACT_QTY=[1,2,3,4];
 /* v17: кто водится в тракте. Обычный монстр - случайный из списка по ресурсу; элита (с 30-й волны) крупнее, со свечением,
    вдвое крепче и даёт вдвое больше добычи; боссы: mini - волны 10-40 и 60-90, mid - 50-я, main - 100-я. Ключи - модели adventure.js */
 D.ROSTER=[
-  {mobs:{wood:['snake','goleling'],iron:['orc','ninja'],herb:['frog','greenblob','mushnub'],hide:['bunny','rat','birb']},
+  {mobs:{wood:['snake','goleling'],iron:['orc','ninja'],herb:['frog','greenblob','mushnub'],hide:['bunny','rat'],meat:['birb','bunny']},
    elite:{wood:'goleling_ev',herb:'mushnub_ev'},boss:{mini:'goleling_ev',mid:'mushnub_ev',main:'orc_skull'}},
-  {mobs:{bone:['dino','tribal'],silk:['spider','armabee'],hide:['bunny','alpaking','rat']},
-   elite:{silk:'armabee_ev',hide:'alpaking_ev'},boss:{mini:'alpaking_ev',mid:'tribal',main:'monkroose'}},
-  {mobs:{spore:['wasp','spikyblob','mushnub'],ecto:['ghost','ghost_skull'],herb:['frog','glub','squidle']},
-   elite:{herb:'glub_ev',spore:'mushnub_ev'},boss:{mini:'glub_ev',mid:'mushking',main:'bigfrog'}},
-  {mobs:{crystal:['bluedemon','hywirl'],silver:['yeti','alien'],iron:['orc','cactoro','ninja']},
+  {mobs:{wood:['tribal','armabee'],hide:['bunny','alpaking','rat'],iron:['spider'],meat:['dino'],herb:['mushnub']},
+   elite:{wood:'armabee_ev',hide:'alpaking_ev'},boss:{mini:'alpaking_ev',mid:'tribal',main:'monkroose'}},
+  {mobs:{herb:['frog','glub','squidle'],hide:['spikyblob','ghost_skull'],meat:['wasp','mushnub'],iron:['ghost']},
+   elite:{herb:'glub_ev',meat:'mushnub_ev'},boss:{mini:'glub_ev',mid:'mushking',main:'bigfrog'}},
+  {mobs:{iron:['orc','cactoro','ninja'],wood:['hywirl','alien'],hide:['yeti'],meat:['bluedemon'],herb:['alien']},
    elite:{},boss:{mini:'hywirl',mid:'wizard',main:'demon'}}
 ];
 D.ELITE_FROM=30;D.ELITE_HP=2;
@@ -93,8 +92,8 @@ D.BAG=[
   {cap:90, pick:0.75,cost:{hide:15}},
   {cap:180,pick:0.9, cost:{hide:40,wood:20}},
   {cap:400,pick:1.0, cost:{hide:80,ironwood:10}},
-  {cap:600,pick:1.1, cost:{hide:150,silk:100,amber:10}},
-  {cap:900,pick:1.2, cost:{silk:250,ecto:150,pearl:10}}
+  {cap:600,pick:1.1, cost:{hide:150,steel:40,meteor:10}},
+  {cap:900,pick:1.2, cost:{hide:250,silver:60,stonehide:10}}
 ];
 /* склад ресурсов: уровень даёт стеллажи (v27 их ставит бригада строителей: сначала в каменной комнате, с 4-го уровня в подвале) */
 D.STORE_UP={gold:function(l){return Math.ceil(100*Math.pow(3,l-1));},time:function(l){return 600*l;}};
@@ -103,10 +102,10 @@ D.STORE=[
   {cap:200,  cost:null},
   {cap:400,  cost:{wood:40,iron:20}},
   {cap:800,  cost:{wood:100,iron:60}},
-  {cap:1500, cost:{wood:200,bone:100}},
-  {cap:3000, cost:{wood:400,bone:250,ironwood:10}},
-  {cap:6000, cost:{wood:800,ecto:400,amber:10}},
-  {cap:12000,cost:{wood:1500,silver:600,pearl:10}}
+  {cap:1500, cost:{wood:200,steel:40}},
+  {cap:3000, cost:{wood:400,steel:100,ironwood:10}},
+  {cap:6000, cost:{wood:800,silver:100,meteor:10}},
+  {cap:12000,cost:{wood:1500,gems:100,stonehide:10}}
 ];
 
 /* ── опыт и уровень мага ── */
@@ -121,15 +120,16 @@ D.staffDps=function(s,lvl){return D.STAFF0*Math.pow(D.STAFF_GROW,s)*(1+D.LVL_DMG
 D.staffTier=function(s){return Math.floor(s/10);};
 D.TIER_COLORS=['#00e5ff','#a060ff','#ff2d78','#ffcc33','#e8fbff','#33ff99','#ff6a1a','#6a8cff'];
 /* основа посоха по полосам уровней: дерево всегда понемногу, главный ресурс текущего тракта */
-D.STAFF_BANDS=[{to:20,main:'iron'},{to:40,main:'bone'},{to:60,main:'ecto'},{to:1e9,main:'silver',extra:'crystal'}];
-D.TIER_RARE=['ironwood','ironwood','amber','amber','pearl','pearl','starice','starice','starice','starice'];
+/* v30.1: переработанные ресурсы дороже, поэтому их нужно меньше: b - сколько на первом уровне полосы, gr - рост за уровень */
+D.STAFF_BANDS=[{to:20,main:'iron',b:5,gr:1.18},{to:40,main:'steel',b:2,gr:1.15},{to:60,main:'silver',b:1.5,gr:1.14},{to:1e9,main:'silver',b:2,gr:1.12,extra:'gems'}];
+D.TIER_RARE=['ironwood','ironwood','meteor','meteor','stonehide','stonehide','ecto','ecto','ecto','ecto'];
 D.staffCost=function(s){
   var c={},band=D.STAFF_BANDS[0];
   for(var i=0;i<D.STAFF_BANDS.length;i++)if(s<D.STAFF_BANDS[i].to){band=D.STAFF_BANDS[i];break;}
   var k=s-(band===D.STAFF_BANDS[0]?0:D.STAFF_BANDS[D.STAFF_BANDS.indexOf(band)-1].to);
   c.wood=Math.ceil(3*Math.pow(1.05,s));
-  c[band.main]=(c[band.main]||0)+Math.ceil(5*Math.pow(1.18,k));
-  if(band.extra)c[band.extra]=Math.ceil(4*Math.pow(1.16,k));
+  c[band.main]=(c[band.main]||0)+Math.ceil((band.b||5)*Math.pow(band.gr||1.18,k));
+  if(band.extra)c[band.extra]=Math.ceil(1.5*Math.pow(1.12,k));
   if((s+1)%10===0){var tier=(s+1)/10,r=D.TIER_RARE[Math.min(tier-1,D.TIER_RARE.length-1)];c[r]=3*tier;}
   return c;
 };
@@ -200,8 +200,9 @@ D.MASTERS=[
 D.MASTER_BY={};D.MASTERS.forEach(function(m){D.MASTER_BY[m.id]=m;});
 D.TOOLS_MAX=10;
 /* общая очередь крафта (v11): одна на всех, мастера работают параллельно, каждый над первой своей вещью */
-D.QSLOTS0=10;D.QSLOTS_MAX=30;
-D.qSlotCost=function(n){return {gold:Math.ceil(80*Math.pow(1.6,n-D.QSLOTS0))};};
+/* v30.1: очередь 6 мест на старте, 10 улучшений до 16 */
+D.QSLOTS0=6;D.QSLOTS_MAX=16;
+D.qSlotCost=function(n){return {gold:Math.ceil(60*Math.pow(1.7,n-D.QSLOTS0))};};
 D.mXpNeed=function(l){return Math.ceil(20*Math.pow(1.35,l-1));};
 /* скорость мастера: уровень +2% за уровень, не больше +40% (к 21-му), собранная коллекция ещё +10% */
 D.mSpeed=function(lvl,coll){return (1+0.02*Math.min(20,lvl-1))*(coll?1.1:1);};
@@ -233,34 +234,56 @@ D.teachTime=function(tier){return 600*tier;};
    Вещи 1-го уровня мастер знает сразу, остальные через учителя. */
 D.GOODS=[
   /* травница */
-  {id:'p_heal', m:'herbalist',tier:1,kind:'potion',c:'#ff4a5a',eff:{hp:0.2},     cost:{herb:2},                  time:40},
-  {id:'p_str',  m:'herbalist',tier:2,kind:'potion',c:'#ff9a3a',eff:{dmg:0.25},   cost:{herb:3,iron:1},           time:120},
-  {id:'p_luck', m:'herbalist',tier:3,kind:'potion',c:'#9cff6a',eff:{chance:0.15},cost:{herb:5,hide:1},           time:300},
-  {id:'p_vigor',m:'herbalist',tier:4,kind:'potion',c:'#ffd84a',eff:{fat:0.25},   cost:{herb:6,bone:1},           time:720},
-  {id:'p_ward', m:'herbalist',tier:5,kind:'ward',  c:'#b080ff',eff:{},           cost:{herb:3,hide:2,ironwood:1},time:1500},
-  {id:'p_spore',m:'herbalist',tier:6,kind:'potion',c:'#d070ff',eff:{dmg:0.6},    cost:{spore:5,herb:3,ecto:1},   time:3000},
+  {id:'p_heal', m:'herbalist',tier:1,kind:'potion',c:'#ff4a5a',eff:{hp:0.2},     cost:{herb:2},                    time:40},
+  {id:'p_str',  m:'herbalist',tier:2,kind:'potion',c:'#ff9a3a',eff:{dmg:0.25},   cost:{herb:3,iron:1},             time:120},
+  {id:'p_luck', m:'herbalist',tier:3,kind:'potion',c:'#9cff6a',eff:{chance:0.15},cost:{herb:5,hide:1},             time:300},
+  {id:'p_vigor',m:'herbalist',tier:4,kind:'potion',c:'#ffd84a',eff:{fat:0.25},   cost:{herb:6,meat:2},             time:720},
+  {id:'p_ward', m:'herbalist',tier:5,kind:'ward',  c:'#b080ff',eff:{},           cost:{herb:4,hide:3,ironwood:1},  time:1500},
+  {id:'p_spore',m:'herbalist',tier:6,kind:'potion',c:'#d070ff',eff:{dmg:0.6},    cost:{herb:8,gems:1,meteor:1},    time:3000},
+  {id:'p_elixir',m:'herbalist',tier:7,kind:'potion',c:'#5ae8ff',eff:{dmg:0.4,hp:0.4},cost:{herb:10,gems:3,ecto:1},time:6000},
   /* столяр */
-  {id:'c_bow',  m:'carpenter',tier:1,kind:'goods', c:'#b07840',cost:{wood:2,hide:1},         time:45},
-  {id:'c_shield',m:'carpenter',tier:3,kind:'goods',c:'#8a6a40',cost:{wood:6,iron:2},         time:360},
-  {id:'c_wand', m:'carpenter',tier:5,kind:'goods', c:'#7a9a6a',cost:{wood:10,ironwood:1},    time:1500},
+  {id:'c_bow',  m:'carpenter',tier:1,kind:'goods', c:'#b07840',cost:{wood:2,hide:1},            time:45},
+  {id:'c_spear',m:'carpenter',tier:2,kind:'goods', c:'#a08060',cost:{wood:3,iron:1},            time:130},
+  {id:'c_shield',m:'carpenter',tier:3,kind:'goods',c:'#8a6a40',cost:{wood:6,iron:2},            time:360},
+  {id:'c_arrows',m:'carpenter',tier:3,kind:'goods',c:'#c0a070',cost:{wood:4,hide:2},            time:300},
+  {id:'c_longbow',m:'carpenter',tier:4,kind:'goods',c:'#9a6a3a',cost:{wood:8,hide:3,steel:1},   time:800},
+  {id:'c_wand', m:'carpenter',tier:5,kind:'goods', c:'#7a9a6a',cost:{wood:10,ironwood:1},       time:1500},
+  {id:'c_rshield',m:'carpenter',tier:5,kind:'goods',c:'#7a6a50',cost:{wood:10,steel:3},         time:1600},
+  {id:'c_goldbow',m:'carpenter',tier:6,kind:'goods',c:'#e0b040',cost:{wood:12,silver:3,meteor:1},time:3200},
+  {id:'c_darkbow',m:'carpenter',tier:7,kind:'goods',c:'#6a3a8a',cost:{ironwood:3,gems:3,ecto:1},time:6600},
   /* кузнец */
-  {id:'s_sword',m:'smith',tier:1,kind:'goods', c:'#c0c8d4',cost:{iron:2,wood:1},         time:50},
-  {id:'s_axe',  m:'smith',tier:2,kind:'goods', c:'#9aa6b4',cost:{wood:2,iron:2,coal:1},  time:150},
-  {id:'s_helm', m:'smith',tier:3,kind:'armor', slot:'head',c:'#8a96a4',eff:{hp:0.15},cost:{iron:5,coal:2,hide:1}, time:420},
-  {id:'s_mail', m:'smith',tier:5,kind:'armor', slot:'body',c:'#a0aab8',eff:{hp:0.3}, cost:{iron:10,coal:5,hide:3},time:1800},
-  {id:'s_blade',m:'smith',tier:7,kind:'goods', c:'#e0e8f0',cost:{silver:6,iron:4,coal:4},time:6000},
+  {id:'s_sword',m:'smith',tier:1,kind:'goods', c:'#c0c8d4',cost:{iron:2,wood:1},              time:50},
+  {id:'s_dagger',m:'smith',tier:1,kind:'goods',c:'#b0b8c4',cost:{iron:2},                     time:35},
+  {id:'s_axe',  m:'smith',tier:2,kind:'goods', c:'#9aa6b4',cost:{wood:2,iron:2,coal:1},       time:150},
+  {id:'s_hammer',m:'smith',tier:2,kind:'goods',c:'#8a96a4',cost:{iron:3,wood:1,coal:1},       time:170},
+  {id:'s_helm', m:'smith',tier:3,kind:'armor', slot:'head',c:'#8a96a4',eff:{hp:0.15},cost:{steel:2,hide:1},time:420},
+  {id:'s_falchion',m:'smith',tier:3,kind:'goods',c:'#c8d0dc',cost:{steel:3,wood:1},           time:400},
+  {id:'s_broad',m:'smith',tier:4,kind:'goods', c:'#d0d8e4',cost:{steel:5,wood:2},             time:800},
+  {id:'s_kite', m:'smith',tier:4,kind:'goods', c:'#a0aab8',cost:{steel:5,wood:3},             time:900},
+  {id:'s_mail', m:'smith',tier:5,kind:'armor', slot:'body',c:'#a0aab8',eff:{hp:0.3}, cost:{steel:8,hide:3},time:1800},
+  {id:'s_katana',m:'smith',tier:5,kind:'goods',c:'#e0e4ec',cost:{steel:8,silver:1},           time:1500},
+  {id:'s_claymore',m:'smith',tier:6,kind:'goods',c:'#c8d4e0',cost:{steel:12,silver:3,meteor:1},time:3400},
+  {id:'s_daxe', m:'smith',tier:6,kind:'goods', c:'#9aa6b4',cost:{steel:12,wood:4,meteor:1},   time:3000},
+  {id:'s_blade',m:'smith',tier:7,kind:'goods', c:'#e0e8f0',cost:{silver:8,steel:6,stonehide:1},time:6000},
+  {id:'s_goldsword',m:'smith',tier:7,kind:'goods',c:'#ffd040',cost:{silver:6,gems:4,ecto:1},  time:7000},
   /* кожевник */
   {id:'t_cloak',m:'tanner',tier:1,kind:'armor', slot:'body', c:'#4a6a3a',eff:{hp:0.1},           cost:{hide:2,herb:1},time:55},
   {id:'t_belt', m:'tanner',tier:1,kind:'armor', slot:'belt', c:'#8a5a32',eff:{hp:0.05,pick:0.03},cost:{hide:1,iron:1},time:35},
   {id:'t_boots',m:'tanner',tier:1,kind:'armor', slot:'feet', c:'#6a4428',eff:{hp:0.05,fat:0.05}, cost:{hide:1,wood:1},time:35},
-  {id:'t_hood', m:'tanner',tier:3,kind:'armor', slot:'head', c:'#5a7a4a',eff:{hp:0.12,chance:0.03},cost:{hide:4,silk:2},time:360},
-  {id:'t_silk', m:'tanner',tier:5,kind:'armor', slot:'body', c:'#dfe6ff',eff:{hp:0.25,fat:0.05},cost:{silk:8,hide:4},time:1800},
+  {id:'t_pouch',m:'tanner',tier:2,kind:'goods', c:'#9a6a3a',cost:{hide:3,wood:1},                time:120},
+  {id:'t_hood', m:'tanner',tier:3,kind:'armor', slot:'head', c:'#5a7a4a',eff:{hp:0.12,chance:0.03},cost:{hide:4,herb:2},time:360},
+  {id:'t_jerkin',m:'tanner',tier:4,kind:'armor',slot:'body', c:'#8a5a32',eff:{hp:0.22},          cost:{hide:8,steel:1},time:800},
+  {id:'t_silk', m:'tanner',tier:5,kind:'armor', slot:'body', c:'#dfe6ff',eff:{hp:0.25,fat:0.05},cost:{hide:8,silver:2},time:1800},
+  {id:'t_scale',m:'tanner',tier:6,kind:'armor', slot:'body', c:'#9aa0a6',eff:{hp:0.4},           cost:{hide:10,stonehide:2},time:3200},
+  {id:'t_ghost',m:'tanner',tier:7,kind:'armor', slot:'body', c:'#6ff0d0',eff:{hp:0.3,fat:0.15},  cost:{hide:12,gems:2,ecto:1},time:6500},
   /* ювелир */
-  {id:'j_ring', m:'jeweler',tier:1,kind:'ring',  slot:'ring',c:'#d6dde8',eff:{crit:0.03},cost:{iron:2,herb:1},time:50},
-  {id:'j_bone', m:'jeweler',tier:2,kind:'ring',  slot:'ring',c:'#e8dfc4',eff:{crit:0.05,hp:0.05},cost:{bone:5,iron:2},time:180},
-  {id:'j_crys', m:'jeweler',tier:4,kind:'ring',  slot:'ring',c:'#7fd8ff',eff:{pick:0.1}, cost:{crystal:5,silver:3},time:900},
-  {id:'j_amber',m:'jeweler',tier:6,kind:'ring',  slot:'ring',c:'#ffaa30',eff:{fat:0.15}, cost:{amber:1,silver:4,bone:4},time:3600},
-  {id:'j_star', m:'jeweler',tier:7,kind:'ring',  slot:'ring',c:'#9fe8ff',eff:{dmg:0.4},  cost:{starice:2,silver:8,crystal:6},time:7200},
+  {id:'j_ring', m:'jeweler',tier:1,kind:'ring',  slot:'ring',c:'#d6dde8',eff:{crit:0.03},         cost:{iron:2,herb:1},time:50},
+  {id:'j_bone', m:'jeweler',tier:2,kind:'ring',  slot:'ring',c:'#c08452',eff:{crit:0.05,hp:0.05}, cost:{hide:2,iron:2},time:180},
+  {id:'j_amulet',m:'jeweler',tier:3,kind:'goods',c:'#c87a40',cost:{iron:4,coal:2,herb:2},       time:400},
+  {id:'j_crys', m:'jeweler',tier:4,kind:'ring',  slot:'ring',c:'#7fd8ff',eff:{pick:0.1},          cost:{silver:3,gems:1},time:900},
+  {id:'j_chain',m:'jeweler',tier:5,kind:'goods', c:'#d6dde8',cost:{silver:5,steel:2},            time:1700},
+  {id:'j_amber',m:'jeweler',tier:6,kind:'ring',  slot:'ring',c:'#c060ff',eff:{fat:0.15},          cost:{silver:4,gems:2,meteor:1},time:3600},
+  {id:'j_star', m:'jeweler',tier:7,kind:'ring',  slot:'ring',c:'#9fe8ff',eff:{dmg:0.4},           cost:{gems:6,silver:6,ecto:1},time:7200},
   /* свитки мага (v11): маг пишет их сам, только когда он в таверне. lvl - уровень мага, учитель не нужен.
      xp - доля опыта до следующего уровня (считается не выше уровня свитка + 5). Продаются и берутся в поход, как зелья. */
   {id:'sc_spark',m:'mage',lvl:1, tier:1,kind:'scroll',c:'#ffb040',eff:{dmg:0.08},cost:{},                               time:30,  xp:0.02},
@@ -268,8 +291,8 @@ D.GOODS=[
   {id:'sc_wind', m:'mage',lvl:6, tier:2,kind:'scroll',c:'#a0f0c0',eff:{fat:0.1}, cost:{herb:2},                         time:100, xp:0.04},
   {id:'sc_seek', m:'mage',lvl:10,tier:3,kind:'scroll',c:'#e0d070',eff:{chance:0.1},cost:{herb:3,wood:2},                time:240, xp:0.065},
   {id:'sc_fire', m:'mage',lvl:15,tier:4,kind:'scroll',c:'#ff5a30',eff:{dmg:0.3}, cost:{coal:2,herb:3,ironwood:1},       time:600, xp:0.1},
-  {id:'sc_storm',m:'mage',lvl:25,tier:5,kind:'scroll',c:'#8a7aff',eff:{dmg:0.5,crit:0.05},cost:{crystal:2,ecto:2,herb:4},time:1200,xp:0.12},
-  {id:'sc_star', m:'mage',lvl:40,tier:6,kind:'scroll',c:'#9fe8ff',eff:{dmg:0.8}, cost:{starice:1,silver:3,crystal:2},   time:2400,xp:0.15}
+  {id:'sc_storm',m:'mage',lvl:25,tier:5,kind:'scroll',c:'#8a7aff',eff:{dmg:0.5,crit:0.05},cost:{gems:1,herb:4,meteor:1},time:1200,xp:0.12},
+  {id:'sc_star', m:'mage',lvl:40,tier:6,kind:'scroll',c:'#9fe8ff',eff:{dmg:0.8}, cost:{ecto:1,silver:3,gems:2},         time:2400,xp:0.15}
 ];
 D.MAGE_SPEED=1;
 D.GOOD_BY={};D.GOODS.forEach(function(x){
@@ -278,7 +301,7 @@ D.GOOD_BY={};D.GOODS.forEach(function(x){
 });
 /* цена = стоимость ресурсов + стоимость времени работы. Минута дорожает с уровнем вещи,
    свитки мага за полцены минуты (их ценность в опыте мага). */
-D.RES_VALUE={wood:2.5,iron:2.5,herb:2.5,hide:2.5,coal:4,bone:6,silk:6,spore:10,ecto:10,crystal:18,silver:18,ironwood:25,amber:60,pearl:80,starice:150};
+D.RES_VALUE={wood:2.5,iron:2.5,herb:2.5,hide:2.5,meat:3,hops:3,veg:3,coal:4,steel:12,silver:20,gems:30,ironwood:25,meteor:60,stonehide:80,ecto:150};
 D.priceOf=function(g){
   var rv=0;for(var k in g.cost)rv+=(D.RES_VALUE[k]||5)*g.cost[k];
   var tv=g.time/60*(D.MIN_RATE[g.tier]||D.MIN_RATE[D.MIN_RATE.length-1])*(g.m==='mage'?0.5:1),p=rv+tv;
@@ -287,7 +310,7 @@ D.priceOf=function(g){
 D.GOODS.forEach(function(x){x.price=D.priceOf(x);});
 D.SLOTS=['head','body','belt','feet','ring'];
 /* с чего начинает новый маг: хватает на первые заказы, пока не вернулся первый поход */
-D.START={gold:150,store:{wood:20,iron:15,herb:20,hide:15}};
+D.START={gold:150,store:{wood:20,iron:15,herb:20,hide:15,hops:12}};
 /* улучшения мага тоже идут заказом у мастера */
 D.ORDERS={
   staff:{m:'carpenter',time:function(s){return 20+15*s;},gold:function(s){return Math.ceil(10*Math.pow(1.16,s));}},
@@ -298,10 +321,10 @@ D.ORDERS={
 D.BUILD={
   forge:  {once:true,cost:function(){return {gold:400,wood:60,iron:40};}},
   tannery:{once:true,cost:function(){return {gold:600,wood:80,hide:60};}},
-  jewelry:{once:true,cost:function(){return {gold:5000,wood:200,crystal:50,amber:5};}},
+  jewelry:{once:true,cost:function(){return {gold:5000,wood:200,gems:50,meteor:5};}},
   hall:   {max:5,cost:function(l){var c={gold:Math.ceil(150*Math.pow(2.6,l))};if(l>0)c.wood=Math.ceil(40*Math.pow(1.8,l));return c;}},   /* v30: первый уровень зданий только за золото */
   bedroom:{max:4,cost:function(l){var c={gold:Math.ceil(300*Math.pow(2.5,l))};if(l>0)c.hide=Math.ceil(30*Math.pow(1.8,l));if(l>=2)c.silk=20*l;return c;}},
-  decor:  {max:5,cost:function(l){var c={gold:Math.ceil(500*Math.pow(2.8,l))},r=['ironwood','ironwood','amber','pearl','starice'][l];c[r]=3+2*l;return c;}}
+  decor:  {max:5,cost:function(l){var c={gold:Math.ceil(500*Math.pow(2.8,l))},r=['ironwood','ironwood','meteor','stonehide','ecto'][l];c[r]=3+2*l;return c;}}
 };
 D.BUILD_ORDER=['hall','bedroom'];   // v25: убранство теперь мебелью в режиме дизайна
 
@@ -316,19 +339,23 @@ D.stageTime=function(L){return L<=0?600:Math.round(900*Math.pow(L,1.5));};
 D.CREW_COST=[0,5000,50000];   // бригады строителей: первая есть сразу
 
 /* промыслы: линии ресурсов работают, когда открыт тракт с этим ресурсом. Добыча в час = база * уровень. */
-D.PROD_BASE={wood:4,iron:4,herb:4,hide:4,coal:18,bone:1,silk:1,spore:0.75,ecto:0.75,silver:0.5,crystal:0.5};
+D.PROD_BASE={wood:4,iron:6,herb:4,hide:4,meat:3,hops:3,veg:3,coal:18,steel:4,silver:3,gems:2,ecto:0.15};
+/* v30.1: плавильня переплавляет со склада: 1 сталь = 2 железа + 1 уголь (нет сырья - стоит) */
+D.CONVERT={steel:{iron:2,coal:1}};
 D.PROD_KEEP=6;      // часов работы влезает в запас здания
 D.PROD_MAX=10;
 D.PROD=[
   {id:'saw',  lines:['wood'],                       build:{gold:200},  c0:10},   /* v30: постройка (1-й уровень) только за золото */
-  {id:'mine', lines:['coal','iron','silver','crystal'],build:{gold:320},c0:25},
-  {id:'hunt', lines:['hide','bone','silk'],         build:{gold:380},  c0:15},
-  {id:'farm', lines:['herb','spore'],               build:{gold:260},  c0:12},
-  {id:'ghost',lines:['ecto'],                       build:{gold:10000},c0:60,tract:2}
+  {id:'mine', lines:['coal','iron','silver','gems'],build:{gold:320},  c0:25},
+  {id:'smelt',lines:['steel'],                      build:{gold:300},  c0:20},
+  {id:'hunt', lines:['hide','meat'],                build:{gold:380},  c0:15},
+  {id:'farm', lines:['herb','hops','veg'],          build:{gold:260},  c0:12},
+  {id:'ghost',lines:['ecto'],                       build:{gold:10000},c0:60,tract:3}
 ];
 D.PROD_BY={};D.PROD.forEach(function(p){D.PROD_BY[p.id]=p;});
 /* в каком тракте открывается ресурс (уголь из шахты есть всегда) */
-D.resTract=function(r){if(r==='coal')return 0;for(var i=0;i<D.TRACTS.length;i++)if(D.TRACTS[i].res.indexOf(r)>=0)return i;return 99;};
+D.RES_TRACT_FIX={coal:0,steel:0,meat:0,hops:0,veg:0,silver:1,gems:2,ecto:3};
+D.resTract=function(r){if(D.RES_TRACT_FIX[r]!==undefined)return D.RES_TRACT_FIX[r];for(var i=0;i<D.TRACTS.length;i++)if(D.TRACTS[i].res.indexOf(r)>=0)return i;return 99;};
 /* конюшня и возчик: сам свозит запас промыслов на склад раз в столько минут */
 D.STABLE={build:{gold:1700},c0:150,max:5,every:[60,40,25,15,10]};
 /* инструменты мастера на той же схеме: c0 золотом, последний вклад ещё и материалы */
@@ -349,10 +376,12 @@ D.seatMax=function(hall){return [6,8,12,14,18,20][Math.max(0,Math.min(5,hall||0)
 D.seatCost=function(n){return {gold:Math.ceil(150*Math.pow(1.4,n-D.SEATS0))};};   // n - сколько мест уже есть
 D.GUEST_CHANCE=0.6;D.GUEST_SIT=900;D.GUEST_FOOD=0.5;
 D.WORKERS={
-  brewer:{hire:200,hall:0,batch:6,per:6,time:900, price:2,help:300},
-  cook:  {hire:500,hall:1,batch:4,per:4,time:1800,price:4,help:500}
+  brewer:{hire:200,hall:0,batch:6,per:6,time:900, price:2,help:300,use:{hops:1/3}},
+  cook:  {hire:500,hall:1,batch:4,per:4,time:1800,price:4,help:500,use:{meat:0.5,veg:0.5}}
 };
 D.WORKER_ORDER=['brewer','cook'];
+/* v30.1: на партию уходит сырьё со склада: пивовару хмель, повару мясо и овощи (use - на одну порцию) */
+D.workerUse=function(w,n){var u=D.WORKERS[w].use,c={};for(var k in u)c[k]=Math.ceil(u[k]*n);return c;};
 D.WORKER_MAX=10;D.WORKER_SHARE=0.5;D.HELP_MAX=5;
 D.workerUp=function(L){return Math.ceil(300*Math.pow(2,L-1));};          // сбережения на расширение до L+1
 D.workerBuild=function(L){return 600*L;};                                 // расширение: 10 мин x уровень

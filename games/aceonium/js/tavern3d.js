@@ -737,6 +737,7 @@ var SITES={
   mine:  {x:20, z:-13,rot:-0.4,      r:9,  wall:'brick'},
   farm:  {x:-17,z:28, rot:Math.PI-0.2,r:8.5,wall:'plaster'},
   ghost: {x:22, z:29, rot:Math.PI+0.3,r:7,  wall:'brick'},
+  smelt: {x:25, z:15, rot:-Math.PI/2-0.2,r:7,wall:'brick'},   /* v30.1: плавильня, рядом с шахтой и кузней */
   stable:{x:5,  z:27, rot:Math.PI,   r:7.5,wall:'plaster'}
 };
 /* дома мастеров (v16): рядом со своим сырьём; дверь (открытая сторона) смотрит на таверну */
@@ -945,9 +946,18 @@ function buildProd(S){
         var bed=box(1.1,0.25,3.2,soilMat());place(bed,-1.8+b*1.8,hz+3.2,0,0.12);H.add(bed);
         for(var k=0;k<4;k++){var pl=natObj(k%2?'Fern_1':'Plant_1_Big',-1.8+b*1.8,hz+2.0+k*0.8,0.35+0.05*(lvl>5),k*1.7,'#6aa83a');if(pl){pl.position.y=0.24;H.add(pl);}}
       }
-      if(g&&g.lineOpen('spore'))for(var m2=0;m2<5;m2++){var mu=natObj(m2%2?'Mushroom_Common':'Mushroom_Laetiporus',hx+1.2+(m2%2)*0.7,-1.6+m2*0.6,0.7,m2);if(mu)H.add(mu);}
+      /* v30.1: хмель на шестах у стены */
+      for(var hp=0;hp<3;hp++){var pole=box(0.08,2.0,0.08,mat('dwood'),1);place(pole,hx+1.2,-1.6+hp*1.2,0,1.0);H.add(pole);var hv=natObj('Plant_1_Big',hx+1.2,-1.6+hp*1.2,0.5,hp*2,'#9ac848');if(hv){hv.position.y=0.3;H.add(hv);}}
       prop(H,'Dummy',-hx-1.8,hz+3.4,0.4);prop(H,'Bucket_Metal',hx+0.8,hz+1.2,0);kprop(H,'shovel',hx+1.3,hz+2.4,1.2,0.05,0.4,-Math.PI/2);
       pile(P,H,'FarmCrate_Carrot',hx+1.2,hz-0.4,0.2);pile(P,H,'FarmCrate_Apple',hx+1.3,hz-1.6,0.6);pile(P,H,'Barrel_Apples',hx+2.4,hz-1.0,0);pile(P,H,'FarmCrate_Carrot',hx+2.5,hz+0.2,1.2);
+    }else if(id==='smelt'){
+      /* печь с огнём, труба, наковальня, слитки и уголь */
+      var fur=box(1.8,1.6,1.4,mat('stone'),1);place(fur,hx+1.6,0.2,0,0.8);H.add(fur);
+      var mouth=box(0.7,0.5,0.08,new T.MeshBasicMaterial({color:0xff7a20}));place(mouth,hx+1.6,0.92,0,0.55);H.add(mouth);
+      var chim=box(0.6,2.2,0.6,mat('stone'),1);place(chim,hx+1.9,-0.1,0,2.6);H.add(chim);
+      var fl=new T.PointLight(0xff8a30,1.4,6,1.8);fl.position.set(hx+1.6,0.8,1.4);H.add(fl);
+      prop(H,'Anvil',hx+1.4,hz+1.2,0.4);prop(H,'Torch_Metal',-hx-0.4,hz+0.8,0);
+      pile(P,H,'Iron_Bars_Stack_Small',-hx-1.3,-0.8,0.3);pile(P,H,'Iron_Bars_Stack_Small',-hx-1.4,0.6,1.2);pile(P,H,'Stone_Chunks_Small',-hx-2.4,-0.2,0.6);pile(P,H,'Iron_Bars_Stack_Small',hx+2.8,hz+0.2,0.9);
     }else if(id==='ghost'){
       prop(H,'Cauldron',hx+1.6,hz+1.2,0);prop(H,'Torch_Metal',-hx-0.4,hz+0.8,0);
       for(var e=0;e<3;e++){
@@ -1087,6 +1097,7 @@ var ACT={
   w_hunt:[['Fixing_Kneeling',3,5,9],['PickUp_Table',1,2,4],['Interact',1,3,5]],
   w_farm:[['Farm_Harvest',2,2.5,5],['Farm_PlantSeed',2,2.77,5.5],['Farm_Watering',2,3.8,7.6]],
   w_ghost:[['Idle_Lantern_Loop',4,5,10],['Interact',1,3,5]],
+  w_smelt:[['TreeChopping_Loop',3,4,8],['Interact',2,3,6],['PickUp_Table',1,2,4]],
   w_stable:[['Idle_FoldArms_Loop',1,4,8],['Interact',2,3,6],['PickUp_Table',1,2,4]]
 };
 function pickCyc(N){
@@ -1195,7 +1206,7 @@ function loaderRun(N,home){
   N.path=pathTo(out.concat(inn),{w:1.5,drop:true}).concat(pathTo(hallPath(a,IN_PT).concat([[1,6.4],[-4.5,6.6],[home.x,home.z+1.6],[home.x,home.z]])));
   N.endRot=home.rot;N.speed=2.0;
 }
-var WORK_LOOK={saw:[0,'m',2,'buzzed'],mine:[1,'m',4,'none'],hunt:[2,'m',1,'parted'],farm:[3,'f',3,'buns'],ghost:[4,'f',0,'long'],stable:[1,'m',3,'parted']};
+var WORK_LOOK={saw:[0,'m',2,'buzzed'],mine:[1,'m',4,'none'],hunt:[2,'m',1,'parted'],farm:[3,'f',3,'buns'],ghost:[4,'f',0,'long'],stable:[1,'m',3,'parted'],smelt:[5,'m',0,'buzzed']};
 function workerLook(id){
   var w=WORK_LOOK[id]||[0,'m',0,'buzzed'];
   return fullLook({gender:w[1],skin:w[2],hair:w[3],hairColor:(w[0]*3+1)%9,beard:w[1]==='m'&&w[0]%2?'beard':'none',
@@ -1203,7 +1214,7 @@ function workerLook(id){
     tint:villTint(function(k){return rnd(w[0]*13.7+k);},40),hat:['cap','straw','headband','straw','none','beret'][w[0]%6],hatC:[VILL_PAL[(w[0]*5)%13],13]});
 }
 /* где стоит работник промысла: в координатах участка (x, z, поворот) */
-var WORK_SPOT={saw:[3.9,-0.2,Math.PI/2],mine:[3.1,-1.9,Math.PI],hunt:[4.4,-0.4,-Math.PI/2],farm:[-0.9,5.2,Math.PI/2],ghost:[2.5,3.4,Math.PI/2],stable:[1.7,5.2,-Math.PI/2]};
+var WORK_SPOT={saw:[3.9,-0.2,Math.PI/2],mine:[3.1,-1.9,Math.PI],hunt:[4.4,-0.4,-Math.PI/2],farm:[-0.9,5.2,Math.PI/2],ghost:[2.5,3.4,Math.PI/2],stable:[1.7,5.2,-Math.PI/2],smelt:[3.0,1.6,Math.PI/2]};
 function helperLook(w,i){
   return fullLook({gender:i%2?'f':'m',skin:(i*2+(w==='cook'?1:3))%5,hair:i%2?'buns':'buzzed',hairColor:(i*3+2)%9,beard:'none',
     body:'peasant',arms:'peasant',legs:'peasant',feet:'peasant',colors:{peasant:(i+(w==='cook'?0:1))%2},

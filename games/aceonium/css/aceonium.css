@@ -691,7 +691,7 @@ body:not(.view-tavern) .qbar{display:none;}
 .pop.pet.crit{color:#ff8a20;font-size:18px;}
 #en-name .elite{color:#ffc840;}
 /* v18: картинки вещей и ресурсов из 3D */
-.spr{display:inline-block;background:url(../assets/icons/icons.webp?v=23) no-repeat;background-size:800% 800%;image-rendering:auto;}
+.spr{display:inline-block;background:url(../assets/icons/icons.webp?v=31) no-repeat;background-size:800% 1100%;image-rendering:auto;}
 .spr.ri{width:16px;height:16px;vertical-align:-3px;}
 .spr.ri.it{width:20px;height:20px;}
 .spr.ri.it.big,.spr.ri.big{width:48px;height:48px;}

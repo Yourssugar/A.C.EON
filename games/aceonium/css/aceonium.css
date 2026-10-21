@@ -1289,3 +1289,4 @@ button.crf-qs.hold{border-color:#ff5a46;box-shadow:0 0 0 2px rgba(255,90,70,.35)
 .bk-story h4{font-size:15px;font-weight:700;color:#8a4414;margin:12px 0 4px;letter-spacing:1px;text-transform:uppercase;}
 .bk-story p{font-size:14px;line-height:1.5;color:#3e2814;}
 .ls:not(.on) *{animation:none!important;}
+.tier-tag{display:inline-block;margin-left:6px;padding:0 6px;font-size:11px;font-style:normal;font-weight:700;line-height:16px;border-radius:8px;background:rgba(232,192,112,.18);color:#e8c070;vertical-align:middle;}

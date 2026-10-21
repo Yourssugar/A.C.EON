@@ -11,6 +11,12 @@ if(process.env.OV){var ov=JSON.parse(process.env.OV);for(var k in ov)D[k]=ov[k];
 var DAYS=+process.argv[2]||10, CAUT=process.argv[3]!=='0';
 var S=G.defaults();S.profile={name:'sim',gender:'m'};S.cautious=CAUT;
 var g=new G.Game(S);g.start=function(){};g.sanitize();
+S.started=true;   // v31: первый поход игрок начинает сам
+/* v31: почему маг возвращался (ранен, не по силам, поражение) */
+var WHY={};
+var _rh=g.returnHome,_pt=g.pauseTrip;
+g.returnHome=function(why){WHY[why]=(WHY[why]||0)+1;return _rh.apply(this,arguments);};
+g.pauseTrip=function(m,why){var k=m?'pause':(why||'tired');WHY[k]=(WHY[k]||0)+1;return _pt.apply(this,arguments);};
 var T=0,log=[];
 function fmtT(s){var d=Math.floor(s/86400),h=Math.floor(s%86400/3600);return 'd'+d+' '+(h<10?'0':'')+h+'h';}
 function lack(cost){for(var k in cost)if(g.have(k)<cost[k])return k;return null;}
@@ -134,7 +140,7 @@ while(T<DAYS*86400){
   for(var t=0;t<4;t++)if(S.tracts[t].clears>0)mark('clear'+t,'ТРАКТ '+t+' пройден');
   if(T%86400===0){
     log.push(fmtT(T)+'  gold '+D.fmt(S.gold)+' (+'+D.fmt(S.stats.goldEarned-gold0)+' продаж '+(S.stats.sold-sold0)+') staff '+S.staff+' dps '+D.fmt(g.rawDps())+' mlvl '+S.mlvl+
-      ' bag '+S.bagLvl+' store '+S.storeLvl+' prod '+D.PROD.map(function(d){return d.id[0]+S.prod[d.id].lvl;}).join('')+' st'+S.prod.stable.lvl+' cr'+S.crews+' hall '+S.build.hall+' best '+S.tracts.map(function(x){return x.best+'/'+x.clears;}).join(',')+' lost '+S.stats.lostBags);
+      ' bag '+S.bagLvl+' store '+S.storeLvl+' prod '+D.PROD.map(function(d){return d.id[0]+S.prod[d.id].lvl;}).join('')+' st'+S.prod.stable.lvl+' cr'+S.crews+' hall '+S.build.hall+' best '+S.tracts.map(function(x){return x.best+'/'+x.clears;}).join(',')+' lost '+S.stats.lostBags+' why '+JSON.stringify(WHY));WHY={};
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+

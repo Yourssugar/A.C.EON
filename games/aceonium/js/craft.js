@@ -61,7 +61,7 @@ function card(r){
   var mid=gd.m,m=g.master(mid),known=m.known.indexOf(r)>=0,bl=g.orderBlock(mid,r),inv=g.invCount(r);
   var cls='crf-c'+(known&&m.hired?'':' off')+(C.flash===r&&Date.now()-C.flashT<500?' flash':'')+(known&&!bl?' can':'');
   var h='<div class="'+cls+'"><button type="button" class="crf-main" data-act="'+(known&&m.hired?'order':'none')+'" data-r="'+r+'">'+
-    '<i class="crf-lv">'+gd.lvl+'</i>'+(inv?'<i class="crf-inv">x'+inv+'</i>':'')+
+    '<i class="crf-lv" title="'+t('tier.title')+'">'+gd.tier+'</i>'+(inv?'<i class="crf-inv">x'+inv+'</i>':'')+
     '<span class="crf-ic">'+UI.itemIcon(r,0,true)+'</span>'+
     '<b class="crf-n">'+UI.itemName(r)+'</b>';
   var cost='';for(var k in gd.cost){var have=g.have(k),need=gd.cost[k];cost+='<span class="'+(have<need?'bad':'')+'">'+UI.resIcon(k)+need+'</span>';}

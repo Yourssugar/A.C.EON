@@ -8,7 +8,7 @@ window.__aceoniumStarted=true;
 var D=window.AcData;
 window.AC_DEBUG=/[?&]debug\b/.test(location.search);
 
-Store.define('aceonium',{version:3,defaults:AcGame.defaults(),migrate:AcGame.migrate});
+Store.define('aceonium',{version:4,defaults:AcGame.defaults(),migrate:AcGame.migrate});
 var S=Store.get('aceonium');
 var game=new AcGame.Game(S);
 if(game.sanitize)game.sanitize();   // старые сохранения: слоты, рецепты, очереди
@@ -357,15 +357,17 @@ function begin(){
     if(away<0){UI.toast(UI.t('toast.clock'));away=0;}
     if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);
       showPlace(S.place,true);petSync();}
+    holdNow();
     if(away>5)catchUp(away,false);else game.start();
     /* v27: сохранения сброшены (персонаж и облик остались), дальше обычные новости версий */
-    if(!S.lore.pro){S.seenV27=true;delete S.resetV27;save();startPrologue();}
-    else if(S.resetV27){delete S.resetV27;S.seenV27=true;save();UI.modal(UI.t('v27r.title'),UI.t('v27r.body')+UI.t('v27.body'));}
-    else if(!S.seenV27){S.seenV27=true;save();UI.modal(UI.t('v27.title'),UI.t('v27.body'));}
+    /* v30: сохранения сброшены под новую экономику (персонаж, облик и пролог остались) */
+    if(!S.lore.pro){S.seenV30=true;delete S.resetV30;save();startPrologue();}
+    else if(S.resetV30){delete S.resetV30;S.seenV30=true;save();UI.modal(UI.t('v30r.title'),UI.t('v30r.body')+UI.t('v30.body'));}
+    else if(!S.seenV30){S.seenV30=true;save();UI.modal(UI.t('v30.title'),UI.t('v30.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      S.seenV27=true;startPrologue();holdNow();
+      S.seenV30=true;startPrologue();holdNow();
       game.start();save();UI.rebuild();lastWall=Date.now();last=performance.now();
     });
   }

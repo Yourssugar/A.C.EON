@@ -204,11 +204,11 @@ function card(r,mode){
   }else if(mode==='learn'){
     var ok=g.canLearn(r);cls+=ok?'':' dim';
     sub=m.lvl>=gd.lvl?COIN+D.fmt(gd.price):t('ms.needLvl',{n:gd.lvl});
-    btn='<button type="button" class="btn sm pink" data-act="learn" data-r="'+r+'"'+(ok&&g.S.gold>=gd.teach?'':' disabled')+'>'+t('ms.learn')+' '+COIN+D.fmt(gd.teach)+'</button><small>'+UI.ft(D.teachTime(gd.lvl))+'</small>';
+    btn='<button type="button" class="btn sm pink" data-act="learn" data-r="'+r+'"'+(ok&&g.S.gold>=gd.teach?'':' disabled')+'>'+t('ms.learn')+' '+COIN+D.fmt(gd.teach)+'</button><small>'+UI.ft(D.teachTime(gd.tier))+'</small>';
   }else{sub=id==='mage'?t('cr2.needMage',{n:gd.lvl}):gd.lvl>1?t('ms.needLvl',{n:gd.lvl}):COIN+D.fmt(gd.price);cls+=' dim';}
   var eff=gd&&gd.eff?UI.effText(r,0):'';
   var dots='';if(gd&&mode!=='view'&&mode!=='learn'){dots='<span class="bq-dots">';for(var q=0;q<4;q++)dots+='<i class="q'+q+(g.collQ(gd.m,r,q)?' on':'')+'"></i>';dots+='</span>';}
-  return '<div class="'+cls+'">'+dots+UI.orderIcon(r,true)+'<b>'+name+'</b><small>'+sub+'</small>'+(eff?'<em>'+eff+'</em>':'')+btn+'</div>';
+  return '<div class="'+cls+'">'+dots+UI.orderIcon(r,true)+'<b>'+name+(gd&&gd.tier?' <i class="tier-tag" title="'+t('tier.title')+'">'+t('tier.n',{n:gd.tier})+'</i>':'')+'</b><small>'+sub+'</small>'+(eff?'<em>'+eff+'</em>':'')+btn+'</div>';
 }
 function close(){
   if(!M)return;

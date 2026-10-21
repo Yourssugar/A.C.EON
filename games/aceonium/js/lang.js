@@ -968,3 +968,14 @@ I18n.add('en',{'wd2.tColor':'COLORS','wd2.hat':'HEADWEAR','wd2.hatC1':'HEADWEAR 
   'hat.wreath':'wreath','hat.crown':'crown','hat.goggles':'goggles','hat.catears':'cat ears','hat.glasses':'glasses',
   'zone.top':'Jacket and hood','zone.legs':'Trousers','zone.leather':'Leather','zone.metal':'Metal','zone.shirt':'Shirt','zone.boots':'Boots and belts','zone.vest':'Vest'});
 })();
+/* v30: уровни вещей и новая экономика */
+I18n.add('ru',{
+  'tier.title':'Уровень вещи','tier.n':'Ур. вещи {n}',
+  'v30r.title':'СОХРАНЕНИЯ СБРОШЕНЫ','v30r.body':'<p>Под новую экономику прогресс начинается заново. Персонаж, облик и настройки остались.</p>',
+  'v30.title':'НОВАЯ ЭКОНОМИКА','v30.body':'<p>У вещей теперь уровни от 1 до 7 (цифра в углу карточки). Вещи 1-го уровня дешёвые и делаются за 30-55 секунд. Дальше дольше и дороже: 2-й уровень 1.5-3 мин, 3-й 4-7 мин, 4-й 10-15 мин, 5-й 20-30 мин, 6-й 40-60 мин, 7-й 1.5-2 ч.</p><p>Учитель вещи следующего уровня приходит, когда мастер дорастёт: 2-й уровень вещей на 2-м уровне мастера, 3-й на 4-м, 4-й на 6-м, 5-й на 9-м, 6-й на 12-м, 7-й на 15-м. Грузчик дешевле и быстрее: сам выкладывает вещи со склада на полки.</p><p>Здания города (лесопилка, шахта, охотники, огород, конюшня) и первый уровень зала и спальни ставятся только за золото.</p>'
+});
+I18n.add('en',{
+  'tier.title':'Item tier','tier.n':'Tier {n}',
+  'v30r.title':'SAVES RESET','v30r.body':'<p>Progress starts over for the new economy. Your character, look and settings are kept.</p>',
+  'v30.title':'NEW ECONOMY','v30.body':'<p>Items now have tiers from 1 to 7 (the number in the card corner). Tier 1 items are cheap and take 30-55 seconds. Higher tiers take longer and cost more: tier 2 1.5-3 min, tier 3 4-7 min, tier 4 10-15 min, tier 5 20-30 min, tier 6 40-60 min, tier 7 1.5-2 h.</p><p>The teacher for the next tier comes when the craftsman grows: tier 2 at craftsman level 2, tier 3 at 4, tier 4 at 6, tier 5 at 9, tier 6 at 12, tier 7 at 15. The loader is cheaper and faster: he moves items from storage to the shelves.</p><p>Town buildings (sawmill, mine, hunters, garden, stable) and the first level of the hall and bedroom cost only gold.</p>'
+});

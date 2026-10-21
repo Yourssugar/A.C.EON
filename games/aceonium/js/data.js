@@ -200,7 +200,7 @@ D.MASTERS=[
 D.MASTER_BY={};D.MASTERS.forEach(function(m){D.MASTER_BY[m.id]=m;});
 D.TOOLS_MAX=10;
 /* общая очередь крафта (v11): одна на всех, мастера работают параллельно, каждый над первой своей вещью */
-D.QSLOTS0=8;D.QSLOTS_MAX=30;
+D.QSLOTS0=10;D.QSLOTS_MAX=30;
 D.qSlotCost=function(n){return {gold:Math.ceil(80*Math.pow(1.6,n-D.QSLOTS0))};};
 D.mXpNeed=function(l){return Math.ceil(20*Math.pow(1.35,l-1));};
 /* скорость мастера: уровень +2% за уровень, не больше +40% (к 21-му), собранная коллекция ещё +10% */
@@ -214,64 +214,74 @@ D.craftTime=function(gd,n){var w=D.WORK_SHARE[gd.m]||0.6;return gd.time*(1-w)+gd
 D.COLL_PRICE=1.1;   // собранная коллекция мастера: его вещи дороже на 10%
 /* v20: ячейки качества в книге (бонус только своей вещи) и золотая страница мастера */
 D.COLL_Q1=0.03;D.COLL_Q2=0.01;D.COLL_LEG_PRICE=1.1;D.COLL_LEG_SPEED=1.1;D.COLL_GOLD=0.01;
-/* учитель: пока учит, мастер не работает */
-D.teachTime=function(lvl){return 600*lvl;}
 D.PAUSE_AWAY=600;   // сек: столько игрока нет, и маг сам продолжает поход, начатый паузой;
+
+/* ════════ УРОВНИ ВЕЩЕЙ (v30) ════════
+   У каждой вещи уровень (tier) 1..D.TIER_MAX (сейчас 7, позже до 12). Уровень вещи задаёт:
+   уровень мастера, на котором приходит учитель (D.TIER_MLVL: 2-й на 2-м, 3-й на 4-м, 4-й на 6-м, 5-й на 9-м, 6-й на 12-м, 7-й на 15-м), цену учителя (D.TIER_TEACH),
+   время учёбы и стоимость минуты работы в цене (D.MIN_RATE).
+   Время крафта по уровням (ориентир): 1: 30-55 с, 2: 1.5-3 мин, 3: 4-7 мин, 4: 10-15 мин, 5: 20-30 мин, 6: 40-60 мин, 7: 1.5-2 ч.
+   gd.lvl у вещей мастеров = нужный уровень мастера (считается из tier), у свитков мага = нужный уровень мага. */
+D.TIER_MAX=7;
+D.TIER_MLVL=[0,1,2,4,6,9,12,15,18,21,24,27,30];
+D.TIER_TEACH=[0,0,100,350,1000,2500,6000,15000,35000,80000,180000,400000,900000];
+D.MIN_RATE=[0,8,10,12,15,18,21,25,30,35,40,46,52];
+D.teachTime=function(tier){return 600*tier;};
 
 /* изделия: kind potion/ward тратятся в походе, armor/ring надеваются, goods только на продажу.
    eff: dmg/hp/chance/pick/crit - доли, fat - насколько медленнее устаёт.
-   lvl 1 известны мастеру сразу, остальные через учителя (teach - золото). */
+   Вещи 1-го уровня мастер знает сразу, остальные через учителя. */
 D.GOODS=[
   /* травница */
-  {id:'p_heal', m:'herbalist',lvl:1,teach:0,    kind:'potion',c:'#ff4a5a',eff:{hp:0.2},     cost:{herb:3,wood:1},           time:120, price:22},
-  {id:'p_str',  m:'herbalist',lvl:2,teach:120,  kind:'potion',c:'#ff9a3a',eff:{dmg:0.25},   cost:{herb:4,iron:1},           time:300, price:45},
-  {id:'p_luck', m:'herbalist',lvl:3,teach:300,  kind:'potion',c:'#9cff6a',eff:{chance:0.15},cost:{herb:6,hide:1},           time:540, price:75},
-  {id:'p_vigor',m:'herbalist',lvl:4,teach:600,  kind:'potion',c:'#ffd84a',eff:{fat:0.25},   cost:{herb:6,bone:1},           time:720, price:100},
-  {id:'p_ward', m:'herbalist',lvl:5,teach:1200, kind:'ward',  c:'#b080ff',eff:{},           cost:{herb:3,hide:2,ironwood:1},time:1440,price:270},
-  {id:'p_spore',m:'herbalist',lvl:7,teach:4000, kind:'potion',c:'#d070ff',eff:{dmg:0.6},    cost:{spore:5,herb:3,ecto:1},   time:1800,price:780},
+  {id:'p_heal', m:'herbalist',tier:1,kind:'potion',c:'#ff4a5a',eff:{hp:0.2},     cost:{herb:2},                  time:40},
+  {id:'p_str',  m:'herbalist',tier:2,kind:'potion',c:'#ff9a3a',eff:{dmg:0.25},   cost:{herb:3,iron:1},           time:120},
+  {id:'p_luck', m:'herbalist',tier:3,kind:'potion',c:'#9cff6a',eff:{chance:0.15},cost:{herb:5,hide:1},           time:300},
+  {id:'p_vigor',m:'herbalist',tier:4,kind:'potion',c:'#ffd84a',eff:{fat:0.25},   cost:{herb:6,bone:1},           time:720},
+  {id:'p_ward', m:'herbalist',tier:5,kind:'ward',  c:'#b080ff',eff:{},           cost:{herb:3,hide:2,ironwood:1},time:1500},
+  {id:'p_spore',m:'herbalist',tier:6,kind:'potion',c:'#d070ff',eff:{dmg:0.6},    cost:{spore:5,herb:3,ecto:1},   time:3000},
   /* столяр */
-  {id:'c_bow',  m:'carpenter',lvl:1,teach:0,    kind:'goods', c:'#b07840',cost:{wood:3,hide:1},         time:150, price:28},
-  {id:'c_shield',m:'carpenter',lvl:3,teach:400, kind:'goods', c:'#8a6a40',cost:{wood:8,iron:2},         time:900, price:156},
-  {id:'c_wand', m:'carpenter',lvl:5,teach:1600, kind:'goods', c:'#7a9a6a',cost:{wood:10,ironwood:1},    time:1800,price:420},
+  {id:'c_bow',  m:'carpenter',tier:1,kind:'goods', c:'#b07840',cost:{wood:2,hide:1},         time:45},
+  {id:'c_shield',m:'carpenter',tier:3,kind:'goods',c:'#8a6a40',cost:{wood:6,iron:2},         time:360},
+  {id:'c_wand', m:'carpenter',tier:5,kind:'goods', c:'#7a9a6a',cost:{wood:10,ironwood:1},    time:1500},
   /* кузнец */
-  {id:'s_sword',m:'smith',lvl:1,teach:0,        kind:'goods', c:'#c0c8d4',cost:{iron:3,wood:1},         time:180, price:34},
-  {id:'s_axe',  m:'smith',lvl:2,teach:200,      kind:'goods', c:'#9aa6b4',cost:{wood:2,iron:3,coal:1},  time:300, price:70},
-  {id:'s_helm', m:'smith',lvl:3,teach:800,      kind:'armor', slot:'head',c:'#8a96a4',eff:{hp:0.15},cost:{iron:6,coal:3,hide:1}, time:720, price:285},
-  {id:'s_mail', m:'smith',lvl:5,teach:2400,     kind:'armor', slot:'body',c:'#a0aab8',eff:{hp:0.3}, cost:{iron:10,coal:5,hide:3},time:1440,price:570},
-  {id:'s_blade',m:'smith',lvl:8,teach:16000,    kind:'goods', c:'#e0e8f0',cost:{silver:6,iron:4,coal:4},time:3600,price:2850},
+  {id:'s_sword',m:'smith',tier:1,kind:'goods', c:'#c0c8d4',cost:{iron:2,wood:1},         time:50},
+  {id:'s_axe',  m:'smith',tier:2,kind:'goods', c:'#9aa6b4',cost:{wood:2,iron:2,coal:1},  time:150},
+  {id:'s_helm', m:'smith',tier:3,kind:'armor', slot:'head',c:'#8a96a4',eff:{hp:0.15},cost:{iron:5,coal:2,hide:1}, time:420},
+  {id:'s_mail', m:'smith',tier:5,kind:'armor', slot:'body',c:'#a0aab8',eff:{hp:0.3}, cost:{iron:10,coal:5,hide:3},time:1800},
+  {id:'s_blade',m:'smith',tier:7,kind:'goods', c:'#e0e8f0',cost:{silver:6,iron:4,coal:4},time:6000},
   /* кожевник */
-  {id:'t_cloak',m:'tanner',lvl:1,teach:0,       kind:'armor', slot:'body', c:'#4a6a3a',eff:{hp:0.1},           cost:{hide:3,herb:1},time:240,price:40},
-  {id:'t_belt', m:'tanner',lvl:1,teach:0,       kind:'armor', slot:'belt', c:'#8a5a32',eff:{hp:0.05,pick:0.03},cost:{hide:2,iron:1},time:180,price:30},
-  {id:'t_boots',m:'tanner',lvl:1,teach:0,       kind:'armor', slot:'feet', c:'#6a4428',eff:{hp:0.05,fat:0.05}, cost:{hide:2,wood:1},time:180,price:30},
-  {id:'t_hood', m:'tanner',lvl:3,teach:1000,    kind:'armor', slot:'head', c:'#5a7a4a',eff:{hp:0.12,chance:0.03},cost:{hide:4,silk:2},time:720,price:255},
-  {id:'t_silk', m:'tanner',lvl:5,teach:3000,    kind:'armor', slot:'body', c:'#dfe6ff',eff:{hp:0.25,fat:0.05},cost:{silk:8,hide:4},time:1800,price:690},
+  {id:'t_cloak',m:'tanner',tier:1,kind:'armor', slot:'body', c:'#4a6a3a',eff:{hp:0.1},           cost:{hide:2,herb:1},time:55},
+  {id:'t_belt', m:'tanner',tier:1,kind:'armor', slot:'belt', c:'#8a5a32',eff:{hp:0.05,pick:0.03},cost:{hide:1,iron:1},time:35},
+  {id:'t_boots',m:'tanner',tier:1,kind:'armor', slot:'feet', c:'#6a4428',eff:{hp:0.05,fat:0.05}, cost:{hide:1,wood:1},time:35},
+  {id:'t_hood', m:'tanner',tier:3,kind:'armor', slot:'head', c:'#5a7a4a',eff:{hp:0.12,chance:0.03},cost:{hide:4,silk:2},time:360},
+  {id:'t_silk', m:'tanner',tier:5,kind:'armor', slot:'body', c:'#dfe6ff',eff:{hp:0.25,fat:0.05},cost:{silk:8,hide:4},time:1800},
   /* ювелир */
-  {id:'j_ring', m:'jeweler',lvl:1,teach:0,      kind:'ring',  slot:'ring',c:'#d6dde8',eff:{crit:0.03},cost:{iron:3,herb:1},time:240,price:42},
-  {id:'j_bone', m:'jeweler',lvl:2,teach:300,    kind:'ring',  slot:'ring',c:'#e8dfc4',eff:{crit:0.05,hp:0.05},cost:{bone:6,iron:2},time:720,price:390},
-  {id:'j_crys', m:'jeweler',lvl:4,teach:6000,   kind:'ring',  slot:'ring',c:'#7fd8ff',eff:{pick:0.1}, cost:{crystal:5,silver:3},time:1800,price:1860},
-  {id:'j_amber',m:'jeweler',lvl:6,teach:12000,  kind:'ring',  slot:'ring',c:'#ffaa30',eff:{fat:0.15}, cost:{amber:1,silver:4,bone:4},time:2400,price:3750},
-  {id:'j_star', m:'jeweler',lvl:8,teach:40000,  kind:'ring',  slot:'ring',c:'#9fe8ff',eff:{dmg:0.4},  cost:{starice:2,silver:8,crystal:6},time:5400,price:15600},
+  {id:'j_ring', m:'jeweler',tier:1,kind:'ring',  slot:'ring',c:'#d6dde8',eff:{crit:0.03},cost:{iron:2,herb:1},time:50},
+  {id:'j_bone', m:'jeweler',tier:2,kind:'ring',  slot:'ring',c:'#e8dfc4',eff:{crit:0.05,hp:0.05},cost:{bone:5,iron:2},time:180},
+  {id:'j_crys', m:'jeweler',tier:4,kind:'ring',  slot:'ring',c:'#7fd8ff',eff:{pick:0.1}, cost:{crystal:5,silver:3},time:900},
+  {id:'j_amber',m:'jeweler',tier:6,kind:'ring',  slot:'ring',c:'#ffaa30',eff:{fat:0.15}, cost:{amber:1,silver:4,bone:4},time:3600},
+  {id:'j_star', m:'jeweler',tier:7,kind:'ring',  slot:'ring',c:'#9fe8ff',eff:{dmg:0.4},  cost:{starice:2,silver:8,crystal:6},time:7200},
   /* свитки мага (v11): маг пишет их сам, только когда он в таверне. lvl - уровень мага, учитель не нужен.
-     Простые без ресурсов. xp - доля опыта до следующего уровня (считается не выше уровня свитка + 5).
-     Продаются путникам и берутся в поход, как зелья. */
-  {id:'sc_spark',m:'mage',lvl:1, teach:0,kind:'scroll',c:'#ffb040',eff:{dmg:0.08},cost:{},                              time:60,  price:10,  xp:0.04},
-  {id:'sc_guard',m:'mage',lvl:3, teach:0,kind:'scroll',c:'#5ab0ff',eff:{hp:0.1},  cost:{},                              time:90,  price:14,  xp:0.05},
-  {id:'sc_wind', m:'mage',lvl:6, teach:0,kind:'scroll',c:'#a0f0c0',eff:{fat:0.1}, cost:{herb:2},                        time:180, price:32,  xp:0.07},
-  {id:'sc_seek', m:'mage',lvl:10,teach:0,kind:'scroll',c:'#e0d070',eff:{chance:0.1},cost:{herb:3,wood:2},               time:300, price:60,  xp:0.08},
-  {id:'sc_fire', m:'mage',lvl:15,teach:0,kind:'scroll',c:'#ff5a30',eff:{dmg:0.3}, cost:{coal:2,herb:3,ironwood:1},      time:600, price:180, xp:0.1},
-  {id:'sc_storm',m:'mage',lvl:25,teach:0,kind:'scroll',c:'#8a7aff',eff:{dmg:0.5,crit:0.05},cost:{crystal:2,ecto:2,herb:4},time:1200,price:700,xp:0.12},
-  {id:'sc_star', m:'mage',lvl:40,teach:0,kind:'scroll',c:'#9fe8ff',eff:{dmg:0.8}, cost:{starice:1,silver:3,crystal:2},   time:2400,price:2600,xp:0.15}
+     xp - доля опыта до следующего уровня (считается не выше уровня свитка + 5). Продаются и берутся в поход, как зелья. */
+  {id:'sc_spark',m:'mage',lvl:1, tier:1,kind:'scroll',c:'#ffb040',eff:{dmg:0.08},cost:{},                               time:30,  xp:0.02},
+  {id:'sc_guard',m:'mage',lvl:3, tier:1,kind:'scroll',c:'#5ab0ff',eff:{hp:0.1},  cost:{},                               time:45,  xp:0.025},
+  {id:'sc_wind', m:'mage',lvl:6, tier:2,kind:'scroll',c:'#a0f0c0',eff:{fat:0.1}, cost:{herb:2},                         time:100, xp:0.04},
+  {id:'sc_seek', m:'mage',lvl:10,tier:3,kind:'scroll',c:'#e0d070',eff:{chance:0.1},cost:{herb:3,wood:2},                time:240, xp:0.065},
+  {id:'sc_fire', m:'mage',lvl:15,tier:4,kind:'scroll',c:'#ff5a30',eff:{dmg:0.3}, cost:{coal:2,herb:3,ironwood:1},       time:600, xp:0.1},
+  {id:'sc_storm',m:'mage',lvl:25,tier:5,kind:'scroll',c:'#8a7aff',eff:{dmg:0.5,crit:0.05},cost:{crystal:2,ecto:2,herb:4},time:1200,xp:0.12},
+  {id:'sc_star', m:'mage',lvl:40,tier:6,kind:'scroll',c:'#9fe8ff',eff:{dmg:0.8}, cost:{starice:1,silver:3,crystal:2},   time:2400,xp:0.15}
 ];
 D.MAGE_SPEED=1;
-D.GOOD_BY={};D.GOODS.forEach(function(x){D.GOOD_BY[x.id]=x;});
-/* v13: цена = стоимость ресурсов + стоимость времени работы. Минута дорожает с уровнем рецепта,
-   свитки мага за полцены минуты (их ценность в опыте мага). Цены из таблицы выше заменяются этими. */
+D.GOOD_BY={};D.GOODS.forEach(function(x){
+  D.GOOD_BY[x.id]=x;
+  if(x.m!=='mage'){x.lvl=D.TIER_MLVL[x.tier];x.teach=D.TIER_TEACH[x.tier];}else x.teach=0;
+});
+/* цена = стоимость ресурсов + стоимость времени работы. Минута дорожает с уровнем вещи,
+   свитки мага за полцены минуты (их ценность в опыте мага). */
 D.RES_VALUE={wood:2.5,iron:2.5,herb:2.5,hide:2.5,coal:4,bone:6,silk:6,spore:10,ecto:10,crystal:18,silver:18,ironwood:25,amber:60,pearl:80,starice:150};
-D.MIN_RATE=[0,8,10,12,15,18,21,25,30];
 D.priceOf=function(g){
   var rv=0;for(var k in g.cost)rv+=(D.RES_VALUE[k]||5)*g.cost[k];
-  var lvl=g.m==='mage'?Math.min(8,Math.ceil(g.lvl/5)):g.lvl;
-  var tv=g.time/60*(D.MIN_RATE[Math.min(8,lvl)]||30)*(g.m==='mage'?0.5:1),p=rv+tv;
+  var tv=g.time/60*(D.MIN_RATE[g.tier]||D.MIN_RATE[D.MIN_RATE.length-1])*(g.m==='mage'?0.5:1),p=rv+tv;
   return p>100?Math.round(p/10)*10:Math.max(3,Math.round(p));
 };
 D.GOODS.forEach(function(x){x.price=D.priceOf(x);});
@@ -289,8 +299,8 @@ D.BUILD={
   forge:  {once:true,cost:function(){return {gold:400,wood:60,iron:40};}},
   tannery:{once:true,cost:function(){return {gold:600,wood:80,hide:60};}},
   jewelry:{once:true,cost:function(){return {gold:5000,wood:200,crystal:50,amber:5};}},
-  hall:   {max:5,cost:function(l){return {gold:Math.ceil(150*Math.pow(2.6,l)),wood:Math.ceil(40*Math.pow(1.8,l))};}},
-  bedroom:{max:4,cost:function(l){var c={gold:Math.ceil(300*Math.pow(2.5,l)),hide:Math.ceil(30*Math.pow(1.8,l))};if(l>=2)c.silk=20*l;return c;}},
+  hall:   {max:5,cost:function(l){var c={gold:Math.ceil(150*Math.pow(2.6,l))};if(l>0)c.wood=Math.ceil(40*Math.pow(1.8,l));return c;}},   /* v30: первый уровень зданий только за золото */
+  bedroom:{max:4,cost:function(l){var c={gold:Math.ceil(300*Math.pow(2.5,l))};if(l>0)c.hide=Math.ceil(30*Math.pow(1.8,l));if(l>=2)c.silk=20*l;return c;}},
   decor:  {max:5,cost:function(l){var c={gold:Math.ceil(500*Math.pow(2.8,l))},r=['ironwood','ironwood','amber','pearl','starice'][l];c[r]=3+2*l;return c;}}
 };
 D.BUILD_ORDER=['hall','bedroom'];   // v25: убранство теперь мебелью в режиме дизайна
@@ -310,17 +320,17 @@ D.PROD_BASE={wood:4,iron:4,herb:4,hide:4,coal:18,bone:1,silk:1,spore:0.75,ecto:0
 D.PROD_KEEP=6;      // часов работы влезает в запас здания
 D.PROD_MAX=10;
 D.PROD=[
-  {id:'saw',  lines:['wood'],                       build:{gold:150,iron:20},             c0:10},
-  {id:'mine', lines:['coal','iron','silver','crystal'],build:{gold:250,wood:30},          c0:25},
-  {id:'hunt', lines:['hide','bone','silk'],         build:{gold:300,wood:40},             c0:15},
-  {id:'farm', lines:['herb','spore'],               build:{gold:200,wood:30},             c0:12},
-  {id:'ghost',lines:['ecto'],                       build:{gold:8000,bone:150,silk:100},  c0:60,tract:2}
+  {id:'saw',  lines:['wood'],                       build:{gold:200},  c0:10},   /* v30: постройка (1-й уровень) только за золото */
+  {id:'mine', lines:['coal','iron','silver','crystal'],build:{gold:320},c0:25},
+  {id:'hunt', lines:['hide','bone','silk'],         build:{gold:380},  c0:15},
+  {id:'farm', lines:['herb','spore'],               build:{gold:260},  c0:12},
+  {id:'ghost',lines:['ecto'],                       build:{gold:10000},c0:60,tract:2}
 ];
 D.PROD_BY={};D.PROD.forEach(function(p){D.PROD_BY[p.id]=p;});
 /* в каком тракте открывается ресурс (уголь из шахты есть всегда) */
 D.resTract=function(r){if(r==='coal')return 0;for(var i=0;i<D.TRACTS.length;i++)if(D.TRACTS[i].res.indexOf(r)>=0)return i;return 99;};
 /* конюшня и возчик: сам свозит запас промыслов на склад раз в столько минут */
-D.STABLE={build:{gold:1500,wood:60},c0:150,max:5,every:[60,40,25,15,10]};
+D.STABLE={build:{gold:1700},c0:150,max:5,every:[60,40,25,15,10]};
 /* инструменты мастера на той же схеме: c0 золотом, последний вклад ещё и материалы */
 D.TOOLS_C0=5;
 /* v20: доля мастера с продаж (20% цены сверх дохода игрока) и его часть нового инструмента (в 1.5 раза больше вкладов игрока за уровень) */
@@ -409,7 +419,7 @@ D.shelfCat=function(rid){var g=D.GOOD_BY[rid];if(!g)return null;return g.kind===
 /* какую витрину мастер приносит с собой при найме, если такой ещё нет */
 D.MASTER_SHELF={herbalist:'pot',carpenter:'weap',smith:'weap',tanner:'arm',jeweler:'jew'};
 /* грузчик: сколько вещей в час переносит со склада на полки; найм и улучшения */
-D.LOADER={hire:400,rate:[8,15,25,40,60],up:[{gold:1500,rep:100},{gold:6000,rep:400},{gold:24000,rep:1500},{gold:80000,rep:5000}]};
+D.LOADER={hire:150,rate:[20,35,55,80,120],up:[{gold:1500,rep:100},{gold:6000,rep:400},{gold:24000,rep:1500},{gold:80000,rep:5000}]};
 D.FURN_LV=3;
 D.CHEST_MAX=5;
 D.chestCost=function(lv){var k=Math.pow(3,lv-1),r=Math.pow(2,lv-1);return {gold:Math.ceil(200*k),wood:Math.ceil(20*r),iron:Math.ceil(10*r)};};

@@ -740,7 +740,7 @@ P.canLearn=function(rid){var gd=D.GOOD_BY[rid];if(!gd||gd.m==='mage')return fals
 /* учитель приходит и учит какое-то время; заказы мастера в это время стоят */
 P.learn=function(rid){
   var gd=D.GOOD_BY[rid];if(!this.canLearn(rid)||!this.pay({gold:gd.teach}))return false;
-  var T=D.teachTime(gd.lvl);this.master(gd.m).teach={r:rid,t:T,T:T};
+  var T=D.teachTime(gd.tier);this.master(gd.m).teach={r:rid,t:T,T:T};
   this.emit('teachStart',rid);return true;
 };
 P.rollQual=function(mid,rid){
@@ -1402,10 +1402,11 @@ P.sanitize=function(){
 
 /* сохранение v1 (золото, уровни) -> v2: персонаж и гардероб остаются, прогресс заново */
 /* v27 (версия 3): прогресс сбрасывается у всех (тестовая стадия), персонаж, облик, гардероб и настройки остаются */
+/* v30 (версия 4): новая экономика (уровни вещей, быстрый крафт), прогресс снова заново. Пролог второй раз не показываем, разговор с хозяйкой да */
 function migrate(old,v){
-  if(v>=3)return old;
+  if(v>=4)return old;
   return {profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},
-    lastSeen:0,resetV27:!!old.profile};
+    lastSeen:0,resetV30:!!old.profile,lore:{pro:old.lore&&old.lore.pro?1:0}};
 }
 
 var api={Game:Game,defaults:defaults,migrate:migrate};

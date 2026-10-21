@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="33" defer></script>
+<script src="../shared/boot.js" data-v="34" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":6},
@@ -87,7 +87,7 @@
 <!-- Обложка загрузки: сфера-Ядро наполняется светом вместе с прогрессом (--p от загрузчика) -->
 <template id="boot-skin">
   <style>
-    #boot{background:#07060f url(assets/lore/load_boot.webp) center/cover no-repeat;}
+    #boot{background:#07060f url(assets/lore/load_boot.webp?v=34) center/cover no-repeat;}
     #boot::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,5,16,.55),rgba(5,5,16,.2) 40%,rgba(5,5,16,.85));pointer-events:none;}
     #boot>*{position:relative;}
     .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}

@@ -394,6 +394,8 @@ function initHud(){
   H['rest-tav'].addEventListener('click',function(){g.sleepNow();});
   /* умения */
   H.haste=el('div','haste-tag hidden');H.stage.appendChild(H.haste);
+  H.clChip=el('button','cl-chip hidden');H.clChip.type='button';H.stage.appendChild(H.clChip);
+  H.clChip.addEventListener('click',function(e){e.stopPropagation();if(S.clone&&window.AdvMap)AdvMap.openWorld(S.clone.t);});
   H.sk=[];
   D.SKILLS.forEach(function(s){
     var b=el('button','sk-btn','<span class="sk-ico">'+icon(s.id)+'</span><span class="sk-cd"></span><span class="sk-key">'+s.key+'</span><span class="sk-t"></span>');
@@ -477,10 +479,13 @@ function refreshHud(){
     var state=!un?'locked':st.act>0||cl?'act':conf?'conf':st.cd>0?'cd':bl?'idle':'ready';
     if(x.b._st!==state){x.b._st=state;x.b.className='sk-btn '+state;x.ico.innerHTML=icon(un?x.s.id:'lock');}
     var full=g.skillCd(x.s);
-    x.b.style.setProperty('--cd',state==='cd'||state==='conf'?(st.cd/full).toFixed(3):cl?(S.clone.hp/S.clone.max).toFixed(3):state==='act'&&x.s.dur?(st.act/x.s.dur).toFixed(3):'0');
-    setText(x.t,!un?t('sk.lockedShort',{n:x.s.unlock}):state==='conf'?'-'+ft(g.skillPayH(x.s.id)*3600):state==='cd'?ft(st.cd):cl?Math.ceil(S.clone.hp/S.clone.max*100)+'%':state==='act'?(x.s.real?Math.ceil(st.act)+t('u.s'):ft(st.act)):'');
+    x.b.style.setProperty('--cd',state==='cd'||state==='conf'?(st.cd/full).toFixed(3):cl?(1-S.clone.hp/S.clone.max).toFixed(3):state==='act'&&x.s.dur?(st.act/x.s.dur).toFixed(3):'0');
+    setText(x.t,!un?t('sk.lockedShort',{n:x.s.unlock}):state==='conf'?'-'+ft(g.skillPayH(x.s.id)*3600):state==='cd'?ft(st.cd):cl?t('cl.w',{w:S.clone.w}):state==='act'?(x.s.real?Math.ceil(st.act)+t('u.s'):ft(st.act)):'');
     x.b.title=t('sk.'+x.s.id)+': '+skillDesc(x.s,st.l)+(st.cd>0&&un?' · '+t('sk.payNow',{t:ft(g.skillPayH(x.s.id)*3600)}):'');
   });
+  /* v34: двойник в походе: плашка над умениями */
+  var c2=S.clone;
+  if(H.clChip){H.clChip.classList.toggle('hidden',!c2);if(c2)setHTML(H.clChip,'<b>'+t('sk.clone')+'</b> '+esc(tractName(c2.t))+' · '+(c2.rest>0?t('cl.rest'):(c2.boss?t('hud.bossWave',{w:c2.w}):t('cl.wave',{w:c2.w})))+' · '+c2.n+'/'+c2.cap+' · '+t('hp.l')+' '+Math.round(c2.hp/c2.max*100)+'%');}
   /* ускорение времени: плашка */
   var hm=g.hasteMult();
   if(H.haste){H.haste.classList.toggle('hidden',hm<=1);if(hm>1)setText(H.haste,t('haste.tag',{p:Math.round(hm),s:Math.ceil(S.skills.haste.act)}));}
@@ -514,7 +519,8 @@ function nextTractPeek(){
 /* v32: сила умения на уровне l словами */
 function skillPowText(s,l){
   var p=D.skillPow(s,l);
-  if(s.id==='heal'||s.id==='shield'||s.id==='clone')return Math.round(p*100)+'%';
+  if(s.id==='heal'||s.id==='shield')return Math.round(p*100)+'%';
+  if(s.id==='clone')return ft(p*3600);
   if(s.id==='sleep')return ft(p*3600);
   return String(Math.round(p));
 }
@@ -522,6 +528,12 @@ function skillDesc(s,l){return t('sk.'+s.id+'.d',{p:skillPowText(s,l),d:ft(s.dur
 /* нажатие на умение: готово - сразу; на откате - первое нажатие показывает цену, второе платит бодрствованием */
 function skillPress(x){
   var s=x.s,b=g.skillBlock(s.id);
+  /* v34: двойник - сначала карта, на ней выбирается тракт (умение тратится только при отправке) */
+  if(s.id==='clone'&&(b===''||b==='pay')){
+    if(window.AdvMap)AdvMap.openWorld(undefined,{clone:true,pay:b==='pay'?g.skillPayH('clone'):0,onPick:function(t2){if(g.useSkill('clone',b==='pay',t2))toast(t('cl.sent',{t:tractName(t2)}));}});
+    return;
+  }
+  if(s.id==='clone'&&b==='active'&&S.clone){if(window.AdvMap)AdvMap.openWorld(S.clone.t);return;}
   if(b===''){g.useSkill(s.id);x.conf=0;refreshHud();return;}
   if(b==='pay'){
     if(x.conf&&Date.now()<x.conf){var h=g.skillPayH(s.id);x.conf=0;if(g.useSkill(s.id,true))toast(t('sk.paid',{s:t('sk.'+s.id),t:ft(h*3600)}));}
@@ -547,20 +559,24 @@ function enemyPos(){
   if(!p){var r=H.stage.getBoundingClientRect();p={x:r.width*0.68,y:r.height*0.42};}
   return p;
 }
+/* v34: цифры боя только когда на экране поход */
+function watching(){return screenNow==='road'&&S.place==='road';}
 function onHit(h){
+  if(!watching())return;
   var p=enemyPos();
   if(h.pet){pop('pet'+(h.crit?' crit':''),D.fmt(h.dmg)+(h.crit?'!':''),p.x-40+(Math.random()-0.5)*30,p.y+20+(Math.random()-0.5)*16);return;}
-  if(h.clone){pop('cln'+(h.crit?' crit':''),D.fmt(h.dmg)+(h.crit?'!':''),p.x+20+(Math.random()-0.5)*40,p.y+12);return;}
   pop(h.big?'big':h.crit?'crit':h.click?'clk':'stf',D.fmt(h.dmg)+(h.crit?'!':''),p.x+(Math.random()-0.5)*70,p.y+(Math.random()-0.5)*20);
 }
 var lootQ=0;
 function onLoot(l){
+  if(!watching())return;
   var p=enemyPos(),k=lootQ++;
   setTimeout(function(){lootQ=Math.max(0,lootQ-1);pop('loot','+'+l.n+' '+resIcon(l.res),p.x+(Math.random()-0.5)*40,p.y-10,true);},Math.min(k,8)*90);
   var b=H['h-bag'].parentNode;b.classList.remove('bump');void b.offsetWidth;b.classList.add('bump');
 }
 function onKill(){}
 function onMageHit(h){
+  if(!watching())return;
   var p=window.AdvMap&&AdvMap.active?AdvMap.mageScreen():window.Scene3D&&Scene3D.mageScreen?Scene3D.mageScreen():null;
   if(!p){var r=H.stage.getBoundingClientRect();p={x:r.width*0.3,y:r.height*0.6};}
   pop('hurt','-'+D.fmt(h.dmg),p.x+(Math.random()-0.5)*30,p.y);
@@ -721,7 +737,7 @@ function tabBag(){
     if(!S.journal.length)return h+'<p class="note">'+t('jr.empty')+'</p>';
     S.journal.slice(0,12).forEach(function(j){
       h+='<div class="jr'+(j.why==='defeat'?' bad':'')+'"><div class="jr-top"><b>'+tractName(j.t)+'</b><span>'+t('jr.wave',{w:j.w})+' · '+ft(j.dur||0)+'</span></div>'+
-        '<div class="jr-why">'+t('why.'+j.why)+(j.why==='defeat'?' · '+t('jr.lost',{n:j.lost}):' · +'+j.n)+'</div>'+
+        '<div class="jr-why">'+(j.clone?t('jr.clone')+' · ':'')+t('why.'+j.why)+(j.why==='defeat'?' · '+t('jr.lost',{n:j.lost}):' · +'+j.n)+'</div>'+
         (j.why==='defeat'?'':'<div class="res-line">'+resList(j.got)+'</div>')+'</div>';
     });
     return h;
@@ -1105,7 +1121,7 @@ function tabCity(){
   add(prodBlock('stable'));
   D.BUILD_ORDER.forEach(function(id){
     var b=D.BUILD[id];
-    add(row({title:function(){return t('bd.'+id);},lvl:function(){return t('row.lvlMax',{n:g.buildLvl(id),m:b.max});},
+    add(row({cls:'bd-'+id,title:function(){return t('bd.'+id);},lvl:function(){return t('row.lvlMax',{n:g.buildLvl(id),m:b.max});},
       info:function(){return t('bd.'+id+'.d',{v:buildVal(id)});},
       btn:function(){return t('buy.up');},
       done:function(){return !g.buildCost(id);},cost:function(){return g.buildCost(id);},buy:function(){return g.buildUp(id);}}));

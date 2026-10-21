@@ -46,7 +46,8 @@ function defaults(){
     gold:D.START.gold,                              // ACEONIUM, только из таверны
     inv:{},                                         // изделия: 'id:качество' -> количество
     equip:{head:null,body:null,belt:null,feet:null,ring:null,hand:null},
-    clone:null,buffs:{wisp:0},                      // v33: двойник {hp,max}; временные бонусы событий (секунды)
+    clone:null,buffs:{wisp:0},held:false,           // v34: поход двойника; бонусы событий (секунды); held - маг ждёт игрока в таверне
+    tut:{step:0},                                   // v34: обучение после пролога
     use:{p_heal:true,p_str:true,p_luck:true,p_vigor:true,p_spore:true,p_ward:true,sc_spark:true,sc_guard:true},   // что брать в поход
     masters:masterDefaults(),
     queue:[],qSlots:D.QSLOTS0,                      // общая очередь крафта: {r,m,t,T,c}
@@ -111,17 +112,12 @@ P.dps=function(){return this.rawDps()*this.dmgMult()*this.staffRate()/D.STAFF_RA
 P.critChance=function(){var c=D.CRIT_CHANCE+this.eff('crit');return Math.min(1,c);};
 P.critMult=function(){return D.CRIT_MULT;};
 P.critFactor=function(){return 1+this.critChance()*(this.critMult()-1);};
-P.effDps=function(){return (this.dps()+this.petDps()+this.cloneDps())*this.critFactor();};
-/* v33: оружие в руке и двойник */
-P.weaponDps=function(){var it=this.S.equip.hand,gd=it&&D.GOOD_BY[it.id];return gd&&gd.eff&&gd.eff.wd?gd.eff.wd*D.QUAL[it.q]:0;};
-P.cloneDps=function(){return this.S.clone?this.weaponDps()*this.skillPow('clone')*(1+this.eff('dmg')):0;};
-P.cloneHp=function(){return this.S.clone?this.S.clone.hp:0;};
-P.cloneEnd=function(why){if(!this.S.clone)return;this.S.clone=null;this.emit('cloneEnd',why);};
+P.effDps=function(){return (this.dps()+this.petDps())*this.critFactor();};
 P.clickDmg=function(){return (this.S.mlvl+this.rawDps()*D.CLICK_DPS_SHARE)*this.dmgMult();};
 P.maxHp=function(){return Math.round(D.maxHp(this.S.mlvl)*(1+this.eff('hp')));};
 P.arm=function(){var S=this.S,v=0;for(var sl in S.equip){var it=S.equip[sl];if(!it)continue;var gd=D.GOOD_BY[it.id];if(gd&&gd.eff&&gd.eff.arm)v+=gd.eff.arm*D.QUAL[it.q];}return v;};
 P.hp=function(){var mx=this.maxHp();if(this.S.hp===null||this.S.hp===undefined||this.S.hp>mx)this.S.hp=mx;return this.S.hp;};
-P.regen=function(dt){var mx=this.maxHp(),c=this.S.clone;this.S.hp=Math.min(mx,this.hp()+D.REGEN*mx*dt);if(c)c.hp=Math.min(c.max,c.hp+D.REGEN*c.max*dt);};
+P.regen=function(dt){var mx=this.maxHp();this.S.hp=Math.min(mx,this.hp()+D.REGEN*mx*dt);};
 P.healLeft=function(){var mx=this.maxHp();return Math.max(0,(mx-this.hp())/(D.REGEN*mx));};
 /* удар обычного монстра и босса с учётом брони */
 P.mobHitDmg=function(t,w,elite){return D.armHit(D.mobDps(t,w)*D.MOB_HIT*(elite?D.ELITE_DMG:1),this.arm())*this.shieldMult();};
@@ -134,12 +130,12 @@ P.predictMob=function(hp){
   var tr=this.S.trip;if(!tr)return {win:true,dmg:0};
   var el=D.eliteChance(tr.w)>0,T=D.mobHp(tr.t,tr.w)*(el?D.ELITE_HP:1)/Math.max(1e-9,this.effDps());
   var dmg=(this.mobHitDmg(tr.t,tr.w,el)/D.MOB_HIT-D.REGEN*this.maxHp())*T;
-  if(hp===undefined)hp=this.hp()+this.cloneHp();
+  if(hp===undefined)hp=this.hp();
   return {win:dmg<hp*D.HP_LOW,dmg:dmg,T:T};
 };
 P.awakeH=function(){return (24-this.restH())/(1-Math.min(0.6,this.eff('fat')));};
 P.restH=function(){return Math.max(D.REST_MIN_H,D.REST_H-D.BED_STEP*this.S.build.bedroom);};
-P.skillCd=function(s){return s.cd;};
+P.skillCd=function(s){return s.cdLv?D.skillPow(s,this.S.skills[s.id].l)*3600:s.cd;};
 P.bag=function(){return D.BAG[this.S.bagLvl-1];};
 /* v30.1: в дальних трактах с монстра падает больше единиц, сумка вмещает во столько же раз больше (тяжелее она не становится) */
 P.bagCap=function(){var tr=this.S.trip;return this.bag().cap*(tr?(D.TRACT_QTY[tr.t]||1):1);};
@@ -196,7 +192,7 @@ P.goTo=function(t){
 /* ── поход ── */
 P.startTrip=function(){
   var S=this.S,R=this.R;
-  S.started=true;
+  S.started=true;S.held=false;
   /* поход на паузе (маг заходил в таверну): продолжаем с той же волны */
   if(S.trip&&S.trip.paused){
     if(S.forceNext===null||S.forceNext===undefined||S.forceNext===S.trip.t){
@@ -254,7 +250,7 @@ P.preCheck=function(){
   if(tr.done)return 'end';
   if(S.fatigue>=1)return 'tired';
   if(tr.n>=this.bagCap())return 'full';
-  var full=this.maxHp()+(S.clone?S.clone.max:0);
+  var full=this.maxHp();
   if(tr.boss){
     if(!this.predictBoss().win)return this.predictBoss(full).win?'wounded':'cautious';
   }else if(!this.predictMob().win)return this.predictMob(full).win?'wounded':'weak';
@@ -262,7 +258,7 @@ P.preCheck=function(){
 };
 /* расчёт боя с боссом по текущей силе (без кликов) */
 P.predictBoss=function(hp){
-  if(hp===undefined)hp=this.hp()+this.cloneHp();
+  if(hp===undefined)hp=this.hp();
   var tr=this.S.trip;if(!tr)return {win:true,T:0,dmg:0,hp:hp};
   var T=D.bossHp(tr.t,tr.w)/Math.max(1e-9,this.effDps());
   var b1=this.bossHitDmg(tr.t,tr.w,false)/D.BOSS_HIT,b2=this.bossHitDmg(tr.t,tr.w,true)/D.BOSS_HIT;
@@ -332,7 +328,7 @@ P.returnHome=function(why){
       this.rep.lost+=lost;this.rep.over+=over;if(why==='defeat')this.rep.lostBags++;
     }
   }
-  S.trip=null;S.place='home';this.cloneEnd('home');R.ev=null;
+  S.trip=null;S.place='home';R.ev=null;
   R.phase='home';R.enemy=null;R.hits.length=0;R.after=null;R.homeT=D.HOME_TIME;
   this.emit('home',{why:why,got:got,n:n,lost:lost,over:over,by:R.downBy,bounty:bounty||0});
   R.downBy=null;
@@ -372,15 +368,18 @@ P.pauseTrip=function(manual,why){
   var bounty=this.payBounty(tr);
   if(r.n||r.over||bounty){S.journal.unshift({t:tr.t,w:tr.w,why:why,got:r.got,n:r.n,lost:0,over:r.over,dur:tr.time,at:Date.now(),b:bounty||undefined});if(S.journal.length>30)S.journal.length=30;}
   tr.paused=true;tr.manual=!!manual;tr.m=Math.min(tr.m,D.MOBS-1);
-  S.place='home';this.cloneEnd('home');R.ev=null;
+  S.place='home';R.ev=null;
   R.phase='home';R.enemy=null;R.hits.length=0;R.after=null;R.homeT=manual?0:D.HOME_TIME;
   this.emit('home',{why:why,got:r.got,n:r.n,lost:0,over:r.over,bounty:bounty});
   this.emit('place','home');
   return true;
 };
+/* v34: кнопка В ТАВЕРНУ заканчивает поход (сумка на склад без потерь), следующий начнётся с первой волны.
+   Маг ждёт игрока в таверне; если игрока нет дольше D.PAUSE_AWAY, уходит сам */
 P.goHome=function(){
   if(this.S.place!=='road'||this.inBoss())return false;
-  return this.pauseTrip(true);
+  this.returnHome('manual');this.S.held=true;this.R.homeT=0;
+  return true;
 };
 P.sleepNow=function(){
   var S=this.S;
@@ -399,6 +398,7 @@ P.homeDecide=function(){
   if(S.sleepAfter||S.fatigue>=0.999){this.sleep();return;}
   /* v31: первый поход игрок начинает сам (карта мира) */
   if(!S.started)return;
+  if(S.held&&(!this.rep||this.rep.sec<D.PAUSE_AWAY))return;
   /* позвали в таверну руками: ждёт игрока; если игрока нет дольше D.PAUSE_AWAY, идёт дальше сам */
   if(S.trip&&S.trip.paused&&S.trip.manual&&(!this.rep||this.rep.sec<D.PAUSE_AWAY))return;
   if(!(S.auto||(S.trip&&S.trip.paused)))return;
@@ -440,7 +440,7 @@ P.applyHit=function(h){
   var R=this.R,e=R.enemy;
   if(R.phase!=='fight'||!e||e.hp<=0)return;
   e.hp=Math.max(0,e.hp-h.dmg);
-  this.emit('hit',{dmg:h.dmg,crit:h.crit,click:!!h.click,big:!!h.big,pet:!!h.pet,clone:!!h.clone});
+  this.emit('hit',{dmg:h.dmg,crit:h.crit,click:!!h.click,big:!!h.big,pet:!!h.pet});
   if(e.hp<=0)this.kill();
 };
 P.kill=function(){
@@ -482,7 +482,7 @@ P.skillBlock=function(id){
   if(st.act>0)return 'active';
   if(id==='sleep'&&(S.place==='sleep'||S.fatigue<=0.001))return S.place==='sleep'?'asleep':'fresh';
   if(id==='heal'&&this.hp()>=this.maxHp())return 'full';
-  if(id==='clone'){if(S.clone)return 'active';if(S.place!=='road'||!S.trip)return 'notrip';if(!this.weaponDps())return 'noweapon';}
+  if(id==='clone'&&S.clone)return 'active';
   if(st.cd>0){
     if(S.place==='sleep'&&id!=='haste')return 'asleep';
     if(S.fatigue>=0.999)return 'tired';
@@ -492,17 +492,18 @@ P.skillBlock=function(id){
 };
 /* цена применения на откате, в часах бодрствования */
 P.skillPayH=function(id){var st=this.S.skills[id];return st.cd>0?D.skillPayH(this.skillDef(id),st.cd):0;};
-P.useSkill=function(id,pay){
+P.useSkill=function(id,pay,arg){
   var S=this.S,s=this.skillDef(id),st=S.skills[id],b=this.skillBlock(id);
   if(b==='pay'&&!pay)return false;
   if(b&&b!=='pay')return false;
+  if(id==='clone'&&!(arg>=0&&this.tractOpen(arg)))return false;   // двойнику нужен тракт
   var paid=0;
   if(b==='pay'){paid=this.skillPayH(id);S.fatigue=Math.min(1,S.fatigue+paid/this.awakeH());}
   st.cd=this.skillCd(s);st.act=s.dur;
   var p=this.skillPow(id);
   if(id==='heal')S.hp=Math.min(this.maxHp(),this.hp()+p*this.maxHp());
   if(id==='sleep')S.fatigue=Math.max(0,S.fatigue-p/this.restH());
-  if(id==='clone'){var cm=this.maxHp()*p;S.clone={hp:cm,max:cm};this.R.cloneT=D.CLONE_HIT*0.5;}
+  if(id==='clone')this.cloneStart(arg);
   this.emit('skill',{id:id,paid:paid});
   /* усталость дошла до конца: в походе зайдёт в таверну (updateFatigue), дома сразу спать */
   if(S.fatigue>=0.999&&S.place==='home'&&!this.hold)this.sleep();
@@ -533,10 +534,94 @@ P.payDebt=function(gold){
   return gold;
 };
 
+/* ── v34: двойник. Уходит в свой поход в выбранный тракт с силой, здоровьем, бронёй и сумкой мага на момент вызова.
+   Не устаёт. Считается по офлайн-правилам (враг за врагом), и в сети, и без игрока. Ранен - отдыхает на дороге.
+   Домой: сумка полна, тракт пройден, босс или монстры не по силам (сумка цела), здоровье кончилось (сумка пропала). */
+P.cloneStart=function(t){
+  var S=this.S,mx=this.maxHp();
+  S.clone={t:t,w:1,m:0,boss:false,done:false,bag:{},n:0,kills:0,best:0,time:0,acc:0,rest:0,
+    hp:mx,max:mx,dps:this.effDps(),arm:this.arm(),pick:this.pickMult(),cap:this.bag().cap*(D.TRACT_QTY[t]||1),at:Date.now()};
+  this.emit('cloneStart',S.clone);
+};
+P.clonePredict=function(c,hp){
+  var T,dmg,rg=D.REGEN*c.max;
+  if(c.boss){
+    T=D.bossHp(c.t,c.w)/Math.max(1e-9,c.dps);
+    var b1=D.armHit(D.bossDps(c.t,c.w)*D.BOSS_HIT,c.arm)/D.BOSS_HIT,b2=D.armHit(D.bossDps(c.t,c.w)*D.BOSS_HIT*D.RAGE_MULT,c.arm)/D.BOSS_HIT;
+    dmg=b1*Math.min(T,D.RAGE_T)+b2*Math.max(0,T-D.RAGE_T)-rg*T;
+    return {win:dmg<hp*0.97,dmg:dmg};
+  }
+  var el=D.eliteChance(c.w)>0;T=D.mobHp(c.t,c.w)*(el?D.ELITE_HP:1)/Math.max(1e-9,c.dps);
+  dmg=(D.armHit(D.mobDps(c.t,c.w)*D.MOB_HIT*(el?D.ELITE_DMG:1),c.arm)/D.MOB_HIT-rg)*T;
+  return {win:dmg<hp*D.HP_LOW,dmg:dmg};
+};
+P.cloneTick=function(dt){
+  var S=this.S,c=S.clone;if(!c||dt<=0)return;
+  c.acc+=dt;c.time+=dt;
+  var guard=0,rg=D.REGEN*c.max;
+  while(c.acc>0&&guard++<20000){
+    if(c.rest>0){var r=Math.min(c.rest,c.acc);c.rest-=r;c.acc-=r;c.hp=Math.min(c.max,c.hp+rg*r);if(c.rest>0)break;continue;}
+    if(c.done){this.cloneHome('end');return;}
+    if(c.n>=c.cap){this.cloneHome('full');return;}
+    if(!this.clonePredict(c,c.hp).win){
+      if(c.hp<c.max*0.99&&this.clonePredict(c,c.max).win){c.rest=(c.max-c.hp)/rg+1;continue;}
+      this.cloneHome(c.boss?'cautious':'weak');return;
+    }
+    var walk=D.WALK_TIME+(c.m===0&&!c.boss&&c.w>1?D.WAVE_PAUSE:0),fight,taken,elite=false;
+    if(c.boss){
+      fight=D.bossHp(c.t,c.w)/c.dps;
+      var p=this.clonePredict(c,c.hp);taken=p.dmg+rg*fight;
+    }else{
+      elite=Math.random()<D.eliteChance(c.w);
+      fight=D.mobHp(c.t,c.w)*(elite?D.ELITE_HP:1)/c.dps;
+      taken=D.armHit(D.mobDps(c.t,c.w)*D.MOB_HIT*(elite?D.ELITE_DMG:1),c.arm)/D.MOB_HIT*fight;
+    }
+    var d=walk+fight+D.DEATH_TIME;
+    if(c.acc<d)break;
+    c.acc-=d;
+    c.hp=Math.min(c.max,c.hp+rg*d-taken);
+    if(c.hp<=0){this.cloneHome('defeat');return;}
+    this.cloneKill(c,elite);
+  }
+};
+P.cloneKill=function(c,elite){
+  var S=this.S,T=D.TRACTS[c.t],q=D.TRACT_QTY[c.t]||1,st=S.tracts[c.t];
+  var ch=Math.min(0.95,D.chance(c.w,st.clears>0)*c.pick),add=function(r,n){c.bag[r]=(c.bag[r]||0)+n;c.n+=n;};
+  c.kills++;S.stats.kills++;
+  if(!c.boss){
+    var res=T.res[Math.floor(Math.random()*T.res.length)];
+    if(elite){add(res,q);if(Math.random()<ch)add(res,q);}else if(Math.random()<ch)add(res,q);
+    c.m++;
+    if(c.m>=D.MOBS){c.m=0;c.best=c.w;if(c.w>st.best)st.best=c.w;if(D.isBossWave(c.w))c.boss=true;else c.w++;}
+  }else{
+    var k=c.w/10;add(T.rare,k);
+    for(var i=0;i<2*k;i++)add(T.res[Math.floor(Math.random()*T.res.length)],q);
+    S.stats.bosses++;c.boss=false;
+    if(c.w>=D.WAVES){c.done=true;var first=st.clears===0;st.clears++;if(first&&c.t+1<D.TRACTS.length)this.emit('tractOpen',c.t+1);}
+    else c.w++;
+  }
+};
+P.cloneHome=function(why){
+  var S=this.S,c=S.clone;if(!c)return;
+  var got={},n=0,lost=0,over=0;
+  for(var k in c.bag){var v=c.bag[k];if(!v)continue;
+    if(why==='defeat'){lost+=v;continue;}
+    var room=Math.max(0,this.storeCap()-this.have(k)),put=Math.min(room,v);S.store[k]=this.have(k)+put;over+=v-put;n+=put;if(put)got[k]=put;}
+  var bounty=this.payBounty(c);
+  S.stats.gathered+=n;
+  if(this.rep){for(var g2 in got)this.rep.got[g2]=(this.rep.got[g2]||0)+got[g2];this.rep.cloneN=(this.rep.cloneN||0)+n;}
+  S.journal.unshift({t:c.t,w:c.best,why:why,got:got,n:n,lost:lost,over:over,dur:c.time,at:Date.now(),b:bounty||undefined,clone:true});
+  if(S.journal.length>30)S.journal.length=30;
+  S.clone=null;
+  this.emit('cloneHome',{why:why,got:got,n:n,lost:lost,over:over,bounty:bounty,t:c.t,w:c.best});
+};
+
 /* ── v33: события на дороге ── */
 P.tryEvent=function(){
   var S=this.S,R=this.R,tr=S.trip;
-  if(!this.evOk||!tr||tr.boss||tr.m!==0||tr.w<2||this.hasteMult()>1)return false;
+  /* v34: после каждой 5-й пройденной волны (начало 6, 11, 16 ...) */
+  if(!this.evOk||!tr||tr.boss||tr.m!==0||tr.w<2||(tr.w-1)%D.EV_EVERY!==0||tr.evW===tr.w||this.hasteMult()>1)return false;
+  tr.evW=tr.w;
   if(R.clock-(this.evLast||-1e9)<D.EV_GAP||Math.random()>=D.EV_CHANCE)return false;
   var list=D.EVENTS.filter(function(e){return e.id!=='trader'||tr.n>0;});
   var e=list[Math.floor(Math.random()*list.length)];
@@ -549,12 +634,23 @@ P.tryEvent=function(){
 P.chooseEvent=function(opt){
   var S=this.S,R=this.R,ev=R.ev,tr=S.trip;if(!ev||ev.res||R.phase!=='event'||!tr)return false;
   var mx=this.maxHp(),T=D.TRACTS[tr.t],q=D.TRACT_QTY[tr.t]||1,res={k:'ev.skip',v:{}};
+  var self=this,hurt=function(f){var d=Math.min(self.hp()-1,mx*f);S.hp=Math.max(1,self.hp()-d);return Math.round(d);};
+  var rres=function(){return T.res[Math.floor(Math.random()*T.res.length)];};
   if(opt!=='skip'){
     if(ev.id==='chest'){
-      if(Math.random()<0.75){var r=T.res[Math.floor(Math.random()*T.res.length)],n=(4+Math.floor(Math.random()*7))*q;this.bagAdd(r,n);res={k:'ev.chest.ok',v:{n:n,r:r}};}
-      else{var d=Math.min(this.hp()-1,mx*0.2);S.hp=Math.max(1,this.hp()-d);res={k:'ev.chest.trap',v:{n:Math.round(d)}};}
-    }else if(ev.id==='spring'){
-      S.hp=mx;S.fatigue=Math.max(0,S.fatigue-0.5/this.awakeH());res={k:'ev.spring.ok',v:{}};
+      if(Math.random()<0.7){var r=rres(),n=D.evAmount(tr.t,tr.w);this.bagAdd(r,n);res={k:'ev.chest.ok',v:{n:n,r:r}};}
+      else res={k:'ev.chest.trap',v:{n:hurt(0.2)}};
+    }else if(ev.id==='cart'){
+      var r1=rres(),n1=D.evAmount(tr.t,tr.w);this.bagAdd(r1,n1);res={k:'ev.cart.ok',v:{n:n1,r:r1}};
+    }else if(ev.id==='gold'){
+      var gg=Math.round((5+tr.w)*(tr.t+1)*(0.6+0.4*Math.random()));S.gold+=gg;S.stats.goldEarned+=gg;res={k:'ev.gold.ok',v:{g:gg}};
+    }else if(ev.id==='remains'){
+      var pots=['p_heal','p_str','p_luck'];
+      if(Math.random()<0.5){var pid=pots[Math.floor(Math.random()*pots.length)];this.invAdd(pid,0,1);res={k:'ev.remains.item',v:{i:pid}};}
+      else{var r2=rres(),n2=D.evAmount(tr.t,tr.w);this.bagAdd(r2,n2);res={k:'ev.remains.res',v:{n:n2,r:r2}};}
+    }else if(ev.id==='gift'){
+      var top=Math.min(7,1+2*tr.t),list=D.GOODS.filter(function(x){return x.m!=='mage'&&x.kind!=='scroll'&&x.tier<=top;});
+      var it=list[Math.floor(Math.random()*list.length)];this.invAdd(it.id,0,1);res={k:'ev.gift.ok',v:{i:it.id}};
     }else if(ev.id==='trader'){
       var gold=0;for(var k in tr.bag){var h=Math.floor(tr.bag[k]/2);if(!h)continue;tr.bag[k]-=h;tr.n-=h;gold+=h*(D.RES_VALUE[k]||2);}
       gold=Math.round(gold);S.gold+=gold;S.stats.goldEarned+=gold;res={k:gold?'ev.trader.ok':'ev.trader.none',v:{g:gold}};
@@ -563,9 +659,9 @@ P.chooseEvent=function(opt){
       else{tr.ambush=true;res={k:'ev.fork.amb',v:{}};}
     }else if(ev.id==='wisp'){
       if(Math.random()<0.6){S.buffs.wisp=D.WISP_T;res={k:'ev.wisp.ok',v:{p:Math.round(D.WISP_DMG*100),t:D.WISP_T/60}};}
-      else{S.fatigue=Math.min(1,S.fatigue+1/this.awakeH());res={k:'ev.wisp.lost',v:{}};}
+      else res={k:'ev.wisp.lost',v:{n:hurt(0.15)}};
     }else if(ev.id==='hurt'){
-      var d2=Math.min(this.hp()-1,mx*0.15);S.hp=Math.max(1,this.hp()-d2);var rp=3*(tr.t+1);S.rep=(S.rep||0)+rp;res={k:'ev.hurt.ok',v:{r:rp}};
+      hurt(0.15);var rp=3*(tr.t+1);S.rep=(S.rep||0)+rp;res={k:'ev.hurt.ok',v:{r:rp}};
     }
   }
   ev.res=res;ev.opt=opt;ev.t=D.EV_SHOW;
@@ -595,6 +691,7 @@ P.update=function(dt){
   R.clock+=dt;
   S.stats.play+=dt;
   this.skillTick(dt,false);
+  this.cloneTick(dt*this.fatigueScale);
   if(S.buffs&&S.buffs.wisp>0)S.buffs.wisp=Math.max(0,S.buffs.wisp-dt);
   this.regen(dt*this.fatigueScale);
   this.updateFatigue(dt);
@@ -629,12 +726,6 @@ P.update=function(dt){
           if(pd>0)R.hits.push({t:0.45,dmg:pr.dmg,crit:pr.crit,pet:true});
           this.emit('petBite',{crit:pr.crit,dmg:pr.dmg});}
       }
-      /* v33: двойник бьёт оружием раз в CLONE_HIT с */
-      if(S.clone){
-        R.cloneT=(R.cloneT===undefined?D.CLONE_HIT*0.5:R.cloneT)-dt;
-        if(R.cloneT<=0){R.cloneT+=D.CLONE_HIT;var cd2=this.cloneDps()*D.CLONE_HIT;
-          if(cd2>0){var cr=this.roll(cd2);R.hits.push({t:0.22,dmg:cr.dmg,crit:cr.crit,clone:true});this.emit('cloneHit',{crit:cr.crit});}}
-      }
       /* v31: бьют все: босс раз в BOSS_HIT с (замах заранее), обычные раз в MOB_HIT с */
       if(R.enemy&&R.enemy.hp>0){
         var en=R.enemy,boss=!!en.boss,tr=S.trip;
@@ -644,15 +735,9 @@ P.update=function(dt){
         if(R.hitT<=0){
           var rage=boss&&R.bossT>D.RAGE_T,dmg=boss?this.bossHitDmg(tr.t,tr.w,rage):this.mobHitDmg(tr.t,tr.w,en.elite);
           R.hitT+=boss?D.BOSS_HIT:D.MOB_HIT;R.wind=false;
-          if(S.clone){
-            /* двойник стоит впереди и принимает удары на себя */
-            S.clone.hp-=dmg;this.emit('cloneHurt',{dmg:dmg,boss:boss});
-            if(S.clone.hp<=0)this.cloneEnd('down');
-          }else{
-            S.hp=Math.max(0,this.hp()-dmg);
-            this.emit('mageHit',{dmg:dmg,hp:S.hp,max:this.maxHp(),rage:rage,boss:boss});
-            if(S.hp<=0){this.bossFail();return;}
-          }
+          S.hp=Math.max(0,this.hp()-dmg);
+          this.emit('mageHit',{dmg:dmg,hp:S.hp,max:this.maxHp(),rage:rage,boss:boss});
+          if(S.hp<=0){this.bossFail();return;}
         }
       }
       break;
@@ -689,6 +774,7 @@ P.offline=function(sec,inner){   // inner: v32, кусок ускорения в
     if(s.real){if(!inner){st.cd=Math.max(0,st.cd-sec);st.act=Math.max(0,st.act-sec);}return;}
     st.cd=Math.max(0,st.cd-sec);acts[s.id]=st.act;});
   this.silent=true;this.rep=rep;
+  this.cloneTick(sec);   // v34: поход двойника за всё время сразу
   var t=0,guard=0,R=this.R;
   while(t<sec&&guard++<2e6){
     for(var ak in acts)S.skills[ak].act=Math.max(0,acts[ak]-t);
@@ -718,7 +804,6 @@ P.offline=function(sec,inner){   // inner: v32, кусок ускорения в
       if(t+d>sec){var rest=sec-t;S.fatigue=Math.min(1,S.fatigue+rest/3600/this.awakeH());this.regen(rest);rep.road+=rest;this.offTick(rest);t=sec;break;}
       t+=d;rep.road+=d;tr.time+=d;
       /* v33: двойник принимает удары первым */
-      if(S.clone){var cl=S.clone;cl.hp=Math.min(cl.max,cl.hp+D.REGEN*cl.max*d);var ab=Math.min(cl.hp,taken);cl.hp-=ab;taken-=ab;if(cl.hp<=0)S.clone=null;if(lose&&ab>0&&hp0+rg*d-taken>0)lose=false;}
       if(S.buffs&&S.buffs.wisp>0)S.buffs.wisp=Math.max(0,S.buffs.wisp-d);
       S.hp=lose?0:Math.max(0,Math.min(mx,hp0+rg*d-taken));
       this.offTick(d);
@@ -786,7 +871,9 @@ P.master=function(id){
   return {hired:true,lvl:S.mlvl,xp:0,tools:0,teach:null,done:S.mageCraft.done,coll:S.mageCraft.coll,known:D.GOODS.filter(function(x){return x.m==='mage'&&x.lvl<=S.mlvl;}).map(function(x){return x.id;})};
 };
 P.canHire=function(id){return id!=='mage'&&!this.master(id).hired;};
-P.hire=function(id){var d=D.MASTER_BY[id];if(!d||!this.canHire(id)||!this.pay({gold:d.hire}))return false;this.master(id).hired=true;this.giveShelf(D.MASTER_SHELF[id]);this.emit('hire',id);return true;};
+/* v34: в обучении первый мастер бесплатно */
+P.hireCost=function(id){var d=D.MASTER_BY[id];if(!d)return 0;return this.S.tut&&this.S.tut.freeHire===id?0:d.hire;};
+P.hire=function(id){var d=D.MASTER_BY[id];if(!d||!this.canHire(id)||!this.pay({gold:this.hireCost(id)}))return false;if(this.S.tut&&this.S.tut.freeHire===id)delete this.S.tut.freeHire;this.master(id).hired=true;this.giveShelf(D.MASTER_SHELF[id]);this.emit('hire',id);return true;};
 P.mSpeed=function(id){var c=this.collDone(id);if(id==='mage')return D.MAGE_SPEED*(c?1.1:1);var m=this.master(id);return D.mSpeed(m.lvl,c);};
 /* освоение: сколько копий вещи сделал этот мастер; время вещи с учётом освоения (без общей скорости мастера) */
 P.mastery=function(mid,rid){var m=this.master(mid);return m&&m.done?(m.done[rid]||0):0;};
@@ -851,6 +938,7 @@ P.orderCost=function(rid){
   var S=this.S;
   function withGold(c,g){if(!c)return null;var o={gold:g};for(var k in c)o[k]=c[k];return o;}
   if(rid==='staff')return withGold(D.staffCost(S.staff),D.ORDERS.staff.gold(S.staff));
+  if(rid==='bag'&&S.tut&&S.tut.freeBag&&D.BAG[S.bagLvl])return {gold:0};   // v34: обучение, первая сумка бесплатно
   if(rid==='bag')return D.BAG[S.bagLvl]?withGold(D.BAG[S.bagLvl].cost,D.ORDERS.bag.gold(S.bagLvl)):null;
   var gd=D.GOOD_BY[rid];return gd?gd.cost:null;
 };
@@ -889,6 +977,7 @@ P.order=function(mid,rid){
   if(this.orderBlock(mid,rid))return false;
   var c=this.orderCost(rid),T=this.craftTime(mid,rid);
   this.pay(c);
+  if(rid==='bag'&&this.S.tut&&this.S.tut.freeBag)delete this.S.tut.freeBag;
   this.S.queue.push({r:rid,m:mid,t:T,T:T,c:JSON.parse(JSON.stringify(c))});
   if(D.GOOD_BY[rid])this.noteRecent(rid);
   this.emit('order',{m:mid,r:rid});return true;
@@ -1552,6 +1641,9 @@ P.sanitize=function(){
   for(k in S.skills)if(!D.SKILLS.some(function(x){return x.id===k;}))delete S.skills[k];
   D.SKILLS.forEach(function(x){var st=S.skills[x.id];if(!st)S.skills[x.id]={l:1,cd:0,act:0};else st.l=Math.max(1,Math.min(x.lv,st.l|0));});
   if(!S.debt)S.debt={n:0,bag:0};
+  if(S.clone&&!S.clone.bag)S.clone=null;
+  if(S.trip&&S.trip.m>=D.MOBS)S.trip.m=D.MOBS-1;
+  if(!S.tut)S.tut={step:99};
   if(!S.queue)S.queue=[];
   var eq={head:null,body:null,belt:null,feet:null,ring:null,hand:null};
   /* надетое: в слот по новой схеме (амулет стал кольцом), иначе обратно в инвентарь */
@@ -1619,13 +1711,18 @@ P.sanitize=function(){
 /* v30 (версия 4): новая экономика (уровни вещей, быстрый крафт), прогресс снова заново. Пролог второй раз не показываем, разговор с хозяйкой да */
 /* v30.1 (версия 5): новые ресурсы, прогресс снова заново */
 function migrate(old,v){
-  if(v>=7)return old;
-  /* v32: новые умения (уровни с нуля), очки умений теперь от выплаченных долгов */
-  if(v===6){delete old.skills;old.spent=0;old.debt={n:0,bag:0};return old;}
-  /* v31: здоровье стало постоянным, первый поход игрок начинает сам. Прогресс v30.1 не сбрасываем */
-  if(v===5){old.hp=null;old.started=!!(old.stats&&old.stats.trips>0);return old;}
-  return {profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},
+  if(v>=8)return old;
+  if(v<5)return {profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},
     lastSeen:0,resetV31:!!old.profile,lore:{pro:old.lore&&old.lore.pro?1:0}};
+  /* v31: здоровье стало постоянным, первый поход игрок начинает сам. Прогресс v30.1 не сбрасываем */
+  if(v<6){old.hp=null;old.started=!!(old.stats&&old.stats.trips>0);}
+  /* v32: новые умения (уровни с нуля), очки умений теперь от выплаченных долгов */
+  if(v<7){delete old.skills;old.spent=0;old.debt={n:0,bag:0};}
+  /* v34: двойник ходит сам, слота оружия нет, 4 монстра в волне; обучение старым сохранениям не показываем */
+  old.clone=null;old.tut={step:99};
+  if(old.equip&&old.equip.hand){var hi=old.equip.hand,hk=hi.id+':'+(hi.q||0);old.inv=old.inv||{};old.inv[hk]=(old.inv[hk]||0)+1;}
+  if(old.equip)delete old.equip.hand;
+  return old;
 }
 
 var api={Game:Game,defaults:defaults,migrate:migrate};

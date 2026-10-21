@@ -144,7 +144,7 @@ function render(full){
   var body=M.q('.ms2-body'),h='';
   if(mage&&S.place!=='home')h+='<p class="bad">'+t('cr2.mageAway')+'</p>';
   if(!m.hired){
-    h+='<button type="button" class="btn pink big" data-act="hire"'+(S.gold<d.hire?' disabled':'')+'>'+t('ms.hire')+' '+COIN+D.fmt(d.hire)+'</button>';
+    var hc=g.hireCost(id);h+='<button type="button" class="btn pink big" data-act="hire"'+(S.gold<hc?' disabled':'')+'>'+t('ms.hire')+' '+COIN+D.fmt(hc)+'</button>';
     h+='<div class="lbl full">'+t('ms2.canMake')+'</div><div class="ms2-grid">'+D.GOODS.filter(function(x){return x.m===id;}).map(function(x){return card(x.id,'view');}).join('')+'</div>';
     return setBody(body,h);
   }

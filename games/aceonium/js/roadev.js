@@ -28,7 +28,7 @@ function paint(){
     h+='</div>';
   }else{
     var v={};for(var k in ev.res.v)v[k]=ev.res.v[k];
-    if(v.r)v.r=t('res.'+v.r);if(v.g!==undefined)v.g=D.fmt(v.g);
+    if(v.r)v.r=t('res.'+v.r);if(v.g!==undefined)v.g=D.fmt(v.g);if(v.i)v.i=UI.itemName(v.i);
     h+='<p class="rev-res">'+t(ev.res.k,v)+'</p><div class="rev-b"><button type="button" class="btn" data-o="next">'+t('ev.next')+'</button></div>';
   }
   h+='<div class="rev-bar"><i></i></div>';

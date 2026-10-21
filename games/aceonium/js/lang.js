@@ -1077,7 +1077,7 @@ I18n.add('ru',{
   'wm.closed':'ЗАКРЫТО','wm.look':'СМОТРЕТЬ ПОХОД','wm.inBoss':'ИДЁТ БОЙ С БОССОМ','wm.go':'ИДТИ','wm.switch':'ИДТИ СЮДА',
   'wm.hurt':'Маг ранен ({p}%), до полного здоровья {t}.','wm.switchN':'Поход по тракту {t} закончится, сумка уйдёт на склад.',
   'vmap.title':'КАРТА ПОХОДОВ',
-  'vmap.body':'<p>Кнопка ПРИКЛЮЧЕНИЕ открывает карту мира. Нажми на район: что там падает, шансы, редкий ресурс с боссов и какая нужна сила. Закрытые районы заштрихованы.</p><p>Поход теперь виден на карте района: маг идёт по дороге, на кружках с числами стоят боссы. Старая 3D-дорога осталась, её включает кнопка 3D.</p><p>Здоровье мага теперь постоянное и видно всегда, за 10 секунд восстанавливается 3%. Бьют и обычные монстры, броня у вещей снимает часть каждого удара. Раненый маг возвращается в таверну и сам уходит дальше только с полным здоровьем, раньше можно отправить кнопкой. Если здоровье кончится, сумка пропадает.</p>'
+  'vmap.body':'<p>Кнопка ПРИКЛЮЧЕНИЕ открывает карту мира. Нажми на район: что там падает, шансы, редкий ресурс с боссов и какая нужна сила. Закрытые районы заштрихованы.</p><p>Поход теперь виден на карте района: маг идёт по дороге, на кружках с числами стоят боссы.</p><p>Здоровье мага теперь постоянное и видно всегда, за 10 секунд восстанавливается 3%. Бьют и обычные монстры, броня у вещей снимает часть каждого удара. Раненый маг возвращается в таверну и сам уходит дальше только с полным здоровьем, раньше можно отправить кнопкой. Если здоровье кончится, сумка пропадает.</p>'
 });
 I18n.add('en',{
   'hp.l':'HP','eff.arm':'armor {v}','why.wounded':'wounded, healing in the tavern','why.weak':'monsters here are too strong for now','home.downMob':'THE MAGE FELL',
@@ -1091,7 +1091,7 @@ I18n.add('en',{
   'wm.closed':'LOCKED','wm.look':'WATCH THE TRIP','wm.inBoss':'BOSS FIGHT IN PROGRESS','wm.go':'GO','wm.switch':'GO HERE',
   'wm.hurt':'The mage is wounded ({p}%), full health in {t}.','wm.switchN':'The trip on {t} ends, the bag goes to storage.',
   'vmap.title':'TRIP MAP',
-  'vmap.body':'<p>The ADVENTURE button opens the world map. Tap a region to see what drops there, the chances, the rare boss resource and the power you need. Locked regions are hatched.</p><p>Trips are shown on the region map: the mage walks the road, bosses wait at the numbered circles. The old 3D road is still there, the 3D button turns it on.</p><p>Mage health is now permanent and always visible, it restores 3% every 10 seconds. Regular monsters hit too, armor on items takes part of every hit. A wounded mage goes back to the tavern and leaves again on his own only at full health, you can send him earlier. If health runs out, the bag is lost.</p>'
+  'vmap.body':'<p>The ADVENTURE button opens the world map. Tap a region to see what drops there, the chances, the rare boss resource and the power you need. Locked regions are hatched.</p><p>Trips are shown on the region map: the mage walks the road, bosses wait at the numbered circles.</p><p>Mage health is now permanent and always visible, it restores 3% every 10 seconds. Regular monsters hit too, armor on items takes part of every hit. A wounded mage goes back to the tavern and leaves again on his own only at full health, you can send him earlier. If health runs out, the bag is lost.</p>'
 });
 /* v32: умения и долги */
 I18n.add('ru',{
@@ -1151,7 +1151,7 @@ I18n.add('ru',{
   'ev.hurt.t':'Раненый путник','ev.hurt.d':'У дороги сидит путник, нога в крови. Просит помочь дойти до города.','ev.hurt.help':'ПОМОЧЬ','ev.hurt.skip':'ПРОЙТИ МИМО',
   'ev.hurt.ok':'Маг перевязал путника и отдал часть своих сил. В городе о нём узнают: +{r} репутации.',
   'vev.title':'ДВОЙНИК И СОБЫТИЯ',
-  'vev.body':'<p>Новое умение ДВОЙНИК (с 15 уровня мага, клавиша 5): призрак мага идёт рядом до конца похода, бьёт оружием и принимает удары на себя. Для него нужно оружие в руке: мечи, луки, топоры от мастеров теперь надеваются в слот РУКА во вкладке СНАРЯЖЕНИЕ.</p><p>На дороге случаются встречи: сундук, родник, торговец, развилка, огонёк, раненый путник. Только пока ты смотришь поход. На встрече показывается 3D-дорога и выбор, через 40 секунд маг сам идёт мимо. Кнопки 3D на дороге больше нет.</p>'
+  'vev.body':'<p>На дороге случаются встречи: сундук, брошенная телега, монеты, вещи путника, щедрый странник, торговец, развилка, огонёк, раненый путник. Только пока ты смотришь поход. На встрече показывается 3D-дорога и выбор, через 40 секунд маг сам идёт мимо.</p>'
 });
 I18n.add('en',{
   'sk.clone':'DOUBLE','sk.clone.d':'a ghost of the mage fights with the weapon in hand and takes hits first, {p} of the mage\'s power, until the trip ends',
@@ -1171,7 +1171,7 @@ I18n.add('en',{
   'ev.hurt.t':'Wounded traveler','ev.hurt.d':'A traveler sits by the road with a bleeding leg and asks for help.','ev.hurt.help':'HELP','ev.hurt.skip':'WALK PAST',
   'ev.hurt.ok':'The mage bandaged him and gave some of his strength. The town will hear of it: +{r} reputation.',
   'vev.title':'DOUBLE AND EVENTS',
-  'vev.body':'<p>New skill DOUBLE (from mage level 15, key 5): a ghost of the mage walks along until the trip ends, fights with a weapon and takes hits first. It needs a weapon in hand: swords, bows and axes from the craftsmen now go into the HAND slot in the GEAR tab.</p><p>Encounters happen on the road: a chest, a spring, a trader, a fork, a wisp, a wounded traveler. Only while you watch the trip. An encounter shows the 3D road and a choice, after 40 seconds the mage walks on. The 3D button on the road is gone.</p>'
+  'vev.body':'<p>Encounters happen on the road: a chest, an abandoned cart, coins, a traveler\'s things, a generous wanderer, a trader, a fork, a wisp, a wounded traveler. Only while you watch the trip. An encounter shows the 3D road and a choice, after 40 seconds the mage walks on.</p>'
 });
 /* v33: королевская награда и доска наград */
 I18n.add('ru',{
@@ -1190,3 +1190,58 @@ I18n.add('en',{
   'vbn.title':'ROYAL BOUNTY',
   'vbn.body':'<p>The king announced a bounty: 1 gold for every monster defeated, a boss counts as one. That is why travelers flock to the tavern for gear. The mage collects the bounty when he returns from a trip. The bounty board by the tavern door lists the top 100 hunters.</p>'
 });
+/* v34: двойник в своём походе, новые события, обучение */
+I18n.add('ru',{
+  'sk.clone':'ДВОЙНИК','sk.clone.d':'копия мага с его силой, здоровьем, бронёй и сумкой уходит в выбранный тракт и фармит сама; откат {p}',
+  'cl.sent':'Двойник ушёл: {t}','cl.back':'Двойник вернулся: +{n}, волна {w}','cl.lost':'Двойник пал, сумка пропала ({n})','cl.wave':'волна {w}','cl.w':'в{w}','cl.rest':'отдыхает','jr.clone':'Двойник',
+  'wm.cloneTitle':'КУДА ОТПРАВИТЬ ДВОЙНИКА','wm.sendClone':'ОТПРАВИТЬ ДВОЙНИКА','wm.clonePay':'(-{t} бодрствования)',
+  'wm.cloneN':'Двойник получит силу, здоровье и броню мага на этот момент, сумка на {c} шт. Он не устаёт. Ранен - отдыхает на дороге, не по силам - возвращается с сумкой, погиб - сумка пропала.',
+  'ev.cart.t':'Брошенная телега','ev.cart.d':'На обочине стоит телега, хозяин, похоже, сбежал от монстров. В ней остались припасы.','ev.cart.take':'ЗАБРАТЬ','ev.cart.skip':'НЕ ТРОГАТЬ',
+  'ev.cart.ok':'В телеге нашлось: {r}, {n} шт.',
+  'ev.gold.t':'Монеты в траве','ev.gold.d':'В траве у дороги блестят монеты. Кто-то обронил кошелёк.','ev.gold.take':'ПОДОБРАТЬ','ev.gold.ok':'Маг подобрал {g} золота.',
+  'ev.remains.t':'Вещи путника','ev.remains.d':'У дороги разбросаны вещи. Их хозяин погиб или убежал от монстров.','ev.remains.search':'ОСМОТРЕТЬ','ev.remains.skip':'ИДТИ ДАЛЬШЕ',
+  'ev.remains.item':'Среди вещей нашлось: {i}.','ev.remains.res':'Среди вещей нашлось: {r}, {n} шт.',
+  'ev.gift.t':'Щедрый странник','ev.gift.d':'Странник узнал мага и протягивает вещь: в дороге ему она не нужна, а магу пригодится.','ev.gift.take':'ВЗЯТЬ','ev.gift.skip':'ОТКАЗАТЬСЯ',
+  'ev.gift.ok':'Странник отдал: {i}. Вещь уже в таверне.',
+  'ev.wisp.lost':'Огонёк завёл в чащу и погас. Маг исцарапался о ветки: -{n} здоровья.',
+  'tut.adv':'Маг готов к первому приключению. Нажми ПРИКЛЮЧЕНИЕ, выбери Летний тракт и нажми ИДТИ.',
+  'tut.craft':'Пока маг в походе, займёмся таверной. Нажми СОЗДАТЬ.',
+  'tut.potion':'Это мастера. Травница уже работает. Нажми на зелье здоровья: оно встанет в очередь.',
+  'tut.wait':'Травница варит зелье. Готовые вещи хозяйка ставит на полки и продаёт гостям.',
+  'tut.first':'Поздравляем! Первая вещь готова.',
+  'tut.hire':'Чтобы улучшить сумку, нужен кожевник. Сейчас его можно нанять бесплатно: открой СТРОЙКА и нажми НАНЯТЬ.',
+  'tut.bag':'Теперь бесплатно улучши сумку: маг унесёт больше ресурсов.',
+  'tut.hall':'Молодцы! Теперь улучши зал до 1 уровня.',
+  'tut.hallGold':'Теперь улучши зал до 1 уровня, это {g} золота. Золото дают продажи и королевская награда: по 1 за монстра, когда маг возвращается.',
+  'tut.staff':'Зал готов. Теперь можно нанять повара и пивовара: кнопка ЗАЛ.',
+  'tut.ok':'ПОНЯТНО','tut.skip':'пропустить обучение'
+});
+I18n.add('en',{
+  'sk.clone':'DOUBLE','sk.clone.d':'a copy of the mage with his power, health, armor and bag goes to the chosen tract and farms on its own; cooldown {p}',
+  'cl.sent':'The double left: {t}','cl.back':'The double is back: +{n}, wave {w}','cl.lost':'The double fell, the bag is lost ({n})','cl.wave':'wave {w}','cl.w':'w{w}','cl.rest':'resting','jr.clone':'Double',
+  'wm.cloneTitle':'WHERE TO SEND THE DOUBLE','wm.sendClone':'SEND THE DOUBLE','wm.clonePay':'(-{t} awake)',
+  'wm.cloneN':'The double gets the mage\'s current power, health and armor, a bag for {c}. It does not tire. Wounded - rests on the road, too strong - comes back with the bag, falls - the bag is lost.',
+  'ev.cart.t':'Abandoned cart','ev.cart.d':'A cart stands by the road, its owner seems to have fled from monsters. Some supplies are left.','ev.cart.take':'TAKE','ev.cart.skip':'LEAVE IT',
+  'ev.cart.ok':'Found in the cart: {r}, {n} pcs.',
+  'ev.gold.t':'Coins in the grass','ev.gold.d':'Coins glint in the grass. Someone dropped a purse.','ev.gold.take':'PICK UP','ev.gold.ok':'The mage picked up {g} gold.',
+  'ev.remains.t':'Traveler\'s things','ev.remains.d':'Things are scattered by the road. Their owner died or ran from monsters.','ev.remains.search':'SEARCH','ev.remains.skip':'MOVE ON',
+  'ev.remains.item':'Among the things: {i}.','ev.remains.res':'Among the things: {r}, {n} pcs.',
+  'ev.gift.t':'Generous wanderer','ev.gift.d':'A wanderer recognizes the mage and offers an item: he does not need it, the mage will.','ev.gift.take':'TAKE','ev.gift.skip':'DECLINE',
+  'ev.gift.ok':'The wanderer gave: {i}. It is already in the tavern.',
+  'ev.wisp.lost':'The wisp led into the thicket and went out. Branches scratched the mage: -{n} health.',
+  'tut.adv':'The mage is ready for his first adventure. Press ADVENTURE, pick Summer Road and press GO.',
+  'tut.craft':'While the mage is away, let\'s run the tavern. Press CRAFT.',
+  'tut.potion':'These are the craftsmen. The herbalist already works. Tap the health potion: it goes into the queue.',
+  'tut.wait':'The herbalist is brewing. The hostess puts finished items on the shelves and sells them to guests.',
+  'tut.first':'Congratulations! Your first item is ready.',
+  'tut.hire':'To upgrade the bag you need a tanner. Right now he is free: open BUILD and press HIRE.',
+  'tut.bag':'Now upgrade the bag for free: the mage will carry more.',
+  'tut.hall':'Well done! Now upgrade the hall to level 1.',
+  'tut.hallGold':'Now upgrade the hall to level 1, that is {g} gold. Gold comes from sales and the royal bounty: 1 per monster when the mage returns.',
+  'tut.staff':'The hall is ready. Now you can hire a cook and a brewer: the HALL button.',
+  'tut.ok':'GOT IT','tut.skip':'skip the tutorial'
+});
+I18n.add('ru',{'vcl.title':'ДВОЙНИК В ПОХОДЕ',
+  'vcl.body':'<p>Двойник теперь ходит сам: нажми умение, выбери тракт на карте. Он берёт силу, здоровье, броню и сумку мага на этот момент и фармит, пока не наполнит сумку. Его поход виден в плашке над умениями. Слота оружия больше нет, надетое оружие вернулось в таверну.</p><p>В волне теперь 4 монстра, монстры бьют сильнее. Кнопка В ТАВЕРНУ заканчивает поход: сумка на склад, следующий поход с первой волны. События случаются после каждой 5-й волны с шансом 25%.</p>'});
+I18n.add('en',{'vcl.title':'DOUBLE ON ITS OWN',
+  'vcl.body':'<p>The double now goes on its own trip: press the skill and pick a tract on the map. It takes the mage\'s current power, health, armor and bag and farms until the bag is full. Its trip shows in the bar above the skills. The weapon slot is gone, equipped weapons went back to the tavern.</p><p>A wave now has 4 monsters, and monsters hit harder. The TO TAVERN button ends the trip: the bag goes to storage, the next trip starts from wave 1. Events happen after every 5th wave with a 25% chance.</p>'});

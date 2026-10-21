@@ -218,17 +218,17 @@ function frame(dt){
   c.save();c.globalAlpha=0.35;c.fillStyle='#000';c.beginPath();c.ellipse(qm.x,qm.y+ih2*0.08,ih2*0.26,ih2*0.065,0,0,7);c.fill();c.restore();
   drawIcon(mage,mgx,mgy,ih2,V.face,mrot,{glow:'rgba(0,229,255,.55)',blur:10,flash:V.flash/0.25,fcol:'#ff3050'});
   V.mpos={x:mgx,y:mgy-ih2};
-  /* v33: двойник - фиолетовый призрак мага чуть впереди и ниже, принимает удары */
+  /* v34: двойник в своём походе: если он в этом же тракте, фиолетовый призрак на своей волне */
   var cl=S.clone;
-  if(cl){
-    V.cl.lunge=Math.max(0,V.cl.lunge-dt*4);V.cl.flash=Math.max(0,V.cl.flash-dt);
-    var cx2=qm.x+ih2*0.32*V.face+Math.sin(V.cl.lunge*Math.PI)*ih2*0.3*V.face,cy2=qm.y+ih2*0.2-(walking?Math.abs(Math.sin(V.time*9+1.5))*3.5:0);
-    var crot=walking?Math.sin(V.time*9+1.5)*0.13:Math.sin(V.time*2.6+1)*0.05;
-    c.save();c.globalAlpha=0.3;c.fillStyle='#000';c.beginPath();c.ellipse(cx2,cy2+ih2*0.02,ih2*0.24,ih2*0.06,0,0,7);c.fill();c.restore();
-    drawIcon(mage,cx2,cy2,ih2*0.95,V.face,crot,{a:0.9,glow:'rgba(160,90,255,.9)',blur:14,flash:Math.max(0.55,V.cl.flash/0.2),fcol:V.cl.flash>0?'#ff3050':'#8a5cff'});
-    var bw2=ih2*0.55,f2=clamp(cl.hp/cl.max,0,1);
-    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(cx2-bw2/2-1,cy2-ih2*0.95-9,bw2+2,6);
-    c.fillStyle='#a070ff';c.fillRect(cx2-bw2/2,cy2-ih2*0.95-8,bw2*f2,4);
+  if(cl&&cl.t===tt){
+    var cp=at(rd,clamp(arcFor(rd,cl.w,cl.m,cl.boss),4,rd.L-4)),q5=scr(cp.x,cp.y),rest=cl.rest>0;
+    var cy2=q5.y+ih2*0.08-(rest?0:Math.abs(Math.sin(V.time*8+1.5))*3),crot=rest?0:Math.sin(V.time*8+1.5)*0.12;
+    var ah2=at(rd,arcFor(rd,cl.w,cl.m,cl.boss)+30),cf=ah2.x>=cp.x?1:-1;
+    c.save();c.globalAlpha=0.3;c.fillStyle='#000';c.beginPath();c.ellipse(q5.x,q5.y+ih2*0.08,ih2*0.24,ih2*0.06,0,0,7);c.fill();c.restore();
+    drawIcon(mage,q5.x,cy2,ih2*0.9,cf,crot,{a:0.9,glow:'rgba(160,90,255,.9)',blur:14,flash:0.55,fcol:'#8a5cff'});
+    var bw2=ih2*0.5,f2=clamp(cl.hp/cl.max,0,1);
+    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(q5.x-bw2/2-1,cy2-ih2*0.9-9,bw2+2,6);
+    c.fillStyle='#a070ff';c.fillRect(q5.x-bw2/2,cy2-ih2*0.9-8,bw2*f2,4);
   }
   /* заряды посоха и искры */
   for(var j=V.fx.length-1;j>=0;j--){
@@ -275,6 +275,10 @@ function regionInfo(ti){
   if(names.length)h+='<div class="wm-row"><span class="wm-k">'+t('wm.mobs')+'</span><div class="wm-v wm-mobs">'+esc(names.join(', '))+'<small>'+t('wm.mainBoss')+' '+esc(t('boss.'+T.id))+'</small></div></div>';
   /* кнопка */
   var tr=S.trip,here=S.place==='road'&&tr&&tr.t===ti,btn='',note='';
+  if(WM&&WM.opts.clone){
+    btn=open?'<button type="button" class="btn wm-go cl" data-a="clone">'+t('wm.sendClone')+(WM.opts.pay?' '+t('wm.clonePay',{t:UI.ft(WM.opts.pay*3600)}):'')+'</button>':'<button type="button" class="btn wm-go" disabled>'+t('wm.closed')+'</button>';
+    return h+'<div class="wm-btns"><small class="wm-note">'+t('wm.cloneN',{c:g.bag().cap*(D.TRACT_QTY[ti]||1)})+'</small>'+btn+'</div>';
+  }
   if(!open)btn='<button type="button" class="btn wm-go" disabled>'+t('wm.closed')+'</button>';
   else if(here)btn='<button type="button" class="btn wm-go" data-a="look">'+t('wm.look')+'</button>';
   else if(g.inBoss())btn='<button type="button" class="btn wm-go" disabled>'+t('wm.inBoss')+'</button>';
@@ -295,27 +299,28 @@ function paintWorld(){
     svg+='<polygon data-t="'+i+'" class="'+(open?'op':'lk')+(sel?' sel':'')+'" points="'+r.poly.map(function(p){return p[0]+','+p[1];}).join(' ')+'"/>';
     var st=S.tracts[i];
     lb+='<div class="wm-lbl'+(open?'':' lk')+(sel?' sel':'')+'" data-t="'+i+'" style="left:'+(r.c[0]/M.w*100).toFixed(2)+'%;top:'+(r.c[1]/M.h*100).toFixed(2)+'%">'+
-      (cur?'<img class="wm-me" alt="" src="'+url('mage.webp')+'">':'')+(open?'':LOCK)+'<b>'+esc(UI.tractName(i))+'</b>'+(open&&st.clears?'<i>'+st.clears+'</i>':'')+'</div>';
+      (cur?'<img class="wm-me" alt="" src="'+url('mage.webp')+'">':'')+(S.clone&&S.clone.t===i?'<img class="wm-me cl" alt="" src="'+url('mage.webp')+'">':'')+(open?'':LOCK)+'<b>'+esc(UI.tractName(i))+'</b>'+(open&&st.clears?'<i>'+st.clears+'</i>':'')+'</div>';
   });
   WM.svg.innerHTML='<defs><pattern id="wm-hatch" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="16" fill="rgba(10,6,22,.62)"/><rect width="6" height="16" fill="rgba(0,0,0,.55)"/></pattern></defs>'+svg;
   WM.lbl.innerHTML=lb;
   WM.info.innerHTML=regionInfo(WM.sel);
 }
-function openWorld(sel){
+function openWorld(sel,opts){
   if(!g)return;
-  closeWorld(true);
+  closeWorld(true);opts=opts||{};
   if(sel===undefined)sel=S.place==='road'&&S.trip?S.trip.t:Math.min(S.lastTract||0,D.TRACTS.length-1);
   var o=document.createElement('div');o.className='wm';
-  o.innerHTML='<div class="wm-box"><div class="wm-h"><b>'+t('wm.title')+'</b><button type="button" class="win-x" aria-label="close"></button></div>'+
+  o.innerHTML='<div class="wm-box'+(opts.clone?' clone':'')+'"><div class="wm-h"><b>'+t(opts.clone?'wm.cloneTitle':'wm.title')+'</b><button type="button" class="win-x" aria-label="close"></button></div>'+
     '<div class="wm-body"><div class="wm-map"><img alt="" src="'+url('world.webp')+'"><svg viewBox="0 0 '+M.w+' '+M.h+'" preserveAspectRatio="none"></svg><div class="wm-lbls"></div></div><div class="wm-info"></div></div></div>';
   document.body.appendChild(o);
-  WM={el:o,sel:sel,svg:o.querySelector('svg'),lbl:o.querySelector('.wm-lbls'),info:o.querySelector('.wm-info')};
+  WM={opts:opts,el:o,sel:sel,svg:o.querySelector('svg'),lbl:o.querySelector('.wm-lbls'),info:o.querySelector('.wm-info')};
   o.addEventListener('click',function(e){
     if(e.target===o||e.target.closest('.win-x')){closeWorld();Sound.sfx('select');return;}
     var r=e.target.closest('[data-t]');
     if(r){WM.sel=+r.dataset.t;paintWorld();Sound.sfx('select');return;}
     var a=e.target.closest('[data-a]');if(!a||a.disabled)return;
     Sound.sfx('select');
+    if(a.dataset.a==='clone'){var tc=WM.sel,cb=WM.opts.onPick;closeWorld();if(cb)cb(tc);return;}
     if(a.dataset.a==='look'){closeWorld();if(UI.goScreen)UI.goScreen('road');return;}
     if(a.dataset.a==='go'){var ti=WM.sel;closeWorld();if(g.goTo(ti)){preload(ti);if(UI.goScreen)UI.goScreen('road');UI.toast(t('plan.goNow',{t:UI.tractName(ti)}));}}
   });
@@ -331,8 +336,6 @@ function closeWorld(quiet){
 function init(game){
   g=game;S=game.S;
   ensureCanvas();
-  g.on('cloneHit',function(){if(V.on)V.cl.lunge=1;if(V.mon)V.mon.kb=1;});
-  g.on('cloneHurt',function(h){if(!V.on)return;V.cl.flash=0.2;if(V.mon)V.mon.lunge=1;if(h.boss)V.shake=0.2;});
   g.on('bolt',onBolt);g.on('hit',onHit);g.on('mageHit',onMageHit);g.on('bossWind',onWind);
   g.on('tripStart',function(){V.mon=null;V.t=-1;});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&WM)closeWorld();});

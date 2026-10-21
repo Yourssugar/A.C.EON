@@ -8,7 +8,7 @@ window.__aceoniumStarted=true;
 var D=window.AcData;
 window.AC_DEBUG=/[?&]debug\b/.test(location.search);
 
-Store.define('aceonium',{version:7,defaults:AcGame.defaults(),migrate:AcGame.migrate});
+Store.define('aceonium',{version:8,defaults:AcGame.defaults(),migrate:AcGame.migrate});
 var S=Store.get('aceonium');
 var game=new AcGame.Game(S);
 if(game.sanitize)game.sanitize();   // старые сохранения: слоты, рецепты, очереди
@@ -20,6 +20,7 @@ document.title='ACEONIUM';
 UI.init(game);
 if(window.AdvMap)AdvMap.init(game);
 if(window.RoadEv)RoadEv.init(game);
+if(window.Tutor)Tutor.init(game);
 
 var has3d=false,portalBusy=false;
 /* v29: экран загрузки сразу после загрузчика файлов, пока сцена не готова (вместо упрощённой графики) */
@@ -71,21 +72,23 @@ var sfxT=0;
 function s3(){return has3d&&!mapMode();}
 /* v33: 3D-дорога только на событиях, обычный поход всегда картой */
 function mapMode(){return !!window.AdvMap&&game.R.phase!=='event';}
+/* v34: звуки и надписи боя только когда игрок смотрит поход */
+function watchRoad(){return S.place==='road'&&curScreen()==='road';}
 function biomeSync(){if(has3d&&S.trip&&Scene3D.setBiome)Scene3D.setBiome(D.TRACTS[S.trip.t].biome);}
 function bossWinText(e){return e.clear?(e.first?UI.t('boss.clearFirst',{t:UI.tractName(e.t)}):UI.t('boss.clear')):UI.t('boss.loot',{n:e.k});}
 game.on('spawn',function(e){if(s3())Scene3D.spawn(e,game.R.t);});
 game.on('bolt',function(b){
   if(s3())Scene3D.bolt(b.kind,b.crit);
-  var now=performance.now();if(now-sfxT>70){sfxT=now;Sound.sfx(b.kind==='click'?'select':'move');}
+  var now=performance.now();if(watchRoad()&&now-sfxT>70){sfxT=now;Sound.sfx(b.kind==='click'?'select':'move');}
 });
 game.on('hit',function(h){UI.onHit(h);if(s3()&&Scene3D.onHit&&!h.pet)Scene3D.onHit(h);});
 game.on('petBite',function(b){if(s3()&&Scene3D.petBite)Scene3D.petBite(b.crit);});
 game.on('bossWind',function(w){if(s3()&&Scene3D.bossWind)Scene3D.bossWind(w.rage);});
-game.on('kill',function(k){if(s3())Scene3D.kill();UI.onKill(k);Sound.sfx('capture');});
+game.on('kill',function(k){if(s3())Scene3D.kill();UI.onKill(k);if(watchRoad())Sound.sfx('capture');});
 game.on('loot',UI.onLoot);
-game.on('bossStart',function(){UI.banner(UI.t('boss.start'),'','red');Sound.sfx('check');});
-game.on('bossWin',function(e){UI.banner(UI.t('boss.win'),bossWinText(e),'gold');Sound.sfx('win');if(s3()&&Scene3D.victory)Scene3D.victory();save();});
-game.on('bossFail',function(){if(s3())Scene3D.retreat();Sound.sfx('lose');});
+game.on('bossStart',function(){if(!watchRoad())return;UI.banner(UI.t('boss.start'),'','red');Sound.sfx('check');});
+game.on('bossWin',function(e){if(watchRoad()){UI.banner(UI.t('boss.win'),bossWinText(e),'gold');Sound.sfx('win');}else if(e.clear)UI.toast(bossWinText(e));if(s3()&&Scene3D.victory)Scene3D.victory();save();});
+game.on('bossFail',function(){if(s3())Scene3D.retreat();if(watchRoad())Sound.sfx('lose');});
 game.on('mageHit',function(h){UI.onMageHit(h);if(s3()&&Scene3D.hurt)Scene3D.hurt(h);});
 game.on('home',function(r){UI.onHome(r);if(UI.tab==='store'||UI.tab==='path')UI.rebuild();save();});
 game.on('tractOpen',function(t){UI.toast(UI.t('toast.tract',{t:UI.tractName(t)}));if(UI.tab==='path')UI.rebuild();});
@@ -211,7 +214,12 @@ UI.screenNow=curScreen;
 game.on('event',function(){biomeSync();applyView();Sound.sfx('check');});
 game.on('eventEnd',function(){applyView();});
 game.on('tripStart',biomeSync);game.on('tripResume',biomeSync);
-game.on('cloneEnd',function(why){if(why==='down'){UI.toast(UI.t('cl.down'));Sound.sfx('lose');}});
+game.on('cloneStart',function(){Sound.sfx('win');save();});
+game.on('cloneHome',function(r){
+  var txt=r.why==='defeat'?UI.t('cl.lost',{n:r.lost}):UI.t('cl.back',{n:r.n,w:r.w})+' · '+UI.t('why.'+r.why);
+  if(r.bounty)txt+=' · '+UI.t('home.bounty',{g:D.fmt(r.bounty)});
+  UI.toast(txt);Sound.sfx(r.why==='defeat'?'lose':'capture');save();if(UI.tab==='store'||UI.tab==='bag')UI.rebuild();
+});
 UI.toggleView=function(){if(S.place==='road')game.goHome();else game.goTrip();};
 if(window.Tavern3D){
   Tavern3D.onPick(function(kind,id){
@@ -402,17 +410,18 @@ function begin(){
     if(away>5)catchUp(away,false);else game.start();
     /* v27: сохранения сброшены (персонаж и облик остались), дальше обычные новости версий */
     /* v30: сохранения сброшены под новую экономику (персонаж, облик и пролог остались) */
-    if(!S.lore.pro){S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;delete S.resetV31;save();startPrologue();}
+    if(!S.lore.pro){S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;S.seenCl=true;delete S.resetV31;save();startPrologue();}
     else if(S.resetV31){delete S.resetV31;S.seenV31=true;save();UI.modal(UI.t('v31r.title'),UI.t('v31r.body')+UI.t('v31.body'));}
-    else if(!S.seenV31){S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;save();UI.modal(UI.t('v31.title'),UI.t('v31.body'));}
-    else if(!S.seenMap){S.seenMap=true;S.seenSk=true;S.seenEv=true;save();UI.modal(UI.t('vmap.title'),UI.t('vmap.body')+UI.t('vsk.body')+UI.t('vev.body')+UI.t('vbn.body'));}
-    else if(!S.seenSk){S.seenSk=true;S.seenEv=true;save();UI.modal(UI.t('vsk.title'),UI.t('vsk.body')+UI.t('vev.body')+UI.t('vbn.body'));}
-    else if(!S.seenEv){S.seenEv=true;save();UI.modal(UI.t('vev.title'),UI.t('vev.body')+UI.t('vbn.body'));}
+    else if(!S.seenV31){S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;S.seenCl=true;save();UI.modal(UI.t('v31.title'),UI.t('v31.body'));}
+    else if(!S.seenMap){S.seenMap=true;S.seenSk=true;S.seenEv=true;S.seenCl=true;save();UI.modal(UI.t('vmap.title'),UI.t('vmap.body')+UI.t('vsk.body')+UI.t('vev.body')+UI.t('vbn.body')+UI.t('vcl.body'));}
+    else if(!S.seenSk){S.seenSk=true;S.seenEv=true;S.seenCl=true;save();UI.modal(UI.t('vsk.title'),UI.t('vsk.body')+UI.t('vev.body')+UI.t('vbn.body')+UI.t('vcl.body'));}
+    else if(!S.seenEv){S.seenEv=true;S.seenCl=true;save();UI.modal(UI.t('vev.title'),UI.t('vev.body')+UI.t('vbn.body')+UI.t('vcl.body'));}
+    else if(!S.seenCl){S.seenCl=true;save();UI.modal(UI.t('vcl.title'),UI.t('vcl.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);}
       showPlace(S.place,true);
-      S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;startPrologue();holdNow();
+      S.seenV31=true;S.seenMap=true;S.seenSk=true;S.seenEv=true;S.seenCl=true;startPrologue();holdNow();
       game.start();save();UI.rebuild();lastWall=Date.now();last=performance.now();
     });
   }

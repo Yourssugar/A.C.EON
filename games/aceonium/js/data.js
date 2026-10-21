@@ -63,7 +63,7 @@ D.bossRole=function(w){return w>=D.WAVES?'main':w===50?'mid':'mini';};
 D.PET_BITE=2.6;   // питомец кусает раз в столько секунд (v17: его бонус урона стал его собственными ударами)
 D.PET_BITE_MIN=1;D.PET_BITE_MAX=3;   // v21: укус через случайные 1-3 с, урон пропорционален паузе
 D.WAVES=100;
-D.MOBS=6;                 // монстров в волне
+D.MOBS=4;                 // монстров в волне (v34: было 6)
 D.WALK_TIME=2.2;          // тень вдали собирается в монстра
 D.WAVE_PAUSE=4;           // переход между волнами
 D.DEATH_TIME=0.55;
@@ -88,7 +88,7 @@ D.bossDps=function(t,w){return D.maxHp(D.recLevel(t,w))*0.6/D.BOSS_T;};
    Обычные монстры бьют раз в MOB_HIT с; урон от здоровья мага рекомендуемого уровня, элита вдвое сильнее.
    Броня (arm у вещей) снимает с каждого удара столько единиц, но не больше 75% удара. */
 D.REGEN=0.003;
-D.MOB_HIT=2;D.MOB_DPS=0.0035;D.ELITE_DMG=2;D.ARM_MIN=0.25;
+D.MOB_HIT=2;D.MOB_DPS=0.005;D.ELITE_DMG=2;D.ARM_MIN=0.25;
 D.mobDps=function(t,w){return D.maxHp(D.recLevel(t,w))*D.MOB_DPS;};
 D.armHit=function(raw,arm){return Math.max(raw*D.ARM_MIN,raw-(arm||0));};
 D.HP_LOW=0.9;   // осторожность: следующий бой не должен снять больше 90% текущего здоровья
@@ -157,9 +157,8 @@ D.SKILLS=[
   {id:'shield',key:'2',unlock:5, dur:1800,cd:21600, lv:20,a:0.3, b:0.5, fat:1},           // -доля входящего урона
   {id:'sleep', key:'3',unlock:8, dur:0,   cd:14400, lv:20,a:0.5, b:2,   fat:2},           // часов сна (снимает усталость)
   {id:'haste', key:'4',unlock:12,dur:60,  cd:43200, lv:30,a:10,  b:100, fat:2,real:true}, // во сколько раз быстрее идёт время
-  {id:'clone', key:'5',unlock:15,dur:0,   cd:28800, lv:20,a:0.5, b:1,   fat:1}            // v33: двойник, сила от мага (урон оружия, здоровье)
+  {id:'clone', key:'5',unlock:15,dur:0,   cd:28800, lv:20,a:8,   b:4,   fat:1,cdLv:true}   // v34: двойник уходит в свой поход; уровни сокращают откат 8 ч -> 4 ч (a,b в часах)
 ];
-D.CLONE_HIT=1.3;   // двойник бьёт раз в столько секунд
 D.skillPointCost=function(l){return l+1;};      // с l на l+1: уровень n стоит n очков
 D.skillPow=function(s,l){return s.a+(s.b-s.a)*Math.min(1,Math.max(0,l-1)/Math.max(1,s.lv-1));};
 D.SKILL_PAY=0.5;
@@ -168,15 +167,22 @@ D.skillPayH=function(s,cdLeft){return Math.max(s.min||0,cdLeft/3600*D.SKILL_PAY)
    На решение EV_TIME с, потом маг идёт мимо. Показываются 3D-дорогой, без боя. */
 D.EVENTS=[
   {id:'chest', opts:['open','skip']},
-  {id:'spring',opts:['rest','skip']},
+  {id:'cart',  opts:['take','skip']},
+  {id:'gold',  opts:['take']},
+  {id:'remains',opts:['search','skip']},
+  {id:'gift',  opts:['take','skip']},
   {id:'trader',opts:['sell','skip']},
   {id:'fork',  opts:['short','skip']},
   {id:'wisp',  opts:['follow','skip']},
   {id:'hurt',  opts:['help','skip']}
 ];
+/* v34: после каждой 5-й волны (на 6, 11, 16 ...) с шансом 25%. Отдыха (бодрости) в событиях нет.
+   Находка ресурсов: штук с монстра в этом тракте x от 1 до (2 + 8 x волна/100), то есть не больше x10 */
+D.EV_EVERY=5;
+D.evAmount=function(t,w){return (D.TRACT_QTY[t]||1)*Math.max(1,Math.ceil(Math.random()*(2+8*w/100)));};
 /* v33: королевская награда: 1 золотой за каждого побеждённого монстра (босс тоже 1), выплата после похода */
 D.BOUNTY=1;
-D.EV_CHANCE=0.25;D.EV_GAP=480;D.EV_TIME=40;D.EV_SHOW=8;
+D.EV_CHANCE=0.25;D.EV_GAP=0;D.EV_TIME=40;D.EV_SHOW=8;
 D.WISP_T=600;D.WISP_DMG=0.25;
 /* долги мага: каждый следующий чуть дороже, платятся золотом в долговой мешок */
 D.DEBT0=20;D.DEBT_GROW=1.0072;D.DEBT_PER_PT=10;
@@ -340,13 +346,7 @@ D.priceOf=function(g){
   return p>100?Math.round(p/10)*10:Math.max(3,Math.round(p));
 };
 D.GOODS.forEach(function(x){x.price=D.priceOf(x);});
-D.SLOTS=['head','body','belt','feet','ring','hand'];
-/* v33: оружие для двойника. Маг бьёт посохом, оружие в руке нужно двойнику: wd - урон в секунду (растёт с уровнем вещи).
-   Множитель по виду: кинжал слабее, двуручные сильнее. Продаются как раньше, надетое из продажи уходит. */
-D.wdBase=function(tier){return 12*Math.pow(2.1,tier-1);};
-D.WEAPON={c_bow:0.9,c_spear:1,c_longbow:1,c_goldbow:1.05,c_darkbow:1.1,s_dagger:0.8,s_sword:1,s_axe:1.1,s_hammer:1.1,s_falchion:1,
-  s_broad:1.2,s_katana:1.15,s_claymore:1.2,s_daxe:1.2,s_blade:1.2,s_goldsword:1.25};
-Object.keys(D.WEAPON).forEach(function(id){var gd=D.GOOD_BY[id];if(!gd)return;gd.slot='hand';gd.eff={wd:Math.round(D.wdBase(gd.tier)*D.WEAPON[id])};});
+D.SLOTS=['head','body','belt','feet','ring'];
 /* с чего начинает новый маг: хватает на первые заказы, пока не вернулся первый поход */
 D.START={gold:150,store:{wood:20,iron:15,herb:20,hide:15,hops:12}};
 /* улучшения мага тоже идут заказом у мастера */
@@ -361,7 +361,7 @@ D.BUILD={
   tannery:{once:true,cost:function(){return {gold:600,wood:80,hide:60};}},
   jewelry:{once:true,cost:function(){return {gold:5000,wood:200,gems:50,meteor:5};}},
   hall:   {max:5,cost:function(l){var c={gold:Math.ceil(150*Math.pow(2.6,l))};if(l>0)c.wood=Math.ceil(40*Math.pow(1.8,l));return c;}},   /* v30: первый уровень зданий только за золото */
-  bedroom:{max:4,cost:function(l){var c={gold:Math.ceil(300*Math.pow(2.5,l))};if(l>0)c.hide=Math.ceil(30*Math.pow(1.8,l));if(l>=2)c.silk=20*l;return c;}},
+  bedroom:{max:4,cost:function(l){var c={gold:Math.ceil(300*Math.pow(2.5,l))};if(l>0)c.hide=Math.ceil(30*Math.pow(1.8,l));if(l>=2)c.steel=12*l;return c;}},   /* v34: шёлка больше нет, вместо него сталь */
   decor:  {max:5,cost:function(l){var c={gold:Math.ceil(500*Math.pow(2.8,l))},r=['ironwood','ironwood','meteor','stonehide','ecto'][l];c[r]=3+2*l;return c;}}
 };
 D.BUILD_ORDER=['hall','bedroom'];   // v25: убранство теперь мебелью в режиме дизайна

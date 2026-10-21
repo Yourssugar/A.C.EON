@@ -69,7 +69,7 @@ function card(r){
   if(gd.eff)h+='<em class="crf-eff">'+UI.effText(r,0)+'</em>';
   h+='</button><div class="crf-foot">';
   if(!m.hired){
-    var hc=D.MASTER_BY[mid].hire;
+    var hc=g.hireCost?g.hireCost(mid):D.MASTER_BY[mid].hire;
     h+='<button type="button" class="btn sm pink" data-act="hire" data-m="'+mid+'"'+(S.gold<hc?' disabled':'')+'>'+t('ms.hire')+' '+UI.costHtml({gold:hc})+'</button>';
   }else if(known){
     var n=Math.min(g.mastery(mid,r),D.MASTERY_CAP);

@@ -128,7 +128,9 @@ var gold0=0,sold0=0;
 while(T<DAYS*86400){
   var hour=Math.floor(T%86400/3600);
   if(hour>=7&&hour<23)shop();
-  g.offline(3600);T+=3600;
+  /* VISIT=минуты: как часто игрок заходит (по умолчанию раз в час) */
+  var STEP=(+process.env.VISIT||60)*60;
+  g.offline(STEP);T+=STEP;
   for(var t=0;t<4;t++)if(S.tracts[t].clears>0)mark('clear'+t,'ТРАКТ '+t+' пройден');
   if(T%86400===0){
     log.push(fmtT(T)+'  gold '+D.fmt(S.gold)+' (+'+D.fmt(S.stats.goldEarned-gold0)+' продаж '+(S.stats.sold-sold0)+') staff '+S.staff+' dps '+D.fmt(g.rawDps())+' mlvl '+S.mlvl+

@@ -122,6 +122,8 @@ function shop(){
   });
   /* надеть лучшее */
   D.GOODS.forEach(function(gd){if(!gd.slot||!g.invCount(gd.id))return;var cur=S.equip[gd.slot],cv=cur?(D.GOOD_BY[cur.id].price*D.QUAL[cur.q]):0;if(gd.price>cv)g.equipItem(gd.id);});
+  /* v32: долги - DEBT=доля золота за заход (по умолчанию 0.15) */
+  g.payDebt(S.gold*(process.env.DEBT!==undefined?+process.env.DEBT:0.15));
   D.SKILLS.forEach(function(s){while(g.buySkill(s.id));});
   /* куда идти */
   var top=0;for(var t=0;t<D.TRACTS.length;t++)if(g.tractOpen(t))top=t;
@@ -140,7 +142,7 @@ while(T<DAYS*86400){
   for(var t=0;t<4;t++)if(S.tracts[t].clears>0)mark('clear'+t,'ТРАКТ '+t+' пройден');
   if(T%86400===0){
     log.push(fmtT(T)+'  gold '+D.fmt(S.gold)+' (+'+D.fmt(S.stats.goldEarned-gold0)+' продаж '+(S.stats.sold-sold0)+') staff '+S.staff+' dps '+D.fmt(g.rawDps())+' mlvl '+S.mlvl+
-      ' bag '+S.bagLvl+' store '+S.storeLvl+' prod '+D.PROD.map(function(d){return d.id[0]+S.prod[d.id].lvl;}).join('')+' st'+S.prod.stable.lvl+' cr'+S.crews+' hall '+S.build.hall+' best '+S.tracts.map(function(x){return x.best+'/'+x.clears;}).join(',')+' lost '+S.stats.lostBags+' why '+JSON.stringify(WHY));WHY={};
+      ' bag '+S.bagLvl+' store '+S.storeLvl+' prod '+D.PROD.map(function(d){return d.id[0]+S.prod[d.id].lvl;}).join('')+' st'+S.prod.stable.lvl+' cr'+S.crews+' hall '+S.build.hall+' best '+S.tracts.map(function(x){return x.best+'/'+x.clears;}).join(',')+' lost '+S.stats.lostBags+' why '+JSON.stringify(WHY)+' debts '+S.debt.n+' sk '+D.SKILLS.map(function(x){return S.skills[x.id].l;}).join('/'));WHY={};
     log.push('      masters '+Object.keys(S.masters).map(function(id){var m=S.masters[id];return id[0]+(m.hired?m.lvl+'/'+m.known.length:'-');}).join(' ')+
       ' pets '+Object.keys(S.pets.own).map(function(k){return k+S.pets.own[k].lvl;}).join(',')+
       ' coll '+Object.keys(S.masters).map(function(id){return id[0]+g.collCount(id)+'/'+g.collList(id).length;}).join(' ')+

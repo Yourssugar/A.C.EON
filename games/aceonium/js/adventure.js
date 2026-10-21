@@ -244,6 +244,6 @@ function loadBase(resolution){
 function loadBiome(b,t){return Promise.all([loadGround(b),loadTract(t===undefined?b:t)]);}
 
 window.Adventure={init:init,loadBase:loadBase,parts:parts,loadPet:loadPet,pet:pet,hasPet:function(id){return !!PET[id];},loadBiome:loadBiome,loadGround:loadGround,loadTract:loadTract,kinds:kinds,groundSet:groundSet,monster:monster,
-  hasMonster:function(id){return !!(id&&MON[id]);},MODELS:MODELS,
+  hasMonster:function(id){return !!(id&&MON[id]);},tractReady:function(t){return tractModels(t).every(function(id){return !!MON[id];});},MODELS:MODELS,
   get ready(){return baseReady;},get res(){return res;}};
 })();

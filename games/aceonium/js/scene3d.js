@@ -1421,7 +1421,12 @@ function preview(canvas){
   };
 }
 
-window.Scene3D={setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
+/* v29: что уже скачано для дороги (экран загрузки ждёт, пока всё будет готово) */
+function loadState(){
+  if(!R)return null;var A=window.Adventure,b=R.biome<0?0:R.biome;
+  return {adv:!!(A&&A.ready),ground:!!(A&&A.ready&&A.groundSet&&A.groundSet(b)),mon:!!(A&&A.ready&&A.tractReady&&A.tractReady(b)),av:!!R.avatar,biome:b};
+}
+window.Scene3D={loadState:loadState,setQuality:function(n){setQuality(n);return R&&R.qName;},detectQuality:detectQuality,get quality(){return R&&R.qName;},supported:supported,load:load,init:init,setLook:setLook,setTier:setTier,setMode:setMode,setFatigue:setFatigue,
   setView:setView,setPet:setPet,get view(){return R?R.view||'road':'road';},spawn:spawn,bolt:bolt,kill:kill,retreat:retreat,bossWind:bossWind,onHit:onHit,petBite:petBite,victory:victory,setRage:setRage,enemyScreen:enemyScreen,mageScreen:mageScreen,hurt:hurt,setTavern:setTavern,craft:craft,portal:portal,frame:frame,preview:preview,
   get ready(){return !!R;},get _r(){return R;}};
 })();

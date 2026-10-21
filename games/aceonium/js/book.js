@@ -29,6 +29,7 @@ function open(mid,rid){
     if(a==='free'){g.setBookFree(b.dataset.r,+b.dataset.q,true);Sound.sfx('select');}
     if(a==='keep'){g.setBookFree(b.dataset.r,+b.dataset.q,false);Sound.sfx('select');}
     if(a==='master'&&window.Masters){close();Masters.open(b.dataset.m);return;}
+    if(a==='pro'&&window.Lore){close();Lore.prologue();return;}
     render();
   });
   render();
@@ -43,7 +44,15 @@ function render(){
     var l=g.collList(m),n=g.collSlots(m);all+=l.length*4;got+=n;
     ch+='<button type="button" class="bk-c'+(m===id?' sel':'')+(g.collGold(m)?' gold':g.collDone(m)?' done':'')+'" data-act="ch" data-m="'+m+'"><span>'+mName(m)+'</span><b>'+n+' / '+l.length*4+'</b></button>';
   });
+  if(window.Lore)ch+='<button type="button" class="bk-c story'+(id==='story'?' sel':'')+'" data-act="ch" data-m="story"><span>'+t('bk.story')+'</span><b></b></button>';
   set(B.box.querySelector('.bk-ch'),ch);
+  /* v29: глава с прологом */
+  if(id==='story'){
+    set(B.box.querySelector('.bk-total'),t('bk.total',{n:got,m:all}));
+    set(B.box.querySelector('.bk-page'),'<div class="bk-h"><b>'+t('bk.story')+'</b><span>'+t('bk.storyH')+'</span></div><div class="bk-story">'+Lore.storyHtml()+'</div>'+
+      '<div class="btn-row left"><button type="button" class="btn sm" data-act="pro">'+t('pro.again')+'</button></div>');
+    return;
+  }
   set(B.box.querySelector('.bk-total'),t('bk.total',{n:got,m:all}));
   /* страница главы */
   var list=g.collList(id),pages=g.collCount(id),slots=g.collSlots(id),done=g.collDone(id),gold=g.collGold(id);

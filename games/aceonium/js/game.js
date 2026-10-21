@@ -446,7 +446,7 @@ P.update=function(dt){
   this.updateFatigue(dt);
   this.tavernTick(dt*this.fatigueScale);
   if(S.place==='home'){
-    if(R.homeT>0){R.homeT-=dt;if(R.homeT<=0)this.homeDecide();}
+    if(R.homeT>0&&!this.hold){R.homeT-=dt;if(R.homeT<=0)this.homeDecide();}   /* hold: v29, маг ждёт дома, пока идёт пролог или разговор */
     return;
   }
   if(S.place!=='road')return;

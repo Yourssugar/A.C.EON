@@ -20,6 +20,10 @@ document.title='ACEONIUM';
 UI.init(game);
 
 var has3d=false,portalBusy=false;
+/* v29: экран загрузки сразу после загрузчика файлов, пока сцена не готова (вместо упрощённой графики) */
+S.lore=S.lore||{};
+function sceneKind(){var sc=S.place==='road'?'road':'tavern';return sc==='road'?'road'+(S.trip&&S.trip.t>=0?S.trip.t:0):'tavern';}
+if(S.profile&&window.LoadScreen)LoadScreen.show(sceneKind());
 
 /* облик персонажа: старые сохранения без look получают облик по умолчанию */
 function lookNow(){
@@ -152,14 +156,14 @@ game.on('place',function(place){
 });
 
 /* ── таверна в 3D: вид сверху, включается, когда маг дома или спит ── */
-var tavLoad=null;
+var tavLoad=null,tavP=0;
 function tavRes(){return (Scene3D.quality==='high'||Scene3D.quality==='ultra')?'2k':'1k';}
 function ensureTavern(){
   if(!has3d||!window.Tavern3D||!window.Avatar||!window.ACE_THREE)return Promise.reject(new Error('no 3d'));
   if(Tavern3D.ready)return Promise.resolve();
   if(!tavLoad){
     tavLoad=Avatar.init(window.ACE_THREE).then(function(){return Tavern3D.init(window.ACE_THREE);})
-      .then(function(){return Tavern3D.load(tavRes(),function(p){UI.viewProgress(p);});});
+      .then(function(){return Tavern3D.load(tavRes(),function(p){tavP=p;UI.viewProgress(p);});});
     tavLoad.then(function(){UI.viewProgress(1);applyView();},function(e){console.warn('[aceonium] tavern',e);tavLoad=null;UI.viewProgress(-1);});
   }
   return tavLoad;
@@ -264,7 +268,7 @@ function loop(now){
   var dt=(now-last)/1000;last=now;
   var wall=Date.now(),gap=(wall-lastWall)/1000;lastWall=wall;
   if(S.profile){
-    if(gap>5){catchUp(gap,gap<120);dt=0.016;}
+    if(gap>5&&!(game.hold&&S.place!=='road')){catchUp(gap,gap<120);dt=0.016;}
     else{
       var left=Math.min(dt,5);
       while(left>0){var st=Math.min(left,0.1);game.update(st);left-=st;}
@@ -278,10 +282,53 @@ function loop(now){
   if(has3d)fpsWatch(dt);
   tavT+=dt;if(tavT>0.3){tavT=0;if(has3d&&Scene3D.view==='tavern')Tavern3D.sync(S);}
   uiT+=dt;
-  if(uiT>0.1){musicTick(uiT);uiT=0;UI.hud();}
+  if(uiT>0.1){musicTick(uiT);lsWatch(uiT);uiT=0;UI.hud();}
   requestAnimationFrame(loop);
 }
 setInterval(function(){UI.panel();},250);
+
+/* ── v29: экран загрузки и разговор с хозяйкой ──
+   Каждые 0.1 с: что нужно для текущего экрана и готово ли оно. Не готово дольше 0.2 с: экран загрузки.
+   Ждём не дольше 45 с на одну сцену, потом показываем как есть. */
+var LSW={bad:0,key:'',waited:0,gave:{},dlgT:0};
+function lsNeed(){
+  var sc=curScreen();
+  if(sc==='road'){
+    var st=Scene3D.loadState();if(!st)return null;
+    var p=(st.adv?0.45:0)+(st.ground?0.2:0)+(st.mon?0.25:0)+(st.av?0.1:0);
+    return {key:'road'+st.biome,ready:st.adv&&st.ground&&st.mon&&st.av,p:p};
+  }
+  var st2=Scene3D.loadState(),av=!st2||st2.av||S.place==='road';
+  var tr=!!(window.Tavern3D&&Tavern3D.ready);
+  return {key:sc==='city'||sc==='store'?sc:'tavern',ready:tr&&av,p:(tr?0.9:tavP*0.9)+(av?0.1:0)};
+}
+function holdNow(){game.hold=!!(S.profile&&window.Lore&&(Lore.busy||!S.lore.pro||(!S.lore.dlg&&S.place==='home')));}
+function uiBlocked(){return !!(window.Masters&&Masters.isOpen||window.Pets&&Pets.isOpen)||[].some.call(document.querySelectorAll('.modal,.wd2,.bk-wrap,.hp-wrap,.create,.pro,.crf'),function(e){return e.offsetWidth>0;});}
+function lsWatch(dt){
+  holdNow();
+  if(!window.LoadScreen)return;
+  if(!has3d||!S.profile||(window.Lore&&Lore.inPrologue)){if(LoadScreen.isOn&&(!S.profile||(window.Lore&&Lore.inPrologue)))LoadScreen.hide(true);return;}
+  var n=lsNeed();
+  if(!n||n.ready||LSW.gave[n.key]){LSW.bad=0;LSW.waited=0;if(LoadScreen.isOn)LoadScreen.hide();}
+  else{
+    if(n.key!==LSW.key){LSW.key=n.key;LSW.waited=0;}
+    LSW.bad+=dt;LSW.waited+=dt;
+    if(LSW.waited>45){LSW.gave[n.key]=1;console.warn('[aceonium] load screen gave up',n.key);LoadScreen.hide();}
+    else if(LSW.bad>0.2||LoadScreen.isOn){LoadScreen.show(n.key);LoadScreen.progress(n.p);}
+  }
+  /* первый разговор: маг дома, таверна на экране, ничего не открыто. Пока он не прошёл, маг не уходит в поход */
+  var can=S.lore.pro&&!S.lore.dlg&&window.Lore&&!Lore.busy&&!LoadScreen.isOn&&S.place==='home'&&curScreen()!=='road'&&Scene3D.view==='tavern'&&!uiBlocked()&&!UI.win;
+  LSW.dlgT=can?LSW.dlgT+dt:0;
+  if(LSW.dlgT>1.2){
+    LSW.dlgT=0;UI.closeWin&&UI.closeWin();
+    if(curScreen()==='tavern'&&window.Tavern3D&&Tavern3D.focus)Tavern3D.focus(6.0,-3.6,9);
+    Lore.dialog(function(){S.lore.dlg=1;save();if(window.Tavern3D&&Tavern3D.resetView)Tavern3D.resetView();});
+  }
+}
+function startPrologue(){
+  if(!window.Lore){S.lore.pro=1;return;}
+  Lore.prologue(function(){S.lore.pro=1;save();});
+}
 
 /* ── авто-качество: если кадров меньше 28 в секунду, шаг вниз ── */
 var LEVELS=['low','medium','high','ultra'],fpsAcc=0,fpsN=0,fpsWarm=4;
@@ -312,13 +359,14 @@ function begin(){
       showPlace(S.place,true);petSync();}
     if(away>5)catchUp(away,false);else game.start();
     /* v27: сохранения сброшены (персонаж и облик остались), дальше обычные новости версий */
-    if(S.resetV27){delete S.resetV27;S.seenV27=true;save();UI.modal(UI.t('v27r.title'),UI.t('v27r.body')+UI.t('v27.body'));}
+    if(!S.lore.pro){S.seenV27=true;delete S.resetV27;save();startPrologue();}
+    else if(S.resetV27){delete S.resetV27;S.seenV27=true;save();UI.modal(UI.t('v27r.title'),UI.t('v27r.body')+UI.t('v27.body'));}
     else if(!S.seenV27){S.seenV27=true;save();UI.modal(UI.t('v27.title'),UI.t('v27.body'));}
   }else{
     UI.showCreate(function(){
       if(has3d){Scene3D.setLook(lookNow());Scene3D.setTier(D.staffTier(S.staff),D.TIER_COLORS);showPlace(S.place,true);}
-      game.start();S.seenV27=true;save();UI.rebuild();
-      setTimeout(function(){UI.modal(UI.t('v8b.title'),UI.t('v8b.body'));},1500);
+      S.seenV27=true;startPrologue();holdNow();
+      game.start();save();UI.rebuild();lastWall=Date.now();last=performance.now();
     });
   }
   save();
@@ -331,6 +379,7 @@ function begin(){
 }
 
 function no3d(){
+  if(window.LoadScreen)LoadScreen.hide(true);
   var host=document.getElementById('canvas-host');
   host.innerHTML='<div class="no3d">'+UI.t('no3d')+'</div>';
   begin();

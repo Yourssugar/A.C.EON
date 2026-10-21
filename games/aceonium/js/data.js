@@ -84,6 +84,14 @@ D.recLevel=function(t,w){return Math.max(1,Math.round(1+D.LV_T*t+D.LV_W*(w-1)/99
 D.BOSS_HIT=1.8;D.BOSS_WIND=0.55;D.RAGE_T=60;D.RAGE_MULT=2;
 /* с рекомендуемой силой бой 45 с снимает 60% здоровья */
 D.bossDps=function(t,w){return D.maxHp(D.recLevel(t,w))*0.6/D.BOSS_T;};
+/* v31: постоянное здоровье. Восстановление 3% от максимума за 10 с везде (в таверне, во сне, в походе).
+   Обычные монстры бьют раз в MOB_HIT с; урон от здоровья мага рекомендуемого уровня, элита вдвое сильнее.
+   Броня (arm у вещей) снимает с каждого удара столько единиц, но не больше 75% удара. */
+D.REGEN=0.003;
+D.MOB_HIT=2;D.MOB_DPS=0.0035;D.ELITE_DMG=2;D.ARM_MIN=0.25;
+D.mobDps=function(t,w){return D.maxHp(D.recLevel(t,w))*D.MOB_DPS;};
+D.armHit=function(raw,arm){return Math.max(raw*D.ARM_MIN,raw-(arm||0));};
+D.HP_LOW=0.9;   // осторожность: следующий бой не должен снять больше 90% текущего здоровья
 
 /* ── добыча ── */
 D.chance=function(w,cleared){return (cleared?0.30:0.21)+0.05*Math.floor((w-1)/10);};
@@ -256,26 +264,26 @@ D.GOODS=[
   {id:'s_dagger',m:'smith',tier:1,kind:'goods',c:'#b0b8c4',cost:{iron:2},                     time:35},
   {id:'s_axe',  m:'smith',tier:2,kind:'goods', c:'#9aa6b4',cost:{wood:2,iron:2,coal:1},       time:150},
   {id:'s_hammer',m:'smith',tier:2,kind:'goods',c:'#8a96a4',cost:{iron:3,wood:1,coal:1},       time:170},
-  {id:'s_helm', m:'smith',tier:3,kind:'armor', slot:'head',c:'#8a96a4',eff:{hp:0.15},cost:{steel:2,hide:1},time:420},
+  {id:'s_helm', m:'smith',tier:3,kind:'armor', slot:'head',c:'#8a96a4',eff:{arm:1,hp:0.15},cost:{steel:2,hide:1},time:420},
   {id:'s_falchion',m:'smith',tier:3,kind:'goods',c:'#c8d0dc',cost:{steel:3,wood:1},           time:400},
   {id:'s_broad',m:'smith',tier:4,kind:'goods', c:'#d0d8e4',cost:{steel:5,wood:2},             time:800},
   {id:'s_kite', m:'smith',tier:4,kind:'goods', c:'#a0aab8',cost:{steel:5,wood:3},             time:900},
-  {id:'s_mail', m:'smith',tier:5,kind:'armor', slot:'body',c:'#a0aab8',eff:{hp:0.3}, cost:{steel:8,hide:3},time:1800},
+  {id:'s_mail', m:'smith',tier:5,kind:'armor', slot:'body',c:'#a0aab8',eff:{arm:4,hp:0.3}, cost:{steel:8,hide:3},time:1800},
   {id:'s_katana',m:'smith',tier:5,kind:'goods',c:'#e0e4ec',cost:{steel:8,silver:1},           time:1500},
   {id:'s_claymore',m:'smith',tier:6,kind:'goods',c:'#c8d4e0',cost:{steel:12,silver:3,meteor:1},time:3400},
   {id:'s_daxe', m:'smith',tier:6,kind:'goods', c:'#9aa6b4',cost:{steel:12,wood:4,meteor:1},   time:3000},
   {id:'s_blade',m:'smith',tier:7,kind:'goods', c:'#e0e8f0',cost:{silver:8,steel:6,stonehide:1},time:6000},
   {id:'s_goldsword',m:'smith',tier:7,kind:'goods',c:'#ffd040',cost:{silver:6,gems:4,ecto:1},  time:7000},
   /* кожевник */
-  {id:'t_cloak',m:'tanner',tier:1,kind:'armor', slot:'body', c:'#4a6a3a',eff:{hp:0.1},           cost:{hide:2,herb:1},time:55},
-  {id:'t_belt', m:'tanner',tier:1,kind:'armor', slot:'belt', c:'#8a5a32',eff:{hp:0.05,pick:0.03},cost:{hide:1,iron:1},time:35},
-  {id:'t_boots',m:'tanner',tier:1,kind:'armor', slot:'feet', c:'#6a4428',eff:{hp:0.05,fat:0.05}, cost:{hide:1,wood:1},time:35},
+  {id:'t_cloak',m:'tanner',tier:1,kind:'armor', slot:'body', c:'#4a6a3a',eff:{arm:0.3,hp:0.1},           cost:{hide:2,herb:1},time:55},
+  {id:'t_belt', m:'tanner',tier:1,kind:'armor', slot:'belt', c:'#8a5a32',eff:{arm:0.1,hp:0.05,pick:0.03},cost:{hide:1,iron:1},time:35},
+  {id:'t_boots',m:'tanner',tier:1,kind:'armor', slot:'feet', c:'#6a4428',eff:{arm:0.2,hp:0.05,fat:0.05}, cost:{hide:1,wood:1},time:35},
   {id:'t_pouch',m:'tanner',tier:2,kind:'goods', c:'#9a6a3a',cost:{hide:3,wood:1},                time:120},
-  {id:'t_hood', m:'tanner',tier:3,kind:'armor', slot:'head', c:'#5a7a4a',eff:{hp:0.12,chance:0.03},cost:{hide:4,herb:2},time:360},
-  {id:'t_jerkin',m:'tanner',tier:4,kind:'armor',slot:'body', c:'#8a5a32',eff:{hp:0.22},          cost:{hide:8,steel:1},time:800},
-  {id:'t_silk', m:'tanner',tier:5,kind:'armor', slot:'body', c:'#dfe6ff',eff:{hp:0.25,fat:0.05},cost:{hide:8,silver:2},time:1800},
-  {id:'t_scale',m:'tanner',tier:6,kind:'armor', slot:'body', c:'#9aa0a6',eff:{hp:0.4},           cost:{hide:10,stonehide:2},time:3200},
-  {id:'t_ghost',m:'tanner',tier:7,kind:'armor', slot:'body', c:'#6ff0d0',eff:{hp:0.3,fat:0.15},  cost:{hide:12,gems:2,ecto:1},time:6500},
+  {id:'t_hood', m:'tanner',tier:3,kind:'armor', slot:'head', c:'#5a7a4a',eff:{arm:0.8,hp:0.12,chance:0.03},cost:{hide:4,herb:2},time:360},
+  {id:'t_jerkin',m:'tanner',tier:4,kind:'armor',slot:'body', c:'#8a5a32',eff:{arm:2,hp:0.22},          cost:{hide:8,steel:1},time:800},
+  {id:'t_silk', m:'tanner',tier:5,kind:'armor', slot:'body', c:'#dfe6ff',eff:{arm:2.5,hp:0.25,fat:0.05},cost:{hide:8,silver:2},time:1800},
+  {id:'t_scale',m:'tanner',tier:6,kind:'armor', slot:'body', c:'#9aa0a6',eff:{arm:6,hp:0.4},           cost:{hide:10,stonehide:2},time:3200},
+  {id:'t_ghost',m:'tanner',tier:7,kind:'armor', slot:'body', c:'#6ff0d0',eff:{arm:6,hp:0.3,fat:0.15},  cost:{hide:12,gems:2,ecto:1},time:6500},
   /* ювелир */
   {id:'j_ring', m:'jeweler',tier:1,kind:'ring',  slot:'ring',c:'#d6dde8',eff:{crit:0.03},         cost:{iron:2,herb:1},time:50},
   {id:'j_bone', m:'jeweler',tier:2,kind:'ring',  slot:'ring',c:'#c08452',eff:{crit:0.05,hp:0.05}, cost:{hide:2,iron:2},time:180},

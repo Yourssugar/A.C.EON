@@ -1064,3 +1064,32 @@ I18n.add('en',{
   'v31r.title':'SAVES RESET','v31r.body':'<p>Progress starts over for the new resources. Your character, look and settings are kept.</p>',
   'v31.title':'NEW RESOURCES','v31.body':'<p>All roads now drop wood, iron, herbs, hide and meat. The farther the road, the more each monster gives. Bosses drop rare resources: ironwood, meteor steel, stone hide and ectoplasm.</p><p>Steel is made by the new smelter from iron and coal. Silver and gems come from the mine once Autumn Woods and Night Marsh are open. The garden grows hops and vegetables: no hops, no beer; no meat and vegetables, no food.</p><p>Craftsmen have 22 new items, every tier now has something to make. The craft queue has 6 slots and upgrades to 16.</p>'
 });
+/* v31: карта походов и постоянное здоровье */
+I18n.add('ru',{
+  'hp.l':'ХП','eff.arm':'броня {v}','why.wounded':'ранен, лечится в таверне','why.weak':'монстры здесь пока не по силам','home.downMob':'МАГ ПАЛ В БОЮ',
+  'go.trip':'ПРИКЛЮЧЕНИЕ','btn.map':'КАРТА','btn.map2d':'2D',
+  'wm.title':'КАРТА МИРА','wm.locked':'откроется после: {t}','wm.clears':'пройден: {n}, лучшая волна {w}','wm.best':'лучшая волна {w}','wm.new':'маг тут ещё не был',
+  'wm.res':'Добыча','wm.chance':'Шанс с монстра','wm.w1':'(волны 1-10)','wm.w50':'(41-50)','wm.w100':'(91-100)','wm.qty':'По {n} шт. за раз.','wm.clearUp':'После первого прохождения шанс выше.',
+  'wm.elite':'Элита','wm.eliteV':'с {w}-й волны, от {a} до {b} монстров. Вдвое крепче и сильнее, добычи вдвое больше.',
+  'wm.boss':'Боссы','wm.bossV':'каждые 10 волн: с 10-й 1 шт., со 100-й 10 шт.',
+  'wm.power':'Сила','wm.powerV':'урон от {a} до {b} в секунду, уровень мага {l1}-{l2}','wm.my':'У тебя: урон {d}, уровень {l}',
+  'wm.mobs':'Монстры','wm.mainBoss':'Главный босс:',
+  'wm.closed':'ЗАКРЫТО','wm.look':'СМОТРЕТЬ ПОХОД','wm.inBoss':'ИДЁТ БОЙ С БОССОМ','wm.go':'ИДТИ','wm.switch':'ИДТИ СЮДА',
+  'wm.hurt':'Маг ранен ({p}%), до полного здоровья {t}.','wm.switchN':'Поход по тракту {t} закончится, сумка уйдёт на склад.',
+  'vmap.title':'КАРТА ПОХОДОВ',
+  'vmap.body':'<p>Кнопка ПРИКЛЮЧЕНИЕ открывает карту мира. Нажми на район: что там падает, шансы, редкий ресурс с боссов и какая нужна сила. Закрытые районы заштрихованы.</p><p>Поход теперь виден на карте района: маг идёт по дороге, на кружках с числами стоят боссы. Старая 3D-дорога осталась, её включает кнопка 3D.</p><p>Здоровье мага теперь постоянное и видно всегда, за 10 секунд восстанавливается 3%. Бьют и обычные монстры, броня у вещей снимает часть каждого удара. Раненый маг возвращается в таверну и сам уходит дальше только с полным здоровьем, раньше можно отправить кнопкой. Если здоровье кончится, сумка пропадает.</p>'
+});
+I18n.add('en',{
+  'hp.l':'HP','eff.arm':'armor {v}','why.wounded':'wounded, healing in the tavern','why.weak':'monsters here are too strong for now','home.downMob':'THE MAGE FELL',
+  'go.trip':'ADVENTURE','btn.map':'MAP','btn.map2d':'2D',
+  'wm.title':'WORLD MAP','wm.locked':'opens after: {t}','wm.clears':'cleared: {n}, best wave {w}','wm.best':'best wave {w}','wm.new':'the mage has not been here yet',
+  'wm.res':'Loot','wm.chance':'Drop chance','wm.w1':'(waves 1-10)','wm.w50':'(41-50)','wm.w100':'(91-100)','wm.qty':'{n} per drop.','wm.clearUp':'The chance is higher after the first clear.',
+  'wm.elite':'Elite','wm.eliteV':'from wave {w}, {a} to {b} of monsters. Twice as tough and strong, twice the loot.',
+  'wm.boss':'Bosses','wm.bossV':'every 10 waves: 1 from wave 10, 10 from wave 100.',
+  'wm.power':'Power','wm.powerV':'damage {a} to {b} per second, mage level {l1}-{l2}','wm.my':'You: damage {d}, level {l}',
+  'wm.mobs':'Monsters','wm.mainBoss':'Main boss:',
+  'wm.closed':'LOCKED','wm.look':'WATCH THE TRIP','wm.inBoss':'BOSS FIGHT IN PROGRESS','wm.go':'GO','wm.switch':'GO HERE',
+  'wm.hurt':'The mage is wounded ({p}%), full health in {t}.','wm.switchN':'The trip on {t} ends, the bag goes to storage.',
+  'vmap.title':'TRIP MAP',
+  'vmap.body':'<p>The ADVENTURE button opens the world map. Tap a region to see what drops there, the chances, the rare boss resource and the power you need. Locked regions are hatched.</p><p>Trips are shown on the region map: the mage walks the road, bosses wait at the numbered circles. The old 3D road is still there, the 3D button turns it on.</p><p>Mage health is now permanent and always visible, it restores 3% every 10 seconds. Regular monsters hit too, armor on items takes part of every hit. A wounded mage goes back to the tavern and leaves again on his own only at full health, you can send him earlier. If health runs out, the bag is lost.</p>'
+});

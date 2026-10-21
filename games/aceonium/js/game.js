@@ -38,6 +38,7 @@ function defaults(){
     cautious:true,auto:true,sleepAfter:false,
     trip:null,                                      // текущий поход
     place:'home',                                   // road | home | sleep
+    hp:null,started:false,                          // v31: здоровье мага (постоянное); started - игрок сам отправил в первый поход
     fatigue:0,charge:0,rested:0,
     skills:skills,
     journal:[],
@@ -62,7 +63,7 @@ function defaults(){
     seenV8b:false,
     stats:{clicks:0,kills:0,bosses:0,bossFails:0,trips:0,lostBags:0,lostItems:0,gathered:0,play:0,rest:0,sold:0,goldEarned:0,crafted:0},
     lastSeen:0,
-    settings:{gfx:'auto'}
+    settings:{gfx:'auto',road:'map'}                // road: v31, поход картой ('map') или 3D-дорогой ('3d')
   };
 }
 
@@ -112,6 +113,21 @@ P.critFactor=function(){return 1+this.critChance()*(this.critMult()-1);};
 P.effDps=function(){return (this.dps()+this.petDps())*this.critFactor();};
 P.clickDmg=function(){return (this.S.mlvl+this.rawDps()*D.CLICK_DPS_SHARE)*this.dmgMult();};
 P.maxHp=function(){return Math.round(D.maxHp(this.S.mlvl)*(1+this.eff('hp')));};
+P.arm=function(){var S=this.S,v=0;for(var sl in S.equip){var it=S.equip[sl];if(!it)continue;var gd=D.GOOD_BY[it.id];if(gd&&gd.eff&&gd.eff.arm)v+=gd.eff.arm*D.QUAL[it.q];}return v;};
+P.hp=function(){var mx=this.maxHp();if(this.S.hp===null||this.S.hp===undefined||this.S.hp>mx)this.S.hp=mx;return this.S.hp;};
+P.regen=function(dt){var mx=this.maxHp();this.S.hp=Math.min(mx,this.hp()+D.REGEN*mx*dt);};
+P.healLeft=function(){var mx=this.maxHp();return Math.max(0,(mx-this.hp())/(D.REGEN*mx));};
+/* удар обычного монстра и босса с учётом брони */
+P.mobHitDmg=function(t,w,elite){return D.armHit(D.mobDps(t,w)*D.MOB_HIT*(elite?D.ELITE_DMG:1),this.arm());};
+P.bossHitDmg=function(t,w,rage){return D.armHit(D.bossDps(t,w)*D.BOSS_HIT*(rage?D.RAGE_MULT:1),this.arm());};
+/* бой с обычным монстром по текущей силе: сколько здоровья снимет (с восстановлением). Худший случай - элита */
+P.predictMob=function(hp){
+  var tr=this.S.trip;if(!tr)return {win:true,dmg:0};
+  var el=D.eliteChance(tr.w)>0,T=D.mobHp(tr.t,tr.w)*(el?D.ELITE_HP:1)/Math.max(1e-9,this.effDps());
+  var dmg=(this.mobHitDmg(tr.t,tr.w,el)/D.MOB_HIT-D.REGEN*this.maxHp())*T;
+  if(hp===undefined)hp=this.hp();
+  return {win:dmg<hp*D.HP_LOW,dmg:dmg,T:T};
+};
 P.awakeH=function(){return D.AWAKE_H/(1-Math.min(0.6,this.eff('fat')));};
 P.restH=function(){return Math.max(D.REST_MIN_H,D.REST_H-D.BED_STEP*this.S.build.bedroom);};
 P.skillCd=function(s){return s.cd*(1-0.04*(this.S.skills[s.id].l-1));};
@@ -171,6 +187,7 @@ P.goTo=function(t){
 /* ── поход ── */
 P.startTrip=function(){
   var S=this.S,R=this.R;
+  S.started=true;
   /* поход на паузе (маг заходил в таверну): продолжаем с той же волны */
   if(S.trip&&S.trip.paused){
     if(S.forceNext===null||S.forceNext===undefined||S.forceNext===S.trip.t){
@@ -227,15 +244,20 @@ P.preCheck=function(){
   if(tr.done)return 'end';
   if(S.fatigue>=1)return 'tired';
   if(tr.n>=this.bagCap())return 'full';
-  if(tr.boss&&!this.predictBoss().win)return 'cautious';
+  var full=this.maxHp();
+  if(tr.boss){
+    if(!this.predictBoss().win)return this.predictBoss(full).win?'wounded':'cautious';
+  }else if(!this.predictMob().win)return this.predictMob(full).win?'wounded':'weak';
   return null;
 };
 /* расчёт боя с боссом по текущей силе (без кликов) */
-P.predictBoss=function(){
-  var tr=this.S.trip;if(!tr)return {win:true,T:0,dmg:0,hp:this.maxHp()};
-  var T=D.bossHp(tr.t,tr.w)/Math.max(1e-9,this.effDps()),bd=D.bossDps(tr.t,tr.w);
-  var dmg=bd*(Math.min(T,D.RAGE_T)+D.RAGE_MULT*Math.max(0,T-D.RAGE_T)),hp=this.maxHp();
-  return {win:dmg<hp*0.97,T:T,dmg:dmg,hp:hp};
+P.predictBoss=function(hp){
+  if(hp===undefined)hp=this.hp();
+  var tr=this.S.trip;if(!tr)return {win:true,T:0,dmg:0,hp:hp};
+  var T=D.bossHp(tr.t,tr.w)/Math.max(1e-9,this.effDps());
+  var b1=this.bossHitDmg(tr.t,tr.w,false)/D.BOSS_HIT,b2=this.bossHitDmg(tr.t,tr.w,true)/D.BOSS_HIT;
+  var dmg=b1*Math.min(T,D.RAGE_T)+b2*Math.max(0,T-D.RAGE_T)-D.REGEN*this.maxHp()*T;
+  return {win:dmg<hp*0.97,T:T,dmg:dmg,hp:hp,b1:b1,b2:b2};
 };
 P.inBoss=function(){var R=this.R;return !!(this.S.place==='road'&&R.enemy&&R.enemy.boss&&(R.phase==='fight'||R.phase==='walk'));};
 
@@ -301,7 +323,8 @@ P.returnHome=function(why){
   }
   S.trip=null;S.place='home';
   R.phase='home';R.enemy=null;R.hits.length=0;R.after=null;R.homeT=D.HOME_TIME;
-  this.emit('home',{why:why,got:got,n:n,lost:lost,over:over});
+  this.emit('home',{why:why,got:got,n:n,lost:lost,over:over,by:R.downBy});
+  R.downBy=null;
   this.emit('place','home');
 };
 /* сумку на склад, без потерь */
@@ -318,15 +341,16 @@ P.deposit=function(bag){
 };
 /* маг заходит в таверну: сумка на склад, поход на паузе и потом продолжится с той же волны.
    manual - игрок сам позвал (тогда маг ждёт игрока), иначе устал и после сна пойдёт дальше сам */
-P.pauseTrip=function(manual){
+P.pauseTrip=function(manual,why){
+  why=manual?'pause':(why||'tired');
   var S=this.S,R=this.R,tr=S.trip;
   if(S.place!=='road'||!tr||this.inBoss())return false;
   var r=this.deposit(tr.bag);tr.bag={};tr.n=0;
-  if(r.n||r.over){S.journal.unshift({t:tr.t,w:tr.w,why:manual?'pause':'tired',got:r.got,n:r.n,lost:0,over:r.over,dur:tr.time,at:Date.now()});if(S.journal.length>30)S.journal.length=30;}
+  if(r.n||r.over){S.journal.unshift({t:tr.t,w:tr.w,why:why,got:r.got,n:r.n,lost:0,over:r.over,dur:tr.time,at:Date.now()});if(S.journal.length>30)S.journal.length=30;}
   tr.paused=true;tr.manual=!!manual;tr.m=Math.min(tr.m,D.MOBS-1);
   S.place='home';
   R.phase='home';R.enemy=null;R.hits.length=0;R.after=null;R.homeT=manual?0:D.HOME_TIME;
-  this.emit('home',{why:manual?'pause':'tired',got:r.got,n:r.n,lost:0,over:r.over});
+  this.emit('home',{why:why,got:r.got,n:r.n,lost:0,over:r.over});
   this.emit('place','home');
   return true;
 };
@@ -349,9 +373,15 @@ P.setAuto=function(on){this.S.auto=!!on;};
 P.homeDecide=function(){
   var S=this.S;
   if(S.sleepAfter||S.fatigue>=0.999){this.sleep();return;}
+  /* v31: первый поход игрок начинает сам (карта мира) */
+  if(!S.started)return;
   /* позвали в таверну руками: ждёт игрока; если игрока нет дольше D.PAUSE_AWAY, идёт дальше сам */
   if(S.trip&&S.trip.paused&&S.trip.manual&&(!this.rep||this.rep.sec<D.PAUSE_AWAY))return;
-  if(S.auto||(S.trip&&S.trip.paused))this.startTrip();
+  if(!(S.auto||(S.trip&&S.trip.paused)))return;
+  /* v31: раненый маг ждёт полного здоровья (кнопкой можно отправить раньше) */
+  var wait=this.healLeft();
+  if(wait>0.5){this.R.homeT=wait+0.2;return;}
+  this.startTrip();
 };
 
 /* ── бой онлайн ── */
@@ -397,9 +427,9 @@ P.kill=function(){
   this.emit('kill',{boss:e.boss,L:e.L,res:e.res});
 };
 P.bossFail=function(){
-  var R=this.R,S=this.S;
-  S.stats.bossFails++;
-  R.hits.length=0;
+  var R=this.R,S=this.S,boss=!!(R.enemy&&R.enemy.boss);
+  if(boss)S.stats.bossFails++;
+  S.hp=0;R.hits.length=0;R.downBy=boss?'boss':'mob';
   this.emit('bossFail',R.enemy);
   R.phase='dying';R.t=1.2;R.enemy=null;R.after='defeat';
 };
@@ -446,6 +476,7 @@ P.update=function(dt){
   R.clock+=dt;
   S.stats.play+=dt;
   for(var id in S.skills){var st=S.skills[id];if(st.cd>0)st.cd=Math.max(0,st.cd-dt);if(st.act>0){st.act=Math.max(0,st.act-dt);if(!st.act)this.emit('skillEnd',id);}}
+  this.regen(dt*this.fatigueScale);
   this.updateFatigue(dt);
   this.tavernTick(dt*this.fatigueScale);
   if(S.place==='home'){
@@ -459,7 +490,8 @@ P.update=function(dt){
       R.t-=dt;
       if(R.t<=0){
         R.phase='fight';
-        if(R.enemy&&R.enemy.boss){R.bossT=0;R.hitT=D.BOSS_HIT;R.wind=false;R.mhp=this.maxHp();this.emit('bossStart',R.enemy);}
+        R.hitT=R.enemy&&R.enemy.boss?D.BOSS_HIT:D.MOB_HIT*0.7;R.wind=false;
+        if(R.enemy&&R.enemy.boss){R.bossT=0;this.emit('bossStart',R.enemy);}
         this.emit('fight',R.enemy);
       }
       break;
@@ -477,14 +509,18 @@ P.update=function(dt){
           if(pd>0)R.hits.push({t:0.45,dmg:pr.dmg,crit:pr.crit,pet:true});
           this.emit('petBite',{crit:pr.crit,dmg:pr.dmg});}
       }
-      if(R.enemy&&R.enemy.boss){
-        R.bossT+=dt;R.hitT-=dt;
-        if(R.hitT<=D.BOSS_WIND&&!R.wind&&R.enemy.hp>0){R.wind=true;this.emit('bossWind',{rage:R.bossT>D.RAGE_T});}
-        if(R.hitT<=0&&R.enemy.hp>0){
-          var tr=S.trip,dmg=D.bossDps(tr.t,tr.w)*D.BOSS_HIT*(R.bossT>D.RAGE_T?D.RAGE_MULT:1);
-          R.hitT+=D.BOSS_HIT;R.wind=false;R.mhp=Math.max(0,R.mhp-dmg);
-          this.emit('mageHit',{dmg:dmg,hp:R.mhp,max:this.maxHp(),rage:R.bossT>D.RAGE_T});
-          if(R.mhp<=0){this.bossFail();return;}
+      /* v31: бьют все: босс раз в BOSS_HIT с (замах заранее), обычные раз в MOB_HIT с */
+      if(R.enemy&&R.enemy.hp>0){
+        var en=R.enemy,boss=!!en.boss,tr=S.trip;
+        if(boss)R.bossT+=dt;
+        R.hitT-=dt;
+        if(boss&&R.hitT<=D.BOSS_WIND&&!R.wind){R.wind=true;this.emit('bossWind',{rage:R.bossT>D.RAGE_T});}
+        if(R.hitT<=0){
+          var rage=boss&&R.bossT>D.RAGE_T,dmg=boss?this.bossHitDmg(tr.t,tr.w,rage):this.mobHitDmg(tr.t,tr.w,en.elite);
+          R.hitT+=boss?D.BOSS_HIT:D.MOB_HIT;R.wind=false;
+          S.hp=Math.max(0,this.hp()-dmg);
+          this.emit('mageHit',{dmg:dmg,hp:S.hp,max:this.maxHp(),rage:rage,boss:boss});
+          if(S.hp<=0){this.bossFail();return;}
         }
       }
       break;
@@ -493,7 +529,7 @@ P.update=function(dt){
       if(R.t<=0){
         if(R.after){this.returnHome(R.after);return;}
         var why=this.preCheck();
-        if(why==='tired')this.pauseTrip(false);else if(why)this.returnHome(why);else this.spawn();
+        if(why==='tired'||why==='wounded')this.pauseTrip(false,why);else if(why)this.returnHome(why);else this.spawn();
       }
       return;
   }
@@ -513,37 +549,45 @@ P.offline=function(sec){
   var t=0,guard=0,R=this.R;
   while(t<sec&&guard++<2e6){
     if(S.place==='road'){
+      R.enemy=null;   // офлайн враг живёт только внутри шага (иначе пауза считает, что идёт бой с боссом)
       if(!S.trip){S.place='home';R.homeT=D.HOME_TIME;continue;}
       var why=this.preCheck();
-      if(why==='tired'){this.pauseTrip(false);continue;}
+      if(why==='tired'||why==='wounded'){this.pauseTrip(false,why);continue;}
       if(why){this.returnHome(why);continue;}
       var tr=S.trip,e=this.makeEnemy();
       var walk=D.WALK_TIME+(tr.m===0&&!tr.boss&&tr.w>1?D.WAVE_PAUSE:0);
-      var dps=Math.max(1e-9,this.effDps()),fight=e.hp/dps,lose=false;
+      var dps=Math.max(1e-9,this.effDps()),fight=e.hp/dps,lose=false,mx=this.maxHp(),hp0=this.hp(),rg=D.REGEN*mx,taken;
       if(e.boss){
         var pr=this.predictBoss();
+        taken=pr.dmg+rg*fight;
         if(!pr.win){
+          /* сколько продержится: до ярости обычный урон, потом двойной (восстановление идёт всё время) */
           lose=true;
-          var bd=D.bossDps(tr.t,tr.w),hp=pr.hp;
-          fight=hp<=bd*D.RAGE_T?hp/bd:D.RAGE_T+(hp-bd*D.RAGE_T)/(bd*D.RAGE_MULT);
+          var n1=pr.b1-rg,n2=pr.b2-rg;
+          fight=n1>0&&hp0<=n1*D.RAGE_T?hp0/n1:(n2>0?D.RAGE_T+Math.max(0,hp0-Math.max(0,n1)*D.RAGE_T)/n2:fight);
         }
+      }else{
+        var hd=this.mobHitDmg(tr.t,tr.w,e.elite)/D.MOB_HIT;taken=hd*fight;
+        if(hp0+rg*(walk+fight)-taken<=0){lose=true;fight=Math.max(1,hp0/Math.max(1e-9,hd-rg));}
       }
       var d=walk+fight+D.DEATH_TIME;
-      if(t+d>sec){var rest=sec-t;S.fatigue=Math.min(1,S.fatigue+rest/3600/this.awakeH());rep.road+=rest;this.offTick(rest);t=sec;break;}
+      if(t+d>sec){var rest=sec-t;S.fatigue=Math.min(1,S.fatigue+rest/3600/this.awakeH());this.regen(rest);rep.road+=rest;this.offTick(rest);t=sec;break;}
       t+=d;rep.road+=d;tr.time+=d;
+      S.hp=lose?0:Math.max(0,Math.min(mx,hp0+rg*d-taken));
       this.offTick(d);
       S.fatigue=Math.min(1,S.fatigue+d/3600/this.awakeH());
       if(S.rested>0)S.rested=Math.max(0,S.rested-d);
-      if(lose){S.stats.bossFails++;this.returnHome('defeat');continue;}
+      if(lose){if(e.boss)S.stats.bossFails++;this.returnHome('defeat');continue;}
       this.applyKill(e);
     }else if(S.place==='home'){
-      var dh=Math.max(0.5,R.homeT||D.HOME_TIME);
-      t+=dh;rep.home+=dh;R.homeT=0;this.offTick(dh);
+      var dh=Math.min(sec-t,Math.max(0.5,R.homeT||D.HOME_TIME));
+      t+=dh;rep.home+=dh;R.homeT=0;this.offTick(dh);this.regen(dh);
+      if(t>=sec)break;
       var before=S.place;this.homeDecide();
-      if(S.place==='home'&&before==='home'){rep.home+=sec-t;this.offTick(sec-t);t=sec;}   // сам в поход не уходит: ждёт игрока
+      if(S.place==='home'&&before==='home'&&!(R.homeT>0)){rep.home+=sec-t;this.offTick(sec-t);this.regen(sec-t);t=sec;}   // сам в поход не уходит: ждёт игрока (homeT>0 - лечится и потом пойдёт)
     }else{
       var need=S.fatigue*this.restH()*3600,ds=Math.min(need,sec-t);
-      t+=ds;rep.sleep+=ds;S.stats.rest+=ds;this.offTick(ds);
+      t+=ds;rep.sleep+=ds;S.stats.rest+=ds;this.offTick(ds);this.regen(ds);
       S.fatigue=Math.max(0,S.fatigue-ds/(this.restH()*3600));S.charge+=ds/3600;
       if(S.fatigue<=1e-9){S.fatigue=0;this.startTrip();}
     }
@@ -1422,7 +1466,9 @@ P.sanitize=function(){
 /* v30 (версия 4): новая экономика (уровни вещей, быстрый крафт), прогресс снова заново. Пролог второй раз не показываем, разговор с хозяйкой да */
 /* v30.1 (версия 5): новые ресурсы, прогресс снова заново */
 function migrate(old,v){
-  if(v>=5)return old;
+  if(v>=6)return old;
+  /* v31: здоровье стало постоянным, первый поход игрок начинает сам. Прогресс v30.1 не сбрасываем */
+  if(v===5){old.hp=null;old.started=!!(old.stats&&old.stats.trips>0);return old;}
   return {profile:old.profile||null,look:old.look||null,wardrobe:old.wardrobe,settings:{gfx:(old.settings&&old.settings.gfx)||'auto',panel:old.settings&&old.settings.panel},
     lastSeen:0,resetV31:!!old.profile,lore:{pro:old.lore&&old.lore.pro?1:0}};
 }

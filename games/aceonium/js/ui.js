@@ -322,7 +322,7 @@ function qualTag(q){return q>0?' <span class="qt q'+q+'">'+t('q.'+q)+'</span>':'
 function effText(id,q){
   var gd=D.GOOD_BY[id];if(!gd||!gd.eff)return '';
   var m=D.QUAL[q||0],out=[];
-  for(var k in gd.eff)out.push(t('eff.'+k,{v:Math.round(gd.eff[k]*m*100)}));
+  for(var k in gd.eff)out.push(t('eff.'+k,{v:k==='arm'?Math.round(gd.eff[k]*m*10)/10:Math.round(gd.eff[k]*m*100)}));
   if(gd.kind==='ward')out.push(t('eff.ward'));
   return out.join(', ');
 }
@@ -360,20 +360,27 @@ function initHud(){
   ['h-level','h-wave','h-dots','h-bag','h-bag-bar','h-rate','h-gold','h-fat-state','h-fat-pct','h-fat-bar','h-fat-note','h-place','h-rested',
    'enemy','en-name','en-hp','en-hp-txt','mhp','mhp-l','mhp-bar','mhp-rage',
    'rest','rest-txt','rest-time','rest-craft','rest-road','rest-tav','skills','fx','stage'].forEach(function(id){H[id]=$(id);});
+  /* v31: здоровье мага всегда на виду, над бодростью */
+  var hf=document.querySelector('.hud-fat');if(hf&&H.mhp){hf.insertBefore(H.mhp,hf.firstChild);H.mhp.classList.remove('hidden');H.mhpT=el('small','mhp-t');H.mhp.querySelector('.mhp-top').appendChild(H.mhpT);}
   var dots='';for(var i=0;i<10;i++)dots+='<i'+(i===9?' class="b"':'')+'></i>';H['h-dots'].innerHTML=dots;
   H.dots=[].slice.call(H['h-dots'].children);
   $('h-bag-i').innerHTML=BAG_SVG;
   /* v23: золото и репутация пилюлями, золото картинкой монет */
   var gl=document.querySelector('.goldline');
   if(gl){gl.querySelector('.coin').outerHTML=spr('o_coin','hud-i');var rl=el('div','repline');rl.innerHTML=spr('u_star','hud-i')+'<b id="h-rep">0</b>';rl.title=t('tv.repT');gl.parentNode.insertBefore(rl,gl.nextSibling);H.rep=rl.querySelector('b');}
-  H['h-place'].addEventListener('click',function(){if(S.place==='road')g.goHome();else g.goTrip();});
+  H['h-place'].addEventListener('click',function(){if(S.place==='road')g.goHome();else openMap();});
   /* переключатель вида: дорога / таверна сверху */
   var vbox=el('div','view-box');
   var vb=el('button','view-btn');vb.type='button';vb.id='view-btn';
-  vb.addEventListener('click',function(e){e.stopPropagation();if(S.place==='road')g.goHome();else g.goTrip();Sound.sfx('select');refreshHud();});
+  vb.addEventListener('click',function(e){e.stopPropagation();if(S.place==='road')g.goHome();else openMap();Sound.sfx('select');refreshHud();});
+  /* v31: на дороге - карта мира (сменить район) и переключатель карта / 3D */
+  var mb=el('button','view-btn map-btn');mb.type='button';mb.id='map-btn';
+  mb.addEventListener('click',function(e){e.stopPropagation();openMap();Sound.sfx('select');});
+  var rb=el('button','view-btn mode-btn');rb.type='button';rb.id='mode-btn';
+  rb.addEventListener('click',function(e){e.stopPropagation();if(UI.setRoadMode)UI.setRoadMode(UI.roadMode()==='map'?'3d':'map');Sound.sfx('select');paintView();});
   var sb=el('button','view-btn sleep-btn');sb.type='button';sb.id='sleep-btn';
   sb.addEventListener('click',function(e){e.stopPropagation();g.sleepNow();Sound.sfx('select');refreshHud();});
-  vbox.appendChild(vb);vbox.appendChild(sb);H.stage.appendChild(vbox);H.view=vb;H.sleep=sb;
+  vbox.appendChild(vb);vbox.appendChild(sb);vbox.appendChild(mb);vbox.appendChild(rb);H.stage.appendChild(vbox);H.view=vb;H.sleep=sb;H.mapb=mb;H.modeb=rb;
 
   /* очередь крафта: в нижней панели рядом с кнопкой СОЗДАТЬ (v23) */
   var qb=el('div','qbar hidden');qb.id='qbar';
@@ -447,16 +454,16 @@ function refreshHud(){
     H['en-hp'].style.width=(e.hp/e.max*100).toFixed(1)+'%';
     setText(H['en-hp-txt'],D.fmt(e.hp)+' / '+D.fmt(e.max));
     H.enemy.classList.toggle('boss',!!e.boss);
-    var bt=e.boss&&R.phase==='fight';
-    H.mhp.classList.toggle('hidden',!bt);
-    if(bt){
-      var mx=g.maxHp();
-      H['mhp-bar'].style.width=(Math.max(0,R.mhp)/mx*100).toFixed(1)+'%';
-      setText(H['mhp-l'],(S.profile?S.profile.name:'')+' '+D.fmt(R.mhp)+' / '+D.fmt(mx));
-      H['mhp-rage'].classList.toggle('hidden',R.bossT<=D.RAGE_T);
-      setText(H['mhp-rage'],t('boss.rage'));
-    }
   }
+  /* здоровье */
+  var mx=g.maxHp(),hp=g.hp(),rage=showE&&e.boss&&R.phase==='fight'&&R.bossT>D.RAGE_T;
+  H['mhp-bar'].style.width=(Math.max(0,hp)/mx*100).toFixed(1)+'%';
+  setText(H['mhp-l'],t('hp.l')+' '+D.fmt(Math.ceil(hp))+'/'+D.fmt(mx));
+  H['mhp-rage'].classList.toggle('hidden',!rage);
+  if(rage)setText(H['mhp-rage'],t('boss.rage'));
+  var hc=hp<mx*0.3?'mhp low':hp<mx?'mhp heal':'mhp';
+  if(H.mhp._c!==hc){H.mhp._c=hc;H.mhp.className=hc;}
+  if(H.mhpT)setText(H.mhpT,hp<mx&&!road&&!rage?ft(g.healLeft()/g.fatigueScale):'');
   /* умения */
   H.sk.forEach(function(x){
     var st=S.skills[x.s.id],un=g.skillUnlocked(x.s);
@@ -507,8 +514,9 @@ function pop(cls,text,x,y,html){
   H.fx.appendChild(d);fxCount++;
   setTimeout(function(){d.remove();fxCount--;},1200);
 }
+function openMap(){if(window.AdvMap)AdvMap.openWorld();else g.goTrip();}
 function enemyPos(){
-  var p=window.Scene3D&&Scene3D.ready?Scene3D.enemyScreen():null;
+  var p=window.AdvMap&&AdvMap.active?AdvMap.enemyScreen():window.Scene3D&&Scene3D.ready?Scene3D.enemyScreen():null;
   if(!p){var r=H.stage.getBoundingClientRect();p={x:r.width*0.68,y:r.height*0.42};}
   return p;
 }
@@ -525,13 +533,13 @@ function onLoot(l){
 }
 function onKill(){}
 function onMageHit(h){
-  var p=window.Scene3D&&Scene3D.mageScreen?Scene3D.mageScreen():null;
+  var p=window.AdvMap&&AdvMap.active?AdvMap.mageScreen():window.Scene3D&&Scene3D.mageScreen?Scene3D.mageScreen():null;
   if(!p){var r=H.stage.getBoundingClientRect();p={x:r.width*0.3,y:r.height*0.6};}
   pop('hurt','-'+D.fmt(h.dmg),p.x+(Math.random()-0.5)*30,p.y);
-  H.stage.classList.remove('hurt');void H.stage.offsetWidth;H.stage.classList.add('hurt');
+  if(h.boss){H.stage.classList.remove('hurt');void H.stage.offsetWidth;H.stage.classList.add('hurt');}
 }
 function onHome(r){
-  if(r.why==='defeat'){banner(t('boss.fail'),t('home.lostBag',{n:r.lost}),'red');return;}
+  if(r.why==='defeat'){banner(t(r.by==='mob'?'home.downMob':'boss.fail'),t('home.lostBag',{n:r.lost}),'red');return;}
   var txt=t('home.back',{n:r.n})+' · '+t('why.'+r.why);
   if(r.over)txt+=' · '+t('home.over',{n:r.over});
   toast(txt);
@@ -1379,6 +1387,12 @@ function paintView(){
   H.view.classList.toggle('on',!road);
   H.sleep.classList.toggle('hidden',S.place!=='home');
   H.sleep.disabled=S.fatigue<0.02;
+  H.view.classList.toggle('pulse',!road&&!S.started&&S.place==='home');
+  if(H.mapb){
+    var onRoad=road&&screenNow==='road';
+    setText(H.mapb,t('btn.map'));H.mapb.classList.toggle('hidden',!onRoad);
+    setText(H.modeb,UI.roadMode&&UI.roadMode()==='map'?'3D':t('btn.map2d'));H.modeb.classList.toggle('hidden',!onRoad||!window.Scene3D||!Scene3D.ready);
+  }
   paintScreen();
 }
 function viewProgress(p){viewLoad=p;paintView();}

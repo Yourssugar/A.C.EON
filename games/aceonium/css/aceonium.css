@@ -1394,3 +1394,24 @@ table.lb th{text-align:left;font-size:12px;color:#a98fd0;font-weight:600;padding
 table.lb td{padding:5px 6px;border-bottom:1px solid #2f1a4a;}
 table.lb tr.me td{color:#ffcf4d;font-weight:700;}
 table.lb td small{color:#cbb6ec;font-weight:400;}
+
+/* ── v34: двойник, обучение ── */
+.cl-chip{position:absolute;left:50%;transform:translateX(-50%);bottom:156px;z-index:6;font:inherit;font-size:12px;padding:4px 12px;border-radius:12px;cursor:pointer;
+  color:#efe4ff;background:rgba(60,30,110,.9);border:2px solid #a070ff;box-shadow:0 0 12px rgba(160,100,255,.45);white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;}
+.cl-chip b{color:#d8c0ff;margin-right:4px;}
+@media (max-width:700px){.cl-chip{bottom:214px;}}
+body.crf-open .cl-chip{display:none;}
+.wm-me.cl{filter:drop-shadow(0 0 3px #a070ff) hue-rotate(200deg) saturate(2);}
+body.ac .wm-go.cl:not(:disabled){color:#fff;background:linear-gradient(180deg,#9a6aff,#6a3ad0);box-shadow:0 3px 0 #3a1a7a;}
+.wm-box.clone{border-color:#a070ff;}
+.tut-ring{position:fixed;z-index:95;pointer-events:none;border:3px solid #ffd36a;border-radius:14px;box-shadow:0 0 0 4000px rgba(5,2,14,.35),0 0 18px rgba(255,210,90,.8);animation:tutPulse 1.2s ease-in-out infinite;display:none;}
+@keyframes tutPulse{0%,100%{border-color:#ffd36a;}50%{border-color:#fff3c0;}}
+.tut{position:fixed;z-index:96;width:min(320px,calc(100vw - 16px));padding:12px 14px 10px;border-radius:14px;background:#2c184a;border:2px solid #ffd36a;color:#fff3d6;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);display:none;--ax:50%;}
+.tut p{margin:0 0 8px;font-size:14px;line-height:1.4;}
+.tut-b{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tut-skip{font:inherit;font-size:12px;background:none;border:0;color:#a98fd0;text-decoration:underline;cursor:pointer;padding:4px 0;margin-left:auto;}
+.tut.up::before,.tut.down::after{content:'';position:absolute;left:var(--ax);width:14px;height:14px;background:#2c184a;border:2px solid #ffd36a;transform:translateX(-50%) rotate(45deg);}
+.tut.up::before{top:-9px;border-right:0;border-bottom:0;}
+.tut.down::after{bottom:-9px;border-left:0;border-top:0;}
+.wm-lbl img.wm-me{display:inline-block;width:20px;height:24px;object-fit:contain;}

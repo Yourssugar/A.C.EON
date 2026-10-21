@@ -135,7 +135,7 @@ function initStage(){
   requestAnimationFrame(loop);
 }
 function showLoad(p,total){
-  var L=W.q('.wd2-load');if(!L)return;
+  if(!W)return;var L=W.q('.wd2-load');if(!L)return;
   if(p>=1||!total){L.classList.add('hidden');return;}
   L.classList.remove('hidden');
   L.querySelector('i').style.width=Math.round(p*100)+'%';

@@ -9,6 +9,8 @@
 'use strict';
 var t=function(k,v){return I18n.t(k,v);};
 var ART='assets/lore/';
+/* с версией в адресе (?v=), чтобы после обновления картинок браузер не показывал старые из кэша */
+function art(f){return window.Boot&&Boot.url?Boot.url(ART+f):ART+f;}
 function esc(s){return String(s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';});}
 
 /* ════════ ТЕКСТЫ ════════ */
@@ -175,7 +177,7 @@ function tick(now){
 function show(kind){
   build();clearTimeout(L.hideT);
   if(L.on&&L.kind===kind)return;
-  var img=L.el.querySelector('.ls-bg img'),src=ART+'load_'+(kind.indexOf('road')===0?kind:kind)+'.webp';
+  var img=L.el.querySelector('.ls-bg img'),src=art('load_'+kind+'.webp');
   if(!L.on||L.kind!==kind){L.el.classList.remove('has-img');img.removeAttribute('src');img.src=src;}
   L.el.querySelector('.ls-title').textContent=titleOf(kind);
   L.el.className='ls on k-'+kind.replace(/\d+$/,'')+' k-'+kind+(img.complete&&img.naturalWidth?' has-img':'');
@@ -205,7 +207,7 @@ function prologue(done){
     '<div class="pro-btns"><button type="button" class="btn ghost" data-a="skip">'+t('pro.skip')+'</button><button type="button" class="btn" data-a="next"></button></div></div>';
   document.body.appendChild(box);
   P={box:box,i:-1,done:done};
-  for(var k=0;k<SLIDES;k++){var im=new Image();im.src=ART+'pro'+(k+1)+'.webp';}
+  for(var k=0;k<SLIDES;k++){var im=new Image();im.src=art('pro'+(k+1)+'.webp');}
   box.addEventListener('click',function(e){
     var b=e.target.closest('[data-a]');
     if(b&&b.dataset.a==='skip'){endPrologue();return;}
@@ -218,7 +220,7 @@ function slide(i){
   P.i=i;var b=P.box,img=b.querySelector('.pro-art img');
   b.classList.remove('has-img');
   img.onload=function(){b.classList.add('has-img');};img.onerror=function(){b.classList.remove('has-img');};
-  img.src=ART+'pro'+(i+1)+'.webp';
+  img.src=art('pro'+(i+1)+'.webp');
   b.querySelector('.pro-art').className='pro-art s'+i;
   var tx=b.querySelector('.pro-txt');tx.classList.remove('in');void tx.offsetWidth;tx.classList.add('in');
   b.querySelector('h3').textContent=t('pro.h.'+i);b.querySelector('p').textContent=t('pro.t.'+i);
@@ -254,7 +256,7 @@ function line(i){
   G.i=i;var d=DLG[i],b=G.box,who=d[0];
   b.className='dlg on w-'+who;
   var face=b.querySelector('.dlg-face img'),file=who==='host'?'hostess':'mage';
-  if(face.dataset.f!==file){face.dataset.f=file;b.classList.remove('has-face');face.onload=function(){if(G)G.box.classList.add('has-face');};face.onerror=function(){};face.src=ART+file+'.webp';}
+  if(face.dataset.f!==file){face.dataset.f=file;b.classList.remove('has-face');face.onload=function(){if(G)G.box.classList.add('has-face');};face.onerror=function(){};face.src=art(file+'.webp');}
   else if(face.naturalWidth)b.classList.add('has-face');
   b.querySelector('.dlg-who').textContent=t('dlg.'+who);
   G.full=t('dlg.'+d[1]);G.n=0;

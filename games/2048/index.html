@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON 2048</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/2048.css","kb":18},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"js/lang.js","kb":14},
+  {"src":"js/rules.js","kb":5},
+  {"src":"js/2048.js","kb":18}
+]}
+</script>
+
+<!-- Обложка загрузки: плитки 2..2048 загораются вместе с прогрессом (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .t-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;width:min(200px,56vw);}
+    .t-grid i{height:44px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:9px;
+      --k:clamp(0,calc((var(--p) - var(--t)) * 10),1);color:rgba(255,255,255,var(--k));
+      background:rgba(0,229,255,calc(.04 + .2 * var(--k)));box-shadow:0 0 calc(14px * var(--k)) rgba(0,229,255,.5);}
+    .t-title{font-size:clamp(18px,5vw,30px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .t-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="t-brand">A.C.EON</div>
+  <div class="t-title">2048</div>
+  <div class="t-grid"></div>
+</template>
+<script>
+(function(){
+  var g=document.getElementById('boot-skin').content.querySelector('.t-grid'),h='',v=2;
+  for(var i=0;i<16;i++){h+='<i style="--t:'+(i/16*0.95).toFixed(3)+'">'+(i<11?v:'')+'</i>';v*=2;}
+  g.innerHTML=h;
+})();
+</script>
+</head>
+<body class="screen-menu th-neon">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="t.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.size"></h2>
+      <div class="seg seg-wide" id="seg-size">
+        <button class="seg-btn" data-v="3">3 x 3</button>
+        <button class="seg-btn" data-v="4">4 x 4</button>
+        <button class="seg-btn" data-v="5">5 x 5</button>
+        <button class="seg-btn" data-v="6">6 x 6</button>
+      </div>
+      <div class="size-info" id="size-info"></div>
+    </section>
+
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.theme"></h2>
+      <div class="themes" id="themes">
+        <button class="th-card" data-v="neon"><span class="th-prev tp-neon"><i class="v2">2</i><i class="v8">8</i><i class="v64">64</i><i class="v2048">2048</i></span><span data-i18n="theme.neon"></span></button>
+        <button class="th-card" data-v="classic"><span class="th-prev tp-classic"><i class="v2">2</i><i class="v8">8</i><i class="v64">64</i><i class="v2048">2048</i></span><span data-i18n="theme.classic"></span></button>
+        <button class="th-card" data-v="term"><span class="th-prev tp-term"><i class="v2">2</i><i class="v8">8</i><i class="v64">64</i><i class="v2048">2048</i></span><span data-i18n="theme.term"></span></button>
+      </div>
+      <h2 class="m-h m-h2" data-i18n="menu.rules"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.undo"></span>
+        <div class="seg" id="seg-undo">
+          <button class="seg-btn" data-v="none" data-i18n="undo.none"></button>
+          <button class="seg-btn" data-v="three" data-i18n="undo.three"></button>
+          <button class="seg-btn" data-v="free" data-i18n="undo.free"></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.pad"></span>
+        <div class="seg" id="seg-pad">
+          <button class="seg-btn" data-v="auto" data-i18n="pad.auto"></button>
+          <button class="seg-btn" data-v="on" data-i18n="pad.on"></button>
+          <button class="seg-btn" data-v="off" data-i18n="pad.off"></button>
+        </div></div>
+      <div class="m-help" data-i18n="menu.help"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+  </div>
+
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn m-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="m-game" id="game">
+  <div class="hud">
+    <div class="sc-box"><span data-i18n="hud.score"></span><b id="hud-score">0</b><i class="sc-add" id="sc-add"></i></div>
+    <div class="sc-box"><span data-i18n="hud.best"></span><b id="hud-best">0</b></div>
+    <div class="sc-box sc-time hidden" id="box-time"><span data-i18n="hud.time"></span><b id="hud-time">3:00</b></div>
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-undo"><svg class="i-undo" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3L2 7l4 4V8h4a3 3 0 010 6H8v2h2a5 5 0 000-10H6z" fill="currentColor"/></svg><span data-i18n="hud.undo"></span><b id="undo-n"></b></button>
+      <button class="btn" id="btn-new" data-i18n="hud.new"></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="arena" id="arena">
+    <div class="board" id="board"><div class="b-cells" id="cells"></div><div class="b-tiles" id="tiles"></div></div>
+    <div class="pad" id="pad">
+      <button class="pad-b pb-up" data-d="up" aria-label="up"></button>
+      <button class="pad-b pb-left" data-d="left" aria-label="left"></button>
+      <button class="pad-b pb-right" data-d="right" aria-label="right"></button>
+      <button class="pad-b pb-down" data-d="down" aria-label="down"></button>
+    </div>
+  </div>
+</main>
+
+<!-- конец партии / достигнута цель -->
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <div class="over-title" id="over-title"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-note hidden" id="over-note" data-i18n="over.noRec"></div>
+    <div class="over-btns">
+      <button class="btn b-keep hidden" id="over-keep">&#9654; <span data-i18n="over.keep"></span></button>
+      <button class="btn" id="over-new"><span data-i18n="hud.new"></span></button>
+      <button class="btn" id="over-view" data-i18n="over.view"></button>
+      <button class="btn" id="over-menu" data-i18n="hud.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

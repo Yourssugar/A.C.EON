@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON MINESWEEPER</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/minesweeper.css","kb":27},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"js/lang.js","kb":22},
+  {"src":"js/rules.js","kb":8},
+  {"src":"js/minesweeper.js","kb":26}
+]}
+</script>
+
+<!-- Обложка загрузки: поле 9x9, клетки открываются вместе с прогрессом (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .ms-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;width:min(200px,56vw);}
+    .ms-grid i{height:20px;--k:clamp(0,calc((var(--p) - var(--t)) * 14),1);
+      background:rgba(18,18,44,calc(1 - .7 * var(--k)));
+      box-shadow:inset 0 0 0 1px rgba(0,229,255,calc(.12 + .45 * var(--k)));}
+    .ms-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .ms-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="ms-brand">A.C.EON</div>
+  <div class="ms-title">MINESWEEPER</div>
+  <div class="ms-grid"></div>
+</template>
+<script>
+(function(){
+  var g=document.getElementById('boot-skin').content.querySelector('.ms-grid'),h='';
+  for(var i=0;i<81;i++){var r=Math.floor(i/9),c=i%9,d=Math.max(Math.abs(r-4),Math.abs(c-4));h+='<i style="--t:'+(d/5*0.95).toFixed(3)+'"></i>';}
+  g.innerHTML=h;
+})();
+</script>
+</head>
+<body class="screen-menu th-neon">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="ms.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.diff"></h2>
+      <div class="seg seg-wide" id="seg-diff">
+        <button class="seg-btn" data-v="beg" data-i18n="diff.beg"></button>
+        <button class="seg-btn" data-v="int" data-i18n="diff.int"></button>
+        <button class="seg-btn" data-v="exp" data-i18n="diff.exp"></button>
+        <button class="seg-btn" data-v="custom" data-i18n="diff.custom"></button>
+      </div>
+      <div class="diff-info" id="diff-info"></div>
+      <div class="custom hidden" id="custom">
+        <label class="rng"><span data-i18n="cust.rows"></span><input type="range" id="c-rows" min="5" max="30" step="1"><b id="c-rows-v"></b></label>
+        <label class="rng"><span data-i18n="cust.cols"></span><input type="range" id="c-cols" min="5" max="40" step="1"><b id="c-cols-v"></b></label>
+        <label class="rng"><span data-i18n="cust.mines"></span><input type="range" id="c-mines" min="1" max="200" step="1"><b id="c-mines-v"></b></label>
+      </div>
+    </section>
+
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.theme"></h2>
+      <div class="themes" id="themes">
+        <button class="th-card" data-v="neon"><span class="th-prev tp-neon"><i></i><i class="o">1</i><i class="o n2">2</i><i class="f"></i><i class="o"></i><i></i></span><span data-i18n="theme.neon"></span></button>
+        <button class="th-card" data-v="classic"><span class="th-prev tp-classic"><i></i><i class="o">1</i><i class="o n2">2</i><i class="f"></i><i class="o"></i><i></i></span><span data-i18n="theme.classic"></span></button>
+        <button class="th-card" data-v="grass"><span class="th-prev tp-grass"><i></i><i class="o">1</i><i class="o n2">2</i><i class="f"></i><i class="o"></i><i></i></span><span data-i18n="theme.grass"></span></button>
+      </div>
+      <h2 class="m-h m-h2" data-i18n="menu.rules"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.marks"></span>
+        <div class="seg" id="seg-marks">
+          <button class="seg-btn" data-v="no" data-i18n="opt.no"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="opt.yes"></button>
+        </div></div>
+      <div class="opt-row" id="opt-bot"><span class="opt-lbl" data-i18n="opt.bot"></span>
+        <div class="seg" id="seg-bot">
+          <button class="seg-btn" data-v="no" data-i18n="opt.no"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="opt.yes"></button>
+        </div></div>
+      <div class="m-help" data-i18n="menu.help"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+  </div>
+
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn m-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="m-game" id="game">
+  <div class="hud">
+    <div class="hud-cell hc-mines"><i class="ico ico-mine"></i><b id="hud-mines">0</b></div>
+    <div class="hud-cell hc-time"><i class="ico ico-time"></i><b id="hud-time">0</b></div>
+    <div class="hud-cell hc-lives hidden" id="hc-lives"><b id="hud-lives"></b></div>
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-btns">
+      <button class="btn hb-flag" id="btn-flag"><i class="ico ico-flag"></i><span data-i18n="hud.flag"></span></button>
+      <button class="btn" id="btn-hint" data-i18n="hud.hint"></button>
+      <button class="btn hb-zoom" id="btn-zoom-out" aria-label="-">&#8722;</button>
+      <button class="btn hb-zoom" id="btn-zoom-in" aria-label="+">+</button>
+      <button class="btn" id="btn-new" data-i18n="hud.new"></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="arena" id="arena">
+    <div class="wrap" id="wrap"><div class="field" id="field"></div></div>
+
+    <!-- сапёр-помощник: показывается справа, если хватает места -->
+    <aside class="bot" id="bot" aria-hidden="true">
+      <div class="bot-stage">
+        <span class="bot-p bp1"></span><span class="bot-p bp2"></span><span class="bot-p bp3"></span><span class="bot-p bp4"></span>
+        <div class="bot-core">
+          <div class="bot-fuse"><span class="bot-spark"></span></div>
+          <div class="bot-body">
+            <div class="bot-eyes"><span class="bot-eye"></span><span class="bot-eye"></span></div>
+            <div class="bot-mouth"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bot-name" data-i18n="bot.name"></div>
+      <div class="bot-sub" data-i18n="bot.sub"></div>
+      <div class="bot-say" id="bot-say"></div>
+    </aside>
+  </div>
+</main>
+
+<!-- конец партии -->
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <div class="over-title" id="over-title"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-note hidden" id="over-note" data-i18n="over.noRec"></div>
+    <div class="over-btns">
+      <button class="btn" id="over-new">&#9654; <span data-i18n="hud.new"></span></button>
+      <button class="btn" id="over-field" data-i18n="over.view"></button>
+      <button class="btn" id="over-menu" data-i18n="hud.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

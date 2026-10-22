@@ -52,7 +52,9 @@ var SETS={
   stone:{c:'stone_color',n:'stone_normal',r:'stone_rough',rep:true},
   fwood:{c:'fwood_color',n:'fwood_normal',rep:true},
   dwood:{c:'dwood_color',n:'dwood_normal',rep:true},
-  thatch:{c:'thatch_color',n:'thatch_normal',rep:true}
+  thatch:{c:'thatch_color',n:'thatch_normal',rep:true},
+  /* v36: украшения города (Kenney Fantasy Town Kit, KayKit Medieval Hexagon) */
+  colormap:{c:'kcmap'},hexagons_medieval:{c:'khex'}
 };
 function texList(){
   var s={};for(var k in SETS){var d=SETS[k];['c','n','orm','r'].forEach(function(m){if(d[m])s[d[m]]=1;});}
@@ -83,6 +85,7 @@ function mat(key,opt){
   if(key==='glass'){m=new T.MeshStandardMaterial({color:0xc87a20,roughness:0.15,metalness:0,transparent:true,opacity:0.75});}
   if(key==='MI_WindowGlass'){m=new T.MeshStandardMaterial({color:0x9fc8e8,roughness:0.1,metalness:0,transparent:true,opacity:0.35,emissive:0xffb050,emissiveIntensity:0});V&&(V.glass=m);}
   if(key==='MI_Page_Empty')m.color.set('#e8dcc0');
+  if(key==='Water'){m=new T.MeshStandardMaterial({color:0x58c8ff,roughness:0.1,metalness:0,transparent:true,opacity:0.7});}
   if(opt&&opt.vc)m.vertexColors=true;
   MATS[id]=m;return m;
 }
@@ -94,13 +97,13 @@ function init(THREE){
   return fetch(url('sizes.json')).then(function(r){return r.json();}).then(function(j){SIZES=j;},function(){SIZES={};});
 }
 function bytesNeeded(){
-  var b=0;['models/tv_build.glb','models/tv_props.glb','models/tv_misc.glb','models/tv_town.glb','models/tv_food.glb'].concat(texList()).forEach(function(f){if(!TEXC[f]&&!KIT[f])b+=SIZES[f]||0;});
+  var b=0;['models/tv_build.glb','models/tv_props.glb','models/tv_misc.glb','models/tv_town.glb','models/tv_food.glb','models/tv_deco.glb'].concat(texList()).forEach(function(f){if(!TEXC[f]&&!KIT[f])b+=SIZES[f]||0;});
   return b;
 }
 function load(resolution,onProgress){
   if(loading)return loading;
   res=resolution||'1k';
-  var files=['models/tv_build.glb','models/tv_props.glb','models/tv_misc.glb','models/tv_town.glb','models/tv_food.glb'],texs=texList();
+  var files=['models/tv_build.glb','models/tv_props.glb','models/tv_misc.glb','models/tv_town.glb','models/tv_food.glb','models/tv_deco.glb'],texs=texList();
   var total=0,got=0;files.concat(texs).forEach(function(f){total+=SIZES[f]||200000;});
   function tick(n){got+=n;if(onProgress)onProgress(Math.min(1,got/total),total);}
   var jobs=files.map(function(f){
@@ -141,6 +144,8 @@ var IN_PT={x:1,z:5.6};                   // точка сразу за двер�
 function HL(){return window.AcHall;}
 var ROAD_Z=16.5,ROAD_END=28;   // путники идут по дороге из-за края и сворачивают к двери
 function place(o,x,z,rot,y){o.position.set(x,y||0,z);o.rotation.y=rot||0;return o;}
+/* v35: дневной свет города: ясное небо, тёплое солнце, зелёный отсвет от травы */
+var DAY={sky:0xa8d8f4,hemi:0xf2f8ff,ground:0x5f8a3a,hemiI:1.65,sun:0xfff1d2,sunI:2.15};
 
 function build(renderer){
   if(V)return V;
@@ -148,14 +153,15 @@ function build(renderer){
      mode:'tavern',az:0.5,pol:0.82,dist:19,target:new T.Vector3(2.2,0,0),goal:{az:0.5,pol:0.82,dist:19,target:new T.Vector3(2.2,0,0)},
      t:0,night:false,labels:{},active:false,fires:[],lastStock:{}};
   var s=V.scene;
-  s.background=new T.Color(0x8fb4cc);s.fog=new T.Fog(0x8fb4cc,45,125);
-  V.hemi=new T.HemisphereLight(0xe0ecff,0x4a5a30,1.3);s.add(V.hemi);
-  V.sun=new T.DirectionalLight(0xfff0d8,1.7);V.sun.position.set(14,26,18);V.sun.target.position.set(0,0,6);s.add(V.sun);s.add(V.sun.target);
+  /* v35: город светлее и цветнее (было небо 0x8fb4cc, свет 1.3 / 1.7) */
+  s.background=new T.Color(DAY.sky);s.fog=new T.Fog(DAY.sky,60,170);
+  V.hemi=new T.HemisphereLight(DAY.hemi,DAY.ground,DAY.hemiI);s.add(V.hemi);
+  V.sun=new T.DirectionalLight(DAY.sun,DAY.sunI);V.sun.position.set(14,26,18);V.sun.target.position.set(0,0,6);s.add(V.sun);s.add(V.sun.target);
   V.sun.castShadow=true;var sc=V.sun.shadow.camera;sc.left=-38;sc.right=38;sc.top=38;sc.bottom=-38;sc.near=1;sc.far=90;
   var hq=window.Scene3D&&(Scene3D.quality==='high'||Scene3D.quality==='ultra');V.sun.shadow.mapSize.set(hq?2048:1024,hq?2048:1024);V.sun.shadow.bias=-0.0005;V.sun.shadow.normalBias=0.04;
   V.inner=new T.PointLight(0xffb060,0,18,1.6);V.inner.position.set(2,2.8,-1);s.add(V.inner);
   /* земля и двор */
-  var gm=mat('grass');gm.color.set('#c8dc9c');
+  var gm=mat('grass');gm.color.set('#f2fae6');
   var grass=plane(320,320,gm,64);grass.position.y=-0.03;s.add(grass);
   var path=plane(3,11,mat('yard'),1.5,5.5);place(path,1,9.6,0,-0.01);s.add(path);
   /* дорога мимо таверны: по ней приходят и уходят путники */
@@ -184,8 +190,15 @@ function wall(G,kind,x,z,rot,o){
              brick:['Wall_UnevenBrick_Straight','Wall_UnevenBrick_Window_Wide_Round','Wall_UnevenBrick_Door_Round']}[kind];
   var nm=o.door?names[2]:o.win?names[1]:names[0];
   if(o.gap)return;
-  var w=place(model(nm),x,z,rot);
+  /* v36.1: стена толщиной 0.4 м и в модели сдвинута внутрь на 0.31 м: ставим её наружу от линии сетки,
+     чтобы внутренняя сторона совпала с краем пола и вещи у стен не уходили в неё (внутренние перегородки по центру) */
+  var off=o.inner||o.mid?0.11:0.31;
+  var w=place(model(nm),x+Math.sin(rot)*off,z+Math.cos(rot)*off,rot);
   if(o.win){var win=model('Window_Wide_Round1');w.add(win);}
+  /* крышка сверху: когда стена опускается к камере, внутри видна пустота */
+  var cap=box(2.02,0.05,0.42,mat('dwood'),1);cap.position.set(0,3.13,-0.11);cap.castShadow=false;w.add(cap);
+  /* полоса пола под наружной стеной: ниже основного пола, видна только там, где его нет (иначе на стыке трава) */
+  if(!o.inner){var fl=plane(2.02,0.75,mat('floor'),0.8,0.3);place(fl,x-Math.sin(rot)*0.05,z-Math.cos(rot)*0.05,rot,0.004);fl.receiveShadow=true;G.add(fl);}
   G.add(w);
   var rec={o:w,n:new T.Vector3(Math.sin(rot),0,Math.cos(rot)),inner:!!o.inner,k:1};
   if(o.inner){w.scale.y=0.42;}
@@ -205,8 +218,12 @@ function room(G,x0,x1,z0,z1,kind,o){
   side('S',[x0,x1],z1,0,true);
   side('W',[z0,z1],x0,-Math.PI/2,false);
   side('E',[z0,z1],x1,Math.PI/2,false);
-  if(o.floor!==false){var f=plane(x1-x0,z1-z0,mat(o.floor||'floor'),(x1-x0)/2.5,(z1-z0)/2.5);place(f,(x0+x1)/2,(z0+z1)/2,0,0.01);G.add(f);}
-  if(o.corners!==false)[[x0,z0],[x1,z0],[x0,z1],[x1,z1]].forEach(function(c){G.add(place(model(kind==='brick'?'Corner_Exterior_Brick':'Corner_Exterior_Wood'),c[0],c[1]));});
+  /* v36.1: пол заходит под наружные стены на 0.25 м, иначе на стыке видна трава */
+  if(o.floor!==false){
+    var ex=function(k){var so=o[k]||{};return so.skip||so.inner?0:0.25;};
+    var fx0=x0-ex('W'),fx1=x1+ex('E'),fz0=z0-ex('N'),fz1=z1+ex('S');
+    var f=plane(fx1-fx0,fz1-fz0,mat(o.floor||'floor'),(fx1-fx0)/2.5,(fz1-fz0)/2.5);place(f,(fx0+fx1)/2,(fz0+fz1)/2,0,0.01);G.add(f);}
+  if(o.corners!==false)[[x0,z0,-1,-1],[x1,z0,1,-1],[x0,z1,-1,1],[x1,z1,1,1]].forEach(function(c){G.add(place(model(kind==='brick'?'Corner_Exterior_Brick':'Corner_Exterior_Wood'),c[0]+c[2]*0.2,c[1]+c[3]*0.2));});
 }
 function prop(G,name,x,z,rot,y,sc){var o=place(model(name),x,z,rot,y);if(sc)o.scale.setScalar(sc);G.add(o);return o;}
 /* v25: вещь на стене (флаг, фонарь, полка): прячется вместе со стеной, когда та опускается к камере. nx, nz - наружу от стены */
@@ -241,7 +258,7 @@ function layout(S){
   [-4,-2,0,2,4].forEach(function(z){
     var shared=brew&&z<=0;
     if(shared&&z===0)return;
-    wall(G,'plaster',8,z,Math.PI/2,{win:!shared&&(z===-2||z===2||z===4&&brew),inner:shared});
+    wall(G,'plaster',8,z,Math.PI/2,{win:!shared&&(z===-2||z===2||z===4&&brew),inner:shared,mid:brew&&z===2});
   });
   /* стена между комнатой мага и залом: низкая, с проходом */
   for(var zz=-4;zz<5;zz+=2)if(zz!==2)wall(G,'plaster',-2,zz,Math.PI/2,{inner:true});
@@ -250,24 +267,24 @@ function layout(S){
   var mouth=box(1.1,0.75,0.3,new T.MeshBasicMaterial({color:0x140804}));place(mouth,3,-4.1,0,0.42);G.add(mouth);
   var mantel=box(2.5,0.14,0.95,mat('dwood'),1);place(mantel,3,-4.4,0,1.27);G.add(mantel);
   var chim=box(1.2,1.9,0.6,mat('stone'),1);place(chim,3,-4.65,0,2.15);G.add(chim);
-  fire(G,3,0.18,-4.0,1.0);
+  fire(G,3,0.1,-3.78,0.9);
   /* стойка и хозяйка */
   var cnt=box(2.8,1.0,0.6,mat('fwood'),1.2);place(cnt,6.0,-2.6,0,0.5);G.add(cnt);
   var top=box(3.0,0.08,0.75,mat('dwood'),1.2);place(top,6.0,-2.6,0,1.04);G.add(top);
   prop(G,'Mug',5.3,-2.55,0,1.08);prop(G,'Mug',6.6,-2.65,0.6,1.08);
-  wprop(G,'Shelf_Simple',6.1,-4.75,0,1.4,0,-1);prop(G,'Barrel_Holder',7.3,-4.2,0);wprop(G,'Bottle_1',5.7,-4.7,0,1.45,0,-1);
+  wprop(G,'Shelf_Simple',6.1,-5.02,0,1.4,0,-1);prop(G,'Barrel_Holder',7.3,-4.2,0);wprop(G,'Bottle_1',5.7,-4.82,0,1.45,0,-1);
   /* стойка по уровню (v25): больше посуды, бочек и блеска */
-  if(cl>=2){prop(G,'Mug',5.8,-2.5,1.2,1.08);wprop(G,'Shelf_Simple',4.9,-4.75,0,1.4,0,-1);wprop(G,'Bottle_1',4.7,-4.7,0,1.45,0,-1);wprop(G,'Bottle_1',5.1,-4.7,0.5,1.45,0,-1);}
+  if(cl>=2){prop(G,'Mug',5.8,-2.5,1.2,1.08);wprop(G,'Shelf_Simple',4.9,-5.02,0,1.4,0,-1);wprop(G,'Bottle_1',4.7,-4.82,0,1.45,0,-1);wprop(G,'Bottle_1',5.1,-4.82,0.5,1.45,0,-1);}
   if(cl>=3){prop(G,'Barrel_Holder',4.7,-4.2,0);prop(G,'Chalice',7.0,-2.6,0,1.08);}
   if(cl>=4){prop(G,'CandleStick_Triple',4.9,-2.6,0,1.08);wprop(G,'Shelf_Small_Bottles',6.1,-4.82,0,1.9,0,-1);}
-  if(cl>=5){prop(G,'Coin_Pile',6.2,-2.6,0,1.08);wprop(G,'Banner_1',3.9,-4.82,0,2.2,0,-1);}
+  if(cl>=5){prop(G,'Coin_Pile',6.2,-2.6,0,1.08);wprop(G,'Banner_1',3.9,-4.9,0,2.2,0,-1);}
   st.hostess={x:6.0,z:-3.6,rot:0};
   /* v26: еду и пиво повар с пивоваром приносят хозяйке: запас виден на стойке */
   [[6.95,-2.62],[7.15,-2.48],[6.8,-2.45]].forEach(function(q,i){var o=prop(G,'Mug',q[0],q[1],i,1.08);V.wpiles.brewer.push(o);keep.push(o);});
   [[4.95,-2.62],[5.2,-2.48]].forEach(function(q,i){var o=place(model('food_stew'),q[0],q[1],i,1.08);o.scale.setScalar(0.26);G.add(o);V.wpiles.cook.push(o);keep.push(o);});
   /* уголок мага у камина (v25): стул, ковёр, столик */
   var MG=HL().MAGE;
-  prop(G,'Chair_1',MG.x,MG.z,MG.rot);var hr=rugMesh(1,1.7,0.9);place(hr,2.3,-3.5,0.1,0.02);G.add(hr);
+  prop(G,'Chair_1',MG.x-Math.sin(MG.rot)*0.12,MG.z-Math.cos(MG.rot)*0.12,MG.rot);var hr=rugMesh(1,1.7,0.9);place(hr,2.3,-3.5,0.1,0.02);G.add(hr);
   prop(G,'Nightstand_Shelf',0.45,-4.55,0.3);prop(G,'Candle_1',0.45,-4.55,0,1.21);prop(G,'Mug',0.35,-4.5,0,1.21);
   /* хлам в западной части зала до первого улучшения */
   if(!hall){
@@ -279,22 +296,30 @@ function layout(S){
   prop(G,bed>=3?'Bed_Twin2':'Bed_Twin1',-4.6,-3.6,Math.PI/2);
   prop(G,'Nightstand_Shelf',-5.55,-1.95,Math.PI/2);prop(G,'Candle_1',-5.55,-1.95,0,0.6);
   prop(G,'Chest_Wood',-2.9,-4.4,0);
-  prop(G,'Chair_1',-3.4,3.6,Math.PI*0.8);prop(G,'Table_Plate',-3.0,4.4,0,0);
+  /* v36.1: письменный стол мага у южной стены: здесь он пишет свитки (лист, чернила, свеча, свиток, книги) */
+  var desk=prop(G,'Table_Large',-3.6,4.36,0);desk.scale.set(0.5,1,0.66);
+  prop(G,'Chair_1',-3.6,3.43,0);
+  var paper=box(0.34,0.006,0.44,new T.MeshStandardMaterial({color:0xf2e6c4,roughness:0.95}));paper.rotation.y=0.12;place(paper,-3.62,4.22,0.12,0.815);paper.castShadow=false;G.add(paper);
+  var ink=new T.Mesh(new T.CylinderGeometry(0.04,0.05,0.07,10),new T.MeshStandardMaterial({color:0x1a1a2a,roughness:0.3}));place(ink,-3.28,4.3,0,0.845);G.add(ink);
+  var quill=box(0.012,0.012,0.26,new T.MeshStandardMaterial({color:0xf4f0e8,roughness:0.8}));quill.rotation.set(0.9,0.5,0);place(quill,-3.3,4.32,0.5,0.93);quill.rotation.x=-0.9;G.add(quill);
+  prop(G,'Scroll_1',-3.05,4.5,0.4,0.81);prop(G,'Book_Stack_1',-4.1,4.55,0.2,0.81);prop(G,'Candle_1',-4.15,4.2,0,0.81);fireSprite(G,-4.15,0.98,4.05,0.12);
+  st.mageDesk={x:-3.6,z:3.55,rot:0};
   st.mageSit={x:MG.x,z:MG.z,rot:MG.rot};
   st.mageBed={x:-4.6,z:-3.6,rot:Math.PI/2};
   if(bed>=1){var br=rugMesh(1,2.6,1.7);place(br,-4,1.0,0,0.02);G.add(br);}
-  if(bed>=2)prop(G,'Bookcase_2',-5.6,3.0,Math.PI/2);
+  if(bed>=2)prop(G,'Bookcase_2',-5.76,3.0,Math.PI/2);
   if(bed>=4)prop(G,'CandleStick',-3.2,-4.5,0,0.69);
   /* убранство на стенах растёт с очками декора (v25) */
-  if(decor>=1){wprop(G,'Banner_1',-1.6,-4.82,0,2.2,0,-1);wprop(G,'Lantern_Wall',7.8,2.6,-Math.PI/2,1.9,1,0);}
-  if(decor>=2){wprop(G,'Lantern_Wall',-1.8,4.75,Math.PI,1.9,0,1);prop(G,'Prop_Vine2',-6.1,5.1,0);var mr=rugMesh(2,2.6,1.8);place(mr,-4.2,-0.6,0,0.02);G.add(mr);}
-  if(decor>=3){wprop(G,'Banner_2',0.2,-4.82,0,2.2,0,-1);prop(G,'Prop_Vine5',8.1,5.1,0);}
+  /* v36.1: с кухней северная стена в этом месте низкая, флаг висел бы в воздухе: вешаем один, поменьше, на дымоход камина */
+  if(decor>=1){if(kitchen){var bn=prop(G,'Banner_1',2.44,-4.27,0,2.5);bn.scale.setScalar(0.7);}else wprop(G,'Banner_1',-1.6,-4.9,0,2.2,0,-1);wprop(G,'Lantern_Wall',7.97,2.6,-Math.PI/2,1.9,1,0);}
+  if(decor>=2){wprop(G,'Lantern_Wall',-1.8,4.97,Math.PI,1.9,0,1);prop(G,'Prop_Vine2',-6.1,5.45,0);var mr=rugMesh(2,2.6,1.8);place(mr,-4.2,-0.6,0,0.02);G.add(mr);}
+  if(decor>=3){if(!kitchen)wprop(G,'Banner_2',0.2,-4.9,0,2.2,0,-1);prop(G,'Prop_Vine5',8.1,5.45,0);}
   /* кухня (зал 1): за северной стеной */
   if(kitchen){
     room(G,-2,4,-9,-5,'brick',{S:{skip:true},N:{win:[1]},W:{win:[-7]},E:{win:[-7]},floor:'cobble'});
     var stove=box(1.6,0.9,0.9,mat('stone'),1);place(stove,2.6,-8.4,0,0.45);G.add(stove);
     fireSprite(G,2.6,0.92,-8.3,0.8);
-    prop(G,'Cauldron',0.4,-8.3,0);prop(G,'Table_Large',0.8,-6.6,Math.PI/2);prop(G,'Shelf_Simple',3.95,-6.8,-Math.PI/2,1.4);
+    prop(G,'Cauldron',0.4,-8.3,0);prop(G,'Table_Large',0.8,-6.6,Math.PI/2);prop(G,'Shelf_Simple',4.0,-6.8,-Math.PI/2,1.4);
     prop(G,'Barrel',3.4,-5.6,0);prop(G,'FarmCrate_Apple',-1.3,-8.3,0.2);
     /* запас блюд на столе */
     var FOOD=['food_stew','food_dinner','food_ingredient_ham_cooked','food_ingredient_bun','food_stew','food_ingredient_cheese'];
@@ -313,14 +338,14 @@ function layout(S){
     prop(G,'Shelf_Simple',8.2,1.5,Math.PI/2,1.3);[0,1,2].forEach(function(k){kprop(G,'milk',8.25,1.15+k*0.35,0,1.36,0.4);});
     kprop(G,'hot_chocolate',9.8,-3.45,0.4,0.92,0.3);
     [[11.4,-1.4],[11.4,-0.4],[11.4,0.6],[10.5,1.3],[9.5,1.3],[11.4,1.4]].forEach(function(q,i){var o=place(model('Barrel'),q[0],q[1],i,0);G.add(o);V.wpiles.brewer.push(o);keep.push(o);});
-    st.brewer={x:9.4,z:-1.9,rot:Math.PI};
+    st.brewer={x:9.4,z:-1.6,rot:Math.PI};   // v36.1: дальше от котла, иначе голова уходила в него
     st.brewHelp=[[10.6,-2.2,Math.PI/2],[10.4,0.2,Math.PI/2],[9.0,0.4,-Math.PI/2],[10.2,-0.9,0],[8.8,-0.8,Math.PI]];
   }else st.brewer=null;
   /* веранда (зал 2): настил и навес у входа */
   if(veranda){
     var deck=plane(6.4,4.4,mat('floor'),2.6,1.8);place(deck,5.2,7.2,0,0.04);G.add(deck);
     var roofv=box(6.8,0.08,4.6,mat('fwood'),1);place(roofv,5.2,7.1,0,2.75);roofv.rotation.x=0.12;G.add(roofv);keep.push(roofv);V.vroof=roofv;
-    [[2.2,9.2],[8.2,9.2],[2.2,5.3],[8.2,5.3]].forEach(function(c){var po=box(0.14,2.7,0.14,mat('dwood'),1);place(po,c[0],c[1],0,1.35);G.add(po);});
+    [[2.2,9.2],[8.2,9.2],[2.2,5.6],[8.2,5.6]].forEach(function(c){var po=box(0.14,2.7,0.14,mat('dwood'),1);place(po,c[0],c[1],0,1.35);G.add(po);});
     prop(G,'Prop_WoodenFence_Single',3.2,9.4,0);prop(G,'Prop_WoodenFence_Extension1',7.2,9.4,0);prop(G,'Prop_WoodenFence_Single',8.4,7.2,Math.PI/2);
     if(hall>=5){prop(G,'Lantern_Wall',2.3,9.1,0,2.2);prop(G,'Lantern_Wall',8.1,9.1,0,2.2);}
   }
@@ -335,7 +360,7 @@ function layout(S){
     var rf=box(1.7,0.07,0.42,mat('dwood'),1);place(rf,bx,bz,0,2.08);rf.rotation.x=-0.25;G.add(rf);
     st.board={x:bx,z:bz};
   })();
-  if(hall>=5){prop(G,'Banner_2',1,5.12,0,2.2);var fl=natObj('Flower_3_Group',-0.6,5.8,0.6,0,'#7aa834');if(fl)G.add(fl);var fl2=natObj('Flower_4_Group',2.6,5.8,0.55,1,'#86b03e');if(fl2)G.add(fl2);}
+  if(hall>=5){prop(G,'Banner_2',1,5.5,0,2.2);var fl=natObj('Flower_3_Group',-0.6,5.8,0.6,0,'#7aa834');if(fl)G.add(fl);var fl2=natObj('Flower_4_Group',2.6,5.8,0.55,1,'#86b03e');if(fl2)G.add(fl2);}
   /* v27: кладовая - каменная пристройка к комнате мага (внутри её не видно: крыша всегда на месте, стены не опускаются).
      Сам склад со стеллажами и сундуками - отдельная сцена (экран СКЛАД), см. buildStore */
   var nw=V.walls.length;
@@ -421,18 +446,22 @@ function yard(G){
   var hay2=box(1.0,0.55,0.9,mat('thatch'),1);place(hay2,14.4,-0.6,-0.2,0.28);G.add(hay2);
   prop(G,'Barrel',-2.6,-9.7,0);prop(G,'Barrel',-1.8,-9.9,1);prop(G,'Crate_Wooden',4.8,-9.6,0.3);
   /* верёвка с бельём */
-  var lx0=10.4,lx1=14.2,lz=5.2;
-  [lx0,lx1].forEach(function(x){var po=box(0.1,2.0,0.1,mat('dwood'),1);place(po,x,lz,0,1.0);G.add(po);});
-  var rope=box(lx1-lx0,0.025,0.025,new T.MeshStandardMaterial({color:0xd8c8a0,roughness:1}));rope.castShadow=false;place(rope,(lx0+lx1)/2,lz,0,1.9);G.add(rope);
-  ['#e8e0d0','#6a8ab0','#c86a5a','#e8e0d0'].forEach(function(cl,i){var c=new T.Mesh(new T.PlaneGeometry(0.55,0.7),new T.MeshStandardMaterial({color:cl,roughness:1,side:T.DoubleSide}));c.position.set(lx0+0.6+i*0.85,1.52,lz);c.castShadow=true;G.add(c);});
+  laundry(G,12.3,5.2,0,3.8,['#e8e0d0','#6a8ab0','#c86a5a','#e8e0d0']);
   /* лавка у входа */
   prop(G,'Bench',-3.8,7.2,0,0,0.8);
 }
 /* огонь без своего света: светящееся пятно (лишние точечные лампы дорого стоят на телефонах) */
-function fireSprite(G,x,y,z,size){
-  var sp=new T.Sprite(new T.SpriteMaterial({map:glowTex(),color:0xff9040,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));
-  sp.position.set(x,y+0.25,z+0.15);sp.scale.set(size,size*0.8,1);G.add(sp);
-  V.fires.push({l:null,s:sp,base:1.6,size:size});
+function fireSprite(G,x,y,z,size){fireFX(G,x,y,z,size,null);}
+/* верёвка с бельём между двух столбов: центр x,z, поворот, длина, цвета вещей */
+var CLOTH_MATS={};
+function laundry(G,x,z,rot,len,cols){
+  var L=new T.Group();L.position.set(x,0,z);L.rotation.y=rot||0;G.add(L);
+  [-len/2,len/2].forEach(function(px){var po=box(0.1,2.0,0.1,mat('dwood'),1);po.position.set(px,1.0,0);L.add(po);});
+  var rope=box(len,0.025,0.025,new T.MeshStandardMaterial({color:0xd8c8a0,roughness:1}));rope.castShadow=false;rope.position.set(0,1.9,0);L.add(rope);
+  var n=Math.max(2,Math.floor(len/0.95));
+  for(var i=0;i<n;i++){var cl=cols[i%cols.length];if(!CLOTH_MATS[cl])CLOTH_MATS[cl]=new T.MeshStandardMaterial({color:cl,roughness:1,side:T.DoubleSide});
+    var w=0.45+((i*37)%5)*0.04,h=0.55+((i*53)%4)*0.07,c=new T.Mesh(new T.PlaneGeometry(w,h),CLOTH_MATS[cl]);c.position.set(-len/2+0.5+i*(len-1)/Math.max(1,n-1),1.88-h/2,0);c.rotation.y=0.05*((i%3)-1);c.castShadow=true;L.add(c);}
+  return L;
 }
 function mergeStatic(G,keepList,extra){
   G.updateMatrixWorld(true);
@@ -484,9 +513,80 @@ function glowTex(){
 }
 function fire(G,x,y,z,size){
   var l=new T.PointLight(0xff8a30,1.6,9,1.8);l.position.set(x,y+0.5,z+0.3);G.add(l);
-  var sp=new T.Sprite(new T.SpriteMaterial({map:glowTex(),color:0xff9040,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));
-  sp.position.set(x,y+0.25,z+0.15);sp.scale.set(size,size*0.8,1);G.add(sp);
-  V.fires.push({l:l,s:sp,base:1.6,size:size});
+  fireFX(G,x,y,z,size,l,{smoke:true});
+}
+/* ════════ v36: живой огонь ════════
+   Тело пламени - анимированный атлас (N64 Fire, CC0), сверху языки пламени, искры и дым (Kenney Particle Pack, CC0).
+   Всё спрайтами с аддитивным смешиванием, свет дрожит неровно (сумма синусов с шумом), а не мигает. */
+var FX=null;
+function fxTex(){
+  if(FX)return FX;
+  var L=new T.TextureLoader();
+  function ld(f){var t=L.load(url('fx/'+f));t.colorSpace=T.SRGBColorSpace;return t;}
+  FX={body:ld('body.webp'),flame:ld('flame.png'),ember:ld('ember.png'),smoke:ld('smoke.png')};
+  FX.body.repeat.set(1/6,1/5);
+  FX.tongue=[0,1].map(function(i){var t=FX.flame.clone();t.repeat.set(0.5,1);t.offset.set(i*0.5,0);t.needsUpdate=true;return t;});
+  return FX;
+}
+function fxSprite(map,add,col){
+  var m=new T.SpriteMaterial({map:map,color:col||0xffffff,transparent:true,blending:add?T.AdditiveBlending:T.NormalBlending,depthWrite:false,fog:true});
+  return new T.Sprite(m);
+}
+function fireFX(G,x,y,z,size,light,opt){
+  var X=fxTex(),f={x:x,y:y,z:z+0.15,size:size,l:light,base:light?1.6:0,parts:[],ph:Math.random()*30,seed:Math.random()*100};
+  /* мягкий ореол и тело */
+  f.glow=fxSprite(glowTex(),true,0xff7a28);f.glow.position.set(x,y+0.3*size,f.z+0.05);f.glow.scale.set(size*1.2,size*1.0,1);f.glow.material.opacity=0.45;G.add(f.glow);
+  var bt=X.body.clone();bt.repeat.set(1/6,1/5);bt.needsUpdate=true;
+  f.body=fxSprite(bt,true,0xffffff);f.body.center.set(0.5,0.08);f.body.position.set(x,y-0.05*size,f.z);f.body.scale.set(size*0.95,size*1.25,1);G.add(f.body);f.bt=bt;
+  var nT=size>=0.9?9:size>=0.6?5:3,nE=size>=0.9?5:2,nS=opt&&opt.smoke?3:0;
+  function add(kind,map,blend,n){for(var i=0;i<n;i++){var sp=fxSprite(map,blend,0xffffff);sp.center.set(0.5,0.1);sp.material.opacity=0;G.add(sp);
+    f.parts.push({k:kind,sp:sp,t:Math.random(),life:1,dx:0,dz:0,w:1});}}
+  X.tongue.forEach(function(tt,i){add('t',tt,true,Math.ceil(nT/2)-(i&&nT%2?1:0));});
+  add('e',X.ember,true,nE);add('s',X.smoke,false,nS);
+  f.parts.forEach(function(p){fxRespawn(f,p,true);});
+  V.fires.push(f);
+  return f;
+}
+function fxRespawn(f,p,first){
+  var s=f.size;
+  if(p.k==='t'){p.life=0.45+Math.random()*0.45;p.dx=(Math.random()-0.5)*0.42*s;p.dz=(Math.random()-0.5)*0.2*s;p.w=0.75+Math.random()*0.5;}
+  else if(p.k==='e'){p.life=1.1+Math.random()*0.9;p.dx=(Math.random()-0.5)*0.35*s;p.dz=(Math.random()-0.5)*0.2*s;p.w=Math.random()*6.28;}
+  else{p.life=2.4+Math.random()*1.2;p.dx=(Math.random()-0.5)*0.2*s;p.dz=0;p.w=Math.random()*6.28;}
+  p.t=first?Math.random()*p.life:0;
+}
+var _fc=null;
+function fxUpdate(dt){
+  if(!_fc)_fc=new T.Color();
+  var night=V.night,i,j;
+  for(i=0;i<V.fires.length;i++){
+    var f=V.fires[i],s=f.size,t=V.t+f.seed;
+    /* дрожание: несколько синусов разной частоты и немного шума */
+    var n=0.55+Math.sin(t*7.3)*0.16+Math.sin(t*13.7+1.3)*0.1+Math.sin(t*23.1+2.1)*0.06+Math.random()*0.08;
+    if(f.l){f.l.intensity=f.base*(0.75+n*0.45)*(night?1.4:1);f.l.color.setRGB(1,0.48+n*0.14,0.16+n*0.06);}
+    f.glow.material.opacity=0.25+n*0.25;f.glow.scale.set(s*(1.1+n*0.2),s*(0.95+n*0.15),1);
+    var fr=Math.floor(V.t*30+f.ph)%30;f.bt.offset.set((fr%6)/6,1-(Math.floor(fr/6)+1)/5);
+    f.body.scale.set(s*(0.9+n*0.1),s*(1.15+n*0.2),1);
+    for(j=0;j<f.parts.length;j++){
+      var p=f.parts[j];p.t+=dt;
+      if(p.t>=p.life)fxRespawn(f,p,false);
+      var q=p.t/p.life,sp=p.sp,m=sp.material;
+      if(p.k==='t'){
+        var hh=s*(0.55+0.5*Math.sin(Math.PI*Math.min(1,q*1.25)))*p.w;
+        sp.position.set(f.x+p.dx*(1-q*0.6)+Math.sin(t*9+j)*0.03*s,f.y+q*0.55*s,f.z+p.dz);
+        sp.scale.set(hh*0.62,hh,1);
+        _fc.setRGB(1,0.95-q*0.6,0.62-q*0.55);m.color.copy(_fc);
+        m.opacity=Math.pow(Math.sin(Math.PI*q),0.8)*0.85;
+      }else if(p.k==='e'){
+        sp.position.set(f.x+p.dx+Math.sin(p.w+q*7)*0.12*s*q,f.y+0.15*s+q*1.5*s,f.z+p.dz);
+        var es=0.06*s*(1-q*0.5);sp.scale.set(es,es,1);
+        m.color.setRGB(1,0.62-q*0.3,0.2);m.opacity=(q<0.1?q*10:1)*(1-q)*0.95;
+      }else{
+        sp.position.set(f.x+p.dx+Math.sin(p.w+q*3)*0.15*s,f.y+0.7*s+q*1.9*s,f.z);
+        var ss=s*(0.45+q*0.9);sp.scale.set(ss,ss,1);
+        m.color.setRGB(0.3,0.28,0.27);m.opacity=Math.sin(Math.PI*q)*0.22;
+      }
+    }
+  }
 }
 function setNight(on){
   if(!V||V.night===on)return;
@@ -497,9 +597,9 @@ function setNight(on){
     V.hemi.intensity=0.95;V.hemi.color.set(0xc8b8a0);V.sun.intensity=0.25;V.inner.intensity=0;
     V.scene.background.set(0x0c0806);V.scene.fog.color.set(0x0c0806);return;
   }
-  V.hemi.intensity=on?0.6:1.4;V.hemi.color.set(on?0x7088c0:0xe0ecff);
-  V.sun.intensity=on?0.45:1.8;V.sun.color.set(on?0x9ab0e8:0xfff0d8);
-  V.scene.background.set(on?0x0b1426:0x8fb4cc);V.scene.fog.color.set(on?0x0b1426:0x8fb4cc);
+  V.hemi.intensity=on?0.75:DAY.hemiI;V.hemi.color.set(on?0x8098d0:DAY.hemi);V.hemi.groundColor.set(on?0x2a3040:DAY.ground);
+  V.sun.intensity=on?0.55:DAY.sunI;V.sun.color.set(on?0xa8bcf0:DAY.sun);
+  V.scene.background.set(on?0x16244a:DAY.sky);V.scene.fog.color.set(on?0x16244a:DAY.sky);
   V.inner.intensity=on?2.2:0.8;
   if(V.glass){V.glass.emissiveIntensity=on?1.2:0;}
 }
@@ -522,9 +622,10 @@ function furnModel(it,G,marks){
     }
     var sx=lv===1?0.55:lv===3?1.35:1;
     var tb=p('Table_Large',0,0,0);tb.scale.x=sx;
-    if(lv===1){p('Stool',0,-0.72,0);p('Stool',0,0.72,0);p('Mug',-0.25,0,0.4,0.82);p('Table_Plate',0.3,0.05,0,0.82);}
+    /* v36.1: табуреты и лавки чуть дальше от стола: сидящий садится тазом на 9 см позади точки места */
+    if(lv===1){p('Stool',0,-0.81,0);p('Stool',0,0.81,0);p('Mug',-0.25,0,0.4,0.82);p('Table_Plate',0.3,0.05,0,0.82);}
     else{
-      var b1=p('Bench',0,-0.85,0),b2=p('Bench',0,0.85,Math.PI);b1.scale.x=sx;b2.scale.x=sx;
+      var b1=p('Bench',0,-0.94,0),b2=p('Bench',0,0.94,Math.PI);b1.scale.x=sx;b2.scale.x=sx;
       p('Mug',-0.6*sx,0.05,0,0.82);p('Table_Plate',0.5*sx,0.1,0,0.82);p('CandleStick_Triple',0,-0.1,0,0.82);
       if(lv===3){p('Mug',1.5,-0.1,1,0.82);p('Table_Plate',-1.4,0.1,0,0.82);p('Bottle_1',0.6,-0.2,0,0.82);}
     }
@@ -768,7 +869,7 @@ function natObj(name,x,z,sc,ry,tint){
   var g=new T.Group();
   ps.forEach(function(p){
     var m=p.mat;
-    if(p.leaf){var k=m.uuid+(tint||'#6a9a2a');if(!NAT_TINT[k]){NAT_TINT[k]=m.clone();NAT_TINT[k].color.set(tint||'#6a9a2a');}m=NAT_TINT[k];}
+    if(p.leaf){var k=m.uuid+(tint||'#86c03a');if(!NAT_TINT[k]){NAT_TINT[k]=m.clone();NAT_TINT[k].color.set(tint||'#86c03a');}m=NAT_TINT[k];}
     var mesh=new T.Mesh(p.geo,m);mesh.matrixAutoUpdate=false;mesh.matrix.copy(p.m);mesh.castShadow=true;mesh.userData.shared=true;g.add(mesh);
   });
   g.position.set(x,0,z);g.rotation.y=ry||0;g.scale.setScalar(sc||1);
@@ -1137,6 +1238,7 @@ function sync(S){
   placeMasters(S,false);
   syncCustomers(S);
   buildNature();
+  buildDeco();
   syncPet(S);
   syncProd(S);
   V.S=S;
@@ -1250,6 +1352,8 @@ function mealFor(N,id){
 }
 /* v25: пути по сетке зала (hall.js). Внутрь: с дороги к двери, дальше A* до места или очереди. Наружу: обратно к двери и на дорогу */
 function roadOut(out){return [PATH_IN[1],PATH_IN[0],[out*ROAD_END,ROAD_Z]];}
+/* v36.1: в позе сидя таз на высоте 0.88 м, а табурет 0.58, лавка 0.53: опускаем сидящего до сиденья (ноги уходят под пол под столом) */
+function seatY(seat){var it=null;liveFurn().forEach(function(f){if(f.id===seat.f)it=f;});return it&&(it.lv||1)>1?-0.24:-0.19;}
 function seatPath(N,key){
   var r=HL().seatPath(liveFurn(),hallLvl(),{x:N.x,z:N.z},key);
   if(!r)return null;N.seat=r.seat;N.appr=r.appr;return r.path;
@@ -1327,16 +1431,21 @@ var NATURE=[
   /* модель, сколько при высокой графике, кольцо от центра, масштаб, вид */
   ['CommonTree_1',10,[13.5,40],[0.9,1.25],'tree'],['CommonTree_2',10,[13.5,40],[0.9,1.25],'tree'],['CommonTree_3',6,[20,50],[0.9,1.2],'tree'],
   ['CommonTree_5',8,[24,55],[0.9,1.3],'tree'],['Pine_1',6,[26,58],[1,1.3],'tree'],['Pine_5',8,[30,62],[1,1.4],'tree'],
+  /* v36.1: лес за посёлком, чтобы за домами не было пустого поля */
+  ['CommonTree_1',34,[47,80],[1.1,1.6],'tree'],['CommonTree_2',34,[47,80],[1.1,1.6],'tree'],['CommonTree_5',28,[50,85],[1.1,1.6],'tree'],
+  ['Pine_1',26,[52,88],[1.2,1.6],'tree'],['Pine_5',30,[55,90],[1.2,1.7],'tree'],['Bush_Common',24,[44,70],[0.8,1.2],'bush'],
   ['Bush_Common',18,[9,26],[0.6,1.0],'bush'],['Bush_Common_Flowers',12,[8.5,22],[0.6,0.95],'bush'],
   ['Rock_Medium_1',5,[12,34],[0.3,0.7],'rock'],['Rock_Medium_2',5,[12,34],[0.3,0.7],'rock'],
   ['Flower_3_Group',14,[8,20],[0.35,0.6],'small'],['Flower_4_Group',10,[8,20],[0.35,0.6],'small'],['Fern_1',10,[9,24],[0.5,0.8],'small'],
   ['Grass_Common_Short',70,[7.5,30],[0.45,0.8],'grass'],['Grass_Common_Tall',36,[8,30],[0.4,0.7],'grass'],['Clover_1',20,[7.5,22],[0.4,0.7],'grass']
 ];
 var NAT_DENS={low:{tree:0.4,bush:0.5,rock:1,small:0.5,grass:0},medium:{tree:0.65,bush:0.8,rock:1,small:0.8,grass:0.5},high:{tree:1,bush:1,rock:1,small:1,grass:1},ultra:{tree:1,bush:1,rock:1,small:1,grass:1}};
-var LEAF_PAL=['#6a9a2a','#7aa834','#5c8c26','#86b03e'];
+var LEAF_PAL=['#86c03a','#98cc46','#74b030','#a6d256','#b4cc4a'];   // v35: листва светлее и разнее
 /* занятые места: дом со складом, двор с забором, дорожка, дорога (деревья и кусты туда не ставим) */
 function natFree(x,z,kind){
   if(x>-16&&x<17&&z>-13.5&&z<14)return false;   // v27: двор с изгородью
+  if(Math.abs(x-PEN.x)<PEN.w/2+2&&Math.abs(z-PEN.z)<PEN.d/2+2)return false;
+  for(var di=0;di<DECO.length;di++){var dd=DECO[di];if(Math.hypot(x-dd[1],z-dd[2])<(dd[5]||4)+(kind==='tree'?2:0.5))return false;}
   for(var id in SITES){var st=SITES[id],r=st.r+(kind==='grass'?-1.5:kind==='tree'?2.5:0.5);if(Math.hypot(x-st.x,z-st.z)<r)return false;}
   for(var hid in HOUSES){var hs=HOUSES[hid],hr=hs.r+(kind==='grass'?-1.5:kind==='tree'?2.5:0.5);if(Math.hypot(x-hs.x,z-hs.z)<hr)return false;}
   if(kind!=='grass'&&z>13.6&&z<19.4)return false;
@@ -1352,12 +1461,135 @@ function NATURE_PUT(G,ps,pos,kind){
     pos.forEach(function(o,i){
       tr.compose(v.set(o.x,0,o.z),qt.setFromEuler(e.set(0,o.ry,0)),sc.set(o.s,o.s,o.s));
       m4.multiplyMatrices(tr,p.m);im.setMatrixAt(i,m4);
-      if(p.leaf)col.copy(pal[o.pi%pal.length]).multiplyScalar(o.v);else col.setRGB(o.v,o.v,o.v);
+      if(p.leaf)col.copy(pal[o.pi%pal.length]).multiplyScalar(o.v*1.15);else col.setRGB(o.v,o.v,o.v);
       im.setColorAt(i,col);
     });
     im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
     im.castShadow=kind==='tree'||kind==='bush'||kind==='rock';im.receiveShadow=false;
     G.add(im);
+  });
+}
+/* ════════ v36: посёлок вокруг (дома KayKit, мельница, колодец, рынок, фонтан, лавки, фонари) и загон с животными ════════
+   [модель, x, z, поворот (null - лицом к таверне), масштаб, радиус (природа сюда не ставится)] */
+var DECO=[
+  ['h_home_A_red',-34,-8,null,7.5,5],['h_home_B_blue',-31,-24,null,7,5],['h_church',-13,-33,null,7.5,6],['h_home_A_yellow',13,-33,null,7.5,5],
+  ['h_home_B_green',33,-25,null,7,5],['h_home_A_green',38,-4,null,7.5,5],['h_tower',41,10,null,6,4],['h_home_B_red',40,24,null,7,5],
+  ['h_windmill',-37,27,null,7.5,6],['h_home_A_red',-30,40,null,7,5],['h_market',36,42,null,6,6],['h_home_B_blue',-41,4,null,6.5,4],
+  ['k_fountain',-10.5,9.5,0,2.1,0.1],['h_well',12,-9,-0.6,2.6,0.1],
+  ['k_stall_red',10.6,11.3,Math.PI,2.3,0.1],['k_stall_green',13.6,11.3,Math.PI,2.3,0.1],['k_stall_bench',12.1,9.9,Math.PI/2,2.3,0.1],
+  ['k_cart',10.5,21.8,0.9,2,2.5],['h_sack',-9.5,21.2,0.4,2.4,1.5],['h_wheelbarrow',-12,21.6,1.2,2.4,1.5],['h_barrel',4.2,21.4,0,2.4,1.2],['h_crate',2.8,21.6,0.5,2.2,1.2],
+  ['k_banner_red',-15.2,12.2,Math.PI/2,2.2,0.1],['k_banner_green',16.8,12.2,-Math.PI/2,2.2,0.1]
+];
+var PEN={x:-26,z:-18,w:10,d:6};   // загон для животных на западе, между охотниками и лесопилкой
+function buildDeco(){
+  if(!V||V.deco||!KIT.h_home_A_red)return;
+  var G=new T.Group();V.deco=G;V.scene.add(G);V.mills=[];V.lamps=[];var di=0;
+  DECO.forEach(function(d){
+    var o=model(d[0]),rot=d[3]===null?Math.atan2(-d[1],6-d[2]):d[3];
+    o.position.set(d[1],0,d[2]);o.rotation.y=rot;o.scale.setScalar(d[4]);G.add(o);
+    if(d[0]==='h_windmill')o.traverse(function(n){if(/fan/.test(n.name))V.mills.push(n);});
+    if(/^h_(home|church|tower|windmill|market)/.test(d[0]))houseYard(G,d,rot,di++);
+  });
+  /* фонари вдоль дороги; ночью светятся */
+  for(var lx=-38;lx<=38;lx+=11){
+    [14.1,18.9].forEach(function(lz,k){
+      if(Math.abs(lx+(k?5.5:0)-1)<2.5)return;
+      var x=lx+(k?5.5:0),o=model('k_lantern');o.position.set(x,0,lz);o.scale.setScalar(2.1);G.add(o);
+      var gl=fxSprite(glowTex(),true,0xffc060);gl.position.set(x,3.05,lz);gl.scale.set(1.2,1.2,1);gl.material.opacity=0;G.add(gl);V.lamps.push(gl);
+    });
+  }
+  /* загон: изгородь по краю, внутри животные */
+  var P=PEN,hx=P.w/2,hz=P.d/2;
+  for(var fx=-hx+1;fx<hx;fx+=2){[-hz,hz].forEach(function(fz){if(fz>0&&Math.abs(fx)<1.5)return;var f=model('Prop_WoodenFence_Single');f.position.set(P.x+fx,0,P.z+fz);G.add(f);});}
+  for(var fz2=-hz+1;fz2<hz;fz2+=2){[-hx,hx].forEach(function(fx2){var f=model('Prop_WoodenFence_Single');f.position.set(P.x+fx2,0,P.z+fz2);f.rotation.y=Math.PI/2;G.add(f);});}
+  loadAnimals(G);
+  if(V.renderer)V.renderer.shadowMap.needsUpdate=true;
+}
+/* v36.1: у каждого дома посёлка своя мелочь: вытоптанная тропинка к посёлку, колодец или бельё, дрова, бочки, мешки, камни, цветы */
+var PATH_MAT=null;
+function pathMat(){
+  if(PATH_MAT)return PATH_MAT;
+  var c=document.createElement('canvas');c.width=64;c.height=4;var x=c.getContext('2d'),g=x.createLinearGradient(0,0,64,0);
+  g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(0.28,'rgba(255,255,255,0.85)');g.addColorStop(0.5,'#fff');g.addColorStop(0.72,'rgba(255,255,255,0.85)');g.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=g;x.fillRect(0,0,64,4);var am=new T.CanvasTexture(c);am.wrapT=T.RepeatWrapping;
+  var base=mat('yard'),t=base.map?base.map.clone():null;if(t){t.wrapS=t.wrapT=T.RepeatWrapping;t.needsUpdate=true;}
+  PATH_MAT=new T.MeshStandardMaterial({map:t,alphaMap:am,color:0xe4cfa6,roughness:1,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  return PATH_MAT;
+}
+function trail(G,x0,z0,x1,z1,w){
+  var len=Math.hypot(x1-x0,z1-z0);if(len<0.5)return;
+  var g=new T.PlaneGeometry(w,len,1,Math.max(2,Math.round(len/2)));g.rotateX(-Math.PI/2);
+  var pos=g.attributes.position,uv=g.attributes.uv;
+  for(var i=0;i<pos.count;i++){var zz=pos.getZ(i);pos.setX(i,pos.getX(i)+Math.sin(zz*0.45)*0.35);uv.setXY(i,uv.getX(i),(zz+len/2)/w);}
+  var m=new T.Mesh(g,pathMat());m.position.set((x0+x1)/2,0.025,(z0+z1)/2);m.rotation.y=Math.atan2(x1-x0,z1-z0);m.receiveShadow=true;G.add(m);
+}
+function houseYard(G,d,rot,i){
+  var x=d[1],z=d[2],s=d[4],fx=Math.sin(rot),fz=Math.cos(rot),sx=fz,sz=-fx,r=function(k){return rnd(i*31+k);};
+  /* тропинка от двери в сторону посёлка */
+  var L=Math.min(14,Math.max(6,Math.hypot(x,z-6)-30));
+  trail(G,x+fx*s*0.45,z+fz*s*0.45,x+fx*(s*0.45+L),z+fz*(s*0.45+L),1.25);
+  /* v36.1: вещи двора не должны заходить в стены дома: если точка внутри пятна дома, выносим её вперёд или назад */
+  var hw=s*0.5+0.5,hd=(d[5]||s)*0.5+0.5;
+  function at(a,b){if(Math.abs(a)<hd&&Math.abs(b)<hw)a=(a<0?-1:1)*(hd+0.3);return {x:x+fx*a+sx*b,z:z+fz*a+sz*b};}
+  function put(name,a,b,ry,sc,y){var q=at(a,b),o=model(name);o.position.set(q.x,y||0,q.z);o.rotation.y=rot+(ry||0);o.scale.setScalar(sc||1);G.add(o);return o;}
+  var side=r(1)<0.5?-1:1;
+  if(r(2)<0.4)put('h_well',s*0.35,side*s*0.75,r(3)*6,2.4);
+  else if(r(2)<0.75){var q=at(-s*0.1,-side*s*0.85);laundry(G,q.x,q.z,rot+Math.PI/2,3.2,[['#f0e8d8','#d86a5a','#6a9ad0','#f0d070'][Math.floor(r(4)*4)],'#f0e8d8',['#8ab86a','#c88ad0','#e8a050'][Math.floor(r(5)*3)]]);}
+  if(r(6)<0.7)put('Wood_Log_Stack',-s*0.05,side*s*0.62,Math.PI/2,1.1);
+  if(r(7)<0.6)put('h_barrel',s*0.38,-side*s*0.5,r(8)*6,2.2);
+  if(r(9)<0.5)put('h_sack',s*0.42,-side*s*0.36,r(10)*6,2.2);
+  if(r(11)<0.4)put('h_crate',s*0.3,side*s*0.42,r(12),2.0);
+  if(r(13)<0.45){var hq=at(-s*0.3,-side*s*0.8),hay=box(1.2,0.6,0.9,mat('thatch'),1);place(hay,hq.x,hq.z,rot+r(14),0.3);G.add(hay);}
+  for(var k=0;k<3;k++){var a=(r(20+k)-0.3)*s*1.2,b=(r(30+k)-0.5)*s*1.8,q2=at(a,b);
+    var nm=k<2?['Rock_Medium_1','Rock_Medium_2','Flower_3_Group','Flower_4_Group'][Math.floor(r(40+k)*4)]:'Bush_Common_Flowers';
+    var o=natObj(nm,q2.x,q2.z,nm.indexOf('Rock')===0?0.35+r(50+k)*0.3:0.5+r(50+k)*0.3,r(60+k)*6);if(o)G.add(o);}
+}
+/* животные Quaternius (CC0): корова и лошадь ходят по загону, овцы и свинья стоят и иногда подпрыгивают */
+var ANIMALS=[['Cow',0.2,'walk'],['Cow',0.19,'walk'],['Horse',0.22,'walk'],['Sheep',0.2,'idle'],['Sheep',0.18,'idle'],['Sheep',0.2,'idle'],['Pig',0.15,'idle']];
+function loadAnimals(G){
+  if(!window.AcSkel||V.animals)return;V.animals=[];
+  var cache={};
+  function get(n){if(!cache[n])cache[n]=fetchBuf('models/an_'+n.toLowerCase()+'.glb',function(){}).then(function(buf){return new Promise(function(ok,bad){loader.parse(buf,'',ok,bad);});});return cache[n];}
+  ANIMALS.forEach(function(a,i){
+    get(a[0]).then(function(g){
+      if(!V||V.deco!==G)return;
+      var SK=SKU||(SKU=window.AcSkel(T)),o=SK.clone(g.scene);o.scale.setScalar(a[1]);
+      o.traverse(function(m){if(m.isMesh){m.castShadow=true;m.frustumCulled=false;}});
+      var x=PEN.x+(Math.random()-0.5)*(PEN.w-3),z=PEN.z+(Math.random()-0.5)*(PEN.d-2.5);
+      o.position.set(x,0,z);o.rotation.y=Math.random()*6.28;G.add(o);
+      var mx=new T.AnimationMixer(o),clips={};g.animations.forEach(function(c){clips[c.name.replace(/^.*\|/,'')]=c;});
+      var an={o:o,mx:mx,clips:clips,kind:a[2],cur:null,t:Math.random()*4,tx:x,tz:z,speed:a[0]==='Horse'?1.1:0.7};
+      animalPlay(an,'Idle');V.animals.push(an);
+    },function(e){console.warn('[tavern3d] animal',a[0],e);});
+  });
+}
+function animalPlay(an,name){
+  var c=an.clips[name]||an.clips.Idle;if(!c||an.cur===name)return;
+  var a=an.mx.clipAction(c);a.reset().play();if(an.act)a.crossFadeFrom(an.act,0.3,false);
+  if(name==='Jump'){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true;}
+  an.act=a;an.cur=name;
+}
+function animalsUpdate(dt){
+  if(!V.animals)return;
+  var vis=V.mode==='city';
+  V.animals.forEach(function(an){
+    an.o.visible=vis;if(!vis)return;
+    an.mx.update(dt);an.t-=dt;
+    var o=an.o,dx=an.tx-o.position.x,dz=an.tz-o.position.z,d=Math.hypot(dx,dz);
+    if(an.kind==='walk'&&d>0.15){
+      var st=Math.min(d,an.speed*dt);o.position.x+=dx/d*st;o.position.z+=dz/d*st;
+      var want=Math.atan2(dx,dz),cur=o.rotation.y,df=((want-cur+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;o.rotation.y=cur+df*Math.min(1,dt*4);
+      animalPlay(an,an.clips.WalkSlow?'WalkSlow':'Walk');
+      return;
+    }
+    if(an.cur==='Jump'&&an.act&&!an.act.isRunning())animalPlay(an,'Idle');
+    else if(an.cur!=='Jump')animalPlay(an,'Idle');
+    if(an.t<=0){
+      an.t=3+Math.random()*6;
+      if(an.kind==='walk'){an.tx=PEN.x+(Math.random()-0.5)*(PEN.w-3);an.tz=PEN.z+(Math.random()-0.5)*(PEN.d-2.5);}
+      else if(Math.random()<0.35)animalPlay(an,'Jump');
+      else o.rotation.y+=(Math.random()-0.5)*1.2;
+    }
   });
 }
 function buildNature(){
@@ -1397,10 +1629,70 @@ function setMage(av,mode){
   if(!av._saved)av._saved={p:av.root.position.clone(),r:av.root.rotation.clone(),parent:av.root.parent};
   V.scene.add(av.root);
   var p=mode==='sleep'?V.st.mageBed:V.st.mageSit;
-  av.root.position.set(p.x,mode==='sleep'?0.55:0.05,p.z);av.root.rotation.set(0,p.rot,0);
+  av.root.position.set(p.x,mode==='sleep'?0.55:SIT_Y,p.z);av.root.rotation.set(0,p.rot,0);
   if(av.staffHolder)av.staffHolder.visible=false;
   if(mode==='sleep')av.play('sleep',0.3);else av.play('Sitting_Idle_Loop',0.4);
   mageCycT=6+Math.random()*6;
+  MW={x:p.x,z:p.z,rot:p.rot,path:[],act:'fire',t:12+Math.random()*12,sit:mode!=='sleep'};
+}
+/* ════════ v36.1: маг ходит по таверне ════════
+   Сидит у камина, греется, болтает с хозяйкой у стойки, смотрит в окно, роется в сундуке, листает книги.
+   Когда в очереди его свиток (маг дома), идёт в свою комнату за стол и пишет. */
+var SIT_Y=-0.25,MW=null,_cp=null,_cp2=null;
+var MAGE_SPOTS={
+  warm:{x:2.3,z:-2.75,rot:Math.PI,anim:'Idle_Loop',t:[6,10]},
+  counter:{x:5.3,z:-1.75,rot:Math.PI,anim:'Idle_Talking_Loop',t:[7,12]},
+  window:{x:5,z:4.3,rot:0,anim:'Idle_Loop',t:[5,9]},
+  chest:{x:-2.9,z:-3.7,rot:Math.PI,anim:'Interact',t:[4,6],room:true},
+  books:{x:-4.95,z:3,rot:-Math.PI/2,anim:'Idle_Loop',t:[5,8],room:true,bed:2}
+};
+function mageCrafting(){
+  var S=V.S;if(!S||S.place!=='home'||!window.acGame)return false;
+  var act=acGame.activeSet(),q=S.queue;for(var i=0;i<q.length;i++)if(q[i].m==='mage'&&act[i])return true;return false;
+}
+function inRoom(p){return p.x<-2;}
+/* дорога: по залу в обход мебели, в комнату мага через проём в перегородке */
+function mageRoute(a,b){
+  var D1={x:-1.1,z:1.7},D2={x:-2.9,z:1.9},pts=[];
+  function hall(f,t){var r=hallPath(f,t);return r&&r.length?r:[[t.x,t.z]];}
+  if(inRoom(a)&&inRoom(b))pts=[[b.x,b.z]];
+  else if(!inRoom(a)&&!inRoom(b))pts=hall(a,b);
+  else if(inRoom(a))pts=[[D2.x,D2.z],[D1.x,D1.z]].concat(hall(D1,b));
+  else pts=hall(a,D1).concat([[D2.x,D2.z],[b.x,b.z]]);
+  return pts.map(function(q){return {x:q[0],z:q[1]};});
+}
+function mageGo(act){
+  var st=V.st,tg=act==='fire'?st.mageSit:act==='desk'?st.mageDesk:MAGE_SPOTS[act];if(!tg)return;
+  MW.act=act;MW.sit=false;MW.path=mageRoute({x:MW.x,z:MW.z},tg);MW.tg=tg;
+  mageRef.play('Walk_Loop',0.25);
+}
+function mageArrive(){
+  var tg=MW.tg,act=MW.act;MW.x=tg.x;MW.z=tg.z;MW.rot=tg.rot;
+  if(act==='fire'||act==='desk'){MW.sit=true;mageRef.play(act==='desk'?'Sitting_Talking_Loop':'Sitting_Idle_Loop',0.35);MW.t=act==='desk'?4:15+Math.random()*20;mageCycT=6+Math.random()*6;}
+  else{mageRef.play(tg.anim,0.3);MW.t=tg.t[0]+Math.random()*(tg.t[1]-tg.t[0]);}
+}
+function mageNext(){
+  var bed=V.S&&V.S.build?V.S.build.bedroom||0:0;
+  var list=['fire','fire','warm','counter','window','chest'];if(bed>=2)list.push('books');
+  var n;do{n=list[Math.floor(Math.random()*list.length)];}while(n===MW.act&&list.length>1);
+  mageGo(n);
+}
+function mageWalk(dt){
+  if(!_cp){_cp=new T.Vector3();_cp2=new T.Vector3();}
+  if(!MW||mageMode==='sleep')return;
+  var craft=mageCrafting();
+  if(craft&&MW.act!=='desk'&&(!MW.path.length||MW.tg!==V.st.mageDesk))mageGo('desk');
+  if(MW.path.length){
+    var p=MW.path[0],dx=p.x-MW.x,dz=p.z-MW.z,d=Math.hypot(dx,dz),stp=1.35*dt;
+    if(d<=stp){MW.x=p.x;MW.z=p.z;MW.path.shift();if(!MW.path.length)mageArrive();}
+    else{MW.x+=dx/d*stp;MW.z+=dz/d*stp;var want=Math.atan2(dx,dz),df=((want-MW.rot+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;MW.rot+=df*Math.min(1,dt*8);}
+  }else{
+    MW.t-=dt;
+    if(MW.act==='desk'){if(!craft&&MW.t<=0)mageNext();}
+    else if(MW.t<=0)mageNext();
+    if(MW.sit&&MW.act==='fire'){mageCycT-=dt;if(mageCycT<=0){var dk=mageRef.curName!=='sitDrink'&&Math.random()<0.5;mageRef.play(dk?'sitDrink':'Sitting_Idle_Loop',0.35);mageCycT=dk?2.66:6+Math.random()*8;}}
+  }
+  mageRef.root.position.set(MW.x,MW.sit?SIT_Y:0,MW.z);mageRef.root.rotation.set(0,MW.rot,0);
 }
 function releaseMage(){
   var av=mageRef;mageRef=null;mageMode='';
@@ -1505,8 +1797,8 @@ function updateCamera(dt){
   /* туман отодвигается вместе с камерой: на виде всего посёлка дома не тонут в дымке */
   /* v27: в таверне туман ближе, двор и изгородь видны, дальше дымка; на складе вокруг темнота */
   if(V.mode==='store'){V.scene.fog.near=V.dist+4;V.scene.fog.far=V.dist+16;}
-  else if(V.mode==='tavern'){V.scene.fog.near=V.dist+6;V.scene.fog.far=V.dist+34;}
-  else{V.scene.fog.near=V.dist+18;V.scene.fog.far=V.dist+100;}
+  else if(V.mode==='tavern'){V.scene.fog.near=V.dist+14;V.scene.fog.far=V.dist+60;}
+  else{V.scene.fog.near=V.dist+42;V.scene.fog.far=V.dist+125;}   // v36.1: лёгкая дымка у самого края, за лесом
 }
 /* стены со стороны камеры опускаются до низкого бортика, как в The Sims */
 var _d=null;
@@ -1582,7 +1874,10 @@ function update(dt){
   V.t+=dt;
   updateCamera(dt);updateWalls(dt);
   if(V.vroof)V.vroof.visible=V.mode==='city';   // навес веранды виден только в городе
-  V.fires.forEach(function(f,i){var fl=0.8+Math.sin(V.t*13+i)*0.12+Math.random()*0.12;if(f.l)f.l.intensity=f.base*fl*(V.night?1.4:1);f.s.scale.set(f.size*fl,f.size*0.8*fl,1);});
+  fxUpdate(dt);
+  if(V.mills)V.mills.forEach(function(m){m.rotation.z+=dt*0.6;});
+  if(V.lamps){var lo=V.night?0.75+Math.sin(V.t*3)*0.05:0;V.lamps.forEach(function(l){l.material.opacity=lo;});}
+  animalsUpdate(dt);
   for(var key in V.npcs){
     var N=V.npcs[key];
     if(N.waitT>0){N.waitT-=dt;}
@@ -1595,7 +1890,8 @@ function update(dt){
       }
       else{N.x+=dx/d*step;N.z+=dz/d*step;}
       var want=Math.atan2(dx,dz),dr=((want-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr*Math.min(1,dt*10);
-      if(N.av&&N.av.curName!=='Walk_Loop')N.av.play('Walk_Loop',0.2);
+      var wn=N.carry?'Walk_Carry_Loop':'Walk_Loop';   // v36.1: с ношей идёт с вытянутыми руками, ящик у груди
+      if(N.av&&N.av.curName!==wn)N.av.play(wn,0.2);
       if(!N.path.length){
         if(N.leaving){removeNpc(N);continue;}
         if(N.guest)N.sitNow=true;
@@ -1603,14 +1899,17 @@ function update(dt){
       }
     }
     if(N.sitNow&&N.av&&!N.path.length){
-      N.sitNow=false;N.x=N.seat.x;N.z=N.seat.z;N.rot=N.seat.rot;N.y=0.05;
+      N.sitNow=false;N.x=N.seat.x;N.z=N.seat.z;N.rot=N.seat.rot;N.y=seatY(N.seat);
       var fed=mealFor(N,+key.slice(2));
       N.anim=rnd(+key.slice(2)*1.7)<0.5?'Sitting_Talking_Loop':'Sitting_Idle_Loop';N.av.play(N.anim,0.3);
       N.cyc=fed?ACT.sitFed:ACT.sit;N.cycT=4+Math.random()*6;
     }else if(N.guest&&!N.path.length){/* сидит */}
     else if(N.cust&&N.av&&!N.path.length){setAnim(N,N.slot===0?ACT.custTalk:ACT.custWait);var dr2=((Math.PI-N.rot+Math.PI*3)%(Math.PI*2))-Math.PI;N.rot+=dr2*Math.min(1,dt*6);}
     if(N.cyc&&N.av&&!N.path.length&&!N.sitNow){N.cycT-=dt;if(N.cycT<=0)pickCyc(N);}
-    if(N.carry){var cr=N.rot;N.carry.position.set(N.x+Math.sin(cr)*0.32,N.carryY||1,N.z+Math.cos(cr)*0.32);N.carry.rotation.y=cr;N.carry.visible=onScreen(key);}
+    if(N.carry){if(!_cp){_cp=new T.Vector3();_cp2=new T.Vector3();}var cr=N.rot,ch=N.av&&N.av.hand;
+      if(ch&&N.av.root.visible){ch.getWorldPosition(_cp);var hr=N.av.bones&&N.av.bones.hand_r;if(hr){hr.getWorldPosition(_cp2);_cp.add(_cp2).multiplyScalar(0.5);}N.carry.position.set(_cp.x+Math.sin(cr)*0.12,_cp.y-0.12,_cp.z+Math.cos(cr)*0.12);}
+      else N.carry.position.set(N.x+Math.sin(cr)*0.34,N.carryY||1,N.z+Math.cos(cr)*0.34);
+      N.carry.rotation.y=cr;N.carry.visible=onScreen(key);}
     if(N.av){var vis=onScreen(key);N.av.root.visible=vis;if(N.meal)N.meal.visible=vis;
       if(vis){N.av.root.position.set(N.x,N.y||0,N.z);N.av.root.rotation.y=N.rot;N.av.update(dt,'npc');}}
   }
@@ -1622,7 +1921,7 @@ function update(dt){
   if(mageRef)mageRef.root.visible=tav;
   if(mageRef&&tav){mageRef.update(dt,'npc');
     /* v21: маг за столом иногда отпивает из кружки */
-    if(mageMode==='sit'){mageCycT-=dt;if(mageCycT<=0){var dk=mageRef.curName!=='sitDrink'&&Math.random()<0.5;mageRef.play(dk?'sitDrink':'Sitting_Idle_Loop',0.35);mageCycT=dk?2.66:6+Math.random()*8;}}
+    mageWalk(dt);
     if(mageMode==='sleep'){zzT-=dt;if(zzT<=0&&mageRef.head)zzT=1.2,spawnZ();}
   }
   for(var i=zz.length-1;i>=0;i--){var z=zz[i];z.t+=dt;z.s.position.y+=dt*0.4;z.s.material.opacity=1-z.t/2.2;if(z.t>2.2){V.scene.remove(z.s);z.s.material.dispose();zz.splice(i,1);}}
@@ -1645,7 +1944,7 @@ function setActive(on,host){
 }
 function resetView(){if(!V)return;var v0=VIEW0[VIEW0[V.mode]?V.mode:'tavern'];V.goal.az=v0.az;V.goal.pol=v0.pol;V.goal.dist=v0.dist;V.goal.target.set(v0.t[0],v0.t[1],v0.t[2]);}
 
-window.Tavern3D={masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_LOOK[id]):null;},init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
+window.Tavern3D={get _mw(){return MW;},get mageOn(){return !!mageRef;},get night(){return !!(V&&V.night);},masterLook:function(id){return MASTER_LOOK[id]?fullLook(MASTER_LOOK[id]):null;},init:init,load:load,build:build,sync:sync,update:update,resize:resize,setActive:setActive,setMage:setMage,releaseMage:releaseMage,
   resetView:resetView,setMode:setMode,get mode(){return V?V.mode:'tavern';},bytesNeeded:bytesNeeded,stats:function(){if(!V)return null;var n=0,tri=0;V.scene.traverse(function(o){if(o.isMesh&&o.visible){n++;var g=o.geometry;tri+=g.index?g.index.count/3:g.attributes.position.count/3;}});var np=Object.keys(V.npcs),nr=np.filter(function(k){return V.npcs[k].ready;}).length;return {npcs:np.length,npcReady:nr,npcPos:np.map(function(k){var N=V.npcs[k];return k+':'+N.x.toFixed(1)+','+N.z.toFixed(1);}).join(' '),meshes:n,tri:Math.round(tri),calls:V.renderer.info.render.calls,rtri:V.renderer.info.render.triangles};},advanceMage:function(sec){if(mageRef)mageRef.update(sec,'npc');},focus:function(x,z,d){if(V){V.goal.target.set(x,0,z);if(d)V.goal.dist=d;}},
   onPick:function(fn){onPickCb=fn;},setLabeler:function(fn){labeler=fn;},
   get ready(){return readyFlag;},get loading(){return !!loading&&!readyFlag;},get scene(){return V&&V.scene;},get camera(){return V&&V.camera;},

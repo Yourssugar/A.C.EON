@@ -520,14 +520,14 @@ var FS={
     'float best=1e9;vec3 res=vec3(0.0);'+
     'for(int k=0;k<4;k++){vec3 mu=m[k]/n;vec3 v=abs(s[k]/n-mu*mu);float sig=v.r+v.g+v.b;if(sig<best){best=sig;res=mu;}}'+
     'gl_FragColor=vec4(res,1.0);}',
-  final:'uniform sampler2D tC;uniform sampler2D tB1;uniform sampler2D tB2;uniform float bloom;uniform float exposure;uniform float grain;uniform float time;uniform float sat;uniform vec2 res;varying vec2 vUv;'+
+  final:'uniform sampler2D tC;uniform sampler2D tB1;uniform sampler2D tB2;uniform float bloom;uniform float exposure;uniform float grain;uniform float time;uniform float sat;uniform float vig;uniform vec2 res;varying vec2 vUv;'+
     'vec3 aces(vec3 x){x*=0.6;return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}'+
     'vec3 toSRGB(vec3 c){return mix(c*12.92,1.055*pow(c,vec3(1.0/2.4))-0.055,step(0.0031308,c));}'+
     'float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}'+
     'void main(){vec3 c=texture2D(tC,vUv).rgb;c+=(texture2D(tB1,vUv).rgb*0.6+texture2D(tB2,vUv).rgb*0.8)*bloom;'+
     'c=aces(c*exposure);float l=dot(c,vec3(0.299,0.587,0.114));c=mix(vec3(l),c,sat);'+
     'c=mix(c,c*vec3(1.04,1.0,0.94),0.5);'+
-    'vec2 d=vUv-0.5;c*=1.0-dot(d,d)*0.55;'+
+    'vec2 d=vUv-0.5;c*=1.0-dot(d,d)*vig;'+
     'vec3 o=toSRGB(c);'+
     'float g=hash(floor(vUv*res/1.5)+floor(time*12.0))-0.5;float canvas=sin(vUv.x*res.x*0.9)*sin(vUv.y*res.y*0.9)*0.5;'+
     'o+=(g*0.6+canvas*0.25)*grain;gl_FragColor=vec4(o,1.0);}'
@@ -539,7 +539,7 @@ function createPost(renderer){
   P.mats.bright=mat('bright',{t:{value:null},th:{value:0.9}});
   P.mats.blur=mat('blur',{t:{value:null},dir:{value:new THREE.Vector2()}});
   P.mats.paint=mat('paint',{t:{value:null},px:{value:new THREE.Vector2()}});
-  P.mats.final=mat('final',{tC:{value:null},tB1:{value:null},tB2:{value:null},bloom:{value:0.9},exposure:{value:1.2},grain:{value:0.02},time:{value:0},sat:{value:1.08},res:{value:new THREE.Vector2()}});
+  P.mats.final=mat('final',{tC:{value:null},tB1:{value:null},tB2:{value:null},bloom:{value:0.9},exposure:{value:1.2},grain:{value:0.02},time:{value:0},sat:{value:1.08},vig:{value:0.55},res:{value:new THREE.Vector2()}});
   function rt(w,h,ms){
     var o={type:THREE.HalfFloatType,depthBuffer:!!ms,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter};
     if(ms)o.samples=4;
@@ -551,7 +551,7 @@ function createPost(renderer){
     P.rts={scene:rt(w,h,true),paint:rt(w,h),b1:rt(w>>1,h>>1),b2:rt(w>>1,h>>1),c1:rt(w>>2,h>>2),c2:rt(w>>2,h>>2)};
   };
   function pass(m,target){P.quad.material=m;renderer.setRenderTarget(target);renderer.render(P.scene,P.cam);}
-  P.render=function(scene,camera,mode,time){
+  P.render=function(scene,camera,mode,time,opt){
     renderer.setRenderTarget(P.rts.scene);renderer.render(scene,camera);
     var src=P.rts.scene;
     if(mode==='paint'){P.mats.paint.uniforms.t.value=src.texture;P.mats.paint.uniforms.px.value.set(1/P.w,1/P.h);pass(P.mats.paint,P.rts.paint);src=P.rts.paint;}
@@ -565,6 +565,8 @@ function createPost(renderer){
     f.tC.value=src.texture;f.tB1.value=P.rts.b1.texture;f.tB2.value=P.rts.c2.texture;
     f.time.value=time;f.res.value.set(P.w,P.h);
     f.grain.value=mode==='paint'?0.035:0.015;f.sat.value=mode==='paint'?1.14:1.06;f.bloom.value=mode==='paint'?1.0:0.85;
+    /* v35: город и таверна светлее и цветнее, без тёмных углов */
+    f.exposure.value=opt&&opt.exp||1.2;f.vig.value=opt&&opt.vig!==undefined?opt.vig:0.55;if(opt&&opt.sat)f.sat.value=opt.sat;
     pass(P.mats.final,null);
   };
   P.dispose=function(){for(var k in P.rts)P.rts[k].dispose();P.rts={};P.w=P.h=0;};
@@ -1187,9 +1189,13 @@ function frame(dt,real){
   if(!R)return;
   /* вид таверны: своя сцена и камера из tavern3d.js, дорога в это время стоит */
   if(R.view==='tavern'&&window.Tavern3D&&Tavern3D.built){
+    if(R.tavMage&&R.avatar&&!Tavern3D.mageOn)Tavern3D.setMage(R.avatar,R.tavMage);
     Tavern3D.update(Math.min(dt,0.05));
-    if(R.post&&R.postMode&&!tavLite())R.post.render(Tavern3D.scene,Tavern3D.camera,R.postMode,R.t);
+    var night=Tavern3D.night;
+    R.renderer.toneMappingExposure=night?1.1:1.3;
+    if(R.post&&R.postMode&&!tavLite())R.post.render(Tavern3D.scene,Tavern3D.camera,R.postMode,R.t,{exp:night?1.25:1.42,sat:night?1.08:1.14,vig:0.22});
     else{R.renderer.setRenderTarget(null);R.renderer.render(Tavern3D.scene,Tavern3D.camera);}
+    R.renderer.toneMappingExposure=1.05;
     return;
   }
   real=real===undefined?dt:Math.min(real,1);
@@ -1376,6 +1382,7 @@ function setView(v,mage){
   if(v==='tavern'){
     if(!Tavern3D.built){Tavern3D.build(R.renderer);resize();}
     Tavern3D.setActive(true,R.renderer.domElement);
+    R.tavMage=mage||null;   // v36.1: персонаж мог ещё не скачаться: тогда поставим его в таверну, когда появится (frame)
     if(mage&&R.avatar)Tavern3D.setMage(R.avatar,mage);else Tavern3D.releaseMage();
   }else if(window.Tavern3D&&Tavern3D.built){Tavern3D.setActive(false);Tavern3D.releaseMage();}
   var was=R.view;R.view=v;

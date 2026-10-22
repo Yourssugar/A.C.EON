@@ -290,6 +290,40 @@ function musicTick(dt,now){
   if(mu.t>=need){mu.cur=w;mu.cand='';Sound.music(w);}
 }
 
+/* ── v36: звуки места: треск камина в таверне, стук молота у кузнеца в городе ──
+   WebAudio: петля без щелчка на стыке (у mp3 в начале и конце пара десятков мс тишины, их пропускаем). */
+var AMB={ctx:null,buf:{},src:{},gain:{},smithT:4};
+function ambCtx(){if(!AMB.ctx){var C=window.AudioContext||window.webkitAudioContext;if(!C)return null;try{AMB.ctx=new C();}catch(e){return null;}}return AMB.ctx;}
+['pointerdown','keydown'].forEach(function(ev){document.addEventListener(ev,function(){var c=ambCtx();if(c&&c.state==='suspended')c.resume();},{passive:true});});
+function ambBuf(n){
+  if(AMB.buf[n]!==undefined)return AMB.buf[n];
+  AMB.buf[n]=null;var c=ambCtx();if(!c)return null;
+  fetch(Boot.url('assets/sfx/'+n+'.mp3')).then(function(r){return r.arrayBuffer();}).then(function(b){return new Promise(function(ok,bad){c.decodeAudioData(b,ok,bad);});})
+    .then(function(d){AMB.buf[n]=d;},function(){AMB.buf[n]=false;});
+  return null;
+}
+function ambLoop(n,vol){
+  var c=ambCtx();if(!c)return;var b=ambBuf(n);if(!b)return;
+  if(!AMB.src[n]){
+    if(vol<0.002)return;
+    var g=c.createGain();g.gain.value=0;g.connect(c.destination);
+    var sr=c.createBufferSource();sr.buffer=b;sr.loop=true;sr.loopStart=0.06;sr.loopEnd=b.duration-0.06;sr.connect(g);sr.start(0,0.06);
+    AMB.src[n]=sr;AMB.gain[n]=g;
+  }
+  AMB.gain[n].gain.setTargetAtTime(vol,c.currentTime,0.5);
+}
+function ambOnce(n,vol){
+  var c=ambCtx();if(!c||c.state!=='running')return;var b=ambBuf(n);if(!b)return;
+  var g=c.createGain();g.gain.value=vol;g.connect(c.destination);var sr=c.createBufferSource();sr.buffer=b;sr.connect(g);sr.start();
+}
+function ambTick(dt){
+  if(!S.profile)return;
+  var sv=(window.Sound&&Sound.volume?Sound.volume('sfx'):0.8)||0,sc=curScreen(),on=!document.hidden&&has3d&&Scene3D.view==='tavern';
+  ambLoop('fire',on&&sc==='tavern'?0.32*sv:0);
+  if(on&&sc==='city'&&S.masters.smith&&S.masters.smith.hired){AMB.smithT-=dt;if(AMB.smithT<=0){AMB.smithT=6+Math.random()*7;ambOnce('smith',0.22*sv);}}
+  else ambBuf('smith');
+}
+
 /* ── главный цикл ── */
 var last=performance.now(),lastWall=Date.now(),uiT=0,tavT=0,HS={acc:0,t:0};
 function loop(now){
@@ -318,7 +352,7 @@ function loop(now){
   if(has3d)fpsWatch(dt);
   tavT+=dt;if(tavT>0.3){tavT=0;if(has3d&&Scene3D.view==='tavern')Tavern3D.sync(S);}
   uiT+=dt;
-  if(uiT>0.1){musicTick(uiT);lsWatch(uiT);uiT=0;UI.hud();}
+  if(uiT>0.1){musicTick(uiT);lsWatch(uiT);ambTick(uiT);uiT=0;UI.hud();}
   requestAnimationFrame(loop);
 }
 setInterval(function(){UI.panel();},250);

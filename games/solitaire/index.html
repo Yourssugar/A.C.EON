@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON SOLITAIRE</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="2" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/solitaire.css","kb":14},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":7},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"js/lang.js","kb":18},
+  {"src":"js/cards.js","kb":6},
+  {"src":"js/rules.js","kb":14},
+  {"src":"js/solitaire.js","kb":28}
+]}
+</script>
+
+<!-- Обложка загрузки: четыре карты переворачиваются вместе с прогрессом (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .bs-fan{display:flex;gap:10px;}
+    .bs-fan i{width:46px;height:64px;border-radius:5px;border:2px solid #2ad6c8;background:#0a1430;
+      --k:clamp(0,calc((var(--p) - var(--t)) * 6),1);opacity:calc(.25 + .75 * var(--k));transform:translateY(calc(10px - 10px * var(--k)));
+      transition:opacity .25s,transform .25s;display:flex;align-items:center;justify-content:center;font-size:24px;color:#ff2d78;font-style:normal;}
+    .bs-fan i:nth-child(odd){color:#e8f4ff;}
+    .bs-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="bs-brand">A.C.EON</div>
+  <div class="bs-title">SOLITAIRE</div>
+  <div class="bs-fan"><i style="--t:0">&#9824;</i><i style="--t:.25">&#9829;</i><i style="--t:.5">&#9827;</i><i style="--t:.75">&#9830;</i></div>
+</template>
+</head>
+<body class="screen-menu">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="sl-menu" id="menu">
+  <div class="sl-head">
+    <h1 class="sl-title"><span class="sl-brand">A.C.EON</span><span data-i18n="sol.title"></span></h1>
+    <div class="sl-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="sl-cols">
+    <section class="sl-card">
+      <h2 class="sl-h" data-i18n="menu.game"></h2>
+      <div class="game-list" id="game-list"></div>
+
+      <div class="opt" id="opt-klondike">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.draw"></span>
+          <div class="seg" id="seg-draw"><button class="seg-btn" data-v="1" data-i18n="opt.draw1"></button><button class="seg-btn" data-v="3" data-i18n="opt.draw3"></button></div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.redeals"></span>
+          <div class="seg" id="seg-redeals"><button class="seg-btn sym" data-v="inf">&#8734;</button><button class="seg-btn" data-v="3">3</button><button class="seg-btn" data-v="0" data-i18n="opt.none"></button></div></div>
+      </div>
+      <div class="opt hidden" id="opt-spider">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.suits"></span>
+          <div class="seg" id="seg-suits">
+            <button class="seg-btn" data-v="1"><span data-i18n="opt.suits1"></span></button>
+            <button class="seg-btn" data-v="2"><span data-i18n="opt.suits2"></span></button>
+            <button class="seg-btn" data-v="4"><span data-i18n="opt.suits4"></span></button>
+          </div></div>
+      </div>
+      <div class="opt hidden" id="opt-freecell"><div class="opt-note" data-i18n="opt.freecellNote"></div></div>
+      <div class="opt">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.tap"></span>
+          <div class="seg" id="seg-tap"><button class="seg-btn" data-v="select" data-i18n="tap.select"></button><button class="seg-btn" data-v="auto" data-i18n="tap.auto"></button></div></div>
+        <div class="opt-note" id="tap-note"></div>
+      </div>
+      <div class="opt" id="opt-auto">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.auto"></span>
+          <div class="seg" id="seg-auto"><button class="seg-btn" data-v="on" data-i18n="opt.on"></button><button class="seg-btn" data-v="off" data-i18n="opt.off"></button></div></div>
+      </div>
+    </section>
+
+    <section class="sl-card">
+      <h2 class="sl-h" data-i18n="menu.look"></h2>
+      <div class="preview" id="preview"></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.table"></span>
+        <div class="seg" id="seg-table">
+          <button class="seg-btn" data-v="felt"><i class="sw sw-felt"></i><span data-i18n="tbl.felt"></span></button>
+          <button class="seg-btn" data-v="blue"><i class="sw sw-blue"></i><span data-i18n="tbl.blue"></span></button>
+          <button class="seg-btn" data-v="neon"><i class="sw sw-neon"></i><span data-i18n="tbl.neon"></span></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.back"></span>
+        <div class="seg" id="seg-back">
+          <button class="seg-btn" data-v="aceon"><i class="sw sw-b-aceon"></i>A.C.EON</button>
+          <button class="seg-btn" data-v="red"><i class="sw sw-b-red"></i><span data-i18n="back.red"></span></button>
+          <button class="seg-btn" data-v="blue"><i class="sw sw-b-blue"></i><span data-i18n="back.blue"></span></button>
+        </div></div>
+      <h2 class="sl-h sl-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+  </div>
+
+  <div class="sl-actions">
+    <button class="btn sl-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn sl-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+  <div class="sl-keys" data-i18n="help.keys"></div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="sl-game" id="game">
+  <div class="hud">
+    <div class="hud-title"><b id="hud-game"></b><span id="hud-deal"></span></div>
+    <div class="hud-cell" id="hud-score-c"><span data-i18n="hud.score"></span><b id="hud-score">0</b></div>
+    <div class="hud-cell"><span data-i18n="hud.moves"></span><b id="hud-moves">0</b></div>
+    <div class="hud-cell"><span data-i18n="hud.time"></span><b id="hud-time">0:00</b></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-undo"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3L2 7l4 4V8.5h4.5A2.5 2.5 0 0 1 13 11v2h2v-2a4.5 4.5 0 0 0-4.5-4.5H6z" fill="currentColor"/></svg> <span data-i18n="hud.undo"></span></button>
+      <button class="btn" id="btn-hint">? <span data-i18n="hud.hint"></span></button>
+      <button class="btn btn-finish hidden" id="btn-finish"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1L3 9h4l-1 6 6-8H8z" fill="currentColor"/></svg> <span data-i18n="hud.finish"></span></button>
+      <button class="btn" id="btn-restart" data-i18n="hud.restart"></button>
+      <button class="btn" id="btn-new" data-i18n="hud.new"></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="stuck hidden" id="stuck">
+    <span data-i18n="stuck.text"></span>
+    <button class="btn" id="stuck-undo"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3L2 7l4 4V8.5h4.5A2.5 2.5 0 0 1 13 11v2h2v-2a4.5 4.5 0 0 0-4.5-4.5H6z" fill="currentColor"/></svg> <span data-i18n="hud.undo"></span></button>
+    <button class="btn" id="stuck-new" data-i18n="hud.new"></button>
+  </div>
+  <div class="table-wrap"><div class="table" id="table"></div></div>
+</main>
+
+<!-- победа -->
+<div class="arc-modal hidden win-modal" id="win-modal">
+  <div class="arc-box win-box">
+    <div class="win-title" data-i18n="win.title"></div>
+    <div class="win-rec hidden" id="win-rec" data-i18n="win.record"></div>
+    <div class="win-rows" id="win-rows"></div>
+    <div class="win-btns">
+      <button class="btn" id="win-new">&#9654; <span data-i18n="hud.new"></span></button>
+      <button class="btn" id="win-menu" data-i18n="hud.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

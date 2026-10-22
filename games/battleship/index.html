@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON BATTLESHIP</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/battleship.css","kb":14},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"js/lang.js","kb":18},
+  {"src":"js/rules.js","kb":9},
+  {"src":"js/battleship.js","kb":24}
+]}
+</script>
+
+<!-- Обложка загрузки: сетка моря, клетки загораются вместе с прогрессом (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .bs-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:min(220px,60vw);}
+    .bs-grid i{height:18px;background:#0a2440;--k:clamp(0,calc((var(--p) - var(--t)) * 12),1);
+      box-shadow:inset 0 0 0 1px rgba(0,229,255,calc(.15 + .5 * var(--k)));}
+    .bs-grid i.s{background:#0a2440;}
+    .bs-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="bs-brand">A.C.EON</div>
+  <div class="bs-title">BATTLESHIP</div>
+  <div class="bs-grid"></div>
+</template>
+<script>
+(function(){
+  var g=document.getElementById('boot-skin').content.querySelector('.bs-grid'),h='';
+  for(var i=0;i<50;i++)h+='<i style="--t:'+((i%10+Math.floor(i/10))/14*0.95).toFixed(3)+'"></i>';
+  g.innerHTML=h;
+})();
+</script>
+</head>
+<body class="screen-menu">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="b-menu" id="menu">
+  <div class="b-head">
+    <h1 class="b-title"><span class="b-brand">A.C.EON</span><span data-i18n="bs.title"></span></h1>
+    <div class="b-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="b-cols">
+    <section class="b-card">
+      <h2 class="b-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <div class="opt-row" id="opt-level"><span class="opt-lbl" data-i18n="menu.level"></span>
+        <div class="seg" id="seg-level">
+          <button class="seg-btn" data-v="easy" data-i18n="lvl.easy"></button>
+          <button class="seg-btn" data-v="normal" data-i18n="lvl.normal"></button>
+          <button class="seg-btn" data-v="hard" data-i18n="lvl.hard"></button>
+        </div></div>
+      <div class="lvl-note" data-i18n="lvl.note"></div>
+    </section>
+
+    <section class="b-card">
+      <h2 class="b-h" data-i18n="menu.rules"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="menu.fleet"></span>
+        <div class="seg" id="seg-fleet">
+          <button class="seg-btn" data-v="classic" data-i18n="fleet.classic"></button>
+          <button class="seg-btn" data-v="west" data-i18n="fleet.west"></button>
+        </div></div>
+      <div class="fleet-note" id="fleet-note"></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="menu.touch"></span>
+        <div class="seg" id="seg-touch">
+          <button class="seg-btn" data-v="no" data-i18n="touch.no"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="touch.yes"></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="menu.theme"></span>
+        <div class="seg" id="seg-theme">
+          <button class="seg-btn" data-v="sea"><i class="sw sw-sea"></i><span data-i18n="theme.sea"></span></button>
+          <button class="seg-btn" data-v="paper"><i class="sw sw-paper"></i><span data-i18n="theme.paper"></span></button>
+        </div></div>
+      <h2 class="b-h b-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+  </div>
+
+  <div class="b-actions">
+    <button class="btn b-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn b-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="b-game" id="game">
+  <div class="hud">
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-cell"><span data-i18n="hud.shots"></span><b id="hud-shots">0</b></div>
+    <div class="hud-cell"><span data-i18n="st.acc"></span><b id="hud-acc">-</b></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-new" data-i18n="hud.new"></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="arena" id="arena">
+    <section class="panel-b panel-enemy">
+      <div class="p-lbl" id="l-enemy"></div>
+      <div class="board" id="b-enemy"></div>
+      <div class="fleet-state" id="f-enemy"></div>
+    </section>
+    <section class="panel-b panel-own">
+      <div class="p-lbl" id="l-own"></div>
+      <div class="board" id="b-own"></div>
+      <div class="fleet-state" id="f-own"></div>
+    </section>
+    <!-- расстановка -->
+    <section class="place-panel">
+      <div class="pl-msg" id="pl-msg"></div>
+      <div class="palette" id="palette"></div>
+      <div class="pl-btns">
+        <button class="btn" id="pl-rotate">&#8635; <span id="pl-vert"></span></button>
+        <button class="btn" id="pl-auto" data-i18n="pl.auto"></button>
+        <button class="btn" id="pl-reset" data-i18n="pl.reset"></button>
+      </div>
+      <button class="btn b-ready" id="btn-ready">&#9654; <span data-i18n="pl.ready"></span></button>
+      <div class="pl-help" data-i18n="pl.help"></div>
+    </section>
+  </div>
+
+  <div class="salvo-bar hidden" id="salvo-bar">
+    <span data-i18n="salvo.pick"></span><b id="salvo-n">0</b>
+    <button class="btn b-fire" id="btn-fire" data-i18n="salvo.fire"></button>
+  </div>
+</main>
+
+<!-- игра вдвоём: передать устройство -->
+<div class="pass hidden" id="pass">
+  <div class="pass-box">
+    <div class="pass-title" id="pass-title"></div>
+    <div class="pass-sub" id="pass-sub"></div>
+    <button class="btn b-play" id="pass-go" data-i18n="pass.go"></button>
+  </div>
+</div>
+
+<!-- конец боя -->
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <div class="over-title" id="over-title"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn" id="over-new">&#9654; <span data-i18n="hud.new"></span></button>
+      <button class="btn" id="over-menu" data-i18n="hud.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

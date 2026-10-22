@@ -542,25 +542,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .fl-sw:active{transform:scale(0.94);}
 .fl-sw.cur{outline:3px solid #fff;outline-offset:2px;}
 
-/* BATTLESHIP */
-#bs-wrap{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;width:100%;}
-.bs-board{display:flex;flex-direction:column;align-items:center;gap:6px;}
-.bs-label{font-size:10px;letter-spacing:2px;color:var(--txt-d);}
-.bs-grid{display:inline-grid;grid-template-columns:repeat(10,var(--bs-cell,28px));grid-template-rows:repeat(10,var(--bs-cell,28px));gap:1px;background:#000;border:2px solid #000;}
-.bs-cell{width:var(--bs-cell,28px);height:var(--bs-cell,28px);background:#fff;display:flex;align-items:center;justify-content:center;position:relative;}
-.bs-cell.ship{background:#5a7a9a;}
-.bs-cell.enemy{cursor:pointer;}
-.bs-cell.enemy:hover{background:rgba(52,152,219,.22);}
-.bs-cell.hit{background:#c0392b;}
-.bs-cell.hit::after{content:'\2715';color:#fff;font-weight:bold;font-size:calc(var(--bs-cell,28px) * 0.5);}
-.bs-cell.sunk{background:#0a0a0a;}
-.bs-cell.sunk::after{content:'\2715';color:#ff4d4d;font-weight:bold;font-size:calc(var(--bs-cell,28px) * 0.5);}
-.bs-cell.miss::after{content:'';width:32%;height:32%;border-radius:50%;background:rgba(44,62,80,.6);}
-.bs-cell.preview-ok{background:rgba(76,175,80,.55);}
-.bs-cell.preview-bad{background:rgba(239,83,80,.55);}
-#bs-setup-grid .bs-cell{cursor:pointer;}
-#bs-start-btn{display:none;}
-
 /* MASTERMIND */
 #mm-history{display:flex;flex-direction:column;gap:6px;width:100%;max-width:480px;max-height:min(360px,40vh);overflow-y:auto;margin:0 auto;}
 .mm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 8px;background:var(--bg2);border:1px solid var(--bdr-d);}
@@ -577,19 +558,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
        transition:transform .1s;box-shadow:0 2px 4px rgba(0,0,0,.3);}
 .mm-sw:hover{transform:scale(1.1);}
 #mm-submit:disabled{opacity:.35;cursor:default;}
-@keyframes bsHitFlash{
-  0%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
-  18%{box-shadow:inset 0 0 0 4px rgba(255,255,255,.95);transform:scale(1.2);}
-  100%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transform:scale(1);}
-}
-.bs-cell.bs-flash.hit,.bs-cell.bs-flash.sunk{animation:bsHitFlash .5s ease-out;z-index:2;}
-@keyframes bsMissPop{
-  0%{transform:scale(0);opacity:0;}
-  60%{transform:scale(1.7);opacity:.85;}
-  100%{transform:scale(1);opacity:1;}
-}
-.bs-cell.bs-flash.miss::after{animation:bsMissPop .4s cubic-bezier(.34,1.56,.64,1);}
-
 /* REACTION TEST */
 #rt-box{
   position:relative;width:100%;max-width:720px;height:clamp(240px,54dvh,460px);margin:0 auto;
@@ -756,20 +724,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .pz-tile.correct{color:#00ff88;border-color:#005522;}
 .pz-tile.empty{background:#020208;border-color:#001a33;}
 
-/* Battleship grid — paper / pencil look */
-.bs-grid{background:#9fb3cc;border:3px solid #33485f;border-radius:2px;box-shadow:0 2px 12px rgba(0,0,0,.45);}
-.bs-cell{background:#f4ecd6;}
-.bs-cell.ship{background:repeating-linear-gradient(45deg,#7c8aa3 0,#7c8aa3 2px,#93a1b9 2px,#93a1b9 4px);box-shadow:inset 0 0 0 2px #46566f;}
-.bs-cell.hit{background:#efd6cd;}
-.bs-cell.hit::after{color:#b22f1c;text-shadow:0 0 1px rgba(178,47,28,.4);}
-.bs-cell.sunk{background:#7c1d12;}
-.bs-cell.sunk::after{color:#ffe3da;}
-.bs-cell.miss::after{background:#54637e;width:30%;height:30%;}
-.bs-cell.enemy:hover{background:#fff4d2;}
-.bs-cell.preview-ok{background:rgba(58,150,84,.45);}
-.bs-cell.preview-bad{background:rgba(196,58,46,.45);}
-.bs-label{font-family:'Press Start 2P',monospace;font-size:7px;color:#a8bdd6;letter-spacing:1px;text-shadow:0 0 6px rgba(120,150,190,.3);}
-
 /* Message text in game bars — inherit arcade font */
 #mine-st,#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ttt-msg,#ss-msg,#rt-text,#bj-msg,#t-msg{
   font-family:'Press Start 2P',monospace;
@@ -875,111 +829,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 #mine-bot.mmood-win .mbot-mouth{width:30px;height:14px;border-bottom-color:#00ff88;}
 #mine-bot.mmood-win .mbot-eye{height:9px;border-radius:3px 3px 0 0;}
 #mine-bot.mmood-win .mbot-status{color:#9affc9;}
-
-/* ═══════════ BATTLESHIP: ENEMY CAPTAIN (below boards) ═══════════ */
-#bs-captain{
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  margin:18px auto 6px;width:210px;pointer-events:none;user-select:none;
-  --cap-accent:#e8b84b;font-family:'Press Start 2P',monospace;
-}
-@media(max-width:640px){#bs-captain{display:none;}}
-
-.cap-stage{position:relative;width:200px;height:188px;display:flex;align-items:flex-end;justify-content:center;}
-.cap-core{position:relative;width:160px;height:180px;display:flex;align-items:flex-end;justify-content:center;animation:capFloat 3.6s ease-in-out infinite;}
-@keyframes capFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
-.cap-core::before{content:'';position:absolute;bottom:6px;width:118%;height:80%;border-radius:50%;
-  background:radial-gradient(circle,var(--cap-accent) 0%,transparent 62%);opacity:.14;filter:blur(7px);z-index:0;}
-
-/* sea-spray particles */
-.cap-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:#a8bdd6;box-shadow:0 0 7px #a8bdd6;opacity:.5;}
-.cap-particle.cp1{bottom:16%;left:12%;animation:capDrift 5.4s ease-in-out infinite;}
-.cap-particle.cp2{bottom:26%;right:12%;animation:capDrift 6.6s ease-in-out infinite .5s;}
-.cap-particle.cp3{bottom:10%;right:22%;animation:capDrift 6s ease-in-out infinite 1s;}
-@keyframes capDrift{0%,100%{transform:translateY(0);opacity:.25;}50%{transform:translateY(-9px);opacity:.7;}}
-
-/* hat */
-.cap-hat{position:absolute;top:46px;left:50%;transform:translateX(-50%);width:120px;z-index:3;transition:transform .25s;}
-.cap-hat-crown{width:92px;height:34px;margin:0 auto;background:linear-gradient(#1c2b46,#0f1830);
-  border:2px solid #2c3f5e;border-bottom:none;border-radius:16px 16px 4px 4px;position:relative;}
-.cap-hat-band{position:absolute;left:-2px;right:-2px;bottom:0;height:9px;background:var(--cap-accent);
-  box-shadow:0 0 8px rgba(232,184,75,.5);display:flex;align-items:center;justify-content:center;}
-.cap-badge{color:#1c2b46;font-size:8px;line-height:1;}
-.cap-hat-brim{width:120px;height:14px;margin:-2px auto 0;background:linear-gradient(#0c1424,#060b16);
-  border:2px solid #243450;border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.5);}
-
-/* face (parchment portrait) */
-.cap-face{position:relative;width:100px;height:88px;margin-bottom:6px;z-index:1;
-  background:linear-gradient(160deg,#ead9b3,#d8c298);
-  border:2px solid #6a4a2a;border-radius:26px 26px 30px 30px;
-  box-shadow:0 0 14px rgba(232,184,75,.25),inset 0 -6px 10px rgba(120,80,40,.25);
-  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:20px;transition:box-shadow .2s,filter .2s,transform .2s;}
-.cap-brows{position:absolute;top:14px;left:0;right:0;display:flex;justify-content:center;gap:18px;z-index:2;}
-.cap-brow{width:18px;height:4px;background:#5a3c1f;border-radius:2px;transition:transform .15s;}
-.cap-brow.l{transform:rotate(6deg);}
-.cap-brow.r{transform:rotate(-6deg);}
-.cap-eyes{display:flex;gap:16px;z-index:1;}
-.cap-eye{width:14px;height:14px;border-radius:50%;background:#22324a;position:relative;animation:capBlink 4.6s infinite;}
-.cap-eye::after{content:'';position:absolute;top:2px;left:2px;width:5px;height:5px;border-radius:50%;background:#bfe3ff;}
-@keyframes capBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.1);}}
-.cap-stache{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:74px;height:22px;z-index:2;
-  background:linear-gradient(#f4f4f4,#cfcfcf);border-radius:0 0 40px 40px;
-  box-shadow:0 2px 3px rgba(0,0,0,.25);clip-path:polygon(0 0,100% 0,86% 100%,50% 70%,14% 100%);}
-.cap-mouth{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:18px;height:4px;background:#7a3b2a;border-radius:0 0 6px 6px;z-index:1;transition:all .15s;}
-
-/* pipe + smoke */
-.cap-pipe{position:absolute;bottom:20px;right:18px;width:22px;height:7px;background:#3a2a1c;border-radius:3px;z-index:2;}
-.cap-pipe::after{content:'';position:absolute;right:-3px;top:-9px;width:9px;height:12px;background:#2a1d12;border-radius:3px;}
-.cap-smoke{position:absolute;right:-2px;top:-16px;width:7px;height:7px;border-radius:50%;background:rgba(220,220,220,.5);
-  animation:capSmoke 2.4s ease-out infinite;}
-@keyframes capSmoke{0%{opacity:0;transform:translate(0,0) scale(.5);}30%{opacity:.6;}100%{opacity:0;transform:translate(6px,-22px) scale(1.8);}}
-
-.cap-name{color:var(--cap-accent);font-size:9px;letter-spacing:2px;text-shadow:0 0 9px rgba(232,184,75,.6);}
-.cap-status{color:#ffe6b0;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(232,184,75,.4);}
-
-/* ── moods ── */
-#bs-captain.cmood-taunt .cap-brow.l{transform:rotate(18deg) translateY(-2px);}
-#bs-captain.cmood-taunt .cap-mouth{width:24px;height:9px;border-radius:0 0 12px 12px;background:#7a3b2a;}
-#bs-captain.cmood-taunt .cap-face{transform:rotate(-3deg);}
-
-#bs-captain.cmood-hurt .cap-face{animation:capShake .45s;box-shadow:0 0 18px rgba(178,47,28,.5),inset 0 -6px 10px rgba(120,80,40,.25);}
-#bs-captain.cmood-hurt .cap-brow{transform:rotate(0);}
-#bs-captain.cmood-hurt .cap-brow.l{transform:rotate(-16deg);}
-#bs-captain.cmood-hurt .cap-brow.r{transform:rotate(16deg);}
-#bs-captain.cmood-hurt .cap-eye{height:6px;}
-@keyframes capShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
-
-#bs-captain.cmood-shipsunk .cap-core{animation:capShake .5s;}
-#bs-captain.cmood-shipsunk .cap-face{filter:brightness(1.05) saturate(1.1);box-shadow:0 0 26px rgba(178,47,28,.7),inset 0 -6px 10px rgba(120,80,40,.25);}
-#bs-captain.cmood-shipsunk .cap-brow.l{transform:rotate(-20deg);}
-#bs-captain.cmood-shipsunk .cap-brow.r{transform:rotate(20deg);}
-#bs-captain.cmood-shipsunk .cap-mouth{width:22px;height:16px;background:#3a1810;border-radius:0 0 50% 50%;}
-#bs-captain.cmood-shipsunk .cap-status{color:#ff9a8a;}
-
-#bs-captain.cmood-attack .cap-core{animation:capLunge .5s ease;}
-@keyframes capLunge{0%{transform:translateX(0);}40%{transform:translateX(8px) rotate(3deg);}100%{transform:translateX(0);}}
-#bs-captain.cmood-attack .cap-mouth{width:24px;height:10px;background:#7a3b2a;border-radius:0 0 12px 12px;}
-#bs-captain.cmood-attack .cap-eye{transform:scale(1.15);}
-
-#bs-captain.cmood-aimiss .cap-brow.l{transform:rotate(-10deg);}
-#bs-captain.cmood-aimiss .cap-brow.r{transform:rotate(10deg);}
-#bs-captain.cmood-aimiss .cap-mouth{width:14px;}
-
-#bs-captain.cmood-begin .cap-hat{transform:translateX(-50%) translateY(-4px);}
-#bs-captain.cmood-begin .cap-smoke{animation-duration:1.2s;}
-
-#bs-captain.cmood-win .cap-core{animation:capWin .8s ease;}
-@keyframes capWin{0%{transform:translateY(0);}30%{transform:translateY(-18px) scale(1.05);}60%{transform:translateY(0);}80%{transform:translateY(-7px);}100%{transform:translateY(0);}}
-#bs-captain.cmood-win .cap-face{box-shadow:0 0 28px var(--cap-accent),inset 0 -6px 10px rgba(120,80,40,.25);}
-#bs-captain.cmood-win .cap-mouth{width:28px;height:12px;border-radius:0 0 14px 14px;}
-#bs-captain.cmood-win .cap-status{color:#ffe08a;}
-
-#bs-captain.cmood-lose .cap-hat{transform:translateX(-50%) translateY(8px) rotate(-8deg);}
-#bs-captain.cmood-lose .cap-face{filter:grayscale(.5) brightness(.85);}
-#bs-captain.cmood-lose .cap-eye{height:6px;}
-#bs-captain.cmood-lose .cap-brow.l{transform:rotate(-12deg) translateY(3px);}
-#bs-captain.cmood-lose .cap-brow.r{transform:rotate(12deg) translateY(3px);}
-#bs-captain.cmood-lose .cap-mouth{width:18px;height:8px;border-radius:8px 8px 0 0;background:#5a2a20;}
-#bs-captain.cmood-lose .cap-status{color:#bfcad8;}
 
 /* ═══════════ CHECKERS: AI OPPONENT ENTITY (right, desktop) ═══════════ */
 #ck-bot{
@@ -1295,7 +1144,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
   <div class="game-grid">
     <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
-    <div class="game-icon" onclick="openGame('battle')"><span class="ico-pixel">&#128674;</span><span class="ico-label">BATTLESHIP</span></div>
+    <div class="game-icon" onclick="location.href='battleship/'"><span class="ico-pixel">&#128674;</span><span class="ico-label">BATTLESHIP</span></div>
     <div class="game-icon" onclick="openGame('mind')"><span class="ico-pixel">&#127919;</span><span class="ico-label">MASTERMIND</span></div>
     <div class="game-icon" onclick="openGame('react')"><span class="ico-pixel">&#9889;</span><span class="ico-label">REACTION</span></div>
     <div class="game-icon" onclick="openGame('bj')"><span class="ico-pixel">&#127920;</span><span class="ico-label">BLACKJACK</span></div>
@@ -1568,68 +1417,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
 </div>
 
-<!-- BATTLESHIP -->
-<div id="game-battle" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">BATTLESHIP</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span id="bs-msg">YOUR TURN</span>
-      <button class="btn" onclick="initBattle()">NEW</button>
-      <span><button class="btn sel" id="bsb-easy" onclick="setBattleDiff('easy')">EASY</button><button class="btn" id="bsb-hard" onclick="setBattleDiff('hard')">HARD</button></span>
-      <span>WINS: <span id="hi-battle">0</span></span>
-    </div>
-
-    <div id="bs-setup">
-      <div class="gbar" style="margin-top:0;">
-        <span id="bs-setup-msg">PLACE YOUR SHIPS</span>
-        <button class="btn" onclick="bsRotate()">ROTATE (R)</button>
-        <button class="btn" onclick="bsAutoPlaceRemaining()">AUTO-PLACE</button>
-        <button class="btn" onclick="bsResetSetup()">RESET</button>
-      </div>
-      <div class="bs-board">
-        <div class="bs-label">PLACE YOUR FLEET</div>
-        <div class="bs-grid" id="bs-setup-grid"></div>
-      </div>
-      <button class="btn sel" id="bs-start-btn" onclick="bsStartBattle()" style="margin-top:10px;">START BATTLE</button>
-    </div>
-
-    <div id="bs-wrap" style="display:none;">
-      <div class="bs-board">
-        <div class="bs-label">YOUR FLEET (<span id="bs-pleft">10</span>/10)</div>
-        <div class="bs-grid" id="bs-pgrid"></div>
-      </div>
-      <div class="bs-board">
-        <div class="bs-label">ENEMY WATERS (<span id="bs-eleft">10</span>/10)</div>
-        <div class="bs-grid" id="bs-egrid"></div>
-      </div>
-    </div>
-
-    <!-- ENEMY CAPTAIN -->
-    <div id="bs-captain" aria-hidden="true">
-      <div class="cap-stage">
-        <span class="cap-particle cp1"></span>
-        <span class="cap-particle cp2"></span>
-        <span class="cap-particle cp3"></span>
-        <div class="cap-core">
-          <div class="cap-hat">
-            <div class="cap-hat-crown"><div class="cap-hat-band"><span class="cap-badge">&#9875;</span></div></div>
-            <div class="cap-hat-brim"></div>
-          </div>
-          <div class="cap-face">
-            <div class="cap-brows"><span class="cap-brow l"></span><span class="cap-brow r"></span></div>
-            <div class="cap-eyes"><span class="cap-eye"></span><span class="cap-eye"></span></div>
-            <div class="cap-stache"></div>
-            <div class="cap-mouth"></div>
-            <div class="cap-pipe"><span class="cap-smoke"></span></div>
-          </div>
-        </div>
-      </div>
-      <div class="cap-name">ENEMY CAPTAIN</div>
-      <div class="cap-status" id="bs-captain-status">AT THE READY</div>
-    </div>
-  </div>
-</div>
-
 <!-- MASTERMIND -->
 <div id="game-mind" class="gwin hidden">
   <div class="gtb"><span class="gtb-t">MASTERMIND</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
@@ -1799,7 +1586,6 @@ function refitCurrent(){
   if(cur==='checkers'){fitCells('ck-cell',8,{min:30,extra:4});ckRender();}
   if(cur==='wordle'){fitCells('wl-key',10,{min:22,extra:36});renderWlGrid();renderWlKeys();}
   if(cur==='flood'&&typeof flN==='number'){fitCells('fl-cell',flN,{min:13,extra:2});renderFlood();}
-  if(cur==='battle')bsFitCells();
   if(cur==='puzzle')renderPuzzle();
 }
 var resizeTmr;
@@ -1851,7 +1637,7 @@ window.openGame=function(id){
   var fn={mine:initMine,brkout:initBreak,
           g2048:init2048,ttt:initTTT,tetris:initTetris,pong:initPong,
           checkers:initCheckers,pf:initPf,
-          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,battle:initBattle,mind:initMind,react:initReact,
+          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,react:initReact,
           bj:initBJ,yahtzee:initYahtzee,puzzle:initPuzzle,bubbles:initBubble};
   /* Show PRESS START — init game only after player clicks */
   showGameSplash(function(){
@@ -2957,341 +2743,6 @@ function renderFloodPalette(){
 function flGetBest(){var v=localStorage.getItem('aceon_hi_flood');return v?parseInt(v):null;}
 function flSetBest(moves){var b=flGetBest();if(b===null||moves<b)localStorage.setItem('aceon_hi_flood',moves);}
 function flShowBest(){var b=flGetBest();var el=document.getElementById('hi-flood');if(el)el.textContent=b===null?'\u2014':b;}
-
-/* ════════════════ BATTLESHIP ════════════════ */
-var BS_SHIPS=[4,3,3,2,2,2,1,1,1,1]; // classic fleet: 1x4, 2x3, 3x2, 4x1
-var bsDiff='easy';
-var bsPlayer,bsEnemy,bsTurn,bsOver,bsHunt,bsHuntDir,bsHuntOrigin,bsLastShot;
-var bsSetupGrid,bsSetupShips,bsToPlace,bsPlaceIdx,bsOrient;
-var bsHoverR=-1,bsHoverC=-1;
-
-/* ── ENEMY CAPTAIN ENTITY (reacts to the battle) ── */
-var BattleBot=(function(){
-  var root=null,st=null,shown=false,cur='idle',rt=null;
-  var SAY={
-    idle:['AT THE READY','STEADY AS SHE GOES','EYES ON THE SEA','HMMM...'],
-    begin:['BATTLE STATIONS!','OPEN FIRE!','TO ARMS!'],
-    taunt:['HA! MISSED!','POOR AIM!','IS THAT ALL?','TRY AGAIN!'],
-    hurt:['ARGH!','A HIT?!','BLAST YOU!','MY HULL!'],
-    shipsunk:['MY SHIP!!','SCUTTLED!','DOWN SHE GOES!','CURSES!'],
-    attack:['DIRECT HIT!','TAKE THAT!','BULLSEYE!','FIRE!'],
-    aimiss:['BLAST!','MISSED HER!','STEADY...','HMPH.'],
-    win:['VICTORY IS MINE!','THE SEA IS MINE!','SURRENDER, SAILOR!'],
-    lose:['I YIELD...','WELL FOUGHT...','YOU WIN, SAILOR.']
-  };
-  function pick(a){return a[Math.random()*a.length|0];}
-  function grab(){if(!root){root=document.getElementById('bs-captain');st=document.getElementById('bs-captain-status');}return root;}
-  function mood(m){if(!grab())return;cur=m;root.className='cmood-'+m;if(st)st.textContent=pick(SAY[m]||['...']);}
-  return {
-    show:function(){if(!grab())return;shown=true;mood('idle');},
-    react:function(m){
-      if(!grab()||!shown)return;
-      if(rt){clearTimeout(rt);rt=null;}
-      mood(m);
-      var transient={begin:1,taunt:1,hurt:1,shipsunk:1,attack:1,aimiss:1};
-      if(transient[m])rt=setTimeout(function(){if(cur===m)mood('idle');},1700);
-    }
-  };
-})();
-window.BattleBot=BattleBot;
-
-window.setBattleDiff=function(d){bsDiff=d;['easy','hard'].forEach(function(x){document.getElementById('bsb-'+x).className='btn'+(x===d?' sel':'');});initBattle();};
-
-/* ── placement validity: in bounds, no overlap, no touching (incl. diagonals) ── */
-function bsTouchesAny(grid,cells){
-  return cells.some(function(p){
-    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
-      var nr=p[0]+dr,nc=p[1]+dc;
-      if(nr<0||nr>=10||nc<0||nc>=10)continue;
-      if(grid[nr][nc]===1)return true;
-    }
-    return false;
-  });
-}
-function bsValidPlacement(grid,cells){
-  for(var i=0;i<cells.length;i++){var p=cells[i];if(p[0]<0||p[0]>=10||p[1]<0||p[1]>=10)return false;}
-  return !bsTouchesAny(grid,cells);
-}
-function bsTryPlaceOne(grid,ships,size){
-  for(var tries=0;tries<500;tries++){
-    var horiz=Math.random()<0.5;
-    var r=Math.random()*10|0,c=Math.random()*10|0;
-    var cells=[];
-    for(var i=0;i<size;i++)cells.push([horiz?r:r+i,horiz?c+i:c]);
-    if(bsValidPlacement(grid,cells)){
-      cells.forEach(function(p){grid[p[0]][p[1]]=1;});
-      ships.push({cells:cells,hits:0,size:size,sunk:false});
-      return true;
-    }
-  }
-  return false;
-}
-function bsPlaceFleet(){
-  for(var attempt=0;attempt<50;attempt++){
-    var grid=[];for(var i=0;i<10;i++)grid.push(Array(10).fill(0));
-    var ships=[];
-    var ok=true;
-    for(var s=0;s<BS_SHIPS.length;s++){if(!bsTryPlaceOne(grid,ships,BS_SHIPS[s])){ok=false;break;}}
-    if(ok)return {grid:grid,ships:ships};
-  }
-  return {grid:grid,ships:ships}; // astronomically unlikely fallback — partial fleet
-}
-
-/* ── game start: AI fleet placed instantly, player goes through manual setup ── */
-window.initBattle=function(){
-  bsEnemy=bsPlaceFleet();
-  bsTurn='player';bsOver=false;
-  bsHunt=[];bsHuntDir=null;bsHuntOrigin=null;bsLastShot=null;
-  bsToPlace=BS_SHIPS.slice();
-  bsPlaceIdx=0;
-  bsOrient='h';
-  bsSetupGrid=[];for(var i=0;i<10;i++)bsSetupGrid.push(Array(10).fill(0));
-  bsSetupShips=[];
-  document.getElementById('bs-setup').style.display='';
-  document.getElementById('bs-wrap').style.display='none';
-  var msg=document.getElementById('bs-msg');
-  msg.textContent='PLACE YOUR SHIPS, THEN START THE BATTLE';msg.style.color='';
-  document.getElementById('bs-pleft').textContent=BS_SHIPS.length;
-  document.getElementById('bs-eleft').textContent=BS_SHIPS.length;
-  bsFitCells();
-  bsUpdateSetupMsg();
-  renderBsSetup();
-  if(window.BattleBot)BattleBot.show();
-};
-
-function bsFitCells(){
-  var avail=Math.min(window.innerWidth, window.innerHeight * 1.4) - 60;
-  var cell=Math.floor((avail-40)/20);
-  cell=Math.max(14,Math.min(46,cell));
-  document.documentElement.style.setProperty('--bs-cell',cell+'px');
-}
-
-/* ── manual placement ── */
-function bsShipName(size){return size===4?'4-DECK':size===3?'3-DECK':size===2?'2-DECK':'1-DECK';}
-function bsUpdateSetupMsg(){
-  var el=document.getElementById('bs-setup-msg'),btn=document.getElementById('bs-start-btn');
-  if(!el)return;
-  if(bsPlaceIdx>=bsToPlace.length){
-    el.textContent='ALL SHIPS PLACED \u2014 READY!';
-    btn.style.display='inline-block';
-  }else{
-    var size=bsToPlace[bsPlaceIdx];
-    var remainingOfSize=bsToPlace.slice(bsPlaceIdx).filter(function(s){return s===size;}).length;
-    el.textContent='PLACE YOUR '+bsShipName(size)+' SHIP ('+remainingOfSize+' LEFT) \u2014 '+(bsOrient==='h'?'HORIZONTAL':'VERTICAL');
-    btn.style.display='none';
-  }
-}
-window.bsRotate=function(){bsOrient=bsOrient==='h'?'v':'h';bsUpdateSetupMsg();if(bsHoverR>=0&&bsPlaceIdx<bsToPlace.length)bsSetupHover(bsHoverR,bsHoverC);};
-window.bsResetSetup=function(){
-  bsSetupGrid=[];for(var i=0;i<10;i++)bsSetupGrid.push(Array(10).fill(0));
-  bsSetupShips=[];bsToPlace=BS_SHIPS.slice();bsPlaceIdx=0;
-  renderBsSetup();bsUpdateSetupMsg();
-};
-window.bsAutoPlaceRemaining=function(){
-  var remaining=bsToPlace.slice(bsPlaceIdx);
-  var allOk=true;
-  remaining.forEach(function(size){if(!bsTryPlaceOne(bsSetupGrid,bsSetupShips,size))allOk=false;});
-  bsPlaceIdx=bsToPlace.length;
-  renderBsSetup();bsUpdateSetupMsg();
-  if(!allOk)document.getElementById('bs-setup-msg').textContent='COULDN\u2019T FIT EVERYTHING \u2014 TRY RESET';
-};
-function bsSetupCandidateCells(r,c){
-  if(bsPlaceIdx>=bsToPlace.length)return [];
-  var size=bsToPlace[bsPlaceIdx],cells=[];
-  for(var i=0;i<size;i++)cells.push([bsOrient==='h'?r:r+i,bsOrient==='h'?c+i:c]);
-  return cells;
-}
-function bsSetupHover(r,c){
-  if(bsPlaceIdx>=bsToPlace.length)return;
-  bsHoverR=r;bsHoverC=c;
-  var cells=bsSetupCandidateCells(r,c);
-  var valid=bsValidPlacement(bsSetupGrid,cells);
-  var g=document.getElementById('bs-setup-grid');
-  Array.prototype.forEach.call(g.children,function(el){el.classList.remove('preview-ok','preview-bad');});
-  cells.forEach(function(p){
-    if(p[0]<0||p[0]>=10||p[1]<0||p[1]>=10)return;
-    var el=g.children[p[0]*10+p[1]];
-    if(el)el.classList.add(valid?'preview-ok':'preview-bad');
-  });
-}
-function bsSetupClick(r,c){
-  if(bsPlaceIdx>=bsToPlace.length)return;
-  var cells=bsSetupCandidateCells(r,c);
-  if(!bsValidPlacement(bsSetupGrid,cells))return;
-  cells.forEach(function(p){bsSetupGrid[p[0]][p[1]]=1;});
-  bsSetupShips.push({cells:cells,hits:0,size:bsToPlace[bsPlaceIdx],sunk:false});
-  bsPlaceIdx++;
-  renderBsSetup();bsUpdateSetupMsg();
-}
-function renderBsSetup(){
-  var g=document.getElementById('bs-setup-grid');
-  if(!g)return;
-  g.innerHTML='';
-  for(var r=0;r<10;r++)for(var c=0;c<10;c++){
-    (function(r,c){
-      var el=document.createElement('div');
-      el.className='bs-cell';
-      if(bsSetupGrid[r][c]===1)el.classList.add('ship');
-      el.addEventListener('mouseenter',function(){bsSetupHover(r,c);});
-      el.addEventListener('click',function(){bsSetupClick(r,c);});
-      g.appendChild(el);
-    })(r,c);
-  }
-}
-window.bsStartBattle=function(){
-  if(bsPlaceIdx<bsToPlace.length)return;
-  bsPlayer={grid:bsSetupGrid,ships:bsSetupShips};
-  document.getElementById('bs-setup').style.display='none';
-  document.getElementById('bs-wrap').style.display='';
-  document.getElementById('bs-msg').textContent='YOUR TURN \u2014 FIRE AT ENEMY WATERS';
-  renderBattle();
-  if(window.BattleBot)BattleBot.react('begin');
-};
-document.addEventListener('keydown',function(e){if(cur==='battle'&&(e.key==='r'||e.key==='R'))bsRotate();});
-
-/* ── battle ── */
-function bsMarkAroundSunk(board,ship){
-  ship.cells.forEach(function(p){
-    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
-      var nr=p[0]+dr,nc=p[1]+dc;
-      if(nr<0||nr>=10||nc<0||nc>=10)continue;
-      if(board.grid[nr][nc]===0)board.grid[nr][nc]=3;
-    }
-  });
-}
-function bsFireAt(board,r,c){
-  var grid=board.grid;
-  if(grid[r][c]===2||grid[r][c]===3)return null;
-  if(grid[r][c]===1){
-    grid[r][c]=2;
-    var ship=board.ships.filter(function(s){return s.cells.some(function(p){return p[0]===r&&p[1]===c;});})[0];
-    ship.hits++;
-    if(ship.hits===ship.size){ship.sunk=true;bsMarkAroundSunk(board,ship);}
-    return {result:'hit',ship:ship};
-  }else{
-    grid[r][c]=3;
-    return {result:'miss'};
-  }
-}
-
-window.bsPlayerFire=function(r,c){
-  if(bsOver||bsTurn!=='player'||cur!=='battle')return;
-  var res=bsFireAt(bsEnemy,r,c);
-  if(!res)return;
-  bsLastShot={board:bsEnemy,r:r,c:c};
-  renderBattle();
-  if(res.result==='hit'){
-    var left=bsEnemy.ships.filter(function(s){return !s.sunk;}).length;
-    document.getElementById('bs-eleft').textContent=left;
-    if(left===0){bsWin();return;}
-    document.getElementById('bs-msg').textContent=res.ship.sunk?'YOU SUNK A SHIP! FIRE AGAIN':'HIT! FIRE AGAIN';
-    if(window.BattleBot)BattleBot.react(res.ship.sunk?'shipsunk':'hurt');
-  }else{
-    document.getElementById('bs-msg').textContent='MISS! ENEMY TURN...';
-    if(window.BattleBot)BattleBot.react('taunt');
-    bsTurn='ai';
-    setTimeout(bsAiTurn,650);
-  }
-};
-
-function bsPickAiTarget(){
-  if(bsDiff==='hard'){
-    while(bsHunt.length){
-      var t=bsHunt.pop();
-      if(bsPlayer.grid[t[0]][t[1]]!==2&&bsPlayer.grid[t[0]][t[1]]!==3){
-        if(t[2])bsHuntDir=t[2];
-        return [t[0],t[1]];
-      }
-    }
-    bsHuntDir=null;
-  }
-  var r,c;
-  do{r=Math.random()*10|0;c=Math.random()*10|0;}while(bsPlayer.grid[r][c]===2||bsPlayer.grid[r][c]===3);
-  return [r,c];
-}
-
-function bsAiTurn(){
-  if(bsOver||cur!=='battle')return;
-  var target=bsPickAiTarget();
-  var res=bsFireAt(bsPlayer,target[0],target[1]);
-  bsLastShot={board:bsPlayer,r:target[0],c:target[1]};
-  renderBattle();
-  if(res.result==='hit'){
-    if(bsDiff==='hard'){
-      if(res.ship.sunk){
-        bsHunt=[];bsHuntDir=null;bsHuntOrigin=null;
-      }else{
-        if(!bsHuntOrigin)bsHuntOrigin=target;
-        var dirs=bsHuntDir?[bsHuntDir]:[[1,0],[-1,0],[0,1],[0,-1]];
-        dirs.forEach(function(d){
-          var nr=target[0]+d[0],nc=target[1]+d[1];
-          if(nr>=0&&nr<10&&nc>=0&&nc<10&&bsPlayer.grid[nr][nc]!==2&&bsPlayer.grid[nr][nc]!==3){
-            bsHunt.push([nr,nc,d]);
-          }
-        });
-      }
-    }
-    var left=bsPlayer.ships.filter(function(s){return !s.sunk;}).length;
-    document.getElementById('bs-pleft').textContent=left;
-    if(left===0){bsLose();return;}
-    document.getElementById('bs-msg').textContent='ENEMY HIT YOUR SHIP! ENEMY FIRES AGAIN...';
-    if(window.BattleBot)BattleBot.react('attack');
-    setTimeout(bsAiTurn,650);
-  }else{
-    document.getElementById('bs-msg').textContent='ENEMY MISSED. YOUR TURN';
-    if(window.BattleBot)BattleBot.react('aimiss');
-    bsTurn='player';
-  }
-}
-
-function bsWin(){
-  bsOver=true;
-  var wins=parseInt(localStorage.getItem('aceon_bs_wins')||'0')+1;
-  localStorage.setItem('aceon_bs_wins',wins);
-  document.getElementById('hi-battle').textContent=wins;
-  var m=document.getElementById('bs-msg');
-  m.textContent='\u2713 VICTORY! ALL ENEMY SHIPS SUNK';m.style.color='var(--pri-b)';
-  if(window.BattleBot)BattleBot.react('lose');
-}
-function bsLose(){
-  bsOver=true;
-  var m=document.getElementById('bs-msg');
-  m.textContent='YOUR FLEET IS DESTROYED \u2014 TRY AGAIN';m.style.color='var(--err)';
-  if(window.BattleBot)BattleBot.react('win');
-}
-
-function renderBattle(){
-  bsRenderGrid('bs-pgrid',bsPlayer,true);
-  bsRenderGrid('bs-egrid',bsEnemy,false);
-}
-
-function bsRenderGrid(id,board,ownBoard){
-  var g=document.getElementById(id);
-  if(!g)return;
-  g.innerHTML='';
-  for(var r=0;r<10;r++)for(var c=0;c<10;c++){
-    (function(r,c){
-      var v=board.grid[r][c];
-      var el=document.createElement('div');
-      el.className='bs-cell';
-      if(v===1&&ownBoard)el.classList.add('ship');
-      if(v===2){
-        var ship=board.ships.filter(function(s){return s.cells.some(function(p){return p[0]===r&&p[1]===c;});})[0];
-        el.classList.add(ship&&ship.sunk?'sunk':'hit');
-      }
-      if(v===3)el.classList.add('miss');
-      if(!ownBoard){
-        el.classList.add('enemy');
-        el.addEventListener('click',function(){bsPlayerFire(r,c);});
-      }
-      if(bsLastShot&&bsLastShot.board===board&&bsLastShot.r===r&&bsLastShot.c===c){
-        el.classList.add('bs-flash');
-      }
-      g.appendChild(el);
-    })(r,c);
-  }
-}
-(function(){var el=document.getElementById('hi-battle');if(el)el.textContent=localStorage.getItem('aceon_bs_wins')||'0';})();
 
 /* ════════════════ MASTERMIND ════════════════ */
 var MM_COLORS=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c','#ecf0f1'];

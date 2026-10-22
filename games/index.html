@@ -440,40 +440,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 /* CANVAS AUTO-SCALE — keeps internal game resolution intact, only shrinks visually */
 .gcv{max-width:100%;height:auto;display:block;margin:0 auto;max-height:calc(100dvh - 130px);width:auto;}
 
-/* MINESWEEPER */
-#mine-grid{display:inline-grid;border:2px solid;border-color:var(--bdr-d) var(--bdr) var(--bdr) var(--bdr-d);background:var(--bg3);gap:1px;padding:2px;}
-.mc{width:var(--mine-cell,26px);height:var(--mine-cell,26px);background:var(--bg4);border:1px solid;
-    border-color:var(--bdr) var(--bdr-d) var(--bdr-d) var(--bdr);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:calc(var(--mine-cell,26px) * 0.46);font-weight:bold;user-select:none;}
-.mc:hover{background:var(--sel);}.mc.rev{background:var(--bg2);border-color:var(--bdr-d);cursor:default;}
-.mc.flag{color:#ef5350;}.mc.boom{background:#5c1a1a;color:#ef5350;}
-.n1{color:#4fc3f7;}.n2{color:#81c784;}.n3{color:#ef5350;}.n4{color:#ce93d8;}
-.n5{color:#ffa726;}.n6{color:#4dd0e1;}.n7{color:#fff;}.n8{color:#888;}
-
-/* 2048 */
-#g2048{background:linear-gradient(160deg,#10182e,#0a0f1e);border:3px solid #243049;padding:10px;border-radius:14px;
-       box-shadow:0 10px 30px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.03);
-       display:inline-grid;grid-template-columns:repeat(4,var(--t2048-cell,76px));grid-template-rows:repeat(4,var(--t2048-cell,76px));gap:8px;}
-.t2{width:var(--t2048-cell,76px);height:var(--t2048-cell,76px);display:flex;align-items:center;justify-content:center;
-    font-weight:bold;border-radius:9px;transition:background .12s,box-shadow .12s;position:relative;}
-.t2-empty{background:rgba(255,255,255,.035);box-shadow:inset 0 2px 6px rgba(0,0,0,.5);}
-.t2:not(.t2-empty){box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.15),inset 0 -3px 6px rgba(0,0,0,.35);text-shadow:0 1px 2px rgba(0,0,0,.45);}
-@keyframes t2pop{0%{transform:scale(.25);opacity:.2;}60%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
-.t2-pop{animation:t2pop .18s ease-out;}
-/* value palette (neon ramp) */
-.tv-2{background:linear-gradient(160deg,#1d4a47,#143a38);color:#b6f7ef;}
-.tv-4{background:linear-gradient(160deg,#214a21,#163a16);color:#c6f7a8;}
-.tv-8{background:linear-gradient(160deg,#4a4a16,#3a3a12);color:#f4f79a;}
-.tv-16{background:linear-gradient(160deg,#4d3410,#3e2c0a);color:#ffd28a;}
-.tv-32{background:linear-gradient(160deg,#4d260c,#3e1d08);color:#ffb070;}
-.tv-64{background:linear-gradient(160deg,#4d1616,#3e1010);color:#ff9a9a;}
-.tv-128{background:linear-gradient(160deg,#4a1238,#3a0e2e);color:#ffaef0;box-shadow:0 0 14px rgba(255,90,200,.45),0 3px 8px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.15);}
-.tv-256{background:linear-gradient(160deg,#310d4d,#260a3e);color:#d6aaff;box-shadow:0 0 16px rgba(170,90,255,.5),0 3px 8px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.15);}
-.tv-512{background:linear-gradient(160deg,#0d234d,#0a1c3e);color:#9ec4ff;box-shadow:0 0 16px rgba(90,150,255,.5),0 3px 8px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.15);}
-.tv-1024{background:linear-gradient(160deg,#0d3a4d,#0a2f3e);color:#9af0ff;box-shadow:0 0 18px rgba(60,220,255,.55),0 3px 8px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.15);}
-.tv-2048{background:linear-gradient(160deg,#4d4310,#3e3408);color:#fff19a;box-shadow:0 0 24px rgba(255,215,80,.7),0 3px 8px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.2);}
-.tv-4096,.tv-8192{background:linear-gradient(160deg,#4d1010,#2e0808);color:#ffd0d0;box-shadow:0 0 24px rgba(255,80,80,.7),0 3px 8px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.2);}
-
 /* TIC TAC TOE */
 #ttt-grid{display:inline-grid;grid-template-columns:repeat(3,var(--ttt-cell,96px));grid-template-rows:repeat(3,var(--ttt-cell,96px));gap:8px;
   background:linear-gradient(160deg,#0c1430,#070b1c);padding:12px;border-radius:16px;border:3px solid #243049;
@@ -634,14 +600,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 /* ══ ARCADE OVERRIDES FOR GAME-SPECIFIC ELEMENTS ══ */
 
-/* Minesweeper cell */
-.mc{border-color:#003355 #001a33 #001a33 #003355;background:#001020;color:#80f0ff;}
-.mc:hover{background:#003355;}
-.mc.rev{background:#050510;border-color:#002233;}
-.mc.boom{background:#330008;color:#ff3344;}
-.n1{color:#00e5ff;}.n2{color:#00ff88;}.n3{color:#ff3344;}.n4{color:#ff2d78;}
-.n5{color:#ffb830;}.n6{color:#b088ff;}.n7{color:#fff;}.n8{color:#666;}
-
 /* TicTacToe */
 .ttt-mark{position:absolute;inset:0;}
 .ttt.X .ttt-mark::before,.ttt.X .ttt-mark::after{content:'';position:absolute;top:50%;left:50%;width:58%;height:12%;border-radius:7px;background:#ff3b4d;box-shadow:0 0 14px #ff3b4d,0 0 5px #ff3b4d;}
@@ -725,7 +683,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .pz-tile.empty{background:#020208;border-color:#001a33;}
 
 /* Message text in game bars — inherit arcade font */
-#mine-st,#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ttt-msg,#ss-msg,#rt-text,#bj-msg,#t-msg{
+#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ttt-msg,#ss-msg,#rt-text,#bj-msg{
   font-family:'Press Start 2P',monospace;
   font-size:clamp(6px,1.5vw,9px);
   letter-spacing:1px;
@@ -741,94 +699,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 /* пульсация заголовка итогов (используется пасьянсом) */
 @keyframes repPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);}}
-/* ═══════════ MINESWEEPER: SAPPER ENTITY (right, desktop) ═══════════ */
-#mine-bot{
-  position:fixed;right:10px;top:50%;
-  transform:translateY(-50%) scale(var(--mbot-scale,1.5));transform-origin:100% 50%;
-  z-index:500;width:190px;pointer-events:none;user-select:none;
-  display:none;flex-direction:column;align-items:center;gap:10px;
-  --mbot-accent:#ff9d2e;--mbot-scale:1.5;font-family:'Press Start 2P',monospace;
-}
-#mine-bot.on{display:flex;}
-@media(max-width:1600px){#mine-bot{--mbot-scale:1.4;}}
-@media(max-width:1440px){#mine-bot{--mbot-scale:1.3;}}
-@media(max-width:1280px){#mine-bot{--mbot-scale:1.15;}}
-@media(max-width:1120px){#mine-bot{--mbot-scale:1.0;}}
-@media(max-width:1000px){#mine-bot{--mbot-scale:.92;}}
-@media(max-width:640px){#mine-bot{display:none!important;}}
-
-.mbot-stage{position:relative;width:190px;height:188px;display:flex;align-items:center;justify-content:center;}
-.mbot-core{position:relative;width:150px;height:172px;display:flex;align-items:flex-end;justify-content:center;animation:mbotFloat 3.4s ease-in-out infinite;}
-@keyframes mbotFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-.mbot-core::before{content:'';position:absolute;bottom:4px;width:120%;height:115%;border-radius:50%;
-  background:radial-gradient(circle,var(--mbot-accent) 0%,transparent 60%);opacity:.16;filter:blur(6px);z-index:0;animation:mbotHalo 3s ease-in-out infinite;}
-@keyframes mbotHalo{0%,100%{opacity:.12;}50%{opacity:.26;}}
-
-.mbot-fuse{position:absolute;top:0;left:55%;width:3px;height:28px;background:#5a4a2a;border-radius:2px;transform:rotate(20deg);transform-origin:bottom;z-index:3;}
-.mbot-spark{position:absolute;top:-6px;left:50%;width:11px;height:11px;border-radius:50%;transform:translateX(-50%);
-  background:radial-gradient(circle,#fff,#ffd23a 45%,#ff7a00 75%,transparent);box-shadow:0 0 10px #ffae00,0 0 22px #ff7a00;
-  animation:mbotSpark .5s steps(2) infinite;}
-@keyframes mbotSpark{0%,100%{opacity:1;transform:translateX(-50%) scale(1);}50%{opacity:.5;transform:translateX(-54%) scale(.7);}}
-
-.mbot-body{position:relative;width:120px;height:120px;border-radius:50%;
-  background:radial-gradient(circle at 36% 30%,#3a3f4a,#10131b 70%,#05070c);
-  border:2px solid var(--mbot-accent);
-  box-shadow:0 0 16px var(--mbot-accent),inset -8px -8px 18px rgba(0,0,0,.7),inset 6px 6px 14px rgba(255,255,255,.06);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
-  transition:box-shadow .2s,border-color .2s,filter .2s;}
-.mbot-body::after{content:'';position:absolute;top:18px;left:24px;width:22px;height:12px;border-radius:50%;
-  background:rgba(255,255,255,.16);filter:blur(2px);transform:rotate(-25deg);}
-
-.mbot-eyes{display:flex;gap:18px;z-index:1;}
-.mbot-eye{width:20px;height:20px;border-radius:50%;background:#06210f;border:2px solid var(--mbot-accent);
-  box-shadow:0 0 8px var(--mbot-accent);position:relative;animation:mbotBlink 4.4s infinite;overflow:hidden;}
-.mbot-eye::after{content:'';position:absolute;top:3px;left:3px;width:7px;height:7px;border-radius:50%;background:#aef0ff;box-shadow:0 0 6px #aef0ff;}
-@keyframes mbotBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.1);}}
-
-.mbot-mouth{width:22px;height:8px;border-bottom:3px solid var(--mbot-accent);border-radius:0 0 12px 12px;z-index:1;transition:all .15s;}
-
-.mbot-name{color:var(--mbot-accent);font-size:11px;letter-spacing:2px;text-shadow:0 0 10px var(--mbot-accent);}
-.mbot-sub{color:#9fb6c4;font-size:7px;letter-spacing:3px;}
-.mbot-status{color:#ffe0b0;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(255,157,46,.4);}
-
-.mbot-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--mbot-accent);box-shadow:0 0 8px var(--mbot-accent);opacity:.5;}
-.mbot-particle.mp1{top:20%;left:14%;animation:mbotDrift1 5s ease-in-out infinite;}
-.mbot-particle.mp2{top:34%;right:12%;animation:mbotDrift2 6.4s ease-in-out infinite;}
-.mbot-particle.mp3{bottom:24%;left:18%;animation:mbotDrift2 5.6s ease-in-out infinite;}
-.mbot-particle.mp4{bottom:30%;right:15%;animation:mbotDrift1 7s ease-in-out infinite;}
-@keyframes mbotDrift1{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(6px,-9px);opacity:.7;}}
-@keyframes mbotDrift2{0%,100%{transform:translate(0,0);opacity:.25;}50%{transform:translate(-7px,-8px);opacity:.7;}}
-
-/* moods */
-#mine-bot.mmood-safe .mbot-body{border-color:#00ff88;box-shadow:0 0 22px #00ff88,inset -8px -8px 18px rgba(0,0,0,.7);}
-#mine-bot.mmood-safe .mbot-eye{height:9px;border-radius:3px 3px 0 0;}
-#mine-bot.mmood-safe .mbot-mouth{width:26px;height:12px;border-bottom-color:#00ff88;}
-
-#mine-bot.mmood-count .mbot-eye{width:14px;}
-#mine-bot.mmood-count .mbot-body{animation:mbotThink .8s ease-in-out infinite;}
-@keyframes mbotThink{0%,100%{transform:rotate(-2deg);}50%{transform:rotate(2deg);}}
-
-#mine-bot.mmood-flag .mbot-body{border-color:#ffd23a;box-shadow:0 0 22px #ffd23a,inset -8px -8px 18px rgba(0,0,0,.7);}
-#mine-bot.mmood-flag .mbot-mouth{width:10px;}
-
-#mine-bot.mmood-go .mbot-spark{animation:mbotSpark .22s steps(2) infinite;}
-
-#mine-bot.mmood-boom .mbot-core{animation:mbotShake .5s;}
-#mine-bot.mmood-boom .mbot-body{border-color:#ff3344;box-shadow:0 0 40px #ff3344,0 0 70px #ff3344,inset -8px -8px 18px rgba(0,0,0,.7);filter:brightness(1.25) saturate(1.3);}
-#mine-bot.mmood-boom .mbot-mouth{width:20px;height:18px;border:3px solid #ff3344;border-radius:50%;}
-#mine-bot.mmood-boom .mbot-eye{background:transparent;border:none;box-shadow:none;animation:none;}
-#mine-bot.mmood-boom .mbot-eye::after{display:none;}
-#mine-bot.mmood-boom .mbot-eye::before{content:'\2715';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ff3344;font-size:16px;font-weight:bold;text-shadow:0 0 8px #ff3344;}
-#mine-bot.mmood-boom .mbot-spark{opacity:0;}
-#mine-bot.mmood-boom .mbot-status{color:#ff8a8a;}
-@keyframes mbotShake{0%,100%{transform:translateX(0);}15%{transform:translate(-8px,2px) rotate(-6deg);}30%{transform:translate(7px,-2px) rotate(5deg);}45%{transform:translate(-6px,1px) rotate(-4deg);}60%{transform:translate(5px,0) rotate(3deg);}80%{transform:translate(-3px,0);}}
-
-#mine-bot.mmood-win .mbot-core{animation:mbotWin .7s ease;}
-@keyframes mbotWin{0%{transform:translateY(0);}30%{transform:translateY(-22px) scale(1.05);}60%{transform:translateY(0);}80%{transform:translateY(-8px);}100%{transform:translateY(0);}}
-#mine-bot.mmood-win .mbot-body{border-color:#00ff88;box-shadow:0 0 34px #00ff88,inset -8px -8px 18px rgba(0,0,0,.7);}
-#mine-bot.mmood-win .mbot-mouth{width:30px;height:14px;border-bottom-color:#00ff88;}
-#mine-bot.mmood-win .mbot-eye{height:9px;border-radius:3px 3px 0 0;}
-#mine-bot.mmood-win .mbot-status{color:#9affc9;}
 
 /* ═══════════ CHECKERS: AI OPPONENT ENTITY (right, desktop) ═══════════ */
 #ck-bot{
@@ -1117,11 +987,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="arc-coin">INSERT COIN &nbsp;<span>&#x25CF;</span>&nbsp; CREDITS: <span id="play-cnt">0</span></div>
   </div>
   <div class="game-grid">
-    <div class="game-icon" onclick="openGame('mine')"><span class="ico-pixel">&#128163;</span><span class="ico-label">MINE&#xAD;SWEEPER</span></div>
+    <div class="game-icon" onclick="location.href='minesweeper/'"><span class="ico-pixel">&#128163;</span><span class="ico-label">MINE&#xAD;SWEEPER</span></div>
     <div class="game-icon" onclick="location.href='solitaire/'"><span class="ico-pixel">&#127183;</span><span class="ico-label">SOLITAIRE</span></div>
     <div class="game-icon" onclick="location.href='snake/'"><span class="ico-pixel">&#128027;</span><span class="ico-label">SNAKE</span></div>
     <div class="game-icon" onclick="openGame('brkout')"><span class="ico-pixel">&#129667;</span><span class="ico-label">BREAKOUT</span></div>
-    <div class="game-icon" onclick="openGame('g2048')"><span class="ico-pixel">&#127922;</span><span class="ico-label">2048</span></div>
+    <div class="game-icon" onclick="location.href='2048/'"><span class="ico-pixel">&#127922;</span><span class="ico-label">2048</span></div>
     <div class="game-icon" onclick="openGame('ttt')"><span class="ico-pixel">&#10060;</span><span class="ico-label">TIC TAC TOE</span></div>
     <div class="game-icon" onclick="openGame('tetris')"><span class="ico-pixel">&#129001;</span><span class="ico-label">TETRIS</span></div>
     <div class="game-icon" onclick="openGame('pong')"><span class="ico-pixel">&#127955;</span><span class="ico-label">PONG</span></div>
@@ -1155,42 +1025,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
 </div>
 
-<!-- MINESWEEPER -->
-<div id="game-mine" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">MINESWEEPER</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>&#128163; <span id="mine-cnt">10</span></span>
-      <span><button class="btn sel" id="mb-easy" onclick="setMineDiff('easy')">EASY</button><button class="btn" id="mb-med" onclick="setMineDiff('med')">MED</button><button class="btn" id="mb-hard" onclick="setMineDiff('hard')">HARD</button></span>
-      <button class="btn" onclick="initMine()">NEW</button>
-      <span>&#9200; <span id="mine-t">0</span>s</span>
-      <span>BEST: <span id="hi-mine">0</span>s</span>
-    </div>
-    <div id="mine-st" style="font-size:11px;letter-spacing:2px;min-height:16px;"></div>
-    <div id="mine-grid"></div>
-
-    <!-- SAPPER ENTITY (desktop only) -->
-    <div id="mine-bot" aria-hidden="true">
-      <div class="mbot-stage">
-        <span class="mbot-particle mp1"></span>
-        <span class="mbot-particle mp2"></span>
-        <span class="mbot-particle mp3"></span>
-        <span class="mbot-particle mp4"></span>
-        <div class="mbot-core">
-          <div class="mbot-fuse"><span class="mbot-spark"></span></div>
-          <div class="mbot-body">
-            <div class="mbot-eyes"><span class="mbot-eye"></span><span class="mbot-eye"></span></div>
-            <div class="mbot-mouth"></div>
-          </div>
-        </div>
-      </div>
-      <div class="mbot-name">SAPPER</div>
-      <div class="mbot-sub" id="mine-bot-sub">BOMB SQUAD</div>
-      <div class="mbot-status" id="mine-bot-status">ON WATCH</div>
-    </div>
-  </div>
-</div>
-
 <!-- BREAKOUT -->
 <div id="game-brkout" class="gwin hidden">
   <div class="gtb"><span class="gtb-t">BREAKOUT</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
@@ -1207,27 +1041,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="m-ctrl" id="mc-brkout">
       <button class="m-btn wide" id="bk-left" onpointerdown="bkHold(-1)" onpointerup="bkRelease()" ontouchend="bkRelease()">&#9664; LEFT</button>
       <button class="m-btn wide" id="bk-right" onpointerdown="bkHold(1)" onpointerup="bkRelease()" ontouchend="bkRelease()">RIGHT &#9654;</button>
-    </div>
-  </div>
-</div>
-
-<!-- 2048 -->
-<div id="game-g2048" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">2048</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>SCORE: <span id="t-sc">0</span></span>
-      <button class="btn" onclick="init2048()">NEW</button>
-      <span>BEST: <span id="t-best">0</span></span>
-      <span id="t-msg" style="font-size:10px;"></span>
-    </div>
-    <div id="g2048"></div>
-    <div class="m-ctrl" id="mc-2048">
-      <div style="display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:3px;">
-        <div></div><button class="m-btn" onclick="tMove('up')">&#9650;</button><div></div>
-        <button class="m-btn" onclick="tMove('left')">&#9664;</button><div></div><button class="m-btn" onclick="tMove('right')">&#9654;</button>
-        <div></div><button class="m-btn" onclick="tMove('down')">&#9660;</button><div></div>
-      </div>
     </div>
   </div>
 </div>
@@ -1560,7 +1373,7 @@ function gC(){
    to a CSS custom property. The grid/board CSS reads that variable via var(),
    so cells shrink on phones without any change to game logic or click handling. */
 /* ── Dynamic cell fitter — always uses available screen space ── */
-var ARC_MAX={'mine-cell':40,'t2048-cell':140,'ck-cell':96,'wl-key':46,'fl-cell':52,'bs-cell':46};
+var ARC_MAX={'ck-cell':96,'wl-key':46,'fl-cell':52,'bs-cell':46};
 function fitCells(varName,cols,opts){
   opts=opts||{};
   /* dynamic margin: small fraction of screen width, never more than 48px */
@@ -1578,11 +1391,8 @@ function fitCells(varName,cols,opts){
   document.documentElement.style.setProperty('--'+varName,cell+'px');
   return cell;
 }
-var t2048Cell=76;
 function refitCurrent(){
   /* fitCells is now self-aware — just re-call each game's fit function */
-  if(cur==='mine'&&typeof mC==='number'){fitCells('mine-cell',mC,{min:12,extra:8+(mC-1)});renderMine();}
-  if(cur==='g2048'){t2048Cell=fitCells('t2048-cell',4,{min:48,extra:38,max:140});render2048();}
   if(cur==='checkers'){fitCells('ck-cell',8,{min:30,extra:4});ckRender();}
   if(cur==='wordle'){fitCells('wl-key',10,{min:22,extra:36});renderWlGrid();renderWlKeys();}
   if(cur==='flood'&&typeof flN==='number'){fitCells('fl-cell',flN,{min:13,extra:2});renderFlood();}
@@ -1634,8 +1444,8 @@ window.openGame=function(id){
   var cnt=localStorage.getItem('aceon_plays')||'0';
   var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
-  var fn={mine:initMine,brkout:initBreak,
-          g2048:init2048,ttt:initTTT,tetris:initTetris,pong:initPong,
+  var fn={brkout:initBreak,
+          ttt:initTTT,tetris:initTetris,pong:initPong,
           checkers:initCheckers,pf:initPf,
           simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,react:initReact,
           bj:initBJ,yahtzee:initYahtzee,puzzle:initPuzzle,bubbles:initBubble};
@@ -1657,69 +1467,6 @@ window.closeGame=function(){
   cur=null;
   showPage(wasP2?2:1);
 };
-
-/* ════════════════ MINESWEEPER ════════════════ */
-var mCfg={easy:{r:9,c:9,m:10},med:{r:12,c:12,m:25},hard:{r:16,c:16,m:50}};
-var mDiff='easy',mR,mC,mM,mBd,mRv,mFl,mDead,mWon,mFst,mTmr,mSec;
-
-/* ── SAPPER ENTITY (right of the field, reacts to digs/flags/boom/win) ── */
-var MineBot=(function(){
-  var root=null,statusEl=null,shown=false,cur='idle',rt=null;
-  var SAY={
-    idle:['DEFUSING...','ON WATCH','STEADY...','TICK... TICK...'],
-    go:['GO!','FIRST DIG...','HERE WE GO'],
-    safe:['PHEW.','CLEAR!','SAFE.','NICE DIG.'],
-    count:['HMM...','COUNTING','CAREFUL...','I SEE NUMBERS'],
-    flag:['FLAG UP.','MINE THERE?','MARKED.','NOTED.'],
-    unflag:['FLAG OFF.','NEVERMIND.','UNSURE?'],
-    boom:['BOOM!','KABOOM!','...OOPS.','WE LOST ONE.'],
-    win:['CLEARED!','ALL SAFE!','GG!','FLAWLESS!']
-  };
-  function pick(a){return a[Math.random()*a.length|0];}
-  function grab(){if(!root){root=document.getElementById('mine-bot');statusEl=document.getElementById('mine-bot-status');}return root;}
-  function mood(m,txt){if(!grab())return;cur=m;root.className=(shown?'on ':'')+'mmood-'+m;if(statusEl)statusEl.textContent=txt||pick(SAY[m]||['...']);}
-  return {
-    show:function(){if(!grab())return;shown=true;root.classList.add('on');mood('idle');},
-    hide:function(){if(grab()){shown=false;root.classList.remove('on');}},
-    react:function(m,txt){
-      if(!grab()||!shown)return;
-      if(rt){clearTimeout(rt);rt=null;}
-      mood(m,txt);
-      var transient={go:1,safe:1,count:1,flag:1,unflag:1};
-      if(transient[m])rt=setTimeout(function(){if(cur===m)mood('idle');},1600);
-    }
-  };
-})();
-window.MineBot=MineBot;
-
-function positionMineBot(){
-  var grid=document.getElementById('mine-grid'),bot=document.getElementById('mine-bot');
-  if(!grid||!bot)return;
-  var win=document.getElementById('game-mine');
-  if(win&&win.classList.contains('hidden'))return;
-  if(!bot.classList.contains('on'))return;
-  var gr=grid.getBoundingClientRect();
-  if(!gr.width)return;
-  var vw=window.innerWidth||document.documentElement.clientWidth;
-  var GAP=18,EDGE=10;
-  bot.style.display='';
-  var bw=bot.getBoundingClientRect().width||0;
-  var rg=vw-gr.right;
-  if(bw&&rg>=bw+GAP+EDGE){
-    var cx=gr.right+rg/2,rightEdge=cx+bw/2,ro=vw-rightEdge;
-    ro=Math.min(Math.max(EDGE,ro),vw-gr.right-GAP-bw);
-    bot.style.right=ro+'px';bot.style.display='';
-  }else{bot.style.display='none';}
-}
-window.positionMineBot=positionMineBot;
-if(!window.__mineBotResize){window.__mineBotResize=true;window.addEventListener('resize',function(){positionMineBot();});}
-
-window.setMineDiff=function(d){mDiff=d;['easy','med','hard'].forEach(function(x){document.getElementById('mb-'+x).className='btn'+(x===d?' sel':'');});initMine();};
-window.initMine=function(){clearInterval(mTmr);var c=mCfg[mDiff];mR=c.r;mC=c.c;mM=c.m;mBd=[];mRv=[];mFl=[];mDead=mWon=false;mFst=true;mSec=0;for(var i=0;i<mR;i++){mBd.push(Array(mC).fill(0));mRv.push(Array(mC).fill(false));mFl.push(Array(mC).fill(false));}document.getElementById('mine-cnt').textContent=mM;document.getElementById('mine-t').textContent='0';document.getElementById('mine-st').textContent='';showHi('mine');fitCells('mine-cell',mC,{min:14,extra:8+(mC-1),margin:48});if(window.MineBot)MineBot.show();renderMine();};
-function mPlace(sr,sc){var p=0;while(p<mM){var r=Math.random()*mR|0,c=Math.random()*mC|0;if(mBd[r][c]===-1||Math.abs(r-sr)<=1&&Math.abs(c-sc)<=1)continue;mBd[r][c]=-1;p++;}for(var r=0;r<mR;r++)for(var c=0;c<mC;c++){if(mBd[r][c]===-1)continue;var n=0;for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){var nr=r+dr,nc=c+dc;if(nr>=0&&nr<mR&&nc>=0&&nc<mC&&mBd[nr][nc]===-1)n++;}mBd[r][c]=n;}}
-function mRev(r,c){if(r<0||r>=mR||c<0||c>=mC||mRv[r][c]||mFl[r][c])return;mRv[r][c]=true;if(mBd[r][c]===0)for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++)mRev(r+dr,c+dc);}
-function mChkW(){for(var r=0;r<mR;r++)for(var c=0;c<mC;c++)if(mBd[r][c]!==-1&&!mRv[r][c])return false;return true;}
-function renderMine(){var g=document.getElementById('mine-grid');g.style.gridTemplateColumns='repeat('+mC+',var(--mine-cell,26px))';g.innerHTML='';for(var r=0;r<mR;r++)for(var c=0;c<mC;c++){(function(r,c){var el=document.createElement('div');el.className='mc';if(mRv[r][c]){el.classList.add('rev');if(mBd[r][c]===-1){el.classList.add('boom');el.textContent='\u2736';}else if(mBd[r][c]>0){el.textContent=mBd[r][c];el.classList.add('n'+mBd[r][c]);}}else if(mFl[r][c]){el.classList.add('flag');el.textContent='F';}if(!mDead&&!mWon){el.addEventListener('click',function(){if(mFl[r][c])return;if(mFst){mFst=false;mPlace(r,c);mTmr=setInterval(function(){mSec++;document.getElementById('mine-t').textContent=mSec;},1000);}if(mBd[r][c]===-1){mDead=true;clearInterval(mTmr);for(var rr=0;rr<mR;rr++)for(var cc=0;cc<mC;cc++)if(mBd[rr][cc]===-1)mRv[rr][cc]=true;if(window.MineBot)MineBot.react('boom');renderMine();document.getElementById('mine-st').style.color='#ef5350';document.getElementById('mine-st').textContent='GAME OVER';return;}mRev(r,c);if(mChkW()){mWon=true;clearInterval(mTmr);setHi('mine',-mSec);var st=document.getElementById('mine-st');st.textContent='YOU WIN! '+mSec+'s';st.style.color='var(--pri)';showHi('mine');if(window.MineBot)MineBot.react('win');}else if(window.MineBot)MineBot.react(mBd[r][c]===0?'safe':'count');renderMine();});el.addEventListener('contextmenu',function(e){e.preventDefault();if(mRv[r][c])return;mFl[r][c]=!mFl[r][c];if(window.MineBot)MineBot.react(mFl[r][c]?'flag':'unflag');var f=0;for(var rr=0;rr<mR;rr++)for(var cc=0;cc<mC;cc++)if(mFl[rr][cc])f++;document.getElementById('mine-cnt').textContent=mM-f;renderMine();});}g.appendChild(el);})(r,c);}if(window.positionMineBot)positionMineBot();}
 
 /* ════════════════ BREAKOUT ════════════════ */
 var bkCtx,bkCv,bkRaf,bkScale=1,bkState,bkPad,bkBalls,bkBricks,bkSc,bkLf,bkLevelNum,bkDrops,bkParticles,bkExpandUntil,bkHTimer;
@@ -1914,19 +1661,6 @@ document.addEventListener('keydown',function(e){
 document.addEventListener('pointermove',bkPointerMove);
 (function(){var cv=document.getElementById('bk-cv');if(cv)cv.addEventListener('pointerdown',function(){bkTap();});})();
 if(!window.__bkResize){window.__bkResize=true;window.addEventListener('resize',function(){if(typeof cur!=='undefined'&&cur==='brkout')bkFit();});}
-
-/* ════════════════ 2048 ════════════════ */
-var tGrd,tSc,tBest=0,tLastSpawn=null;
-var T_CLR={0:{bg:'',fg:''},2:{bg:'#1b3a1b',fg:'#a5d6a7'},4:{bg:'#2d3a00',fg:'#c5e1a5'},8:{bg:'#3e2300',fg:'#ffcc80'},16:{bg:'#3e1500',fg:'#ffa726'},32:{bg:'#3e0800',fg:'#ef9a9a'},64:{bg:'#3e0000',fg:'#ef5350'},128:{bg:'#2a003e',fg:'#ce93d8'},256:{bg:'#00153e',fg:'#90caf9'},512:{bg:'#003e3e',fg:'#80deea'},1024:{bg:'#003e1b',fg:'#a5d6a7'},2048:{bg:'#3e3800',fg:'#fff176'}};
-window.init2048=function(){tSc=0;tGrd=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];document.getElementById('t-sc').textContent='0';document.getElementById('t-msg').textContent='';t2048Cell=fitCells('t2048-cell',4,{max:76,min:48,extra:38,margin:48});tSpawn();tSpawn();render2048();};
-function tSpawn(){var e=[];for(var r=0;r<4;r++)for(var c=0;c<4;c++)if(tGrd[r][c]===0)e.push([r,c]);if(!e.length)return;var p=e[Math.random()*e.length|0];tGrd[p[0]][p[1]]=Math.random()<0.9?2:4;tLastSpawn=[p[0],p[1]];}
-function tSlide(row){row=row.filter(function(x){return x!==0;});for(var i=0;i<row.length-1;i++){if(row[i]===row[i+1]){row[i]*=2;tSc+=row[i];row.splice(i+1,1);}}while(row.length<4)row.push(0);return row;}
-function tMove(dir){var moved=false;if(dir==='left'||dir==='right'){for(var r=0;r<4;r++){var row=tGrd[r].slice();if(dir==='right')row.reverse();var s=tSlide(row);if(dir==='right')s.reverse();if(JSON.stringify(tGrd[r])!==JSON.stringify(s)){moved=true;tGrd[r]=s;}}}else{for(var c=0;c<4;c++){var col=[tGrd[0][c],tGrd[1][c],tGrd[2][c],tGrd[3][c]];if(dir==='down')col.reverse();var s2=tSlide(col);if(dir==='down')s2.reverse();for(var r2=0;r2<4;r2++)if(tGrd[r2][c]!==s2[r2]){moved=true;tGrd[r2][c]=s2[r2];}}}if(moved){tSpawn();if(tSc>tBest){tBest=tSc;document.getElementById('t-best').textContent=tBest;}document.getElementById('t-sc').textContent=tSc;render2048();tCheck();}}
-window.tMove=tMove;
-function render2048(){var g=document.getElementById('g2048');g.innerHTML='';for(var r=0;r<4;r++)for(var c=0;c<4;c++){var v=tGrd[r][c];var el=document.createElement('div');el.className='t2 '+(v?'tv-'+v:'t2-empty');if(v){el.style.fontSize=(v>=1000?t2048Cell*0.21:v>=100?t2048Cell*0.24:t2048Cell*0.30)+'px';el.textContent=v;if(tLastSpawn&&tLastSpawn[0]===r&&tLastSpawn[1]===c)el.classList.add('t2-pop');}g.appendChild(el);}}
-function tCheck(){var has=false,can=false;for(var r=0;r<4;r++)for(var c=0;c<4;c++){if(tGrd[r][c]===2048)has=true;if(tGrd[r][c]===0)can=true;if(c<3&&tGrd[r][c]===tGrd[r][c+1])can=true;if(r<3&&tGrd[r][c]===tGrd[r+1][c])can=true;}var m=document.getElementById('t-msg');if(has){m.textContent='2048!';m.style.color='#fff176';}else if(!can){m.textContent='NO MOVES';m.style.color='#ef5350';}}
-document.addEventListener('keydown',function(e){if(cur!=='g2048')return;var map={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'};if(map[e.key]){e.preventDefault();tMove(map[e.key]);}});
-(function(){var el=document.getElementById('g2048');if(!el)return;var tx,ty;el.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;ty=e.touches[0].clientY;e.preventDefault();},{passive:false});el.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>Math.abs(dy))tMove(dx>0?'right':'left');else tMove(dy>0?'down':'up');e.preventDefault();},{passive:false});})();
 
 /* ════════════════ TIC-TAC-TOE ════════════════ */
 var tttB,tttGo,tttWp=0,tttAp=0,tttLast=-1,tttWinLine=null;

@@ -9,11 +9,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    /* курсор: синяя стрелка с чёрным контуром, над тем, что нажимается, она светлее.
+       Системный курсор через CSS, без JS: не отстаёт от мыши и виден поверх всех слоёв */
+    :root{
+      --cur: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'><path d='M3 2.5L3 20.5L7.6 16.4L10.7 23.2L14 21.8L10.9 15.1L17.2 15.1Z' fill='%234DAFFF' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'/><path d='M5 7L5 15.6' stroke='%23d6f0ff' stroke-width='1.1' stroke-linecap='round' opacity='.75'/></svg>") 3 3, auto;
+      --cur-p: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'><path d='M3 2.5L3 20.5L7.6 16.4L10.7 23.2L14 21.8L10.9 15.1L17.2 15.1Z' fill='%23b8e4ff' stroke='%23000' stroke-width='1.8' stroke-linejoin='round'/><path d='M5 7L5 15.6' stroke='%23fff' stroke-width='1.1' stroke-linecap='round'/></svg>") 3 3, pointer;
+    }
     html, body {
       width:100%; height:100%;
       background:#000;
       overflow:hidden;
-      cursor:none;
+      cursor:var(--cur);
       user-select:none;
       -webkit-tap-highlight-color:transparent;
       font-family:'JetBrains Mono','Courier New',monospace;
@@ -22,9 +28,9 @@
       *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
     }
 
-    /* ═══ RENDER STACK ═══ */
-    #src { position:fixed; inset:0; z-index:1; display:none; width:100%; height:100%; } /* показывается только без WebGL */
-    #gl  { position:fixed; inset:0; z-index:1; display:block; width:100%; height:100%; }
+    /* рендер: #gl основной, #src только когда WebGL нет (статичная галактика) */
+    #src { position:fixed; inset:0; z-index:1; display:none; width:100%; height:100%; }
+    #gl  { position:fixed; inset:0; z-index:1; display:none; width:100%; height:100%; }
 
     #vig {
       position:fixed; inset:0; z-index:2; pointer-events:none;
@@ -35,16 +41,15 @@
       background:repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
     }
 
-    /* iris: fullscreen-слой, дырка сужается JS-градиентом — без квадратов */
+    /* iris для режима без WebGL; с WebGL диафрагма считается в финальном шейдере */
     #iris { position:fixed; inset:0; z-index:80; pointer-events:none; }
-    /* финальный чёрный занавес перед сменой страницы */
     #blackout {
       position:fixed; inset:0; z-index:210; background:#000;
       opacity:0; pointer-events:none; transition:opacity .45s ease-in;
     }
     #blackout.on { opacity:1; }
 
-    /* ═══ SEAMLESS PORTAL ═══ */
+    /* портал: info/ и Core грузятся в iframe под анимацией */
     #portal-host { position:fixed; inset:0; z-index:208; display:none; }
     #portal-host.open { display:block; }
     #portal-host iframe {
@@ -55,7 +60,6 @@
     #portal-host.reveal iframe { opacity:1; transform:scale(1); }
     #portal-host.closing iframe { opacity:0; transform:scale(1.12); transition:opacity .55s ease, transform .7s ease; }
 
-    /* ═══ GLITCH FX ═══ */
     #tears { position:fixed; inset:0; z-index:40; pointer-events:none; overflow:hidden; }
     .tear {
       position:absolute; left:0; right:0; pointer-events:none;
@@ -71,7 +75,6 @@
     #sigbroken.on { animation:sbflash .38s steps(3) 1; }
     @keyframes sbflash { 0%{opacity:0} 20%{opacity:.9} 45%{opacity:.15} 70%{opacity:.85} 100%{opacity:0} }
 
-    /* ═══ BOOT ═══ */
     #boot {
       position:fixed; inset:0; z-index:120; background:#000;
       padding:26px; color:#00993a; font-size:11px; line-height:2; letter-spacing:2px;
@@ -79,7 +82,6 @@
     }
     #boot.gone { opacity:0; pointer-events:none; }
 
-    /* ═══ HUD ═══ */
     #hud { position:fixed; top:14px; right:18px; z-index:50; font-size:10px; letter-spacing:3px; text-align:right; line-height:2.1; pointer-events:none; transition:opacity .6s; }
     .hg  { color:#003a12; animation:npls 4s ease-in-out infinite; }
     .hgg { color:#001d09; }
@@ -93,7 +95,6 @@
     }
     .fadeout { opacity:0 !important; }
 
-    /* ═══ STAGE ═══ */
     #stage {
       position:fixed; inset:0; z-index:20;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -115,19 +116,26 @@
     .st-in { opacity:0; transform:translateY(14px); transition:opacity .9s ease, transform .9s ease; }
     .st-in.on { opacity:1; transform:translateY(0); }
 
-    /* ── living logo ── */
     #logo-wrap { position:relative; text-align:center; pointer-events:none; }
-    .ttl {
+    .ttl-box { position:relative; display:inline-block; }
+    .ttl, .ttl-glow {
       font-family:'Rajdhani','Arial Narrow',sans-serif;
       font-size:clamp(38px,7vw,72px); font-weight:700;
-      color:#c8c8c8; letter-spacing:.14em; line-height:1;
-      position:relative; display:inline-block;
-      animation:breath 6s ease-in-out infinite;
+      letter-spacing:.14em; line-height:1;
     }
-    @keyframes breath {
-      0%,100%{ text-shadow:0 0 18px rgba(200,200,200,.07); }
-      50%    { text-shadow:0 0 34px rgba(200,200,200,.16), 0 0 70px rgba(0,150,200,.07); }
+    .ttl {
+      color:#c8c8c8; position:relative; display:inline-block;
+      text-shadow:0 0 18px rgba(200,200,200,.07);
     }
+    /* дыхание логотипа: раньше анимировался text-shadow (перерисовка каждый кадр),
+       теперь статичная тень на копии текста, а меняется только opacity */
+    .ttl-glow {
+      position:absolute; left:0; top:0; white-space:nowrap; color:transparent; pointer-events:none;
+      text-shadow:0 0 34px rgba(200,200,200,.16), 0 0 70px rgba(0,150,200,.07);
+      opacity:0; will-change:opacity;
+      animation:glowBreath 6s ease-in-out infinite;
+    }
+    @keyframes glowBreath { 0%,100%{opacity:0} 50%{opacity:1} }
     .ttl::before {
       content:attr(data-text); position:absolute; top:0; left:0;
       color:#dd0025; clip-path:inset(0 0 54% 0); animation:ga 7s infinite;
@@ -153,7 +161,6 @@
     @keyframes lscan { 0%{left:-40px;opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{left:calc(100% + 10px);opacity:0} }
     #sub { font-size:10px; color:#1c1c1c; letter-spacing:6px; margin-top:14px; }
 
-    /* ── auth ── */
     #auth { margin-top:52px; pointer-events:auto; width:min(340px,84vw); }
     .pwlb { font-size:9px; color:#1a1a1a; letter-spacing:4px; margin-bottom:7px; transition:color .4s; }
     #auth.open .pwlb { color:#00733a; }
@@ -168,14 +175,14 @@
     .pwip {
       background:transparent; border:none; outline:none; color:#5a5a5a;
       font-family:inherit; font-size:11px; padding:9px 7px; flex:1; min-width:0;
-      letter-spacing:3px; cursor:none;
+      letter-spacing:3px; cursor:text;
     }
     .pwip::placeholder { color:#101010; }
     #auth.open .pwip { color:#00a344; }
     .pwbt {
       border:none; border-left:1px solid #161616; background:transparent;
       color:#1c1c1c; font-family:inherit; font-size:9px; padding:9px 13px;
-      cursor:none; letter-spacing:3px; transition:color .2s, border-color .4s;
+      cursor:var(--cur-p); letter-spacing:3px; transition:color .2s, border-color .4s;
     }
     #auth.open .pwbt { border-left-color:#004a1e; color:#00552a; }
     .pwbt:hover { color:#00a344; }
@@ -185,29 +192,26 @@
     #pwstat.err  { color:#cc001f; }
     #pwstat.arg  { color:#8a2be2; }
 
-    /* ── routes ── */
     #routes { margin-top:34px; display:flex; gap:22px; pointer-events:auto; flex-wrap:wrap; justify-content:center; }
     .rbtn {
       position:relative;
       font-family:'JetBrains Mono',monospace; font-weight:400;
       font-size:10px; letter-spacing:5px;
       padding:9px 24px; text-decoration:none; white-space:nowrap;
-      cursor:none; display:inline-block;
+      cursor:var(--cur-p); display:inline-block;
       clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,9px 100%,0 calc(100% - 9px));
       transition:transform .2s, box-shadow .22s;
     }
-    #btn-info {
-      color:#00cc66; border:1px solid #00cc66; background:rgba(0,18,8,.92);
-      animation:mystPulse 2.1s ease-in-out infinite;
-    }
+    /* пульс кнопок: внешний box-shadow всё равно обрезался clip-path, а перерисовка шла каждый кадр.
+       Теперь внутреннее свечение на ::after, анимируется только opacity */
+    .rbtn::after { content:''; position:absolute; inset:0; pointer-events:none; opacity:.25; will-change:opacity; }
+    #btn-info { color:#00cc66; border:1px solid #00cc66; background:rgba(0,18,8,.92); }
+    #btn-info::after { box-shadow:inset 0 0 12px rgba(0,204,102,.32); animation:btnPulse 2.1s ease-in-out infinite; }
     #btn-info:hover { transform:translateY(-2px); box-shadow:0 0 24px rgba(0,204,102,.55), inset 0 0 10px rgba(0,204,102,.08); }
-    #btn-core {
-      color:#4DAFFF; border:1px solid #4DAFFF; background:rgba(0,8,20,.92);
-      animation:corePulse 2.7s ease-in-out infinite;
-    }
+    #btn-core { color:#4DAFFF; border:1px solid #4DAFFF; background:rgba(0,8,20,.92); }
+    #btn-core::after { box-shadow:inset 0 0 12px rgba(77,175,255,.28); animation:btnPulse 2.7s ease-in-out infinite; }
     #btn-core:hover { transform:translateY(-2px); box-shadow:0 0 24px rgba(77,175,255,.5), inset 0 0 10px rgba(77,175,255,.07); }
-    @keyframes mystPulse { 0%,100%{box-shadow:0 0 6px rgba(0,204,102,.3)} 50%{box-shadow:0 0 20px rgba(0,204,102,.62)} }
-    @keyframes corePulse { 0%,100%{box-shadow:0 0 5px rgba(77,175,255,.22)} 50%{box-shadow:0 0 18px rgba(77,175,255,.52)} }
+    @keyframes btnPulse { 0%,100%{opacity:.25} 50%{opacity:1} }
     .rbtn.shake { animation:bshake .35s linear; }
     @keyframes bshake {
       0%,100%{transform:translateX(0)} 20%{transform:translateX(-3px) skewX(-1deg)}
@@ -239,28 +243,26 @@
     #warp-line.on { opacity:1; animation:warpPulse .5s ease-in-out infinite; }
     @keyframes warpPulse { 0%,100%{opacity:.55} 50%{opacity:1} }
 
-    /* ── УРОВНИ РЕАЛЬНОСТИ: на лёгких тирах гасим вечные paint-анимации ── */
-    body.fx0 #stage, body.fx1 #stage { animation:none; }
-    body.fx0 .ttl, body.fx1 .ttl { animation:none; text-shadow:0 0 22px rgba(200,200,200,.09); }
-    body.fx0 .ttl::before, body.fx0 .ttl::after { content:none; }
-    body.fx0 #btn-info, body.fx1 #btn-info { animation:none; box-shadow:0 0 10px rgba(0,204,102,.28); }
-    body.fx0 #btn-core, body.fx1 #btn-core { animation:none; box-shadow:0 0 10px rgba(77,175,255,.25); }
-    body.fx0 #scanfx, body.fx1 #scanfx { display:none; }
-    body.fx0 .hg { animation:none; opacity:.85; }
+    /* U-1: вечные CSS-анимации выключены, остаются статичные тени */
+    body.fx1 #stage { animation:none; }
+    body.fx1 .ttl-glow { animation:none; opacity:.5; }
+    body.fx1 .rbtn::after { animation:none; opacity:.55; }
+    body.fx1 #scanfx { display:none; }
 
-    /* ═══ UNIVERSE SELECTOR ═══ */
-    #uni-ov{
+    /* выбор вселенной */
+    #uni-ov, #lang-ov{
       position:fixed; inset:0; z-index:126; background:rgba(0,0,0,.9);
       display:none; align-items:center; justify-content:center; flex-direction:column; gap:24px;
       padding:20px;
     }
-    #uni-ov.on{ display:flex; }
-    .us-cap{ font-size:10px; letter-spacing:6px; color:#3a4a4a; }
+    #lang-ov{ z-index:127; background:rgba(0,0,0,.93); gap:20px; }
+    #uni-ov.on, #lang-ov.on{ display:flex; }
+    .us-cap{ font-size:10px; letter-spacing:6px; color:#3a4a4a; text-align:center; }
     .us-row{ display:flex; gap:clamp(14px,5vw,38px); }
     .us-d{
       font-family:'Rajdhani',sans-serif; font-weight:700;
       font-size:clamp(40px,9vw,58px); line-height:1;
-      color:#2a3a3a; cursor:pointer; padding:4px 14px;
+      color:#2a3a3a; cursor:var(--cur-p); padding:4px 14px;
       border:1px solid transparent;
       transition:color .2s, text-shadow .2s, border-color .2s;
     }
@@ -274,33 +276,100 @@
     }
     #uni-ov.on .us-panel{ transform:translateY(0); opacity:1; }
     .us-p-head{ font-family:'Rajdhani',sans-serif; font-size:16px; letter-spacing:5px; color:#d8f4fa; margin-bottom:6px; }
+    .us-p-rec{ font-size:9px; letter-spacing:2px; color:#00b35a; min-height:0; }
+    .us-p-rec:empty{ display:none; }
     .us-p-hw{ color:#3f636d; font-size:9px; letter-spacing:2px; margin-top:10px; }
     .us-p-fx{ color:#4b7a86; font-size:9px; letter-spacing:1.5px; margin-top:6px; }
+    .us-p-nogl{ color:#a33a46; font-size:9px; letter-spacing:1.5px; margin-top:8px; }
+    .us-p-nogl:empty{ display:none; }
     .us-enter{
       margin-top:16px; background:transparent;
       border:1px solid #0a5a2a; color:#00cc66;
       font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:4px;
-      padding:9px 26px; cursor:pointer; transition:box-shadow .2s;
+      padding:9px 26px; cursor:var(--cur-p); transition:box-shadow .2s;
     }
     .us-enter:hover{ box-shadow:0 0 16px rgba(0,204,102,.4); }
-    .us-hint{ font-size:8px; letter-spacing:3px; color:#223333; text-align:center; }
-    #uni-mark{
-      pointer-events:auto; cursor:pointer;
+    .us-hint{ font-size:8px; letter-spacing:3px; color:#223333; text-align:center; max-width:90vw; line-height:1.8; }
+
+    /* выбор языка */
+    .lg-list{ width:min(360px,86vw); border:1px solid #10282e; background:rgba(2,8,10,.94); padding:8px 0; }
+    .lg-i{
+      display:flex; gap:18px; align-items:baseline; width:100%;
+      padding:9px 22px; background:transparent; border:0; border-left:2px solid transparent;
+      font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:3px; text-transform:uppercase;
+      color:#4b7a86; cursor:var(--cur-p); text-align:left;
+      transition:color .15s, background-color .15s, border-color .15s;
+    }
+    .lg-i b{ font-weight:400; font-size:10px; color:#223a40; width:26px; flex:none; }
+    .lg-i:hover, .lg-i.sel{ color:#eafcff; background:rgba(0,184,204,.06); border-left-color:#0e7a8a; }
+    .lg-i.sel b{ color:#00b8cc; }
+    .lg-i.cur::after{ content:'\25c2'; margin-left:auto; color:#0e7a8a; }
+
+    /* прорыв сигнала: фраза сквозь сломанную загрузку */
+    #breach{
+      position:fixed; left:50%; top:46%; transform:translate(-50%,-50%); z-index:121;
+      width:max-content; max-width:min(680px,88vw); text-align:center; pointer-events:none;
+      font-size:clamp(13px,1.7vw,17px); letter-spacing:4px; line-height:1.9;
+      color:#d4efe4; opacity:0; transition:opacity .25s;
+      text-shadow:0 0 14px rgba(0,204,102,.35), 1px 0 rgba(221,0,37,.55), -1px 0 rgba(0,136,187,.55);
+    }
+    #breach.on{ opacity:1; }
+    #breach-bg{ position:fixed; inset:0; z-index:119; background:rgba(0,0,0,.72); opacity:0; pointer-events:none; transition:opacity .3s; }
+    #breach-bg.on{ opacity:1; }
+    #boot.br-glitch > div{ animation:bootJit .14s steps(2) infinite; }
+    #boot.br-dim > div{ opacity:.12; transition:opacity .25s; }
+    #boot .br-err{ color:#cc001f; }
+    @keyframes bootJit{ 0%{transform:translateX(0)} 50%{transform:translateX(-3px) skewX(-4deg)} 100%{transform:translateX(2px)} }
+
+    #resume{ margin-top:24px; pointer-events:auto; font-size:9px; letter-spacing:4px; min-height:12px; }
+    #resume a{ color:#1f6a9e; text-decoration:none; cursor:var(--cur-p); transition:color .2s, text-shadow .2s; }
+    #resume a:hover{ color:#4DAFFF; text-shadow:0 0 12px rgba(77,175,255,.5); }
+    #resume:empty{ display:none; }
+
+    /* док музыки: переключатель фоновой музыки главной + вход в Music Archive */
+    #mdock{
+      position:fixed; right:18px; bottom:34px; z-index:50;
+      display:flex; align-items:stretch; gap:6px; transition:opacity .6s;
+    }
+    #mdock > *{
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:4px; color:#4DAFFF;
+      background:rgba(0,8,20,.86); border:1px solid #163a5a; text-decoration:none;
+      display:flex; align-items:center; gap:9px; padding:7px 11px;
+      cursor:var(--cur-p); transition:border-color .2s, box-shadow .2s, color .2s;
+    }
+    #mdock > *:hover{ border-color:#4DAFFF; box-shadow:0 0 14px rgba(77,175,255,.35); }
+    #m-arch{ clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,0 100%); padding-right:14px; }
+    #m-arch svg{ width:15px; height:15px; fill:none; stroke:#4DAFFF; stroke-width:1.3; }
+    #m-arch svg .d2{ stroke-dasharray:3 4; transform-origin:12px 12px; }
+    #m-arch svg .d3{ fill:#4DAFFF; stroke:none; }
+    #mdock.playing #m-arch svg .d2{ animation:discSpin 3.2s linear infinite; }
+    @keyframes discSpin{ to{ transform:rotate(360deg); } }
+    .eq{ display:inline-flex; align-items:flex-end; gap:2px; height:11px; }
+    .eq i{ width:2px; height:2px; background:#2a5f88; transition:background .3s; }
+    #mdock.playing .eq i{ background:#4DAFFF; animation:eqb .9s ease-in-out infinite; }
+    #mdock.playing .eq i:nth-child(2){ animation-delay:-.45s; animation-duration:.7s; }
+    #mdock.playing .eq i:nth-child(3){ animation-delay:-.2s;  animation-duration:1.1s; }
+    #mdock.playing .eq i:nth-child(4){ animation-delay:-.6s;  animation-duration:.8s; }
+    #mdock.playing .eq i:nth-child(5){ animation-delay:-.3s;  animation-duration:1s; }
+    @keyframes eqb{ 0%,100%{ height:2px; } 50%{ height:11px; } }
+    body.fx1 #mdock.playing .eq i{ animation-duration:1.6s; }
+    @media(max-width:560px){ #mdock{ bottom:30px; right:12px; } }
+
+    #uni-mark, #lang-mark{
+      pointer-events:auto; cursor:var(--cur-p);
       font-size:12px; letter-spacing:4px; margin-top:4px;
-      color:#cc2233; text-shadow:0 0 10px rgba(204,34,51,.35);
       transition:color .2s, text-shadow .2s;
     }
+    #uni-mark{ color:#cc2233; text-shadow:0 0 10px rgba(204,34,51,.35); }
     #uni-mark:hover{ color:#ff4455; text-shadow:0 0 16px rgba(255,68,85,.6); }
+    #lang-mark{ font-size:10px; color:#1f6a9e; text-shadow:0 0 10px rgba(42,127,192,.3); }
+    #lang-mark:hover{ color:#4DAFFF; text-shadow:0 0 16px rgba(77,175,255,.55); }
 
-    /* ═══ CURSOR ═══ */
-    #cur { position:fixed; z-index:1000; width:34px; height:34px; margin-left:-17px; margin-top:-17px; pointer-events:none; top:-50px; left:-50px; }
-    #currot { animation:crspin 9s linear infinite; transform-origin:50% 50%; transform-box:fill-box; }
-    @keyframes crspin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
     @media (pointer:coarse){
-      #cur{display:none;} html,body{cursor:auto;} .pwip,.pwbt,.rbtn{cursor:auto;}
       #scanfx{display:none;}
       #stage{animation:none;}
       #stage.suck{filter:none;}
+      .lg-i{ padding:12px 22px; }
     }
 
     @media(max-width:560px){
@@ -321,7 +390,6 @@
 <div id="warp-line"></div>
 <div id="blackout"></div>
 
-<!-- будущий бесшовный портал: сюда смонтируем контент info/ и Core -->
 <div id="portal-host"></div>
 
 <div id="hud">
@@ -335,17 +403,21 @@
   <div id="layerlbl">LAYER_01 // SINGULARITY</div>
   <div id="feed">FEED: LIVE</div>
   <div id="uni-mark">UNIVERSE: U-0 &#9656; SHIFT</div>
+  <div id="lang-mark">LANG: EN &#9656; SHIFT</div>
 </div>
 
 <div id="stage">
   <div id="logo-wrap" class="st-in">
-    <div class="ttl" data-text="A.C.EON STUDIO" id="ttl">A.C.EON STUDIO</div>
+    <div class="ttl-box">
+      <span class="ttl-glow" aria-hidden="true">A.C.EON STUDIO</span>
+      <div class="ttl" data-text="A.C.EON STUDIO" id="ttl">A.C.EON STUDIO</div>
+    </div>
     <div id="logo-scan"></div>
     <div id="sub">// HUMAN &middot; MACHINE &middot; SIGNAL //</div>
   </div>
 
   <div id="auth" class="st-in">
-    <div class="pwlb" id="pwlb">[ AUTH CHANNEL &gt; STANDBY ]</div>
+    <div class="pwlb" id="pwlb" data-i18n="auth.standby">[ AUTH CHANNEL &gt; STANDBY ]</div>
     <div class="pwbx" id="pwbx">
       <span class="pwpr">&#8250;_</span>
       <input class="pwip" id="pwi" type="text" autocomplete="off" spellcheck="false" placeholder="########" maxlength="24">
@@ -359,14 +431,24 @@
     <a href="A.C.EON_Core/index.html" class="rbtn" id="btn-core">&#9670; CORE
       <span id="core-hover">
         <span class="sigbars"><i></i><i></i><i></i><i></i></span>
-        CONNECTING A.C.EON NETWORK
+        <span data-i18n="core.hover">CONNECTING A.C.EON NETWORK</span>
       </span>
     </a>
   </div>
+  <div id="resume" class="st-in"></div>
+</div>
+
+<div id="breach-bg"></div>
+<div id="breach"></div>
+
+<div id="lang-ov">
+  <div class="us-cap" id="lg-cap">SELECT LANGUAGE</div>
+  <div class="lg-list" id="lg-list"></div>
+  <div class="us-hint" id="lg-hint"></div>
 </div>
 
 <div id="uni-ov">
-  <div class="us-cap">SELECT REALITY DENSITY</div>
+  <div class="us-cap" data-i18n="uni.cap">SELECT REALITY DENSITY</div>
   <div class="us-row">
     <div class="us-d" data-u="1">1</div>
     <div class="us-d" data-u="2">2</div>
@@ -374,53 +456,105 @@
   </div>
   <div class="us-panel">
     <div class="us-p-head" id="usp-head"></div>
+    <div class="us-p-rec" id="usp-rec"></div>
     <div id="usp-desc"></div>
     <div class="us-p-fx" id="usp-fx"></div>
     <div class="us-p-hw" id="usp-hw"></div>
-    <button class="us-enter" id="us-enter">ENTER UNIVERSE</button>
+    <div class="us-p-nogl" id="usp-nogl"></div>
+    <button class="us-enter" id="us-enter" data-i18n="uni.enter">ENTER UNIVERSE</button>
   </div>
-  <div class="us-hint">CHOICE IS REMEMBERED &middot; SHIFT ANYTIME VIA THE U-MARK, TOP LEFT &middot; KEYS 1&ndash;3</div>
+  <div class="us-hint" data-i18n="uni.hint"></div>
 </div>
 
 <div id="boot"></div>
 
 <div id="sb">
   <span>SYS_BOOT:LAYER_01</span>
-  <span id="ec1">ERR 0x&mdash;&mdash;</span>
+  <span id="ec1">ERR 0x----</span>
   <span id="tc1">00:00:00</span>
 </div>
 
-<svg id="cur" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
-  <g id="currot" fill="none" stroke="#404040" stroke-width="0.6"><rect x="9" y="9" width="16" height="16" transform="rotate(45,17,17)"/></g>
-  <line x1="17" y1="1"  x2="17" y2="11" stroke="#3c3c3c" stroke-width="0.5"/>
-  <line x1="17" y1="23" x2="17" y2="33" stroke="#3c3c3c" stroke-width="0.5"/>
-  <line x1="1"  y1="17" x2="11" y2="17" stroke="#3c3c3c" stroke-width="0.5"/>
-  <line x1="23" y1="17" x2="33" y2="17" stroke="#3c3c3c" stroke-width="0.5"/>
-  <circle cx="17" cy="17" r="1.5" fill="#3c3c3c"/>
-</svg>
+<div id="mdock">
+  <button type="button" id="m-tgl" aria-pressed="false" data-i18n-title="music.toggle"><span class="eq"><i></i><i></i><i></i><i></i><i></i></span></button>
+  <a href="Music%20archive/" id="m-arch" data-i18n-title="music.title">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="12" r="5.4" class="d2"/><circle cx="12" cy="12" r="1.6" class="d3"/></svg>
+    <span>MUSIC</span>
+  </a>
+</div>
 
 <audio id="bgm" preload="none" crossorigin="anonymous"></audio>
 
+<!-- язык общий с аркадой: Store('site').lang, ключ aceon:site -->
+<script src="games/shared/store.js?v=1"></script>
+<script src="games/shared/i18n.js?v=1"></script>
+<script src="home/lang.js?v=2"></script>
+<!-- память о посетителе (только этот браузер) и правила, что узел скажет вернувшемуся -->
+<script src="shared/trace.js?v=1"></script>
+<script src="home/watch.js?v=1"></script>
 <script>
 (function(){
   'use strict';
-  var gch='!<>_[]{}=+#\u2593\u2592\u2591\u2573~';
+  var gch='!<>_[]{}=+#▓▒░╳~';
   var reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var isCoarse=window.matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
-  /* ═══ ВСЕЛЕННЫЕ (уровни плотности реальности) ═══ */
+  /* ?gl=force: WebGL даже на программном рендере; ?gl=off: проверить статичный режим */
+  var forceGL=/[?&]gl=force/.test(location.search), noGL=/[?&]gl=off/.test(location.search);
+
+  /* язык */
+  var LANGS=[
+    {code:'en',name:'English'},{code:'ru',name:'Русский'},{code:'de',name:'Deutsch'},
+    {code:'fr',name:'Français'},{code:'es',name:'Español'},{code:'it',name:'Italiano'},{code:'pl',name:'Polski'}
+  ];
+  var HL=window.HOME_LANG||{en:{}};
+  var hasI18n=!!(window.I18n&&window.Store);
+  if(hasI18n){ for(var lc in HL)I18n.add(lc,HL[lc]); }
+  /* запасной путь, если games/shared не загрузился: тот же ключ aceon:site */
+  function readSite(){ try{ return JSON.parse(localStorage.getItem('aceon:site')||'null')||{}; }catch(e){ return {}; } }
+  function knownLang(c){ return LANGS.some(function(l){return l.code===c;}); }
+  var fbLang=(function(){
+    var s=readSite().lang; if(s&&knownLang(s))return s;
+    var nav=navigator.languages||[navigator.language||'en'];
+    for(var i=0;i<nav.length;i++){ var c=String(nav[i]).slice(0,2).toLowerCase(); if(knownLang(c))return c; }
+    return 'en';
+  })();
+  function curLang(){ return hasI18n?I18n.lang:fbLang; }
+  function savedLang(){
+    var l=hasI18n?Store.get('site').lang:readSite().lang;
+    return l&&knownLang(l)?l:null;
+  }
+  function TL(code,key,vars){
+    var d=HL[code]||HL.en, v=d[key];
+    if(v===undefined)v=HL.en[key];
+    if(v===undefined)return key;
+    if(typeof v==='string'&&vars)v=v.replace(/\{(\w+)\}/g,function(m,n){return vars[n]!==undefined?vars[n]:m;});
+    return v;
+  }
+  function T(key,vars){ return TL(curLang(),key,vars); }
+  function TA(key){ var v=T(key); return Array.isArray(v)?v:[String(v)]; }
+  function setLang(code){
+    if(!knownLang(code))return;
+    if(hasI18n) I18n.set(code);
+    else{
+      fbLang=code;
+      var o=readSite(); o.lang=code; if(!o.v)o.v=1;
+      if(o.music===undefined)o.music=0.6; if(o.sfx===undefined)o.sfx=0.8;
+      try{ localStorage.setItem('aceon:site',JSON.stringify(o)); }catch(e){}
+      document.documentElement.lang=code;
+    }
+    applyTexts();
+  }
+  document.documentElement.lang=curLang();
+
+  /* Вселенные.
+     Все три рисуют одну и ту же сцену одним WebGL-конвейером. Разница только в цене:
+     tk/tc: разрешение шлейфа = tk * min(dpr, tc) от CSS-пикселя; oc: потолок dpr финального кадра. */
   var UNIVERSES=[
-    {id:1,tag:'U-1',name:'STILL',capMs:31,n:isCoarse?900:2800,S:isCoarse?.65:.85,gl:false,gldpr:1,fx:1,st:1,
-     desc:'A frozen galaxy. Thousands of particles locked mid-fall around a breathing core. A painting that is alive in exactly one place.',
-     fxl:'ACTIVE: STATIC GALAXY (U-3 DENSITY) \u00b7 LIVE CORE \u00b7 GLITCHES',
-     hw:'RUNS ON ANYTHING \u2014 COST OF A SINGLE IMAGE'},
-    {id:2,tag:'U-2',name:'FLUX',capMs:isCoarse?31:15,n:isCoarse?480:1300,S:isCoarse?.6:.7,gl:true,gldpr:isCoarse?.9:1.0,fx:2,
-     desc:'Gravitational lensing ignites. Space bends around the core, the disc blooms, the signal reacts to the music.',
-     fxl:'HEAVIEST: WEBGL LENSING \u00b7 BLOOM \u00b7 AUDIO-REACTIVE CORE \u00b7 PARALLAX',
-     hw:'MODERN PHONES / INTEGRATED GPU 2018+ \u2014 IRIS XE, VEGA, APPLE M1'},
-    {id:3,tag:'U-3',name:'SINGULARITY',capMs:15,n:isCoarse?900:2800,S:isCoarse?.7:.85,gl:true,gldpr:isCoarse?1.25:1.75,fx:3,
-     desc:'Everything at once. Full lens field with chromatic dispersion, thousands of particles, deep trails, cursor gravity, every glitch layer.',
-     fxl:'HEAVIEST: FULL LENS FIELD \u00b7 CHROMATIC DISPERSION \u00b7 2800+ PARTICLES \u00b7 DEEP TRAILS \u00b7 CURSOR GRAVITY',
-     hw:'DEDICATED GPU RECOMMENDED \u2014 GTX 1050 / RX 560 / APPLE M1 PRO OR BETTER'}
+    {id:1,tag:'U-1',name:'STILL',capMs:31,fx:1,words:false,cursor:false,
+     n:isCoarse?800:2200, tk:isCoarse?.5:.55, tc:1, oc:isCoarse?.85:1, sn:isCoarse?900:2800},
+    {id:2,tag:'U-2',name:'FLUX',capMs:15,fx:2,words:!isCoarse,cursor:true,
+     n:isCoarse?900:2800, tk:isCoarse?.6:.7, tc:isCoarse?1:1.25, oc:isCoarse?1:1.25, sn:isCoarse?900:2800},
+    {id:3,tag:'U-3',name:'SINGULARITY',capMs:15,fx:3,words:!isCoarse,cursor:true,
+     n:isCoarse?1000:3200, tk:isCoarse?.6:.85, tc:isCoarse?1.5:1.4, oc:isCoarse?1.5:1.75, sn:isCoarse?900:2800}
   ];
   function getUni(id){ return UNIVERSES[Math.max(1,Math.min(3,id))-1]; }
   var savedU=null;
@@ -428,35 +562,31 @@
     var _su=localStorage.getItem('aceon_universe');
     if(_su!==null){ savedU=Math.max(1,Math.min(3,parseInt(_su,10)||1)); }
   }catch(e){}
-  /* переопределение через URL: ?fx=1..3 */
   var _m=location.search.match(/[?&]fx=([1-3])/);
   if(_m)savedU=parseInt(_m[1],10);
   var PRO=getUni(savedU===null?1:savedU);
   var nightMode=(function(){var h=new Date().getHours();return h>=0&&h<5;})();
 
-  /* ═══ ПАМЯТЬ УЗЛА ═══ */
+  /* память узла. aceon_visits считает загрузки главной (для старых фраз),
+     подробная память о сессиях и разделах в shared/trace.js */
+  var TR=window.Trace||null, HW=window.HomeWatch||null;
   var visits=1;
   try{
     visits=(parseInt(localStorage.getItem('aceon_visits'),10)||0)+1;
     localStorage.setItem('aceon_visits',String(visits));
   }catch(e){}
-  var greetings=[
-    'WE MEET AGAIN','YOU RETURNED','THE WELL REMEMBERS YOU','WELCOME BACK, OBSERVER',
-    'STILL CURIOUS?','YOU HEARD IT TOO','BACK FOR MORE SIGNAL','IT KNEW YOU WOULD COME BACK',
-    'FAMILIAR PATTERN DETECTED','HELLO AGAIN','THE ORBIT HOLDS YOU','YOU NEVER REALLY LEFT',
-    'SAME EYES. SAME HUNGER.','THE DOOR WAS LEFT OPEN FOR YOU'
-  ];
+  var greetIdx=-1;
   function pickGreeting(){
-    if(visits<=1)return 'FIRST CONTACT LOGGED';
-    var lastI=-1;
+    if(visits<=1){ greetIdx=-1; return; }
+    var n=TA('greet.list').length, lastI=-1, i;
     try{ lastI=parseInt(localStorage.getItem('aceon_greet_i'),10); }catch(e){}
-    var i;
-    do{ i=Math.random()*greetings.length|0; }while(i===lastI&&greetings.length>1);
+    do{ i=Math.random()*n|0; }while(i===lastI&&n>1);
     try{ localStorage.setItem('aceon_greet_i',String(i)); }catch(e){}
-    return greetings[i];
+    greetIdx=i;
   }
+  function greetText(){ return greetIdx<0?T('greet.first'):(TA('greet.list')[greetIdx]||''); }
 
-  /* ═══ СОСТОЯНИЕ ВОРОНКИ ═══ */
+  /* состояние воронки */
   var VX={
     base:1+Math.min(visits-1,10)*0.03,
     g:1, target:0, warp:false, rev:false, red:0, redT:0,
@@ -464,426 +594,442 @@
   };
   VX.target=VX.base; VX.g=VX.base;
 
-  var W=0,H=0;                 /* css px */
-  var S=PRO.S;                 /* внутренний масштаб рендера */
-  var SW=0,SH=0;               /* internal px */
-  var CXi=0,CYi=0,COREi=0;     /* центр/ядро в internal px */
+  var W=0,H=0;
+  /* Константы движения подбирались во «внутренних» пикселях старого рендера (0.85 от CSS).
+     Симуляция считается в них же, чтобы скорость и форма спирали не поменялись. */
+  var SIMS=.85;
+  var SWs=0,SHs=0,CXs=0,CYs=0,MAXRs=0,COREs=0;
   var SQUASH=.80,TILT=-0.10;
-  var cosT=Math.cos(TILT),sinT=Math.sin(TILT);
+  var simT=0,tGlobal=0;
 
-  var MAXN=4200;
-  var N=PRO.n;
-
-  /* ═══════════════════════════════════════════
-     WORKER: физика частиц (fallback — инлайн-шима)
-  ═══════════════════════════════════════════ */
-  function workerMain(ctx){
-    var W=0,H=0,CX=0,CY=0,MAXR=0,CORE=20;
-    var SQ=.8,TILT=-.1,cosT=Math.cos(TILT),sinT=Math.sin(TILT);
-    var MAX=0,N=0,greenP=.045,redP=.025;
-    var r,a,z,size,kind,acc,wob,ox,oy;
-    function spawn(i,atEdge){
-      r[i]=atEdge?MAXR*(1+Math.random()*.4):CORE+Math.pow(Math.random(),.6)*MAXR;
-      a[i]=Math.random()*6.2832;
-      z[i]=.35+Math.random()*.65;
-      var rk=Math.random();
-      kind[i]=rk<.94?0:(rk<.985?1:2);
-      var ra=Math.random();
-      acc[i]=ra<greenP?1:(ra<greenP+redP?2:0);
-      size[i]=kind[i]===0?(1+Math.random()*1.8):(8+Math.random()*8);
-      wob[i]=Math.random()*6.2832;
-      ox[i]=0;oy[i]=0;
-    }
-    function geom(w,h){ W=w;H=h;CX=W/2;CY=H*.46;MAXR=Math.sqrt(W*W+H*H)*.62;CORE=Math.max(14,Math.min(W,H)*.033); }
-    ctx.onmessage=function(e){
-      var d=e.data;
-      if(d.t==='init'){
-        geom(d.W,d.H);
-        greenP=d.greenP;redP=d.redP;
-        MAX=d.max;N=Math.min(d.n,MAX);
-        r=new Float32Array(MAX);a=new Float32Array(MAX);z=new Float32Array(MAX);
-        size=new Float32Array(MAX);kind=new Uint8Array(MAX);acc=new Uint8Array(MAX);
-        wob=new Float32Array(MAX);ox=new Float32Array(MAX);oy=new Float32Array(MAX);
-        for(var i=0;i<MAX;i++)spawn(i,false);
-        ctx.postMessage({t:'ready',core:CORE});
-        return;
-      }
-      if(d.t==='resize'){ geom(d.W,d.H); ctx.postMessage({t:'ready',core:CORE}); return; }
-      if(d.t==='setn'){ N=Math.max(120,Math.min(d.n,MAX)); return; }
-      if(d.t!=='step')return;
-      var dt=d.dt,g=d.g,warp=d.warp,rev=d.rev?-1:1;
-      var mx=d.mx,my=d.my,mact=d.mact,msp=d.msp,px=d.px,py=d.py,wA=d.wA;
-      var buf=new Float32Array(d.buf);
-      for(var i=0;i<N;i++){
-        a[i]+=(.17+110/(r[i]+50))*z[i]*g*rev*dt;
-        r[i]-=(4+1600/(r[i]+40))*z[i]*g*(warp?2.6:1)*rev*dt;
-        wob[i]+=dt*(.6+z[i]);
-        if(rev>0){
-          if(r[i]<=CORE*.55){
-            if(warp){r[i]=MAXR*(1+Math.random()*.5);a[i]=Math.random()*6.2832;}
-            else spawn(i,true);
-          }
-        }else{
-          if(r[i]>=MAXR*1.45){ r[i]=CORE*1.6; a[i]=Math.random()*6.2832; }
-        }
-        var A=a[i]+wA;
-        var exx=Math.cos(A)*r[i];
-        var eyy=Math.sin(A)*r[i]*SQ+Math.sin(wob[i])*3*z[i];
-        var x=exx*cosT-eyy*sinT, y=exx*sinT+eyy*cosT;
-        var sx=CX+x+px*z[i], sy=CY+y+py*z[i];
-        if(mact){
-          var dx=sx-mx, dy=sy-my, dd=dx*dx+dy*dy;
-          var R=110+msp*90, R2=R*R;
-          if(dd<R2&&dd>1){
-            var dist=Math.sqrt(dd);
-            var f=(1-dist/R)*(2.8+msp*5)*z[i];
-            ox[i]+=(dx/dist)*f-(dy/dist)*f*.6;
-            oy[i]+=(dy/dist)*f+(dx/dist)*f*.6;
-          }
-        }
-        ox[i]*=.88;oy[i]*=.88;
-        var o=i*7;
-        buf[o]=sx+ox[i]; buf[o+1]=sy+oy[i];
-        buf[o+2]=size[i];
-        buf[o+3]=Math.max(0,1-r[i]/(MAXR*.55));
-        buf[o+4]=z[i];
-        buf[o+5]=kind[i]+acc[i]*10;
-        buf[o+6]=A+1.5708;
-      }
-      ctx.postMessage({t:'frame',buf:buf.buffer,n:N},[buf.buffer]);
-    };
-  }
-  function makeInlineWorker(fn){
-    var mainSide={onmessage:null,terminate:function(){},postMessage:null};
-    var workerSide={onmessage:null,postMessage:function(m){
-      setTimeout(function(){ if(mainSide.onmessage)mainSide.onmessage({data:m}); },0);
-    }};
-    mainSide.postMessage=function(m){
-      setTimeout(function(){ if(workerSide.onmessage)workerSide.onmessage({data:m}); },0);
-    };
-    fn(workerSide);
-    return mainSide;
-  }
-  var worker=null;
-  try{
-    var wblob=new Blob(['('+workerMain.toString()+')(self)'],{type:'application/javascript'});
-    worker=new Worker(URL.createObjectURL(wblob));
-    worker.onerror=function(){ try{worker.terminate();}catch(e){} worker=makeInlineWorker(workerMain); bindWorker(); };
-  }catch(e){ worker=makeInlineWorker(workerMain); }
-
-  /* ═══ 2D SOURCE ═══ */
+  /* WebGL: частицы целиком на видеокарте.
+     Раньше: воркер считал 2800 частиц, 2D-холст рисовал их по одной, каждый кадр
+     холст копировался в текстуру и шёл через шейдер с 9 выборками в полном разрешении.
+     Сейчас: положение частицы = функция от времени в вершинном шейдере, шлейф живёт
+     в своём буфере, свечение считается в буфере вдвое меньше, финальный проход 4 выборки. */
+  var glC=document.getElementById('gl');
   var srcC=document.getElementById('src');
   var sctx=srcC.getContext('2d',{alpha:false});
+  var gl=null, glOK=false, glAvail=false;
+  var PG={}, BF={}, TG={trail:null,bloom:null}, atlasTex=null, maxPt=64;
+  var MAXP=3600;
+  var trW=0,trH=0,blW=0,blH=0,outW=0,outH=0;
+  var qScale=1;
 
-  /* ═══ WEBGL POST ═══ */
-  var glC=document.getElementById('gl');
-  var gl=null,prog=null,uni={},tex=null,glOK=false,glSupported=false,glInited=false;
-  var GLDPR=Math.min(window.devicePixelRatio||1,PRO.gldpr);
-  function initGL(){
+  var FP='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n';
+
+  var VS_PART=[
+    'precision highp float;',
+    'attribute vec4 aA;',   /* стартовый угол, фаза, глубина z, фаза покачивания */
+    'attribute vec4 aB;',   /* вид (0 точка, 1 глиф, 2 слово), акцент, размер, радиус рождения */
+    'attribute float aC;',  /* зерно для глифа/слова */
+    'uniform vec2 uSim; uniform vec2 uCenter; uniform float uMaxR; uniform float uCore;',
+    'uniform float uSimT; uniform float uTime; uniform float uWorldA;',
+    'uniform vec2 uPar; uniform vec4 uMouse;',
+    'uniform float uPx; uniform float uWarp; uniform float uRed; uniform float uWords; uniform float uMaxPt;',
+    'varying vec4 vCol; varying float vKind; varying vec4 vCell; varying vec4 vSpr;',
+    /* dr/dt = -(4+1600/(r+40))*z*g. С rho=r+40: F(rho)=rho/4-100*ln(rho+400) убывает линейно по времени */
+    'float F(float p){return p*0.25-100.0*log(p+400.0);}',
+    /* угол как функция радиуса: интеграл da/dr от старых формул, разложен на простые дроби */
+    'float G(float r){return 0.25*(0.17*r-2.8205*log(r+50.0)+44.82*log(r+440.0));}',
+    'float h1(float n){return fract(sin(n)*43758.5453);}',
+    'void main(){',
+    '  float z=aA.z;',
+    '  float rs=uMaxR*aB.w, re=uCore*0.55;',
+    '  float Fs=F(rs+40.0), Fe=F(re+40.0), span=Fs-Fe;',
+    '  float p=fract(aA.y+uSimT*z/span);',
+    '  float Ft=Fs-p*span;',
+    '  float lo=re+40.0, hi=rs+40.0;',
+    '  for(int i=0;i<14;i++){float m=0.5*(lo+hi); if(F(m)>Ft)hi=m; else lo=m;}',
+    '  float r=0.5*(lo+hi)-40.0;',
+    '  float A=aA.x+G(rs)-G(r)+uWorldA;',
+    '  float ex=cos(A)*r;',
+    '  float ey=sin(A)*r*0.8+sin(aA.w+uTime*(0.6+z))*3.0*z;',
+    '  float ct=cos(-0.10), st=sin(-0.10);',
+    '  vec2 sp=uCenter+vec2(ex*ct-ey*st, ex*st+ey*ct)+uPar*z;',
+    '  if(uMouse.z>0.001){',
+    '    vec2 d=sp-uMouse.xy; float dist=length(d); float R=110.0+uMouse.w*90.0;',
+    '    if(dist<R&&dist>1.0){',
+    '      vec2 n=d/dist; float f=(1.0-dist/R)*(2.8+uMouse.w*5.0)*z*uMouse.z*6.0;',
+    '      sp+=n*f+vec2(-n.y,n.x)*f*0.6;',
+    '    }',
+    '  }',
+    '  float heat=max(0.0,1.0-r/(uMaxR*0.55));',
+    '  float kind=aB.x, acc=aB.y;',
+    '  vec3 c=vec3(110.0-heat*55.0,120.0+heat*70.0,135.0+heat*120.0);',
+    '  if(uRed>0.5)c=vec3(140.0+heat*90.0,40.0+heat*20.0,50.0+heat*20.0);',
+    '  if(acc>1.5)c=vec3(210.0,20.0,50.0); else if(acc>0.5)c=vec3(0.0,190.0,90.0);',
+    '  vCol=vec4(c/255.0, z*(0.10+heat*0.65)*(1.0+uWarp*0.25));',
+    '  gl_Position=vec4(sp.x/uSim.x*2.0-1.0, 1.0-sp.y/uSim.y*2.0, 0.0, 1.0);',
+    '  vCell=vec4(0.0); vSpr=vec4(0.0,0.0,1.0,0.0);',
+    '  if(kind<0.5){',
+    '    float s=(1.0+aB.z*1.8)*(1.0+heat*0.8)*uPx;',
+    '    float ps=ceil(s)+1.0;',
+    '    vKind=0.0; vSpr.xy=vec2(s*0.5,ps);',
+    '    gl_PointSize=ps;',
+    '  } else {',
+    '    float cellH=(8.0+aB.z*8.0)*(1.0+heat*0.4)*uPx*1.6;',
+    '    if(kind>1.5&&uWords>0.5&&heat<0.55&&cellH*6.0<=uMaxPt){',
+    '      float wi=floor(aC*9.999);',
+    '      vCell=vec4(mod(wi,2.0)*0.375,(128.0+floor(wi*0.5)*64.0)/512.0,0.375,0.125);',
+    '      float ra=A+1.5708;',
+    '      vKind=2.0; vSpr=vec4(0.0,cellH*6.0,cos(ra),sin(ra));',
+    '      gl_PointSize=cellH*6.0;',
+    '    } else {',
+    '      float gi=floor(h1(aC*91.7+floor(uTime*0.24+aC*13.0))*31.999);',
+    '      vCell=vec4(mod(gi,16.0)/16.0,floor(gi/16.0)*0.125,0.0625,0.125);',
+    '      vKind=1.0; vSpr.y=cellH;',
+    '      gl_PointSize=min(cellH,uMaxPt);',
+    '    }',
+    '  }',
+    '}'
+  ].join('\n');
+
+  var FS_PART=FP+[
+    'uniform sampler2D uAtlas;',
+    'varying vec4 vCol; varying float vKind; varying vec4 vCell; varying vec4 vSpr;',
+    'void main(){',
+    '  vec2 pc=gl_PointCoord-0.5;',
+    /* выборка вне ветвлений, иначе mip-уровень не определён */
+    '  vec2 l=vec2(pc.x*vSpr.z+pc.y*vSpr.w, -pc.x*vSpr.w+pc.y*vSpr.z);',
+    '  l.y*=(vKind>1.5?6.0:1.0);',
+    '  float t=texture2D(uAtlas, vCell.xy+(clamp(l,-0.5,0.5)+0.5)*vCell.zw).a;',
+    '  float k;',
+    '  if(vKind<0.5){',
+    /* площадь квадрата размером s внутри спрайта: частица плавно ездит по субпикселям */
+    '    vec2 q=abs(pc)*vSpr.y;',
+    '    vec2 cv=clamp(vSpr.x+0.5-q,0.0,1.0);',
+    '    k=cv.x*cv.y;',
+    '  } else if(vKind<1.5){ k=t; }',
+    '  else { k=abs(l.y)>0.5?0.0:t; }',
+    '  if(k<=0.003)discard;',
+    '  gl_FragColor=vec4(vCol.rgb,vCol.a*k);',
+    '}'
+  ].join('\n');
+
+  var VS_TRI='attribute vec2 aP;varying vec2 vUV;void main(){vUV=aP*.5+.5;gl_Position=vec4(aP,0.,1.);}';
+
+  /* затухание шлейфа: dst*(1-a) - пол. Пол нужен, иначе в 8 битах остаются вечные серые следы */
+  var FS_FADE=FP+'uniform float uA;uniform float uFloor;void main(){gl_FragColor=vec4(vec3(uFloor),uA);}';
+
+  var VS_CORE=[
+    'attribute vec2 aP;',
+    'uniform vec2 uSim; uniform vec2 uC; uniform float uR;',
+    'varying vec2 vS;',
+    'void main(){ vS=aP*uR; vec2 s=uC+vS; gl_Position=vec4(s.x/uSim.x*2.0-1.0,1.0-s.y/uSim.y*2.0,0.0,1.0); }'
+  ].join('\n');
+  var FS_CORE=FP+[
+    'uniform float uCoreR; uniform float uFlare; uniform float uRot; uniform float uRedC; uniform float uWarpC; uniform float uPxSim;',
+    'varying vec2 vS;',
+    'void main(){',
+    '  float R=uCoreR*6.0*uFlare;',
+    '  float d=length(vS)/R;',
+    '  vec3 c1=mix(vec3(60.,180.,230.),vec3(230.,70.,80.),uRedC)/255.;',
+    '  vec3 c2=mix(vec3(30.,110.,170.),vec3(160.,40.,50.),uRedC)/255.;',
+    '  vec4 a=vec4(c1*0.10*uFlare,0.10*uFlare), b=vec4(c2*0.05*uFlare,0.05*uFlare);',
+    '  vec4 P=d<0.35?mix(a,b,d/0.35):mix(b,vec4(0.0),clamp((d-0.35)/0.65,0.0,1.0));',
+    '  float ct=cos(-0.10), st=sin(-0.10);',
+    '  vec2 l=vec2(vS.x*ct+vS.y*st, -vS.x*st+vS.y*ct); l.y/=0.8;',
+    '  float lr=length(l), px=max(uPxSim,0.5);',
+    '  float disc=clamp((uCoreR-lr)/px+0.5,0.0,1.0);',
+    '  P=mix(P,vec4(0.0,0.0,0.0,1.0),disc);',
+    '  float lw=min(1.0,1.0/px);',
+    '  float r1=clamp(1.0-abs(lr-(uCoreR+2.0))/px,0.0,1.0)*lw*(uWarpC>0.5?0.5:0.22);',
+    '  vec3 rc=mix(vec3(90.,200.,255.),vec3(255.,110.,120.),uRedC)/255.;',
+    '  P=vec4(rc*r1,r1)+P*(1.0-r1);',
+    '  float Rd=uCoreR+11.0;',
+    '  float ang=atan(l.y,l.x)-uRot;',
+    '  float dash=step(mod(ang*Rd,12.0),3.0);',
+    '  float r2=clamp(1.0-abs(lr-Rd)/px,0.0,1.0)*lw*dash*(uWarpC>0.5?0.4:0.14);',
+    '  vec3 dc=mix(vec3(120.,210.,255.),vec3(255.,130.,140.),uRedC)/255.;',
+    '  P=vec4(dc*r2,r2)+P*(1.0-r2);',
+    '  gl_FragColor=P;',
+    '}'
+  ].join('\n');
+
+  var FS_BLOOM=FP+[
+    'uniform sampler2D uTex; uniform vec2 uO; varying vec2 vUV;',
+    'void main(){',
+    '  vec3 b=texture2D(uTex,vUV+vec2(uO.x,0.)).rgb+texture2D(uTex,vUV-vec2(uO.x,0.)).rgb',
+    '        +texture2D(uTex,vUV+vec2(0.,uO.y)).rgb+texture2D(uTex,vUV-vec2(0.,uO.y)).rgb',
+    '        +texture2D(uTex,vUV+uO).rgb+texture2D(uTex,vUV-uO).rgb;',
+    '  gl_FragColor=vec4(max(b*0.1666-0.30,0.0),1.0);',
+    '}'
+  ].join('\n');
+
+  var FS_FINAL=FP+[
+    'varying vec2 vUV;',
+    'uniform sampler2D uTex; uniform sampler2D uBloom;',
+    'uniform vec2 uCenter; uniform float uAspect;',
+    'uniform float uTime; uniform float uWarp; uniform float uLens; uniform float uRed;',
+    'uniform vec3 uIris;',
+    'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+    'vec2 lens(vec2 uv,float k){',
+    '  vec2 d=uv-uCenter; d.x*=uAspect;',
+    '  float r=length(d);',
+    '  float s=min(k/(r*r*34.0+r*4.0+0.028),0.42);',
+    '  float an=s*(2.0+uWarp*3.2);',
+    '  float ca=cos(an), sa=sin(an);',
+    '  d=mat2(ca,-sa,sa,ca)*d;',
+    '  d*=1.0-s; d.x/=uAspect;',
+    '  return uCenter+d;',
+    '}',
+    'void main(){',
+    '  vec2 uv=vUV; vec2 cc=uv-0.5;',
+    '  uv=0.5+cc*(1.0+dot(cc,cc)*(0.05+uWarp*0.06));',
+    '  vec2 buv=lens(uv,uLens*(1.0+uWarp*2.6));',
+    '  vec2 dv=buv-uv;',
+    '  vec3 col;',
+    '  col.r=texture2D(uTex,uv+dv*1.10).r;',
+    '  col.g=texture2D(uTex,buv).g;',
+    '  col.b=texture2D(uTex,uv+dv*0.90).b;',
+    '  col+=texture2D(uBloom,buv).rgb*(0.9+uWarp*1.3);',
+    '  col=mix(col,vec3(col.r*1.3+col.g*0.25,col.g*0.35,col.b*0.3),uRed*0.85);',
+    '  col+=(hash(floor(gl_FragCoord.xy)+mod(uTime,10.0)*61.7)-0.5)*0.05;',
+    '  col*=clamp(1.0-dot(cc,cc)*(1.0-uWarp*0.25),0.0,1.0);',
+    '  if(uIris.x>=0.0){',
+    '    vec2 pp=vec2(vUV.x*uIris.y,(1.0-vUV.y)*uIris.z);',
+    '    float d=distance(pp,vec2(0.5*uIris.y,0.46*uIris.z)), R=uIris.x;',
+    '    float m=d<R?0.0:(d<R*1.22?(d-R)/(R*0.22+0.001)*0.85:0.85+0.15*clamp((d-R*1.22)/(R*0.33+2.0),0.0,1.0));',
+    '    col*=1.0-m;',
+    '  }',
+    '  gl_FragColor=vec4(col,1.0);',
+    '}'
+  ].join('\n');
+
+  function compileProg(vs,fs,attrs){
+    function sh(type,src){
+      var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+      if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    }
+    var p=gl.createProgram();
+    gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));
+    gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));
+    attrs.forEach(function(a,i){ gl.bindAttribLocation(p,i,a); });
+    gl.linkProgram(p);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+    var u={}, n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
+    for(var i=0;i<n;i++){ var inf=gl.getActiveUniform(p,i); u[inf.name]=gl.getUniformLocation(p,inf.name); }
+    return {p:p,u:u};
+  }
+  function U(prog,name){ return prog.u[name]||null; }
+
+  function buildParticles(){
+    var d=new Float32Array(MAXP*9);
+    var greenP=nightMode?.02:.045, redP=nightMode?.09:.025;
+    for(var i=0;i<MAXP;i++){
+      var o=i*9, rk=Math.random(), ra=Math.random();
+      d[o]=Math.random()*6.2832;
+      d[o+1]=Math.random();
+      d[o+2]=.35+Math.random()*.65;
+      d[o+3]=Math.random()*6.2832;
+      d[o+4]=rk<.94?0:(rk<.985?1:2);
+      d[o+5]=ra<greenP?1:(ra<greenP+redP?2:0);
+      d[o+6]=Math.random();
+      d[o+7]=1+Math.random()*.4;
+      d[o+8]=Math.random();
+    }
+    BF.part=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,BF.part);
+    gl.bufferData(gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);
+  }
+
+  var orbitWords=['A.C.EON','SIGNAL','OBSERVER','440HZ','FRAGMENT','LAYER_01','THE VOID','WATCHING','01001000','NOT ALONE'];
+  /* среди слов на орбите появляется раздел, где человек провёл больше всего времени */
+  if(TR){
+    var favId=TR.top(['home','A.C.EON_Core','info']);
+    if(favId&&TR.data().sec[favId].t>=120)orbitWords[4]=TR.name(favId);
+  }
+  function uploadAtlas(){
+    var cv=document.createElement('canvas'); cv.width=1024; cv.height=512;
+    var g=cv.getContext('2d');
+    g.fillStyle='#fff'; g.textAlign='center'; g.textBaseline='middle';
+    g.font='40px "JetBrains Mono",monospace';
+    for(var i=0;i<32;i++){
+      var ch=i<10?gch[i]:String.fromCharCode(33+(Math.random()*93|0));
+      g.fillText(ch,(i%16)*64+32,(i>>4)*64+34);
+    }
+    for(var w=0;w<orbitWords.length;w++){
+      g.fillText(orbitWords[w],(w%2)*384+192,128+(w>>1)*64+34);
+    }
+    if(!atlasTex)atlasTex=gl.createTexture();
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D,atlasTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cv);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+
+  function makeTarget(old,w,h){
+    if(old){ gl.deleteFramebuffer(old.fb); gl.deleteTexture(old.tex); }
+    var tex=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    var fb=gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('fbo');
+    gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    return {fb:fb,tex:tex,w:w,h:h};
+  }
+
+  function glInit(){
+    if(noGL)return false;
+    var opts={alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false,
+      failIfMajorPerformanceCaveat:!forceGL};
+    try{ gl=glC.getContext('webgl',opts)||glC.getContext('experimental-webgl',opts); }catch(e){ gl=null; }
+    if(!gl)return false;
     try{
-      gl=glC.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false})
-        ||glC.getContext('experimental-webgl');
-      if(!gl)throw 0;
-      var vsrc='attribute vec2 aP;varying vec2 vUV;void main(){vUV=aP*.5+.5;gl_Position=vec4(aP,0.,1.);}';
-      var fsrc=
-        'precision mediump float;varying vec2 vUV;'+
-        'uniform sampler2D uTex;uniform vec2 uRes;uniform vec2 uCenter;uniform float uAspect;'+
-        'uniform float uTime;uniform float uWarp;uniform float uBass;uniform float uLens;uniform float uRed;'+
-        'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
-        'vec2 lens(vec2 uv,float k){'+
-          'vec2 d=uv-uCenter;d.x*=uAspect;'+
-          'float r=length(d);'+
-          'float s=k/(r*r*34.0+r*4.0+0.028);'+
-          's=min(s,0.42);'+
-          'float an=s*(2.0+uWarp*3.2);'+
-          'float ca=cos(an),sa=sin(an);'+
-          'd=mat2(ca,-sa,sa,ca)*d;'+
-          'd*=1.0-s;d.x/=uAspect;'+
-          'return uCenter+d;}'+
-        'void main(){'+
-          'vec2 uv=vUV;vec2 cc=uv-0.5;'+
-          'uv=0.5+cc*(1.0+dot(cc,cc)*(0.05+uWarp*0.06));'+
-          'float k=uLens*(1.0+uWarp*2.6+uBass*0.7);'+
-          'vec2 buv=lens(uv,k);'+
-          'vec2 dv=buv-uv;'+
-          'vec3 col;'+
-          'col.r=texture2D(uTex,uv+dv*1.10).r;'+
-          'col.g=texture2D(uTex,buv).g;'+
-          'col.b=texture2D(uTex,uv+dv*0.90).b;'+
-          'vec2 px=(2.6+uWarp*2.0)/uRes;'+
-          'vec3 bl=texture2D(uTex,buv+vec2(px.x,0.)).rgb;'+
-          'bl+=texture2D(uTex,buv-vec2(px.x,0.)).rgb;'+
-          'bl+=texture2D(uTex,buv+vec2(0.,px.y)).rgb;'+
-          'bl+=texture2D(uTex,buv-vec2(0.,px.y)).rgb;'+
-          'bl+=texture2D(uTex,buv+px).rgb;'+
-          'bl+=texture2D(uTex,buv-px).rgb;'+
-          'bl*=0.1666;'+
-          'col+=max(bl-0.30,0.0)*(0.9+uWarp*1.3+uBass*0.8);'+
-          'col=mix(col,vec3(col.r*1.3+col.g*0.25,col.g*0.35,col.b*0.3),uRed*0.85);'+
-          'float gn=hash(uv*uRes+mod(uTime,10.0)*61.7);'+
-          'col+=(gn-0.5)*0.05;'+
-          'float v=1.0-dot(cc,cc)*(1.0-uWarp*0.25);'+
-          'col*=clamp(v,0.0,1.0);'+
-          'gl_FragColor=vec4(col,1.0);}';
-      function sh(type,src){
-        var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
-        if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(s);
-        return s;
-      }
-      prog=gl.createProgram();
-      gl.attachShader(prog,sh(gl.VERTEX_SHADER,vsrc));
-      gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,fsrc));
-      gl.linkProgram(prog);
-      if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw 0;
-      gl.useProgram(prog);
-      var qb=gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER,qb);
+      PG.part =compileProg(VS_PART,FS_PART,['aA','aB','aC']);
+      PG.fade =compileProg(VS_TRI,FS_FADE,['aP']);
+      PG.core =compileProg(VS_CORE,FS_CORE,['aP']);
+      PG.bloom=compileProg(VS_TRI,FS_BLOOM,['aP']);
+      PG.fin  =compileProg(VS_TRI,FS_FINAL,['aP']);
+      BF.tri=gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER,BF.tri);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-      var aP=gl.getAttribLocation(prog,'aP');
-      gl.enableVertexAttribArray(aP);
-      gl.vertexAttribPointer(aP,2,gl.FLOAT,false,0,0);
-      ['uTex','uRes','uCenter','uAspect','uTime','uWarp','uBass','uLens','uRed'].forEach(function(n){uni[n]=gl.getUniformLocation(prog,n);});
-      tex=gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D,tex);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-      gl.uniform1i(uni.uTex,0);
-      glSupported=true;
+      BF.quad=gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER,BF.quad);
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+      buildParticles();
+      atlasTex=null; uploadAtlas();
+      var pr=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE); maxPt=pr?pr[1]:64;
+      gl.useProgram(PG.part.p); gl.uniform1i(U(PG.part,'uAtlas'),2);
+      gl.useProgram(PG.bloom.p); gl.uniform1i(U(PG.bloom,'uTex'),0);
+      gl.useProgram(PG.fin.p); gl.uniform1i(U(PG.fin,'uTex'),0); gl.uniform1i(U(PG.fin,'uBloom'),1);
+      TG.trail=null; TG.bloom=null;
     }catch(e){
-      glSupported=false;
+      if(window.console)console.warn('A.C.EON: WebGL off,',e&&e.message);
+      gl=null; return false;
     }
-  }
-  /* GL включается через applyUniverse ниже */
-  glOK=false;
-  glC.style.display='none';
-  srcC.style.display='block';
-
-  /* ═══ GEOMETRY ═══ */
-  var coreFromWorker=20;
-  function resize(){
-    W=window.innerWidth;H=window.innerHeight;
-    SW=Math.max(320,(W*S)|0); SH=Math.max(240,(H*S)|0);
-    CXi=SW/2; CYi=SH*.46; COREi=Math.max(14,Math.min(SW,SH)*.033);
-    srcC.width=SW; srcC.height=SH;
-    sctx.fillStyle='#000'; sctx.fillRect(0,0,SW,SH);
-    if(glOK){
-      glC.width=(W*GLDPR)|0; glC.height=(H*GLDPR)|0;
-      gl.viewport(0,0,glC.width,glC.height);
-      gl.bindTexture(gl.TEXTURE_2D,tex);
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,SW,SH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-      texW=SW; texH=SH;
-    }
-    staticCv=null; staticAngle=0;
-    worker.postMessage({t:'resize',W:SW,H:SH});
-  }
-  window.addEventListener('resize',resize);
-
-  /* ═══ буферы ping-pong ═══ */
-  var freeBuf=new Float32Array(MAXN*7);
-  var drawBuf=null, drawN=0, pending=false;
-  function bindWorker(){
-    worker.onmessage=function(e){
-      var d=e.data;
-      if(d.t==='ready'){ coreFromWorker=d.core; return; }
-      if(d.t==='frame'){
-        freeBuf=drawBuf||new Float32Array(MAXN*7);
-        drawBuf=new Float32Array(d.buf);
-        drawN=d.n;
-        pending=false;
-      }
-    };
-  }
-  bindWorker();
-  worker.postMessage({t:'init',W:Math.max(320,(window.innerWidth*S)|0),H:Math.max(240,(window.innerHeight*S)|0),
-    n:N,max:MAXN,greenP:nightMode?.02:.045,redP:nightMode?.09:.025});
-  resize();
-
-  /* ═══ ПРИМЕНЕНИЕ ВСЕЛЕННОЙ (живое переключение) ═══ */
-  var overloadHinted=false;
-  function applyUniverse(u){
-    PRO=getUni(u);
-    try{ localStorage.setItem('aceon_universe',String(u)); }catch(e){}
-    document.body.classList.remove('fx0','fx1','fx2','fx3');
-    document.body.classList.add('fx'+PRO.fx);
-    S=PRO.S;
-    GLDPR=Math.min(window.devicePixelRatio||1,PRO.gldpr);
-    N=PRO.n;
-    if(PRO.gl){
-      if(!glInited){ initGL(); glInited=true; }
-      if(glSupported){
-        glOK=true; glC.style.display='block'; srcC.style.display='none';
-      } else {
-        glOK=false; glC.style.display='none'; srcC.style.display='block';
-      }
-    } else {
-      glOK=false; glC.style.display='none'; srcC.style.display='block';
-    }
-    colorCache={};
-    overloadHinted=false;
-    staticCv=null; staticAngle=0;
-    resize();
-    worker.postMessage({t:'setn',n:N});
-    var um=document.getElementById('uni-mark');
-    if(um)um.textContent='UNIVERSE: '+PRO.tag+' \u25b8 SHIFT';
-    document.title='A.C.EON STUDIO | [OFFICIAL] | '+PRO.tag;
-  }
-  applyUniverse(PRO.id);
-
-  /* ═══ INPUT: мышь / гироскоп ═══ */
-  var mouseX=.5,mouseY=.5,mPix={x:-999,y:-999},mAct=false,mSpeed=0,lastMx=0,lastMy=0,lastMT=0;
-  var gyroX=0,gyroY=0;
-  var cur=document.getElementById('cur');
-  document.addEventListener('mousemove',function(e){
-    var now=performance.now();
-    if(lastMT){
-      var dd=Math.hypot(e.clientX-lastMx,e.clientY-lastMy)/Math.max(now-lastMT,1);
-      mSpeed=mSpeed*.8+Math.min(dd,3)*.2;
-    }
-    lastMx=e.clientX;lastMy=e.clientY;lastMT=now;
-    mouseX=e.clientX/W; mouseY=e.clientY/H;
-    mPix.x=e.clientX*S; mPix.y=e.clientY*S; mAct=true;
-    cur.style.left=e.clientX+'px'; cur.style.top=e.clientY+'px';
-    bumpActivity();
-  });
-  document.addEventListener('mouseleave',function(){
-    cur.style.left='-50px';cur.style.top='-50px'; mAct=false;
-  });
-  if(window.DeviceOrientationEvent){
-    function attachGyro(){
-      window.addEventListener('deviceorientation',function(e){
-        if(e.gamma==null)return;
-        gyroX=Math.max(-1,Math.min(1,e.gamma/30));
-        gyroY=Math.max(-1,Math.min(1,(e.beta-45)/30));
-      });
-    }
-    if(typeof DeviceOrientationEvent.requestPermission==='function'){
-      document.addEventListener('pointerdown',function req(){
-        DeviceOrientationEvent.requestPermission().then(function(r){ if(r==='granted')attachGyro(); }).catch(function(){});
-        document.removeEventListener('pointerdown',req);
-      });
-    } else attachGyro();
+    return true;
   }
 
-  /* ═══ AUDIO: анализатор + rumble ═══ */
-  /* аудиореактивность отключена: музыка играет напрямую, без MediaElementSource
-     (перехват звука через AudioContext давал фризы и рывки воронки на части устройств).
-     aBass/aTreb оставлены нулями — все формулы рендера нейтральны. */
-  var audioCtx=null;
-  var aBass=0,aTreb=0;
-  function ensureAudioCtx(){
-    if(audioCtx)return audioCtx;
-    try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
-    return audioCtx;
+  function useQuadAttrib(buf){
+    gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
   }
-  function rumble(dur){
-    var ac=ensureAudioCtx(); if(!ac)return;
-    try{
-      if(ac.state==='suspended')ac.resume();
-      var t0=ac.currentTime;
-      var g=ac.createGain();
-      g.gain.setValueAtTime(0.0001,t0);
-      g.gain.exponentialRampToValueAtTime(.5,t0+dur*.55);
-      g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
-      g.connect(ac.destination);
-      [26,31].forEach(function(f0,ix){
-        var o=ac.createOscillator();
-        o.type='sine';
-        o.frequency.setValueAtTime(f0,t0);
-        o.frequency.exponentialRampToValueAtTime(f0*2.4,t0+dur);
-        o.detune.value=ix*7;
-        o.connect(g); o.start(t0); o.stop(t0+dur+.05);
-      });
-    }catch(e){}
+  function usePartAttrib(){
+    gl.bindBuffer(gl.ARRAY_BUFFER,BF.part);
+    for(var i=0;i<3;i++)gl.enableVertexAttribArray(i);
+    gl.vertexAttribPointer(0,4,gl.FLOAT,false,36,0);
+    gl.vertexAttribPointer(1,4,gl.FLOAT,false,36,16);
+    gl.vertexAttribPointer(2,1,gl.FLOAT,false,36,32);
   }
 
-  /* ═══ ЦВЕТА / КЭШ ═══ */
-  var colorCache={};
-  function partColor(heat,z,accI,warpNow,redNow){
-    var hb=(heat*7)|0, zb=(z*4)|0;
-    var key=accI*1000+hb*10+zb+(warpNow?5e4:0)+(redNow?1e5:0);
-    var c=colorCache[key];
-    if(c)return c;
-    var alpha=z*(.10+heat*.65)*(warpNow?1.25:1);
-    var cr,cg,cb;
-    if(accI===1){cr=0;cg=190;cb=90;}
-    else if(accI===2){cr=210;cg=20;cb=50;}
-    else{
-      cr=(110-heat*55)|0; cg=(120+heat*70)|0; cb=(135+heat*120)|0;
-      if(redNow){cr=(140+heat*90)|0;cg=(40+heat*20)|0;cb=(50+heat*20)|0;}
-    }
-    c='rgba('+cr+','+cg+','+cb+','+alpha.toFixed(3)+')';
-    colorCache[key]=c;
-    return c;
-  }
-  var chArr=new Array(MAXN), wordArr=new Array(MAXN);
-  var phrases=['A.C.EON','SIGNAL','OBSERVER','440HZ','FRAGMENT','LAYER_01','THE VOID','WATCHING','01001000','NOT ALONE'];
-  function randChar(){ return Math.random()<.3?gch[Math.random()*gch.length|0]:String.fromCharCode(33+(Math.random()*93|0)); }
-
-  /* ═══ RENDER 2D SOURCE ═══ */
-  var tGlobal=0;
-  function renderSrc(){
-    var warpNow=VX.warp, redNow=VX.red>.5;
-    var clearA=warpNow?.13:(.24-aBass*.08);
-    sctx.fillStyle='rgba(0,0,0,'+clearA.toFixed(3)+')';
-    sctx.fillRect(0,0,SW,SH);
-    if(!drawBuf)return;
-    var buf=drawBuf,n=drawN;
-    var lastFont='';
-    for(var i=0;i<n;i++){
-      var o=i*7;
-      var x=buf[o],y=buf[o+1];
-      if(x<-30||x>SW+30||y<-30||y>SH+30)continue;
-      var heat=buf[o+3],z=buf[o+4];
-      var ka=buf[o+5]|0, kind=ka%10, accI=(ka/10)|0;
-      sctx.fillStyle=partColor(heat,z,accI,warpNow,redNow);
-      if(kind===0||PRO.fx===0){
-        var s=buf[o+2]*(1+heat*.8);
-        sctx.fillRect(x|0,y|0,s,s);
-      } else {
-        var fs=(buf[o+2]*(1+heat*.4))|0;
-        var f=fs+'px "JetBrains Mono",monospace';
-        if(f!==lastFont){sctx.font=f;lastFont=f;}
-        if(chArr[i]===undefined||Math.random()<.004)chArr[i]=randChar();
-        if(kind===2&&heat<.55&&PRO.fx>=2&&!isCoarse){
-          if(wordArr[i]===undefined)wordArr[i]=phrases[Math.random()*phrases.length|0];
-          sctx.save();
-          sctx.translate(x,y);
-          sctx.rotate(buf[o+6]);
-          sctx.fillText(wordArr[i],0,0);
-          sctx.restore();
-        } else sctx.fillText(chArr[i],x,y);
-      }
-    }
-    drawCore(warpNow,redNow);
-  }
-  function drawCore(warpNow,redNow){
-    var flare=(warpNow?1.9:1)+aBass*.9;
-    var cR=redNow||nightMode;
-    var g1=sctx.createRadialGradient(CXi,CYi,0,CXi,CYi,COREi*6*flare);
-    g1.addColorStop(0, cR?'rgba(230,70,80,'+(0.10*flare).toFixed(3)+')':'rgba(60,180,230,'+(0.10*flare).toFixed(3)+')');
-    g1.addColorStop(.35,cR?'rgba(160,40,50,'+(0.05*flare).toFixed(3)+')':'rgba(30,110,170,'+(0.05*flare).toFixed(3)+')');
-    g1.addColorStop(1,'rgba(0,0,0,0)');
-    sctx.fillStyle=g1;
-    sctx.beginPath();sctx.arc(CXi,CYi,COREi*6*flare,0,6.2832);sctx.fill();
-    sctx.save();
-    sctx.translate(CXi,CYi);sctx.rotate(TILT);sctx.scale(1,SQUASH);
-    sctx.fillStyle='#000';
-    sctx.beginPath();sctx.arc(0,0,COREi,0,6.2832);sctx.fill();
-    sctx.strokeStyle=cR?'rgba(255,110,120,'+(warpNow?.5:.22+aBass*.25)+')':'rgba(90,200,255,'+(warpNow?.5:.22+aBass*.25)+')';
-    sctx.lineWidth=1;
-    sctx.beginPath();sctx.arc(0,0,COREi+2,0,6.2832);sctx.stroke();
-    sctx.rotate(tGlobal*.5*VX.g);
-    sctx.setLineDash([3,9]);
-    sctx.strokeStyle=cR?'rgba(255,130,140,'+(warpNow?.4:.14)+')':'rgba(120,210,255,'+(warpNow?.4:.14)+')';
-    sctx.beginPath();sctx.arc(0,0,COREi+11,0,6.2832);sctx.stroke();
-    sctx.restore();
+  function sizeGL(){
+    var dpr=window.devicePixelRatio||1;
+    var tk=PRO.tk*Math.min(dpr,PRO.tc)*qScale;
+    var ok=Math.min(dpr,PRO.oc)*Math.max(qScale,.7);
+    trW=Math.max(160,(W*tk)|0); trH=Math.max(120,(H*tk)|0);
+    blW=Math.max(2,trW>>1); blH=Math.max(2,trH>>1);
+    outW=Math.max(2,(W*ok)|0); outH=Math.max(2,(H*ok)|0);
+    glC.width=outW; glC.height=outH;
+    TG.trail=makeTarget(TG.trail,trW,trH);
+    TG.bloom=makeTarget(TG.bloom,blW,blH);
   }
 
-  /* ═══ СТАТИЧНАЯ ГАЛАКТИКА (U-1) ═══ */
+  var mS={x:-999,y:-999},mAmt=0;
+  function glRender(dt,still){
+    var warpAmt=VX.warp?Math.min((VX.g-VX.base)/8,1):0;
+    /* затухание привязано ко времени, а не к кадру: шлейф одной длины на 30 и на 144 Гц.
+       Старый рендер гасил .24 за кадр, поэтому на слабом железе (20-30 fps) шлейфы были длиннее;
+       .16 на кадр при 60 Гц даёт примерно ту же длину, что старый U-3 на среднем ноутбуке */
+    var fa=still?1:1-Math.pow(1-(VX.warp?.09:.16),Math.min(dt,.05)*60);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER,TG.trail.fb);
+    gl.viewport(0,0,trW,trH);
+    gl.enable(gl.BLEND);
+
+    gl.useProgram(PG.fade.p);
+    useQuadAttrib(BF.tri);
+    gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+    gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+    gl.uniform1f(U(PG.fade,'uA'),fa);
+    gl.uniform1f(U(PG.fade,'uFloor'),.6/255);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    gl.blendEquation(gl.FUNC_ADD);
+
+    var pp=PG.part, n=Math.min(PRO.n,MAXP);
+    gl.useProgram(pp.p);
+    usePartAttrib();
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,atlasTex); gl.activeTexture(gl.TEXTURE0);
+    gl.uniform2f(U(pp,'uSim'),SWs,SHs);
+    gl.uniform2f(U(pp,'uCenter'),CXs,CYs);
+    gl.uniform1f(U(pp,'uMaxR'),MAXRs);
+    gl.uniform1f(U(pp,'uCore'),COREs);
+    gl.uniform1f(U(pp,'uSimT'),simT);
+    gl.uniform1f(U(pp,'uTime'),tGlobal);
+    gl.uniform1f(U(pp,'uWorldA'),VX.worldA);
+    var pxp=((mouseX+gyroX*.5)-.5)*26*SIMS, pyp=((mouseY+gyroY*.5)-.5)*18*SIMS;
+    gl.uniform2f(U(pp,'uPar'),pxp,pyp);
+    gl.uniform4f(U(pp,'uMouse'),mS.x,mS.y,mAmt,mSpeed);
+    gl.uniform1f(U(pp,'uPx'),trW/SWs);
+    gl.uniform1f(U(pp,'uWarp'),VX.warp?1:0);
+    gl.uniform1f(U(pp,'uRed'),VX.red>.5?1:0);
+    gl.uniform1f(U(pp,'uWords'),PRO.words?1:0);
+    gl.uniform1f(U(pp,'uMaxPt'),maxPt);
+    gl.drawArrays(gl.POINTS,0,n);
+
+    var cp=PG.core, flare=VX.warp?1.9:1;
+    gl.useProgram(cp.p);
+    useQuadAttrib(BF.quad);
+    gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+    gl.uniform2f(U(cp,'uSim'),SWs,SHs);
+    gl.uniform2f(U(cp,'uC'),CXs,CYs);
+    gl.uniform1f(U(cp,'uR'),COREs*6*flare+2);
+    gl.uniform1f(U(cp,'uCoreR'),COREs);
+    gl.uniform1f(U(cp,'uFlare'),flare);
+    gl.uniform1f(U(cp,'uRot'),tGlobal*.5*VX.g);
+    gl.uniform1f(U(cp,'uRedC'),(VX.red>.5||nightMode)?1:0);
+    gl.uniform1f(U(cp,'uWarpC'),VX.warp?1:0);
+    gl.uniform1f(U(cp,'uPxSim'),SWs/trW);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.disable(gl.BLEND);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER,TG.bloom.fb);
+    gl.viewport(0,0,blW,blH);
+    gl.useProgram(PG.bloom.p);
+    useQuadAttrib(BF.tri);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,TG.trail.tex);
+    var bo=2.0*(1+warpAmt*.77);
+    gl.uniform2f(U(PG.bloom,'uO'),bo/W,bo/H);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    gl.viewport(0,0,outW,outH);
+    var fp=PG.fin;
+    gl.useProgram(fp.p);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,TG.bloom.tex);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,TG.trail.tex);
+    gl.uniform2f(U(fp,'uCenter'),.5,1-.46);
+    gl.uniform1f(U(fp,'uAspect'),W/H);
+    gl.uniform1f(U(fp,'uTime'),tGlobal);
+    gl.uniform1f(U(fp,'uWarp'),warpAmt);
+    gl.uniform1f(U(fp,'uLens'),.10);
+    gl.uniform1f(U(fp,'uRed'),VX.red);
+    gl.uniform3f(U(fp,'uIris'),irisActive?irisR:-1,W,H);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+
+  /* статичная галактика: единственный режим без WebGL */
+  var SS=isCoarse?.65:.85;
+  var SW=0,SH=0,CXi=0,CYi=0,COREi=0;
   var staticCv=null, staticAngle=0;
+  function randChar(){ return Math.random()<.3?gch[Math.random()*gch.length|0]:String.fromCharCode(33+(Math.random()*93|0)); }
   function buildStatic(){
     staticCv=document.createElement('canvas');
     staticCv.width=SW; staticCv.height=SH;
@@ -891,7 +1037,7 @@
     g.fillStyle='#000'; g.fillRect(0,0,SW,SH);
     var MAXR2=Math.sqrt(SW*SW+SH*SH)*.62;
     var CORE2=Math.max(14,Math.min(SW,SH)*.033);
-    var n=PRO.n, arms=3;
+    var n=PRO.sn, arms=3;
     var cosT2=Math.cos(TILT), sinT2=Math.sin(TILT);
     for(var i=0;i<n;i++){
       var t=Math.pow(Math.random(),.65);
@@ -920,6 +1066,28 @@
       }
     }
   }
+  function drawCore2D(warpNow,redNow){
+    var flare=warpNow?1.9:1;
+    var cR=redNow||nightMode;
+    var g1=sctx.createRadialGradient(CXi,CYi,0,CXi,CYi,COREi*6*flare);
+    g1.addColorStop(0, cR?'rgba(230,70,80,'+(0.10*flare).toFixed(3)+')':'rgba(60,180,230,'+(0.10*flare).toFixed(3)+')');
+    g1.addColorStop(.35,cR?'rgba(160,40,50,'+(0.05*flare).toFixed(3)+')':'rgba(30,110,170,'+(0.05*flare).toFixed(3)+')');
+    g1.addColorStop(1,'rgba(0,0,0,0)');
+    sctx.fillStyle=g1;
+    sctx.beginPath();sctx.arc(CXi,CYi,COREi*6*flare,0,6.2832);sctx.fill();
+    sctx.save();
+    sctx.translate(CXi,CYi);sctx.rotate(TILT);sctx.scale(1,SQUASH);
+    sctx.fillStyle='#000';
+    sctx.beginPath();sctx.arc(0,0,COREi,0,6.2832);sctx.fill();
+    sctx.strokeStyle=cR?'rgba(255,110,120,'+(warpNow?.5:.22)+')':'rgba(90,200,255,'+(warpNow?.5:.22)+')';
+    sctx.lineWidth=1;
+    sctx.beginPath();sctx.arc(0,0,COREi+2,0,6.2832);sctx.stroke();
+    sctx.rotate(tGlobal*.5*VX.g);
+    sctx.setLineDash([3,9]);
+    sctx.strokeStyle=cR?'rgba(255,130,140,'+(warpNow?.4:.14)+')':'rgba(120,210,255,'+(warpNow?.4:.14)+')';
+    sctx.beginPath();sctx.arc(0,0,COREi+11,0,6.2832);sctx.stroke();
+    sctx.restore();
+  }
   function renderStatic(dt){
     if(!staticCv)buildStatic();
     var spin=VX.g-VX.base;
@@ -930,109 +1098,208 @@
       sctx.translate(CXi,CYi); sctx.rotate(staticAngle); sctx.translate(-CXi,-CYi);
       sctx.drawImage(staticCv,0,0);
       sctx.restore();
-    } else {
-      sctx.drawImage(staticCv,0,0);
-    }
-    drawCore(VX.warp, VX.red>.5);
+    } else sctx.drawImage(staticCv,0,0);
+    drawCore2D(VX.warp, VX.red>.5);
   }
 
-  /* ═══ POST ═══ */
-  var texW=0,texH=0;
-  function renderGL(){
-    if(!glOK)return;
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D,tex);
-    if(texW===srcC.width&&texH===srcC.height){
-      gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,gl.RGBA,gl.UNSIGNED_BYTE,srcC);
-    }else{
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srcC);
-      texW=srcC.width; texH=srcC.height;
+  /* геометрия */
+  function resize(){
+    W=window.innerWidth; H=window.innerHeight;
+    SWs=W*SIMS; SHs=H*SIMS; CXs=SWs/2; CYs=SHs*.46;
+    MAXRs=Math.sqrt(SWs*SWs+SHs*SHs)*.62;
+    COREs=Math.max(14,Math.min(SWs,SHs)*.033);
+    if(glOK){
+      try{ sizeGL(); }catch(e){ dropToStatic(); }
     }
-    gl.uniform2f(uni.uRes,glC.width,glC.height);
-    gl.uniform2f(uni.uCenter,.5,1-.46);
-    gl.uniform1f(uni.uAspect,W/H);
-    gl.uniform1f(uni.uTime,tGlobal);
-    gl.uniform1f(uni.uWarp,VX.warp?Math.min((VX.g-VX.base)/8,1):0);
-    gl.uniform1f(uni.uBass,aBass);
-    gl.uniform1f(uni.uLens,PRO.id>=3?.10:.085);
-    gl.uniform1f(uni.uRed,VX.red);
-    gl.drawArrays(gl.TRIANGLES,0,3);
+    if(!glOK){
+      SW=Math.max(320,(W*SS)|0); SH=Math.max(240,(H*SS)|0);
+      CXi=SW/2; CYi=SH*.46; COREi=Math.max(14,Math.min(SW,SH)*.033);
+      srcC.width=SW; srcC.height=SH;
+      sctx.fillStyle='#000'; sctx.fillRect(0,0,SW,SH);
+      staticCv=null; staticAngle=0;
+    }
+  }
+  window.addEventListener('resize',resize);
+
+  function showRenderer(){
+    glC.style.display=glOK?'block':'none';
+    srcC.style.display=glOK?'none':'block';
+  }
+  function dropToStatic(){
+    glOK=false; showRenderer();
+    W=0; resize();
   }
 
-  /* ═══ IRIS (JS-градиент, без квадратов) ═══ */
+  glAvail=glInit();
+  glOK=glAvail;
+  glC.addEventListener('webglcontextlost',function(e){ e.preventDefault(); glOK=false; showRenderer(); resize(); },false);
+  glC.addEventListener('webglcontextrestored',function(){
+    glAvail=glInit(); glOK=glAvail; showRenderer(); resize();
+  },false);
+  if(glOK&&document.fonts&&document.fonts.ready){
+    document.fonts.ready.then(function(){ if(glOK&&gl)try{ uploadAtlas(); }catch(e){} });
+  }
+
+  /* рекомендованная вселенная: грубая оценка по железу, игрок всё равно выбирает сам */
+  function recommendUni(){
+    if(!glAvail)return 1;
+    var mem=navigator.deviceMemory||0, cores=navigator.hardwareConcurrency||0, ren='';
+    try{
+      var ext=gl.getExtension('WEBGL_debug_renderer_info');
+      ren=String(gl.getParameter(ext?ext.UNMASKED_RENDERER_WEBGL:gl.RENDERER)||'');
+    }catch(e){}
+    if(/swiftshader|llvmpipe|softpipe|software|gma|sandybridge|ivybridge|ironlake|mali-[2-4]\d\d|mali-t[67]|adreno[^0-9]*[2-4]\d\d\b|powervr sgx|hd graphics (\d{4}|[2-4]\d\d)\b|hd graphics( direct3d|,|\)|$)/i.test(ren))return 1;
+    if((mem&&mem<=2)||(cores&&cores<=2))return 1;
+    if(isCoarse)return (mem>=8&&cores>=8)?3:2;
+    if(/nvidia|geforce|radeon rx|radeon pro|apple m\d|iris\(r\) xe|iris xe|\barc\b/i.test(ren)||cores>=8)return 3;
+    return 2;
+  }
+  var REC=recommendUni();
+
+  /* применение вселенной (живое переключение) */
+  var overloadHinted=false;
+  function applyUniverse(u){
+    PRO=getUni(u);
+    try{ localStorage.setItem('aceon_universe',String(u)); }catch(e){}
+    document.body.classList.remove('fx1','fx2','fx3');
+    document.body.classList.add('fx'+PRO.fx);
+    qScale=1;
+    overloadHinted=false;
+    showRenderer();
+    W=0; resize();
+    var um=document.getElementById('uni-mark');
+    if(um)um.textContent='UNIVERSE: '+PRO.tag+' ▸ SHIFT';
+    document.title='A.C.EON STUDIO | [OFFICIAL] | '+PRO.tag;
+  }
+  applyUniverse(PRO.id);
+
+  /* ввод: мышь / гироскоп */
+  var mouseX=.5,mouseY=.5,mPix={x:-999,y:-999},mAct=false,mSpeed=0,lastMx=0,lastMy=0,lastMT=0;
+  var gyroX=0,gyroY=0;
+  document.addEventListener('mousemove',function(e){
+    var now=performance.now();
+    if(lastMT){
+      var dd=Math.hypot(e.clientX-lastMx,e.clientY-lastMy)/Math.max(now-lastMT,1);
+      mSpeed=mSpeed*.8+Math.min(dd,3)*.2;
+    }
+    lastMx=e.clientX;lastMy=e.clientY;lastMT=now;
+    mouseX=e.clientX/W; mouseY=e.clientY/H;
+    mPix.x=e.clientX*SIMS; mPix.y=e.clientY*SIMS; mAct=true;
+    bumpActivity();
+  });
+  document.addEventListener('mouseleave',function(){
+    mAct=false;
+  });
+  if(window.DeviceOrientationEvent){
+    var attachGyro=function(){
+      window.addEventListener('deviceorientation',function(e){
+        if(e.gamma==null)return;
+        gyroX=Math.max(-1,Math.min(1,e.gamma/30));
+        gyroY=Math.max(-1,Math.min(1,(e.beta-45)/30));
+      });
+    };
+    if(typeof DeviceOrientationEvent.requestPermission==='function'){
+      document.addEventListener('pointerdown',function req(){
+        DeviceOrientationEvent.requestPermission().then(function(r){ if(r==='granted')attachGyro(); }).catch(function(){});
+        document.removeEventListener('pointerdown',req);
+      });
+    } else attachGyro();
+  }
+
+  /* звук: rumble и 440 через WebAudio, музыка напрямую через <audio> ---
+     (перехват музыки через MediaElementSource давал фризы на части устройств) */
+  var audioCtx=null;
+  function ensureAudioCtx(){
+    if(audioCtx)return audioCtx;
+    try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+    return audioCtx;
+  }
+  function rumble(dur){
+    var ac=ensureAudioCtx(); if(!ac)return;
+    try{
+      if(ac.state==='suspended')ac.resume();
+      var t0=ac.currentTime;
+      var g=ac.createGain();
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(.5,t0+dur*.55);
+      g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+      g.connect(ac.destination);
+      [26,31].forEach(function(f0,ix){
+        var o=ac.createOscillator();
+        o.type='sine';
+        o.frequency.setValueAtTime(f0,t0);
+        o.frequency.exponentialRampToValueAtTime(f0*2.4,t0+dur);
+        o.detune.value=ix*7;
+        o.connect(g); o.start(t0); o.stop(t0+dur+.05);
+      });
+    }catch(e){}
+  }
+
+  /* iris */
   var iris=document.getElementById('iris');
-  var irisActive=false, irisT=0, irisDur=2.15;
+  var irisActive=false, irisT=0, irisDur=2.15, irisR=-1;
   function irisFrame(dt){
     if(!irisActive)return;
     irisT=Math.min(irisT+dt/irisDur,1);
-    var e=irisT*irisT*irisT;                       /* easeInCubic */
-    var R=(1-e)*Math.hypot(W,H)*.72;
-    iris.style.background='radial-gradient(circle at 50% 46%, transparent '+(R|0)+'px, rgba(0,0,0,.85) '+((R*1.22)|0)+'px, #000 '+((R*1.55+2)|0)+'px)';
+    var e=irisT*irisT*irisT;
+    irisR=(1-e)*Math.hypot(W,H)*.72;
+    if(!glOK){
+      var R=irisR;
+      iris.style.background='radial-gradient(circle at 50% 46%, transparent '+(R|0)+'px, rgba(0,0,0,.85) '+((R*1.22)|0)+'px, #000 '+((R*1.55+2)|0)+'px)';
+    }
   }
   function irisReset(){
-    irisActive=false; irisT=0;
+    irisActive=false; irisT=0; irisR=-1;
     iris.style.background='none';
   }
 
-  /* ═══ MAIN LOOP + адаптивное качество ═══ */
+  /* главный цикл + адаптивное качество */
   var last=performance.now();
-  var emaDt=16, qCooldown=0, liteLast=0;
+  var emaDt=16, qCooldown=3, liteLast=0;
   function frame(now){
-    if(portalOpen){ setTimeout(function(){ requestAnimationFrame(frame); },320); return; }
+    if(portalOpen){ setTimeout(function(){ last=performance.now(); requestAnimationFrame(frame); },320); return; }
     var capMs=warping?15:PRO.capMs;
     if(capMs>17&&now-liteLast<capMs-1){ requestAnimationFrame(frame); return; }
     liteLast=now;
     var dt=Math.min((now-last)/1000,.05); last=now; tGlobal+=dt;
     emaDt=emaDt*.95+(dt*1000)*.05;
 
-    /* адаптивное качество */
+    /* медленно: сначала режем разрешение шлейфа, потом подсказываем вселенную пониже */
     qCooldown-=dt;
-    if(qCooldown<=0){
-      var nFloor=Math.max(100,(PRO.n*.4)|0);
-      var budget=PRO.capMs>17?PRO.capMs+10:26;
-      if(emaDt>budget&&N>nFloor){
-        N=Math.max(nFloor,(N*.82)|0);
-        worker.postMessage({t:'setn',n:N});
-        qCooldown=2.5;
-      } else if(emaDt>budget+16&&PRO.id>=2&&!overloadHinted){
+    if(glOK&&qCooldown<=0&&!warping){
+      var budget=PRO.capMs>17?PRO.capMs+10:24;
+      if(emaDt>budget&&qScale>.56){
+        qScale=Math.max(.55,qScale*.85); resize(); qCooldown=3;
+      } else if(emaDt>budget+12&&PRO.id>=2&&!overloadHinted){
         overloadHinted=true;
-        document.getElementById('feed').textContent='FEED: OVERLOAD \u2014 TRY LOWER UNIVERSE';
-      } else if(emaDt<budget*.6&&N<PRO.n){
-        N=Math.min(PRO.n,(N*1.12)|0);
-        worker.postMessage({t:'setn',n:N});
-        qCooldown=4;
+        document.getElementById('feed').textContent=T('feed.overload');
       }
     }
 
     var gTarget=VX.target*VX.idle;
-    VX.g+=(gTarget-VX.g)*(VX.warp?.045:.02);
+    VX.g+=(gTarget-VX.g)*(1-Math.pow(1-(VX.warp?.045:.02),dt*60));
     VX.worldA+=dt*.06*VX.g;
     if(VX.redT>0){ VX.redT-=dt; VX.red=Math.min(VX.red+dt*3,1); }
     else VX.red=Math.max(VX.red-dt*1.5,0);
 
-    if(PRO.st){
+    if(!glOK){
       renderStatic(dt);
       irisFrame(dt);
       requestAnimationFrame(frame);
       return;
     }
-    if(!pending&&freeBuf){
-      pending=true;
-      var pxp=((mouseX+gyroX*.5)-.5)*26*S, pyp=((mouseY+gyroY*.5)-.5)*18*S;
-      var msg={t:'step',dt:dt,g:VX.g,warp:VX.warp?1:0,rev:VX.rev?1:0,
-        mx:mPix.x,my:mPix.y,mact:mAct?1:0,msp:mSpeed,px:pxp,py:pyp,wA:VX.worldA,buf:freeBuf.buffer};
-      try{ worker.postMessage(msg,[freeBuf.buffer]); }catch(e){ worker.postMessage(msg); }
-      freeBuf=null;
-    }
-    renderSrc();
-    renderGL();
+    simT+=dt*VX.g*(VX.rev?-1:1)*(VX.warp?2.6:1);
+    var kf=Math.min(1,dt*10);
+    if(mS.x<-900){ mS.x=mPix.x; mS.y=mPix.y; }
+    mS.x+=(mPix.x-mS.x)*kf; mS.y+=(mPix.y-mS.y)*kf;
+    mAmt+=(((mAct&&PRO.cursor&&!isCoarse)?1:0)-mAmt)*Math.min(1,dt*4);
     irisFrame(dt);
+    glRender(dt,false);
     requestAnimationFrame(frame);
   }
   if(!reduceMotion)requestAnimationFrame(frame);
-  else{ sctx.fillStyle='#000';sctx.fillRect(0,0,SW,SH); if(glOK){glC.style.display='none';srcC.style.display='block';} }
 
-  /* ═══ WARP-ПЕРЕХОД (~2.3s) ═══ */
+  /* warp-переход (~2.3s) */
   var warping=false;
   var warpTimers=[];
   var warpLine=document.getElementById('warp-line');
@@ -1047,8 +1314,8 @@
     document.getElementById('hud').classList.add('fadeout');
     document.getElementById('hud-l').classList.add('fadeout');
     document.getElementById('sb').classList.add('fadeout');
+    document.getElementById('mdock').classList.add('fadeout');
     irisActive=true; irisT=0;
-    /* страница грузится параллельно анимации в скрытом слое */
     spawnPortalFrame(href);
     wT(function(){ warpLine.textContent=label||'ENTERING SIGNAL'; warpLine.classList.add('on'); },800);
     wT(tearBurst,400); wT(tearBurst,1100); wT(tearBurst,1650);
@@ -1058,54 +1325,65 @@
     wT(function(){ tryOpenPortal(href,label,0); },2300);
   }
 
-  /* ═══ SEAMLESS PORTAL ═══ */
+  /* портал */
   var portalHost=document.getElementById('portal-host');
   var portalOpen=false, portalFrame=null, portalReadyF=false;
   function spawnPortalFrame(href){
     portalReadyF=false;
     portalHost.innerHTML='';
     portalFrame=document.createElement('iframe');
-    portalFrame.addEventListener('load',function(){ portalReadyF=true; });
+    portalFrame.addEventListener('load',function(){ portalReadyF=true; portalTrack(); });
     portalFrame.src=href;
     portalHost.appendChild(portalFrame);
-    portalHost.classList.add('open');            /* под blackout, невидим */
+    portalHost.classList.add('open');
   }
+  /* что открыто в портале: страница внутри iframe не пишет себя сама, это делает главная */
+  var ptrack=null;
+  function portalFlush(){
+    if(!TR||!ptrack)return 0;
+    var sec=(Date.now()-ptrack.t0)/1000;
+    TR.time(ptrack.id,sec); ptrack.t0=Date.now(); ptrack.sum+=sec;
+    return ptrack.sum;
+  }
+  function portalTrack(){
+    if(!TR||!portalFrame)return;
+    var href; try{ href=portalFrame.contentWindow.location.href; }catch(e){ return; }
+    var id=TR.idFromUrl(href); if(!id||id==='home')return;
+    if(ptrack&&ptrack.id===id)return;
+    portalFlush();
+    TR.visit(id,href);
+    ptrack={id:id,t0:Date.now(),sum:0};
+  }
+  window.addEventListener('pagehide',portalFlush);
   function tryOpenPortal(href,label,waited){
     if(portalReadyF){ openPortal(href); return; }
-    if(waited>=4500){ window.location.href=href; return; }   /* фолбэк: обычный переход */
+    if(waited>=4500){ window.location.href=href; return; }
     warpTimers.push(setTimeout(function(){ tryOpenPortal(href,label,waited+250); },250));
   }
-  /* передача музыки: под Core-порталом главная глушит свой трек (у Core своя музыка) */
-  var duckIv=null, ducked=false;
+  /* под Core-порталом главная глушит свой трек: у Core своя музыка */
+  var ducked=false;
   function duckMainBGM(down){
-    var bgm=document.getElementById('bgm');
-    if(!bgm||!bgmFired)return;
-    clearInterval(duckIv);
+    if(!bgmFired)return;
     if(down){
+      if(bgmEl.paused)return;
       ducked=true;
-      duckIv=setInterval(function(){
-        bgm.volume=Math.max(0,bgm.volume-0.06);
-        if(bgm.volume<=0){clearInterval(duckIv);bgm.pause();}
-      },70);
+      fadeBgm(0,function(){ bgmEl.pause(); },.06);
     } else {
-      try{ bgm.play().catch(function(){}); }catch(e){}
-      duckIv=setInterval(function(){
-        bgm.volume=Math.min(0.65,bgm.volume+0.05);
-        if(bgm.volume>=0.65)clearInterval(duckIv);
-      },90);
+      if(bgmUserOff)return;
+      bgmEl.play().catch(function(){});
+      fadeBgm(bgmTarget());
     }
   }
   function openPortal(href){
     portalOpen=true; warping=false;
     VX.warp=false; VX.target=VX.base;
-    if(/core/i.test(href))duckMainBGM(true);
+    if(/core|music/i.test(href))duckMainBGM(true);
     try{
       if(portalFrame&&portalFrame.contentWindow)
         portalFrame.contentWindow.postMessage({aceon:'reveal'},location.origin);
     }catch(e){}
     try{ history.pushState({aceonPortal:href},'',href); }catch(e){}
     warpLine.classList.remove('on');
-    cur.style.display='none';
     requestAnimationFrame(function(){
       portalHost.classList.add('reveal');
       blackout.classList.remove('on');
@@ -1114,9 +1392,15 @@
   function closePortal(){
     if(!portalOpen)return;
     portalOpen=false;
-    cur.style.display='';
+    var back=null;
+    if(TR&&HW&&ptrack){ back=HW.afterPortal(TR,ptrack.id,portalFlush()); }
+    ptrack=null;
+    if(back&&!reduceMotion)setTimeout(function(){
+      TR.mark(back.seenKey);
+      showBreach(T('w.'+back.id,back.vars),{backdrop:true});
+    },1500);
     if(ducked){ ducked=false; duckMainBGM(false); }
-    hardReset();                                  /* мгновенно вернуть сцену */
+    hardReset();
     VX.rev=true; VX.target=3*VX.base;             /* воронка «выдыхает» гостя обратно */
     setTimeout(function(){ VX.rev=false; VX.target=VX.base; },1200);
     portalHost.classList.remove('reveal');
@@ -1133,13 +1417,13 @@
     if(d.aceon==='ready')portalReadyF=true;
     if(d.aceon==='close'&&portalOpen)history.back();
   });
-  /* если главная случайно оказалась внутри чужого iframe (клик "назад" внутри Core) — просим родителя закрыть портал */
+  /* главная оказалась внутри чужого iframe (кнопка «назад» внутри Core): просим родителя закрыть портал */
   if(window.self!==window.top){
     try{ window.parent.postMessage({aceon:'close'},location.origin); }catch(e){}
   }
   window.ACEON={ warpTo:goVortex, closePortal:closePortal, visits:visits };
 
-  /* ═══ LETTER SPIRAL ═══ */
+  /* буквы логотипа по спирали */
   var letterClones=[];
   function spiralLetters(){
     var logoWrap=document.getElementById('logo-wrap');
@@ -1203,19 +1487,19 @@
     document.getElementById('logo-wrap').style.visibility='';
   }
 
-  /* ═══ HARD RESET (фикс возврата назад / bfcache) ═══ */
+  /* полный сброс сцены (возврат назад, bfcache) */
   function hardReset(){
     warpTimers.forEach(clearTimeout); warpTimers=[];
     warping=false; VX.warp=false; VX.rev=false;
     VX.target=VX.base; VX.g=VX.base; VX.red=0; VX.redT=0; VX.idle=1;
     var stage=document.getElementById('stage');
     stage.classList.remove('suck'); stage.removeAttribute('style');
-    ['hud','hud-l','sb'].forEach(function(id){document.getElementById(id).classList.remove('fadeout');});
+    ['hud','hud-l','sb','mdock'].forEach(function(id){document.getElementById(id).classList.remove('fadeout');});
     warpLine.classList.remove('on');
     blackout.classList.remove('on');
     irisReset();
     restoreLogo();
-    sctx.fillStyle='#000'; sctx.fillRect(0,0,SW,SH);
+    if(!glOK){ sctx.fillStyle='#000'; sctx.fillRect(0,0,SW,SH); }
     var b=document.getElementById('pwb'); b.disabled=false; b.textContent='OK';
     document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});
   }
@@ -1224,12 +1508,11 @@
       portalOpen=false;
       portalHost.classList.remove('open','reveal','closing');
       portalHost.innerHTML='';
-      cur.style.display='';
       hardReset();
     }
   });
 
-  /* ═══ GLITCH FX ═══ */
+  /* глитчи */
   var tears=document.getElementById('tears');
   function tearBurst(){
     if(reduceMotion||portalOpen||PRO.fx<1)return;
@@ -1267,26 +1550,43 @@
   }
   setInterval(function(){ if(PRO.fx>=3&&Math.random()<.28&&!warping&&!portalOpen)flash(0.012+Math.random()*.018); },7500);
 
-  /* ═══ GHOST PHRASES ═══ */
-  var lagPool=['...are you there...','wrong channel','can you hear this','still here','not alone','signal broken','please respond','...hello...','it pulls everything','do not resist','closer now'];
-  if(visits>2)lagPool=lagPool.concat(['you came back','it remembers you','visit '+String(visits).padStart(2,'0'),'you always return']);
+  /* фразы-призраки */
+  function lagPool(){
+    var p=TA('ghost.list');
+    if(visits>2)p=p.concat(TA('ghost.return').map(function(s){return s.replace('{n}',String(visits).padStart(2,'0'));}));
+    return p;
+  }
   var lagC=0;
+  /* подсказка слова-кода: одна за сессию, только для вернувшихся и только из ненайденных слов */
+  function hintFor(){
+    if(!TR||!HW||visits<=2)return null;
+    try{ if(sessionStorage.getItem('aceon_hint'))return null; }catch(e){}
+    var fails=TR.data().ev['pw.fail']||0;
+    if(Math.random()>(fails>=3?.6:.3))return null;
+    var left=HW.unknownCodes(TR); if(!left.length)return null;
+    var w=left[Math.random()*left.length|0];
+    try{ sessionStorage.setItem('aceon_hint',w); }catch(e){}
+    return w;
+  }
   function spawnLag(){
     if(lagC>=2||warping||portalOpen||PRO.fx<1)return; lagC++;
-    var phrase=lagPool[Math.random()*lagPool.length|0];
+    var pool=lagPool(), phrase=pool[Math.random()*pool.length|0];
+    var hint=hintFor(), keep=[-1,-1];
+    if(hint){ phrase=T('hint.'+hint); var hi=phrase.indexOf(hint); keep=[hi,hi+hint.length]; }
     var el=document.createElement('div');
     var vw=window.innerWidth,vh=window.innerHeight,x,y,tries=0;
-    do{x=Math.random()*(vw-260)+20;y=Math.random()*(vh-80)+20;tries++;}
+    var pw=Math.min(vw-40,phrase.length*10.5+40);   /* верхняя полоса занята HUD, её обходим */
+    do{x=Math.random()*Math.max(1,vw-pw-20)+20;y=Math.random()*Math.max(1,vh-200)+120;tries++;}
     while(tries<20&&x>vw*.24&&x<vw*.76&&y>vh*.22&&y<vh*.75);
     el.textContent=phrase;
     el.style.cssText='position:fixed;font-size:13px;color:transparent;letter-spacing:4px;pointer-events:none;white-space:nowrap;left:'+x+'px;top:'+y+'px;z-index:9;font-family:inherit;';
     document.body.appendChild(el);
-    var life=0,total=55+Math.random()*40|0,peak=.26+Math.random()*.12,green=Math.random()<.22;
+    var life=0,total=(hint?90:55)+Math.random()*40|0,peak=hint?.5:.26+Math.random()*.12,green=hint||Math.random()<.22;
     var iv=setInterval(function(){
       life++;
       var a=life<=10?(life/10)*peak:life>=(total-14)?((total-life)/14)*peak:peak;
       var co=(life<total*.2||life>total*.78)?.45:.07;
-      el.textContent=phrase.split('').map(function(c){return Math.random()<co?gch[Math.random()*gch.length|0]:c;}).join('');
+      el.textContent=phrase.split('').map(function(c,k){return (k<keep[0]||k>=keep[1])&&Math.random()<co?gch[Math.random()*gch.length|0]:c;}).join('');
       el.style.color=green?'rgba(0,'+(130+Math.random()*60|0)+',0,'+a+')':'rgba(175,175,175,'+a+')';
       if(life>=total){clearInterval(iv);el.remove();lagC--;}
     },50);
@@ -1294,10 +1594,10 @@
   function schLag(){setTimeout(function(){spawnLag();schLag();},7000+Math.random()*9000);}
   setTimeout(function(){spawnLag();schLag();},6000);
 
-  /* ═══ LIVING LOGO ═══ */
+  /* живой логотип */
   var ttl=document.getElementById('ttl');
   var subel=document.getElementById('sub');
-  var TORIG='A.C.EON STUDIO', SORIG='// HUMAN \u00b7 MACHINE \u00b7 SIGNAL //';
+  var TORIG='A.C.EON STUDIO', SORIG='// HUMAN · MACHINE · SIGNAL //';
   function glitch(el,orig,n){
     var f=0,iv=setInterval(function(){
       if(warping){clearInterval(iv);return;}
@@ -1324,7 +1624,7 @@
   function schScan(){ setTimeout(function(){runScan();schScan();},9000+Math.random()*9000); }
   setTimeout(schScan,4200);
 
-  /* ═══ IDLE-ЗАТЯГИВАНИЕ ═══ */
+  /* затягивание при бездействии */
   var lastAct=Date.now(), idleApplied=false;
   function bumpActivity(){
     lastAct=Date.now();
@@ -1351,47 +1651,65 @@
     }
   },500);
 
-  /* ═══ AUTH CHANNEL ═══ */
+  /* канал доступа */
   var auth=document.getElementById('auth');
   var pwlb=document.getElementById('pwlb');
   var pwi=document.getElementById('pwi');
   var pwb=document.getElementById('pwb');
   var pwstat=document.getElementById('pwstat');
+  var pwKey='';               /* последний ключ статуса: при смене языка строка перерисовывается */
+  function setStat(cls,key,vars){
+    pwKey=key||''; pwstat.className=cls;
+    pwstat.textContent=key?T(key,vars):'';
+  }
+  function authLabel(){ pwlb.textContent=T(auth.classList.contains('open')?'auth.opened':'auth.standby'); }
 
   pwi.addEventListener('focus',function(){
     auth.classList.add('open');
-    pwlb.textContent='[ AUTH CHANNEL > OPENED ]';
-    pwstat.className='live'; pwstat.textContent='> AUTH CHANNEL OPENED \u2014 LISTENING';
+    authLabel();
+    setStat('live','auth.listening');
     tryStartMusic();
   });
-  document.getElementById('pwbx').addEventListener('pointerdown',tryStartMusic);
+  document.getElementById('pwbx').addEventListener('pointerdown',function(){ tryStartMusic(); });
   pwi.addEventListener('blur',function(){
     if(pwi.value)return;
     auth.classList.remove('open');
-    pwlb.textContent='[ AUTH CHANNEL > STANDBY ]';
-    if(pwstat.className==='live'){ pwstat.textContent=''; pwstat.className=''; }
+    authLabel();
+    if(pwstat.className==='live')setStat('','');
   });
   pwi.addEventListener('input',function(){
     if(pwstat.className!=='err'){
-      pwstat.className='live'; pwstat.textContent='> RECEIVING INPUT'+'.'.repeat(1+(pwi.value.length%3));
+      pwKey=''; pwstat.className='live';
+      pwstat.textContent=T('auth.receiving')+'.'.repeat(1+(pwi.value.length%3));
     }
   });
 
-  var denies=[
-    '> ACCESS DENIED \u2014 NO ACTIVE CODES THIS CYCLE',
-    '> ALL CHANNELS SEALED \u2014 AWAIT BROADCAST',
-    '> KEY NOT IN CURRENT TRANSMISSION',
-    '> SIGNAL MISMATCH \u2014 NODE LOGGED ATTEMPT '
-  ];
   /* слова, ломающие реальность (не переходы) */
+  var CODE_B64={'Vk9JRA==':'VOID','TlVMTA==':'NULL','U0lHTkFM':'SIGNAL','U1RBU0lT':'STASIS','UFVMU0U=':'PULSE','REFSSw==':'DARK','NDQw':'440'};
   function realityWord(v){
     var b;
     try{ b=btoa(v.toUpperCase()); }catch(e){ return false; }
+    if(TR&&CODE_B64[b])TR.code(CODE_B64[b]);
+    if(b==='Rk9SR0VU'){                       /* стереть память о посетителе */
+      if(TR){ TR.forget(); TR.event('forget'); }
+      try{ ['aceon_visits','aceon_greet_i','aceon_home_mvol'].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+      try{ sessionStorage.removeItem('aceon_hint'); }catch(e){}
+      visits=1; greetIdx=-1;
+      document.getElementById('greet').textContent=greetText();
+      document.getElementById('resume').textContent='';
+      var wipe=document.createElement('div');
+      wipe.style.cssText='position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:75;transition:opacity .25s ease;';
+      document.body.appendChild(wipe);
+      requestAnimationFrame(function(){ wipe.style.opacity='.97'; });
+      setTimeout(function(){ wipe.style.transition='opacity 1.6s ease'; wipe.style.opacity='0'; setTimeout(function(){wipe.remove();},1700); },700);
+      glitch(ttl,TORIG,18); tearBurst();
+      setStat('arg','rw.forget');
+      return true;
+    }
     if(b==='Vk9JRA=='){                       /* реверс воронки */
       VX.rev=true;
       setTimeout(function(){ VX.rev=false; },6000);
-      pwstat.className='arg';
-      pwstat.textContent='> POLARITY REVERSED \u2014 THE WELL EXHALES';
+      setStat('arg','rw.void');
       signalBroken();
       return true;
     }
@@ -1399,47 +1717,41 @@
       VX.target=15*VX.base;
       flash(.09);
       setTimeout(function(){ if(!warping)VX.target=VX.base; },3000);
-      pwstat.className='arg';
-      pwstat.textContent='> COLLAPSE CONTAINED \u2014 DO NOT REPEAT';
+      setStat('arg','rw.null');
       tearBurst();
       return true;
     }
     if(b==='U0lHTkFM'){                       /* красное смещение */
       VX.redT=10;
-      pwstat.className='arg';
-      pwstat.textContent='> RED SHIFT ENGAGED \u2014 10 SECONDS';
+      setStat('arg','rw.signal');
       return true;
     }
-    if(b==='U1RBU0lT'){                       /* STASIS: время почти останавливается */
+    if(b==='U1RBU0lT'){                       /* время почти останавливается */
       VX.target=0.06*VX.base;
       setTimeout(function(){ if(!warping)VX.target=VX.base; },5000);
-      pwstat.className='arg';
-      pwstat.textContent='> STASIS FIELD ENGAGED \u2014 TIME DILATED';
+      setStat('arg','rw.stasis');
       return true;
     }
-    if(b==='UFVMU0U='){                       /* PULSE: ударная волна от ядра */
+    if(b==='UFVMU0U='){                       /* ударная волна от ядра */
       shockwave();
       VX.target=4*VX.base;
       setTimeout(function(){ if(!warping)VX.target=VX.base; },700);
-      pwstat.className='arg';
-      pwstat.textContent='> CORE PULSE EMITTED';
+      setStat('arg','rw.pulse');
       return true;
     }
-    if(b==='REFSSw=='){                       /* DARK: свет гаснет */
+    if(b==='REFSSw=='){                       /* свет гаснет */
       var dk=document.createElement('div');
       dk.style.cssText='position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:75;transition:opacity .6s ease;';
       document.body.appendChild(dk);
       requestAnimationFrame(function(){ dk.style.opacity='.93'; });
       setTimeout(function(){ dk.style.opacity='0'; setTimeout(function(){dk.remove();},900); },2600);
-      pwstat.className='arg';
-      pwstat.textContent='> LIGHTS OUT \u2014 IT PREFERS THE DARK';
+      setStat('arg','rw.dark');
       return true;
     }
-    if(b==='NDQw'){                           /* 440: несущая частота */
+    if(b==='NDQw'){                           /* несущая частота */
       playCarrier();
       glitch(ttl,TORIG,10);
-      pwstat.className='arg';
-      pwstat.textContent='> 440 HZ \u2014 THE CARRIER FREQUENCY';
+      setStat('arg','rw.440');
       return true;
     }
     return false;
@@ -1475,25 +1787,26 @@
       o.connect(g); o.start(t0); o.stop(t0+2.4);
     }catch(e){}
   }
+  var denyIdx=0, denyN=0;
   function tryPass(){
     if(warping)return;
     var v=pwi.value.trim();
     pwb.disabled=true; pwb.textContent='.';
-    pwstat.className='live';
+    pwKey=''; pwstat.className='live';
     var dots=0,vi=setInterval(function(){
-      pwstat.textContent='> VERIFYING'+' \u2593\u2592\u2591\u2592'.slice(0,1+(dots++%4));
+      pwstat.textContent=T('auth.verifying')+' ▓▒░▒'.slice(0,1+(dots++%4));
     },110);
     VX.target=2.6*VX.base;
     setTimeout(function(){ if(!warping&&VX.target===2.6*VX.base)VX.target=VX.base; },900);
     setTimeout(function(){
       clearInterval(vi);
-      if(!v){ pwstat.className='err'; pwstat.textContent='> NULL SIGNAL'; }
+      if(!v){ setStat('err','auth.null'); }
       else if(realityWord(v)){ /* реальность уже пострадала */ }
       else{
-        pwstat.className='err';
-        var m=denies[Math.random()*denies.length|0];
-        if(m.slice(-1)===' ')m+=Math.floor(Math.random()*9);
-        pwstat.textContent=m;
+        denyIdx=Math.random()*TA('auth.deny').length|0; denyN=Math.floor(Math.random()*9);
+        if(TR)TR.event('pw.fail');
+        pwKey='deny'; pwstat.className='err';
+        pwstat.textContent=denyText();
         glitch(ttl,TORIG,14);
         tearBurst();
         if(Math.random()<.4)signalBroken();
@@ -1501,12 +1814,11 @@
       pwb.textContent='OK'; pwb.disabled=false;
     },600+Math.random()*400|0);
   }
+  function denyText(){ return (TA('auth.deny')[denyIdx]||'').replace('{n}',String(denyN)); }
   pwb.onclick=tryPass;
   pwi.addEventListener('keydown',function(e){ if(e.key==='Enter')tryPass(); });
 
-  /* ═══ ROUTE BUTTONS ═══ */
-  var infoWords=['INFO','\u25b8 ARG','ACCESS','?????','\u25c8 SIGNAL','ENTER','\u25b8 INFO'];
-  var coreWords=['\u25c6 CORE','NETWORK','A.C.EON','[CORE]','\u25b8 NODE','\u25c6 CORE'];
+  /* кнопки переходов */
   var btnInfo=document.getElementById('btn-info');
   var btnCore=document.getElementById('btn-core');
   var coreLabelNode=btnCore.childNodes[0];
@@ -1524,8 +1836,9 @@
   var iwIdx=0;
   setInterval(function(){
     if(warping||portalOpen)return;
-    iwIdx=(iwIdx+1)%infoWords.length;
-    morphTo(function(s){btnInfo.textContent=s;},function(){return btnInfo.textContent;},infoWords[iwIdx],8+Math.random()*6|0,false);
+    var words=TA('btn.info');
+    iwIdx=(iwIdx+1)%words.length;
+    morphTo(function(s){btnInfo.textContent=s;},function(){return btnInfo.textContent;},words[iwIdx],8+Math.random()*6|0,false);
     if(Math.random()<.45){btnInfo.classList.add('shake');setTimeout(function(){btnInfo.classList.remove('shake');},380);}
     if(Math.random()<.18){btnInfo.classList.add('flicker-red');setTimeout(function(){btnInfo.classList.remove('flicker-red');},220);}
   },3400+Math.random()*1800|0);
@@ -1533,8 +1846,9 @@
   var cwIdx=0;
   setInterval(function(){
     if(warping||portalOpen)return;
-    cwIdx=(cwIdx+1)%coreWords.length;
-    morphTo(function(s){coreLabelNode.textContent=s+' ';},function(){return coreLabelNode.textContent.trim();},coreWords[cwIdx],6+Math.random()*5|0,true);
+    var words=TA('btn.core');
+    cwIdx=(cwIdx+1)%words.length;
+    morphTo(function(s){coreLabelNode.textContent=s+' ';},function(){return coreLabelNode.textContent.trim();},words[cwIdx],6+Math.random()*5|0,true);
     if(Math.random()<.3){btnCore.classList.add('shake');setTimeout(function(){btnCore.classList.remove('shake');},380);}
     if(Math.random()<.12){btnCore.classList.add('flicker-dim');setTimeout(function(){btnCore.classList.remove('flicker-dim');},180);}
   },4800+Math.random()*2400|0);
@@ -1542,16 +1856,16 @@
   btnInfo.addEventListener('click',function(e){
     if(reduceMotion)return;
     e.preventDefault();
-    goVortex(btnInfo.getAttribute('href'),'PULLED INTO SIGNAL');
+    goVortex(btnInfo.getAttribute('href'),T('warp.info'));
   });
   btnCore.addEventListener('click',function(e){
     if(reduceMotion)return;
     e.preventDefault();
-    goVortex(btnCore.getAttribute('href'),'CONNECTING A.C.EON NETWORK');
+    goVortex(btnCore.getAttribute('href'),T('warp.core'));
   });
 
-  /* ═══ HUD / CLOCK ═══ */
-  document.getElementById('greet').textContent=pickGreeting();
+  /* HUD / часы */
+  pickGreeting();
   if(nightMode)document.getElementById('layerlbl').textContent='LAYER_01 // AFTER HOURS';
   var nst=['OBSERVING','WATCHING','SCANNING','ANALYZING','WAITING'],ni=0;
   setInterval(function(){document.getElementById('ns1').textContent=nst[ni++%nst.length];},6200);
@@ -1578,24 +1892,129 @@
     document.getElementById('ec1').textContent='ERR 0x'+r;
   },3800);
 
-  /* ═══ BOOT ═══ */
+  /* все переводимые тексты разом: при старте и при смене языка */
+  function applyTexts(){
+    document.querySelectorAll('[data-i18n]').forEach(function(el){ el.textContent=T(el.getAttribute('data-i18n')); });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el){ el.title=T(el.getAttribute('data-i18n-title')); });
+    document.getElementById('greet').textContent=greetText();
+    authLabel();
+    if(pwKey==='deny')pwstat.textContent=denyText();
+    else if(pwKey)pwstat.textContent=T(pwKey);
+    var iw=TA('btn.info'), cw=TA('btn.core');
+    btnInfo.textContent=iw[iwIdx%iw.length];
+    coreLabelNode.textContent=cw[cwIdx%cw.length]+' ';
+    if(overloadHinted)document.getElementById('feed').textContent=T('feed.overload');
+    document.getElementById('lang-mark').textContent='LANG: '+curLang().toUpperCase()+' ▸ SHIFT';
+    if(uniOv.classList.contains('on'))fillUniPanel(uniSel);
+    renderResume();
+  }
+
+  /* ПРОДОЛЖИТЬ: последний раздел, если он был не слишком давно */
+  var resumeEl=document.getElementById('resume');
+  function renderResume(){
+    resumeEl.textContent='';
+    if(!TR||TR.session.n<2)return;
+    var l=TR.lastPlace();
+    if(!l||Date.now()-l.ts>21*864e5)return;
+    var a=document.createElement('a');
+    a.href=l.url;
+    a.textContent='\u25b8 '+T('resume')+': '+TR.name(l.id);
+    a.addEventListener('click',function(e){
+      if(reduceMotion)return;
+      e.preventDefault();
+      goVortex(l.url,T('resume')+': '+TR.name(l.id));
+    });
+    resumeEl.appendChild(a);
+  }
+
+  /* прорыв сигнала */
+  var breachEl=document.getElementById('breach'), breachBg=document.getElementById('breach-bg');
+  function scramble(text,k){
+    return text.split('').map(function(c){ return c!==' '&&Math.random()<k?gch[Math.random()*gch.length|0]:c; }).join('');
+  }
+  function showBreach(text,opt,done){
+    opt=opt||{};
+    if(opt.backdrop)breachBg.classList.add('on');
+    breachEl.textContent=''; breachEl.classList.add('on');
+    tearBurst();
+    var i=0;
+    var typer=setInterval(function(){
+      i=Math.min(text.length,i+1);
+      breachEl.textContent=scramble(text.slice(0,i),.35)+(i<text.length?'_':'');
+      if(i>=text.length){
+        clearInterval(typer);
+        breachEl.textContent=text;
+        var jit=setInterval(function(){ breachEl.textContent=Math.random()<.18?scramble(text,.08):text; },140);
+        setTimeout(function(){
+          clearInterval(jit);
+          var n=0, out=setInterval(function(){
+            breachEl.textContent=scramble(text,.3+n*.15);
+            if(++n>=5){
+              clearInterval(out);
+              breachEl.classList.remove('on'); breachBg.classList.remove('on');
+              tearBurst();
+              setTimeout(function(){ breachEl.textContent=''; if(done)done(); },260);
+            }
+          },60);
+        },1900+text.length*35);
+      }
+    },42);
+  }
+
+  /* что сказать при загрузке: ?breach=<id> показывает конкретное сообщение (для проверки текстов) */
+  var bootBreach=null;
+  (function(){
+    var m=location.search.match(/[?&]breach=([a-z_]+)/);
+    if(m){ bootBreach={id:m[1],vars:{n:7,sec:'ACEONIUM',min:12}}; return; }
+    if(!TR||!HW||reduceMotion||!TR.session.fresh||TR.session.n<2)return;
+    var pick=HW.pick(TR);
+    if(pick&&(TR.session.gap>20*3600e3||Math.random()<.45)){ bootBreach=pick; return; }
+    if(!pick&&Math.random()<.2&&visits>1)bootBreach={id:'greet',text:greetText().toLowerCase()};
+  })();
+  function breachText(b){ return b.text||T('w.'+b.id,b.vars); }
+
+  /* загрузка */
   var boot=document.getElementById('boot');
-  var bootLines=['> A.C.EON NODE \u2014 COLD BOOT'];
-  if(visits>1)bootLines.push('> RETURN DETECTED \u2014 VISIT '+String(visits).padStart(2,'0'));
+  var bootLines=['> A.C.EON NODE: COLD BOOT'];
+  if(visits>1)bootLines.push('> RETURN DETECTED: VISIT '+String(visits).padStart(2,'0'));
   if(nightMode)bootLines.push('> NIGHT PROTOCOL ACTIVE');
+  if(savedLang())bootLines.push('> LOCALE '+savedLang().toUpperCase()+' RESTORED');
   if(savedU!==null)bootLines.push('> UNIVERSE '+getUni(savedU).tag+' RESTORED');
   bootLines=bootLines.concat([
     '> GRAVITY WELL: STABLE',
-    '> LAYER_01 \u2014 SINGULARITY MOUNTED',
+    glAvail?'> RENDER PATH: WEBGL':'> RENDER PATH: STATIC (NO WEBGL)',
+    '> LAYER_01: SINGULARITY MOUNTED',
     '> AUTH CHANNEL: STANDBY',
     '> RENDERING...'
   ]);
+  var BREACH_AT=2;
   function typeBoot(i){
+    if(bootBreach&&i===BREACH_AT){
+      var b=bootBreach; bootBreach=null;
+      if(TR&&b.id!=='greet')TR.mark('w.'+b.id);
+      var err=document.createElement('div');
+      err.className='br-err';
+      err.textContent='> ERR 0x'+(Math.random()*0xffff|0).toString(16).toUpperCase().padStart(4,'0')+': STREAM INTEGRITY LOST';
+      boot.appendChild(err);
+      boot.classList.add('br-glitch');
+      tearBurst();
+      setTimeout(function(){
+        boot.classList.remove('br-glitch'); boot.classList.add('br-dim');
+        showBreach(breachText(b),{},function(){
+          boot.classList.remove('br-dim');
+          var ok=document.createElement('div');
+          ok.textContent='> RESYNC: OK';
+          boot.appendChild(ok);
+          setTimeout(function(){ typeBoot(i); },260);
+        });
+      },520);
+      return;
+    }
     if(i>=bootLines.length){
       setTimeout(function(){
         boot.classList.add('gone');
-        if(savedU===null)showUniverseSel(true);
-        else revealStage();
+        if(!savedLang())showLangSel(true);
+        else afterLang();
       },350);
       return;
     }
@@ -1607,14 +2026,54 @@
       else setTimeout(function(){typeBoot(i+1);},90+Math.random()*160);
     })();
   }
-  if(reduceMotion){
-    boot.classList.add('gone');
-    document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});
-  } else typeBoot(0);
+  function afterLang(){
+    if(savedU===null)showUniverseSel(true);
+    else revealStage();
+  }
 
-  /* ═══ UNIVERSE SELECTOR UI ═══ */
+  /* выбор языка */
+  var langOv=document.getElementById('lang-ov');
+  var lgList=document.getElementById('lg-list');
+  var langFirst=false, langSel=0;
+  LANGS.forEach(function(l,i){
+    var b=document.createElement('button');
+    b.className='lg-i'; b.type='button'; b.setAttribute('data-l',l.code);
+    b.innerHTML='<b>'+l.code.toUpperCase()+'</b><span></span>';
+    b.lastChild.textContent=l.name;
+    b.addEventListener('mouseenter',function(){ markLang(i); });
+    b.addEventListener('focus',function(){ markLang(i); });
+    b.addEventListener('click',function(){ chooseLang(i); });
+    lgList.appendChild(b);
+  });
+  /* подпись и подсказка сразу на том языке, на который навели */
+  function markLang(i){
+    langSel=i;
+    var code=LANGS[i].code;
+    lgList.querySelectorAll('.lg-i').forEach(function(b,k){ b.classList.toggle('sel',k===i); });
+    document.getElementById('lg-cap').textContent=TL(code,'lang.cap');
+    document.getElementById('lg-hint').textContent=TL(code,'lang.hint');
+  }
+  function showLangSel(first){
+    langFirst=first;
+    var c=curLang(), idx=0;
+    LANGS.forEach(function(l,k){ if(l.code===c)idx=k; });
+    lgList.querySelectorAll('.lg-i').forEach(function(b,k){ b.classList.toggle('cur',!first&&k===idx); });
+    markLang(idx);
+    langOv.classList.add('on');
+  }
+  function chooseLang(i){
+    if(TR&&!langFirst&&LANGS[i].code!==curLang())TR.event('lang.change');
+    setLang(LANGS[i].code);
+    langOv.classList.remove('on');
+    if(langFirst){ langFirst=false; afterLang(); }
+  }
+  document.getElementById('lang-mark').addEventListener('click',function(){
+    if(!warping&&!portalOpen&&!uniOv.classList.contains('on'))showLangSel(false);
+  });
+
+  /* выбор вселенной */
   var uniOv=document.getElementById('uni-ov');
-  var uniFirst=false, uniSel=0;
+  var uniFirst=false, uniSel=1;
   function revealStage(){
     document.querySelectorAll('.st-in').forEach(function(el,k){
       setTimeout(function(){el.classList.add('on');},300+k*450);
@@ -1624,16 +2083,18 @@
   function fillUniPanel(u){
     var P=getUni(u);
     document.getElementById('usp-head').textContent=P.tag+' // '+P.name;
-    document.getElementById('usp-desc').textContent=P.desc;
-    document.getElementById('usp-fx').textContent=P.fxl;
-    document.getElementById('usp-hw').textContent=P.hw;
+    document.getElementById('usp-rec').textContent=(glAvail&&u===REC)?T('uni.rec'):'';
+    document.getElementById('usp-desc').textContent=T('uni.'+u+'.desc');
+    document.getElementById('usp-fx').textContent=T('uni.'+u+'.fx');
+    document.getElementById('usp-hw').textContent=T('uni.'+u+'.hw');
+    document.getElementById('usp-nogl').textContent=glAvail?'':T('uni.nogl');
     document.querySelectorAll('.us-d').forEach(function(d){
       d.classList.toggle('sel',+d.getAttribute('data-u')===u);
     });
   }
   function showUniverseSel(first){
     uniFirst=first;
-    uniSel=first?1:PRO.id;
+    uniSel=first?REC:PRO.id;
     fillUniPanel(uniSel);
     uniOv.classList.add('on');
   }
@@ -1644,49 +2105,119 @@
     });
   });
   document.getElementById('us-enter').addEventListener('click',function(){
+    if(TR&&!uniFirst&&uniSel!==PRO.id)TR.event('uni.change');
     savedU=uniSel;
     applyUniverse(uniSel);
     uniOv.classList.remove('on');
     if(uniFirst){ uniFirst=false; revealStage(); }
   });
   document.addEventListener('keydown',function(e){
+    if(langOv.classList.contains('on')){
+      var n=LANGS.length;
+      if(e.key==='ArrowDown'||e.key==='ArrowRight'){ markLang((langSel+1)%n); e.preventDefault(); }
+      else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){ markLang((langSel+n-1)%n); e.preventDefault(); }
+      else if(e.key>='1'&&e.key<=String(n)){ markLang(+e.key-1); }
+      else if(e.key==='Enter'){ chooseLang(langSel); e.preventDefault(); }
+      else if(e.key==='Escape'&&!langFirst){ langOv.classList.remove('on'); }
+      return;
+    }
     if(!uniOv.classList.contains('on'))return;
     if(e.key>='1'&&e.key<='3'){ uniSel=+e.key; fillUniPanel(uniSel); }
     if(e.key==='Enter')document.getElementById('us-enter').click();
   });
   document.getElementById('uni-mark').addEventListener('click',function(){
-    if(!warping&&!portalOpen)showUniverseSel(false);
+    if(!warping&&!portalOpen&&!langOv.classList.contains('on'))showUniverseSel(false);
   });
 
-  /* ═══ DEBUG (?debug в URL) ═══ */
+  applyTexts();
+  if(reduceMotion){
+    /* без движения: один неподвижный кадр вместо чёрного экрана */
+    simT=40;
+    if(glOK){ for(var rs=0;rs<6;rs++)glRender(.016,rs===0); }
+    else renderStatic(0);
+    boot.classList.add('gone');
+    if(!savedLang())showLangSel(true);
+    else if(savedU===null)showUniverseSel(true);
+    document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});
+  } else typeBoot(0);
+
+  /* отладка: ?debug в адресе */
   if(location.search.indexOf('debug')>=0){
     var dbg=document.createElement('div');
     dbg.style.cssText='position:fixed;bottom:34px;left:18px;z-index:400;font-size:10px;color:#0f0;letter-spacing:1px;line-height:1.7;pointer-events:none;font-family:monospace;';
     document.body.appendChild(dbg);
     setInterval(function(){
-      dbg.textContent='FPS '+Math.round(1000/emaDt)+' | N='+N+' | '+PRO.tag
-        +' | GL:'+(glOK?'ON':'OFF')+' | SRC '+SW+'x'+SH
-        +(glOK?' | GLC '+glC.width+'x'+glC.height:'');
+      dbg.textContent='FPS '+Math.round(1000/emaDt)+' | N='+(glOK?Math.min(PRO.n,MAXP):PRO.sn)+' | '+PRO.tag
+        +' | GL:'+(glOK?'ON':'OFF')+(glOK?' | TRAIL '+trW+'x'+trH+' | OUT '+outW+'x'+outH+' | Q '+qScale.toFixed(2):' | SRC '+SW+'x'+SH)
+        +' | REC U-'+REC+' | LANG '+curLang()+(TR?' | SESS '+TR.session.n:'');
     },500);
   }
 
-  /* ═══ MUSIC ═══ */
-  var bgmFired=false;
+  /* музыка. Громкость общая для сайта: Store('site').music, 0 значит «выключено» везде,
+     в аркаде тоже. Перед выключением громкость запоминается в aceon_home_mvol */
+  var bgmFired=false, bgmUserOff=false, bgmFadeIv=null;
   var bgmTracks=['audio/track1.mp3','audio/track2.mp3'];
-  function tryStartMusic(){
-    if(bgmFired)return; bgmFired=true;
-    var bgm=document.getElementById('bgm');
-    if(!bgm)return;
-    bgm.src=bgmTracks[Math.floor(Math.random()*bgmTracks.length)];
-    bgm.volume=0;
-    bgm.play().catch(function(){});
-    setTimeout(function(){
-      var vol=0,fiv=setInterval(function(){
-        vol=Math.min(vol+0.04,0.65);bgm.volume=vol;
-        if(vol>=0.65)clearInterval(fiv);
-      },180);
-    },1000);
+  var bgmEl=document.getElementById('bgm');
+  var mdock=document.getElementById('mdock'), mTgl=document.getElementById('m-tgl'), mArch=document.getElementById('m-arch');
+  function siteMusic(){
+    var v=(hasI18n?Store.get('site'):readSite()).music;
+    return typeof v==='number'?v:0.6;
   }
+  function saveMusic(v){
+    if(hasI18n){ Store.get('site').music=v; Store.save('site'); return; }
+    var o=readSite(); o.music=v; if(!o.v)o.v=1;
+    try{ localStorage.setItem('aceon:site',JSON.stringify(o)); }catch(e){}
+  }
+  function bgmTarget(){ var v=siteMusic(); return v>0?Math.min(1,v):0.6; }
+  function fadeBgm(to,done,step){
+    clearInterval(bgmFadeIv);
+    bgmFadeIv=setInterval(function(){
+      var v=bgmEl.volume;
+      v=to>v?Math.min(to,v+(step||.03)):Math.max(to,v-(step||.05));
+      bgmEl.volume=v;
+      if(v===to){ clearInterval(bgmFadeIv); if(done)done(); }
+    },110);
+  }
+  function tryStartMusic(force){
+    if(bgmFired)return;
+    if(!force&&siteMusic()<=0)return;
+    bgmFired=true;
+    bgmEl.src=bgmTracks[Math.floor(Math.random()*bgmTracks.length)];
+    bgmEl.volume=0;
+    var p=bgmEl.play();
+    if(p&&p.then)p.then(function(){ setTimeout(function(){ fadeBgm(bgmTarget()); },force?0:1000); })
+      .catch(function(){ bgmFired=false; });
+  }
+  function dockState(){
+    var on=!bgmEl.paused;
+    mdock.classList.toggle('playing',on);
+    mTgl.setAttribute('aria-pressed',on?'true':'false');
+  }
+  bgmEl.addEventListener('play',dockState);
+  bgmEl.addEventListener('pause',dockState);
+  mTgl.addEventListener('click',function(){
+    if(!bgmFired||bgmEl.paused){
+      bgmUserOff=false;
+      if(siteMusic()<=0){
+        var pv=0.6; try{ pv=parseFloat(localStorage.getItem('aceon_home_mvol'))||0.6; }catch(e){}
+        saveMusic(pv);
+      }
+      if(TR)TR.event('music.on');
+      if(!bgmFired)tryStartMusic(true);
+      else{ bgmEl.play().catch(function(){}); fadeBgm(bgmTarget()); }
+    } else {
+      bgmUserOff=true;
+      if(TR)TR.event('music.off');
+      try{ localStorage.setItem('aceon_home_mvol',String(siteMusic())); }catch(e){}
+      saveMusic(0);
+      fadeBgm(0,function(){ bgmEl.pause(); });
+    }
+  });
+  mArch.addEventListener('click',function(e){
+    if(reduceMotion)return;
+    e.preventDefault();
+    goVortex(mArch.getAttribute('href'),T('warp.music'));
+  });
 
 })();
 </script>

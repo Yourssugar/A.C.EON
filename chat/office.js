@@ -190,11 +190,13 @@ function sprite(pal,face,dir,frame,sit,typing,glow){
 /* ---------- агенты ---------- */
 const DEFS=window.OFFICE_AGENTS||[];
 const REAL=DEFS.filter(d=>!d.slot);
-const agents=REAL.map(d=>({
-  def:d, id:d.id, pal:d.pal, x:0, y:0, dir:'down', frame:0, ft:0, sit:false, typing:false,
-  face:'idle', path:[], tgt:null, anc:null, act:null, actUntil:0, status:'check', placed:false,
-  bub:null, clicks:[], blinkAt:performance.now()+2000+Math.random()*4000, zAt:0, onArrive:null
+/* все 13 ходят по офису; у слотов (стажёров) нет статуса и данных */
+const agents=DEFS.map(d=>({
+  def:d, id:d.id, extra:!!d.slot, pal:d.pal||SLOT_PAL, x:0, y:0, dir:'down', frame:0, ft:0, sit:false, typing:false,
+  face:'idle', path:[], tgt:null, anc:null, act:null, actUntil:0, status:d.slot?'extra':'check', placed:true,
+  spd:20+Math.random()*7, bub:null, clicks:[], blinkAt:performance.now()+2000+Math.random()*4000, onArrive:null, chain:0
 }));
+const realAgents=agents.filter(a=>!a.extra);
 const byId={}; agents.forEach(a=>byId[a.id]=a);
 
 function place(a,t){
@@ -212,52 +214,30 @@ function goTo(a,t,cb){
   a.anc={x:t.cx,y:t.cy,c:t.c};
 }
 function taken(key,except){ return agents.some(o=>o!==except&&o.tgt&&o.tgt.key===key); }
-function sofaFor(a){
-  const s=a.def.sleep||'sofa1';
-  if(s==='desk')return seatTarget(a.def.seat);
-  const list=SOFA[s]||SOFA.sofa1;
-  return list.find(t=>!taken(t.key,a))||list[0];
-}
 
-/* что делает агент в зависимости от статуса */
-function stateTarget(a){
-  if(a.status==='busy')return seatTarget(a.def.seat);
-  if(a.status==='off')return sofaFor(a);
-  return null;
-}
-function enterStatus(a,prev){
-  const t=stateTarget(a);
-  if(a.status==='busy'){
-    goTo(a,t,()=>{ a.face='work'; a.typing=true; });
-  } else if(a.status==='off'){
-    goTo(a,t,()=>{ a.face='sleep'; });
-  } else if(a.status==='free'){
-    a.face='happy';
-    if(prev==='busy') say(a,sayPool('say.done'),true);
-    else if(prev==='off') say(a,sayPool('say.ask'),true);
-    a.act=null; a.actUntil=performance.now()+1500+Math.random()*2500;
-  }
-}
+/* режим: свободен или занят (busy и offline для посетителя одно и то же: ЗАНЯТ, но никто не спит) */
+function busyMode(a){ return !a.extra&&(a.status==='busy'||a.status==='off'); }
 function setStatus(a,st){
   const prev=a.status;
-  if(prev===st){ if(!a.placed)firstPlace(a); return; }
+  if(prev===st)return;
   a.status=st;
-  if(!a.placed){ firstPlace(a); renderDrawer(); updateCount(); return; }
-  enterStatus(a,prev);
+  const wasBusy=(prev==='busy'||prev==='off'), nowBusy=busyMode(a);
+  if(prev!=='check'){
+    if(wasBusy&&!nowBusy) sayChain(a,sayPool(prev==='busy'?'say.done':'say.ask'),true);
+    else if(!wasBusy&&nowBusy&&st==='busy'&&Math.random()<.6) sayChain(a,sayPool('say.newtask'),true);
+  }
+  // сменить занятие поскорее, если стоит на месте
+  if(wasBusy!==nowBusy&&!a.path.length)a.actUntil=Math.min(a.actUntil,performance.now()+1200+Math.random()*2000);
   renderDrawer(); updateCount(); refreshCard();
 }
-function firstPlace(a){
-  a.placed=true;
-  const t=stateTarget(a);
-  if(t){ place(a,t); a.face=a.status==='busy'?'work':'sleep'; a.typing=a.status==='busy'; }
-  else { a.face='idle'; a.actUntil=performance.now()+800+Math.random()*3000; }
-}
 
-/* свободное время */
-const ACTS=[['desk',3],['coffee',2],['window',2],['vending',.8],['fridge',.8],['cooler',.8],['sofa',1.2],['watch',1.4],['visit',1.4],['plant',.6],['board',.7],['term',.6],['cooler2',.6],['door',.5]];
+/* занятия */
+const ACTS_FREE=[['desk',3],['coffee',2],['window',2],['vending',.8],['fridge',.8],['cooler',.8],['sofa',1.2],['watch',1.2],['visit',1.4],['plant',.6],['board',.7],['term',.6],['cooler2',.6],['door',.5],['wander',.8]];
+const ACTS_BUSY=[['desk',4.5],['term',1.2],['board',1.2],['visit',1],['coffee',1],['door',.7],['cooler',.5],['cooler2',.5],['window',.5],['wander',1.2],['watch',.3]];
 function chooseAct(a){
+  const ACTS=busyMode(a)?ACTS_BUSY:ACTS_FREE;
   let sum=0; ACTS.forEach(x=>sum+=x[1]);
-  for(let tries=0;tries<8;tries++){
+  for(let tries=0;tries<10;tries++){
     let r=Math.random()*sum, k='desk';
     for(const x of ACTS){ r-=x[1]; if(r<=0){ k=x[0]; break; } }
     if(k===a.act&&Math.random()<.7)continue;
@@ -273,40 +253,54 @@ function actTarget(a,k){
     case 'window': return POI[pick(['win0','win1','win2'])];
     case 'sofa': { const s=pick(['sofa1','sofa2','sofa3']); return SOFA[s].find(t=>!taken(t.key,a))||null; }
     case 'watch': { const x=60+Math.round(Math.random()*240); return botT(x,200,'down','watch'+(x>>4)); }
+    case 'wander': {
+      if(Math.random()<.5){ const x=10+Math.round(Math.random()*348); return topT(x,TY,pick(['down','left','right']),'w'+(x>>3)); }
+      const i=Math.random()*4|0, y=88+Math.round(Math.random()*104);
+      return {x:VX[i],y,c:'V'+i,cx:VX[i],cy:y,face:pick(['down','left','right']),key:'w'+i+'-'+(y>>3)};
+    }
     case 'visit': {
-      const others=agents.filter(o=>o!==a&&o.placed&&o.status!=='off'&&!o.path.length);
+      const others=agents.filter(o=>o!==a&&!o.path.length&&o.anc);
       if(!others.length)return null;
-      const o=pick(others), an=o.anc; if(!an)return null;
+      const o=pick(others), an=o.anc;
       const horiz=(an.c==='T'||an.c==='B');
       let x=an.x, y=an.y;
       if(horiz) x+= (an.x>W/2?-14:14); else y+= (an.y>150?-14:14);
-      const t={x,y,c:an.c,cx:x,cy:y,face:'down',key:'visit-'+o.id,buddy:o};
-      return t;
+      return {x,y,c:an.c,cx:x,cy:y,face:'down',key:'visit-'+o.id,buddy:o};
     }
     default: return POI[k]||null;
   }
 }
-function startAct(a,now){
+function startAct(a){
   const [k,t]=chooseAct(a);
   a.act=k;
   goTo(a,t,()=>{
-    const dur={desk:9000,coffee:6000,window:7000,sofa:9000,watch:5000,visit:6000}[k]||5000;
+    const busy=busyMode(a);
+    const dur={desk:busy?14000:9000,coffee:6000,window:7000,sofa:9000,watch:5000,visit:6000,wander:2500,term:busy?8000:5000,board:busy?7000:5000}[k]||5000;
     a.actUntil=performance.now()+dur*(.7+Math.random()*.7);
-    a.face=pick(['idle','idle','happy']);
-    if(k==='watch'){ a.face='wow'; if(Math.random()<.75)say(a,sayPool('say.watch')); }
-    else if(k==='coffee'&&Math.random()<.5) say(a,sayPool('say.coffee'));
+    a.face=busy?pick(['work','busy','idle']):pick(['idle','idle','happy']);
+    if(k==='watch'){ a.face='wow'; if(Math.random()<.75)sayChain(a,sayPool('say.watch')); }
+    else if(k==='coffee'&&Math.random()<.4) sayChain(a,sayPool('say.coffee'));
     else if(k==='visit'&&t.buddy){
       const o=t.buddy;
-      a.dir=Math.abs(o.x-a.x)>Math.abs(o.y-a.y)?(o.x<a.x?'left':'right'):(o.y<a.y?'up':'down');
-      if(a.dir==='up')a.dir=o.x<a.x?'left':'right';
-      say(a,pick(lines(a).idle));
-      setTimeout(()=>{ if(o.status!=='off'&&!o.path.length)say(o,pick(lines(o).click)); },1800);
+      a.dir=o.x<a.x-2?'left':o.x>a.x+2?'right':'down';
+      sayChain(a,idleLine(a));
+      setTimeout(()=>{ if(!o.path.length&&!o.bub)sayChain(o,replyLine(o)); },1900);
     }
-    else if(k==='desk'){ a.typing=Math.random()<.4; if(a.typing)a.face='work'; }
+    else if(k==='desk'){ a.typing=busy||Math.random()<.4; if(a.typing)a.face='work'; }
+    else if((k==='term'||k==='board')&&busy&&Math.random()<.5) sayChain(a,sayPool('say.duty'));
   });
   a.actUntil=Infinity;
 }
-function lines(a){ const l=a.def.lines||{}; return l[lang()]||l.en||{idle:['...'],click:['...'],annoy:['...'],work:['...']}; }
+function lines(a){ const l=a.def.lines||{}; return l[lang()]||l.en||null; }
+/* что говорит сам по себе */
+function idleLine(a){
+  const L=lines(a), busy=busyMode(a), r=Math.random();
+  if(a.extra) return r<.55?sayPool('say.think'):r<.8?sayPool('say.duty'):sayPool('say.extra');
+  if(busy) return r<.45&&L?pick(L.work):r<.75?sayPool('say.duty'):sayPool('say.think');
+  return r<.45&&L?pick(L.idle):r<.62?sayPool('say.ask'):sayPool('say.think');
+}
+function walkLine(a){ return (busyMode(a)?Math.random()<.6:Math.random()<.25)?sayPool('say.duty'):sayPool('say.think'); }
+function replyLine(a){ const L=lines(a); if(a.extra)return sayPool('say.extra'); if(busyMode(a))return sayPool('say.later'); return L?pick(L.click):sayPool('say.ask'); }
 
 /* ---------- кошка и пёс ---------- */
 const imgs={};
@@ -321,15 +315,29 @@ const pets=[
 /* ---------- реплики ---------- */
 const ov=document.getElementById('ov');
 const bubs=[];
+/* реплика из нескольких частей через | : показываются по очереди */
+function sayChain(a,text,force){
+  if(!text)return;
+  const parts=String(text).split('|');
+  if(!force&&(bubs.length>=2||a.bub))return;
+  const id=++a.chain;
+  say(a,parts[0],true);
+  let t=0;
+  for(let i=1;i<parts.length;i++){
+    t+=1500+parts[i-1].length*55;
+    setTimeout(()=>{ if(a.chain===id)say(a,parts[i],true); },t);
+  }
+}
 function say(a,text,force){
   if(!text)return;
+  if(a.id==='node')text=text.toUpperCase();
   if(!force&&bubs.length>=2)return;
   if(a.bub)killBub(a.bub,true);
   const el=document.createElement('div');
   el.className='bub'+(a.id==='node'?' robo':'');
   el.textContent=text;
   ov.appendChild(el);
-  const b={el,a,until:performance.now()+2600+text.length*55};
+  const b={el,a,until:performance.now()+2200+text.length*55};
   a.bub=b; bubs.push(b); posBub(b);
 }
 function killBub(b,now){
@@ -381,7 +389,7 @@ function draw(now){
   const k=nightK(d);
   // объекты по глубине
   const list=[];
-  agents.forEach(a=>{ if(a.placed||a.status==='check')list.push(a); });
+  agents.forEach(a=>list.push(a));
   pets.forEach(p=>list.push(p));
   list.sort((p,q)=>p.y-q.y);
   list.forEach(e=>{
@@ -429,7 +437,7 @@ let last=performance.now(), nextAmb=performance.now()+6000+Math.random()*5000, n
 function step(a,dt,now){
   // ходьба
   if(a.path.length){
-    const p=a.path[0], dx=p.x-a.x, dy=p.y-a.y, dist=Math.hypot(dx,dy), spd=24*dt;
+    const p=a.path[0], dx=p.x-a.x, dy=p.y-a.y, dist=Math.hypot(dx,dy), spd=a.spd*dt;
     if(Math.abs(dx)>Math.abs(dy))a.dir=dx<0?'left':'right'; else a.dir=dy<0?'up':'down';
     if(dist<=spd){ a.x=p.x; a.y=p.y; a.path.shift(); }
     else { a.x+=dx/dist*spd; a.y+=dy/dist*spd; }
@@ -444,9 +452,7 @@ function step(a,dt,now){
   if(a.typing){ a.ft+=dt; if(a.ft>.22){ a.ft=0; a.frame=(a.frame+1)%2; } }
   else a.frame=0;
   if(now>a.blinkAt){ a.blink=true; if(now>a.blinkAt+130){ a.blink=false; a.blinkAt=now+2500+Math.random()*4500; } }
-  if(a.status==='off'&&a.face==='sleep'&&now>a.zAt){ a.zAt=now+1300+Math.random()*700; zs.push({x:a.x+4,y:a.y-(a.sit?24:27),t:now}); }
-  if(a.status==='free'&&a.placed&&now>a.actUntil){ a.typing=false; startAct(a,now); }
-  if(a.status==='busy'&&!a.typing&&a.tgt&&a.tgt.key==='seat'+a.def.seat){ a.typing=true; a.face='work'; }
+  if(now>a.actUntil){ a.typing=false; startAct(a); }
 }
 function stepPet(p,dt,now){
   if(p.path.length){
@@ -469,17 +475,15 @@ function stepPet(p,dt,now){
 }
 function ambient(now){
   if(now<nextAmb)return;
-  nextAmb=now+8000+Math.random()*12000;
+  nextAmb=now+4500+Math.random()*7000;
   if(bubs.length>=2)return;
-  const cand=agents.filter(a=>a.placed&&!a.path.length&&!a.bub);
+  const cand=agents.filter(a=>!a.bub);
   if(!cand.length)return;
-  const a=pick(cand);
-  if(a.status==='off'){ if(Math.random()<.35&&a.face==='sleep')say(a,sayPool('say.sleep')); return; }
-  if(a.status==='busy'){ say(a,pick(lines(a).work)); return; }
-  const r=Math.random(), h=new Date().getHours();
-  if(r<.12&&(h<5||h>=23))say(a,sayPool('say.night'));
-  else if(r<.3)say(a,sayPool('say.ask'));
-  else say(a,pick(lines(a).idle));
+  const a=pick(cand), h=new Date().getHours();
+  if(a.path.length>1){ sayChain(a,walkLine(a)); return; }
+  if(a.path.length)return;
+  if(!busyMode(a)&&Math.random()<.1&&(h<5||h>=23)){ sayChain(a,sayPool('say.night')); return; }
+  sayChain(a,idleLine(a));
 }
 function loop(now){
   requestAnimationFrame(loop);
@@ -487,7 +491,7 @@ function loop(now){
   nextFrame=now+Math.max(14,(AU.capMs||15)-2);
   let dt=Math.min(.06,(now-last)/1000); last=now;
   if(reduceMotion)dt*=.8;
-  agents.forEach(a=>{ if(a.placed)step(a,dt,now); });
+  agents.forEach(a=>step(a,dt,now));
   pets.forEach(p=>stepPet(p,dt,now));
   ambient(now);
   for(let i=bubs.length-1;i>=0;i--){ const b=bubs[i]; if(now>b.until)killBub(b); else posBub(b); }
@@ -538,21 +542,22 @@ function clickAgent(a){
   sel=a; showTag(a,5000);
   const L=lines(a);
   let s;
-  if(a.status==='off') s=sayPool('say.sleep');
-  else if(a.clicks.length>=5){ s=pick(L.annoy); if(a.clicks.length===5&&TR)TR.event('office.annoy'); a.face='busy'; }
-  else if(a.status==='busy') s=pick(L.work);
+  if(a.clicks.length>=5&&L){ s=pick(L.annoy); if(a.clicks.length===5&&TR)TR.event('office.annoy'); a.face='busy'; }
+  else if(a.extra) s=a.clicks.length>=5?sayPool('say.extra'):(Math.random()<.7?sayPool('say.extra'):sayPool('say.think'));
+  else if(busyMode(a)) s=(Math.random()<.65||!L)?sayPool('say.later'):pick(L.work);
   else s=pick(L.click);
-  say(a,s,true);
-  if(a.status==='free'&&!a.path.length&&!a.sit&&a.dir==='up')a.dir='down';
+  sayChain(a,s,true);
+  if(!a.path.length&&!a.sit&&a.dir==='up')a.dir='down';
   if(TR)TR.event('office.click');
 }
-function stLabel(st){ return st==='free'?T('free'):st==='check'?T('check'):T('busy'); }
+function stLabel(st){ return st==='free'?T('free'):st==='check'?T('check'):st==='extra'?T('slot.empty'):T('busy'); }
+function nameOf(def){ return def.slot?(T('slot')+' '+String(def.n).padStart(2,'0')):L(def.name); }
 function showTag(a,ms){
   if(tagA===a&&tag.classList.contains('on')&&tag.dataset.st===a.status+lang()){ tagUntil=Math.max(tagUntil,performance.now()+ms); return; }
   tagA=a; tagUntil=performance.now()+ms; tag.dataset.st=a.status+lang();
   tag.innerHTML='';
   const d=document.createElement('span'); d.className='dot '+a.status; tag.appendChild(d);
-  const n=document.createElement('span'); n.textContent=L(a.def.name); tag.appendChild(n);
+  const n=document.createElement('span'); n.textContent=nameOf(a.def); tag.appendChild(n);
   const i=document.createElement('i'); i.textContent='i'; i.title=stLabel(a.status);
   i.addEventListener('click',ev=>{ ev.stopPropagation(); openCard(a.def); }); tag.appendChild(i);
   tag.classList.add('on'); posTag();
@@ -586,19 +591,19 @@ async function poll(a){
 }
 const forced=QS.get('status');
 const demo=QS.has('demo');
-function pollAll(){ if(document.hidden)return; agents.forEach(poll); }
+function pollAll(){ if(document.hidden)return; realAgents.forEach(poll); }
 if(forced){
   const arr=forced.split(',');
-  setTimeout(()=>agents.forEach((a,i)=>setStatus(a,['free','busy','off'].indexOf(arr[i])>=0?arr[i]:'off')),400);
+  setTimeout(()=>realAgents.forEach((a,i)=>setStatus(a,['free','busy','off'].indexOf(arr[i])>=0?arr[i]:'off')),400);
 } else if(demo){
-  const cyc=()=>agents.forEach(a=>{ if(!a.placed||Math.random()<.5)setStatus(a,pick(['free','free','busy','off'])); });
+  const cyc=()=>realAgents.forEach(a=>{ if(a.status==='check'||Math.random()<.5)setStatus(a,pick(['free','free','busy','off'])); });
   setTimeout(cyc,400); setInterval(()=>{ if(!document.hidden)cyc(); },25000);
 } else {
   pollAll(); setInterval(pollAll,20000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden)pollAll(); });
 }
-/* пока статуса нет, сидят за столами */
-agents.forEach(a=>{ place(a,seatTarget(a.def.seat)); a.face='idle'; });
+/* старт: все за своими столами, расходятся в разное время */
+agents.forEach(a=>{ place(a,seatTarget(a.def.seat)); a.face='idle'; a.actUntil=performance.now()+1500+Math.random()*9000; });
 
 /* ---------- меню агентов ---------- */
 const drawer=document.getElementById('drawer'), alist=document.getElementById('alist');
@@ -609,9 +614,9 @@ function statusOf(def){ if(def.slot)return 'slot'; const a=byId[def.id]; return 
 function miniSprite(def){
   const c=document.createElement('canvas'); c.width=16; c.height=24;
   const x=c.getContext('2d'); x.imageSmoothingEnabled=false;
-  if(def.slot){ x.drawImage(sprite(SLOT_PAL,'q','down',0,false,false,false),0,0); return c; }
+  if(def.slot){ x.drawImage(sprite(def.pal||SLOT_PAL,'q','down',0,false,false,false),0,0); return c; }
   const st=statusOf(def);
-  const face=st==='free'?'happy':st==='busy'?'work':st==='check'?'idle':'sleep';
+  const face=st==='free'?'happy':st==='check'?'idle':'work';
   x.drawImage(sprite(def.pal,face,'down',0,false,false,false),0,0);
   return c;
 }
@@ -646,7 +651,7 @@ function updateCount(){
 /* ---------- карточка ---------- */
 const card=document.getElementById('card');
 let cardDef=null;
-const FACE_OF={free:'happy',busy:'working',check:'busy'};
+const FACE_OF={free:'happy',busy:'working',off:'busy',check:'busy'};
 function openCard(def){
   cardDef=def; fillCard(); card.classList.add('on');
   if(TR)TR.event('office.card.'+def.id);
@@ -661,7 +666,6 @@ function fillCard(){
   const face=FACE_OF[st];
   $('pt-face').style.display=face?'block':'none'; if(face)$('pt-face').src='img/f-'+face+'.png';
   $('pt-q').style.display=def.slot?'flex':'none';
-  $('pt-z').style.display=(st==='off')?'block':'none';
   $('cdot').className='dot '+(def.slot?'':st);
   $('cst').textContent=def.slot?T('slot'):stLabel(st);
   $('csub').textContent=def.slot?T('slot.empty'):T('sub.'+st);
@@ -707,7 +711,7 @@ document.getElementById('ccall').addEventListener('click',()=>{
   const def=cardDef, a=def&&byId[def.id]; if(!a||a.status!=='free')return;
   closeCard(); drawer.classList.remove('on');
   a.act='called';
-  goTo(a,botT(184,201,'down','called'),()=>{ a.face='happy'; say(a,sayPool('say.ask'),true); a.actUntil=performance.now()+7000; });
+  goTo(a,botT(184,201,'down','called'),()=>{ a.face='happy'; sayChain(a,sayPool('say.ask'),true); a.actUntil=performance.now()+7000; });
   a.actUntil=Infinity;
 });
 document.getElementById('pt').addEventListener('mouseenter',()=>{ if(cardDef&&statusOf(cardDef)==='free')document.getElementById('pt-face').src='img/f-fascinated.png'; });

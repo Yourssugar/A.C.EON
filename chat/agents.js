@@ -4,7 +4,7 @@
    chat  страница разговора
    pal   цвета пиксельного робота: O контур, H блик головы, B корпус, D тень, S экран, A акцент
    p     портрет в карточке: img/p-<p>.png
-   seat  номер стола (0..13), sleep  где спит, когда не в сети: sofa1, sofa2, sofa3 или desk
+   seat  номер стола (0..13)
    stats 1..10, ключи подписей в lang.js (st.<ключ>) */
 window.OFFICE_AGENTS=[
 {
@@ -12,7 +12,7 @@ window.OFFICE_AGENTS=[
   cfg:'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/anton-chat/config.json',
   chat:'../anton-chat/',
   pal:{O:'1a1c2c',H:'566c86',B:'333c57',D:'29366f',S:'0d0e17',A:'ef7d57',e:'73eff7',m:'ffcd75',w:'f4f4f4'},
-  p:'anton', seat:0, sleep:'sofa3', color:'#ef7d57',
+  p:'anton', seat:0, color:'#ef7d57',
   model:'Qwen 3.7 14B',
   host:{ru:'локально',en:'local',de:'lokal',fr:'en local',es:'local',it:'in locale',pl:'lokalnie'},
   cls:{ru:'КОДЕР',en:'CODER',de:'CODER',fr:'CODEUR',es:'PROGRAMADOR',it:'CODER',pl:'KODER'},
@@ -71,7 +71,7 @@ window.OFFICE_AGENTS=[
   cfg:'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/kai-chat/config.json',
   chat:'../kai-chat/',
   pal:{O:'1a1c2c',H:'f4f4f4',B:'94b0c2',D:'566c86',S:'0d0e17',A:'b13e53',e:'73eff7',m:'ef7d57',w:'f4f4f4'},
-  p:'kai', seat:1, sleep:'sofa1', color:'#ff6b8b',
+  p:'kai', seat:1, color:'#ff6b8b',
   model:'Qwen 3.7 14B',
   host:{ru:'локально',en:'local',de:'lokal',fr:'en local',es:'local',it:'in locale',pl:'lokalnie'},
   cls:{ru:'СОБЕСЕДНИК / ХУДОЖНИК',en:'COMPANION / ARTIST',de:'GESPRÄCHSPARTNER / KÜNSTLER',fr:'COMPAGNON / ARTISTE',es:'COMPAÑERO / ARTISTA',it:'COMPAGNO / ARTISTA',pl:'ROZMÓWCA / ARTYSTA'},
@@ -130,7 +130,7 @@ window.OFFICE_AGENTS=[
   cfg:'https://raw.githubusercontent.com/Yourssugar/A.C.EON/main/node-chat/config.json',
   chat:'../node-chat/',
   pal:{O:'1a1c2c',H:'3b5dc9',B:'29366f',D:'1a1c2c',S:'0d0e17',A:'41a6f6',e:'f4f4f4',m:'41a6f6',w:'73eff7'},
-  p:'node', seat:2, sleep:'desk', color:'#41a6f6',
+  p:'node', seat:2, color:'#41a6f6',
   model:'gpt-5.4-mini',
   host:{ru:'облако',en:'cloud',de:'Cloud',fr:'cloud',es:'nube',it:'cloud',pl:'chmura'},
   cls:{ru:'СИСТЕМА',en:'SYSTEM',de:'SYSTEM',fr:'SYSTÈME',es:'SISTEMA',it:'SISTEMA',pl:'SYSTEM'},
@@ -185,8 +185,15 @@ window.OFFICE_AGENTS=[
   }
 }
 ];
-/* пустые места до 13 */
+/* остальные места до 13: стажёры без имени и описания, уже ходят по офису */
 (function(){
-  for(var i=window.OFFICE_AGENTS.length;i<13;i++)
-    window.OFFICE_AGENTS.push({id:'slot'+(i+1), slot:true, n:i+1, seat:i});
+  var C=[['a7f070','38b764','257179','ffcd75'],['b13e53','5d275d','1a1c2c','ef7d57'],['f4f4f4','ffcd75','ef7d57','b13e53'],
+         ['73eff7','257179','29366f','a7f070'],['ffcd75','ef7d57','b13e53','5d275d'],['f4f4f4','566c86','333c57','73eff7'],
+         ['ef7d57','b13e53','5d275d','ffcd75'],['73eff7','41a6f6','3b5dc9','f4f4f4'],['94b0c2','333c57','1a1c2c','a7f070'],
+         ['f4f4f4','94b0c2','566c86','38b764']];
+  for(var i=window.OFFICE_AGENTS.length;i<13;i++){
+    var c=C[(i-3)%C.length];
+    window.OFFICE_AGENTS.push({id:'slot'+(i+1), slot:true, n:i+1, seat:i,
+      pal:{O:'1a1c2c',H:c[0],B:c[1],D:c[2],S:'0d0e17',A:c[3],e:'73eff7',m:'ffcd75',w:'f4f4f4'}});
+  }
 })();

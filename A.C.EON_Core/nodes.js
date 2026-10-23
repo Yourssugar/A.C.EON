@@ -72,9 +72,9 @@ window.CORE_NODES = [
   {id:'astro', sector:'tools', name:'A.S.T.R.O', url:'../astro/', status:'live', w:2.2,
    tag:{ru:'прогноз', en:'forecast', de:'Prognose', fr:'prévisions', es:'pronóstico', it:'previsioni', pl:'prognoza'},
    desc:{ru:'Астрологический прогноз и справка.', en:'Astrological forecast and reference.', de:'Astrologische Prognose und Nachschlagewerk.', fr:'Prévisions astrologiques et références.', es:'Pronóstico astrológico y referencia.', it:'Previsioni astrologiche e riferimenti.', pl:'Prognoza astrologiczna i informacje.'}},
-  {id:'nodeai', sector:'tools', name:'NODE AI', url:'../chat/', status:'live', w:2.3,
-   tag:{ru:'чат с ИИ', en:'AI chat', de:'KI-Chat', fr:'chat IA', es:'chat IA', it:'chat IA', pl:'czat AI'},
-   desc:{ru:'Разговор с ИИ-персонажами Kai и Anton.', en:'Talk with the AI characters Kai and Anton.', de:'Gespräch mit den KI-Figuren Kai und Anton.', fr:'Parler avec les personnages IA Kai et Anton.', es:'Habla con los personajes de IA Kai y Anton.', it:'Parla con i personaggi IA Kai e Anton.', pl:'Rozmowa z postaciami AI Kai i Anton.'}},
+  {id:'nodeai', sector:'tools', name:{ru:'ОФИС ИИ', en:'AI OFFICE', de:'KI-BÜRO', fr:'BUREAU IA', es:'OFICINA IA', it:'UFFICIO IA', pl:'BIURO AI'}, url:'../chat/', status:'live', w:2.3,
+   tag:{ru:'агенты студии', en:'studio agents', de:'Studio-Agenten', fr:'agents du studio', es:'agentes del estudio', it:'agenti dello studio', pl:'agenci studia'},
+   desc:{ru:'ИИ-агенты студии за работой: наблюдай и поговори со свободным.', en:'The studio AI agents at work: watch them and talk to a free one.', de:'Die KI-Agenten des Studios bei der Arbeit: zuschauen und mit einem freien sprechen.', fr:'Les agents IA du studio au travail : observe-les et parle à celui qui est libre.', es:'Los agentes de IA del estudio trabajando: obsérvalos y habla con uno libre.', it:'Gli agenti IA dello studio al lavoro: osservali e parla con uno libero.', pl:'Agenci AI studia przy pracy: obserwuj ich i porozmawiaj z wolnym.'}},
 
   /* обучение */
   {id:'ai_course', sector:'learn', name:{ru:'КУРС AI', en:'AI COURSE', de:'KI-KURS', fr:'COURS IA', es:'CURSO IA', it:'CORSO IA', pl:'KURS AI'}, url:'../layer_00/', status:'live', w:2.3,

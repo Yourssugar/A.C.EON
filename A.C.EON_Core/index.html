@@ -6,7 +6,8 @@
 <title>A.C.EON · NETWORK</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<!-- Space Grotesk без кириллицы: русские буквы в названиях берутся из Manrope -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="../universe.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -19,180 +20,206 @@
   --txt:#D8EEF8;
   --dim:rgba(216,238,248,0.32);
   --panel:rgba(2,5,9,0.93);
+  --title:'Space Grotesk','Manrope',sans-serif;
+  --cur: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'><path d='M3 2.5L3 20.5L7.6 16.4L10.7 23.2L14 21.8L10.9 15.1L17.2 15.1Z' fill='%234DAFFF' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'/><path d='M5 7L5 15.6' stroke='%23d6f0ff' stroke-width='1.1' stroke-linecap='round' opacity='.75'/></svg>") 3 3, auto;
+  --cur-p: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'><path d='M3 2.5L3 20.5L7.6 16.4L10.7 23.2L14 21.8L10.9 15.1L17.2 15.1Z' fill='%23b8e4ff' stroke='%23000' stroke-width='1.8' stroke-linejoin='round'/><path d='M5 7L5 15.6' stroke='%23fff' stroke-width='1.1' stroke-linecap='round'/></svg>") 3 3, pointer;
 }
 html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;
-  font-family:'JetBrains Mono',monospace;color:var(--txt);cursor:default;user-select:none}
-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+  font-family:'JetBrains Mono',monospace;color:var(--txt);cursor:var(--cur);user-select:none;
+  -webkit-tap-highlight-color:transparent}
+#c{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;touch-action:none}
+#c.hov{cursor:var(--cur-p)}
+#c.grab{cursor:grabbing}
 
-/* ── SCANLINES ── */
 .scanlines{position:fixed;inset:0;z-index:998;pointer-events:none;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px)}
-
-/* ── CRT: виньетка + лёгкая хроматическая аберрация по краям + мерцание ── */
-.crt{position:fixed;inset:0;z-index:997;pointer-events:none;
-  animation:crtflick 7s steps(60) infinite}
+.crt{position:fixed;inset:0;z-index:997;pointer-events:none;animation:crtflick 7s steps(60) infinite}
 .crt::before{content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 130% 120% at 50% 50%,
-    transparent 55%,rgba(2,5,9,.28) 88%,rgba(2,5,9,.55) 100%)}
+  background:radial-gradient(ellipse 130% 120% at 50% 50%,transparent 55%,rgba(2,5,9,.28) 88%,rgba(2,5,9,.55) 100%)}
 .crt::after{content:'';position:absolute;inset:0;opacity:.35;
   background:
     linear-gradient(90deg,rgba(77,175,255,.05) 0%,transparent 3%,transparent 97%,rgba(255,64,96,.05) 100%),
     linear-gradient(0deg,rgba(77,175,255,.04) 0%,transparent 4%,transparent 96%,rgba(255,64,96,.04) 100%)}
-@keyframes crtflick{
-  0%,100%{opacity:1}96%{opacity:1}97%{opacity:.94}98%{opacity:1}99%{opacity:.97}}
-/* U-1: CRT и scanlines выключены */
+@keyframes crtflick{0%,100%{opacity:1}96%{opacity:1}97%{opacity:.94}98%{opacity:1}99%{opacity:.97}}
 html.ufx1 .crt, html.ufx1 .scanlines{display:none}
-#umark{color:#cc2233;letter-spacing:.2em;font-weight:700;text-shadow:0 0 8px rgba(204,34,51,.35)}
 
-/* ── LOADER ── */
+/* загрузка */
 #loader{position:fixed;inset:0;z-index:500;background:var(--bg);
   display:flex;align-items:flex-start;justify-content:center;
   padding:52px 32px 32px;overflow:hidden;transition:opacity .55s}
 #loader.fade{opacity:0;pointer-events:none}
-
 .term{width:100%;max-width:660px;font-size:12.5px;line-height:1.95}
 .tl{display:flex;justify-content:space-between;white-space:pre;
   opacity:0;transform:translateX(-5px);transition:opacity .13s,transform .13s}
 .tl.on{opacity:1;transform:none}
-.tl b{font-weight:700}
-.ca{color:var(--acc)} .cg{color:var(--grn)} .cy{color:var(--ylw)}
-.cr{color:var(--red)} .cd{color:var(--dim)}
-
-/* blinking cursor */
+.ca{color:var(--acc)} .cg{color:var(--grn)} .cy{color:var(--ylw)} .cr{color:var(--red)} .cd{color:var(--dim)}
 .cur::after{content:'█';animation:blink .65s step-end infinite;color:var(--acc)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-
-/* progress */
 .pg{margin-top:14px;opacity:0;transition:opacity .3s}
 .pg.on{opacity:1}
 .pg-lbl{font-size:10px;color:var(--dim);margin-bottom:7px;letter-spacing:.08em}
 .pg-bg{height:2px;background:rgba(77,175,255,.1);position:relative;overflow:hidden}
-.pg-fill{height:100%;background:var(--acc);width:0%;transition:width .04s linear;
-  box-shadow:0 0 10px var(--acc)}
+.pg-fill{height:100%;background:var(--acc);width:0%;transition:width .04s linear;box-shadow:0 0 10px var(--acc)}
 .pg-pct{font-size:10px;color:var(--acc);text-align:right;margin-top:5px}
-
-/* ACCESS */
 .access{font-size:15px;font-weight:700;letter-spacing:.35em;color:var(--grn);
-  text-align:center;margin-top:22px;opacity:0;transition:opacity .3s;
-  text-shadow:0 0 24px var(--grn)}
+  text-align:center;margin-top:22px;opacity:0;transition:opacity .3s;text-shadow:0 0 24px var(--grn)}
 .access.on{opacity:1}
 
-/* ── HUD HEADER ── */
+/* шапка */
 .hdr{position:fixed;top:0;left:0;right:0;z-index:20;
-  padding:15px 24px;display:flex;align-items:center;justify-content:space-between;
+  padding:15px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;
   background:linear-gradient(to bottom,rgba(2,5,9,.96) 0%,transparent 100%);
   pointer-events:none;opacity:0;transition:opacity .6s}
 .hdr.on{opacity:1}
 .hdr-logo{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--acc)}
-.hdr-m{font-size:10px;color:var(--dim);letter-spacing:.1em}
-.crumb-back{color:var(--acc);cursor:pointer;pointer-events:auto;
-  text-shadow:0 0 8px rgba(77,175,255,.5);transition:opacity .15s}
+.hdr-m{font-size:10px;color:var(--dim);letter-spacing:.1em;white-space:nowrap}
+.hdr-r{display:flex;align-items:center;gap:12px;pointer-events:auto}
+.crumb-back{color:var(--acc);cursor:var(--cur-p);pointer-events:auto;text-shadow:0 0 8px rgba(77,175,255,.5);transition:opacity .15s}
 .crumb-back:hover{opacity:.7}
 .crumb-here{color:var(--txt)}
+#umark{color:#cc2233;letter-spacing:.2em;font-weight:700;text-shadow:0 0 8px rgba(204,34,51,.35)}
+.hbtn{display:flex;align-items:center;justify-content:center;height:26px;min-width:26px;padding:0 7px;
+  background:rgba(2,5,9,.8);border:1px solid rgba(77,175,255,.25);border-radius:5px;
+  cursor:var(--cur-p);color:var(--acc);font-family:inherit;font-size:10px;letter-spacing:.12em;transition:all .2s}
+.hbtn:hover{border-color:var(--acc);box-shadow:0 0 10px rgba(77,175,255,.3)}
+#bgm-btn{font-size:13px;letter-spacing:0}
+#bgm-btn.muted{color:var(--dim);border-color:rgba(216,238,248,.15)}
+#langwrap{position:relative}
+#langmenu{position:absolute;right:0;top:32px;display:none;flex-direction:column;min-width:150px;
+  background:rgba(2,5,9,.96);border:1px solid rgba(77,175,255,.3);padding:5px 0}
+#langmenu.on{display:flex}
+#langmenu button{background:none;border:0;border-left:2px solid transparent;color:rgba(216,238,248,.6);text-align:left;
+  font-family:inherit;font-size:11px;letter-spacing:.12em;padding:7px 14px;cursor:var(--cur-p);display:flex;gap:12px}
+#langmenu button b{font-weight:400;color:rgba(77,175,255,.5);width:20px}
+#langmenu button:hover,#langmenu button.sel{color:var(--txt);background:rgba(77,175,255,.08);border-left-color:var(--acc)}
 
-/* ── HUD TOOLTIP ── */
-.hud{position:fixed;z-index:300;pointer-events:none;opacity:0;transition:opacity .1s;min-width:230px}
+/* подписи узлов: обычный текст поверх WebGL, чёткий и переводимый */
+#labels{position:fixed;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.nl{position:absolute;left:0;top:0;width:0;height:0;will-change:transform,opacity}
+.nl-in{position:absolute;left:0;top:0;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.nl-name{font-family:var(--title);font-weight:600;color:#D8EEF8;line-height:1.05;letter-spacing:.02em;width:max-content;white-space:normal;word-break:keep-all;overflow-wrap:normal}
+.nl.off .nl-name{color:rgba(216,238,248,.38)}
+.nl-ico{width:20px;height:20px;stroke:var(--c);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.nl-back{font-size:9px;letter-spacing:.14em;color:var(--c);opacity:.85}
+.nl-cap{position:absolute;left:0;transform:translateX(-50%);white-space:nowrap;
+  font-size:9px;letter-spacing:.12em;color:var(--c);opacity:.62;text-transform:uppercase}
+.nl-cap i{font-style:normal;color:rgba(216,238,248,.45)}
+.nl-new{position:absolute;left:0;transform:translateX(-50%);font-size:8px;letter-spacing:.18em;font-weight:700;
+  color:#020509;background:var(--c);padding:1px 5px 0;box-shadow:0 0 10px var(--c)}
+
+/* подсказка над узлом */
+.hud{position:fixed;z-index:300;pointer-events:none;opacity:0;transition:opacity .12s;width:260px}
 .hud.on{opacity:1}
-.hud-box{
-  background:rgba(2,5,9,.95);
-  border:1px solid rgba(77,175,255,.3);
-  position:relative;
-  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
-}
-/* corner marks */
-.hud-box::before{content:'';position:absolute;top:2px;right:2px;
-  width:10px;height:10px;border-top:1.5px solid var(--acc);border-right:1.5px solid var(--acc)}
-.hud-box::after{content:'';position:absolute;bottom:2px;left:2px;
-  width:10px;height:10px;border-bottom:1.5px solid var(--acc);border-left:1.5px solid var(--acc)}
+.hud-box{background:rgba(2,5,9,.95);border:1px solid color-mix(in srgb,var(--hc,#4DAFFF) 35%,transparent);position:relative;
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.hud-box::before{content:'';position:absolute;top:2px;right:2px;width:10px;height:10px;border-top:1.5px solid var(--hc,#4DAFFF);border-right:1.5px solid var(--hc,#4DAFFF)}
+.hud-box::after{content:'';position:absolute;bottom:2px;left:2px;width:10px;height:10px;border-bottom:1.5px solid var(--hc,#4DAFFF);border-left:1.5px solid var(--hc,#4DAFFF)}
 .hud-top{padding:9px 14px 7px;border-bottom:1px solid rgba(77,175,255,.15)}
 .hud-tag{font-size:8px;letter-spacing:.18em;color:var(--dim);margin-bottom:2px}
-.hud-name{font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--acc)}
+.hud-name{font-family:var(--title);font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--hc,#4DAFFF)}
 .hud-body{padding:9px 14px 11px}
 .hud-row{display:flex;gap:10px;font-size:10px;margin-bottom:3px;align-items:baseline}
+.hud-row.hide{display:none}
 .hud-k{color:var(--dim);min-width:56px;letter-spacing:.07em}
 .hud-v{color:var(--txt)}
-.hud-v.g{color:var(--grn)} .hud-v.y{color:var(--ylw)}
-.sdot{display:inline-block;width:5px;height:5px;border-radius:50%;
-  background:var(--grn);box-shadow:0 0 5px var(--grn);margin-right:5px;
-  animation:sdot 1.6s ease-in-out infinite}
+.sdot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--grn);box-shadow:0 0 5px var(--grn);
+  margin-right:5px;animation:sdot 1.6s ease-in-out infinite}
 @keyframes sdot{0%,100%{opacity:1}50%{opacity:.3}}
 .hud-sep{height:1px;background:rgba(77,175,255,.1);margin:6px 0}
-.hud-desc{font-size:11px;color:rgba(216,238,248,.45);line-height:1.6;
-  font-family:'Space Grotesk',sans-serif}
-.hud-hint{font-size:9px;color:var(--acc);letter-spacing:.1em;opacity:.5;margin-top:7px}
-.hud-scope{display:block;width:100%;height:22px;margin-top:8px;
-  border-top:1px solid rgba(77,175,255,.1);opacity:.85}
+.hud-desc{font-size:12px;color:rgba(216,238,248,.62);line-height:1.55;font-family:'Manrope',sans-serif}
+.hud-act{font-size:9px;color:var(--hc,#4DAFFF);letter-spacing:.1em;margin-top:8px}
+.hud-drag{font-size:9px;color:var(--dim);letter-spacing:.06em;margin-top:2px}
+.hud-scope{display:block;width:100%;height:22px;margin-top:8px;border-top:1px solid rgba(77,175,255,.1);opacity:.85}
 
-/* ── LEGEND ── */
-.leg{position:fixed;left:18px;top:50%;transform:translateY(-50%);z-index:20;
-  display:flex;flex-direction:column;gap:10px;opacity:0;transition:opacity .6s}
-.leg.on{opacity:1}
-.li{display:flex;align-items:center;gap:8px;opacity:.45;transition:opacity .2s;cursor:pointer}
-.li:hover{opacity:1}
-.ld{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.ll{font-size:9px;letter-spacing:.1em;color:var(--dim)}
+/* карта сети слева: то же дерево списком, для тех, кто не любит искать */
+#map{position:fixed;left:18px;top:50%;transform:translateY(-50%);z-index:20;width:200px;
+  opacity:0;transition:opacity .6s;pointer-events:none}
+#map.on{opacity:1;pointer-events:auto}
+.map-t{font-size:8px;letter-spacing:.24em;color:var(--dim);margin-bottom:10px}
+.mi{display:flex;align-items:center;gap:9px;padding:5px 0;cursor:var(--cur-p);opacity:.58;transition:opacity .15s}
+.mi:hover,.mi.hl{opacity:1}
+.mi.off{opacity:.3}
+.mi-d{width:6px;height:6px;border-radius:50%;flex:none;background:var(--c);box-shadow:0 0 6px var(--c)}
+.mi-n{font-family:var(--title);font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mi-s{font-size:9px;color:var(--c);margin-left:auto;letter-spacing:.08em;white-space:nowrap}
+.mi-new{font-size:7px;letter-spacing:.14em;font-weight:700;color:#020509;background:var(--c);padding:1px 4px 0}
+.mi.back .mi-n{font-family:inherit;font-size:10px;letter-spacing:.14em;color:var(--acc)}
+#map-toggle{position:fixed;left:14px;bottom:44px;z-index:21;display:none}
 
-/* ── FILTERS ── */
-.fil{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:20;
-  display:flex;flex-direction:column;gap:8px;opacity:0;transition:opacity .6s}
-.fil.on{opacity:1}
-.fb{width:30px;height:30px;border-radius:50%;border:1px solid rgba(77,175,255,.18);
-  background:rgba(2,5,9,.8);cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:all .2s;outline:none}
-.fb:hover{border-color:rgba(77,175,255,.6)}
-.fb.on{border-color:var(--acc);background:rgba(77,175,255,.15)}
-.fd{width:6px;height:6px;border-radius:50%}
+/* боковые метки и уголки (раньше рисовались на холсте каждый кадр) */
+.side{position:fixed;top:88px;bottom:88px;width:70px;z-index:2;pointer-events:none;opacity:0;transition:opacity .6s}
+.side.on{opacity:1}
+.side.l{left:26px;border-left:1px solid rgba(77,175,255,.06)}
+.side.r{right:26px;border-right:1px solid rgba(77,175,255,.06);text-align:right}
+.side span{display:block;height:70px;font-size:8px;color:rgba(77,175,255,.1);padding:0 8px;line-height:0;animation:sideb 9s ease-in-out infinite}
+.side.l span{border-top:1px solid transparent;background:linear-gradient(90deg,rgba(77,175,255,.2) 0 4px,transparent 4px) top left/100% 1px no-repeat}
+.side.r span{background:linear-gradient(270deg,rgba(77,175,255,.2) 0 4px,transparent 4px) top right/100% 1px no-repeat}
+@keyframes sideb{0%,100%{color:rgba(77,175,255,.06)}50%{color:rgba(77,175,255,.18)}}
+.side i{position:absolute;width:6px;height:1px;background:rgba(77,175,255,.55);animation:scan 9s linear infinite}
+.side.l i{left:-3px}.side.r i{right:-3px}
+@keyframes scan{from{top:0}to{top:100%}}
+.corner{position:fixed;width:22px;height:22px;z-index:2;pointer-events:none;border:0 solid rgba(77,175,255,.12)}
+.corner.a{left:16px;top:16px;border-left-width:1px;border-top-width:1px}
+.corner.b{right:16px;top:16px;border-right-width:1px;border-top-width:1px}
+.corner.c{left:16px;bottom:16px;border-left-width:1px;border-bottom-width:1px}
+.corner.d{right:16px;bottom:16px;border-right-width:1px;border-bottom-width:1px}
+html.ufx1 .side{display:none}
 
-/* ── DROP ZONE ── */
-.dz{position:fixed;bottom:30px;left:50%;
-  transform:translateX(-50%) scale(0);
+/* портал: элемент нужен для попадания курсора, рисует его WebGL */
+.dz{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) scale(0);
   z-index:150;width:96px;height:96px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;flex-direction:column;
   transition:transform .35s cubic-bezier(.175,.885,.32,1.275);pointer-events:none}
 .dz.on{transform:translateX(-50%) scale(1)}
 .dz-txt{font-size:9px;letter-spacing:.12em;color:var(--acc);text-align:center;line-height:1.7}
+@keyframes dzrej{0%,100%{transform:translateX(-50%) scale(1)}25%{transform:translateX(-54%) scale(1.02)}75%{transform:translateX(-46%) scale(1.02)}}
+.dz.rej{animation:dzrej .3s}
 
-/* ── HINT ── */
-.hint{position:fixed;bottom:18px;left:22px;z-index:20;
-  font-size:9px;color:var(--dim);letter-spacing:.08em;opacity:0;transition:opacity .8s}
+.hint{position:fixed;bottom:18px;left:22px;z-index:20;font-size:9px;color:var(--dim);letter-spacing:.08em;opacity:0;transition:opacity .8s;max-width:calc(100vw - 44px)}
 .hint.on{opacity:1}
 
-/* ── BGM BUTTON ── */
-.bgm-btn{
-  display:none;align-items:center;justify-content:center;
-  width:26px;height:26px;padding:0;
-  background:rgba(2,5,9,.8);
-  border:1px solid rgba(77,175,255,.25);border-radius:5px;
-  cursor:pointer;color:var(--acc);font-size:13px;
-  transition:all .2s;pointer-events:auto;flex-shrink:0;
-  line-height:1;
-}
-.bgm-btn.on{display:flex}
-.bgm-btn:hover{border-color:var(--acc);box-shadow:0 0 10px rgba(77,175,255,.3)}
-.bgm-btn.muted{color:var(--dim);border-color:rgba(216,238,248,.15)}
+/* шёпот узла */
+#whisper{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:30;pointer-events:none;
+  font-size:13px;letter-spacing:4px;color:#d4efe4;opacity:0;transition:opacity .3s;white-space:nowrap;
+  text-shadow:0 0 14px rgba(0,204,102,.35),1px 0 rgba(255,64,96,.55),-1px 0 rgba(77,175,255,.55)}
+#whisper.on{opacity:1}
 
-/* ── WIP BANNER ── */
-.wip{
-  position:fixed;top:52px;left:50%;transform:translateX(-50%);
-  z-index:20;white-space:nowrap;
-  font-family:'JetBrains Mono',monospace;font-size:9px;
-  letter-spacing:.14em;color:var(--ylw);
-  padding:4px 16px;
-  border:1px solid rgba(255,208,96,.2);
-  background:rgba(255,208,96,.05);
-  opacity:0;transition:opacity .6s;pointer-events:none;
+/* без WebGL: карта списком посередине */
+body.nogl #c, body.nogl #labels, body.nogl .side{display:none}
+body.nogl #map{left:50%;transform:translate(-50%,-50%);width:min(420px,88vw)}
+body.nogl .mi{padding:9px 0;opacity:.8}
+body.nogl .mi-n{font-size:15px}
+#nogl-note{display:none;position:fixed;bottom:18px;right:22px;font-size:9px;letter-spacing:.12em;color:var(--red);z-index:20}
+body.nogl #nogl-note{display:block}
+
+@media (max-width:760px){
+  #map{left:12px;right:12px;width:auto;top:auto;bottom:84px;transform:none;background:rgba(2,5,9,.94);
+    border:1px solid rgba(77,175,255,.2);padding:12px 14px;display:none}
+  #map.open{display:block}
+  #map-toggle{display:flex}
+  .side{display:none}
+  .hdr{padding:12px 14px}
+  #hst{overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+  #hclock{display:none}
+  .hud{width:230px}
+  body.nogl #map{display:block;left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%)}
 }
-.wip.on{opacity:1}
-.wip-blink{animation:blink .7s step-end infinite}
+@media (pointer:coarse){ html,body{cursor:auto} }
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
 </style>
 </head>
 <body>
 
 <canvas id="c"></canvas>
+<div id="labels"></div>
 <div class="crt"></div>
 <div class="scanlines"></div>
+<div class="corner a"></div><div class="corner b"></div><div class="corner c"></div><div class="corner d"></div>
+<div class="side l" id="sideL"><i></i></div>
+<div class="side r" id="sideR"><i></i></div>
 
-<!-- LOADER -->
 <div id="loader">
   <div class="term" id="term">
     <div class="pg" id="pg">
@@ -204,1594 +231,53 @@ html.ufx1 .crt, html.ufx1 .scanlines{display:none}
   </div>
 </div>
 
-<!-- WIP -->
-<div class="wip" id="wip"><span class="wip-blink">⚠</span> &nbsp;СТРАНИЦА В РАЗРАБОТКЕ · ДАННЫЕ ВРЕМЕННЫЕ</div>
-
-<!-- UI -->
 <div class="hdr" id="hdr">
   <div class="hdr-logo">A.C.EON</div>
-  <div class="hdr-m" id="hst">NETWORK · 9 NODES · ONLINE</div>
-  <div style="display:flex;align-items:center;gap:12px;pointer-events:auto">
+  <div class="hdr-m" id="hst">NETWORK</div>
+  <div class="hdr-r">
     <div class="hdr-m" id="umark"></div>
+    <div id="langwrap">
+      <button class="hbtn" id="langbtn" type="button">EN</button>
+      <div id="langmenu"></div>
+    </div>
     <div class="hdr-m" id="hclock"></div>
-    <button class="bgm-btn" id="bgm-btn" onclick="toggleBGM()" title="Выключить звук">♫</button>
+    <button class="hbtn" id="bgm-btn" type="button">♫</button>
   </div>
 </div>
 
-<div class="leg" id="leg"></div>
-<div class="fil" id="fil"></div>
+<nav id="map"><div class="map-t" id="map-t"></div><div id="map-list"></div></nav>
+<button class="hbtn" id="map-toggle" type="button"></button>
 
-<!-- HUD TOOLTIP -->
 <div class="hud" id="hud">
   <div class="hud-box">
     <div class="hud-top">
-      <div class="hud-tag" id="htag">◈ ОБЪЕКТ ОБНАРУЖЕН</div>
+      <div class="hud-tag" id="htag"></div>
       <div class="hud-name" id="hname"></div>
     </div>
     <div class="hud-body">
-      <div class="hud-row"><div class="hud-k">ТИП</div><div class="hud-v" id="htype"></div></div>
-      <div class="hud-row"><div class="hud-k">СТАТУС</div><div class="hud-v" id="hstat"><span class="sdot" id="hsdot"></span><span id="hstxt">АКТИВЕН</span></div></div>
+      <div class="hud-row" id="r-type"><div class="hud-k" id="k-type"></div><div class="hud-v" id="htype"></div></div>
+      <div class="hud-row" id="r-stat"><div class="hud-k" id="k-stat"></div><div class="hud-v"><span class="sdot" id="hsdot"></span><span id="hstxt"></span></div></div>
+      <div class="hud-row" id="r-trace"><div class="hud-k" id="k-trace"></div><div class="hud-v" id="htrace"></div></div>
       <div class="hud-sep"></div>
       <div class="hud-desc" id="hdesc"></div>
       <canvas class="hud-scope" id="hscope" width="220" height="22"></canvas>
-      <div class="hud-hint" id="hhint">↓ ЗАХВАТИ · ТЯНИ В ПОРТАЛ</div>
+      <div class="hud-act" id="hact"></div>
+      <div class="hud-drag" id="hdrag"></div>
     </div>
   </div>
 </div>
 
-<!-- DROP ZONE -->
-<div class="dz" id="dz"><div class="dz-txt" id="dztxt">◎<br>ПОРТАЛ</div></div>
-
-<!-- HINT -->
-<div class="hint" id="hint">▸ НАВЕДИ НА УЗЕЛ · ЗАХВАТИ · ТЯНИ В ПОРТАЛ ↓</div>
-
-<script>
-/* ============================================================
-   UNIVERSE / PORTAL BOOTSTRAP
-============================================================ */
-const AU = window.AceonUniverse || {id:2,tag:'U-2',name:'FLUX',fx:2,gl:true,capMs:15,particleScale:.7,dprCap:1.25,is:n=>n<=2};
-let PORTAL=false;
-try{ PORTAL=(window.self!==window.top); }catch(e){ PORTAL=true; }
-if(PORTAL){ try{ parent.postMessage({aceon:'ready'},location.origin); }catch(e){} }
-function requestPortalClose(){ try{ parent.postMessage({aceon:'close'},location.origin); }catch(e){} }
-const SPARKS=AU.id>=2, SUCTION=AU.id>=3;
-
-/* ── КАМЕРА ── */
-const cam={z:1,t:1};
-function chromPulse(){
-  if(AU.id<3)return;
-  const c0=document.getElementById('c');
-  c0.style.filter='drop-shadow(2px 0 rgba(255,64,96,.4)) drop-shadow(-2px 0 rgba(77,175,255,.4))';
-  setTimeout(()=>{c0.style.filter='';},240);
-}
-function s2w(x,y){ return {x:(x-W/2)/cam.z+W/2, y:(y-H/2)/cam.z+H/2}; }
-
-/* ── СПРАЙТЫ СВЕЧЕНИЯ ── */
-const _glowCache={};
-function glowSprite(col){
-  let g=_glowCache[col];
-  if(g)return g;
-  g=document.createElement('canvas');g.width=g.height=128;
-  const c2=g.getContext('2d');
-  const gr=c2.createRadialGradient(64,64,0,64,64,64);
-  gr.addColorStop(0,col+'55');gr.addColorStop(.45,col+'22');gr.addColorStop(1,col+'00');
-  c2.fillStyle=gr;c2.fillRect(0,0,128,128);
-  _glowCache[col]=g;return g;
-}
-
-/* ── ИСКРЫ ── */
-let sparks=[];
-function burstSparks(x,y,col,k){
-  for(let i=0;i<k;i++){
-    const a=Math.random()*6.283, v=1.5+Math.random()*3.5;
-    sparks.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,col});
-  }
-}
-function updateDrawSparks(){
-  for(let i=sparks.length-1;i>=0;i--){
-    const p=sparks[i];
-    p.x+=p.vx;p.y+=p.vy;p.vx*=.92;p.vy*=.92;p.life-=.035;
-    if(p.life<=0){sparks.splice(i,1);continue;}
-    cx.globalAlpha=p.life*.8;
-    cx.fillStyle=p.col;
-    cx.fillRect(p.x,p.y,1.8,1.8);
-  }
-  cx.globalAlpha=1;
-}
-
-/* ── КВАДРАТИЧНАЯ КРИВАЯ ── */
-function qpt(ax,ay,cpx,cpy,bx,by,t){
-  const u=1-t;
-  return {x:u*u*ax+2*u*t*cpx+t*t*bx, y:u*u*ay+2*u*t*cpy+t*t*by};
-}
-
-/* ── ПОРТАЛ-СИНГУЛЯРНОСТЬ ── */
-let dzT=0;
-function dzCenter(){
-  const el=document.getElementById('dz');
-  const r=el.getBoundingClientRect();
-  if(r.width>4) return {x:r.left+r.width/2, y:r.top+r.height/2};
-  return {x:W/2, y:H-78};
-}
-function drawPortal(){
-  const el=document.getElementById('dz');
-  const on=el.classList.contains('on');
-  dzT+=((on?1:0)-dzT)*.14;
-  if(dzT<.02)return;
-  const c=dzCenter(), T=Date.now();
-  cx.save();
-  cx.globalAlpha=dzT;
-  const mg=cx.createRadialGradient(c.x,c.y,0,c.x,c.y,54);
-  mg.addColorStop(0,'rgba(0,2,6,.96)');
-  mg.addColorStop(.55,'rgba(2,8,18,.85)');
-  mg.addColorStop(.8,'rgba(77,175,255,.15)');
-  mg.addColorStop(1,'rgba(77,175,255,0)');
-  cx.beginPath();cx.arc(c.x,c.y,54,0,Math.PI*2);cx.fillStyle=mg;cx.fill();
-  const r1=40*dzT, r2=48*dzT;
-  cx.lineWidth=1.2;
-  cx.save();cx.translate(c.x,c.y);cx.rotate(T*.0012);
-  cx.setLineDash([5,8]);
-  cx.strokeStyle='rgba(120,205,255,.75)';
-  cx.beginPath();cx.arc(0,0,r1,0,Math.PI*2);cx.stroke();cx.restore();
-  cx.save();cx.translate(c.x,c.y);cx.rotate(-T*.0009);
-  cx.setLineDash([3,10]);
-  cx.strokeStyle='rgba(77,175,255,.45)';
-  cx.beginPath();cx.arc(0,0,r2,0,Math.PI*2);cx.stroke();cx.restore();
-  cx.setLineDash([]);
-  if(AU.id>=2){
-    cx.fillStyle='#9AD6FF';
-    for(let i=0;i<10;i++){
-      const a=T*.0016+i*.628, rr=r1+4+Math.sin(T*.003+i)*4;
-      cx.globalAlpha=dzT*(.35+.3*Math.sin(T*.004+i*2));
-      cx.fillRect(c.x+Math.cos(a)*rr,c.y+Math.sin(a)*rr*.9,1.8,1.8);
-    }
-  }
-  /* струя всасывания при драге рядом (U-3) */
-  if(SUCTION&&typeof drag!=='undefined'&&drag){
-    const d=Math.hypot(drag.x-c.x,drag.y-c.y);
-    if(d<220){
-      const T2=T*.0014;
-      cx.fillStyle='#BDE6FF';
-      for(let i=0;i<7;i++){
-        const t=(T2+i/7)%1;
-        const px2=drag.x+(c.x-drag.x)*t, py2=drag.y+(c.y-drag.y)*t;
-        cx.globalAlpha=dzT*(1-t)*.55*(1-d/220);
-        const sz=2.4*(1-t)+.6;
-        cx.fillRect(px2,py2,sz,sz);
-      }
-    }
-  }
-  cx.restore();
-}
-
-/* ── ПОГЛОЩЕНИЕ УЗЛА ПОРТАЛОМ ── */
-let swallowing=[];
-function swallowThen(n,cb){
-  const c=dzCenter();
-  n.pinned=true;
-  swallowing.push({n,cb,t:0,ang:Math.atan2(n.y-c.y,n.x-c.x),
-    r:Math.hypot(n.x-c.x,n.y-c.y),cx:c.x,cy:c.y,done:false});
-  spike=1;
-}
-function updateSwallow(){
-  for(let i=swallowing.length-1;i>=0;i--){
-    const sw=swallowing[i];
-    sw.t=Math.min(1,sw.t+.05);
-    const e=sw.t*sw.t;
-    const ang=sw.ang+e*4.2, rr=sw.r*(1-e);
-    sw.n.x=sw.cx+Math.cos(ang)*rr;
-    sw.n.y=sw.cy+Math.sin(ang)*rr;
-    sw.n.swScale=1-e*.96;
-    if(sw.t>=1&&!sw.done){
-      sw.done=true;
-      sw.n.hidden=true;
-      nova(sw.cx,sw.cy,sw.n.color);
-      if(SPARKS)burstSparks(sw.cx,sw.cy,sw.n.color,12);
-      flashA=Math.max(flashA,.3);
-      hideDZ();
-      swallowing.splice(i,1);
-      sw.cb();
-    }
-  }
-}
-(function(){ const um=document.getElementById('umark'); if(um)um.textContent=AU.tag; })();
-
-/* ============================================================
-   TYPES
-============================================================ */
-const TYPES = {
-  core:    {color:'#4DAFFF', label:'CORE'},
-  partner: {color:'#3DFFB4', label:'PARTNER'},
-  special: {color:'#FFD060', label:'SPECIAL'},
-  archive: {color:'#6B8CA0', label:'ARCHIVE'},
-};
-
-/* ============================================================
-   ДЕРЕВО СЕТИ
-   ── лист   : есть url  → переход
-   ── контейнер: есть children → проваливаемся в слой
-   ── offline: заглушка «в разработке»
-   ⚑ Реальные адреса ЛИГУРИИ / каналов правь прямо здесь.
-============================================================ */
-const TREE = {
-  label:'NETWORK',
-  edges:[  // связи между корневыми узлами (по id)
-    ['history','videos'],
-    ['history','arg'],
-    ['history','guestbook'],
-    ['videos','partners'],
-    ['videos','music'],
-    ['music','nodeai'],
-    ['games','nodeai'],
-    ['nodeai','arg'],
-    ['partners','products'],
-    ['arg','guestbook'],
-  ],
-  children:[
-    /* ─ ИСТОРИЯ ─ контейнер: истории создания песен ─ */
-    {id:'history', label:'ИСТОРИЯ', sub:'История создания песен', type:'archive', w:2.0,
-      children:[
-        {id:'liguria',  label:'ЛИГУРИЯ', sub:'Скороговорка · интерактив', type:'special', w:2.3, url:'../fragment02/'},
-        {id:'idolls',   label:'IDOLLS',  sub:'Dark Opera · интерактив', type:'special', w:2.4, url:'../idolls/' },
-        {id:'h_dev2',   label:'СКОРО',   sub:'Новая история · в разработке', type:'archive', w:1.6, offline:true},
-      ]},
-
-    /* ─ A.C.EON ─ контейнер: каналы ─ */
-    {id:'videos', label:'A.C.EON', sub:'A.C.EON Studio · Проекты студии', type:'core', w:2.0,
-      children:[
-        {id:'yt_aceon', label:'A.C.EON YT', sub:'Официальный канал', type:'core', w:2.6, url:'https://www.youtube.com/@A.C.EONStudio', external:true},
-        {id:'yt_p1', label:'A.C.EON Coin', sub:'Coin-info · в разработке', type:'special', w:2.9, url: 'https://yourssugar.github.io/A.C.EON/aceon-coin/coin-info.html'},
-        {id:'yt_p2', label:'LODA/OEIS', sub:'Партнёр · в разработке', type:'core', w:2.1, url: 'https://yourssugar.github.io/A.C.EON/LODA/OEIS/index.html'},
-        {id:'yt_p3', label:'КАНАЛ', sub:'Партнёр · в разработке', type:'partner', w:1.5, offline:true},
-        {id:'yt_p4', label:'КАНАЛ', sub:'Партнёр · в разработке', type:'partner', w:1.5, offline:true},
-        {id:'yt_p5', label:'КАНАЛ', sub:'Партнёр · в разработке', type:'partner', w:1.5, offline:true},
-      ]},
-
-    /* ─ ПАРТНЁРЫ ─ контейнер (пусто) ─ */
-    {id:'partners', label:'ПАРТНЁРЫ', sub:'Люди, помогшие проекту', type:'partner', w:1.8,
-      children:[
-        {id:'Dmitrii Piveń',  label:'Dmitrii Piveń', sub:'о жизни', type:'core', w:2.3, url:'https://www.youtube.com/@dmitrypiven21', external:true},
-        {id:'pt_2', label:'СКОРО', sub:'Профиль · в разработке', type:'partner', w:1.6, offline:true},
-        {id:'pt_3', label:'СКОРО', sub:'Профиль · в разработке', type:'partner', w:1.6, offline:true},
-      ]},
-
-    /* ─ GAMES ─ контейнер: аркада + свои игры ─ */
-    {id:'games', label:'GAMES', sub:'Браузерные игры', type:'core', w:2.5,
-      children:[
-        {id:'arcade',  label:'ARCADE', sub:'A.C.EON Arcade', type:'core', w:2.6, url:'../games/'},
-        {id:'«БРЕШЬ»',  label:'(МЕЧ/ЩИТ)', sub:'В разработке', type:'core', w:1.7, url:'../games/cyber/'},
-        {id:'g_dev2',  label:'ACEONIUM', sub:'В разработке', type:'core', w:2.1, url:'../games/aceonium/'},
-      ]},
-
-    /* ─ ЛИСТЬЯ ─ */
-    {id:'music',     label:'MUSIC',    sub:'Музыкальный плеер', type:'core',    w:3.0, url:'../Music%20archive/'},
-    {id:'nodeai',    label:'NODE AI',  sub:'Kai + Anton',       type:'special', w:2.2, url:'../chat/'},
-
-    /* ─ ТОВАРЫ ─ контейнер (пусто) ─ */
-    {id:'products', label:'ТОВАРЫ', sub:'Наши продукты', type:'partner', w:1.8,
-      children:[
-        {id:'pr_1', label:'СКОРО', sub:'Товар · в разработке', type:'partner', w:1.6, offline:true},
-        {id:'pr_2', label:'СКОРО', sub:'Товар · в разработке', type:'partner', w:1.6, offline:true},
-      ]},
-
-    {id:'arg', label:'KNOWLEDGE', sub:'Информация · обучение', type:'special', w:2.0,
-      children:[
-        {id:'CIPHER',      label:'CIPHER',     sub:'шифрование · криптография',      type:'special', w:2.0, url:'../CIPHER/'},
-        {id:'info',      label:'A.S.T.R.O',    sub:'прогноз · информация',           type:'special', w:2.0, url:'../astro/'},
-        {id:'ai_course', label:'КУРС AI',      sub:'Обучение · взаимодействие с ИИ', type:'special', w:2.3, url:'../layer_00/'},
-        {id:'FORGE',     label:'FORGE',        sub:'Обучение · взаимодействие с кодом', type:'special', w:2.1, url:'../forge/'},
-      ]},
-    {id:'guestbook', label:'ГОСТЕВАЯ', sub:'Архив памяти',       type:'archive', w:1.5, url:'../Guestbook/'},
-  ]
-};
-
-/* ============================================================
-   CANVAS
-============================================================ */
-const cv=document.getElementById('c');
-const cx=cv.getContext('2d');
-let W=cv.width=innerWidth, H=cv.height=innerHeight;
-window.addEventListener('resize',()=>{
-  W=cv.width=innerWidth;H=cv.height=innerHeight;
-  gridCv=null; nebCv=null; vparts=null;
-  if(hub){hub.x=W/2;hub.y=H/2;}
-});
-
-/* ============================================================
-   STARFIELD (параллакс-глубина)
-============================================================ */
-const STAR_N = AU.id>=3?160:(AU.id>=2?110:50);
-const STARS=Array.from({length:STAR_N},()=>({
-  x:Math.random(), y:Math.random(),
-  z:Math.random()*.75+.25,        // глубина: дальше = медленнее, тусклее
-  ph:Math.random()*Math.PI*2,
-}));
-let pmx=0,pmy=0;                  // нормализованное смещение курсора для параллакса
-addEventListener('mousemove',e=>{ pmx=e.clientX/W-.5; pmy=e.clientY/H-.5; },{passive:true});
-
-function drawStars(){
-  const t=Date.now()*.00002;
-  const low=AU.id<2;
-  for(const s of STARS){
-    const par=46*s.z;
-    const drift=(s.x + t*s.z)%1;
-    const px=drift*W - pmx*par;
-    const py=low ? s.y*H - pmy*par
-                 : s.y*H + Math.sin(t*40+s.ph)*7*s.z - pmy*par;
-    const r=s.z*1.5;
-    const a=low ? s.z*s.z*.16
-                : (s.z*s.z*.18)*(Math.sin(Date.now()*.001+s.ph)*.35+.65);
-    cx.beginPath();cx.arc(px,py,r,0,Math.PI*2);
-    cx.fillStyle=`rgba(77,175,255,${a})`;cx.fill();
-  }
-}
-
-/* ── НЕБУЛА (U-2+): пререндер, параллакс дальнего слоя ── */
-let nebCv=null;
-function buildNeb(){
-  nebCv=document.createElement('canvas');
-  nebCv.width=((W+80)/2)|0; nebCv.height=((H+80)/2)|0;
-  const g=nebCv.getContext('2d');
-  for(let i=0;i<7;i++){
-    const bx=Math.random()*nebCv.width, by=Math.random()*nebCv.height;
-    const br=Math.min(nebCv.width,nebCv.height)*(.25+Math.random()*.35);
-    const hue=Math.random()<.75?'77,175,255':'61,255,180';
-    const gr=g.createRadialGradient(bx,by,0,bx,by,br);
-    gr.addColorStop(0,`rgba(${hue},${(.045+Math.random()*.03).toFixed(3)})`);
-    gr.addColorStop(1,`rgba(${hue},0)`);
-    g.fillStyle=gr;g.beginPath();g.arc(bx,by,br,0,Math.PI*2);g.fill();
-  }
-}
-function drawNeb(){
-  if(AU.id<2)return;
-  if(!nebCv)buildNeb();
-  cx.drawImage(nebCv, -40 - pmx*10, -40 - pmy*10, W+80, H+80);
-}
-
-/* ── МИНИ-СИНГУЛЯРНОСТЬ (U-3): глубокий фон, не отвлекает ── */
-let vparts=null,_vT=0;
-function initVortex(){
-  vparts=[];
-  for(let i=0;i<380;i++)vparts.push({
-    r:30+Math.pow(Math.random(),.6)*Math.min(W,H)*.55,
-    a:Math.random()*Math.PI*2,
-    z:.3+Math.random()*.7
-  });
-}
-function drawVortex(){
-  if(AU.id<3)return;
-  if(!vparts)initVortex();
-  const t=performance.now();
-  const dt=Math.min((t-(_vT||t))/1000,.05); _vT=t;
-  const cxp=W/2, cyp=H/2, lim=Math.min(W,H)*.6;
-  cx.fillStyle='#4DAFFF';
-  for(const p of vparts){
-    const ag=1+agit*2.2;
-    p.a+=(.05+40/(p.r+60))*p.z*dt*ag;
-    p.r-=(1.5+180/(p.r+40))*p.z*dt*ag;
-    if(p.r<26){ p.r=Math.min(W,H)*(.5+Math.random()*.25); p.a=Math.random()*Math.PI*2; }
-    const x=cxp+Math.cos(p.a)*p.r - pmx*6;
-    const y=cyp+Math.sin(p.a)*p.r*.85 - pmy*6;
-    const heat=1-p.r/lim;
-    cx.globalAlpha=Math.max(0,p.z*(.055+heat*.13)*(1+agit*.9));
-    cx.fillRect(x,y,1.8+heat*1.5,1.8+heat*1.5);
-  }
-  cx.globalAlpha=1;
-}
-
-/* ── ВОЛНА ДЫХАНИЯ СЕТИ (U-2+) / ШТОРМ (U-3) ── */
-let wave={t:2,amp:0};
-function fireWave(amp){ wave.t=0; wave.amp=amp; }
-function waveBoost(x,y){
-  if(wave.t>1)return 0;
-  const cxp=hub?hub.x:W/2, cyp=hub?hub.y:H/2;
-  const wr=wave.t*Math.hypot(W,H)*.5;
-  const d=Math.hypot(x-cxp,y-cyp);
-  return Math.exp(-Math.pow((d-wr)/70,2))*wave.amp;
-}
-
-/* ── СВЕРХНОВАЯ при активации узла (U-2+) ── */
-let novas=[];
-function nova(x,y,col){
-  if(AU.id<2)return;
-  novas.push({x,y,t:0,col:col||'#4DAFFF'});
-  if(AU.id>=3)novas.push({x,y,t:-.15,col:'#EAF6FF'});
-}
-function drawNovas(){
-  for(let i=novas.length-1;i>=0;i--){
-    const nv=novas[i]; nv.t+=.024;
-    if(nv.t<=0)continue;
-    if(nv.t>=1){novas.splice(i,1);continue;}
-    const R=nv.t*Math.max(W,H)*.55;
-    cx.beginPath();cx.arc(nv.x,nv.y,R,0,Math.PI*2);
-    cx.strokeStyle=nv.col+Math.round((1-nv.t)*110).toString(16).padStart(2,'0');
-    cx.lineWidth=1.5+(1-nv.t)*2;
-    cx.stroke();
-  }
-}
-
-/* ============================================================
-   LEVEL STATE  (стек drill-down)
-============================================================ */
-let path=[];            // стек контейнеров, в которые вошли
-let nodes=[], edges=[]; // текущий уровень
-let hub=null;           // центральный узел-родитель в под-слое
-
-function levelChildren(){
-  return path.length ? path[path.length-1].children : TREE.children;
-}
-
-function runtimeNode(def,x,y,isHub){
-  return {...def,
-    x,y, vx:0, vy:0,
-    radius: 20 + (def.w || (isHub?2.8:1.8))*10,
-    color: TYPES[def.type].color,
-    container: !!(def.children && def.children.length),
-    hovered:false, dragging:false, hidden:false,
-    pinned:!!isHub, isHub:!!isHub,
-    trail:[], spawnT:0, spawned:false, spawning:false, glitchUntil:0, ripple:0,
-    seed:(def.id||'x').split('').reduce((s2,ch)=>s2+ch.charCodeAt(0),0),
-    hotT:0, tx:x, ty:y, sx:x, sy:y, arcK:0,
-  };
-}
-
-function mkEdge(a,b){return {a,b,
-  sag:(Math.random()<.5?-1:1)*(.05+Math.random()*.05),
-  grow:0, ex:null, ey:null,
-  ps:Array.from({length:3},()=>({t:Math.random()}))};}
-
-function buildLevel(anim=true){
-  clearFilter();
-  const kids=levelChildren();
-  const cxp=W/2, cyp=H/2, R=Math.min(W,H)*.24;
-  const arr=[];
-
-  if(path.length>0){
-    const parent=path[path.length-1];
-    hub=runtimeNode(parent,cxp,cyp,true);
-    arr.push(hub);
-  } else hub=null;
-
-  kids.forEach((d,i)=>{
-    const a=(i/kids.length)*Math.PI*2 - Math.PI/2;
-    const x=cxp+Math.cos(a)*R*(.85+Math.random()*.3);
-    const y=cyp+Math.sin(a)*R*(.85+Math.random()*.3);
-    arr.push(runtimeNode(d,x,y,false));
-  });
-  nodes=arr;
-
-  /* хореография влёта: узлы стартуют за краями экрана по дугам (U-2+) */
-  const flyR=Math.hypot(W,H)*.62;
-  arr.forEach(n=>{
-    n.tx=n.x; n.ty=n.y;
-    if(!n.isHub && anim && AU.id>=2){
-      const ang=Math.atan2(n.y-cyp,n.x-cxp)+(Math.random()-.5)*.5;
-      n.sx=cxp+Math.cos(ang)*flyR;
-      n.sy=cyp+Math.sin(ang)*flyR;
-      n.arcK=(Math.random()<.5?-1:1)*(60+Math.random()*90);
-      n.x=n.sx; n.y=n.sy;
-    } else { n.sx=n.x; n.sy=n.y; n.arcK=0; }
-  });
-
-  edges=[];
-  if(path.length===0){
-    TREE.edges.forEach(([ida,idb])=>{
-      const ai=nodes.findIndex(n=>n.id===ida), bi=nodes.findIndex(n=>n.id===idb);
-      if(ai>=0&&bi>=0) edges.push(mkEdge(ai,bi));
-    });
-  } else {
-    for(let i=1;i<nodes.length;i++) edges.push(mkEdge(0,i)); // звезда от хаба
-  }
-
-  nodes.forEach((n,i)=>{
-    n.spawnT=0;n.spawned=false;n.spawning=false;
-    if(anim){
-      setTimeout(()=>{n.spawning=true;}, (n.isHub?0:i*90)+50);
-    } else {n.spawnT=1;n.spawned=true;n.spawning=true;}
-  });
-
-  updateHeader();
-  hudEl.classList.remove('on');
-}
-
-function descend(node){
-  const def=levelChildren().find(d=>d.id===node.id);
-  if(!def) return;
-  nova(node.x,node.y,node.color);
-  flashA=.5; tick(560,.07); spike=1;
-  if(AU.id>=2){
-    cam.t=1.3; chromPulse();
-    setTimeout(()=>{ path.push(def); buildLevel(true); cam.z=.87; cam.t=1; },190);
-  } else { path.push(def); buildLevel(true); }
-}
-function goBack(){
-  if(!path.length){ if(PORTAL)requestPortalClose(); return; }
-  flashA=.5; tick(330,.06); spike=.7;
-  if(AU.id>=2){
-    cam.t=.82;
-    setTimeout(()=>{ path.pop(); buildLevel(true); cam.z=1.14; cam.t=1; },190);
-  } else { path.pop(); buildLevel(true); }
-}
-function goRoot(){
-  if(!path.length) return;
-  path=[];
-  flashA=.5; tick(300,.06);
-  buildLevel(true);
-}
-
-/* ── ШАПКА / ХЛЕБНЫЕ КРОШКИ ── */
-function updateHeader(){
-  const hst=document.getElementById('hst');
-  const count=levelChildren().length;
-  if(path.length===0){
-    if(PORTAL){
-      hst.innerHTML=`<span class="crumb-back">◄ MAIN</span> / NETWORK · ${count} NODES`;
-      const back=hst.querySelector('.crumb-back');
-      if(back) back.onclick=requestPortalClose;
-    } else {
-      hst.innerHTML=`NETWORK · ${count} NODES · ONLINE`;
-    }
-  } else {
-    const crumbs=path.map(p=>p.label).join(' / ');
-    hst.innerHTML=
-      `<span class="crumb-back">◄ NETWORK</span> / `+
-      `<span class="crumb-here">${crumbs}</span> · ${count} NODES`;
-    const back=hst.querySelector('.crumb-back');
-    if(back) back.onclick=goRoot;
-  }
-}
-
-/* ============================================================
-   PHYSICS
-============================================================ */
-const REP=22000,KS=.01,REST=210,KC=.003,DMP=.93;
-
-function physics(){
-  const cxp = hub? hub.x : W/2;
-  const cyp = hub? hub.y : H/2;
-
-  for(let i=0;i<nodes.length;i++){
-    if(!nodes[i].spawned||nodes[i].hidden) continue;
-    for(let j=i+1;j<nodes.length;j++){
-      if(!nodes[j].spawned||nodes[j].hidden) continue;
-      const a=nodes[i],b=nodes[j];
-      const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy+1,d=Math.sqrt(d2);
-      const f=REP/d2,fx=(dx/d)*f,fy=(dy/d)*f;
-      if(!a.pinned){a.vx-=fx;a.vy-=fy;}
-      if(!b.pinned){b.vx+=fx;b.vy+=fy;}
-    }
-  }
-  edges.forEach(e=>{
-    const a=nodes[e.a],b=nodes[e.b];
-    if(!a||!b||!a.spawned||!b.spawned||a.hidden||b.hidden) return;
-    const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)+.01;
-    const f=KS*(d-REST),fx=(dx/d)*f,fy=(dy/d)*f;
-    if(!a.pinned){a.vx+=fx;a.vy+=fy;}
-    if(!b.pinned){b.vx-=fx;b.vy-=fy;}
-  });
-  nodes.forEach(n=>{
-    if(!n.spawned||n.hidden||n.pinned) return;
-    if(n.dragging){n.vx=0;n.vy=0;return}
-    n.vx+=(cxp-n.x)*KC; n.vy+=(cyp-n.y)*KC;
-    n.vx+=(Math.random()-.5)*.0007; n.vy+=(Math.random()-.5)*.0007;
-    n.vx*=DMP; n.vy*=DMP; n.x+=n.vx; n.y+=n.vy;
-    const p=n.radius+52;
-    if(n.x<p) n.vx+=(p-n.x)*.18;
-    if(n.x>W-p) n.vx-=(n.x-(W-p))*.18;
-    if(n.y<p) n.vy+=(p-n.y)*.18;
-    if(n.y>H-p) n.vy-=(n.y-(H-p))*.18;
-  });
-  edges.forEach(e=>e.ps.forEach(p=>{p.t+=.0025;if(p.t>1)p.t=0}));
-}
-
-/* ============================================================
-   DRAW
-============================================================ */
-let gridCv=null;
-const GRID_PAD=64;
-function buildGrid(){
-  gridCv=document.createElement('canvas');
-  gridCv.width=W+GRID_PAD*2; gridCv.height=H+GRID_PAD*2;
-  const g=gridCv.getContext('2d');
-  const S=38;
-  g.fillStyle='rgba(77,175,255,.055)';
-  for(let x=0;x<gridCv.width;x+=S) for(let y=0;y<gridCv.height;y+=S){
-    g.beginPath();g.arc(x,y,.75,0,Math.PI*2);g.fill();
-  }
-}
-function drawGrid(){
-  if(!gridCv)buildGrid();
-  const par=AU.id>=2?26:0;
-  cx.drawImage(gridCv, -GRID_PAD - pmx*par, -GRID_PAD - pmy*par);
-}
-
-function drawEdge(e){
-  const a=nodes[e.a],b=nodes[e.b];
-  if(!a||!b||!a.spawned||!b.spawned||a.hidden||b.hidden) return;
-  const hot=a.hovered||b.hovered||a.dragging||b.dragging;
-  const wb=waveBoost((a.x+b.x)/2,(a.y+b.y)/2);
-  const al=Math.min(.95,(hot?.55:.2)+wb*.45);
-  const grow=e.grow==null?1:e.grow;
-  const dashOff=-(Date.now()*.022)%16;
-  if(AU.id<2){
-    /* U-1: прямая, но живая — бегущий пунктир */
-    cx.beginPath();cx.moveTo(a.x,a.y);
-    cx.lineTo(a.x+(b.x-a.x)*grow,a.y+(b.y-a.y)*grow);
-    cx.setLineDash([5,9]);cx.lineDashOffset=dashOff;
-    cx.strokeStyle=`rgba(77,175,255,${al})`;
-    cx.lineWidth=(hot?1.5:.8)+wb*1.2;cx.stroke();
-    cx.setLineDash([]);
-    e._c=null;
-  } else {
-    /* U-2+: изогнутый упругий трос с градиентом */
-    if(e.ex==null){e.ex=(a.x+b.x)/2;e.ey=(a.y+b.y)/2;}
-    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
-    const dx=b.x-a.x,dy=b.y-a.y;
-    const tgx=mx-dy*e.sag, tgy=my+dx*e.sag;
-    e.ex+=(tgx-e.ex)*.1; e.ey+=(tgy-e.ey)*.1;
-    const g=cx.createLinearGradient(a.x,a.y,b.x,b.y);
-    g.addColorStop(0,a.color); g.addColorStop(1,b.color);
-    const N=14, M=Math.max(2,Math.round(N*grow));
-    cx.beginPath();
-    for(let i=0;i<=M;i++){
-      const p=qpt(a.x,a.y,e.ex,e.ey,b.x,b.y,i/N);
-      i===0?cx.moveTo(p.x,p.y):cx.lineTo(p.x,p.y);
-    }
-    cx.globalAlpha=al;
-    cx.setLineDash([6,10]);cx.lineDashOffset=dashOff;
-    cx.strokeStyle=g;
-    cx.lineWidth=(hot?1.7:.85)+wb*1.4;
-    cx.stroke();
-    cx.setLineDash([]);cx.globalAlpha=1;
-    if(grow<1){
-      const p=qpt(a.x,a.y,e.ex,e.ey,b.x,b.y,M/N);
-      cx.beginPath();cx.arc(p.x,p.y,2.6,0,Math.PI*2);
-      cx.fillStyle='#CFEBFF';cx.fill();
-    }
-    e._c=true;
-  }
-  e.ps.forEach(p=>{
-    const pt=e._c?qpt(a.x,a.y,e.ex,e.ey,b.x,b.y,p.t)
-                :{x:a.x+(b.x-a.x)*p.t,y:a.y+(b.y-a.y)*p.t};
-    cx.beginPath();cx.arc(pt.x,pt.y,hot?2.4:1.4,0,Math.PI*2);
-    cx.fillStyle=`rgba(150,220,255,${hot?.85:.35})`;cx.fill();
-  });
-}
-
-function easeOut(t){return 1-(1-t)*(1-t)}
-
-function drawNode(n){
-  if(n.hidden) return;
-  const sp=easeOut(n.spawnT);
-  const scl=n.swScale==null?1:n.swScale;
-  const T=Date.now();
-  n.hotT+=(((n.hovered||n.dragging)?1:0)-n.hotT)*.16;
-  const hot=n.hovered||n.dragging;
-  const r=n.radius*sp*scl*(1+.07*n.hotT);
-  if(r<1) return;
-  const glitch=n.glitchUntil>T && !n.isHub;
-  const gj=glitch?(Math.random()-.5)*5:0;
-  const seed=n.seed||0;
-
-  /* ионный след при драге */
-  if(n.dragging&&n.trail.length>1){
-    for(let i=1;i<n.trail.length;i++){
-      const prog=i/n.trail.length;
-      const ta=n.trail[i-1],tb=n.trail[i];
-      cx.beginPath();cx.moveTo(ta.x,ta.y);cx.lineTo(tb.x,tb.y);
-      cx.strokeStyle=n.color+Math.round(prog*90).toString(16).padStart(2,'0');
-      cx.lineWidth=n.radius*prog*.75;cx.lineCap='round';cx.stroke();
-    }
-  }
-
-  /* мягкое свечение — спрайт, все тиры */
-  const gs=glowSprite(n.color);
-  cx.globalAlpha=(n.offline?.22:.5)+n.hotT*.45;
-  const gr2=r*2.6;
-  cx.drawImage(gs,n.x-gr2,n.y-gr2,gr2*2,gr2*2);
-  cx.globalAlpha=1;
-
-  /* кольцо рождения */
-  if(n.spawnT<1&&n.spawnT>0){
-    const burst=n.radius*(2.5-n.spawnT*1.6);
-    cx.beginPath();cx.arc(n.x,n.y,burst,0,Math.PI*2);
-    cx.strokeStyle=n.color+Math.round((1-n.spawnT)*120).toString(16).padStart(2,'0');
-    cx.lineWidth=2;cx.stroke();
-  }
-
-  /* рябь прихода пакета */
-  if(n.ripple>0){
-    const rr=r + (1-n.ripple)*42;
-    cx.beginPath();cx.arc(n.x,n.y,rr,0,Math.PI*2);
-    cx.strokeStyle=n.color+Math.round(n.ripple*140).toString(16).padStart(2,'0');
-    cx.lineWidth=1.5;cx.stroke();
-    n.ripple=Math.max(0,n.ripple-.035);
-  }
-
-  /* орб с дыханием */
-  const rb=r*(1+.025*Math.sin(T*.0013+seed));
-  cx.beginPath();cx.arc(n.x,n.y,rb,0,Math.PI*2);
-  const bg=cx.createRadialGradient(n.x-rb*.25,n.y-rb*.25,0,n.x,n.y,rb);
-  bg.addColorStop(0,n.color+(n.offline?'2C':(hot?'96':'5E')));
-  bg.addColorStop(1,n.color+(n.offline?'04':'0A'));
-  cx.fillStyle=bg;cx.fill();
-  /* внутренняя диафрагма вместо центральной точки */
-  if(!n.offline){
-    cx.beginPath();cx.arc(n.x,n.y,rb*.52,0,Math.PI*2);
-    cx.strokeStyle=n.color+(hot?'8C':'48');
-    cx.lineWidth=1;cx.stroke();
-    const iaRot=T*.0014*(seed%2?-1:1)+seed;
-    cx.beginPath();cx.arc(n.x,n.y,rb*.52,iaRot,iaRot+.7);
-    cx.strokeStyle=n.color+(hot?'FF':'B0');
-    cx.lineWidth=1.6;cx.stroke();
-  }
-  cx.beginPath();cx.arc(n.x,n.y,rb,0,Math.PI*2);
-  cx.strokeStyle=n.color+(n.offline?'2A':(hot?'D0':'60'));
-  cx.lineWidth=hot?1.6:1;cx.stroke();
-
-  /* кольца-механизмы / мёртвое кольцо офлайна */
-  if(n.offline){
-    cx.setLineDash([3,7]);
-    cx.beginPath();cx.arc(n.x,n.y,r+8,seed,seed+5.6);
-    cx.strokeStyle=n.color+'30';cx.lineWidth=1;cx.stroke();
-    cx.setLineDash([]);
-    if(Math.random()<.03){
-      cx.strokeStyle='rgba(255,96,96,.5)';
-      const a0=Math.random()*6.28;
-      cx.beginPath();cx.arc(n.x,n.y,r+8,a0,a0+.25);cx.stroke();
-    }
-  } else if(!n.isHub){
-    const spd=1+n.hotT*1.6;
-    const dir=seed%2?1:-1;
-    cx.lineWidth=1.2;
-    const rot1=T*.0008*spd*dir+seed;
-    cx.strokeStyle=n.color+(hot?'B0':'58');
-    for(let k=0;k<3;k++){
-      const a0=rot1+k*2.094;
-      cx.beginPath();cx.arc(n.x,n.y,r+6,a0,a0+1.5);cx.stroke();
-    }
-    const rot2=-T*.0006*spd*dir+seed*2;
-    cx.strokeStyle=n.color+(hot?'70':'32');
-    for(let k=0;k<2;k++){
-      const a0=rot2+k*3.1416;
-      cx.beginPath();cx.arc(n.x,n.y,r+11,a0,a0+2.1);cx.stroke();
-    }
-  }
-
-  /* спутники контейнеров */
-  if(n.container&&!n.isHub&&sp>.6){
-    const k=Math.min(3,(n.children?n.children.length:2));
-    const d=r+17;
-    for(let i=0;i<k;i++){
-      const a=T*.0011*(seed%2?1:-1)+i*6.283/k;
-      const px2=n.x+Math.cos(a)*d, py2=n.y+Math.sin(a)*d*.92;
-      cx.beginPath();cx.arc(px2,py2,2,0,Math.PI*2);
-      cx.fillStyle=n.color+'C0';cx.fill();
-      cx.beginPath();cx.arc(n.x,n.y,d,a-.55,a-.18);
-      cx.strokeStyle=n.color+'36';cx.lineWidth=1;cx.stroke();
-    }
-  }
-
-  /* прицельные скобки при пробуждении */
-  if(n.hotT>.03&&!n.isHub){
-    const b=r*1.55+(1-n.hotT)*12, L=b*.38;
-    cx.strokeStyle=n.color+Math.round(n.hotT*200).toString(16).padStart(2,'0');
-    cx.lineWidth=1.3;
-    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx2,sy2])=>{
-      cx.beginPath();
-      cx.moveTo(n.x+sx2*b-sx2*L,n.y+sy2*b);
-      cx.lineTo(n.x+sx2*b,n.y+sy2*b);
-      cx.lineTo(n.x+sx2*b,n.y+sy2*b-sy2*L);
-      cx.stroke();
-    });
-  }
-
-  /* микроглитч */
-  if(glitch){
-    const jx=(Math.random()-.5)*7;
-    cx.save();cx.globalAlpha=.55;
-    cx.beginPath();cx.arc(n.x+jx,n.y,r,0,Math.PI*2);
-    cx.strokeStyle='rgba(77,175,255,.9)';cx.lineWidth=1;cx.stroke();
-    cx.beginPath();cx.arc(n.x-jx,n.y,r,0,Math.PI*2);
-    cx.strokeStyle='rgba(255,64,96,.9)';cx.lineWidth=1;cx.stroke();
-    const ty=n.y+(Math.random()-.5)*r*1.4;
-    cx.fillStyle='rgba(216,238,248,.16)';
-    cx.fillRect(n.x-r,ty,r*2,1.5);
-    cx.restore();
-  }
-
-  /* хаб */
-  if(n.isHub){
-    cx.save();
-    cx.translate(n.x,n.y);
-    cx.rotate(T*.0004);
-    cx.beginPath();cx.arc(0,0,r+13,0,Math.PI*2);
-    cx.setLineDash([4,7]);
-    cx.strokeStyle=n.color+'66';cx.lineWidth=1;cx.stroke();
-    cx.setLineDash([]);
-    cx.restore();
-  }
-
-  /* текст */
-  if(sp<.5) return;
-  const ta=Math.max(0,sp*2-1)*Math.max(0,scl*1.4-.4);
-  if(ta<=0)return;
-  cx.globalAlpha=ta;
-  cx.textAlign='center';cx.textBaseline='middle';
-
-  if(n.isHub){
-    cx.fillStyle='#D8EEF8';
-    cx.font=`600 ${Math.max(10,r*.30)}px 'Space Grotesk',sans-serif`;
-    cx.fillText(n.label,n.x,n.y - r*.12);
-    cx.fillStyle=n.color+'CC';
-    cx.font=`700 ${Math.max(8,r*.19)}px 'JetBrains Mono',monospace`;
-    cx.fillText('◄ ВЫХОД',n.x,n.y + r*.34);
-  } else {
-    cx.font=`600 ${Math.max(9,r*.37)}px 'Space Grotesk',sans-serif`;
-    cx.fillStyle=n.offline?'rgba(216,238,248,.38)':'#D8EEF8';
-    cx.fillText(n.label,n.x+gj,n.y);
-    cx.font=`7px 'JetBrains Mono',monospace`;
-    cx.fillStyle=n.color+'70';
-    const tg=(TYPES[n.type]?TYPES[n.type].label.slice(0,2):'ND');
-    cx.fillText(tg+'·'+String(seed%89+10), n.x, n.y+r+13);
-  }
-  cx.globalAlpha=1;
-}
-
-/* ============================================================
-   SIDE HUD PANELS
-============================================================ */
-const SIDE_L=['SIG·07','0x1A3F','PKT·042','NODE·9','SCAN··','440HZ·','ERR·0·','LAT·12'];
-const SIDE_R=['MEM·74%','CPU·031','0xFF2A','CONN·4','TX··OK','RX··OK','0xA3B1','BUF·88'];
-
-function drawSideHUD(){
-  if(!graphOn) return;
-  const t=Date.now();
-  const yS=88, yE=H-88, step=70;
-  const lx=26, rx=W-26;
-
-  const cs=22;
-  cx.strokeStyle='rgba(77,175,255,.12)';cx.lineWidth=1;
-  [[16,16,1,1],[W-16,16,-1,1],[16,H-16,1,-1],[W-16,H-16,-1,-1]].forEach(([x,y,sx,sy])=>{
-    cx.beginPath();
-    cx.moveTo(x,y+sy*cs);cx.lineTo(x,y);cx.lineTo(x+sx*cs,y);
-    cx.stroke();
-    cx.beginPath();cx.arc(x+sx*3,y+sy*3,1,0,Math.PI*2);
-    cx.fillStyle='rgba(77,175,255,.25)';cx.fill();
-  });
-  if(AU.id<2) return;   /* U-1: только угловые метки */
-
-  cx.lineWidth=1;
-  cx.beginPath();cx.moveTo(lx,yS);cx.lineTo(lx,yE);
-  cx.strokeStyle='rgba(77,175,255,.06)';cx.stroke();
-  cx.beginPath();cx.moveTo(rx,yS);cx.lineTo(rx,yE);
-  cx.stroke();
-
-  const scanY=(t*.016)%(yE-yS)+yS;
-  const scanA=.55;
-  cx.beginPath();cx.moveTo(lx-3,scanY);cx.lineTo(lx+3,scanY);
-  cx.strokeStyle=`rgba(77,175,255,${scanA})`;cx.lineWidth=1;cx.stroke();
-  cx.beginPath();cx.moveTo(lx-1,scanY-3);cx.lineTo(lx+1,scanY-3);
-  cx.strokeStyle='rgba(77,175,255,.15)';cx.stroke();
-  cx.beginPath();cx.moveTo(rx-3,scanY);cx.lineTo(rx+3,scanY);
-  cx.strokeStyle=`rgba(77,175,255,${scanA})`;cx.lineWidth=1;cx.stroke();
-  cx.beginPath();cx.moveTo(rx-1,scanY-3);cx.lineTo(rx+1,scanY-3);
-  cx.strokeStyle='rgba(77,175,255,.15)';cx.stroke();
-
-  cx.font='8px JetBrains Mono,monospace';
-  for(let i=0;yS+i*step<yE;i++){
-    const y=yS+i*step;
-    const bL=Math.sin(t*.0007+i*.85)>.5;
-    const bR=Math.sin(t*.0007+i*1.1+1.8)>.5;
-    const aL=bL?.15:.055;
-    const aR=bR?.15:.055;
-    cx.beginPath();cx.moveTo(lx,y);cx.lineTo(lx+4,y);
-    cx.strokeStyle=`rgba(77,175,255,${aL*1.8})`;cx.lineWidth=1;cx.stroke();
-    cx.textAlign='left';cx.textBaseline='middle';
-    cx.fillStyle=`rgba(77,175,255,${aL})`;
-    cx.fillText(SIDE_L[i%SIDE_L.length],lx+8,y);
-    cx.beginPath();cx.moveTo(rx,y);cx.lineTo(rx-4,y);
-    cx.strokeStyle=`rgba(77,175,255,${aR*1.8})`;cx.stroke();
-    cx.textAlign='right';
-    cx.fillStyle=`rgba(77,175,255,${aR})`;
-    cx.fillText(SIDE_R[i%SIDE_R.length],rx-8,y);
-  }
-}
-
-/* ============================================================
-   RENDER LOOP
-============================================================ */
-let flashA=0, graphOn=false;
-let scopeActive=false, scopeColor='#4DAFFF';
-let _scopeCv,_scopeCx;
-
-/* ── ПАКЕТЫ-ВСПЛЕСКИ ── */
-let bursts=[];
-function updateBursts(){
-  for(let i=bursts.length-1;i>=0;i--){
-    const bz=bursts[i];
-    bz.t+=bz.speed;
-    if(bz.t>=1){
-      const dest = bz.dir ? nodes[bz.e.b] : nodes[bz.e.a];
-      if(dest && !dest.hidden) dest.ripple=1;
-      bursts.splice(i,1);
-    }
-  }
-}
-function drawBursts(){
-  bursts.forEach(bz=>{
-    const a=nodes[bz.e.a], b=nodes[bz.e.b];
-    if(!a||!b||!a.spawned||!b.spawned||a.hidden||b.hidden) return;
-    const e=bz.e;
-    const P=t=> e._c?qpt(a.x,a.y,e.ex,e.ey,b.x,b.y,t)
-                   :{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
-    const dirT=bz.dir?bz.t:1-bz.t;
-    const h=P(dirT);
-    const TL=AU.id>=2?9:5;
-    for(let k=1;k<=TL;k++){
-      const tt=Math.max(0,Math.min(1,dirT+(bz.dir?-1:1)*k*.03));
-      const p=P(tt);
-      cx.globalAlpha=(1-k/TL)*.5;
-      cx.fillStyle='#96DCFF';
-      cx.beginPath();cx.arc(p.x,p.y,(1-k/TL)*2.4+.4,0,Math.PI*2);cx.fill();
-    }
-    cx.globalAlpha=1;
-    const g=cx.createRadialGradient(h.x,h.y,0,h.x,h.y,11);
-    g.addColorStop(0,'rgba(210,242,255,.9)');g.addColorStop(1,'rgba(77,175,255,0)');
-    cx.beginPath();cx.arc(h.x,h.y,11,0,Math.PI*2);cx.fillStyle=g;cx.fill();
-    cx.beginPath();cx.arc(h.x,h.y,2.6,0,Math.PI*2);cx.fillStyle='#EAF6FF';cx.fill();
-  });
-}
-function scheduleBurst(){
-  setTimeout(()=>{
-    if(graphOn && edges.length){
-      const vis=edges.filter(e=>{
-        const a=nodes[e.a],b=nodes[e.b];
-        return a&&b&&a.spawned&&b.spawned&&!a.hidden&&!b.hidden;
-      });
-      if(vis.length){
-        const e=vis[(Math.random()*vis.length)|0];
-        bursts.push({e, t:0, dir:Math.random()<.5, speed:.011+Math.random()*.009});
-      }
-    }
-    scheduleBurst();
-  }, (AU.id<2?3200:1200)+Math.random()*(AU.id<2?5200:2400));
-}
-scheduleBurst();
-
-function scopeDraw(){
-  if(!_scopeCv){_scopeCv=document.getElementById('hscope');if(!_scopeCv)return;_scopeCx=_scopeCv.getContext('2d');}
-  const w=_scopeCv.width,h=_scopeCv.height,t=Date.now()*.006;
-  _scopeCx.clearRect(0,0,w,h);
-  _scopeCx.strokeStyle='rgba(77,175,255,.12)';_scopeCx.lineWidth=1;
-  _scopeCx.beginPath();_scopeCx.moveTo(0,h/2);_scopeCx.lineTo(w,h/2);_scopeCx.stroke();
-  _scopeCx.beginPath();
-  for(let x=0;x<=w;x+=2){
-    const p=x/w;
-    const y=h/2 + Math.sin(p*15+t)*(h*.30)*Math.sin(t*.6+p*3) + (Math.random()-.5)*2;
-    x===0?_scopeCx.moveTo(x,y):_scopeCx.lineTo(x,y);
-  }
-  _scopeCx.strokeStyle=scopeColor;_scopeCx.lineWidth=1.2;
-  if(AU.id>=3){_scopeCx.shadowColor=scopeColor;_scopeCx.shadowBlur=4;}
-  _scopeCx.stroke();_scopeCx.shadowBlur=0;
-  const hx=(t*11)%w;
-  _scopeCx.beginPath();_scopeCx.moveTo(hx,0);_scopeCx.lineTo(hx,h);
-  _scopeCx.strokeStyle=scopeColor+'55';_scopeCx.stroke();
-}
-
-let _lastF=0, spike=0, agit=0;
-function frame(now){
-  requestAnimationFrame(frame);
-  if(document.hidden)return;
-  now=now||performance.now();
-  if(AU.capMs>17 && now-_lastF<AU.capMs-1)return;
-  _lastF=now;
-
-  cam.z+=(cam.t-cam.z)*.13;
-  spike*=.965;
-  agit+=(Math.max(drag?.6:.12,spike)-agit)*.05;
-
-  if(graphOn){ physics(); updateBursts(); updateSwallow(); }
-  if(wave.t<=1)wave.t+=.012;
-
-  /* хореография влёта по дугам */
-  nodes.forEach(n=>{
-    if(n.spawning&&n.spawnT<1){
-      n.spawnT=Math.min(1,n.spawnT+.03);
-      const tt=1-Math.pow(1-n.spawnT,3);
-      if(n.arcK){
-        const mx=(n.sx+n.tx)/2, my=(n.sy+n.ty)/2;
-        const dx=n.tx-n.sx, dy=n.ty-n.sy, L=Math.hypot(dx,dy)+.01;
-        const cpx=mx-dy/L*n.arcK, cpy=my+dx/L*n.arcK;
-        const u=1-tt;
-        n.x=u*u*n.sx+2*u*tt*cpx+tt*tt*n.tx;
-        n.y=u*u*n.sy+2*u*tt*cpy+tt*tt*n.ty;
-      }
-      if(n.spawnT>=1){n.spawned=true;n.x=n.tx;n.y=n.ty;}
-    }
-  });
-  /* прогрессивная прорисовка связей */
-  edges.forEach(e=>{
-    const a=nodes[e.a],b=nodes[e.b];
-    if(a&&b&&a.spawned&&b.spawned&&e.grow<1)e.grow=Math.min(1,e.grow+.03);
-  });
-  /* магнит портала (U-3) */
-  if(SUCTION&&drag){
-    const c=dzCenter();
-    const d=Math.hypot(drag.x-c.x,drag.y-c.y);
-    if(d<170){
-      drag.x+=(c.x-drag.x)*.05*(1-d/170);
-      drag.y+=(c.y-drag.y)*.05*(1-d/170);
-    }
-  }
-
-  cx.fillStyle='#020509';cx.fillRect(0,0,W,H);
-  drawNeb();
-  drawVortex();
-  drawStars();
-
-  cx.save();
-  cx.translate(W/2,H/2);cx.scale(cam.z,cam.z);cx.translate(-W/2,-H/2);
-  drawGrid();
-  if(AU.id>=3)cx.globalCompositeOperation='lighter';
-  edges.forEach(drawEdge);
-  drawBursts();
-  cx.globalCompositeOperation='source-over';
-  nodes.forEach(drawNode);
-  drawNovas();
-  updateDrawSparks();
-  cx.restore();
-
-  drawPortal();
-  drawSideHUD();
-  if(scopeActive) scopeDraw();
-  if(flashA>0){
-    cx.fillStyle=`rgba(77,175,255,${flashA})`;
-    cx.fillRect(0,0,W,H);
-    flashA-=.022;
-  }
-  drawEmergence();
-}
-requestAnimationFrame(frame);
-
-/* ============================================================
-   LOADING SEQUENCE
-============================================================ */
-const GID=Math.random().toString(36).substr(2,8).toUpperCase();
-
-const LINES=[
-  {t:'A.C.EON  NETWORK   v2.4.1',              c:'ca b', d:0},
-  {t:'RE-ENTRY DETECTED — COLD PATH',       c:'cy',   d:240},
-  {t:'> SIGNAL RE-SYNC.......................', c:'',     d:560,  sx:'OK',    sc:'cg'},
-  {t:'> WORMHOLE RESIDUE.....................', c:'',     d:1050, sx:'TRACE', sc:'cy'},
-  {t:`> USER_ID  :  GUEST_${GID}`,              c:'ca',   d:1430},
-  {t:'> RESTORING NODE MAP...................', c:'',     d:1770, sx:'OK',    sc:'cg'},
-];
-
-function addLine(cfg){
-  const wrap=document.getElementById('pg');
-  const div=document.createElement('div');
-  div.className='tl '+(cfg.c||'');
-  if(cfg.b) div.style.fontWeight='700';
-  if(cfg.sx){
-    const l=document.createElement('span');l.textContent=cfg.t;
-    const r=document.createElement('span');r.textContent=cfg.sx;r.className=cfg.sc;
-    div.appendChild(l);div.appendChild(r);
-  } else {
-    div.textContent=cfg.t;
-  }
-  document.getElementById('term').insertBefore(div,wrap);
-  requestAnimationFrame(()=>div.classList.add('on'));
-  return div;
-}
-
-let curLine=null;
-function runLoader(){
-  LINES.forEach((cfg,i)=>{
-    setTimeout(()=>{
-      if(curLine) curLine.classList.remove('cur');
-      curLine=addLine(cfg);
-      if(i<LINES.length-1) curLine.classList.add('cur');
-    },cfg.d);
-  });
-
-  const last=LINES[LINES.length-1].d+200;
-  setTimeout(()=>{
-    if(curLine) curLine.classList.remove('cur');
-    document.getElementById('pg').classList.add('on');
-    let pct=0;
-    const fill=document.getElementById('pgf'),pctEl=document.getElementById('pgp');
-    const iv=setInterval(()=>{
-      pct=Math.min(100,pct+Math.random()*3.2+.8);
-      fill.style.width=pct+'%';
-      pctEl.textContent=Math.floor(pct)+'%';
-      if(pct>=100){
-        clearInterval(iv);pctEl.textContent='100%';
-        setTimeout(()=>{
-          document.getElementById('acc').classList.add('on');
-          setTimeout(startGraph,480);
-        },300);
-      }
-    },22);
-  },last);
-}
-
-function startGraph(){
-  const ld=document.getElementById('loader');
-  if(ld)ld.classList.add('fade');
-  setTimeout(()=>{
-    if(ld)ld.remove();
-    document.getElementById('hdr').classList.add('on');
-    document.getElementById('wip').classList.add('on');
-    document.getElementById('leg').classList.add('on');
-    document.getElementById('fil').classList.add('on');
-    graphOn=true;
-    flashA=.45;
-    if(AU.id>=2){ cam.z=1.16; cam.t=1; }
-    buildLevel(true);
-    const kids=levelChildren();
-    const hintDelay=kids.length*90+900;
-    setTimeout(()=>document.getElementById('hint').classList.add('on'), hintDelay);
-    setTimeout(()=>document.getElementById('hint').classList.remove('on'), hintDelay+6000);
-  },ld?560:0);
-}
-
-/* ============================================================
-   ВЫХОД ИЗ ЧЕРВОТОЧИНЫ (портальный вход — без терминала)
-============================================================ */
-let holdBlack=PORTAL, emergeT=2, streaks=null;
-function beginEmerge(){
-  if(emergeT>=0&&emergeT<=1)return;
-  holdBlack=false; emergeT=0;
-  if(AU.id>=2){ cam.z=1.35; cam.t=1; }
-  streaks=Array.from({length:AU.id>=2?46:22},()=>({
-    a:Math.random()*6.283,
-    l:.15+Math.random()*.5,
-    w:.5+Math.random()*1.4,
-    sp:.7+Math.random()*.6
-  }));
-  spike=1;
-  startGraph();
-}
-function drawEmergence(){
-  if(holdBlack){
-    /* тьма туннеля: пульсирующая точка приближающегося сигнала */
-    cx.fillStyle='#020509';cx.fillRect(0,0,W,H);
-    const T=Date.now();
-    const a=.22+.18*Math.sin(T*.004);
-    const g=cx.createRadialGradient(W/2,H/2,0,W/2,H/2,60);
-    g.addColorStop(0,`rgba(120,205,255,${a})`);
-    g.addColorStop(1,'rgba(77,175,255,0)');
-    cx.fillStyle=g;cx.beginPath();cx.arc(W/2,H/2,60,0,Math.PI*2);cx.fill();
-    return;
-  }
-  if(emergeT<0||emergeT>1)return;
-  emergeT=Math.min(1,emergeT+.02);
-  const e=emergeT, inv=1-e;
-  cx.fillStyle=`rgba(2,5,9,${(inv*.85).toFixed(3)})`;
-  cx.fillRect(0,0,W,H);
-  const R=Math.max(W,H)*(.15+e*.9);
-  const g=cx.createRadialGradient(W/2,H/2,0,W/2,H/2,R);
-  g.addColorStop(0,`rgba(210,240,255,${(inv*.55).toFixed(3)})`);
-  g.addColorStop(.4,`rgba(77,175,255,${(inv*.28).toFixed(3)})`);
-  g.addColorStop(1,'rgba(77,175,255,0)');
-  cx.fillStyle=g;cx.beginPath();cx.arc(W/2,H/2,R,0,Math.PI*2);cx.fill();
-  const maxL=Math.hypot(W,H)*.5;
-  cx.strokeStyle='rgba(160,220,255,1)';
-  for(const st of streaks){
-    const r0=maxL*e*st.sp, r1=r0+maxL*st.l*inv;
-    cx.globalAlpha=inv*.5;
-    cx.lineWidth=st.w*inv+.2;
-    cx.beginPath();
-    cx.moveTo(W/2+Math.cos(st.a)*r0, H/2+Math.sin(st.a)*r0);
-    cx.lineTo(W/2+Math.cos(st.a)*r1, H/2+Math.sin(st.a)*r1);
-    cx.stroke();
-  }
-  cx.globalAlpha=1;
-}
-window.addEventListener('message',ev=>{
-  if(ev.origin!==location.origin)return;
-  if(ev.data&&ev.data.aceon==='reveal')beginEmerge();
-});
-
-if(PORTAL){
-  const ld=document.getElementById('loader');
-  if(ld)ld.remove();
-  /* фолбэк, если родитель не прислал сигнал reveal */
-  setTimeout(()=>{ if(holdBlack)beginEmerge(); },4200);
-} else {
-  runLoader();
-}
-/* возврат из bfcache: не держим гостя в темноте */
-window.addEventListener('pageshow',e=>{
-  if(e.persisted&&holdBlack)beginEmerge();
-});
-
-/* ============================================================
-   MICROGLITCH SCHEDULER
-============================================================ */
-function scheduleGlitch(){
-  setTimeout(()=>{
-    if(graphOn){
-      const cand=nodes.filter(n=>n.spawned&&!n.hidden&&!n.isHub);
-      if(cand.length){
-        const n=cand[(Math.random()*cand.length)|0];
-        n.glitchUntil=Date.now()+110+Math.random()*150;
-      }
-    }
-    scheduleGlitch();
-
-/* ── дыхание сети (U-2+) и сигнальные штормы (U-3) ── */
-(function schWave(){
-  setTimeout(()=>{
-    if(graphOn&&AU.id>=2)fireWave(.5);
-    schWave();
-  },16000+Math.random()*14000);
-})();
-(function schStorm(){
-  setTimeout(()=>{
-    if(graphOn&&AU.id>=3){
-      fireWave(1);
-      setTimeout(()=>fireWave(.8),450);
-      setTimeout(()=>fireWave(.6),900);
-      for(let k=0;k<4;k++)setTimeout(()=>{
-        if(edges.length){
-          const e=edges[(Math.random()*edges.length)|0];
-          bursts.push({e,t:0,dir:Math.random()<.5,speed:.02});
-        }
-      },k*180);
-    }
-    schStorm();
-  },38000+Math.random()*34000);
-})();
-  }, (AU.id<2?2600:1300)+Math.random()*1900);
-}
-scheduleGlitch();
-
-/* ============================================================
-   CLOCK
-============================================================ */
-setInterval(()=>{
-  const n=new Date(),p=v=>String(v).padStart(2,'0');
-  document.getElementById('hclock').textContent=`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
-},1000);
-
-/* ============================================================
-   MOUSE / TOUCH
-============================================================ */
-const hudEl=document.getElementById('hud');
-const hname=document.getElementById('hname');
-const htag=document.getElementById('htag');
-const htype=document.getElementById('htype');
-const hdesc=document.getElementById('hdesc');
-const hhint=document.getElementById('hhint');
-const dzEl =document.getElementById('dz');
-const dztxt=document.getElementById('dztxt');
-
-let drag=null, trailT=0, hubPress=null;
-
-function nodeAt(x,y){
-  for(let i=nodes.length-1;i>=0;i--){
-    const n=nodes[i];
-    if(!n.spawned||n.hidden) continue;
-    const dx=x-n.x,dy=y-n.y;
-    if(dx*dx+dy*dy<n.radius*n.radius) return n;
-  }
-  return null;
-}
-
-function inDZ(x,y){
-  const r=dzEl.getBoundingClientRect();
-  const cx2=r.left+r.width/2,cy2=r.top+r.height/2;
-  const dx=x-cx2,dy=y-cy2;
-  return dx*dx+dy*dy<(r.width/2)*(r.width/2);
-}
-
-function fillHUD(h){
-  hname.textContent=h.label;
-  htype.textContent=TYPES[h.type].label;
-  hdesc.textContent=h.sub||'';
-  scopeColor=h.color||'#4DAFFF';
-  const sdotEl=document.getElementById('hsdot');
-  const stxtEl=document.getElementById('hstxt');
-
-  if(h.isHub){
-    htag.textContent='◈ ВОЗВРАТ';
-    sdotEl.style.cssText='';
-    stxtEl.textContent='НАЗАД';stxtEl.style.color='';
-    hdesc.textContent='Вернуться в сеть';
-    hhint.textContent='◄ КЛИКНИ · ВЕРНУТЬСЯ';
-  } else if(h.offline){
-    htag.textContent='◈ ОБЪЕКТ ОБНАРУЖЕН';
-    sdotEl.style.cssText='background:#FF6060;box-shadow:0 0 5px #FF6060';
-    stxtEl.textContent='ОФЛАЙН';stxtEl.style.color='#FF6060';
-    hhint.textContent='● НЕДОСТУПНО · В РАЗРАБОТКЕ';
-  } else if(h.container){
-    htag.textContent='◈ УЗЕЛ · СЛОЙ';
-    sdotEl.style.cssText='';
-    stxtEl.textContent='АКТИВЕН';stxtEl.style.color='';
-    hhint.textContent='↓ ТЯНИ В ПОРТАЛ · ОТКРЫТЬ СЛОЙ';
-  } else {
-    htag.textContent='◈ ОБЪЕКТ ОБНАРУЖЕН';
-    sdotEl.style.cssText='';
-    stxtEl.textContent='АКТИВЕН';stxtEl.style.color='';
-    hhint.textContent= h.external ? '↓ ТЯНИ В ПОРТАЛ · НОВАЯ ВКЛАДКА' : '↓ ТЯНИ В ПОРТАЛ · ПЕРЕХОД';
-  }
-}
-
-cv.addEventListener('mousemove',e=>{
-  const wp=s2w(e.clientX,e.clientY);
-  if(drag){
-    drag.x=wp.x;drag.y=wp.y;
-    if(Date.now()-trailT>18){
-      drag.trail.push({x:wp.x,y:wp.y});
-      if(drag.trail.length>10) drag.trail.shift();
-      trailT=Date.now();
-    }
-    const over=inDZ(e.clientX,e.clientY);
-    dzEl.style.background=over?'rgba(77,175,255,.14)':'transparent';
-    if(over){
-      dztxt.innerHTML = drag.offline ? '✕<br>ОТКАЗ'
-        : drag.container ? '⊞<br>ОТКРЫТЬ' : '◎<br>ПОРТАЛ';
-    } else dztxt.innerHTML='◎<br>ПОРТАЛ';
-    return;
-  }
-  nodes.forEach(n=>n.hovered=false);
-  const h=nodeAt(wp.x,wp.y);
-  if(h){
-    h.hovered=true;cv.style.cursor= h.isHub?'pointer':'grab';
-    fillHUD(h);
-    hudEl.style.left=(e.clientX+28)+'px';
-    hudEl.style.top=(e.clientY-16)+'px';
-    hudEl.classList.add('on');
-    scopeActive=true;
-  } else {
-    cv.style.cursor='default';
-    hudEl.classList.remove('on');
-    scopeActive=false;
-  }
-});
-
-cv.addEventListener('mousedown',e=>{
-  const wp=s2w(e.clientX,e.clientY);
-  const n=nodeAt(wp.x,wp.y);
-  if(!n) return;
-  if(n.isHub){ hubPress=n; return; }        // хаб = кнопка «назад», не таскаем
-  drag=n;n.dragging=true;n.trail=[];
-  cv.style.cursor='grabbing';
-  hudEl.classList.remove('on');
-  dzEl.classList.add('on');
-  if(SPARKS)burstSparks(n.x,n.y,n.color,10);
-  tick(440,.08);
-});
-
-function hideDZ(){
-  dzEl.classList.remove('on');
-  dzEl.style.borderColor='';dzEl.style.background='';
-  dztxt.innerHTML='◎<br>ПОРТАЛ';
-}
-
-cv.addEventListener('mouseup',e=>{
-  if(hubPress){
-    const wp0=s2w(e.clientX,e.clientY);
-    const n=nodeAt(wp0.x,wp0.y);
-    if(n===hubPress) goBack();
-    hubPress=null;return;
-  }
-  if(!drag) return;
-  const wasInDZ=inDZ(e.clientX,e.clientY);
-  const d=drag; d.dragging=false; d.trail=[]; drag=null;
-  cv.style.cursor='default';
-  if(wasInDZ){
-    activate(d);
-  } else {
-    d.vx=(Math.random()-.5)*3; d.vy=(Math.random()-.5)*3; tick(220,.05);
-    hideDZ();
-  }
-});
-
-cv.addEventListener('touchstart',e=>{
-  const t=e.touches[0],wp=s2w(t.clientX,t.clientY),n=nodeAt(wp.x,wp.y);
-  if(!n) return;
-  if(n.isHub){ hubPress=n; return; }
-  drag=n;n.dragging=true;n.trail=[];dzEl.classList.add('on');
-},{passive:true});
-cv.addEventListener('touchmove',e=>{
-  if(!drag) return;e.preventDefault();
-  const t=e.touches[0],wp=s2w(t.clientX,t.clientY);drag.x=wp.x;drag.y=wp.y;
-  const over=inDZ(t.clientX,t.clientY);
-  dzEl.style.background=over?'rgba(77,175,255,.18)':'transparent';
-},{passive:false});
-cv.addEventListener('touchend',e=>{
-  if(hubPress){
-    const t=e.changedTouches[0];const wp0=s2w(t.clientX,t.clientY);const n=nodeAt(wp0.x,wp0.y);
-    if(n===hubPress) goBack();
-    hubPress=null;return;
-  }
-  if(!drag) return;
-  const t=e.changedTouches[0];
-  const wasInDZ=inDZ(t.clientX,t.clientY);
-  const d=drag; d.dragging=false; d.trail=[]; drag=null;
-  if(wasInDZ){
-    activate(d);
-  } else {
-    d.vx=(Math.random()-.5)*3; d.vy=(Math.random()-.5)*3;
-    hideDZ();
-  }
-},{passive:true});
-
-// ESC — на уровень выше
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') goBack(); });
-
-/* ── АКТИВАЦИЯ УЗЛА ── */
-function activate(n){
-  if(n.offline){
-    /* портал выплёвывает узел */
-    portalReject();
-    n.vx=(Math.random()-.5)*6; n.vy=-6.5;
-    n.glitchUntil=Date.now()+420;
-    if(SPARKS)burstSparks(n.x,n.y,'#FF4060',14);
-    return;
-  }
-  /* узел затягивается в сингулярность, потом действие */
-  swallowThen(n,()=>{
-    if(n.container){ descend(n); return; }
-    if(n.url && n.url!=='#'){
-      sessionStorage.setItem('aceon_access','granted');
-      setTimeout(()=>{
-        if(n.external) window.open(n.url,'_blank');
-        else window.location.href=n.url;
-      },380);
-    }
-  });
-}
-
-function portalReject(){
-  tick(120,.06);
-  dzEl.style.borderColor='rgba(255,64,96,1)';
-  dzEl.style.background='rgba(255,64,96,.15)';
-  dztxt.innerHTML='✕<br>ОТКАЗ';
-  dzEl.classList.add('rej');
-  setTimeout(()=>{
-    dzEl.classList.remove('rej');
-    hideDZ();
-  },420);
-}
-
-/* ============================================================
-   AUDIO (тики)
-============================================================ */
-let ac;
-function tick(freq,vol){
-  try{
-    if(!ac) ac=new(window.AudioContext||window.webkitAudioContext)();
-    const o=ac.createOscillator(),g=ac.createGain();
-    o.connect(g);g.connect(ac.destination);
-    o.frequency.value=freq;o.type='sine';
-    g.gain.setValueAtTime(vol,ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.11);
-    o.start();o.stop(ac.currentTime+.11);
-  }catch(e){}
-}
-
-/* ============================================================
-   DZ PULSE + REJECT
-============================================================ */
-const dzStyle=document.createElement('style');
-dzStyle.textContent=`
-@keyframes dzp{
-  0%,100%{box-shadow:0 0 0 0 rgba(77,175,255,.28),0 0 0 9px rgba(77,175,255,.09)}
-  50%{box-shadow:0 0 0 5px rgba(77,175,255,.38),0 0 0 16px rgba(77,175,255,.05)}}
-.dz.on{border:none}
-@keyframes dzrej{0%,100%{transform:translateX(-50%) scale(1)}
-  25%{transform:translateX(-54%) scale(1.02)}75%{transform:translateX(-46%) scale(1.02)}}
-.dz.rej{animation:dzrej .3s}
-`;
-document.head.appendChild(dzStyle);
-
-/* ============================================================
-   BACKGROUND MUSIC
-   Замени имена файлов на свои — они должны лежать в ../audio/
-============================================================ */
-const BGM_TRACKS=[
-  '../audio/Связи.mp3',
-  '../audio/Связи (female).mp3',
-];
-
-const bgm=new Audio();
-bgm.volume=0;
-let bgmVol=0.45;
-let bgmIdx=Math.floor(Math.random()*BGM_TRACKS.length);
-let bgmStarted=false;
-let bgmMuted=false;
-
-function startBGM(){
-  if(bgmStarted) return;
-  bgmStarted=true;
-  bgm.src=BGM_TRACKS[bgmIdx];
-  bgm.volume=0;
-  bgm.play().then(()=>{
-    let v=0;
-    const fi=setInterval(()=>{
-      v=Math.min(v+0.018, bgmVol);
-      bgm.volume=bgmMuted?0:v;
-      if(v>=bgmVol) clearInterval(fi);
-    },150);
-    document.getElementById('bgm-btn').classList.add('on');
-  }).catch(()=>{});
-}
-
-function toggleBGM(){
-  bgmMuted=!bgmMuted;
-  const btn=document.getElementById('bgm-btn');
-  if(bgmMuted){
-    let v=bgm.volume;
-    const fo=setInterval(()=>{
-      v=Math.max(v-0.04,0);
-      bgm.volume=v;
-      if(v<=0) clearInterval(fo);
-    },60);
-    btn.classList.add('muted');
-    btn.textContent='♪';
-    btn.title='Включить звук';
-  } else {
-    let v=0;
-    const fi=setInterval(()=>{
-      v=Math.min(v+0.018,bgmVol);
-      bgm.volume=v;
-      if(v>=bgmVol) clearInterval(fi);
-    },150);
-    btn.classList.remove('muted');
-    btn.textContent='♫';
-    btn.title='Выключить звук';
-  }
-}
-
-['click','touchstart','keydown'].forEach(ev=>{
-  document.addEventListener(ev, startBGM, {once:true, passive:true});
-});
-
-/* ============================================================
-   LEGEND + FILTERS
-============================================================ */
-const legEl=document.getElementById('leg');
-const filEl=document.getElementById('fil');
-let activeF=null;
-
-Object.entries(TYPES).forEach(([key,val])=>{
-  const li=document.createElement('div');
-  li.className='li';
-  li.innerHTML=`<div class="ld" style="background:${val.color}"></div><div class="ll">${val.label}</div>`;
-  li.addEventListener('click',()=>setF(key));
-  legEl.appendChild(li);
-
-  const fb=document.createElement('button');
-  fb.className='fb';fb.title=val.label;fb.dataset.k=key;
-  fb.innerHTML=`<div class="fd" style="background:${val.color}"></div>`;
-  fb.addEventListener('click',()=>setF(key));
-  filEl.appendChild(fb);
-});
-
-function clearFilter(){
-  activeF=null;
-  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
-  document.querySelectorAll('.li').forEach(l=>l.style.opacity='');
-}
-
-function setF(type){
-  if(activeF===type){
-    activeF=null;nodes.forEach(n=>{if(!n.isHub)n.hidden=false});
-    document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
-    document.querySelectorAll('.li').forEach(l=>l.style.opacity='');
-  } else {
-    activeF=type;nodes.forEach(n=>{if(!n.isHub)n.hidden=n.type!==type});
-    document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.k===type));
-    document.querySelectorAll('.li').forEach(l=>{
-      l.style.opacity=l.querySelector('.ll').textContent===TYPES[type].label?'1':'.18';
-    });
-  }
-}
-</script>
-  <script src="/A.C.EON/aceon-coin/coin-widget.js" defer></script>
+<div class="dz" id="dz"><div class="dz-txt" id="dztxt"></div></div>
+<div class="hint" id="hint"></div>
+<div id="whisper"></div>
+<div id="nogl-note"></div>
+
+<script src="../games/shared/store.js?v=1"></script>
+<script src="../games/shared/i18n.js?v=1"></script>
+<script src="../shared/trace.js?v=1"></script>
+<script src="nodes.js?v=1"></script>
+<script src="lang.js?v=1"></script>
+<script src="core.js?v=1"></script>
+<script src="/A.C.EON/aceon-coin/coin-widget.js" defer></script>
 </body>
 </html>

@@ -225,6 +225,7 @@ function toast(text,undo){
 
 /* ---------- плеер: вид ---------- */
 function updatePlayer(){
+  try{ document.dispatchEvent(new CustomEvent('mp:track',{detail:current})); }catch(e){}
   if(!current){ $('playerTitle').textContent=T('pick'); $('playerSub').textContent=T('pickSub'); return; }
   const col=trackColor(current.id), cov=$('playerCover');
   cov.style.background=col.bg; cov.style.color=col.fg; cov.textContent=trackInitials(current.title);
@@ -274,7 +275,7 @@ function buildList(){
     row.style.animationDelay=Math.min(i*.03,.45).toFixed(2)+'s';
     row.innerHTML='<div class="row-num">'+(i+1)+'</div>'
       +'<div class="row-cover" style="background:'+col.bg+';color:'+col.fg+';">'+esc(trackInitials(t.title))+'</div>'
-      +'<div class="row-title">'+esc(t.title)+'</div>'
+      +'<div class="row-title">'+esc(t.title)+(t.yt?' <span class="row-yt" aria-hidden="true"></span>':'')+'</div>'
       +(hid?'<button class="row-btn row-restore" type="button"><i class="ti ti-arrow-back-up"></i></button>'
            :'<button class="row-btn row-hide" type="button"><i class="ti ti-eye-off"></i></button><button class="row-heart" type="button"><i class="ti ti-heart"></i></button>');
     row._num=i+1; listNodes[t.id]=row; frag.appendChild(row);
@@ -418,6 +419,7 @@ document.addEventListener('click',()=>langMenu.classList.remove('on'));
 /* пробел: пауза; стрелки: соседние треки */
 addEventListener('keydown',e=>{
   if(e.target.closest&&e.target.closest('input,textarea'))return;
+  const yv=document.getElementById('yt'); if(yv&&yv.classList.contains('on'))return;
   if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
   else if(e.code==='ArrowRight'&&e.shiftKey)skip(1,true);
   else if(e.code==='ArrowLeft'&&e.shiftKey)skip(-1,true);
@@ -437,5 +439,11 @@ function applyTexts(){
 /* ---------- старт ---------- */
 $('btnShuffle').classList.toggle('active',shuffle); $('btnRepeat').classList.toggle('active',repeat); updateModes();
 applyTexts(); buildList(); updatePlayer();
-window.MusicPlayer={get playing(){ return playing; }, levels:L};
+/* для youtube.js: плавно остановить и вернуть музыку, робот, тексты */
+let fadeT=null;
+function fadeTo(v,ms,done){ clearInterval(fadeT); const from=audio.volume, t0=performance.now();
+  fadeT=setInterval(()=>{ const k=Math.min(1,(performance.now()-t0)/ms); audio.volume=from+(v-from)*k; if(k>=1){ clearInterval(fadeT); if(done)done(); } },30); }
+window.MusicPlayer={get playing(){ return playing; }, get current(){ return current; }, levels:L, robot, T,
+  pauseFade(cb){ if(!playing){ if(cb)cb(false); return; } fadeTo(0,500,()=>{ audio.pause(); audio.volume=1; if(cb)cb(true); }); },
+  resumeFade(){ initGraph(); if(actx&&actx.state==='suspended')actx.resume(); audio.volume=0; audio.play().then(()=>fadeTo(1,800)).catch(()=>{ audio.volume=1; }); }};
 })();

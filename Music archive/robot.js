@@ -5,7 +5,8 @@
    Стили: спокойный трек раскачивается, средний кивает в долю и машет руками по очереди,
    громкий танцует "робота": на каждую сильную долю новая поза, на самых сильных прыгает.
    AceonRobot.create(canvas,{base, levels, tier, reduce}) -> {emote(name), wake(), destroy()}
-   emote: 'like' (сердечки), 'hide' (пожимает плечами), 'skip' (недовольно), 'peak' (восторг) */
+   emote: 'like' (сердечки), 'hide' (пожимает плечами), 'skip' (недовольно), 'peak' (восторг),
+          'present' (руки вперёд, как будто разворачивает экран), 'bye' (машет рукой) */
 (function(){
 'use strict';
 
@@ -36,7 +37,7 @@ function create(canvas,o){
   const G={bodyY:0,bodyRot:0,head:0,armL:-4,armR:-4,legL:0,legR:0,squash:0};
   let face='busy', faceUntil=0, faceOver=null, blinkAt=0, blink=false;
   let jumpV=0, jumpY=0, lastBeat=0, beatN=0, pose=null, lastPoseAt=0, pausedSince=performance.now(), sleeping=false;
-  let shrugUntil=0, hearts=[], zs=[], zAt=0, lastT=performance.now(), peakAt=0;
+  let shrugUntil=0, presentUntil=0, waveUntil=0, hearts=[], zs=[], zAt=0, lastT=performance.now(), peakAt=0;
   let energyAvg=.25;
 
   function fit(){
@@ -52,6 +53,8 @@ function create(canvas,o){
     else if(k==='hide'){ faceOver='sad'; faceUntil=now+1600; shrugUntil=now+1200; }
     else if(k==='skip'){ faceOver='busy'; faceUntil=now+1200; }
     else if(k==='peak'){ faceOver='fascinated'; faceUntil=now+1500; }
+    else if(k==='present'){ faceOver='fascinated'; faceUntil=now+1600; presentUntil=now+1300; }
+    else if(k==='bye'){ faceOver='happy'; faceUntil=now+1600; waveUntil=now+1500; }
   }
   function wake(){ pausedSince=performance.now(); sleeping=false; }
 
@@ -105,6 +108,8 @@ function create(canvas,o){
       if(sleeping&&now>zAt){ zAt=now+1400; zs.push({t:0}); }
     }
     if(now<shrugUntil){ G.armL=55; G.armR=55; G.head=-6; }
+    if(now<presentUntil){ G.armL=105; G.armR=105; G.head=-8; G.bodyRot=0; G.bodyY=-4; }
+    if(now<waveUntil){ G.armR=150+Math.sin(t*14)*22; }
 
     /* сглаживание: робот двигается рывками, остальные мягко */
     const k=Math.min(1,dt*(L.on&&energyAvg>=.42?22:9));

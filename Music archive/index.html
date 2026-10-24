@@ -360,6 +360,58 @@
     .track-row.gone { opacity: 0; transform: translateX(-40px); transition: opacity .25s, transform .25s; }
     .badge.dim { background: var(--surface2); color: var(--muted); }
 
+    /* YouTube: кнопка у трека, значок в списке, значок канала */
+    .yt-ico { display: inline-block; width: 18px; height: 13px; border-radius: 4px; background: #ff0033; position: relative; flex-shrink: 0; }
+    .yt-ico::after { content: ''; position: absolute; left: 7px; top: 3.5px; border-left: 6px solid #fff; border-top: 3px solid transparent; border-bottom: 3px solid transparent; }
+    .yt-btn { display: flex; align-items: center; gap: 7px; flex-shrink: 0; cursor: pointer; padding: 6px 11px 6px 9px; border-radius: 20px;
+      background: rgba(255,0,51,.12); border: 1px solid rgba(255,0,51,.45); color: #ffd6de; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .1em;
+      animation: ytblink 1.6s ease-in-out infinite; transition: background .15s, transform .15s; }
+    .yt-btn[hidden] { display: none; }
+    .yt-btn:hover { background: rgba(255,0,51,.26); transform: scale(1.05); animation-play-state: paused; }
+    @keyframes ytblink { 0%,100% { box-shadow: 0 0 0 0 rgba(255,0,51,.0); border-color: rgba(255,0,51,.35); } 50% { box-shadow: 0 0 18px 2px rgba(255,0,51,.45); border-color: rgba(255,60,90,.9); } }
+    html.ufx1 .yt-btn { animation: none; box-shadow: 0 0 10px rgba(255,0,51,.35); }
+    @media (max-width: 520px) { .yt-btn .yt-lbl { display: none; } .yt-btn { padding: 7px; } }
+    .row-yt { display: inline-block; width: 12px; height: 9px; border-radius: 3px; background: #ff0033; vertical-align: 1px; margin-left: 6px; position: relative; opacity: .85; }
+    .row-yt::after { content: ''; position: absolute; left: 4.5px; top: 2px; border-left: 4px solid #fff; border-top: 2.5px solid transparent; border-bottom: 2.5px solid transparent; }
+    #ytChannel { display: flex; opacity: .55; transition: opacity .15s; }
+    #ytChannel:hover { opacity: 1; }
+
+    /* YouTube: окно видео, робот рядом, луч проектора */
+    #yt { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; gap: 18px; padding: 24px; }
+    #yt.on { display: flex; }
+    #yt-back { position: absolute; inset: 0; background: rgba(6,3,15,.82); backdrop-filter: blur(6px); opacity: 0; transition: opacity .45s; }
+    #yt.show #yt-back { opacity: 1; }
+    #yt-row { position: relative; z-index: 2; display: flex; align-items: flex-end; gap: 14px; max-width: 100%; }
+    #yt-robot-wrap { position: relative; width: 200px; height: 300px; flex-shrink: 0; z-index: 2; margin-bottom: -8px; }
+    #yt-robot { width: 100%; height: 100%; display: block; }
+    #yt-panel { position: relative; z-index: 2; width: min(960px, calc(100vw - 280px)); aspect-ratio: 16/9; max-height: calc(100vh - 80px);
+      background: #000; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 0 60px -10px rgba(124,58,237,.55); transform-origin: 0% 30%; transform: scale(.02,.02); opacity: 0;
+      transition: transform .7s cubic-bezier(.2,.9,.25,1.05), opacity .3s; }
+    #yt.show #yt-panel { transform: none; opacity: 1; }
+    #yt-panel iframe, #yt-panel .yt-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    #yt-scan { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(196,181,253,.0), rgba(196,181,253,.35) 50%, rgba(196,181,253,0)); opacity: 0; }
+    #yt.show #yt-scan { animation: ytscan .9s ease-out .25s 1; }
+    @keyframes ytscan { 0% { opacity: 1; transform: translateY(-100%); } 100% { opacity: 0; transform: translateY(100%); } }
+    #yt-beam { position: fixed; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .5s;
+      background: linear-gradient(to right, rgba(196,181,253,.38), rgba(124,58,237,.06)); filter: blur(1px); }
+    #yt.show #yt-beam { opacity: 1; }
+    #yt.closing #yt-beam { opacity: 0; }
+    #yt-tools { position: absolute; top: 10px; right: 10px; z-index: 3; display: flex; gap: 6px; opacity: 0; transition: opacity .3s .5s; }
+    #yt.show #yt-tools { opacity: 1; }
+    #yt-tools button, #yt-tools a { width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(6,3,15,.7);
+      color: #ede8ff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; font-family: 'JetBrains Mono', monospace; text-decoration: none; }
+    #yt-tools button:hover, #yt-tools a:hover { background: rgba(124,58,237,.6); }
+    #yt-blocked { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; color: #c4b5fd; font-size: 14px; }
+    #yt-blocked.on { display: flex; }
+    #yt-blocked a { background: #ff0033; color: #fff; border-radius: 10px; padding: 9px 16px; text-decoration: none; font-weight: 500; }
+    @media (max-width: 760px) {
+      #yt { padding: 12px; }
+      #yt-row { flex-direction: column; align-items: center; gap: 4px; }
+      #yt-robot-wrap { width: 120px; height: 150px; margin-bottom: 0; }
+      #yt-panel { width: calc(100vw - 24px); }
+    }
+
     #toast {
       position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); z-index: 50;
       display: flex; align-items: center; gap: 14px; padding: 10px 14px 10px 16px;
@@ -403,6 +455,7 @@
         <span class="stream-dot"></span>
         <span>STREAM ACTIVE</span>
       </div>
+      <a id="ytChannel" href="https://www.youtube.com/channel/UC1C4YD4undY1jLsCpq_klNA" target="_blank" rel="noopener" aria-label="YouTube"><span class="yt-ico"></span></a>
       <div id="langwrap">
         <button id="langbtn" type="button">RU</button>
         <div id="langmenu"></div>
@@ -425,6 +478,7 @@
           <div class="track-title" id="playerTitle"></div>
           <div class="track-sub"   id="playerSub"></div>
         </div>
+        <button class="yt-btn" id="ytBtn" type="button" hidden><span class="yt-ico"></span><span class="yt-lbl">YouTube</span></button>
         <button class="like-btn" id="playerLike" type="button">
           <i class="ti ti-heart" id="playerLikeIcon"></i>
         </button>
@@ -513,7 +567,7 @@ var TRACKS = [
   { id: 37, title: "When the Echo Does",                               src: "../audio/When the Echo Does (2_4).mp3"                       },
   { id: 38, title: "Don't Fix It",                                     src: "../audio/Don't Fix It (3_4).mp3"                             },
   { id: 39, title: "Hold the Last Note",                               src: "../audio/Hold the Last Note (4_4).mp3"                       },
-  { id: 40, title: "Runes in the Sand",                                src: "../audio/Runes in the Sand 1_3.mp3"                          },
+  { id: 40, title: "Runes in the Sand",                                src: "../audio/Runes in the Sand 1_3.mp3",                          yt: "https://www.youtube.com/watch?v=crpPOhiSI5A" },
   { id: 41, title: "The Glass Oracle",                                 src: "../audio/The Glass Oracle 2_3.mp3"                           },  
   { id: 42, title: "The Last Maker",                                   src: "../audio/The Last Maker 3_3.mp3"                             },
   { id: 43, title: "The Dunes Speak (outro)",                          src: "../audio/The Dunes Speak 4_3  (outro).mp3"                   }
@@ -522,9 +576,10 @@ var TRACKS = [
 <script src="../games/shared/store.js?v=1"></script>
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
-<script src="lang.js?v=1"></script>
-<script src="robot.js?v=1"></script>
-<script src="player.js?v=1"></script>
+<script src="lang.js?v=2"></script>
+<script src="robot.js?v=2"></script>
+<script src="player.js?v=2"></script>
+<script src="youtube.js?v=1"></script>
 <script>
 var AU = window.AceonUniverse || { id: 1, fx: 1 };
 /* ── БОКЕ (U-3): всплывающие огоньки, оживают под музыку ────── */

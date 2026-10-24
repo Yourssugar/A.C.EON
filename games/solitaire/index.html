@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="2" defer></script>
+<script src="../shared/boot.js" data-v="3" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -94,6 +94,12 @@
           <button class="seg-btn" data-v="red"><i class="sw sw-b-red"></i><span data-i18n="back.red"></span></button>
           <button class="seg-btn" data-v="blue"><i class="sw sw-b-blue"></i><span data-i18n="back.blue"></span></button>
         </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.cards"></span>
+        <div class="seg" id="seg-cards">
+          <button class="seg-btn" data-v="std" data-i18n="cards.std"></button>
+          <button class="seg-btn" data-v="big" data-i18n="cards.big"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="cards.note"></div>
       <h2 class="sl-h sl-h2" data-i18n="menu.stats"></h2>
       <div class="stats" id="stats"></div>
     </section>

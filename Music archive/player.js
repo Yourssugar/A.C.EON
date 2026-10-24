@@ -80,14 +80,20 @@ let current=null, playing=false, shuffle=!!mem.shuffle, repeat=!!mem.repeat, act
 const audio=new Audio(); audio.preload='auto';
 const preloader=new Audio(); preloader.preload='auto'; preloader.muted=true;
 
+const ALBUMS=(window.ALBUMS||[]).filter(a=>a&&a.id&&Array.isArray(a.tracks));
+const albumById=id=>ALBUMS.find(a=>a.id===id);
+function albumTracks(a){ return a?a.tracks.map(byIdRaw).filter(t=>t&&!hidden.has(t.id)):[]; }
+function byIdRaw(id){ return TRACKS.find(t=>t.id===id); }
 function visible(){ return TRACKS.filter(t=>!hidden.has(t.id)); }
 function getList(tab){
   tab=tab||activeTab;
   if(tab==='favs')return TRACKS.filter(t=>favs.has(t.id)&&!hidden.has(t.id));
   if(tab==='hidden')return TRACKS.filter(t=>hidden.has(t.id));
+  if(tab==='albums')return [];
+  if(tab.indexOf('album:')===0)return albumTracks(albumById(tab.slice(6)));
   return visible();
 }
-function playList(){ const l=getList(playTab==='hidden'?'all':playTab); return l.length?l:visible(); }
+function playList(){ const l=getList(playTab==='hidden'||playTab==='albums'?'all':playTab); return l.length?l:visible(); }
 function pickNext(forward){
   const list=playList(); if(!list.length)return null;
   if(forward&&queued&&list.some(t=>t.id===queued.id)&&(!current||queued.id!==current.id))return queued;
@@ -164,7 +170,8 @@ function loop(now){
 requestAnimationFrame(loop);
 
 /* ---------- робот ---------- */
-const robot=window.AceonRobot?AceonRobot.create($('robot'),{base:'img/',levels:()=>L,tier:TIER,reduce}):{emote(){},wake(){}};
+const robot=window.AceonRobot?AceonRobot.create($('robot'),{base:'img/',levels:()=>L,tier:TIER,reduce,
+  moves:()=>window.MusicExtras?MusicExtras.moves():null, skin:()=>window.MusicExtras?MusicExtras.skin():''}):{emote(){},wake(){}};
 
 /* ---------- воспроизведение ---------- */
 let playStart=0, countedPlay=false, lastTime=0, statSaveAt=0;
@@ -223,6 +230,7 @@ function toast(text,undo){
   toastT=setTimeout(()=>el.classList.remove('on'),5000);
 }
 
+function dayKey(dt){ const x=dt||new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
 /* ---------- плеер: вид ---------- */
 function updatePlayer(){
   try{ document.dispatchEvent(new CustomEvent('mp:track',{detail:current})); }catch(e){}
@@ -248,6 +256,8 @@ function updateModes(){
 }
 function renderTabs(){
   [['all','tabAll'],['favs','tabFavs'],['hidden','tabHidden']].forEach(([k,id])=>$(id).classList.toggle('active',activeTab===k));
+  $('tabAlbums').classList.toggle('active',activeTab==='albums'||activeTab.indexOf('album:')===0);
+  $('tabAlbums').textContent=T('albums'); $('tabAlbums').style.display=ALBUMS.length?'':'none';
   const nf=[...favs].filter(id=>!hidden.has(id)).length, nh=hidden.size;
   $('tabAll').textContent=T('all');
   $('tabFavs').innerHTML=esc(T('favs'))+(nf?' <span class="badge">'+nf+'</span>':'');
@@ -258,16 +268,46 @@ function setTab(t){ activeTab=t; renderTabs(); buildList(); }
 
 /* ---------- список ---------- */
 let listNodes={};
+function albumCover(a){
+  const ts=a.tracks.map(byIdRaw).filter(Boolean), c1=trackColor(ts[0]?ts[0].id:1), c2=trackColor(ts[1]?ts[1].id:2);
+  return 'background:linear-gradient(135deg,'+c1.bg+','+c2.bg+');color:'+c1.fg;
+}
+function buildAlbums(el){
+  el.innerHTML='';
+  const grid=document.createElement('div'); grid.className='album-grid';
+  ALBUMS.forEach((a,i)=>{
+    const ts=albumTracks(a), card=document.createElement('div');
+    card.className='album-card'; card.dataset.album=a.id; card.style.animationDelay=Math.min(i*.05,.4).toFixed(2)+'s';
+    const playingHere=current&&a.tracks.indexOf(current.id)>=0;
+    card.innerHTML='<div class="album-cover" style="'+albumCover(a)+'">'+esc(trackInitials(a.title))+'<button class="album-play" type="button"><i class="ti ti-player-play"></i></button></div>'
+      +'<div class="album-title">'+esc(a.title)+'</div><div class="album-sub">'+ts.length+' '+esc(T('tracksShort'))+(playingHere?' · <b>'+esc(T('nowPlaying'))+'</b>':'')+'</div>';
+    card.querySelector('.album-play').title=T('playAlbum');
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+}
+function playAlbum(id){
+  const a=albumById(id), ts=albumTracks(a); if(!ts.length)return;
+  playTab='album:'+id; playTrack(ts[0],true);
+  if(TR)TR.event('music.album');
+}
 function buildList(){
-  const list=getList(), el=$('trackList');
+  const el=$('trackList');
   listNodes={};
+  if(activeTab==='albums'){ buildAlbums(el); return; }
+  const list=getList();
+  let head='';
+  if(activeTab.indexOf('album:')===0){
+    const a=albumById(activeTab.slice(6));
+    head='<div class="album-head"><button class="album-back" type="button">&lt; '+esc(T('albums'))+'</button><div class="album-head-t">'+esc(a?a.title:'')+'</div><button class="album-playall" type="button"><i class="ti ti-player-play"></i> '+esc(T('playAlbum'))+'</button></div>';
+  }
   if(!list.length){
     const icon=activeTab==='favs'?'heart':activeTab==='hidden'?'eye-off':'music';
     const txt=activeTab==='favs'?T('emptyFavs'):activeTab==='hidden'?T('emptyHidden'):T('emptyAll');
     el.innerHTML='<div class="empty"><i class="ti ti-'+icon+'"></i></div>'; el.firstChild.appendChild(document.createTextNode(txt));
     return;
   }
-  el.innerHTML='';
+  el.innerHTML=head;
   const frag=document.createDocumentFragment(), hid=activeTab==='hidden';
   list.forEach((t,i)=>{
     const col=trackColor(t.id), row=document.createElement('div');
@@ -291,13 +331,18 @@ function updateRows(){
     const row=listNodes[id], isAct=!!(current&&current.id===+id), liked=favs.has(+id);
     if(row.classList.contains('active')!==isAct)row.classList.toggle('active',isAct);
     const num=row.firstChild;
-    const want=isAct?'<i class="ti ti-'+(playing?'player-play':'player-pause')+'" style="font-size:12px;"></i>':String(row._num);
+    /* играет: прыгающие полоски (на наведении пауза); на паузе: значок play */
+    const want=isAct?(playing?'<span class="eq"><i></i><i></i><i></i></span><i class="ti ti-player-pause eq-p"></i>':'<i class="ti ti-player-play" style="font-size:13px;"></i>'):String(row._num);
     if(num.innerHTML!==want)num.innerHTML=want;
     const hb=row.querySelector('.row-heart');
     if(hb&&hb.classList.contains('liked')!==liked){ hb.classList.toggle('liked',liked); hb.firstElementChild.className='ti ti-'+(liked?'heart-filled':'heart'); }
   }
 }
 $('trackList').addEventListener('click',e=>{
+  const card=e.target.closest('.album-card');
+  if(card){ if(e.target.closest('.album-play'))playAlbum(card.dataset.album); else setTab('album:'+card.dataset.album); return; }
+  if(e.target.closest('.album-back')){ setTab('albums'); return; }
+  if(e.target.closest('.album-playall')){ playAlbum(activeTab.slice(6)); return; }
   const row=e.target.closest('.track-row'); if(!row||row._swiped)return;
   const id=+row.dataset.id;
   if(e.target.closest('.row-heart')){ toggleLike(id); return; }
@@ -334,6 +379,8 @@ audio.addEventListener('timeupdate',()=>{
   if(current&&playing){
     const d=audio.currentTime-lastTime;
     if(d>0&&d<2){ const s=mem.stats[current.id]||(mem.stats[current.id]={n:0,s:0,last:0}); s.s=Math.round((s.s+d)*10)/10; s.last=Date.now();
+      const day=dayKey(); mem.days=mem.days||{}; mem.days[day]=Math.round(((mem.days[day]||0)+d)*10)/10;
+      try{ document.dispatchEvent(new CustomEvent('mp:tick',{detail:d})); }catch(e){}
       if(!countedPlay&&audio.currentTime>30){ countedPlay=true; s.n++; } }
     if(Date.now()-statSaveAt>10000){ statSaveAt=Date.now(); save(); }
   }
@@ -347,7 +394,8 @@ audio.addEventListener('ended',()=>{
   const n=pickNext(true);
   if(n)playTrack(n,true); else { playing=false; $('playIcon').className='ti ti-player-play'; }
 });
-audio.addEventListener('play',()=>{ playing=true; $('playIcon').className='ti ti-player-pause'; setCoverPlaying(true); setStreamOn(true); updateRows(); robot.wake(); queueNext(); if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing'; });
+audio.addEventListener('play',()=>{ try{ document.dispatchEvent(new CustomEvent('mp:play',{detail:current})); }catch(e){}
+  playing=true; $('playIcon').className='ti ti-player-pause'; setCoverPlaying(true); setStreamOn(true); updateRows(); robot.wake(); queueNext(); if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing'; });
 audio.addEventListener('pause',()=>{ playing=false; $('playIcon').className='ti ti-player-play'; setCoverPlaying(false); setStreamOn(false); updateRows(); save(); if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused'; });
 /* битый или пропавший файл: через секунду следующий */
 audio.addEventListener('error',()=>{ if(current&&playing){ setTimeout(()=>{ if(playing||audio.paused)skip(1,false); },1200); } });
@@ -401,6 +449,7 @@ $('btnPlay').addEventListener('click',togglePlay);
 $('playerLike').addEventListener('click',()=>{ if(current)toggleLike(current.id); });
 $('progress').addEventListener('click',seek);
 $('tabAll').addEventListener('click',()=>setTab('all'));
+$('tabAlbums').addEventListener('click',()=>setTab('albums'));
 $('tabFavs').addEventListener('click',()=>setTab('favs'));
 $('tabHidden').addEventListener('click',()=>setTab('hidden'));
 $('back').addEventListener('click',()=>{
@@ -443,7 +492,8 @@ applyTexts(); buildList(); updatePlayer();
 let fadeT=null;
 function fadeTo(v,ms,done){ clearInterval(fadeT); const from=audio.volume, t0=performance.now();
   fadeT=setInterval(()=>{ const k=Math.min(1,(performance.now()-t0)/ms); audio.volume=from+(v-from)*k; if(k>=1){ clearInterval(fadeT); if(done)done(); } },30); }
-window.MusicPlayer={get playing(){ return playing; }, get current(){ return current; }, levels:L, robot, T,
+window.MusicPlayer={get playing(){ return playing; }, get current(){ return current; }, levels:L, robot, T, lang, mem, save, TRACKS, ALBUMS,
+  trackColor, trackInitials, fmtTime, dayKey, byId:byIdRaw, hidden, favs, TIER, reduce, toast,
   pauseFade(cb){ if(!playing){ if(cb)cb(false); return; } fadeTo(0,500,()=>{ audio.pause(); audio.volume=1; if(cb)cb(true); }); },
   resumeFade(){ initGraph(); if(actx&&actx.state==='suspended')actx.resume(); audio.volume=0; audio.play().then(()=>fadeTo(1,800)).catch(()=>{ audio.volume=1; }); }};
 })();

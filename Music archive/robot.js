@@ -6,7 +6,10 @@
    громкий танцует "робота": на каждую сильную долю новая поза, на самых сильных прыгает.
    AceonRobot.create(canvas,{base, levels, tier, reduce}) -> {emote(name), wake(), destroy()}
    emote: 'like' (сердечки), 'hide' (пожимает плечами), 'skip' (недовольно), 'peak' (восторг),
-          'present' (руки вперёд, как будто разворачивает экран), 'bye' (машет рукой) */
+          'present' (руки вперёд, как будто разворачивает экран), 'bye' (машет рукой),
+          'learn' + имя (сразу показывает выученное движение)
+   opts.moves() -> {poses:[номера поз], specials:['flip','slide','headbang','wave']}: что робот уже выучил
+   opts.skin()  -> 'gold' или '': облик (золотой открывается за прослушивание всех треков) */
 (function(){
 'use strict';
 
@@ -33,10 +36,11 @@ function create(canvas,o){
   FACES.forEach(f=>load('f-'+f,'rb-face-'+f+'.png'));
 
   /* состояние позы (текущее и целевое) */
-  const P={bodyY:0,bodyRot:0,head:0,armL:-4,armR:-4,legL:0,legR:0,squash:0};
+  const P={bodyY:0,bodyRot:0,head:0,armL:-4,armR:-4,legL:0,legR:0,squash:0,spin:0,slide:0};
   const G={bodyY:0,bodyRot:0,head:0,armL:-4,armR:-4,legL:0,legR:0,squash:0};
   let face='busy', faceUntil=0, faceOver=null, blinkAt=0, blink=false;
   let jumpV=0, jumpY=0, lastBeat=0, beatN=0, pose=null, lastPoseAt=0, pausedSince=performance.now(), sleeping=false;
+  let special=null, specialAt=0;
   let shrugUntil=0, presentUntil=0, waveUntil=0, hearts=[], zs=[], zAt=0, lastT=performance.now(), peakAt=0;
   let energyAvg=.25;
 
@@ -44,9 +48,11 @@ function create(canvas,o){
     const r=canvas.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
     canvas.width=Math.max(1,Math.round(r.width*dpr)); canvas.height=Math.max(1,Math.round(r.height*dpr));
   }
-  fit(); addEventListener('resize',fit);
+  fit();
+  if(window.ResizeObserver)new ResizeObserver(fit).observe(canvas); else addEventListener('resize',fit);
 
-  function emote(k){
+  function startSpecial(name,now){ special={name,t0:now,dur:{flip:900,slide:1800,headbang:1600,wave:1800}[name]||1500}; specialAt=now; if(name==='flip'){ jumpV=-260; } }
+  function emote(k,arg){
     const now=performance.now();
     wake();
     if(k==='like'){ faceOver='fascinated'; faceUntil=now+1800; for(let i=0;i<5;i++)hearts.push({x:(Math.random()-.5)*60,y:0,vy:-(40+Math.random()*40),t:0,d:i*120}); }
@@ -55,6 +61,9 @@ function create(canvas,o){
     else if(k==='peak'){ faceOver='fascinated'; faceUntil=now+1500; }
     else if(k==='present'){ faceOver='fascinated'; faceUntil=now+1600; presentUntil=now+1300; }
     else if(k==='bye'){ faceOver='happy'; faceUntil=now+1600; waveUntil=now+1500; }
+    else if(k==='learn'){ faceOver='fascinated'; faceUntil=now+2200;
+      if(arg&&['flip','slide','headbang','wave'].indexOf(arg)>=0)startSpecial(arg,now);
+      else if(typeof arg==='number'){ pose=POSES[arg]||pose; lastPoseAt=now; G.armL=pose.l; G.armR=pose.r; } }
   }
   function wake(){ pausedSince=performance.now(); sleeping=false; }
 
@@ -75,7 +84,10 @@ function create(canvas,o){
       energyAvg+=((L.energy||0)-energyAvg)*Math.min(1,dt*.35);
       const style=energyAvg<.22?'sway':energyAvg<.42?'bob':'robot';
       if(L.beat){ beatN++; lastBeat=now;
-        if(style==='robot'&&now-lastPoseAt>240){ pose=POSES[Math.random()*POSES.length|0]; lastPoseAt=now; }
+        const mv=o.moves?o.moves():null;
+        if(style==='robot'&&now-lastPoseAt>240){ const pl=mv&&mv.poses&&mv.poses.length?mv.poses:null; pose=POSES[pl?pl[Math.random()*pl.length|0]:(Math.random()*POSES.length|0)]; lastPoseAt=now; }
+        if(!reduce&&!special&&mv&&mv.specials&&mv.specials.length&&style!=='sway'&&L.strength>1.55&&now-specialAt>7000&&Math.random()<.35)
+          startSpecial(mv.specials[Math.random()*mv.specials.length|0],now);
         if(L.strength>1.9&&style==='robot'&&!reduce&&jumpY===0&&now-peakAt>2200){ jumpV=-210; peakAt=now; emote('peak'); }
       }
       const sinceBeat=(now-lastBeat)/1000, pulse=Math.exp(-sinceBeat*7);
@@ -110,6 +122,17 @@ function create(canvas,o){
     if(now<shrugUntil){ G.armL=55; G.armR=55; G.head=-6; }
     if(now<presentUntil){ G.armL=105; G.armR=105; G.head=-8; G.bodyRot=0; G.bodyY=-4; }
     if(now<waveUntil){ G.armR=150+Math.sin(t*14)*22; }
+    /* особые движения (выученные) */
+    let spin=0, slideX=0;
+    if(special){
+      const k=(now-special.t0)/special.dur;
+      if(k>=1)special=null;
+      else if(special.name==='flip'){ spin=360*(k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2); G.armL=150; G.armR=150; }
+      else if(special.name==='slide'){ slideX=Math.sin(k*Math.PI*2)*46; G.legL=Math.sin(t*18)*14; G.legR=-Math.sin(t*18)*14; G.armL=20+Math.sin(t*9)*25; G.armR=20-Math.sin(t*9)*25; }
+      else if(special.name==='headbang'){ G.head=Math.sin(t*17)*20; G.bodyRot=Math.sin(t*17)*3; }
+      else if(special.name==='wave'){ G.armL=95+Math.sin(t*10)*45; G.armR=95+Math.sin(t*10+Math.PI)*45; G.bodyRot=Math.sin(t*5)*4; }
+    }
+    P.spin=spin; P.slide=slideX;
 
     /* сглаживание: робот двигается рывками, остальные мягко */
     const k=Math.min(1,dt*(L.on&&energyAvg>=.42?22:9));
@@ -136,10 +159,14 @@ function create(canvas,o){
     const s=Math.min(W/360,H/520);
     ctx.save();
     ctx.translate(W/2,H-6*s); ctx.scale(s,s);
+    ctx.translate(P.slide||0,0);
     /* тень */
     ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,-2,90*(1+jumpY/400),12,0,0,6.283); ctx.fill();
     /* система координат торса: низ ног на земле */
     const legLen=150, tw=RIG.torso.w, th=RIG.torso.h;
+    if(P.spin){ const cy0=-(th+legLen)/2+jumpY; ctx.translate(0,cy0); ctx.rotate(P.spin*D2R); ctx.translate(0,-cy0); }
+    const gold=o.skin&&o.skin()==='gold';
+    if(gold)ctx.filter='sepia(1) saturate(3.2) hue-rotate(-14deg) brightness(1.18)';
     ctx.translate(-tw/2,-(th+legLen-12)+P.bodyY+jumpY);
     /* ноги (от бёдер), при приседании чуть разъезжаются */
     limb(RIG.legL,RIG.hipL,P.legL+(jumpY<0?-14:0)+P.bodyY*.6);
@@ -153,6 +180,7 @@ function create(canvas,o){
     ctx.translate(RIG.neck[0],RIG.neck[1]); ctx.rotate(P.head*D2R*.5); ctx.translate(0,P.head*.4); ctx.translate(-RIG.neck[0],-RIG.neck[1]);
     ctx.drawImage(imgs.head,0,0,tw,th);
     const f=faceOver&&now<faceUntil?faceOver:face;
+    if(gold)ctx.filter='none';
     if(f&&!blink){ const sc=RIG.screen; ctx.drawImage(imgs['f-'+f],sc[0],sc[1],sc[2],sc[3]); }
     /* сердечки и сон рисуются над головой */
     const hx=RIG.neck[0], hy=RIG.screen[1]-6;
@@ -167,9 +195,11 @@ function create(canvas,o){
       ctx.font='bold '+(18+z.t*8)+'px JetBrains Mono, monospace'; ctx.fillText('z',hx+50+z.t*18,hy-z.t*30); ctx.globalAlpha=1;
     }
     ctx.restore();
+    if(gold)ctx.filter='sepia(1) saturate(3.2) hue-rotate(-14deg) brightness(1.18)';
     /* руки поверх корпуса: угол от висящего положения, плюс = в сторону и вверх */
     limb(RIG.armL,RIG.shoulderL,P.armL);
     limb(RIG.armR,RIG.shoulderR,-P.armR);
+    ctx.filter='none';
     ctx.restore();
   }
   function heart(x,y,r){

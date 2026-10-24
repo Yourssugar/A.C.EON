@@ -35,7 +35,7 @@ const secret=id=>!!(OPS[id]&&OPS[id].secret);
 /* ---------- память ---------- */
 let mem={recipes:[],last:null,stE:false,stD:false};
 const hasStore=!!window.Store;
-if(hasStore){ try{ Store.define('cipher',{version:1,defaults:{recipes:[],last:null,stE:false,stD:false,real:false,realOk:false}}); mem=Store.get('cipher'); }catch(e){} }
+if(hasStore){ try{ Store.define('cipher',{version:1,defaults:{recipes:[],last:null,stE:false,stD:false,real:false,realOk:false,mis:{}}}); mem=Store.get('cipher'); }catch(e){} }
 function save(){ if(hasStore)try{ Store.save('cipher'); }catch(e){} }
 
 /* ---------- конвейер ---------- */
@@ -126,7 +126,7 @@ function createPipeline(cfg){
 /* ---------- режимы и шифромашина ---------- */
 let mode='enc', decMode='auto', lastRecipe=[], REAL=false;
 const REAL_STEPS=[{id:'aes'}];
-function machineSteps(){ if(REAL)return REAL_STEPS; return mode==='enc'?encPipe.steps:(decMode==='man'?decPipe.steps:lastRecipe); }
+function machineSteps(){ if(REAL)return REAL_STEPS; if(mode==='int')return curM>=0?intPipe.steps:[]; return mode==='enc'?encPipe.steps:(decMode==='man'?decPipe.steps:lastRecipe); }
 function syncMachine(added){
   $('machine').classList.toggle('dec',mode!=='enc');
   $('mMode').textContent=(REAL?T('modeR')+' · ':'')+(mode==='enc'?T('tabEnc'):T('tabDec'));
@@ -334,6 +334,7 @@ function setReal(on,then){
   $('modeT').classList.toggle('on',!REAL); $('modeR').classList.toggle('on',REAL);
   if(GL&&GL.setReal)GL.setReal(REAL);
   if(REAL&&mode==='dec')setDecMode('auto');
+  if(REAL&&mode==='int')setMode('enc');
   $('passBox').hidden=REAL?mode!=='dec':true;
   if(REAL){ $('passMsg').textContent=T('needPass'); $('passMsg').classList.remove('bad'); }
   $('encOutWrap').hidden=true; $('decOutWrap').hidden=true;
@@ -468,6 +469,117 @@ $('passGo').addEventListener('click',doDecode);
 $('passIn').addEventListener('keydown',e=>{ if(e.key==='Enter')doDecode(); });
 $('cipher').addEventListener('input',()=>{ hidePass(); $('passIn').value=''; });
 
+/* ---------- ПЕРЕХВАТ: миссии ----------
+   Игроку дают перехваченную передачу без маркера. Нужно собрать рецепт, которым её зашифровали.
+   Станция снимает слои с конца сразу при каждом изменении, совпало с открытым текстом: перехват разобран.
+   Звёзды: 3 без подсказок, каждая подсказка минус одна (минимум 1), показанное решение 0.
+   Тексты миссий в lang.js: m<N>.t заголовок, .b сводка, .p открытый текст, .h первая подсказка.
+   Вторая и третья подсказки собираются из рецепта сами. */
+const MISSIONS=[
+  {r:[{id:'b64'}],from:'NET-0'},
+  {r:[{id:'revall'}],from:'NET-0'},
+  {r:[{id:'caesar',p:3}],from:'COURIER'},
+  {r:[{id:'morse'}],from:'COAST-3'},
+  {r:[{id:'bin'}],from:'M2M'},
+  {r:[{id:'revword'},{id:'b64'}],from:'NET-0'},
+  {r:[{id:'vigenere',p:'kai'}],from:'AI-OFFICE'},
+  {r:[{id:'rail',p:4},{id:'hex'}],from:'NET-0'},
+  {r:[{id:'atbash'},{id:'caesar',p:7},{id:'base32'}],from:'NET-0'},
+  {r:[{id:'swapfl'},{id:'xor',p:'echo'},{id:'rail',p:3},{id:'braille'}],from:'SHADOW'}
+];
+let curM=-1, curPlain='', curCipher='', curShown=false;
+if(!mem.mis||typeof mem.mis!=='object')mem.mis={};
+const mrec=i=>mem.mis[i]||(mem.mis[i]={h:0,done:false,stars:0,gave:false});
+const unlocked=i=>i===0||!!(mem.mis[i-1]&&mem.mis[i-1].done);
+const starStr=n=>'\u2605'.repeat(n)+'\u2606'.repeat(3-n);
+const intPipe=createPipeline({paletteId:'paletteInt',pipeId:'pipeInt',descId:'opdescInt',exclude:['vernam','aes'],emptyKey:'intEmpty',isShown:()=>mode==='int'&&curM>=0,
+  onChange:added=>{ if(mode==='int')syncMachine(added); evalInt(); }});
+function buildMissionList(){
+  const g=$('mgrid'); g.innerHTML=''; let done=0;
+  MISSIONS.forEach((m,i)=>{
+    const st=mem.mis[i], lock=!unlocked(i); if(st&&st.done)done++;
+    const b=document.createElement('button'); b.type='button'; b.className='mcard'+(lock?' locked':'')+(st&&st.done?' done':'');
+    b.innerHTML='<span class="mn">'+String(i+1).padStart(2,'0')+'</span><span class="mt"></span><span class="ms"></span>';
+    b.querySelector('.mt').textContent=lock?T('intLocked'):T('m'+(i+1)+'.t');
+    b.querySelector('.ms').textContent=st&&st.done?starStr(st.stars):'';
+    if(!lock)b.addEventListener('click',()=>openMission(i)); else b.disabled=true;
+    g.appendChild(b);
+  });
+  $('intProg').textContent=T('intProg',{n:done,m:MISSIONS.length});
+}
+function sigOf(t){
+  const a=Array.from(t), out=[];
+  out.push([T('sLen'),a.length]);
+  if(/^[.\- ]+$/.test(t)){ out.push([T('sMorse'),'.-']); return out; }
+  if(/[A-Za-z]/.test(t))out.push([T('sLat'),'Aa']);
+  if(/[\u0400-\u04FF]/.test(t))out.push([T('sCyr'),'Яя']);
+  if(/[0-9]/.test(t))out.push([T('sDig'),'0-9']);
+  if(/[\u2800-\u28FF]/.test(t))out.push([T('sBr'),'\u28FF']);
+  const sym=(t.match(/[!-\/:-@\[-`{-~]/g)||[]); if(sym.length)out.push([T('sSym'),Array.from(new Set(sym)).slice(0,6).join('')]);
+  if(/ /.test(t))out.push([T('sSpace'),(t.match(/ /g)||[]).length]);
+  out.push([T('sEnd'),a.slice(-2).join('')]);
+  return out;
+}
+function openMission(i,keep){
+  curM=i; curShown=false;
+  const m=MISSIONS[i];
+  curPlain=T('m'+(i+1)+'.p');
+  let c=curPlain; m.r.forEach(st=>{ c=OPS[st.id].fwd(c,st.p); }); curCipher=c;
+  $('intList').hidden=true; $('intMission').hidden=false;
+  $('mNum').textContent=String(i+1).padStart(2,'0'); $('mTitle').textContent=T('m'+(i+1)+'.t'); $('mFrom').textContent=m.from;
+  $('mBrief').textContent=T('m'+(i+1)+'.b'); $('mCipher').textContent=curCipher;
+  $('mSig').innerHTML=sigOf(curCipher).map(x=>'<span>'+esc(x[0])+': <b>'+esc(x[1])+'</b></span>').join('');
+  const st=mrec(i); $('mStars').textContent=st.done?starStr(st.stars):'';
+  renderHints();
+  if(!keep)intPipe.setSteps([]); else { intPipe.render(); evalInt(); }
+  syncMachine();
+  if(!keep){ try{ $('intMission').scrollIntoView({behavior:RM?'auto':'smooth',block:'start'}); }catch(e){} }
+}
+function closeMission(){ curM=-1; $('intMission').hidden=true; $('intList').hidden=false; buildMissionList(); syncMachine(); }
+function hintText(i,k){
+  const r=MISSIONS[i].r;
+  if(k===0)return T('m'+(i+1)+'.h');
+  if(k===1)return T('intOps')+' '+r.map(st=>opName(st.id)).join(', ');
+  return T('intRecipe')+' '+r.map((st,j)=>(j+1)+') '+opName(st.id)+(st.p!==undefined?' ['+st.p+']':'')).join('  ');
+}
+function renderHints(){
+  if(curM<0)return; const st=mrec(curM);
+  $('mHints').innerHTML=''; for(let k=0;k<st.h;k++){ const d=document.createElement('div'); d.innerHTML='<b>'+esc(T('intHint'))+' '+(k+1)+'.</b> '; d.appendChild(document.createTextNode(hintText(curM,k))); $('mHints').appendChild(d); }
+  $('mHintBtn').textContent=T('intHint')+' '+Math.min(3,st.h+1)+'/3'; $('mHintBtn').disabled=st.h>=3;
+  $('mGive').textContent=T('intGive');
+}
+$('mHintBtn').addEventListener('click',()=>{ if(curM<0)return; const st=mrec(curM); if(st.h<3){ st.h++; save(); renderHints(); if(TR)TR.event('cipher.int.hint'); } });
+$('mGive').addEventListener('click',()=>{ if(curM<0)return; const st=mrec(curM); st.gave=true; st.h=3; save(); renderHints(); intPipe.setSteps(MISSIONS[curM].r); });
+$('intBack').addEventListener('click',closeMission);
+$('mNext').addEventListener('click',()=>{ if(curM>=0&&curM<MISSIONS.length-1)openMission(curM+1); else closeMission(); });
+function evalInt(){
+  if(curM<0)return;
+  const out=$('mOut'), steps=intPipe.steps;
+  if(!steps.length){ out.className='transmission plain'; out.innerHTML='<span class="muted">'+esc(T('intEmpty'))+'</span>'; $('mOk').hidden=true; return; }
+  let s=curCipher, failAt=-1;
+  for(let i=steps.length-1;i>=0;i--){ try{ s=OPS[steps[i].id].inv(s,steps[i].p); }catch(e){ failAt=i; break; } }
+  if(failAt>=0){ out.className='transmission plain err'; out.textContent='\u2715 '+T('intFail',{n:String(failAt+1).padStart(2,'0')}); $('mOk').hidden=true; return; }
+  const a=Array.from(s); out.className='transmission plain'; out.textContent=a.length>1200?a.slice(0,1200).join('')+' ...':s;
+  const ok=s===curPlain||s.trim().toLowerCase()===curPlain.trim().toLowerCase();
+  $('mOk').hidden=!ok;
+  if(ok&&!curShown)solved();
+  if(!ok)curShown=false;
+}
+function solved(){
+  curShown=true;
+  const st=mrec(curM), stars=st.gave?0:Math.max(1,3-st.h);
+  const first=!st.done; st.done=true; st.stars=Math.max(st.stars||0,stars); save();
+  $('mOkStars').textContent=starStr(stars); $('mStars').textContent=starStr(st.stars);
+  $('mOkNote').textContent=st.gave?T('intGiven'):'';
+  const last=curM===MISSIONS.length-1;
+  const all=MISSIONS.every((m,i)=>mem.mis[i]&&mem.mis[i].done);
+  $('mNext').textContent=last?T('intBack'):T('intNext');
+  if(all&&last)$('mOkNote').textContent=(st.gave?T('intGiven')+' ':'')+T('intAll');
+  if(GL)intPipe.steps.forEach((x,i)=>setTimeout(()=>{ GL.spin(i,-1); if(AU)AU.tick(); },120+i*180));
+  if(AU)setTimeout(()=>AU.seal(true),200+intPipe.steps.length*180);
+  if(TR){ TR.event('cipher.int.solved'); if(first&&all)TR.event('cipher.int.all'); }
+}
+
 /* ---------- прочее ---------- */
 function copyText(txt,btn,msg){
   const ok=()=>{ const o=btn.textContent; btn.textContent=msg||T('copied'); setTimeout(()=>btn.textContent=o,1400); };
@@ -482,8 +594,8 @@ $('encSt').checked=!!mem.stE; $('decSt').checked=!!mem.stD;
 
 function setMode(m){
   mode=m;
-  $('view-enc').classList.toggle('on',m==='enc'); $('view-dec').classList.toggle('on',m==='dec');
-  $('tab-enc').classList.toggle('on',m==='enc'); $('tab-dec').classList.toggle('on',m==='dec');
+  $('view-enc').classList.toggle('on',m==='enc'); $('view-dec').classList.toggle('on',m==='dec'); $('view-int').classList.toggle('on',m==='int');
+  $('tab-enc').classList.toggle('on',m==='enc'); $('tab-dec').classList.toggle('on',m==='dec'); $('tab-int').classList.toggle('on',m==='int');
   if(REAL)$('passBox').hidden=m!=='dec';
   airStop(); airReset();
   syncMachine();
@@ -496,6 +608,7 @@ function setDecMode(m){
 }
 $('tab-enc').addEventListener('click',()=>setMode('enc'));
 $('tab-dec').addEventListener('click',()=>setMode('dec'));
+$('tab-int').addEventListener('click',()=>{ setMode('int'); if(TR)TR.event('cipher.int.open'); });
 $('sub-auto').addEventListener('click',()=>setDecMode('auto'));
 $('sub-man').addEventListener('click',()=>setDecMode('man'));
 $('encBtn').addEventListener('click',doEncode);
@@ -526,6 +639,8 @@ function texts(){
   set('tModeT','modeT'); set('tModeR','modeR'); set('rnote','rNote'); set('tRPass','rPassT'); $('rPass').placeholder=T('passPh'); $('rPass2').placeholder=T('rPass2');
   set('rGen','rGen'); $('rEye').textContent=$('rEye').dataset.on?T('rHide'):T('rShow'); set('tRHint','rHint'); meter();
   set('tRwT','rWarnT'); $('rwList').innerHTML=[1,2,3,4,5,6].map(i=>'<li>'+esc(T('rWarn'+i))+'</li>').join(''); set('tRwAgree','rAgree'); set('rwYes','rEnter'); set('rwNo','rCancel');
+  set('tab-int','tabInt'); set('tIntList','intList'); set('tIntStars','intStarsT'); set('intBack','intBack'); set('tIntFrom','intFrom'); set('tIntCipher','intCipher'); set('tIntBuild','intBuild'); set('tIntOut','intOut'); set('tIntOk','intOk');
+  intPipe.buildPalette(); buildMissionList(); if(curM>=0)openMission(curM,true);
   set('tFR','fR'); set('encMorse','morse'); set('encVoice','voice'); sndLabel(); airReset();
   set('tmCh','mCh'); set('tmChV',REAL?'mChVR':'mChV'); set('tmKey','mKey'); set('tmKeyV',REAL?'mKeyVR':'mKeyV'); set('tmParse','mParse'); set('tmParseV',REAL?'mParseVR':'mParseV');
   set('tMachine','machine'); set('tab-enc','tabEnc'); set('tab-dec','tabDec'); set('sub-auto','subAuto'); set('sub-man','subMan');

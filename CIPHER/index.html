@@ -217,6 +217,34 @@
   .rw-box .toggle{text-transform:none;letter-spacing:.02em;font-size:12.5px;color:var(--paper)}
   .rw-box .toggle input{accent-color:var(--ok)}
   .rw-act{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
+  /* перехват */
+  .capr{margin-left:auto;color:var(--steel-dim);font-size:10px;letter-spacing:.14em}
+  .mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .mcard{background:var(--panel-2);border:1px solid var(--line);padding:11px 12px;text-align:left;cursor:pointer;font-family:var(--mono);color:var(--paper);transition:.15s;display:flex;flex-direction:column;gap:4px;min-height:92px}
+  .mcard:hover{border-color:var(--alert)}
+  .mcard .mn{font-size:20px;font-weight:700;color:var(--alert);letter-spacing:.05em}
+  .mcard .mt{font-size:12px;line-height:1.35}
+  .mcard .ms{margin-top:auto;font-size:12px;color:var(--amber);letter-spacing:.1em}
+  .mcard.done{border-color:rgba(232,176,75,.4)}
+  .mcard.locked{opacity:.38;cursor:not-allowed}
+  .mcard.locked:hover{border-color:var(--line)}
+  .stars{color:var(--amber);letter-spacing:.12em}
+  .from{font-size:11px;letter-spacing:.16em;color:var(--steel-dim);text-transform:uppercase}
+  .from b{color:var(--alert);font-weight:400}
+  .from span{color:var(--paper)}
+  .mbrief{margin:10px 0 0;font-size:13px;line-height:1.6;color:var(--paper)}
+  #mCipher{max-height:220px;overflow:auto}
+  .sig{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .sig span{font-size:10.5px;letter-spacing:.08em;border:1px solid var(--line);padding:3px 7px;color:var(--steel)}
+  .sig span b{color:var(--paper);font-weight:400}
+  .mhints div{margin-top:10px;font-size:12px;line-height:1.55;color:var(--paper);border-left:2px solid var(--amber-dim);padding-left:10px}
+  .mhints div b{color:var(--amber);font-weight:400}
+  #mOut{max-height:260px;overflow:auto}
+  #mOut.err{color:var(--alert)}
+  .mok{margin-top:14px;border:1px solid var(--amber-dim);padding:14px;background:rgba(232,176,75,.05);animation:fade .3s ease}
+  .mok[hidden]{display:none}
+  .mok-h{font-size:13px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+  .mok .run{margin-top:12px}
   .run.realbtn{width:auto;padding:12px 18px;background:var(--ok);font-size:12px}
   .btns{display:flex;gap:6px;flex-wrap:wrap}
   .incoming{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--alert);margin-bottom:10px}
@@ -302,6 +330,7 @@
   <div class="tabs">
     <button class="tab on" id="tab-enc" type="button"></button>
     <button class="tab dec" id="tab-dec" type="button"></button>
+    <button class="tab dec t-only" id="tab-int" type="button"></button>
   </div>
 
   <!-- ========== ШИФРОВАНИЕ ========== -->
@@ -408,6 +437,43 @@
     </div>
   </section>
 
+  <!-- ========== ПЕРЕХВАТ: миссии ========== -->
+  <section class="view t-only" id="view-int">
+    <div id="intList">
+      <div class="block">
+        <div class="cap dec"><span class="n">&#9673;</span> <span id="tIntList"></span><span class="capr" id="intProg"></span></div>
+        <div class="pad"><div class="mgrid" id="mgrid"></div><p class="hint" id="tIntStars"></p></div>
+      </div>
+    </div>
+    <div id="intMission" hidden>
+      <button class="tb" id="intBack" type="button"></button>
+      <div class="block brief" style="margin-top:12px">
+        <div class="cap dec"><span class="n" id="mNum">01</span> <span id="mTitle"></span><span class="capr stars" id="mStars"></span></div>
+        <div class="pad"><div class="from"><b id="tIntFrom"></b>: <span id="mFrom"></span></div><p class="mbrief" id="mBrief"></p></div>
+      </div>
+      <div class="block">
+        <div class="cap dec"><span class="n">&#8634;</span> <span id="tIntCipher"></span></div>
+        <div class="pad">
+          <div class="transmission" id="mCipher"></div>
+          <div class="sig" id="mSig"></div>
+          <div class="rrow" style="margin-top:12px"><button class="preset" id="mHintBtn" type="button"></button><button class="preset ghost" id="mGive" type="button"></button></div>
+          <div class="mhints" id="mHints"></div>
+        </div>
+      </div>
+      <div class="block">
+        <div class="cap dec"><span class="n">&#9636;</span> <span id="tIntBuild"></span></div>
+        <div class="pad"><div id="paletteInt" class="dec-pal"></div><div class="opdesc" id="opdescInt"></div><div style="height:14px"></div><div id="pipeInt" class="pipe dec-pipe"></div></div>
+      </div>
+      <div class="block">
+        <div class="cap dec"><span class="n">&#10003;</span> <span id="tIntOut"></span></div>
+        <div class="pad">
+          <div class="transmission plain" id="mOut"></div>
+          <div class="mok" id="mOk" hidden><div class="mok-h"><span id="tIntOk"></span> <span class="stars" id="mOkStars"></span></div><p class="hint" id="mOkNote"></p><button class="run dec" id="mNext" type="button"></button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer><span class="t-only"><b id="tF1"></b> <span id="tF2"></span><br><span id="tF3"></span><br><span id="tF4"></span><br><span id="tF6"></span><br></span><span class="r-only"><span id="tFR"></span><br></span><span id="tF5"></span></footer>
 
 <div id="rwarn" hidden role="dialog" aria-modal="true">
@@ -423,10 +489,10 @@
 <script src="../games/shared/store.js?v=1"></script>
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
-<script src="lang.js?v=3"></script>
+<script src="lang.js?v=4"></script>
 <script src="cipher-engine.js?v=4"></script>
 <script src="cipher-gl.js?v=3"></script>
 <script src="cipher-audio.js?v=1"></script>
-<script src="cipher-ui.js?v=4"></script>
+<script src="cipher-ui.js?v=5"></script>
 </body>
 </html>

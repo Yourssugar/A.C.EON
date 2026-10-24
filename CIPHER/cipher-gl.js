@@ -11,7 +11,7 @@ const AU=window.AceonUniverse||{id:2,capMs:16};
 const TIER=AU.id||2;
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LIVE=TIER>=2&&!RM;
-let running=false, last=performance.now(), lastF=0, tickT=0, decK=0;
+let running=false, last=performance.now(), lastF=0, tickT=0, decK=0, realK=0, REAL=false;
 const cv=document.getElementById('gl'), scr=document.getElementById('mscreen'), labels=document.getElementById('rlabels');
 let gl=null;
 try{ gl=cv.getContext('webgl',{antialias:TIER>=3,alpha:false,depth:true,premultipliedAlpha:false,powerPreference:'low-power'}); }catch(e){}
@@ -23,7 +23,7 @@ function sh(t,src){ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compi
 function prog(vs,fs){ const a=sh(gl.VERTEX_SHADER,vs), b=sh(gl.FRAGMENT_SHADER,fs); if(!a||!b)return null; const p=gl.createProgram(); gl.attachShader(p,a); gl.attachShader(p,b); gl.linkProgram(p); return gl.getProgramParameter(p,gl.LINK_STATUS)?p:null; }
 
 const BG=prog('attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}',`precision mediump float;
-uniform vec2 R;uniform float t,nz,dec,wa,sl;uniform vec4 P;uniform sampler2D W;
+uniform vec2 R;uniform float t,nz,dec,wa,sl,rl;uniform vec4 P;uniform sampler2D W;
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 void main(){
   vec2 f=gl_FragCoord.xy, uv=f/R;
@@ -31,7 +31,7 @@ void main(){
   c*=.93+.07*sin(f.y*2.0944/sl);
   float roll=fract(uv.y*.6-t*.035); c*=1.-.035*smoothstep(.0,.02,roll)*smoothstep(.06,.02,roll);
   c+=(h(floor(f/(1.5*sl))+fract(t*7.13)*91.)-.5)*(.022+nz*.08);
-  vec3 tint=mix(vec3(.91,.69,.29),vec3(.86,.3,.25),dec);
+  vec3 tint=mix(mix(vec3(.91,.69,.29),vec3(.86,.3,.25),dec),vec3(.36,.8,.58),rl);
   vec2 q=(f-P.xy)/P.zw;
   if(q.x>0.&&q.x<1.&&q.y>0.&&q.y<1.){
     vec2 g=mod(f-P.xy,24.*sl);
@@ -64,11 +64,11 @@ void main(){
   q.x+=X; vW=q; vN=nn; vUV=uv; vK=k;
   gl_Position=VP*vec4(q,1.);
 }`,`precision mediump float;
-uniform sampler2D TX;uniform float row,rows,glow,hl,dec,axle;uniform vec3 eye;
+uniform sampler2D TX;uniform float row,rows,glow,hl,dec,axle,rl;uniform vec3 eye;
 varying vec3 vN,vW;varying vec2 vUV;varying float vK;
 void main(){
   vec3 N=normalize(vN), L=normalize(vec3(.35,.85,.55)), V=normalize(eye-vW);
-  vec3 tint=mix(vec3(.93,.7,.3),vec3(.9,.32,.26),dec);
+  vec3 tint=mix(mix(vec3(.93,.7,.3),vec3(.9,.32,.26),dec),vec3(.38,.82,.6),rl);
   float face=max(0.,dot(N,V));
   vec3 col; float spec=.45;
   if(axle>.5){ col=vec3(.36,.34,.31); }
@@ -115,8 +115,8 @@ const geo=(function(){
 })();
 const quad=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,quad); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
 const UB={}, UR={};
-['R','t','nz','dec','wa','sl','P','W'].forEach(n=>UB[n]=gl.getUniformLocation(BG,n));
-['VP','X','A','SC','TX','row','rows','glow','hl','dec','axle','eye'].forEach(n=>UR[n]=gl.getUniformLocation(RT,n));
+['R','t','nz','dec','wa','sl','P','W','rl'].forEach(n=>UB[n]=gl.getUniformLocation(BG,n));
+['VP','X','A','SC','TX','row','rows','glow','hl','dec','axle','eye','rl'].forEach(n=>UR[n]=gl.getUniformLocation(RT,n));
 const AB={p:gl.getAttribLocation(BG,'p')};
 const AR={p:gl.getAttribLocation(RT,'p'),n:gl.getAttribLocation(RT,'n'),uv:gl.getAttribLocation(RT,'uv'),k:gl.getAttribLocation(RT,'k')};
 
@@ -156,7 +156,7 @@ function glyphSet(id,seed){
     case 'revword': case 'wordorder': return many(i=>LAT[(i*7)%26]);
     case 'swap23': case 'swapfl': case 'atbash': return many(i=>CYR[i%CYR.length]);
     case 'rail': return pick('ZNVWMX/\\',CELLS);
-    case 'xor': case 'vernam': return many(()=>hx(2).toUpperCase());
+    case 'xor': case 'vernam': case 'aes': return many(()=>hx(2).toUpperCase());
     case 'hill': return many(()=>String((r()*256)|0));
     case 'rsa': return many(()=>hx(3).toUpperCase());
     case 'rot47': return pick(range(33,126),CELLS);
@@ -293,7 +293,8 @@ function frame(now){
   });
   dying=dying.filter(r=>r.s>.02);
   burst*=Math.exp(-dt*2.5);
-  decK+=((mode==='dec'?1:0)-decK)*Math.min(1,dt*6);
+  decK+=((mode==='dec'&&!REAL?1:0)-decK)*Math.min(1,dt*6);
+  realK+=((REAL?1:0)-realK)*Math.min(1,dt*5);
   if(LIVE&&!animS){ tickT-=dt; if(tickT<=0){ tickT=2+Math.random()*4; const r=rotors[(Math.random()*rotors.length)|0]; if(r){ r.tang+=(Math.random()<.5?1:-1)*STEP; } } }
 
   /* окно экрана в пикселях холста (y снизу) */
@@ -317,7 +318,7 @@ function frame(now){
   gl.useProgram(BG);
   gl.bindBuffer(gl.ARRAY_BUFFER,quad); gl.enableVertexAttribArray(AB.p); gl.vertexAttribPointer(AB.p,2,gl.FLOAT,false,0,0);
   gl.uniform2f(UB.R,CWpx,CHpx); gl.uniform1f(UB.t,LIVE?now/1000:0); gl.uniform1f(UB.nz,Math.min(1,burst+(animS?.35:0)));
-  gl.uniform1f(UB.dec,decK); gl.uniform1f(UB.wa,vis?1:0); gl.uniform1f(UB.sl,dpr); gl.uniform4f(UB.P,P[0],P[1],P[2],P[3]);
+  gl.uniform1f(UB.dec,decK); gl.uniform1f(UB.rl,realK); gl.uniform1f(UB.wa,vis?1:0); gl.uniform1f(UB.sl,dpr); gl.uniform4f(UB.P,P[0],P[1],P[2],P[3]);
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,wtex); gl.uniform1i(UB.W,0);
   gl.drawArrays(gl.TRIANGLES,0,3);
   gl.disableVertexAttribArray(AB.p);
@@ -332,7 +333,7 @@ function frame(now){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,geo.i);
     gl.uniformMatrix4fv(UR.VP,false,new Float32Array(VP)); gl.uniform3f(UR.eye,eye[0],eye[1],eye[2]);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,atex); gl.uniform1i(UR.TX,0);
-    gl.uniform1f(UR.rows,Math.max(1,rotors.length)); gl.uniform1f(UR.dec,decK);
+    gl.uniform1f(UR.rows,Math.max(1,rotors.length)); gl.uniform1f(UR.dec,decK); gl.uniform1f(UR.rl,realK);
     /* ось */
     const span=(N-1)*D/2+W+.5;
     gl.uniform1f(UR.axle,1); gl.uniform1f(UR.X,0); gl.uniform1f(UR.A,0); gl.uniform2f(UR.SC,span/W,.11); gl.uniform1f(UR.glow,0); gl.uniform1f(UR.hl,0); gl.uniform1f(UR.row,0);
@@ -352,7 +353,7 @@ function frame(now){
     if(rotors.length>1){ const a=project(VP,rotors[0].tx,0,0,rc.width,rc.height)[0], b=project(VP,rotors[1].tx,0,0,rc.width,rc.height)[0]; const pitch=b-a; if((pitch>78)!==(lastPitch>78)){ lastPitch=pitch; nameLabels(); } lastPitch=pitch; }
     else if(lastPitch<=78){ lastPitch=999; nameLabels(); }
   }
-  const keep=LIVE||moving||busyAnim||wActive||Math.abs(decK-(mode==='dec'?1:0))>.01;
+  const keep=LIVE||moving||busyAnim||wActive||Math.abs(decK-(mode==='dec'&&!REAL?1:0))>.01||Math.abs(realK-(REAL?1:0))>.01;
   if(keep)requestAnimationFrame(frame); else running=false;
 }
 
@@ -367,6 +368,6 @@ scr.addEventListener('pointermove',e=>{
 scr.addEventListener('pointerleave',()=>{ if(hlIdx>=0){ hlIdx=-1; if(hoverCb)hoverCb(-1); kick(); } });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden)kick(); });
 
-window.CipherGL={ok:true,setRotors,spin,anim,animEnd,hover,onHover:fn=>{ hoverCb=fn; }};
+window.CipherGL={ok:true,setRotors,spin,anim,animEnd,hover,onHover:fn=>{ hoverCb=fn; },setReal:on=>{ REAL=!!on; kick(); }};
 kick();
 })();

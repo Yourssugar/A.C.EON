@@ -7,6 +7,7 @@
 "use strict";
 
 const SITE_KEY = "A.C.EON//SINGULARITY//KEY";
+function err(code, extra) { const e = new Error(code); e.code = code; if (extra) Object.assign(e, extra); return e; }
 
 const ALPH = {
   latL: "abcdefghijklmnopqrstuvwxyz",
@@ -101,6 +102,64 @@ function vernamGen(s) { const n = utf8Bytes(s).length; const pad = new Uint8Arra
 function vernamFwd(s, p) { const b = utf8Bytes(s), pad = b64ToBytes(p || ""); return bytesToB64(b.map((x, i) => x ^ (pad.length ? pad[i % pad.length] : 0))); }
 function vernamInv(s, p) { const b = b64ToBytes(s), pad = b64ToBytes(p || ""); return bytesUtf8(b.map((x, i) => x ^ (pad.length ? pad[i % pad.length] : 0))); }
 
+// ---- AES-256-GCM по паролю (WebCrypto, асинхронно) ----
+// формат: base64( соль 16 байт | iv 12 байт | шифртекст с тегом )
+const AES_ITER = 200000;
+const subtle = (root.crypto && root.crypto.subtle) || null;
+function rnd(n) { const b = new Uint8Array(n); root.crypto.getRandomValues(b); return b; }
+async function aesKey(pass, salt, iter) {
+  const base = await subtle.importKey("raw", utf8Bytes(pass), "PBKDF2", false, ["deriveKey"]);
+  return subtle.deriveKey({ name: "PBKDF2", salt, iterations: iter || AES_ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function aesEnc(s, pass) {
+  if (!subtle) throw err("nocrypto"); if (!pass) throw err("needpass");
+  const salt = rnd(16), iv = rnd(12), k = await aesKey(pass, salt);
+  const ct = new Uint8Array(await subtle.encrypt({ name: "AES-GCM", iv }, k, utf8Bytes(s)));
+  const out = new Uint8Array(28 + ct.length); out.set(salt, 0); out.set(iv, 16); out.set(ct, 28);
+  return bytesToB64(out);
+}
+async function aesDec(s, pass) {
+  if (!subtle) throw err("nocrypto"); if (!pass) throw err("needpass");
+  let b; try { b = b64ToBytes(s.replace(/\s+/g, "")); } catch (e) { throw err("fail"); }
+  if (b.length < 29) throw err("fail");
+  const k = await aesKey(pass, b.slice(0, 16));
+  try { return bytesUtf8(new Uint8Array(await subtle.decrypt({ name: "AES-GCM", iv: b.slice(16, 28) }, k, b.slice(28)))); }
+  catch (e) { throw err("pass"); }
+}
+
+// ---- РЕАЛЬНЫЙ КАНАЛ: только AES-256-GCM по паролю, без рецепта и без ключа станции ----
+// ⟨ACEON-R⟩ + base64url( версия 1 байт | итерации 4 байта | соль 16 | iv 12 | шифртекст с тегом 16 )
+// Внутри: длина текста 4 байта | текст | случайная добивка до кратного 64 байтам (скрывает точную длину).
+// Заголовок (версия и итерации) защищён тегом GCM как дополнительные данные.
+const PREFIX_R = "\u27e8ACEON-R\u27e9", R_VER = 1, R_ITER = 600000;
+function b64u(bytes) { return bytesToB64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+function unb64u(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return b64ToBytes(s); }
+function isReal(t) { return String(t).replace(/^\s+/, "").startsWith(PREFIX_R); }
+async function realEnc(text, pass) {
+  if (!subtle) throw err("nocrypto"); if (!pass) throw err("needpass");
+  const data = utf8Bytes(text), L = data.length, size = Math.ceil((L + 4) / 64) * 64;
+  const pt = new Uint8Array(size); new DataView(pt.buffer).setUint32(0, L); pt.set(data, 4); pt.set(rnd(size - 4 - L), 4 + L);
+  const head = new Uint8Array(5); head[0] = R_VER; new DataView(head.buffer).setUint32(1, R_ITER);
+  const salt = rnd(16), iv = rnd(12), k = await aesKey(pass, salt, R_ITER);
+  const ct = new Uint8Array(await subtle.encrypt({ name: "AES-GCM", iv, additionalData: head }, k, pt));
+  const out = new Uint8Array(5 + 16 + 12 + ct.length); out.set(head, 0); out.set(salt, 5); out.set(iv, 21); out.set(ct, 33);
+  return PREFIX_R + b64u(out);
+}
+async function realDec(t, pass) {
+  if (!subtle) throw err("nocrypto");
+  t = String(t).replace(/^\s+/, ""); if (!t.startsWith(PREFIX_R)) throw err("nomark");
+  let b; try { b = unb64u(t.slice(PREFIX_R.length).replace(/\s+/g, "")); } catch (e) { throw err("broken"); }
+  if (b.length < 33 + 16 + 64) throw err("broken");
+  if (b[0] !== R_VER) throw err("version");
+  const iter = new DataView(b.buffer, b.byteOffset).getUint32(1);
+  if (iter < 1000 || iter > 5000000) throw err("broken");
+  if (!pass) throw err("needpass");
+  const k = await aesKey(pass, b.slice(5, 21), iter);
+  let pt; try { pt = new Uint8Array(await subtle.decrypt({ name: "AES-GCM", iv: b.slice(21, 33), additionalData: b.slice(0, 5) }, k, b.slice(33))); } catch (e) { throw err("pass"); }
+  const L = new DataView(pt.buffer).getUint32(0); if (L > pt.length - 4) throw err("broken");
+  return bytesUtf8(pt.slice(4, 4 + L));
+}
+
 // ============================================================
 // РЕЕСТР ОПЕРАЦИЙ
 // grp - группа в палитре, plabel - подпись поля параметра, gen - генерация ключа под сообщение
@@ -138,6 +197,11 @@ const OPS = {
   atbash: { name: "Атбаш (зеркало)", grp: "Классика", desc: "Алфавит отражается: А↔Я, Б↔Э, A↔Z. Древний шифр-перевёртыш.", fwd: s => Array.from(s).map(atbashChar).join(""), inv: s => Array.from(s).map(atbashChar).join("") },
   rot47: { name: "ROT47", grp: "Классика", desc: "Сдвиг на 47 по видимым ASCII-знакам. Латиница, цифры и символы перемешиваются; кириллица не меняется.", fwd: s => rot47(s), inv: s => rot47(s) },
   caseswap: { name: "Инверсия регистра", grp: "Классика", desc: "Строчные буквы становятся ЗАГЛАВНЫМИ и наоборот.", fwd: s => Array.from(s).map(caseChar).join(""), inv: s => Array.from(s).map(caseChar).join("") },
+
+  // --- Защита: настоящее шифрование паролем, пароль в метку не попадает ---
+  aes: { name: "Пароль (AES)", grp: "Защита", param: "pass", plabel: "пароль", pdefault: "", secret: true, async: true,
+    desc: "AES-256-GCM, ключ из пароля через PBKDF2. Без пароля слой не снять никому, даже станции.",
+    fwd: () => { throw err("async"); }, inv: () => { throw err("async"); }, fwdA: aesEnc, invA: aesDec },
 };
 
 // ============================================================
@@ -161,7 +225,6 @@ function encode(text, recipe) {
   }
   return PREFIX + packRecipe({ r: recipe.map(st => st.p === undefined ? { id: st.id } : { id: st.id, p: st.p }), h: fnv(text) }) + SEP + s;
 }
-function err(code, extra) { const e = new Error(code); e.code = code; if (extra) Object.assign(e, extra); return e; }
 /* разбор передачи: метка, рецепт, снятие слоёв с конца. Ошибки с кодом: nomark, broken, recipe, unknown, fail.
    В ответе ok: true, если сумма совпала (или её нет в старой передаче и текст не битый) */
 function decodeParts(t) {
@@ -195,7 +258,64 @@ function stages(text, recipe) { const out = []; let s = text; for (const st of r
 function unstages(text, recipe) { const out = []; let s = text; for (let i = recipe.length - 1; i >= 0; i--) { s = OPS[recipe[i].id].inv(s, recipe[i].p); out.push({ id: recipe[i].id, p: recipe[i].p, i, out: s }); } return out; }
 /* битый текст: символ замены U+FFFD или управляющие символы (кроме переноса строки и табуляции) */
 function looksBroken(s) { return /[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(s); }
-const API = { OPS, encode, decode, decodeParts, stages, unstages, looksBroken, packRecipe, unpackRecipe, PREFIX, SEP };
+// ============================================================
+// АСИНХРОННЫЙ ПУТЬ (нужен для AES). Его использует интерфейс.
+// collect: массив, куда складывается текст после каждого шага
+// ============================================================
+const hasSecret = r => r.some(st => OPS[st.id] && OPS[st.id].secret);
+const packStep = st => OPS[st.id].secret || st.p === undefined ? { id: st.id } : { id: st.id, p: st.p };
+async function stepF(st, s) { const op = OPS[st.id]; return op.fwdA ? op.fwdA(s, st.p) : op.fwd(s, st.p); }
+async function stepI(st, s, pass) { const op = OPS[st.id]; return op.invA ? op.invA(s, op.secret ? (st.p || pass) : st.p) : op.inv(s, st.p); }
+async function encodeA(text, recipe, collect) {
+  let s = text;
+  for (const st of recipe) {
+    const op = OPS[st.id];
+    if (op.gen && (st.p === undefined || st.p === null)) st.p = op.gen(s);
+    s = await stepF(st, s);
+    if (collect) collect.push({ id: st.id, p: op.secret ? undefined : st.p, out: s });
+  }
+  /* с паролем сумму не пишем: по ней можно было бы проверять догадки о коротком тексте */
+  return PREFIX + packRecipe({ r: recipe.map(packStep), h: hasSecret(recipe) ? undefined : fnv(text) }) + SEP + s;
+}
+/* снять слои рецепта с текста; ошибки пароля пробрасываются как есть */
+async function unwrapA(body, recipe, pass, collect) {
+  let s = body;
+  for (let i = recipe.length - 1; i >= 0; i--) {
+    try { s = await stepI(recipe[i], s, pass); }
+    catch (e) { if (e && (e.code === "pass" || e.code === "needpass" || e.code === "nocrypto")) { e.recipe = recipe; e.layer = i; throw e; } throw err("fail", { layer: i, recipe }); }
+    if (collect) collect.push({ id: recipe[i].id, p: OPS[recipe[i].id].secret ? undefined : recipe[i].p, i, out: s });
+  }
+  return s;
+}
+function readMark(t) {
+  t = String(t).replace(/^\s+/, "");
+  if (!t.startsWith(PREFIX)) throw err("nomark");
+  const end = t.indexOf(SEP); if (end < 0) throw err("broken");
+  let pack; try { pack = unpackRecipe(t.slice(PREFIX.length, end)); } catch (e) { throw err("recipe"); }
+  const recipe = Array.isArray(pack) ? pack : (pack && Array.isArray(pack.r) ? pack.r : null);
+  if (!recipe) throw err("recipe");
+  for (const st of recipe) if (!st || !OPS[st.id]) throw err("unknown");
+  return { recipe, h: Array.isArray(pack) ? null : (pack.h || null), body: t.slice(end + 1) };
+}
+async function decodePartsA(t, pass, collect) {
+  const m = readMark(t), recipe = m.recipe, h = m.h, body = m.body;
+  const cands = [body]; const tw = (body.match(/\s+$/) || [""])[0].length;
+  for (let k = 1; k <= Math.min(tw, 8); k++) cands.push(body.slice(0, body.length - k));
+  let first = null, firstSt = null, firstErr = null, passErr = null;
+  for (const c of cands) {
+    const st = []; let plain;
+    try { plain = await unwrapA(c, recipe, pass, st); }
+    catch (e) { if (e.code === "needpass" || e.code === "nocrypto") throw e; if (e.code === "pass") { passErr = passErr || e; continue; } if (!firstErr) firstErr = e; continue; }
+    if (h ? fnv(plain) === h : !looksBroken(plain)) { if (collect) collect.push(...st); return { recipe, plain, ok: true, sum: !!h, body: c }; }
+    if (first === null) { first = plain; firstSt = st; }
+  }
+  if (first !== null) { if (collect) collect.push(...firstSt); return { recipe, plain: first, ok: false, sum: !!h, body }; }
+  throw passErr || firstErr || err("fail", { layer: recipe.length - 1, recipe });
+}
+
+const API = { OPS, encode, decode, decodeParts, stages, unstages, looksBroken, packRecipe, unpackRecipe, PREFIX, SEP,
+  encodeA, decodePartsA, unwrapA, readMark, hasSecret, hasCrypto: !!subtle,
+  PREFIX_R, isReal, realEnc, realDec, R_ITER };
 if (typeof module !== "undefined" && module.exports) module.exports = API;      // Node
 else { root.ACEON = API; } // браузер
 

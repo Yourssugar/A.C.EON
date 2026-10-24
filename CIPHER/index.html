@@ -175,6 +175,59 @@
   .out-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
   .copy{background:transparent;border:1px solid var(--line);color:var(--steel);cursor:pointer;font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;padding:6px 12px;transition:.13s}
   .copy:hover{border-color:var(--amber);color:var(--amber)}
+  .copy[hidden]{display:none}
+  .copy.air.live{border-color:var(--amber);color:var(--amber);animation:blink 1s steps(1) infinite}
+  .tbr{display:flex;gap:6px;align-items:center}
+  #sndBtn.off{color:var(--steel-dim)}
+  #sndBtn[hidden]{display:none}
+  /* учебный и реальный режим */
+  .modes{display:flex;margin-top:14px;border:1px solid var(--line)}
+  .mode{flex:1;background:var(--panel);border:0;color:var(--steel);font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;padding:12px 8px;cursor:pointer;transition:.15s;display:flex;gap:8px;justify-content:center;align-items:center}
+  .mode + .mode{border-left:1px solid var(--line)}
+  .mode b{color:var(--steel-dim);font-weight:400}
+  .mode:hover{color:var(--paper);background:var(--panel-2)}
+  .mode.on{background:var(--panel-2);color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber)}
+  .mode.real.on{color:var(--ok);box-shadow:inset 0 -2px 0 var(--ok)}
+  body.real .t-only{display:none!important}
+  body:not(.real) .r-only{display:none!important}
+  .rnote{margin-top:10px;padding:9px 12px;border:1px solid rgba(90,161,127,.45);color:#9fd6b8;font-size:11.5px;line-height:1.55;background:rgba(90,161,127,.07)}
+  body.real .tab.on,body.real .tab.on.dec{background:var(--ok);color:var(--void)}
+  body.real .run,body.real .run.dec{background:var(--ok);color:var(--void)}
+  body.real .run:disabled{background:var(--line);color:var(--steel-dim)}
+  body.real .cap .n,body.real .cap.dec .n{color:var(--ok)}
+  body.real .grif{color:var(--ok)}
+  body.real .grif span{border-color:var(--ok);box-shadow:inset 0 0 0 2px rgba(90,161,127,.15)}
+  body.real .stamp-title .dot{color:var(--ok)}
+  body.real .transmission{color:#9fd6b8}
+  body.real .transmission.plain{color:var(--paper)}
+  body.real #passBox{border-left-color:var(--ok)}
+  body.real .console{border-left-color:var(--ok)}
+  body.real .console div.hot{color:#9fd6b8;text-shadow:0 0 8px rgba(90,161,127,.4)}
+  body.real textarea:focus,body.real input.txt:focus{border-color:var(--ok)}
+  #rEye,#rGen{white-space:nowrap}
+  .meter{height:4px;background:var(--line);margin-top:10px;overflow:hidden}
+  .meter i{display:block;height:100%;width:0;transition:width .2s,background .2s}
+  .mtxt{font-size:11px;margin-top:6px;min-height:16px}
+  #rwarn{position:fixed;inset:0;z-index:50;background:rgba(5,6,8,.84);display:flex;align-items:center;justify-content:center;padding:16px}
+  #rwarn[hidden]{display:none}
+  .rw-box{max-width:580px;width:100%;max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--ok);padding:20px}
+  .stamp{display:inline-block;color:var(--ok);border:1px solid var(--ok);padding:6px 10px;letter-spacing:.2em;text-transform:uppercase;font-size:12px;transform:rotate(-2deg)}
+  .rw-box ul{margin:16px 0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--paper)}
+  .rw-box li{margin-bottom:7px}
+  .rw-box .toggle{text-transform:none;letter-spacing:.02em;font-size:12.5px;color:var(--paper)}
+  .rw-box .toggle input{accent-color:var(--ok)}
+  .rw-act{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
+  .run.realbtn{width:auto;padding:12px 18px;background:var(--ok);font-size:12px}
+  .btns{display:flex;gap:6px;flex-wrap:wrap}
+  .incoming{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--alert);margin-bottom:10px}
+  .incoming[hidden]{display:none}
+  .blink{animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  #passBox{margin-top:12px;border-left:2px solid var(--alert);padding-left:12px}
+  #passBox[hidden]{display:none}
+  .passmsg{font-size:12px;color:var(--steel);margin-bottom:8px}
+  .passmsg.bad{color:#ff8b80}
+  #passBox .saverow input:focus{border-color:var(--alert)}
   .copy.dec:hover{border-color:var(--alert);color:var(--alert)}
   .transmission{background:var(--void);border:1px solid var(--line);padding:14px;font-size:13px;word-break:break-all;white-space:pre-wrap;color:var(--amber);min-height:44px}
   .transmission.plain{color:var(--paper)}
@@ -217,7 +270,7 @@
 
   <div class="topbar">
     <button class="tb" id="back" type="button">&lt; A.C.EON</button>
-    <div id="langwrap"><button class="tb" id="langbtn" type="button">RU</button><div id="langmenu"></div></div>
+    <div class="tbr"><button class="tb" id="sndBtn" type="button"></button><div id="langwrap"><button class="tb" id="langbtn" type="button">RU</button><div id="langmenu"></div></div></div>
   </div>
 
   <header>
@@ -234,6 +287,12 @@
       <span><b id="tmParse"></b>: <span id="tmParseV"></span></span>
     </div>
   </header>
+
+  <div class="modes">
+    <button class="mode on" id="modeT" type="button"><b>01</b><span id="tModeT"></span></button>
+    <button class="mode real" id="modeR" type="button"><b>02</b><span id="tModeR"></span></button>
+  </div>
+  <div class="rnote r-only" id="rnote"></div>
 
   <div class="machine" id="machine">
     <div class="cap"><span class="n">&#9881;</span> <span id="tMachine"></span><span class="mode" id="mMode"></span></div>
@@ -252,7 +311,17 @@
       <div class="pad"><textarea id="plain"></textarea></div>
     </div>
 
-    <div class="block">
+    <div class="block r-only">
+      <div class="cap"><span class="n">02</span> <span id="tRPass"></span></div>
+      <div class="pad">
+        <div class="saverow"><input class="txt" id="rPass" type="password" autocomplete="new-password" spellcheck="false"><button type="button" id="rEye"></button><button type="button" id="rGen"></button></div>
+        <div class="saverow"><input class="txt" id="rPass2" type="password" autocomplete="new-password" spellcheck="false"></div>
+        <div class="meter"><i id="rBar"></i></div><div class="mtxt" id="rMeter"></div>
+        <p class="hint" id="tRHint"></p>
+      </div>
+    </div>
+
+    <div class="block t-only">
       <div class="cap"><span class="n">02</span> <span id="tC2"></span></div>
       <div class="pad">
         <div class="grp-label" id="tPresets"></div>
@@ -266,7 +335,7 @@
       </div>
     </div>
 
-    <div class="block">
+    <div class="block t-only">
       <div class="cap"><span class="n">03</span> <span id="tC3"></span></div>
       <div class="pad"><div id="pipe" class="pipe"></div></div>
     </div>
@@ -276,7 +345,7 @@
     <div class="block" style="margin-top:18px" id="encOutWrap" hidden>
       <div class="cap"><span class="n">04</span> <span id="tC4"></span></div>
       <div class="pad">
-        <div class="out-head"><label class="toggle"><input type="checkbox" id="encSt"> <span class="tStages"></span></label><button class="copy" id="encCopy" type="button"></button></div>
+        <div class="out-head"><label class="toggle t-only"><input type="checkbox" id="encSt"> <span class="tStages"></span></label><span class="btns"><button class="copy air" id="encMorse" type="button" hidden></button><button class="copy air" id="encVoice" type="button" hidden></button><button class="copy" id="encLink" type="button" hidden></button><button class="copy" id="encShare" type="button" hidden></button><button class="copy" id="encCopy" type="button"></button></span></div>
         <div style="height:10px"></div>
         <div id="encConsole" class="console"></div>
         <div id="transOut" class="transmission"></div>
@@ -287,7 +356,7 @@
 
   <!-- ========== РАСШИФРОВКА ========== -->
   <section class="view" id="view-dec">
-    <div class="subtabs">
+    <div class="subtabs t-only">
       <button class="subtab on" id="sub-auto" type="button"></button>
       <button class="subtab" id="sub-man" type="button"></button>
     </div>
@@ -295,7 +364,14 @@
     <div id="decAuto">
       <div class="block">
         <div class="cap dec"><span class="n">&#8634;</span> <span id="tDecPaste"></span></div>
-        <div class="pad"><textarea id="cipher" class="dec" placeholder="&#10216;ACEON:...&#10217;..."></textarea></div>
+        <div class="pad">
+          <div class="incoming" id="incoming" hidden><span class="blink">&#9679;</span> <span id="tIncoming"></span></div>
+          <textarea id="cipher" class="dec" placeholder="&#10216;ACEON:...&#10217;..."></textarea>
+          <div id="passBox" hidden>
+            <div class="passmsg" id="passMsg"></div>
+            <div class="saverow"><input class="txt" id="passIn" type="password" autocomplete="off"><button type="button" id="passGo"></button></div>
+          </div>
+        </div>
       </div>
       <button class="run dec" id="decBtn" type="button"></button>
     </div>
@@ -322,7 +398,7 @@
     <div class="block" style="margin-top:18px" id="decOutWrap" hidden>
       <div class="cap dec"><span class="n">&#10003;</span> <span id="tRestored"></span></div>
       <div class="pad">
-        <div class="out-head"><label class="toggle"><input type="checkbox" id="decSt"> <span class="tStages"></span></label><button class="copy dec" id="decCopy" type="button"></button></div>
+        <div class="out-head"><label class="toggle t-only"><input type="checkbox" id="decSt"> <span class="tStages"></span></label><button class="copy dec" id="decCopy" type="button"></button></div>
         <div style="height:10px"></div>
         <div id="decConsole" class="console dec"></div>
         <div id="plainOut" class="transmission plain"></div>
@@ -332,15 +408,25 @@
     </div>
   </section>
 
-  <footer><b id="tF1"></b> <span id="tF2"></span><br><span id="tF3"></span><br><span id="tF4"></span><br><span id="tF5"></span></footer>
+  <footer><span class="t-only"><b id="tF1"></b> <span id="tF2"></span><br><span id="tF3"></span><br><span id="tF4"></span><br><span id="tF6"></span><br></span><span class="r-only"><span id="tFR"></span><br></span><span id="tF5"></span></footer>
+
+<div id="rwarn" hidden role="dialog" aria-modal="true">
+  <div class="rw-box">
+    <span class="stamp" id="tRwT"></span>
+    <ul id="rwList"></ul>
+    <label class="toggle"><input type="checkbox" id="rwOk"> <span id="tRwAgree"></span></label>
+    <div class="rw-act"><button class="tb" id="rwNo" type="button"></button><button class="run realbtn" id="rwYes" type="button" disabled></button></div>
+  </div>
+</div>
 </div>
 
 <script src="../games/shared/store.js?v=1"></script>
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
-<script src="lang.js?v=1"></script>
-<script src="cipher-engine.js?v=2"></script>
-<script src="cipher-gl.js?v=1"></script>
-<script src="cipher-ui.js?v=2"></script>
+<script src="lang.js?v=3"></script>
+<script src="cipher-engine.js?v=4"></script>
+<script src="cipher-gl.js?v=3"></script>
+<script src="cipher-audio.js?v=1"></script>
+<script src="cipher-ui.js?v=4"></script>
 </body>
 </html>

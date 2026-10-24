@@ -7,6 +7,7 @@
 const $=id=>document.getElementById(id);
 const A=window.ACEON, OPS=A.OPS;
 const GL=window.CipherGL&&window.CipherGL.ok?window.CipherGL:null;
+const AU=window.CipherAudio&&window.CipherAudio.ok?window.CipherAudio:null;
 const TR=window.Trace||null;
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let PORTAL=false; try{ PORTAL=window.self!==window.top; }catch(e){ PORTAL=true; }
@@ -24,26 +25,29 @@ function T(k,v){
   const d=CL[lang()]||{}; let s=d[k]!==undefined?d[k]:((CL.en||{})[k]!==undefined?CL.en[k]:((CL.ru||{})[k]!==undefined?CL.ru[k]:k));
   if(v)s=String(s).replace(/\{(\w+)\}/g,(m,n)=>v[n]!==undefined?v[n]:m); return s;
 }
-const GRP={'Кодировки':'enc','Визуальное':'vis','Перестановки':'perm','Классика':'cls'};
+const GRP={'Кодировки':'enc','Визуальное':'vis','Перестановки':'perm','Классика':'cls','Защита':'sec'};
 const opName=id=>{ const k='o.'+id, s=T(k); return s!==k?s:OPS[id].name; };
 const opDesc=id=>{ const k='d.'+id, s=T(k); return s!==k?s:(OPS[id].desc||''); };
 const grpName=id=>T('g.'+(GRP[OPS[id].grp]||'cls'));
 const plabel=id=>{ const k='pl.'+id, s=T(k); return s!==k?s:(OPS[id].param==='num'?T('pNum'):T('pKey')); };
+const secret=id=>!!(OPS[id]&&OPS[id].secret);
 
 /* ---------- память ---------- */
 let mem={recipes:[],last:null,stE:false,stD:false};
 const hasStore=!!window.Store;
-if(hasStore){ try{ Store.define('cipher',{version:1,defaults:{recipes:[],last:null,stE:false,stD:false}}); mem=Store.get('cipher'); }catch(e){} }
+if(hasStore){ try{ Store.define('cipher',{version:1,defaults:{recipes:[],last:null,stE:false,stD:false,real:false,realOk:false}}); mem=Store.get('cipher'); }catch(e){} }
 function save(){ if(hasStore)try{ Store.save('cipher'); }catch(e){} }
 
 /* ---------- конвейер ---------- */
 const clone=st=>st.p===undefined?{id:st.id}:{id:st.id,p:st.p};
+/* в память пароли не пишем */
+const keep=st=>secret(st.id)?{id:st.id}:clone(st);
 function createPipeline(cfg){
   const steps=[];
   let hot=-1;
   function buildPalette(){
     const grps={};
-    for(const id in OPS){ if(cfg.exclude&&cfg.exclude.indexOf(id)>=0)continue; const g=GRP[OPS[id].grp]||'cls'; (grps[g]=grps[g]||[]).push(id); }
+    for(const id in OPS){ if(cfg.exclude&&cfg.exclude.indexOf(id)>=0)continue; if(secret(id)&&!A.hasCrypto)continue; const g=GRP[OPS[id].grp]||'cls'; (grps[g]=grps[g]||[]).push(id); }
     const el=$(cfg.paletteId); el.innerHTML='';
     for(const g in grps){
       const lab=document.createElement('div'); lab.className='grp-label'; lab.textContent=T('g.'+g); el.appendChild(lab);
@@ -76,7 +80,7 @@ function createPipeline(cfg){
       const op=OPS[st.id];
       const row=document.createElement('div'); row.className='step'; row.dataset.i=i;
       let ph='';
-      if(op.param)ph='<input class="param" value="'+esc(st.p)+'" placeholder="'+esc(plabel(st.id))+'" title="'+esc(plabel(st.id))+'"'+(op.param==='num'?' inputmode="numeric"':'')+'>';
+      if(op.param)ph='<input class="param" value="'+esc(st.p===undefined?'':st.p)+'" placeholder="'+esc(plabel(st.id))+'" title="'+esc(plabel(st.id))+'"'+(op.param==='num'?' inputmode="numeric"':'')+(op.param==='pass'?' type="password" autocomplete="new-password"':'')+'>';
       row.innerHTML='<div class="idx" title="'+esc(T('drag'))+'">'+String(i+1).padStart(2,'0')+'</div>'
         +'<div class="nm">'+esc(opName(st.id))+'<small>'+esc(grpName(st.id))+'</small></div>'+ph
         +'<div class="ctrl"><button class="up" type="button" title="'+esc(T('up'))+'">&#8593;</button><button class="dn" type="button" title="'+esc(T('down'))+'">&#8595;</button><button class="x" type="button" title="'+esc(T('remove'))+'">&#10005;</button></div>';
@@ -120,20 +124,21 @@ function createPipeline(cfg){
 }
 
 /* ---------- режимы и шифромашина ---------- */
-let mode='enc', decMode='auto', lastRecipe=[];
-function machineSteps(){ return mode==='enc'?encPipe.steps:(decMode==='man'?decPipe.steps:lastRecipe); }
+let mode='enc', decMode='auto', lastRecipe=[], REAL=false;
+const REAL_STEPS=[{id:'aes'}];
+function machineSteps(){ if(REAL)return REAL_STEPS; return mode==='enc'?encPipe.steps:(decMode==='man'?decPipe.steps:lastRecipe); }
 function syncMachine(added){
   $('machine').classList.toggle('dec',mode!=='enc');
-  $('mMode').textContent=mode==='enc'?T('tabEnc'):T('tabDec');
+  $('mMode').textContent=(REAL?T('modeR')+' · ':'')+(mode==='enc'?T('tabEnc'):T('tabDec'));
   const st=machineSteps();
   $('rempty').textContent=st.length?'':T('noRotors');
   if(GL)GL.setRotors(st,mode==='enc'?'enc':'dec',id=>opName(id),added);
 }
-const encPipe=createPipeline({paletteId:'palette',pipeId:'pipe',descId:'opdesc',emptyKey:'empty',isShown:()=>mode==='enc',
-  onChange:added=>{ mem.last=encPipe.steps.map(clone); save(); if(mode==='enc')syncMachine(added); }});
-const decPipe=createPipeline({paletteId:'paletteMan',pipeId:'pipeMan',descId:'opdescMan',exclude:['vernam'],emptyKey:'emptyMan',isShown:()=>mode==='dec'&&decMode==='man',
-  onChange:added=>{ if(mode==='dec'&&decMode==='man')syncMachine(added); }});
-if(GL)GL.onHover(i=>{ const p=mode==='enc'?encPipe:(decMode==='man'?decPipe:null); if(p)p.highlight(i); });
+const encPipe=createPipeline({paletteId:'palette',pipeId:'pipe',descId:'opdesc',exclude:['aes'],emptyKey:'empty',isShown:()=>!REAL&&mode==='enc',
+  onChange:added=>{ mem.last=encPipe.steps.map(keep); save(); if(mode==='enc'&&!REAL)syncMachine(added); }});
+const decPipe=createPipeline({paletteId:'paletteMan',pipeId:'pipeMan',descId:'opdescMan',exclude:['vernam','aes'],emptyKey:'emptyMan',isShown:()=>!REAL&&mode==='dec'&&decMode==='man',
+  onChange:added=>{ if(mode==='dec'&&decMode==='man'&&!REAL)syncMachine(added); }});
+if(GL)GL.onHover(i=>{ if(REAL)return; const p=mode==='enc'?encPipe:(decMode==='man'?decPipe:null); if(p)p.highlight(i); });
 
 /* ---------- готовые рецепты ---------- */
 const KEYS=['eon','kai','anton','nebula','signal','ash','ghost','raven','orbit','echo'];
@@ -146,7 +151,7 @@ const PRESETS={
 function randomRecipe(){
   const ids=Object.keys(OPS), n=3+(Math.random()*3|0), out=[];
   for(let i=0;i<n;i++){
-    let id; do{ id=ids[Math.random()*ids.length|0]; }while(out.length&&out[out.length-1].id===id);
+    let id; do{ id=ids[Math.random()*ids.length|0]; }while(secret(id)||(out.length&&out[out.length-1].id===id));
     const op=OPS[id], st={id};
     if(op.param==='num')st.p=id==='rail'?2+(Math.random()*5|0):1+(Math.random()*25|0);
     else if(op.param==='key')st.p=KEYS[Math.random()*KEYS.length|0];
@@ -179,7 +184,7 @@ $('rsave').addEventListener('click',()=>{
   if(!encPipe.steps.length){ flashBtn($('rsave'),T('eEmpty').split(',')[0]); return; }
   const name=($('rname').value.trim()||('#'+(mem.recipes.length+1))).slice(0,32);
   const i=mem.recipes.findIndex(r=>r.name===name);
-  const rec={name,steps:encPipe.steps.map(clone)};
+  const rec={name,steps:encPipe.steps.map(keep)};
   if(i>=0)mem.recipes[i]=rec; else { mem.recipes.push(rec); if(mem.recipes.length>12)mem.recipes.shift(); }
   save(); $('rname').value=''; buildMine(); flashBtn($('rsave'),T('saved'));
 });
@@ -203,6 +208,8 @@ function playScramble(target,cfg){
   btn.disabled=true; btn.dataset.lbl=btn.textContent; btn.textContent=cfg.busy+'...';
   let fired=0; const t0=performance.now();
   if(GL)GL.anim(cfg.dir,cfg.dur);
+  if(AU)AU.staticOn();
+  let lastHead=0;
   function frame(now){
     const p=Math.min(1,(now-t0)/cfg.dur), head=Math.floor(easeInOut(p)*VIS);
     while(fired<cfg.events.length&&(now-t0)>=cfg.events[fired].t){
@@ -211,11 +218,13 @@ function playScramble(target,cfg){
       con.querySelectorAll('div').forEach(x=>x.classList.remove('hot')); d.classList.add('hot');
       if(steps){ clearActive(); if(ev.step>=0&&steps[ev.step])steps[ev.step].classList.add('active'); }
       if(GL&&ev.rotor>=0)GL.spin(ev.rotor,cfg.dir==='enc'?1:-1);
+      if(AU&&ev.rotor>=0)AU.tick();
     }
+    if(AU&&head>lastHead){ AU.type(); lastHead=head; }
     let buf=''; for(let i=0;i<VIS;i++)buf+=i<head?chars[i]:i<head+ZONE?rndGlyph():noise[i];
     out.textContent=buf;
     if(p<1)animRAF=requestAnimationFrame(frame);
-    else { animRAF=null; if(steps)clearActive(); con.querySelectorAll('div').forEach(x=>x.classList.remove('hot')); btn.disabled=false; btn.textContent=btn.dataset.lbl; if(GL)GL.animEnd(); cfg.onDone(); }
+    else { animRAF=null; if(steps)clearActive(); con.querySelectorAll('div').forEach(x=>x.classList.remove('hot')); btn.disabled=false; btn.textContent=btn.dataset.lbl; if(GL)GL.animEnd(); if(AU){ AU.staticOff(); AU.seal(cfg.dir!=='enc'); } cfg.onDone(); }
   }
   animRAF=requestAnimationFrame(frame);
 }
@@ -226,7 +235,7 @@ function renderStages(box,list,dir,input){
   let h='<div class="stage"><span class="k">00</span><span class="lbl">'+esc(T('stIn'))+'<span class="len">'+Array.from(input).length+'</span></span><div class="val">'+esc(cut(input))+'</div></div>';
   list.forEach((st,k)=>{
     const n=dir==='enc'?k+1:st.i+1;
-    h+='<div class="stage"><span class="k">'+String(n).padStart(2,'0')+'</span><span class="lbl">'+esc(opName(st.id))+(st.p!==undefined&&OPS[st.id].param?' ['+esc(st.p)+']':'')
+    h+='<div class="stage"><span class="k">'+String(n).padStart(2,'0')+'</span><span class="lbl">'+esc(opName(st.id))+(st.p!==undefined&&OPS[st.id].param&&!secret(st.id)?' ['+esc(st.p)+']':'')
       +'<span class="len">'+Array.from(st.out).length+'</span></span><div class="val">'+esc(cut(st.out))+'</div></div>';
   });
   box.innerHTML=h;
@@ -234,15 +243,20 @@ function renderStages(box,list,dir,input){
 }
 
 /* ---------- шифрование ---------- */
-let encLast=null;
-function doEncode(){
-  if(animRAF)return;
+let encLast=null, busy=false;
+async function doEncode(){
+  if(animRAF||busy)return;
+  if(REAL)return doEncodeReal();
   const text=$('plain').value, out=$('transOut'), con=$('encConsole');
-  $('encOutWrap').hidden=false; clearActive(); $('encStages').classList.remove('on');
+  $('encOutWrap').hidden=false; clearActive(); $('encStages').classList.remove('on'); linkRow(false);
   if(!encPipe.steps.length){ con.className='console'; con.innerHTML=''; out.className='transmission err'; out.textContent=T('eEmpty'); return; }
   encPipe.steps.forEach(st=>{ if(OPS[st.id].gen)st.p=undefined; });
-  const transmission=A.encode(text,encPipe.steps);
-  encLast={text,recipe:encPipe.steps.map(clone)};
+  const coll=[]; let transmission;
+  busy=true; $('encBtn').disabled=true;
+  try{ transmission=await A.encodeA(text,encPipe.steps,coll); }
+  catch(e){ con.className='console'; con.innerHTML=''; out.className='transmission err'; out.textContent='\u2715 '+(e.code==='needpass'?T('ePassEmpty'):e.code==='nocrypto'?T('noCrypto'):T('eMan')); return; }
+  finally{ busy=false; $('encBtn').disabled=false; }
+  encLast={text,stages:coll,tr:transmission};
   if(TR)TR.event('cipher.encode');
   if(RM){ con.className='console'; con.innerHTML=''; finishEncode(transmission); return; }
   const n=encPipe.steps.length, DUR=Math.max(3000,Math.min(5000,2400+n*300)), win=DUR*.6;
@@ -253,18 +267,134 @@ function doEncode(){
   playScramble(transmission,{out,con,btn:$('encBtn'),steps:document.querySelectorAll('#pipe .step'),dir:'enc',
     dur:DUR,busy:T('busyEnc'),outClass:'live',conClass:'',events,onDone:()=>finishEncode(transmission)});
 }
+/* ---------- реальный канал ---------- */
+function strength(pw){
+  if(!pw)return 0;
+  if(/^[a-hj-np-z2-9]{5}(-[a-hj-np-z2-9]{5}){3}$/.test(pw))return 99;
+  if(/^(.)\1*$/.test(pw)||/^(?:123456|12345678|password|qwerty|пароль|йцукен|111111|000000)/i.test(pw))return 8;
+  let pool=0; if(/[a-z]/.test(pw))pool+=26; if(/[A-Z]/.test(pw))pool+=26; if(/[0-9]/.test(pw))pool+=10; if(/[^a-zA-Z0-9\u0400-\u04FF]/.test(pw))pool+=33; if(/[\u0400-\u04FF]/.test(pw))pool+=66;
+  const uniq=new Set(Array.from(pw)).size, len=Array.from(pw).length;
+  return Math.round(Math.min(len,uniq*1.5)*Math.log2(Math.max(pool,2)));
+}
+function meter(){
+  const b=strength($('rPass').value), bar=$('rBar'), m=$('rMeter');
+  const lv=b<40?['sWeak','#c8433a']:b<64?['sFair','#e8b04b']:b<90?['sGood','#8fc46b']:['sStrong','#5aa17f'];
+  bar.style.width=Math.min(100,b/1.2)+'%'; bar.style.background=lv[1];
+  m.textContent=$('rPass').value?T(lv[0])+' · '+T('sBits',{n:b}):''; m.style.color=lv[1];
+}
+function genPass(){
+  const al='abcdefghjkmnpqrstuvwxyz23456789', b=new Uint8Array(20); crypto.getRandomValues(b);
+  let s=''; for(let i=0;i<20;i++){ s+=al[b[i]%al.length]; if(i%5===4&&i<19)s+='-'; }
+  $('rPass').value=s; $('rPass2').value=s; showPass(true); meter();
+}
+function showPass(on){ ['rPass','rPass2'].forEach(id=>$(id).type=on?'text':'password'); $('rEye').textContent=on?T('rHide'):T('rShow'); $('rEye').dataset.on=on?'1':''; }
+async function doEncodeReal(){
+  const text=$('plain').value, out=$('transOut'), con=$('encConsole'), pw=$('rPass').value;
+  $('encOutWrap').hidden=false; linkRow(false); $('encStages').classList.remove('on');
+  const fail=msg=>{ con.className='console'; con.innerHTML=''; out.className='transmission err'; out.textContent='\u2715 '+msg; };
+  if(!A.hasCrypto)return fail(T('noCrypto'));
+  if(Array.from(pw).length<8)return fail(T('eShort'));
+  if(pw!==$('rPass2').value)return fail(T('eMismatch'));
+  let tr; busy=true; $('encBtn').disabled=true;
+  try{ tr=await A.realEnc(text,pw); }catch(e){ return fail(e.code==='nocrypto'?T('noCrypto'):T('eMan')); }
+  finally{ busy=false; $('encBtn').disabled=false; }
+  encLast={text,stages:null,tr};
+  if(TR)TR.event('cipher.real.encode');
+  if(RM){ con.className='console'; con.innerHTML=''; finishEncode(tr); return; }
+  const DUR=3400, events=[{t:0,line:T('rL1'),step:-1,rotor:-1},{t:900,line:T('rL2',{n:String(A.R_ITER).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}),step:-1,rotor:0},{t:1900,line:T('rL3'),step:-1,rotor:0},{t:DUR*.82,line:T('rL4'),step:-1,rotor:-1},{t:DUR*.97,line:T('lSeal'),step:-1,rotor:-1}];
+  playScramble(tr,{out,con,btn:$('encBtn'),steps:null,dir:'enc',dur:DUR,busy:T('busyEnc'),outClass:'live',conClass:'',events,onDone:()=>finishEncode(tr)});
+}
+async function doDecodeReal(t){
+  lastRecipe=REAL_STEPS; syncMachine();
+  const pw=$('passIn').value;
+  if(!pw){ askPass(false); return; }
+  let plain; busy=true; $('decBtn').disabled=true;
+  try{ plain=await A.realDec(t,pw); }
+  catch(e){ if(e.code==='pass'||e.code==='needpass'){ askPass(e.code==='pass'); return; } decError(e.code==='version'?T('eVersion'):e.code==='nocrypto'?T('noCrypto'):T('eBroken')); return; }
+  finally{ busy=false; $('decBtn').disabled=false; }
+  $('decOutWrap').hidden=false; $('passMsg').textContent=T('needPass'); $('passMsg').classList.remove('bad');
+  if(TR)TR.event('cipher.real.decode');
+  const out=$('plainOut'), con=$('decConsole');
+  $('decWarn').classList.remove('on');
+  const done=()=>finishDecode({plain,ok:true,sum:true},'',null);
+  if(RM){ con.className='console'; con.innerHTML=''; done(); return; }
+  const DUR=3400, events=[{t:0,line:T('lIn'),step:-1,rotor:-1},{t:900,line:T('rL2',{n:String(A.R_ITER).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}),step:-1,rotor:0},{t:1900,line:T('rL5'),step:-1,rotor:0},{t:DUR*.97,line:T('lDone'),step:-1,rotor:-1}];
+  playScramble(plain!==''?plain:T('emptyMsg'),{out,con,btn:$('decBtn'),steps:null,dir:'dec',dur:DUR,busy:T('busyDec'),outClass:'plain live-dec',conClass:'dec',events,onDone:done});
+}
+['rPass','rPass2'].forEach(id=>$(id).addEventListener('input',meter));
+$('rEye').addEventListener('click',()=>showPass(!$('rEye').dataset.on));
+$('rGen').addEventListener('click',genPass);
+
+/* переключение учебный / реальный */
+let warnNext=null;
+function setReal(on,then){
+  if(on&&!mem.realOk){ warnNext=then||null; $('rwOk').checked=false; $('rwYes').disabled=true; $('rwarn').hidden=false; return; }
+  REAL=!!on; mem.real=REAL; save();
+  document.body.classList.toggle('real',REAL);
+  $('modeT').classList.toggle('on',!REAL); $('modeR').classList.toggle('on',REAL);
+  if(GL&&GL.setReal)GL.setReal(REAL);
+  if(REAL&&mode==='dec')setDecMode('auto');
+  $('passBox').hidden=REAL?mode!=='dec':true;
+  if(REAL){ $('passMsg').textContent=T('needPass'); $('passMsg').classList.remove('bad'); }
+  $('encOutWrap').hidden=true; $('decOutWrap').hidden=true;
+  texts();
+  if(then)then();
+}
+$('modeT').addEventListener('click',()=>{ if(REAL)setReal(false); });
+$('modeR').addEventListener('click',()=>{ if(!REAL)setReal(true); });
+$('rwOk').addEventListener('change',e=>{ $('rwYes').disabled=!e.target.checked; });
+$('rwYes').addEventListener('click',()=>{ mem.realOk=true; save(); $('rwarn').hidden=true; const n=warnNext; warnNext=null; setReal(true,n); if(TR)TR.event('cipher.real.ok'); });
+$('rwNo').addEventListener('click',()=>{ $('rwarn').hidden=true; warnNext=null; });
+addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('rwarn').hidden)$('rwNo').click(); });
+
+/* ---------- эфир: морзе и номерная станция ---------- */
+function bodyOf(tr){ const i=tr.indexOf('\u27e9'); return i>=0?tr.slice(i+1):tr; }
+function morseText(tr){ const b=bodyOf(tr).toUpperCase().replace(/[^A-Z0-9]/g,''); return 'VVV DE ACEON '+b.slice(0,36).replace(/(.{6})/g,'$1 ')+' AR'; }
+function numberGroups(tr){
+  let h=2166136261>>>0; const out=[]; const s=bodyOf(tr);
+  for(let g=0;g<5;g++){ let grp=[]; for(let k=0;k<5;k++){ for(let i=(g*5+k)%Math.max(1,s.length);i<s.length;i+=7){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } grp.push(h%10); } out.push(grp.join(', ')); }
+  return out;
+}
+let airBtn=null;
+function airStop(){ if(AU){ AU.stopMorse(); AU.stopVoice(); } }
+function airReset(){ if(airBtn){ airBtn.textContent=airBtn.dataset.lbl; airBtn.classList.remove('live'); airBtn=null; } }
+function air(btn,kind){
+  if(!AU||!encLast)return;
+  if(airBtn===btn){ airStop(); airReset(); return; }
+  airStop(); airReset();
+  if(!AU.on()){ AU.set(true); sndLabel(); }
+  airBtn=btn; btn.dataset.lbl=btn.textContent; btn.textContent=T('stop'); btn.classList.add('live');
+  if(kind==='morse')AU.morse(morseText(encLast.tr),airReset);
+  else AU.voice([T('vIntro')].concat(numberGroups(encLast.tr)).concat([T('vEnd')]),lang(),airReset);
+  if(TR)TR.event('cipher.air.'+kind);
+}
+$('encMorse').addEventListener('click',e=>air(e.currentTarget,'morse'));
+$('encVoice').addEventListener('click',e=>air(e.currentTarget,'voice'));
+function sndLabel(){ const b=$('sndBtn'); if(!AU){ b.hidden=true; return; } b.textContent=(AU.on()?'\u266A ':'\u2715 ')+T('snd'); b.classList.toggle('off',!AU.on()); }
+$('sndBtn').addEventListener('click',()=>{ if(!AU)return; AU.set(!AU.on()); sndLabel(); if(!AU.on())airReset(); });
+
 function finishEncode(tr){
   const out=$('transOut'), end=tr.indexOf(A.SEP);
   out.className='transmission'; out.dataset.full=tr;
   out.innerHTML='<span class="marker">'+esc(tr.slice(0,end+1))+'</span>'+esc(tr.slice(end+1));
-  if(encLast){ renderStages($('encStages'),A.stages(encLast.text,encLast.recipe),'enc',encLast.text); $('encStages').classList.toggle('on',$('encSt').checked); }
+  if(encLast&&encLast.stages){ renderStages($('encStages'),encLast.stages,'enc',encLast.text); $('encStages').classList.toggle('on',$('encSt').checked); }
+  linkRow(true);
 }
 
+/* ---------- ссылка-передача: передача после # в адресе (на сервер не уходит) ---------- */
+function b64url(str){ const b=new TextEncoder().encode(str); let s=''; b.forEach(x=>s+=String.fromCharCode(x)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64url(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; const bin=atob(s); return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))); }
+function linkFor(tr){ return location.origin+location.pathname+'#t='+b64url(tr); }
+function fromLink(t){ const m=String(t).match(/#t=([A-Za-z0-9_-]+)/); if(!m)return t; try{ return unb64url(m[1]); }catch(e){ return t; } }
+function linkRow(on){ $('encLink').hidden=!on; $('encShare').hidden=!on||!navigator.share; $('encMorse').hidden=!on||!AU; $('encVoice').hidden=!on||!AU||!AU.hasVoice; if(!on){ airStop(); airReset(); } }
+$('encLink').addEventListener('click',e=>{ if(!encLast)return; copyText(linkFor(encLast.tr),e.currentTarget,T('linkCopied')); if(TR)TR.event('cipher.link'); });
+$('encShare').addEventListener('click',()=>{ if(!encLast||!navigator.share)return; navigator.share({title:'A.C.EON // CIPHER',text:T('shareText'),url:linkFor(encLast.tr)}).catch(()=>{}); if(TR)TR.event('cipher.share'); });
+
 /* ---------- расшифровка ---------- */
-function decodeAnimate(res,recipe,btnId,input){
+function decodeAnimate(res,recipe,btnId,input,coll){
   const out=$('plainOut'), con=$('decConsole');
   $('decWarn').classList.remove('on'); $('decStages').classList.remove('on');
-  const done=()=>finishDecode(res,recipe,input);
+  const done=()=>finishDecode(res,input,coll);
   if(RM){ con.className='console'; con.innerHTML=''; done(); return; }
   const target=res.plain!==''?res.plain:T('emptyMsg');
   const n=recipe.length, DUR=Math.max(3000,Math.min(5000,2400+n*300)), win=DUR*.6;
@@ -275,53 +405,72 @@ function decodeAnimate(res,recipe,btnId,input){
   playScramble(target,{out,con,btn:$(btnId),steps:decMode==='man'?document.querySelectorAll('#pipeMan .step'):null,dir:'dec',
     dur:DUR,busy:T('busyDec'),outClass:'plain live-dec',conClass:'dec',events,onDone:done});
 }
-function finishDecode(res,recipe,input){
+function finishDecode(res,input,coll){
   const out=$('plainOut');
   out.className='transmission plain'; out.textContent=res.plain!==''?res.plain:T('emptyMsg'); out.dataset.full=res.plain;
   const w=$('decWarn');
   if(!res.ok){ w.textContent=res.sum?T('wTamper'):T('wGarbage'); w.classList.add('on'); }
-  try{ renderStages($('decStages'),A.unstages(input,recipe),'dec',input); $('decStages').classList.toggle('on',$('decSt').checked); }catch(e){}
+  if(coll){ renderStages($('decStages'),coll,'dec',input); $('decStages').classList.toggle('on',$('decSt').checked); }
 }
 function decError(msg){
   const con=$('decConsole'); con.className='console'; con.innerHTML='';
-  const out=$('plainOut'); out.className='transmission err'; out.textContent='✕ '+msg; out.dataset.full='';
+  const out=$('plainOut'); out.className='transmission err'; out.textContent='\u2715 '+msg; out.dataset.full='';
   $('decWarn').classList.remove('on'); $('decStages').classList.remove('on');
   $('decOutWrap').hidden=false;
 }
 function errText(e,recipe){
   const c=e&&e.code;
   if(c==='nomark')return T('eNomark'); if(c==='broken')return T('eBroken'); if(c==='recipe')return T('eRecipe'); if(c==='unknown')return T('eUnknown');
-  if(c==='fail'){ const i=e.layer|0; return T('eFail',{n:String(i+1).padStart(2,'0'),op:recipe&&recipe[i]?opName(recipe[i].id):'?'}); }
+  if(c==='nocrypto')return T('noCrypto'); if(c==='pass')return T('ePass'); if(c==='needpass')return T('ePassEmpty');
+  if(c==='fail'){ const r=recipe||e.recipe, i=e.layer|0; return T('eFail',{n:String(i+1).padStart(2,'0'),op:r&&r[i]?opName(r[i].id):'?'}); }
   return T('eRecipe');
 }
-function doDecode(){
-  if(animRAF)return;
-  const t=$('cipher').value;
-  $('decOutWrap').hidden=false;
-  let res; try{ res=A.decodeParts(t); }catch(e){ let rec=null; try{ const s=t.replace(/^\s+/,''); rec=A.unpackRecipe(s.slice(A.PREFIX.length,s.indexOf(A.SEP))); rec=Array.isArray(rec)?rec:rec.r; }catch(er){} decError(errText(e,rec)); lastRecipe=[]; syncMachine(); return; }
-  lastRecipe=res.recipe.map(clone); syncMachine(true);
-  const s=t.replace(/^\s+/,''), body=s.slice(s.indexOf(A.SEP)+1);
+/* пароль для слоя AES при расшифровке по маркеру */
+function askPass(wrong){
+  $('passBox').hidden=false; $('decOutWrap').hidden=true;
+  $('passMsg').textContent=wrong?(REAL?T('ePassR'):T('ePass')):T('needPass'); $('passMsg').classList.toggle('bad',!!wrong);
+  if(wrong)$('passIn').select(); try{ $('passIn').focus({preventScroll:false}); }catch(e){}
+}
+function hidePass(){ if(REAL&&mode==='dec'){ $('passMsg').textContent=T('needPass'); $('passMsg').classList.remove('bad'); return; } $('passBox').hidden=true; }
+async function doDecode(){
+  if(animRAF||busy)return;
+  const t=fromLink($('cipher').value);
+  if(A.isReal(t)){ if(!REAL){ setReal(true,()=>doDecode()); return; } return doDecodeReal(t); }
+  let pre; try{ pre=A.readMark(t); }catch(e){ hidePass(); decError(errText(e)); lastRecipe=[]; syncMachine(); return; }
+  lastRecipe=pre.recipe.map(clone); syncMachine(true);
+  const coll=[]; let res;
+  busy=true; $('decBtn').disabled=true;
+  try{ res=await A.decodePartsA(t,$('passIn').value,coll); }
+  catch(e){ if(e.code==='needpass'||e.code==='pass'){ askPass(e.code==='pass'); return; } hidePass(); decError(errText(e,pre.recipe)); return; }
+  finally{ busy=false; $('decBtn').disabled=false; }
+  hidePass(); $('decOutWrap').hidden=false;
   if(TR)TR.event('cipher.decode');
-  decodeAnimate(res,res.recipe,'decBtn',body);
+  decodeAnimate(res,res.recipe,'decBtn',res.body,coll);
 }
-function doDecodeManual(){
-  if(animRAF)return;
+async function doDecodeManual(){
+  if(animRAF||busy)return;
   let c=$('cipherMan').value;
-  const s=c.replace(/^\s+/,''); if(s.startsWith(A.PREFIX)){ const e=s.indexOf(A.SEP); if(e>=0)c=s.slice(e+1); }
+  const s0=fromLink(c).replace(/^\s+/,''); if(s0.startsWith(A.PREFIX)){ const e=s0.indexOf(A.SEP); if(e>=0)c=s0.slice(e+1); }
   const recipe=decPipe.steps.map(clone);
-  $('decOutWrap').hidden=false;
   if(!recipe.length){ decError(T('eManAdd')); return; }
-  let plain=null;
   const tries=[c,c.replace(/\s+$/,'')].filter((x,i,a)=>a.indexOf(x)===i);
-  for(const x of tries){ try{ let s2=x; for(let i=recipe.length-1;i>=0;i--)s2=OPS[recipe[i].id].inv(s2,recipe[i].p); if(plain===null||!A.looksBroken(s2)){ plain=s2; c=x; } if(!A.looksBroken(s2))break; }catch(e){} }
-  if(plain===null){ decError(T('eMan')); return; }
+  let res=null, lastE=null;
+  busy=true; $('decBtnMan').disabled=true;
+  try{
+    for(const x of tries){ const coll=[]; try{ const plain=await A.unwrapA(x,recipe,'',coll); if(!res||!A.looksBroken(plain))res={plain,coll,x}; if(!A.looksBroken(plain))break; }catch(e){ lastE=e; } }
+  } finally{ busy=false; $('decBtnMan').disabled=false; }
+  if(!res){ decError(lastE&&(lastE.code==='pass'||lastE.code==='needpass'||lastE.code==='nocrypto')?errText(lastE):T('eMan')); return; }
+  $('decOutWrap').hidden=false;
   if(TR)TR.event('cipher.manual');
-  decodeAnimate({plain,ok:!A.looksBroken(plain),sum:false},recipe,'decBtnMan',c);
+  decodeAnimate({plain:res.plain,ok:!A.looksBroken(res.plain),sum:false},recipe,'decBtnMan',res.x,res.coll);
 }
+$('passGo').addEventListener('click',doDecode);
+$('passIn').addEventListener('keydown',e=>{ if(e.key==='Enter')doDecode(); });
+$('cipher').addEventListener('input',()=>{ hidePass(); $('passIn').value=''; });
 
 /* ---------- прочее ---------- */
-function copyText(txt,btn){
-  const ok=()=>{ const o=btn.textContent; btn.textContent=T('copied'); setTimeout(()=>btn.textContent=o,1400); };
+function copyText(txt,btn,msg){
+  const ok=()=>{ const o=btn.textContent; btn.textContent=msg||T('copied'); setTimeout(()=>btn.textContent=o,1400); };
   const fb=()=>{ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(e){} ta.remove(); };
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok,fb); else fb();
 }
@@ -335,6 +484,8 @@ function setMode(m){
   mode=m;
   $('view-enc').classList.toggle('on',m==='enc'); $('view-dec').classList.toggle('on',m==='dec');
   $('tab-enc').classList.toggle('on',m==='enc'); $('tab-dec').classList.toggle('on',m==='dec');
+  if(REAL)$('passBox').hidden=m!=='dec';
+  airStop(); airReset();
   syncMachine();
 }
 function setDecMode(m){
@@ -371,23 +522,40 @@ function texts(){
   const set=(id,k)=>{ $(id).textContent=T(k); };
   set('back','back'); langBtn.textContent=lang().toUpperCase(); langBtn.title=T('lang');
   langMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.l===lang()));
-  set('tSub','sub'); $('tGrif').innerHTML=T('grif');
-  set('tmCh','mCh'); set('tmChV','mChV'); set('tmKey','mKey'); set('tmKeyV','mKeyV'); set('tmParse','mParse'); set('tmParseV','mParseV');
+  set('tSub','sub'); $('tGrif').innerHTML=REAL?T('grifR'):T('grif');
+  set('tModeT','modeT'); set('tModeR','modeR'); set('rnote','rNote'); set('tRPass','rPassT'); $('rPass').placeholder=T('passPh'); $('rPass2').placeholder=T('rPass2');
+  set('rGen','rGen'); $('rEye').textContent=$('rEye').dataset.on?T('rHide'):T('rShow'); set('tRHint','rHint'); meter();
+  set('tRwT','rWarnT'); $('rwList').innerHTML=[1,2,3,4,5,6].map(i=>'<li>'+esc(T('rWarn'+i))+'</li>').join(''); set('tRwAgree','rAgree'); set('rwYes','rEnter'); set('rwNo','rCancel');
+  set('tFR','fR'); set('encMorse','morse'); set('encVoice','voice'); sndLabel(); airReset();
+  set('tmCh','mCh'); set('tmChV',REAL?'mChVR':'mChV'); set('tmKey','mKey'); set('tmKeyV',REAL?'mKeyVR':'mKeyV'); set('tmParse','mParse'); set('tmParseV',REAL?'mParseVR':'mParseV');
   set('tMachine','machine'); set('tab-enc','tabEnc'); set('tab-dec','tabDec'); set('sub-auto','subAuto'); set('sub-man','subMan');
   set('tC1','c1'); $('plain').placeholder=T('plainPh'); set('tC2','c2'); set('tPresets','presets'); set('tMine','mine');
-  $('rname').placeholder=T('namePh'); set('rsave','save'); set('tC3','c3'); set('encBtn','run'); set('tC4','c4');
+  $('rname').placeholder=T('namePh'); set('rsave','save'); set('tC3','c3'); $('encBtn').textContent=REAL?T('rRun'):T('run'); set('tC4','c4');
   set('encCopy','copy'); set('decCopy','copy'); document.querySelectorAll('.tStages').forEach(e=>e.textContent=T('stages'));
-  set('tDecPaste','decPaste'); set('decBtn','decRun'); set('tManPhrase','manPhrase'); $('cipherMan').placeholder=T('manPh'); set('tManHint','manHint');
+  set('tDecPaste','decPaste'); $('decBtn').textContent=REAL?T('rDecRun'):T('decRun'); set('tManPhrase','manPhrase'); $('cipherMan').placeholder=T('manPh'); set('tManHint','manHint');
   set('tManOps','manOps'); set('tManSeq','manSeq'); set('decBtnMan','manRun'); set('tRestored','restored');
-  set('tF1','f1'); set('tF2','f2'); set('tF3','f3'); set('tF4','f4'); set('tF5','f5');
+  set('tF1','f1'); set('tF2','f2'); set('tF3','f3'); set('tF4','f4'); set('tF5','f5'); set('tF6','f6');
+  set('encLink','link'); set('encShare','share'); $('passIn').placeholder=T('passPh'); set('passGo','passGo'); set('tIncoming','incoming');
+  if(!$('passBox').hidden)$('passMsg').textContent=$('passMsg').classList.contains('bad')?T('ePass'):T('needPass');
   encPipe.buildPalette(); encPipe.render(); decPipe.buildPalette(); decPipe.render();
   buildPresets(); buildMine(); syncMachine();
-  if(encLast&&$('encStages').innerHTML)renderStages($('encStages'),A.stages(encLast.text,encLast.recipe),'enc',encLast.text);
+  if(encLast&&encLast.stages&&$('encStages').innerHTML)renderStages($('encStages'),encLast.stages,'enc',encLast.text);
 }
 
 /* ---------- старт ---------- */
 $('plain').value=T('sample');
 const start=Array.isArray(mem.last)&&mem.last.length?mem.last:[{id:'b64'},{id:'swap23'},{id:'revword'},{id:'swapfl'},{id:'caesar',p:3}];
-start.forEach(s=>{ if(OPS[s.id])encPipe.steps.push(clone(s)); });
+start.forEach(s=>{ if(OPS[s.id]&&!secret(s.id))encPipe.steps.push(clone(s)); });
+if(mem.real&&mem.realOk){ REAL=true; document.body.classList.add('real'); $('modeT').classList.remove('on'); $('modeR').classList.add('on'); if(GL&&GL.setReal)GL.setReal(true); }
 texts();
+/* открыли ссылку-передачу: сразу во вкладку расшифровки и перехват */
+(function(){
+  const m=location.hash.match(/^#t=([A-Za-z0-9_-]+)/); if(!m)return;
+  let tr=''; try{ tr=unb64url(m[1]); }catch(e){ return; }
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  $('cipher').value=tr; setMode('dec'); if(!REAL)setDecMode('auto'); $('incoming').hidden=false;
+  if(TR)TR.event('cipher.link.open');
+  const go=()=>setTimeout(()=>{ $('machine').scrollIntoView({behavior:RM?'auto':'smooth',block:'start'}); doDecode(); },700);
+  if(A.isReal(tr)&&!REAL)setReal(true,go); else go();
+})();
 })();

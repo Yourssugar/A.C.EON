@@ -70,3 +70,15 @@
     }
   };
 })();
+
+/* История после портала главной. Главная открывает раздел в iframe и пишет его адрес в строку (pushState).
+   Если потом уйти из раздела и вернуться "назад", браузер может отдать этому документу и чужие записи
+   истории: "назад" меняет адрес на главную, а на экране остаётся раздел. Тогда грузим настоящую страницу. */
+(function(){
+  'use strict';
+  if(window.self!==window.top)return;
+  var own=location.pathname;
+  window.addEventListener('popstate',function(){
+    if(location.pathname!==own)location.replace(location.href);
+  });
+})();

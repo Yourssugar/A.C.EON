@@ -1327,12 +1327,13 @@
 
   /* портал */
   var portalHost=document.getElementById('portal-host');
-  var portalOpen=false, portalFrame=null, portalReadyF=false;
+  var portalOpen=false, portalFrame=null, portalReadyF=false, portalLoads=0;
+  var HOME_PATH=location.pathname, HOME_URL=location.href.split('#')[0].split('?')[0];
   function spawnPortalFrame(href){
-    portalReadyF=false;
+    portalReadyF=false; portalLoads=0;
     portalHost.innerHTML='';
     portalFrame=document.createElement('iframe');
-    portalFrame.addEventListener('load',function(){ portalReadyF=true; portalTrack(); });
+    portalFrame.addEventListener('load',function(){ portalLoads++; portalReadyF=true; portalTrack(); if(portalLoads>1)portalEscape(); else if(portalOpen)portalTitle(); });
     portalFrame.src=href;
     portalHost.appendChild(portalFrame);
     portalHost.classList.add('open');
@@ -1374,8 +1375,14 @@
       fadeBgm(bgmTarget());
     }
   }
+  /* пока открыт портал, во вкладке название раздела, а не главной */
+  var homeTitle=null;
+  function portalTitle(){
+    try{ var t=portalFrame&&portalFrame.contentDocument&&portalFrame.contentDocument.title; if(t){ if(homeTitle===null)homeTitle=document.title; document.title=t; } }catch(e){}
+  }
   function openPortal(href){
     portalOpen=true; warping=false;
+    portalTitle();
     VX.warp=false; VX.target=VX.base;
     if(/core|music/i.test(href))duckMainBGM(true);
     try{
@@ -1389,9 +1396,26 @@
       blackout.classList.remove('on');
     });
   }
+  /* страница внутри портала ушла на другой адрес (старая ссылка, кнопка): переносим её во всю вкладку,
+     чтобы адрес и "назад" были настоящими. Возврат на главную просто закрывает портал. */
+  function portalEscape(){
+    if(!portalOpen||!portalFrame)return;
+    var href; try{ href=portalFrame.contentWindow.location.href; }catch(e){ return; }
+    var id=TR?TR.idFromUrl(href):null;
+    if(id==='home'||href.split('#')[0].split('?')[0]===HOME_URL){ closePortalHere(); return; }
+    portalFlush();
+    location.replace(href);
+  }
+  /* закрыть портал без history.back(): после переходов внутри iframe "назад" листал бы историю iframe */
+  function closePortalHere(){
+    if(!portalOpen)return;
+    closePortal();
+    try{ history.replaceState(null,'',HOME_URL); }catch(e){}
+  }
   function closePortal(){
     if(!portalOpen)return;
     portalOpen=false;
+    if(homeTitle!==null){ document.title=homeTitle; homeTitle=null; }
     var back=null;
     if(TR&&HW&&ptrack){ back=HW.afterPortal(TR,ptrack.id,portalFlush()); }
     ptrack=null;
@@ -1410,12 +1434,16 @@
       portalHost.innerHTML=''; portalFrame=null;
     },720);
   }
-  window.addEventListener('popstate',function(){ if(portalOpen)closePortal(); });
+  window.addEventListener('popstate',function(){
+    if(portalOpen){ closePortal(); return; }
+    /* "вперёд" на адрес раздела, а портала уже нет: открыть сам раздел */
+    if(location.pathname!==HOME_PATH)location.replace(location.href);
+  });
   window.addEventListener('message',function(e){
     if(e.origin!==location.origin)return;
     var d=e.data||{};
     if(d.aceon==='ready')portalReadyF=true;
-    if(d.aceon==='close'&&portalOpen)history.back();
+    if(d.aceon==='close'&&portalOpen){ if(portalLoads>1)closePortalHere(); else history.back(); }
   });
   /* главная оказалась внутри чужого iframe (кнопка «назад» внутри Core): просим родителя закрыть портал */
   if(window.self!==window.top){
@@ -1504,6 +1532,8 @@
     document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});
   }
   window.addEventListener('pageshow',function(e){
+    /* вернулись "назад" из раздела на запись портала (адрес ядра, а документ главной): грузим сам раздел */
+    if(e.persisted&&location.pathname!==HOME_PATH){ location.replace(location.href); return; }
     if(e.persisted||warping||portalOpen){
       portalOpen=false;
       portalHost.classList.remove('open','reveal','closing');

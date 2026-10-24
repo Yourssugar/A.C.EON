@@ -145,7 +145,7 @@ function run(from){
       else sky.canvas.style.transform=gcv.style.transform=''; }
     /* следы сбоят цветом */
     accDot+=dt;
-    if(accDot>.14){ accDot=0; const now=Date.now();
+    if(accDot>.14){ accDot=0; const now=GB.now();
       for(const [id,v] of glitched)if(v.until<=now)glitched.delete(id);
       const budget=Math.min(8-glitched.size,rndI(1,strong?Math.ceil(2+i*5):2));
       for(let k=0;k<budget&&guests.length;k++){ if(Math.random()>i*.6)continue; const gg=pick(guests);
@@ -206,7 +206,7 @@ function run(from){
   }
   function rebirth(fast){
     go('stars');
-    ignite=Date.now(); igniteDur=fast?2500:9000;
+    ignite=GB.now(); igniteDur=fast?2500:9000;
     rampStars(fast?1500:6000);
     musicBack();
     GB.lock=false;

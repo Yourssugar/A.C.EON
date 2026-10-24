@@ -9,6 +9,10 @@
    sky.wave()                         волна рождения следа
    sky.burst(x,y)                     вспышка в точке (новая звезда, "найти мою")
    sky.gl                             true, если WebGL
+   sky.st                             состояние для архива памяти, меняется снаружи:
+       die 0..1 (распад неба), dieT (секунд с начала распада), dur (длина распада, с),
+       ink 0..1 (белое небо, звёзды чернилами), starA 0..1 (видимость фоновых звёзд и светлячков)
+   sky.breakConsts(guests)            созвездия вспыхивают красным и рвутся (начало распада)
 
    Уровни (вселенные сайта):
    1  фон и фоновые звёзды рисуются один раз, кадр = готовая картинка + следы, 30 fps
@@ -33,7 +37,7 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec2 vUv;
-uniform vec2 uRes;uniform vec2 uPar;uniform float uT,uMilky,uAur;
+uniform vec2 uRes;uniform vec2 uPar;uniform float uT,uMilky,uAur,uDie,uInk;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
@@ -60,7 +64,7 @@ void main(){
     float f2=fbm(vec2(along*3.,d*1.5)+vec2(3.1,T*.002));
     float band=exp(-d*d*1.6)*(.35+.9*f2);
     float lane=exp(-pow((d+.12-(f2-.5)*.5)*5.,2.))*smoothstep(.35,.7,f2);
-    col+=vec3(.74,.78,.92)*.05*band*(1.-.7*lane);
+    col+=vec3(.74,.78,.92)*.05*band*(1.-.7*lane)*(1.-uDie*.8);
   }
   /* аврора у верхнего края */
   if(uAur>.5){
@@ -68,7 +72,15 @@ void main(){
     float yb=base+sin(x*.004+T*.12)*amp+sin(x*.011+T*.07)*amp*.4;
     float k=smoothstep(yb-16.,yb+8.,p.y)*(1.-smoothstep(yb,yb+uRes.y*.09,p.y));
     float streak=.3+.7*fbm(vec2(x*.018+T*.05,p.y*.006+T*.02));
-    col+=vec3(120.,220.,190.)/255.*.055*k*streak;
+    col+=vec3(120.,220.,190.)/255.*.055*k*streak*(1.-uDie)*(1.-uInk);
+  }
+  /* распад: свет уходит из туманностей */
+  col=mix(col,vec3(8.,8.,12.)/255.,uDie*.5);
+  /* белое небо архива: те же облака, только светлые на белом */
+  if(uInk>0.){
+    float v=dot(max(col-vec3(7.,5.,15.)/255.,0.),vec3(.4,.35,.25))*3.;
+    vec3 ink=vec3(1.)-v*vec3(1.,1.,.92);
+    col=mix(col,ink,uInk);
   }
   gl_FragColor=vec4(col,1.);
 }`;
@@ -85,7 +97,7 @@ precision highp float;
 precision mediump float;
 #endif
 attribute vec4 aA;attribute vec4 aB;
-uniform vec2 uRes,uPar,uMouse;uniform float uT,uDpr,uLive,uFlare,uLamp,uPMax;
+uniform vec2 uRes,uPar,uMouse;uniform float uT,uDpr,uLive,uFlare,uLamp,uPMax,uDie,uDieT,uDur,uStarA,uWeak;
 varying vec3 vCol;varying float vA,vF,vR,vS;
 float h(float n){return fract(sin(n)*43758.5453);}
 void main(){
@@ -102,6 +114,12 @@ void main(){
     float cyc=uT/9.+aB.x*3.7, k=floor(cyc);
     if(h(k*12.9898+aB.x*78.233)>.985){float lt=fract(cyc)*9.;f=max(0.,1.-lt*.55);}
   }
+  if(uDie>0.){
+    float g=mix(24.,90.,h(aB.x*91.7+aA.x))*mix(1.,.25,uWeak);
+    p.y+=g*uDieT*uDieT*uDieT/(6.*uDur);
+    a*=(.6+.4*sin(uT*20.+aB.x*7.))*(1.-uDie*.35);
+  }
+  a*=uStarA;
   float md=length(p-uMouse);
   a*=1.+uLamp*.9*max(0.,1.-md/130.);
   a=min(1.,a+f*.65);
@@ -150,30 +168,30 @@ void main(){
   gl_Position=vec4(c.x,-c.y,0.,1.);
 }`;
 const F_PT=`precision mediump float;
-uniform float uT;
+uniform float uT,uInk;
 varying vec3 vCol;varying float vA,vS,vRing,vHov,vKind,vFresh;
 void main(){
   vec2 q=(gl_PointCoord-.5)*vS;
   float d=length(q);
-  if(vKind>.5){float a=vA*exp(-d*d/.9);gl_FragColor=vec4(vCol*a,1.);return;}
+  if(vKind>.5){float a=vA*exp(-d*d/.9);gl_FragColor=vec4(mix(vCol,vec3(.8),uInk)*a,1.);return;}
   float c=mix(1.6,5.,vHov)*(1.+vFresh*.35);
   float g=mix(5.,14.,vHov)*(1.+vFresh*.5);
   float core=smoothstep(c+.8,c-.6,d);
   float glow=exp(-d*d/(g*g))*mix(.38,.85,vHov);
-  vec3 col=vCol*(core+glow*.65)*vA;
+  vec3 col=mix(vCol,vec3(.92),uInk)*(core+glow*.65)*vA;
   if(vRing>.5){
     float R=mix(9.,16.,vHov);
     float ring=smoothstep(1.3,0.,abs(d-R));
     float ang=atan(q.y,q.x);
     float dash=smoothstep(-.2,.2,sin(ang*4.+uT*.8));
-    col+=vec3(1.,.82,.48)*ring*(.35+.5*dash)*(.75+.25*sin(uT*2.));
+    col+=mix(vec3(1.,.82,.48),vec3(.4,.55,.85),uInk)*ring*(.35+.5*dash)*(.75+.25*sin(uT*2.));
   }
   gl_FragColor=vec4(col,1.);
 }`;
 
-const V_LINE=`precision mediump float;attribute vec2 aP;attribute float aA;uniform vec2 uRes;varying float vA;
-void main(){vA=aA;vec2 c=aP/uRes*2.-1.;gl_Position=vec4(c.x,-c.y,0.,1.);}`;
-const F_LINE=`precision mediump float;uniform vec3 uCol;varying float vA;void main(){gl_FragColor=vec4(uCol*vA,1.);}`;
+const V_LINE=`precision mediump float;attribute vec2 aP;attribute vec4 aC;uniform vec2 uRes;varying vec4 vC;
+void main(){vC=aC;vec2 c=aP/uRes*2.-1.;gl_Position=vec4(c.x,-c.y,0.,1.);}`;
+const F_LINE=`precision mediump float;varying vec4 vC;void main(){gl_FragColor=vec4(vC.rgb*vC.a,1.);}`;
 
 const F_WAVE=`precision mediump float;varying vec2 vUv;uniform vec2 uRes,uC;uniform float uR,uA,uDpr;
 void main(){vec2 p=vec2(vUv.x,1.-vUv.y)*uRes;float d=length(p-uC);
@@ -210,7 +228,7 @@ function create(canvas,o){
 
   const quad=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,quad); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
   const starBuf=gl.createBuffer(), ptBuf=gl.createBuffer(), lineBuf=gl.createBuffer();
-  let ptData=new Float32Array(10*400), lineData=new Float32Array(3*200);
+  let ptData=new Float32Array(10*400), lineData=new Float32Array(6*200);
   let nStars=0;
   let W=1,H=1,dpr=1;
   let fbo=null, fboTex=null, fbW=0, fbH=0, bgScale=tier.bg, staticReady=false;
@@ -252,7 +270,7 @@ function create(canvas,o){
     W=Math.max(1,window.innerWidth); H=Math.max(1,window.innerHeight);
     canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
     canvas.style.width=W+'px'; canvas.style.height=H+'px';
-    const s=live?bgScale:1;
+    const s=bgScale;
     makeFbo(Math.max(1,Math.round(canvas.width*s)),Math.max(1,Math.round(canvas.height*s)));
     buildStars(); buildFlies(); staticReady=false; consts.length=0;
   }
@@ -263,6 +281,7 @@ function create(canvas,o){
     gl.useProgram(P.bg.p); bindQuad(P.bg);
     gl.uniform2f(P.bg.u.uRes,W,H); gl.uniform2f(P.bg.u.uPar,par.x,par.y);
     gl.uniform1f(P.bg.u.uT,T); gl.uniform1f(P.bg.u.uMilky,tier.milky); gl.uniform1f(P.bg.u.uAur,tier.aur&&live?1:0);
+    gl.uniform1f(P.bg.u.uDie,st.die); gl.uniform1f(P.bg.u.uInk,st.ink);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4); off(P.bg);
   }
   function drawStars(T,par,mouse){
@@ -273,7 +292,9 @@ function create(canvas,o){
     gl.uniform2f(pr.u.uRes,W,H); gl.uniform2f(pr.u.uPar,par.x,par.y);
     gl.uniform2f(pr.u.uMouse,mouse?mouse.x:-9999,mouse?mouse.y:-9999);
     gl.uniform1f(pr.u.uT,T); gl.uniform1f(pr.u.uDpr,dpr); gl.uniform1f(pr.u.uLive,live?1:0);
-    gl.uniform1f(pr.u.uFlare,tier.fx&&live?1:0); gl.uniform1f(pr.u.uLamp,live&&mouse?1:0); gl.uniform1f(pr.u.uPMax,PMAX);
+    gl.uniform1f(pr.u.uFlare,tier.fx&&live&&!st.die?1:0); gl.uniform1f(pr.u.uLamp,live&&mouse&&!st.die?1:0); gl.uniform1f(pr.u.uPMax,PMAX);
+    gl.uniform1f(pr.u.uDie,st.die); gl.uniform1f(pr.u.uDieT,st.dieT); gl.uniform1f(pr.u.uDur,Math.max(1,st.dur));
+    gl.uniform1f(pr.u.uStarA,st.starA); gl.uniform1f(pr.u.uWeak,tier.live?0:1);
     gl.drawArrays(gl.POINTS,0,nStars); off(pr);
   }
   function blit(){
@@ -283,6 +304,8 @@ function create(canvas,o){
   }
 
   /* эффекты */
+  const st={die:0,dieT:0,dur:12,ink:0,starA:1};
+  let lastInk=-1;
   const waves=[], bursts=[], dust=[], consts=[];
   let shoot=null, constTimer=14+Math.random()*18, lastT=0, par={x:0,y:0}, parT={x:0,y:0};
   let slowAcc=0, slowN=0;
@@ -304,21 +327,21 @@ function create(canvas,o){
     par.x+=(parT.x-par.x)*.03; par.y+=(parT.y-par.y)*.03;
     gl.disable(gl.BLEND);
 
-    /* фон: на уровне 1 один раз (вместе со звёздами), иначе каждый кадр в уменьшенный буфер */
+    /* фон в уменьшенный буфер: живое небо каждый кадр, на уровне 1 один раз (и каждый кадр, пока идёт распад) */
+    if(st.ink!==lastInk){ lastInk=st.ink; staticReady=false; }
     gl.bindFramebuffer(gl.FRAMEBUFFER,fbo); gl.viewport(0,0,fbW,fbH);
-    if(live){ drawBG(T,par); }
-    else if(!staticReady){
-      drawBG(17.3,{x:0,y:0});
-      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE); drawStars(0,{x:0,y:0},null); gl.disable(gl.BLEND);
-      staticReady=true;
-    }
+    if(live||st.die>0){ drawBG(live?T:17.3,par); staticReady=false; }
+    else if(!staticReady){ drawBG(17.3,{x:0,y:0}); staticReady=true; }
     gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,canvas.width,canvas.height);
     blit();
-    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE);
-    if(live)drawStars(T,par,mouse);
+    gl.enable(gl.BLEND);
+    /* на белом звёзды не прибавляют свет, а вычитают: получаются чернила */
+    if(st.ink>.5)gl.blendFunc(gl.ZERO,gl.ONE_MINUS_SRC_COLOR); else gl.blendFunc(gl.ONE,gl.ONE);
+    if(st.starA>0)drawStars(live?T:0,par,st.die?null:mouse);
 
     /* волна рождения */
     for(let i=waves.length-1;i>=0;i--){
+      if(st.ink>.5){ waves.length=0; break; }
       const w=waves[i]; w.t+=dt*.55; if(w.t>=1){ waves.splice(i,1); continue; }
       const pr=P.wave; gl.useProgram(pr.p); bindQuad(pr);
       gl.uniform2f(pr.u.uRes,W,H); gl.uniform2f(pr.u.uC,W/2,H+20);
@@ -328,30 +351,32 @@ function create(canvas,o){
 
     /* линии: созвездия, падающая звезда */
     let nl=0;
-    function line(x1,y1,a1,x2,y2,a2){ if(nl+2>lineData.length/3){ const n=new Float32Array(lineData.length*2); n.set(lineData); lineData=n; }
-      lineData.set([x1,y1,a1,x2,y2,a2],nl*3); nl+=2; }
+    function line(x1,y1,a1,x2,y2,a2,c){ if(nl+2>lineData.length/6){ const n=new Float32Array(lineData.length*2); n.set(lineData); lineData=n; }
+      c=c||[1,1,1]; lineData.set([x1,y1,c[0],c[1],c[2],a1,x2,y2,c[0],c[1],c[2],a2],nl*6); nl+=2; }
     const byId=new Map(); guests.forEach(g=>byId.set(g.id,g));
     if(tier.fx&&live){
       constTimer-=dt;
-      if(constTimer<=0){ const c=pickConst(byId,guests); if(c)consts.push(c); constTimer=32+Math.random()*22; }
+      if(constTimer<=0&&!st.die){ const c=pickConst(byId,guests); if(c)consts.push(c); constTimer=32+Math.random()*22; }
       for(let i=consts.length-1;i>=0;i--){
-        const c=consts[i]; c.t+=dt; const life=c.warm?4.6:3.6;
+        const c=consts[i]; c.t+=dt; const life=c.broken?2.6:(c.warm?4.6:3.6);
         if(c.t>=life){ consts.splice(i,1); continue; }
-        const a=c.t<.8?c.t/.8:(c.t>life-1.2?(life-c.t)/1.2:1);
+        const a=c.broken?(c.t<.5?c.t/.5:(c.t>life-1.1?(life-c.t)/1.1:1)):(c.t<.8?c.t/.8:(c.t>life-1.2?(life-c.t)/1.2:1));
         const pts=c.ids.map(id=>byId.get(id));
         if(pts.some(p=>!p)){ consts.splice(i,1); continue; }
-        c.a=a*.2;
-        for(let k=1;k<pts.length;k++) line(pts[k-1].x,pts[k-1].y,c.a,pts[k].x,pts[k].y,c.a);
+        c.a=a*(c.broken?.4:.2);
+        const col=c.broken?[1,.32,.43]:null, j=c.broken?10*Math.max(.2,st.die):0;
+        const jx=()=>(Math.random()-.5)*j;
+        for(let k=1;k<pts.length;k++) line(pts[k-1].x+jx(),pts[k-1].y+jx(),c.a,pts[k].x+jx(),pts[k].y+jx(),c.a,col);
       }
-      if(!shoot&&Math.random()<dt*.07) shoot={x:Math.random()*W*.7+W*.2,y:Math.random()*H*.3,t:0};
-      if(shoot){ shoot.t+=dt*1.8; if(shoot.t>=1)shoot=null; else { const dx=shoot.x-shoot.t*220, dy=shoot.y+shoot.t*120; line(dx,dy,(1-shoot.t)*.75,dx+60,dy-33,0); } }
+      if(!shoot&&st.ink<.5&&Math.random()<dt*(.07+st.die*.7)) shoot={x:Math.random()*W*.7+W*.2,y:Math.random()*H*.3,t:0};
+      if(shoot){ shoot.t+=dt*1.8; if(shoot.t>=1)shoot=null; else { const L=60+st.die*70, dx=shoot.x-shoot.t*220, dy=shoot.y+shoot.t*120; line(dx,dy,(1-shoot.t)*.75,dx+L,dy-L*.55,0); } }
     }
     if(nl){
       const pr=P.line; gl.useProgram(pr.p);
-      gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf); gl.bufferData(gl.ARRAY_BUFFER,lineData.subarray(0,nl*3),gl.DYNAMIC_DRAW);
-      gl.enableVertexAttribArray(pr.a.aP); gl.vertexAttribPointer(pr.a.aP,2,gl.FLOAT,false,12,0);
-      gl.enableVertexAttribArray(pr.a.aA); gl.vertexAttribPointer(pr.a.aA,1,gl.FLOAT,false,12,8);
-      gl.uniform2f(pr.u.uRes,W,H); gl.uniform3f(pr.u.uCol,1,1,1);
+      gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf); gl.bufferData(gl.ARRAY_BUFFER,lineData.subarray(0,nl*6),gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(pr.a.aP); gl.vertexAttribPointer(pr.a.aP,2,gl.FLOAT,false,24,0);
+      gl.enableVertexAttribArray(pr.a.aC); gl.vertexAttribPointer(pr.a.aC,4,gl.FLOAT,false,24,8);
+      gl.uniform2f(pr.u.uRes,W,H);
       gl.drawArrays(gl.LINES,0,nl); off(pr);
     }
 
@@ -363,13 +388,13 @@ function create(canvas,o){
     }
     if(flies.length){
       flies.forEach(f=>{
-        f.vx+=(Math.random()-.5)*3*dt; f.vy+=(Math.random()-.5)*3*dt; f.vx*=.985; f.vy*=.985;
+        f.vx+=(Math.random()-.5)*3*dt; f.vy+=(Math.random()-.5)*3*dt+st.die*30*dt; f.vx*=.985; f.vy*=.985;
         f.x+=f.vx; f.y+=f.vy;
-        if(f.x<0)f.x=W; if(f.x>W)f.x=0; if(f.y<0)f.y=H; if(f.y>H)f.y=0;
-        pt(f.x,f.y,.86,.9,1,.1+.16*(.5+.5*Math.sin(T*1.6+f.ph)),0,0,1,0);
+        if(f.x<0)f.x=W; if(f.x>W)f.x=0; if(f.y<0)f.y=H; if(f.y>H)f.y=st.die>0?H:0;
+        pt(f.x,f.y,.86,.9,1,(.1+.16*(.5+.5*Math.sin(T*1.6+f.ph)))*(1-st.die*.6)*st.starA,0,0,1,0);
       });
     }
-    if(tier.fx&&live){
+    if(tier.fx&&live&&!st.die){
       const hg=scene.hover!=null?byId.get(scene.hover):null;
       if(hg&&Math.random()<.14&&dust.length<12) dust.push({x:hg.x+(Math.random()-.5)*8,y:hg.y,vy:-(6+Math.random()*9),vx:(Math.random()-.5)*5,life:1});
       for(let i=dust.length-1;i>=0;i--){ const d=dust[i]; d.x+=d.vx*dt; d.y+=d.vy*dt; d.life-=dt*.5;
@@ -387,12 +412,12 @@ function create(canvas,o){
       gl.enableVertexAttribArray(pr.a.aP); gl.vertexAttribPointer(pr.a.aP,2,gl.FLOAT,false,40,0);
       gl.enableVertexAttribArray(pr.a.aC); gl.vertexAttribPointer(pr.a.aC,4,gl.FLOAT,false,40,8);
       gl.enableVertexAttribArray(pr.a.aK); gl.vertexAttribPointer(pr.a.aK,4,gl.FLOAT,false,40,24);
-      gl.uniform2f(pr.u.uRes,W,H); gl.uniform1f(pr.u.uDpr,dpr); gl.uniform1f(pr.u.uPMax,PMAX); gl.uniform1f(pr.u.uT,T);
+      gl.uniform2f(pr.u.uRes,W,H); gl.uniform1f(pr.u.uDpr,dpr); gl.uniform1f(pr.u.uPMax,PMAX); gl.uniform1f(pr.u.uT,T); gl.uniform1f(pr.u.uInk,st.ink);
       gl.drawArrays(gl.POINTS,0,np); off(pr);
     }
 
     /* если не тянет: уменьшаем буфер фона */
-    if(live&&scene.frameMs){
+    if(live&&scene.frameMs&&!st.die){
       slowAcc+=scene.frameMs; slowN++;
       if(slowN>=90){ const avg=slowAcc/slowN; slowAcc=0; slowN=0;
         if(avg>26&&bgScale>.26){ bgScale=Math.max(.25,bgScale*.75);
@@ -402,7 +427,11 @@ function create(canvas,o){
   canvas.addEventListener('webglcontextlost',e=>{ e.preventDefault(); },false);
   canvas.addEventListener('webglcontextrestored',()=>location.reload(),false);
   resize();
-  return {gl:true, resize, frame, wave(){ if(waves.length<3)waves.push({t:0}); }, burst(x,y){ bursts.push({x,y,t:0,s:Math.random()*6}); }, live};
+  function breakConsts(guests){
+    if(!(tier.fx&&live))return;
+    for(let k=0;k<3;k++){ const c=pickConst(null,guests); if(c){ c.broken=1; c.warm=0; consts.push(c); } }
+  }
+  return {gl:true, resize, frame, wave(){ if(waves.length<3)waves.push({t:0}); }, burst(x,y){ bursts.push({x,y,t:0,s:Math.random()*6}); }, live, st, breakConsts, canvas};
 }
 
 /* ---------- запасной вариант без WebGL ---------- */
@@ -424,19 +453,22 @@ function create2D(canvas,o,tier){
     for(let i=0;i<180;i++){ bctx.fillStyle='rgba(255,255,255,'+(Math.random()*.5+.15).toFixed(2)+')';
       bctx.beginPath(); bctx.arc(Math.random()*W,Math.random()*H,Math.random()*.9+.15,0,6.283); bctx.fill(); }
   }
-  const bursts=[];
+  const st={die:0,dieT:0,dur:12,ink:0,starA:1};
   function frame(now,scene){
-    ctx.drawImage(bg,0,0);
+    const ink=st.ink>.5;
+    if(ink){ ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H); }
+    else { ctx.drawImage(bg,0,0); if(st.die>0){ ctx.fillStyle='rgba(8,8,12,'+(st.die*.5).toFixed(3)+')'; ctx.fillRect(0,0,W,H); } }
     (scene.guests||[]).forEach(g=>{
-      const r=(g.hov?5:1.8), a=g.a;
+      const r=(g.hov?5:1.8), a=Math.min(1,g.a);
+      const col=ink?'0,0,0':`${g.r*255|0},${g.g*255|0},${g.b*255|0}`;
       const gr=ctx.createRadialGradient(g.x,g.y,0,g.x,g.y,r*4);
-      gr.addColorStop(0,`rgba(${g.r*255|0},${g.g*255|0},${g.b*255|0},${(a*.9).toFixed(3)})`); gr.addColorStop(1,'rgba(0,0,0,0)');
+      gr.addColorStop(0,`rgba(${col},${(a*.9).toFixed(3)})`); gr.addColorStop(1,`rgba(${col},0)`);
       ctx.fillStyle=gr; ctx.fillRect(g.x-r*4,g.y-r*4,r*8,r*8);
-      if(g.own){ ctx.strokeStyle='rgba(255,210,122,.6)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(g.x,g.y,g.hov?16:9,0,6.283); ctx.stroke(); }
+      if(g.own){ ctx.strokeStyle=ink?'rgba(150,105,30,.7)':'rgba(255,210,122,.6)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(g.x,g.y,g.hov?16:9,0,6.283); ctx.stroke(); }
     });
   }
   resize();
-  return {gl:false, resize, frame, wave(){}, burst(){}, live:false};
+  return {gl:false, resize, frame, wave(){}, burst(){}, live:false, st, breakConsts(){}, get canvas(){ return canvas; }};
 }
 
 window.AceonSky={create};

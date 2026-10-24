@@ -1,9 +1,15 @@
 /* A.C.EON · Гостевая книга: логика страницы.
    Сервер прежний: адрес берётся из Guestbook/config.json на GitHub, GET /entries?count=N, POST /entry {name, phrase}.
    Следы плывут справа налево за 20 минут, высота следа зависит от его id (как раньше).
-   Память в localStorage 'aceon:gb': свои записи (id), последний увиденный id, имя для формы. */
+   Память в localStorage 'aceon:gb': свои записи (id), последний увиденный id, имя для формы, сколько раз смотрел архив.
+   Тот же файл работает на странице архива памяти (Guestbook/Guestbook/, там window.GB_ARCHIVE=true):
+   небо гостевой, потом сценарий из archive.js. Для archive.js наружу отдаётся window.GB. */
 (function(){
 'use strict';
+
+const ROOT=new URL('../',document.currentScript&&document.currentScript.src||location.href).href;   // корень сайта
+const GB_DIR=ROOT+'Guestbook/';
+const ARCHIVE=!!window.GB_ARCHIVE;
 
 const CONFIG_URL='https://raw.githubusercontent.com/yourssugar/A.C.EON/main/Guestbook/config.json';
 const CROSS_MS=20*60*1000, REFRESH=60*1000, MAX_FETCH=300, PL=35, CONFIG_TTL=5*60*1000;
@@ -30,7 +36,7 @@ function lang(){ return hasI18n?I18n.lang:fbLang; }
 function T(k,v){
   const d=GL[lang()]||GL.en;
   let s=d[k]!==undefined?d[k]:(GL.en[k]!==undefined?GL.en[k]:k);
-  if(s&&typeof s==='object'){ let f='other'; try{ f=new Intl.PluralRules(lang()).select(v&&v.n!==undefined?v.n:0); }catch(e){} s=s[f]||s.other; }
+  if(s&&typeof s==='object'&&!Array.isArray(s)){ let f='other'; try{ f=new Intl.PluralRules(lang()).select(v&&v.n!==undefined?v.n:0); }catch(e){} s=s[f]||s.other; }
   if(typeof s==='string'&&v) s=s.replace(/\{(\w+)\}/g,(m,n)=>v[n]!==undefined?(n==='n'?fmtNum(v[n]):v[n]):m);
   return s;
 }
@@ -56,10 +62,12 @@ function relTime(ts){
   return rtf.format(-Math.floor(s/86400/365),'year');
 }
 
+const GB=window.GB={mod:null,afterFrame:null,lock:false};
+
 /* ---------- память гостевой ---------- */
 const GKEY='aceon:gb';
 let mem=(function(){ try{ return JSON.parse(localStorage.getItem(GKEY)||'null')||{}; }catch(e){ return {}; } })();
-mem.v=1; mem.mine=Array.isArray(mem.mine)?mem.mine:[]; mem.lastId=mem.lastId||0; mem.name=mem.name||'';
+mem.v=1; mem.mine=Array.isArray(mem.mine)?mem.mine:[]; mem.lastId=mem.lastId||0; mem.name=mem.name||''; mem.archive=mem.archive||0;
 function saveMem(){ try{ localStorage.setItem(GKEY,JSON.stringify(mem)); }catch(e){} }
 const isMine=id=>mem.mine.indexOf(id)>=0;
 
@@ -149,7 +157,9 @@ function scene(now){
     if(TIER>=2&&mouse&&!isCoarse){ const d=Math.hypot(mouse.x-o.x,mouse.y-o.y); if(d<130)a*=1+(1-d/130)*1.4; }
     a=Math.min(1.5,a*(o.size)*(1+fr*.5));
     if(o.x<-60||o.x>sw+60)continue;
-    out.push({id,name:o.entry.name,x:o.x,y:o.y,r:o.tint[0],g:o.tint[1],b:o.tint[2],a,own:isMine(id),fresh:fr,hov:o.hov});
+    const g={id,name:o.entry.name,x:o.x,y:o.y,r:o.tint[0],g:o.tint[1],b:o.tint[2],a,own:isMine(id),fresh:fr,hov:o.hov};
+    if(GB.mod&&GB.mod(o,g,nowMs)===false)continue;
+    out.push(g);
   }
   return out;
 }
@@ -191,7 +201,7 @@ function nearest(px,py){
 }
 fld.addEventListener('mousemove',e=>{
   mouse={x:e.clientX,y:e.clientY};
-  if(isCoarse)return;
+  if(isCoarse||GB.lock)return;
   const id=nearest(e.clientX,e.clientY);
   if(id!=null)setHover(id,false);
   else if(hoverId!=null&&!pinned){ const o=orbs.get(hoverId); if(!o||Math.hypot(o.x-e.clientX,o.y-e.clientY)>22)setHover(null); }
@@ -199,7 +209,7 @@ fld.addEventListener('mousemove',e=>{
 fld.addEventListener('mouseleave',()=>{ mouse=null; if(!pinned)setHover(null); });
 document.addEventListener('mousemove',e=>{ if(!fld.contains(e.target))mouse={x:e.clientX,y:e.clientY}; },{passive:true});
 fld.addEventListener('click',e=>{
-  if(e.target.closest('#tip'))return;
+  if(e.target.closest('#tip')||GB.lock)return;
   const id=nearest(e.clientX,e.clientY);
   if(id==null){ setHover(null); return; }
   if(hoverId===id&&pinned){ setHover(null); return; }
@@ -290,7 +300,8 @@ function loop(now){
   if(now-lastF<capMs-1)return;
   const fm=lastNow?now-lastNow:16; lastNow=now; lastF=now;
   const guests=scene(now);
-  sky.frame(now,{guests,mouse,hover:hoverId,frameMs:fm});
+  sky.frame(now,{guests,mouse:GB.lock?null:mouse,hover:hoverId,frameMs:fm});
+  if(GB.afterFrame)GB.afterFrame(now,fm,guests);
   if(hoverId!=null){ const o=orbs.get(hoverId); if(o)placeTip(o); else setHover(null); }
 }
 requestAnimationFrame(loop);
@@ -301,7 +312,15 @@ const mb=document.getElementById('mb');
 if(TIER>=2&&!reduce){
   (function glitch(){ setTimeout(()=>{ if(!document.hidden){ mb.classList.add('gl'); setTimeout(()=>mb.classList.remove('gl'),90+Math.random()*90); } glitch(); },9000+Math.random()*16000); })();
 }
-mb.addEventListener('click',()=>{ if(TR)TR.event('gb.memory'); });
+mb.addEventListener('click',e=>{
+  if(TR)TR.event('gb.memory');
+  /* переход в архив без перезагрузки: распадается это же небо */
+  if(window.AceonArchive&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&e.button===0){
+    e.preventDefault();
+    try{ history.pushState({aceonArchive:1},'',GB_DIR+'Guestbook/'+location.search); }catch(er){}
+    window.AceonArchive.run('guestbook');
+  }
+});
 
 /* ---------- музыка (общая громкость сайта) ---------- */
 const bgm=new Audio(); bgm.volume=0; bgm.loop=true;
@@ -316,7 +335,7 @@ function bgmUI(){ const on=bgmStarted&&!bgm.paused; bgmBtn.classList.toggle('mut
 function startBGM(force){
   if(bgmStarted)return;
   if(!force&&siteMusic()<=0){ bgmUI(); return; }
-  bgmStarted=true; bgm.src='../audio/Schlaf, Mein Herz.mp3';
+  bgmStarted=true; bgm.src=ROOT+'audio/Schlaf, Mein Herz.mp3';
   const p=bgm.play(); if(p&&p.then)p.then(()=>{ fadeBgm(bgmTarget()); bgmUI(); }).catch(()=>{ bgmStarted=false; bgmUI(); });
 }
 bgm.addEventListener('play',bgmUI); bgm.addEventListener('pause',bgmUI);
@@ -344,7 +363,7 @@ LANGS.forEach(c=>{
 });
 langBtn.addEventListener('click',e=>{ e.stopPropagation(); langMenu.classList.toggle('on'); });
 document.addEventListener('click',e=>{ langMenu.classList.remove('on'); });
-document.getElementById('back').addEventListener('click',()=>{ location.href='../A.C.EON_Core/'; });
+document.getElementById('back').addEventListener('click',()=>{ location.href=ROOT+'A.C.EON_Core/'; });
 document.getElementById('rb').addEventListener('click',()=>loadEntries(false));
 function applyTexts(){
   document.title='A.C.EON · '+T('title');
@@ -357,11 +376,18 @@ function applyTexts(){
   document.getElementById('dc').textContent=T('note');
   if(lastTotal)setCount(lastTotal);
   if(hoverId!=null){ const o=orbs.get(hoverId); if(o)showTip(o); }
+  if(GB.onLang)GB.onLang();
 }
+/* для archive.js */
+GB.sky=sky; GB.orbs=orbs; GB.T=T; GB.lang=lang; GB.mem=mem; GB.saveMem=saveMem; GB.isMine=isMine;
+GB.setHover=setHover; GB.tier=TIER; GB.reduce=reduce; GB.coarse=isCoarse; GB.TR=TR; GB.ROOT=ROOT; GB.DIR=GB_DIR;
+GB.music={el:bgm, target:bgmTarget, fade:fadeBgm, started:()=>bgmStarted&&!bgm.paused, on:()=>siteMusic()>0};
+GB.onLang=null;
 applyTexts(); updateFind();
 
 /* ---------- старт ---------- */
 (async function init(){
+  if(ARCHIVE&&window.AceonArchive)window.AceonArchive.run('direct');
   await fetchConfig();
   loadEntries(true);
   setInterval(()=>{ if(!document.hidden)loadEntries(false); },REFRESH);

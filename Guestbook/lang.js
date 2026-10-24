@@ -1,4 +1,5 @@
-/* Гостевая книга: тексты интерфейса (7 языков). Сами записи не переводятся.
+/* Гостевая книга и архив памяти: тексты (7 языков). Сами записи не переводятся.
+   ar.t1 и ar.t2: тексты архива по строкам, строки появляются по очереди.
    Поля с формами числа ({one, few, many, other}) выбираются через Intl.PluralRules. */
 window.GB_LANG={
 en:{
@@ -10,7 +11,16 @@ en:{
   'err.server':'the trace server is unavailable, try ↻ a bit later','err.generic':'error','ok.sent':'trace left ✦',
   'find.here':'there it is','find.back':'your star is back in the sky','find.none':'your star is no longer among the last 300 traces',
   'new.since':{one:'while you were away, {n} new trace appeared',other:'while you were away, {n} new traces appeared'},
-  'mine':'your trace'
+  'mine':'your trace',
+  'ar.title':'MEMORY ARCHIVE','ar.back':'< GUESTBOOK','ar.skip':'skip',
+  'ar.t1':['Everything changes. People grow up and leave. Technology grows old. Even a world that seemed permanent one day becomes a different one.',
+    'But a few words can hold a moment: a thought, a feeling, a mood. A piece of us, the way we were right now.',
+    'In the A.C.EON Studio guestbook every message becomes a star. The memory archive keeps these traces so that one day someone looks up and learns:',
+    'you were here. And your words were real.'],
+  'ar.t2':['We could not stop time.',
+    'Something disappeared. Someone left.',
+    'But your words remained. As stars in the A.C.EON Studio sky.',
+    'You were here. And it was real.']
 },
 ru:{
   'title':'ГОСТЕВАЯ КНИГА','back':'< ЯДРО','lang.title':'Язык','music':'Музыка вкл / выкл','refresh':'Обновить','find':'Где моя звезда',
@@ -21,7 +31,16 @@ ru:{
   'err.server':'сервер следов недоступен, попробуй ↻ чуть позже','err.generic':'ошибка','ok.sent':'след оставлен ✦',
   'find.here':'вот она','find.back':'твоя звезда снова на небе','find.none':'твоей звезды уже нет среди последних 300 следов',
   'new.since':{one:'пока тебя не было, оставили {n} новый след',few:'пока тебя не было, оставили {n} новых следа',many:'пока тебя не было, оставили {n} новых следов',other:'пока тебя не было, оставили {n} новых следа'},
-  'mine':'твой след'
+  'mine':'твой след',
+  'ar.title':'АРХИВ ПАМЯТИ','ar.back':'< ГОСТЕВАЯ','ar.skip':'пропустить',
+  'ar.t1':['Всё меняется. Люди взрослеют и уходят. Технологии устаревают. Даже мир, который казался постоянным, однажды становится другим.',
+    'Но несколько слов способны удержать мгновение: мысль, чувство, настроение. Частицу нас такими, какими мы были сейчас.',
+    'В гостевой книге A.C.EON Studio каждое послание становится звездой. Архив памяти бережёт эти следы, чтобы однажды кто-то поднял глаза и узнал:',
+    'вы были здесь. И ваши слова были настоящими.'],
+  'ar.t2':['Мы не смогли остановить время.',
+    'Что-то исчезло. Кто-то ушёл.',
+    'Но ваши слова остались. Звёздами на небе A.C.EON Studio.',
+    'Вы были здесь. И это было настоящим.']
 },
 de:{
   'title':'GÄSTEBUCH','back':'< KERN','lang.title':'Sprache','music':'Musik an / aus','refresh':'Aktualisieren','find':'Wo ist mein Stern',
@@ -32,7 +51,16 @@ de:{
   'err.server':'der Spurenserver ist nicht erreichbar, versuch ↻ etwas später','err.generic':'Fehler','ok.sent':'Spur hinterlassen ✦',
   'find.here':'da ist er','find.back':'dein Stern ist zurück am Himmel','find.none':'dein Stern ist nicht mehr unter den letzten 300 Spuren',
   'new.since':{one:'während du weg warst, kam {n} neue Spur dazu',other:'während du weg warst, kamen {n} neue Spuren dazu'},
-  'mine':'deine Spur'
+  'mine':'deine Spur',
+  'ar.title':'ARCHIV DER ERINNERUNG','ar.back':'< GÄSTEBUCH','ar.skip':'überspringen',
+  'ar.t1':['Alles verändert sich. Menschen werden erwachsen und gehen. Technik veraltet. Selbst eine Welt, die beständig schien, wird eines Tages eine andere.',
+    'Doch ein paar Worte können einen Augenblick festhalten: einen Gedanken, ein Gefühl, eine Stimmung. Ein Stück von uns, so wie wir gerade waren.',
+    'Im Gästebuch von A.C.EON Studio wird jede Nachricht zu einem Stern. Das Archiv der Erinnerung bewahrt diese Spuren, damit eines Tages jemand aufblickt und erfährt:',
+    'ihr wart hier. Und eure Worte waren echt.'],
+  'ar.t2':['Wir konnten die Zeit nicht anhalten.',
+    'Etwas ist verschwunden. Jemand ist gegangen.',
+    'Doch eure Worte sind geblieben. Als Sterne am Himmel von A.C.EON Studio.',
+    'Ihr wart hier. Und es war echt.']
 },
 fr:{
   'title':'LIVRE D\'OR','back':'< NOYAU','lang.title':'Langue','music':'Musique oui / non','refresh':'Actualiser','find':'Où est mon étoile',
@@ -43,7 +71,16 @@ fr:{
   'err.server':'le serveur des traces est indisponible, réessaie ↻ un peu plus tard','err.generic':'erreur','ok.sent':'trace laissée ✦',
   'find.here':'la voilà','find.back':'ton étoile est revenue dans le ciel','find.none':'ton étoile n\'est plus parmi les 300 dernières traces',
   'new.since':{one:'pendant ton absence, {n} nouvelle trace est apparue',many:'pendant ton absence, {n} de nouvelles traces sont apparues',other:'pendant ton absence, {n} nouvelles traces sont apparues'},
-  'mine':'ta trace'
+  'mine':'ta trace',
+  'ar.title':'ARCHIVE DE LA MÉMOIRE','ar.back':'< LIVRE D\'OR','ar.skip':'passer',
+  'ar.t1':['Tout change. Les gens grandissent et s\'en vont. Les technologies vieillissent. Même un monde qui semblait immuable devient un jour un autre.',
+    'Mais quelques mots peuvent retenir un instant : une pensée, un sentiment, une humeur. Une part de nous, tels que nous étions à ce moment-là.',
+    'Dans le livre d\'or d\'A.C.EON Studio, chaque message devient une étoile. L\'archive de la mémoire garde ces traces pour qu\'un jour quelqu\'un lève les yeux et apprenne :',
+    'vous étiez là. Et vos mots étaient vrais.'],
+  'ar.t2':['Nous n\'avons pas pu arrêter le temps.',
+    'Quelque chose a disparu. Quelqu\'un est parti.',
+    'Mais vos mots sont restés. Comme des étoiles dans le ciel d\'A.C.EON Studio.',
+    'Vous étiez là. Et c\'était vrai.']
 },
 es:{
   'title':'LIBRO DE VISITAS','back':'< NÚCLEO','lang.title':'Idioma','music':'Música sí / no','refresh':'Actualizar','find':'Dónde está mi estrella',
@@ -54,7 +91,16 @@ es:{
   'err.server':'el servidor de huellas no está disponible, prueba ↻ un poco más tarde','err.generic':'error','ok.sent':'huella dejada ✦',
   'find.here':'ahí está','find.back':'tu estrella ha vuelto al cielo','find.none':'tu estrella ya no está entre las últimas 300 huellas',
   'new.since':{one:'mientras no estabas, apareció {n} huella nueva',many:'mientras no estabas, aparecieron {n} de huellas nuevas',other:'mientras no estabas, aparecieron {n} huellas nuevas'},
-  'mine':'tu huella'
+  'mine':'tu huella',
+  'ar.title':'ARCHIVO DE LA MEMORIA','ar.back':'< LIBRO DE VISITAS','ar.skip':'saltar',
+  'ar.t1':['Todo cambia. Las personas crecen y se van. La tecnología envejece. Incluso un mundo que parecía eterno un día se vuelve otro.',
+    'Pero unas pocas palabras pueden sostener un instante: un pensamiento, un sentimiento, un estado de ánimo. Una parte de nosotros, tal como éramos ahora.',
+    'En el libro de visitas de A.C.EON Studio cada mensaje se convierte en una estrella. El archivo de la memoria guarda estas huellas para que un día alguien levante la vista y sepa:',
+    'estuvieron aquí. Y sus palabras eran reales.'],
+  'ar.t2':['No pudimos detener el tiempo.',
+    'Algo desapareció. Alguien se fue.',
+    'Pero sus palabras quedaron. Como estrellas en el cielo de A.C.EON Studio.',
+    'Estuvieron aquí. Y fue real.']
 },
 it:{
   'title':'LIBRO DEGLI OSPITI','back':'< NUCLEO','lang.title':'Lingua','music':'Musica sì / no','refresh':'Aggiorna','find':'Dov\'è la mia stella',
@@ -65,7 +111,16 @@ it:{
   'err.server':'il server delle tracce non è disponibile, riprova ↻ tra poco','err.generic':'errore','ok.sent':'traccia lasciata ✦',
   'find.here':'eccola','find.back':'la tua stella è tornata in cielo','find.none':'la tua stella non è più tra le ultime 300 tracce',
   'new.since':{one:'mentre eri via, è apparsa {n} nuova traccia',many:'mentre eri via, sono apparse {n} di nuove tracce',other:'mentre eri via, sono apparse {n} nuove tracce'},
-  'mine':'la tua traccia'
+  'mine':'la tua traccia',
+  'ar.title':'ARCHIVIO DELLA MEMORIA','ar.back':'< LIBRO DEGLI OSPITI','ar.skip':'salta',
+  'ar.t1':['Tutto cambia. Le persone crescono e se ne vanno. Le tecnologie invecchiano. Perfino un mondo che sembrava immutabile un giorno diventa un altro.',
+    'Ma poche parole possono trattenere un attimo: un pensiero, un sentimento, uno stato d\'animo. Una parte di noi, così come eravamo adesso.',
+    'Nel libro degli ospiti di A.C.EON Studio ogni messaggio diventa una stella. L\'archivio della memoria custodisce queste tracce perché un giorno qualcuno alzi lo sguardo e sappia:',
+    'voi eravate qui. E le vostre parole erano vere.'],
+  'ar.t2':['Non siamo riusciti a fermare il tempo.',
+    'Qualcosa è scomparso. Qualcuno se n\'è andato.',
+    'Ma le vostre parole sono rimaste. Come stelle nel cielo di A.C.EON Studio.',
+    'Eravate qui. Ed era vero.']
 },
 pl:{
   'title':'KSIĘGA GOŚCI','back':'< RDZEŃ','lang.title':'Język','music':'Muzyka wł. / wył.','refresh':'Odśwież','find':'Gdzie jest moja gwiazda',
@@ -76,6 +131,15 @@ pl:{
   'err.server':'serwer śladów jest niedostępny, spróbuj ↻ za chwilę','err.generic':'błąd','ok.sent':'ślad zostawiony ✦',
   'find.here':'oto ona','find.back':'twoja gwiazda wróciła na niebo','find.none':'twojej gwiazdy nie ma już wśród ostatnich 300 śladów',
   'new.since':{one:'gdy cię nie było, pojawił się {n} nowy ślad',few:'gdy cię nie było, pojawiły się {n} nowe ślady',many:'gdy cię nie było, pojawiło się {n} nowych śladów',other:'gdy cię nie było, pojawiło się {n} nowego śladu'},
-  'mine':'twój ślad'
+  'mine':'twój ślad',
+  'ar.title':'ARCHIWUM PAMIĘCI','ar.back':'< KSIĘGA GOŚCI','ar.skip':'pomiń',
+  'ar.t1':['Wszystko się zmienia. Ludzie dorastają i odchodzą. Technologie się starzeją. Nawet świat, który wydawał się stały, pewnego dnia staje się inny.',
+    'Ale kilka słów potrafi zatrzymać chwilę: myśl, uczucie, nastrój. Cząstkę nas takich, jakimi byliśmy właśnie teraz.',
+    'W księdze gości A.C.EON Studio każda wiadomość staje się gwiazdą. Archiwum pamięci strzeże tych śladów, aby pewnego dnia ktoś podniósł wzrok i dowiedział się:',
+    'byliście tutaj. I wasze słowa były prawdziwe.'],
+  'ar.t2':['Nie zdołaliśmy zatrzymać czasu.',
+    'Coś zniknęło. Ktoś odszedł.',
+    'Ale wasze słowa zostały. Jako gwiazdy na niebie A.C.EON Studio.',
+    'Byliście tutaj. I to było prawdziwe.']
 }
 };

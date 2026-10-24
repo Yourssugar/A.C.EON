@@ -35,7 +35,7 @@ const secret=id=>!!(OPS[id]&&OPS[id].secret);
 /* ---------- память ---------- */
 let mem={recipes:[],last:null,stE:false,stD:false};
 const hasStore=!!window.Store;
-if(hasStore){ try{ Store.define('cipher',{version:1,defaults:{recipes:[],last:null,stE:false,stD:false,real:false,realOk:false,mis:{}}}); mem=Store.get('cipher'); }catch(e){} }
+if(hasStore){ try{ Store.define('cipher',{version:1,defaults:{recipes:[],last:null,stE:false,stD:false,real:false,realOk:false,mis:{},theme:'station',themeAsked:false}}); mem=Store.get('cipher'); }catch(e){} }
 function save(){ if(hasStore)try{ Store.save('cipher'); }catch(e){} }
 
 /* ---------- конвейер ---------- */
@@ -375,6 +375,7 @@ function sndLabel(){ const b=$('sndBtn'); if(!AU){ b.hidden=true; return; } b.te
 $('sndBtn').addEventListener('click',()=>{ if(!AU)return; AU.set(!AU.on()); sndLabel(); if(!AU.on())airReset(); });
 
 function finishEncode(tr){
+  if(window.CipherTheme)CipherTheme.event('enc');
   const out=$('transOut'), end=tr.indexOf(A.SEP);
   out.className='transmission'; out.dataset.full=tr;
   out.innerHTML='<span class="marker">'+esc(tr.slice(0,end+1))+'</span>'+esc(tr.slice(end+1));
@@ -407,6 +408,7 @@ function decodeAnimate(res,recipe,btnId,input,coll){
     dur:DUR,busy:T('busyDec'),outClass:'plain live-dec',conClass:'dec',events,onDone:done});
 }
 function finishDecode(res,input,coll){
+  if(window.CipherTheme)CipherTheme.event(res.ok?'dec':'err');
   const out=$('plainOut');
   out.className='transmission plain'; out.textContent=res.plain!==''?res.plain:T('emptyMsg'); out.dataset.full=res.plain;
   const w=$('decWarn');
@@ -414,6 +416,7 @@ function finishDecode(res,input,coll){
   if(coll){ renderStages($('decStages'),coll,'dec',input); $('decStages').classList.toggle('on',$('decSt').checked); }
 }
 function decError(msg){
+  if(window.CipherTheme)CipherTheme.event('err');
   const con=$('decConsole'); con.className='console'; con.innerHTML='';
   const out=$('plainOut'); out.className='transmission err'; out.textContent='\u2715 '+msg; out.dataset.full='';
   $('decWarn').classList.remove('on'); $('decStages').classList.remove('on');
@@ -567,6 +570,7 @@ function evalInt(){
 }
 function solved(){
   curShown=true;
+  if(window.CipherTheme)CipherTheme.event('int');
   const st=mrec(curM), stars=st.gave?0:Math.max(1,3-st.h);
   const first=!st.done; st.done=true; st.stars=Math.max(st.stars||0,stars); save();
   $('mOkStars').textContent=starStr(stars); $('mStars').textContent=starStr(st.stars);
@@ -639,6 +643,9 @@ function texts(){
   set('tModeT','modeT'); set('tModeR','modeR'); set('rnote','rNote'); set('tRPass','rPassT'); $('rPass').placeholder=T('passPh'); $('rPass2').placeholder=T('rPass2');
   set('rGen','rGen'); $('rEye').textContent=$('rEye').dataset.on?T('rHide'):T('rShow'); set('tRHint','rHint'); meter();
   set('tRwT','rWarnT'); $('rwList').innerHTML=[1,2,3,4,5,6].map(i=>'<li>'+esc(T('rWarn'+i))+'</li>').join(''); set('tRwAgree','rAgree'); set('rwYes','rEnter'); set('rwNo','rCancel');
+  set('tAnom','anomaly'); set('tGIn','gIn'); set('tGOut','gOut');
+  $('setBtn').title=T('setBtn'); $('setBtn').setAttribute('aria-label',T('setBtn')); renderNotes();
+  if(!$('thPick').hidden){ buildThemeGrid(); $('thTitle').textContent=$('thSndRow').hidden?T('thTitle'):T('setTitle'); $('thNote').textContent=T('thNote'); $('thSndT').textContent=T('setSound'); }
   set('tab-int','tabInt'); set('tIntList','intList'); set('tIntStars','intStarsT'); set('intBack','intBack'); set('tIntFrom','intFrom'); set('tIntCipher','intCipher'); set('tIntBuild','intBuild'); set('tIntOut','intOut'); set('tIntOk','intOk');
   intPipe.buildPalette(); buildMissionList(); if(curM>=0)openMission(curM,true);
   set('tFR','fR'); set('encMorse','morse'); set('encVoice','voice'); sndLabel(); airReset();
@@ -657,12 +664,85 @@ function texts(){
   if(encLast&&encLast.stages&&$('encStages').innerHTML)renderStages($('encStages'),encLast.stages,'enc',encLast.text);
 }
 
+/* ---------- ТЕМЫ ОФОРМЛЕНИЯ ----------
+   station: ЭЛТ (без картинки). Остальные: фон из themes/, свои цвета (CSS), свечение машины (ac) и экран (scr),
+   рукописные заметки по краям (lang: nt.<тема>.<n>), у pixel робот-помощник. Шрифты тем грузятся только когда тема выбрана. */
+const THEMES={
+  station:{img:false,ac:[.91,.69,.29],scr:[.022,.024,.032]},
+  stars:{img:true,machine:'stars',ac:[.93,.77,.45],scr:[.015,.022,.055],fonts:['Caveat:wght@500'],notes:[[3,36,-7,'l'],[4,64,-5,'l'],[3,12,6,'r'],[2,74,-4,'r']]},
+  rain:{img:true,rain:['themes/rain-w.webp','themes/rain-m.webp'],ac:[.42,.86,.66],scr:[.015,.02,.02],fonts:['Caveat:wght@500'],notes:[[4,10,-8,'r'],[5,52,-6,'r'],[3,78,-4,'l']]},
+  pixel:{img:true,pixel:true,ac:[.96,.66,.22],scr:[.02,.04,.08],fonts:['Pixelify+Sans:wght@500;600'],robot:true},
+  radio:{img:true,gauges:true,ac:[.95,.62,.24],scr:[.03,.022,.015],fonts:['Caveat:wght@500'],notes:[[3,30,4,'r']]},
+  dossier:{img:true,paper:true,ac:[.95,.66,.3],scr:[.02,.018,.016],fonts:['Caveat:wght@500','PT+Mono'],notes:[[3,58,-5,'r']]}
+};
+const TORDER=['station','stars','rain','pixel','radio','dossier'];
+let THEME='station';
+const loadedFonts={};
+function loadFonts(list){
+  (list||[]).forEach(f=>{ if(loadedFonts[f])return; loadedFonts[f]=1;
+    const l=document.createElement('link'); l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family='+f+'&display=swap'; document.head.appendChild(l); });
+}
+function applyTheme(name){
+  if(!THEMES[name])name='station';
+  THEME=name; const t=THEMES[name];
+  document.documentElement.dataset.theme=name;
+  document.documentElement.classList.toggle('th-img',!!t.img);
+  loadFonts(t.fonts);
+  if(GL&&GL.setTheme)GL.setTheme({ac:t.ac,scr:t.scr,img:t.img,machine:t.machine,paper:t.paper,pixel:t.pixel,rain:t.rain,gauges:t.gauges});
+  $('rlabels').classList.toggle('stars',t.machine==='stars');
+  renderNotes();
+  $('rbSide').hidden=!t.robot; if(t.robot){ rbSet('idle'); setTimeout(()=>robotSay('rb.hello'),600); }
+  document.querySelectorAll('.th-card').forEach(c=>c.classList.toggle('on',c.dataset.t===name));
+}
+function renderNotes(){
+  const box=$('notes'), t=THEMES[THEME]; box.innerHTML='';
+  (t.notes||[]).forEach((n,i)=>{
+    const d=document.createElement('div'); d.className='note'; d.textContent=T('nt.'+THEME+'.'+(i+1));
+    d.style[n[3]==='l'?'left':'right']=n[0]+'%'; d.style.top=n[1]+'%'; d.style.transform='rotate('+n[2]+'deg)';
+    box.appendChild(d);
+  });
+}
+/* робот пиксельной темы: idle, speaking, happy */
+let rbT=null;
+function rbSet(m){ const img=$('rbImg'), src='themes/robot-'+m+'.webp'; if(img.getAttribute('src')!==src)img.setAttribute('src',src); }
+function robotSay(key,mood){
+  if(!THEMES[THEME].robot)return;
+  const b=$('rbBub'); b.textContent=T(key); b.classList.add('on'); rbSet(mood||'speaking');
+  clearTimeout(rbT); rbT=setTimeout(()=>{ b.classList.remove('on'); rbSet('idle'); },mood==='happy'?4200:3600);
+}
+window.CipherTheme={event:k=>robotSay('rb.'+k,k==='enc'||k==='dec'||k==='int'?'happy':'speaking')};
+/* окно выбора: при первом входе и из настроек */
+function buildThemeGrid(){
+  const g=$('thGrid'); g.innerHTML='';
+  TORDER.forEach(n=>{
+    const b=document.createElement('button'); b.type='button'; b.className='th-card'+(n===THEME?' on':''); b.dataset.t=n;
+    b.innerHTML=(n==='station'?'<div class="ph"></div>':'<img alt="" loading="lazy" src="themes/'+n+'-thumb.webp">')+'<span></span>';
+    b.querySelector('span').textContent=T('th.'+n);
+    b.addEventListener('click',()=>{ mem.theme=n; mem.themeAsked=true; save(); applyTheme(n); if(TR)TR.event('cipher.theme'); if(!$('thSndRow').hidden)return; closeThemes(); });
+    g.appendChild(b);
+  });
+}
+function openThemes(settings){
+  buildThemeGrid();
+  $('thTitle').textContent=settings?T('setTitle'):T('thTitle'); $('thNote').textContent=T('thNote');
+  $('thSndRow').hidden=!settings||!AU; $('thSndT').textContent=T('setSound'); if(AU)$('thSnd').checked=AU.on();
+  $('thPick').hidden=false;
+}
+function closeThemes(){ $('thPick').hidden=true; if(!mem.themeAsked){ mem.themeAsked=true; save(); } }
+$('setBtn').addEventListener('click',()=>openThemes(true));
+$('thClose').addEventListener('click',closeThemes);
+$('thPick').addEventListener('click',e=>{ if(e.target===$('thPick'))closeThemes(); });
+$('thSnd').addEventListener('change',e=>{ if(AU){ AU.set(e.target.checked); sndLabel(); } });
+addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('thPick').hidden)closeThemes(); });
+
 /* ---------- старт ---------- */
 $('plain').value=T('sample');
 const start=Array.isArray(mem.last)&&mem.last.length?mem.last:[{id:'b64'},{id:'swap23'},{id:'revword'},{id:'swapfl'},{id:'caesar',p:3}];
 start.forEach(s=>{ if(OPS[s.id]&&!secret(s.id))encPipe.steps.push(clone(s)); });
 if(mem.real&&mem.realOk){ REAL=true; document.body.classList.add('real'); $('modeT').classList.remove('on'); $('modeR').classList.add('on'); if(GL&&GL.setReal)GL.setReal(true); }
+applyTheme(mem.theme||'station');
 texts();
+if(!mem.themeAsked&&!location.hash)setTimeout(()=>openThemes(false),500);
 /* открыли ссылку-передачу: сразу во вкладку расшифровки и перехват */
 (function(){
   const m=location.hash.match(/^#t=([A-Za-z0-9_-]+)/); if(!m)return;

@@ -245,6 +245,120 @@
   .mok[hidden]{display:none}
   .mok-h{font-size:13px;letter-spacing:.2em;color:var(--amber);font-weight:700}
   .mok .run{margin-top:12px}
+
+  /* ================= ТЕМЫ ОФОРМЛЕНИЯ =================
+     data-theme на <html>: station (ЭЛТ, по умолчанию), stars, rain, pixel, radio, dossier.
+     Фон темы лежит в #themebg (широкий и вертикальный вариант), холст WebGL поверх него прозрачен вне окна машины. */
+  #themebg{position:fixed;inset:0;z-index:0;display:none;background:#05070c center/cover no-repeat}
+  html.th-img #themebg{display:block}
+  html.th-img body::before{display:none}
+  html.th-img body{background:#05070c}
+  [data-theme=stars] #themebg{background-image:url(themes/stars-w.webp)}
+  [data-theme=rain] #themebg{background-image:url(themes/rain-w.webp)}
+  [data-theme=pixel] #themebg{background-image:url(themes/pixel-w.webp);image-rendering:pixelated}
+  [data-theme=radio] #themebg{background-image:url(themes/radio-w.webp)}
+  [data-theme=dossier] #themebg{background-image:url(themes/dossier-w.webp)}
+  @media (orientation:portrait),(max-width:760px){
+    [data-theme=stars] #themebg{background-image:url(themes/stars-m.webp)}
+    [data-theme=rain] #themebg{background-image:url(themes/rain-m.webp)}
+    [data-theme=pixel] #themebg{background-image:url(themes/pixel-m.webp)}
+    [data-theme=radio] #themebg{background-image:url(themes/radio-m.webp)}
+    [data-theme=dossier] #themebg{background-image:url(themes/dossier-m.webp)}
+  }
+  html.th-img:not(.ufx1) header,html.th-img:not(.ufx1) .block,html.th-img:not(.ufx1) .tabs,html.th-img:not(.ufx1) .modes,html.th-img:not(.ufx1) .subtabs,html.th-img:not(.ufx1) .machine > .cap,html.th-img:not(.ufx1) .tb{backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+  html.th-img .rnote{background:rgba(10,30,20,.75)}
+  .stamp-title h1,.tab,.mode,.run,.block > .cap,.machine > .cap{font-family:var(--head,var(--mono))}
+
+  /* звёздный архив: ночное небо, золото */
+  [data-theme=stars]{--void:#050913;--panel:rgba(7,12,26,.8);--panel-2:rgba(14,21,42,.86);--line:rgba(201,163,90,.26);--amber:#e8c272;--amber-dim:#8f7440;--steel:#a6b0ca;--steel-dim:#6f7896;--paper:#e8e4d8;--alert:#e2675e}
+  [data-theme=stars] .block,[data-theme=stars] header,[data-theme=stars] .machine{border-color:rgba(201,163,90,.32);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35)}
+  /* дождливое окно: тёмное стекло, янтарь и зелёный сигнал */
+  [data-theme=rain]{--void:#07090b;--panel:rgba(12,14,17,.72);--panel-2:rgba(22,25,29,.8);--line:rgba(255,255,255,.09);--amber:#e8b04b;--amber-dim:#7b6230;--steel:#97a1ab;--steel-dim:#5f6873;--paper:#e2e6ea;--alert:#e2524a}
+  [data-theme=rain] .block,[data-theme=rain] header,[data-theme=rain] .machine{border-radius:4px}
+  /* пиксельная комната: синий интерфейс, пиксельный шрифт заголовков */
+  [data-theme=pixel]{--void:#0a1424;--panel:rgba(11,21,38,.92);--panel-2:#14263f;--line:#2b4a70;--amber:#f2b43a;--amber-dim:#8b6a2a;--steel:#8fb1d6;--steel-dim:#5a7699;--paper:#eaf2ff;--alert:#ff5f57;--head:'Pixelify Sans',var(--mono)}
+  [data-theme=pixel] .block,[data-theme=pixel] header,[data-theme=pixel] .machine,[data-theme=pixel] .tabs,[data-theme=pixel] .modes{border-width:2px;box-shadow:4px 4px 0 rgba(0,0,0,.45)}
+  [data-theme=pixel] .op,[data-theme=pixel] .preset,[data-theme=pixel] .tb{border-width:2px;box-shadow:2px 2px 0 rgba(0,0,0,.4)}
+  [data-theme=pixel] .stamp-title h1{letter-spacing:.12em}
+  /* радиорубка: тёплое дерево и латунь, винты по углам */
+  [data-theme=radio]{--void:#0f0b08;--panel:rgba(26,19,13,.9);--panel-2:rgba(40,29,20,.92);--line:rgba(196,146,74,.32);--amber:#e9a944;--amber-dim:#8a6328;--steel:#bba78c;--steel-dim:#80705b;--paper:#f0e5d2;--alert:#d9573f}
+  [data-theme=radio] .block,[data-theme=radio] header,[data-theme=radio] .machine{border-color:rgba(196,146,74,.45);box-shadow:inset 0 1px 0 rgba(255,220,160,.08),0 10px 28px rgba(0,0,0,.5);
+    background-image:radial-gradient(circle at 9px 9px,#9c7a45 2px,#3b2a18 3px,transparent 4px),radial-gradient(circle at calc(100% - 9px) 9px,#9c7a45 2px,#3b2a18 3px,transparent 4px)}
+  [data-theme=radio] .run{background:linear-gradient(#f3c167,#c98a2c);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 12px rgba(0,0,0,.4)}
+  [data-theme=radio] .tab.on{background:linear-gradient(#f3c167,#c98a2c)}
+  /* досье: бумага, бордовый, машинопись */
+  [data-theme=dossier]{--void:#f3ead6;--panel:#e9dfc8;--panel-2:#e1d4b8;--line:rgba(70,48,25,.28);--amber:#8e2230;--amber-dim:#b07a80;--steel:#5d4c3a;--steel-dim:#8c7a63;--paper:#2b2118;--alert:#9b1c28;--ok:#2f6b4a;--mono:'PT Mono',ui-monospace,monospace}
+  [data-theme=dossier] .block,[data-theme=dossier] header,[data-theme=dossier] .tabs,[data-theme=dossier] .modes,[data-theme=dossier] .subtabs{background:#e9dfc8 url(themes/paper.webp) repeat;background-size:512px;border-color:rgba(70,48,25,.3);box-shadow:0 8px 22px rgba(0,0,0,.5)}
+  [data-theme=dossier] .tab:not(.on),[data-theme=dossier] .mode:not(.on),[data-theme=dossier] .subtab:not(.on){background:transparent}
+  [data-theme=dossier] .mode.on{background:rgba(142,34,48,.1)}
+  [data-theme=dossier] .machine{border-color:rgba(0,0,0,.6);box-shadow:0 8px 22px rgba(0,0,0,.5)}
+  [data-theme=dossier] .machine > .cap{background:#e9dfc8 url(themes/paper.webp);color:var(--steel)}
+  [data-theme=dossier] header{position:relative}
+  [data-theme=dossier] header::after{content:'';position:absolute;left:-10px;top:-18px;width:44px;height:48px;background:url(themes/clip.webp) center/contain no-repeat;transform:rotate(-8deg);pointer-events:none}
+  [data-theme=dossier] .tb{background:rgba(233,223,200,.92);color:#4a3a2a;border-color:rgba(70,48,25,.35)}
+  [data-theme=dossier] #langmenu{background:#efe5d0}
+  [data-theme=dossier] .stamp-title h1{color:#2b2118}
+  [data-theme=dossier] .console div.hot{text-shadow:none}
+  [data-theme=dossier] .transmission.live{text-shadow:none}
+  [data-theme=dossier] footer,[data-theme=dossier] footer b{color:#d8ccb4}
+
+
+  /* ===== этап 2: своя машина у каждой темы ===== */
+  #mview{position:absolute;inset:0}
+  #rlabels.stars{top:0;bottom:0;height:auto}
+  #rlabels.stars span{bottom:auto}
+  #rlabels.stars span b::before{content:'ST-'}
+  [data-theme=stars] #rlabels span{color:#c9b07a;text-shadow:0 0 6px rgba(0,0,0,.8)}
+  [data-theme=stars] #rlabels span b{color:#e8c272}
+  [data-theme=dossier] #rlabels span{color:#5d4c3a}
+  [data-theme=dossier] #rlabels span b{color:#8e2230}
+  [data-theme=pixel] #rlabels span{font-family:'Pixelify Sans',var(--mono);color:#8fb1d6}
+  .gauges,.hud,.anom{display:none}
+  [data-theme=radio] #mview{right:clamp(120px,30%,250px)}
+  [data-theme=radio] .gauges{display:flex;position:absolute;right:8px;top:6px;bottom:6px;width:calc(clamp(120px,30%,250px) - 14px);flex-direction:column;justify-content:center;gap:4px}
+  .gauge{position:relative;width:100%;max-height:calc(50% - 2px);aspect-ratio:420/165;margin:0 auto}
+  .gauge img{width:100%;height:100%;display:block}
+  .gauge .face{position:absolute;left:6%;right:6%;top:12%;bottom:16%;overflow:hidden}
+  .gauge .needle{position:absolute;left:calc(50% - 1px);width:2px;top:27.2%;height:257%;background:linear-gradient(#5a1a10,#2a1608 35%);transform-origin:50% 100%;transform:rotate(-34deg);box-shadow:1px 0 1px rgba(0,0,0,.35)}
+  .gauge span{position:absolute;left:0;right:0;bottom:19%;text-align:center;font-size:clamp(7px,1.6vw,10px);letter-spacing:.18em;color:#4a3420;font-weight:700}
+  [data-theme=rain] .hud{display:grid;position:absolute;left:12px;top:10px;grid-template-columns:auto auto;gap:2px 10px;font-size:9.5px;letter-spacing:.14em;color:rgba(160,230,200,.55);pointer-events:none}
+  [data-theme=rain] .hud b{font-weight:400;color:rgba(200,255,230,.85)}
+  [data-theme=rain] .anom{display:block;position:absolute;top:10%;bottom:10%;width:0;border-left:1px solid #ff3b3b;box-shadow:0 0 10px #ff3b3b;opacity:0;pointer-events:none}
+  .anom span{position:absolute;left:6px;bottom:0;white-space:nowrap;font-size:10px;letter-spacing:.14em;color:#ff6b6b}
+  .anom em{font-style:normal}
+  .anom.flip span{left:auto;right:6px}
+  /* рукописные заметки по краям (только на широком экране) */
+  #notes{position:fixed;inset:0;z-index:1;pointer-events:none;display:none}
+  @media (min-width:1280px){ html.th-img #notes{display:block} }
+  .note{position:absolute;max-width:min(210px,calc((100vw - 900px) / 2 - 24px));font-family:'Caveat',cursive;font-size:26px;line-height:1.15;white-space:pre-line;opacity:.88}
+  [data-theme=stars] .note{color:#e3b866;text-shadow:0 0 12px rgba(227,184,102,.25)}
+  [data-theme=rain] .note{color:rgba(225,232,238,.75);font-size:28px}
+  [data-theme=radio] .note{color:#3a2a18;background:rgba(236,224,196,.92);padding:10px 14px;font-size:24px;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+  [data-theme=dossier] .note{color:#a3212f;background:rgba(236,226,204,.94);padding:10px 14px;font-size:23px;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+
+  /* пиксельный робот-помощник сбоку */
+  #rbSide{position:fixed;z-index:2;left:max(12px,calc(50% - 430px - 210px));bottom:16px;width:170px;display:none;pointer-events:none}
+  @media (min-width:1280px){ [data-theme=pixel] #rbSide:not([hidden]){display:block} }
+  #rbImg{width:170px;height:auto;image-rendering:pixelated;display:block}
+  .rb-bub{position:absolute;bottom:calc(100% + 6px);left:40px;width:200px;background:#0d1a2e;border:2px solid #4fb6ff;color:#dff1ff;font-family:'Pixelify Sans',var(--mono);font-size:14px;line-height:1.35;padding:9px 11px;box-shadow:3px 3px 0 rgba(0,0,0,.5);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+  .rb-bub.on{opacity:1;transform:none}
+
+  /* выбор оформления и настройки */
+  #thPick{position:fixed;inset:0;z-index:55;background:rgba(4,5,8,.84);display:flex;align-items:center;justify-content:center;padding:16px}
+  #thPick[hidden]{display:none}
+  .th-box{width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#10131a;border:1px solid #2c3242;padding:18px;color:#d8dae0;font-family:ui-monospace,"Cascadia Mono",monospace}
+  .th-h{display:flex;justify-content:space-between;align-items:center;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#e8b04b;margin-bottom:14px}
+  .th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .th-card{background:#171a22;border:1px solid #2c3242;padding:0;cursor:pointer;text-align:left;color:#d8dae0;font-family:inherit;transition:.15s;overflow:hidden}
+  .th-card:hover,.th-card:focus-visible{border-color:#e8b04b;outline:none}
+  .th-card.on{border-color:#e8b04b;box-shadow:0 0 0 1px #e8b04b}
+  .th-card img,.th-card .ph{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+  .th-card .ph{background:radial-gradient(ellipse at 50% 0,#1c2030,#0a0b0e 70%);position:relative}
+  .th-card .ph::after{content:'';position:absolute;left:8%;right:8%;top:48%;height:2px;background:#e8b04b;box-shadow:0 0 10px #e8b04b;opacity:.8}
+  .th-card span{display:block;padding:8px 10px;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+  .th-snd{margin-top:14px}
+  .th-snd[hidden]{display:none}
+  #thPick .hint{color:#7d8aa0}
   .run.realbtn{width:auto;padding:12px 18px;background:var(--ok);font-size:12px}
   .btns{display:flex;gap:6px;flex-wrap:wrap}
   .incoming{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--alert);margin-bottom:10px}
@@ -293,12 +407,15 @@
 </style>
 </head>
 <body>
+<div id="themebg"></div>
 <canvas id="gl"></canvas>
+<div id="notes" aria-hidden="true"></div>
+<div id="rbSide" hidden><div class="rb-bub" id="rbBub"></div><img id="rbImg" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="></div>
 <div class="wrap">
 
   <div class="topbar">
     <button class="tb" id="back" type="button">&lt; A.C.EON</button>
-    <div class="tbr"><button class="tb" id="sndBtn" type="button"></button><div id="langwrap"><button class="tb" id="langbtn" type="button">RU</button><div id="langmenu"></div></div></div>
+    <div class="tbr"><button class="tb" id="setBtn" type="button">&#9881;</button><button class="tb" id="sndBtn" type="button"></button><div id="langwrap"><button class="tb" id="langbtn" type="button">RU</button><div id="langmenu"></div></div></div>
   </div>
 
   <header>
@@ -324,7 +441,16 @@
 
   <div class="machine" id="machine">
     <div class="cap"><span class="n">&#9881;</span> <span id="tMachine"></span><span class="mode" id="mMode"></span></div>
-    <div id="mscreen"><div id="rlabels"></div><div id="rempty"></div></div>
+    <div id="mscreen">
+      <div id="mview"><div id="rlabels"></div><div id="rempty"></div>
+        <div class="hud" aria-hidden="true"><span>FREQ</span><b>1.3 kHz</b><span>SNR</span><b id="hudS">+12 dB</b></div>
+        <div class="anom" id="mAnom" aria-hidden="true"><span>01 + <em id="tAnom"></em></span></div>
+      </div>
+      <div class="gauges" aria-hidden="true">
+        <div class="gauge" id="gIn"><img src="themes/gauge.webp" alt=""><div class="face"><i class="needle"></i></div><span id="tGIn"></span></div>
+        <div class="gauge" id="gOut"><img src="themes/gauge.webp" alt=""><div class="face"><i class="needle"></i></div><span id="tGOut"></span></div>
+      </div>
+    </div>
   </div>
 
   <div class="tabs">
@@ -476,6 +602,15 @@
 
   <footer><span class="t-only"><b id="tF1"></b> <span id="tF2"></span><br><span id="tF3"></span><br><span id="tF4"></span><br><span id="tF6"></span><br></span><span class="r-only"><span id="tFR"></span><br></span><span id="tF5"></span></footer>
 
+<div id="thPick" hidden role="dialog" aria-modal="true">
+  <div class="th-box">
+    <div class="th-h"><span id="thTitle"></span><button class="tb" id="thClose" type="button">&#10005;</button></div>
+    <div class="th-grid" id="thGrid"></div>
+    <div class="th-snd" id="thSndRow"><label class="toggle"><input type="checkbox" id="thSnd"> <span id="thSndT"></span></label></div>
+    <p class="hint" id="thNote"></p>
+  </div>
+</div>
+
 <div id="rwarn" hidden role="dialog" aria-modal="true">
   <div class="rw-box">
     <span class="stamp" id="tRwT"></span>
@@ -489,10 +624,10 @@
 <script src="../games/shared/store.js?v=1"></script>
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
-<script src="lang.js?v=4"></script>
+<script src="lang.js?v=6"></script>
 <script src="cipher-engine.js?v=4"></script>
-<script src="cipher-gl.js?v=3"></script>
+<script src="cipher-gl.js?v=5"></script>
 <script src="cipher-audio.js?v=1"></script>
-<script src="cipher-ui.js?v=5"></script>
+<script src="cipher-ui.js?v=7"></script>
 </body>
 </html>

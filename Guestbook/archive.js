@@ -4,7 +4,7 @@
    2 распад 12-14 с: звёзды падают и бьются в агонии, свет уходит из туманностей, следы гостей
      сбоят цветом и тонут, полосы, разрывы неба, трещины (U-3), вспышки, тряска; музыка замедляется и гаснет
    3 смерть: всё заливает белым
-   4 первый текст по строкам, потом исчезает
+   4 первый текст печатается по букве (240 знаков в минуту), потом исчезает
    5 пустота
    6 второй текст, и на белом загораются звёзды: следы гостей чёрными точками, их можно читать
    Время сценария идёт только пока вкладка открыта (тикает из кадра неба).
@@ -31,12 +31,29 @@ function run(from){
   const t1=el('div','ar-t1','ar-txt'), t2=el('div','ar-t2','ar-txt');
   const skip=el('button','ar-skip'); skip.type='button';
   const back=el('a','ar-back'); back.href=GB.DIR;
+  /* текст печатается по букве, как сообщение в чате: 240 знаков в минуту, пробелы и знаки тоже.
+     Невидимый остаток строки стоит на месте сразу, поэтому строки не прыгают при наборе. */
+  const CHAR_MS=250, LINE_GAP=700;
+  const prog=new Map([[t1,[]],[t2,[]]]);
+  let typing=null;                  // {box, line, acc, gap, done}
+  function renderBox(box){
+    const p=prog.get(box);
+    [...box.children].forEach((d,i)=>{
+      const chars=d._chars, n=Math.min(p[i]||0,chars.length);
+      d._ty.textContent=chars.slice(0,n).join(''); d._rest.textContent=chars.slice(n).join('');
+      d._cr.style.display=(typing&&typing.box===box&&typing.line===i)?'':'none';
+    });
+  }
   function fillTexts(){
     const a=T('ar.t1'), b=T('ar.t2');
     [[t1,a],[t2,b]].forEach(([box,lines])=>{
-      const shown=[...box.children].map(c=>c.classList.contains('on'));
       box.innerHTML='';
-      lines.forEach((s,i)=>{ const d=el('div',null,'al'+(i===lines.length-1?' em':'')+(box===t2&&i===0?' main':''),box); d.textContent=s; if(shown[i])d.classList.add('on'); });
+      lines.forEach((s,i)=>{
+        const d=el('div',null,'al'+(i===lines.length-1?' em':'')+(box===t2&&i===0?' main':''),box);
+        d._chars=Array.from(s);
+        d._ty=el('span',null,'ty',d); d._cr=el('span',null,'cr',d); d._rest=el('span',null,'rest',d);
+      });
+      renderBox(box);
     });
     skip.textContent=T('ar.skip'); back.textContent=T('ar.back');
     document.title='A.C.EON · '+T('ar.title');
@@ -172,14 +189,31 @@ function run(from){
     glitched.clear(); err.classList.remove('on');
   }
 
-  /* строки текста по очереди */
-  function showLines(box,gapFn,done){
-    const lines=[...box.children]; let t=0;
-    box.classList.add('on');
-    lines.forEach((ln,i)=>{ at(t,()=>ln.classList.add('on')); t+=gapFn(ln.textContent,i); });
-    at(t,done);
+  /* набор текста: тикает из часов сценария */
+  function typeBox(box,done){
+    box.classList.add('on','tw');
+    prog.set(box,[...box.children].map(()=>0));
+    typing={box,line:0,acc:0,gap:0,done};
+    renderBox(box);
   }
-  const readMs=s=>Math.max(2600,900+s.length*52);
+  function typeTick(dt){
+    if(!typing)return;
+    const box=typing.box, lines=[...box.children], p=prog.get(box);
+    if(typing.gap>0){ typing.gap-=dt; if(typing.gap>0)return; typing.acc=0; }
+    typing.acc+=dt;
+    let changed=false;
+    while(typing&&typing.acc>=CHAR_MS){
+      typing.acc-=CHAR_MS;
+      const ln=lines[typing.line];
+      if(!ln){ break; }
+      p[typing.line]=(p[typing.line]||0)+1; changed=true;
+      if(p[typing.line]>=ln._chars.length){
+        if(typing.line+1<lines.length){ typing.line++; typing.gap=LINE_GAP; break; }
+        const done=typing.done; typing=null; renderBox(box); done(); return;
+      }
+    }
+    if(changed)renderBox(box);
+  }
 
   function toWhite(){
     stopGlitch();
@@ -195,14 +229,14 @@ function run(from){
   }
   function text1(){
     go('t1');
-    showLines(t1,(s,i)=>readMs(s)+(i===2?400:0),()=>{
+    typeBox(t1,()=>{
       at(4200,()=>{ t1.classList.add('out');
         at(2400,()=>{ t1.classList.remove('on'); go('void'); at(3200,text2); }); });
     });
   }
   function text2(){
     go('t2');
-    showLines(t2,(s,i)=>i===0?2200:1900,()=>at(1400,rebirth));
+    typeBox(t2,()=>at(1400,rebirth));
   }
   function rebirth(fast){
     go('stars');
@@ -223,7 +257,8 @@ function run(from){
     events.length=0; stopGlitch(); musicDie(1);
     ink=true; die=0; sky.st.die=0; sky.st.ink=1; sky.st.starA=0;
     body.classList.add('ink'); white.classList.remove('on');
-    t1.classList.remove('on'); t2.classList.add('on'); [...t2.children].forEach(c=>c.classList.add('on'));
+    typing=null; t1.classList.remove('on'); t2.classList.add('on','tw');
+    prog.set(t2,[...t2.children].map(d=>d._chars.length)); renderBox(t2);
     rebirth(true);
   });
 
@@ -232,6 +267,7 @@ function run(from){
     const dt=Math.min(100,lastNow?now-lastNow:16)*SPEED; lastNow=now;
     clock+=dt; phaseT+=dt;
     for(let k=0;k<events.length;k++){ if(events[k].t<=clock){ const f=events[k].fn; events.splice(k,1); k--; f(); } }
+    typeTick(dt);
     if(phase==='calm'&&phaseT>=calm){
       go('decay'); GB.lock=true; GB.setHover(null);
       sky.st.dur=D/1000; genCracks(); gcv.style.display='block';

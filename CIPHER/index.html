@@ -4,70 +4,84 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A.C.EON // CIPHER</title>
+<script src="../universe.js"></script>
 <style>
   :root{
     --void:#0a0b0e;
     --panel:#12141a;
     --panel-2:#171a22;
     --line:#242835;
-    --amber:#e8b04b;      /* фосфор телетайпа — главный акцент */
+    --amber:#e8b04b;      /* фосфор телетайпа, главный акцент */
     --amber-dim:#8a6c2e;
     --steel:#7d8aa0;      /* вторичный текст */
-    --steel-dim:#4b5568;
+    --steel-dim:#56607a;
     --paper:#d8dae0;      /* основной текст */
-    --alert:#c8433a;      /* гриф / расшифровка */
+    --alert:#c8433a;      /* гриф, расшифровка */
     --ok:#5aa17f;
     --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Courier New", monospace;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
+  html{background:var(--void)}
   body{
-    background:
-      radial-gradient(1200px 700px at 50% -10%, #14161d 0%, var(--void) 60%),
-      var(--void);
-    color:var(--paper);
-    font-family:var(--mono);
-    line-height:1.5;
-    -webkit-font-smoothing:antialiased;
-    padding:22px 16px 80px;
+    background:radial-gradient(1200px 700px at 50% -10%, #14161d 0%, var(--void) 60%),var(--void);
+    color:var(--paper);font-family:var(--mono);line-height:1.5;-webkit-font-smoothing:antialiased;
+    padding:14px 16px 80px;min-height:100vh;
   }
-  /* тонкие сканлайны — очень деликатно */
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px);
-    mix-blend-mode:overlay;
-  }
+  html.gl body{background:transparent}
+  /* фон ЭЛТ рисует WebGL; без него остаются тонкие сканлайны */
+  #gl{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:none}
+  html.gl #gl{display:block}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px);mix-blend-mode:overlay}
+  html.gl body::before{display:none}
   .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1}
+
+  /* ---- верхняя строка ---- */
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .tb{background:rgba(18,20,26,.8);border:1px solid var(--line);color:var(--steel);font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    padding:6px 11px;cursor:pointer;transition:.15s}
+  .tb:hover{color:var(--amber);border-color:var(--amber-dim)}
+  #langwrap{position:relative}
+  #langmenu{position:absolute;right:0;top:calc(100% + 4px);display:none;flex-direction:column;min-width:150px;padding:4px;z-index:30;background:var(--void);border:1px solid var(--amber-dim)}
+  #langmenu.on{display:flex}
+  #langmenu button{background:none;border:0;text-align:left;padding:6px 9px;font-family:var(--mono);font-size:12px;color:var(--steel);display:flex;gap:10px;cursor:pointer}
+  #langmenu button b{font-weight:400;color:var(--steel-dim);width:20px}
+  #langmenu button:hover,#langmenu button.sel{color:var(--amber);background:rgba(232,176,75,.07)}
 
   /* ---- ГРИФ / ШАПКА ---- */
   header{border:1px solid var(--line);background:var(--panel);position:relative}
   .stamp-row{display:flex;justify-content:space-between;align-items:stretch;border-bottom:1px solid var(--line)}
-  .stamp-title{padding:14px 18px}
-  .stamp-title h1{
-    margin:0;font-size:clamp(20px,5vw,30px);letter-spacing:.18em;font-weight:700;
-    color:var(--paper);
-  }
+  .stamp-title{padding:14px 18px;min-width:0}
+  .stamp-title h1{margin:0;font-size:clamp(20px,5vw,30px);letter-spacing:.18em;font-weight:700;color:var(--paper)}
   .stamp-title .dot{color:var(--amber)}
   .stamp-title p{margin:3px 0 0;font-size:11px;letter-spacing:.32em;color:var(--steel);text-transform:uppercase}
-  .grif{
-    display:flex;align-items:center;padding:0 16px;border-left:1px solid var(--line);
-    color:var(--alert);font-size:11px;letter-spacing:.24em;text-transform:uppercase;
-    text-align:right;
-  }
-  .grif span{
-    border:1px solid var(--alert);padding:5px 9px;transform:rotate(-3deg);
-    box-shadow:inset 0 0 0 2px rgba(200,67,58,.15);
-  }
+  .grif{display:flex;align-items:center;padding:0 16px;border-left:1px solid var(--line);color:var(--alert);font-size:11px;letter-spacing:.24em;text-transform:uppercase;text-align:right}
+  .grif span{border:1px solid var(--alert);padding:5px 9px;transform:rotate(-3deg);box-shadow:inset 0 0 0 2px rgba(200,67,58,.15)}
   .meta{display:flex;flex-wrap:wrap;gap:2px 22px;padding:9px 18px;font-size:11px;color:var(--steel-dim);letter-spacing:.14em}
   .meta b{color:var(--steel);font-weight:400}
+  @media (max-width:520px){ .grif{padding:0 10px;font-size:9.5px} .stamp-title p{letter-spacing:.18em} }
+
+  /* ---- шифромашина (роторы рисует WebGL сквозь прозрачное окно) ---- */
+  .machine{display:none;margin-top:20px;border:1px solid var(--line);position:relative}
+  html.gl .machine{display:block}
+  .machine > .cap{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel);
+    font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--steel)}
+  .machine > .cap .n{color:var(--amber);font-weight:700}
+  .machine > .cap .mode{margin-left:auto;color:var(--steel-dim);font-size:10px}
+  .machine.dec > .cap .n{color:var(--alert)}
+  #mscreen{position:relative;height:210px}
+  @media (max-width:640px){ #mscreen{height:160px} }
+  #rlabels{position:absolute;left:0;right:0;bottom:6px;height:16px;pointer-events:none}
+  #rlabels span{position:absolute;bottom:0;transform:translateX(-50%);font-size:10px;letter-spacing:.08em;color:var(--steel-dim);white-space:nowrap;transition:color .2s}
+  #rlabels span b{color:var(--amber-dim);font-weight:400;margin-right:4px}
+  #rlabels span.hot{color:var(--amber)}
+  .machine.dec #rlabels span.hot{color:var(--alert)}
+  #rempty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.2em;color:var(--steel-dim);text-transform:uppercase;pointer-events:none}
 
   /* ---- ТАБЫ ---- */
   .tabs{display:flex;margin-top:20px;gap:0;border:1px solid var(--line)}
-  .tab{
-    flex:1;background:var(--panel);color:var(--steel);border:none;cursor:pointer;
-    font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;
-    padding:15px 8px;transition:.15s;position:relative;
-  }
+  .tab{flex:1;background:var(--panel);color:var(--steel);border:none;cursor:pointer;font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;padding:15px 8px;transition:.15s}
   .tab + .tab{border-left:1px solid var(--line)}
   .tab:hover{color:var(--paper);background:var(--panel-2)}
   .tab.on{color:var(--void);background:var(--amber)}
@@ -77,105 +91,112 @@
   section.view.on{display:block;animation:fade .25s ease}
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-  /* под-вкладки расшифровки */
   .subtabs{display:flex;border:1px solid var(--line);margin-bottom:18px}
-  .subtab{flex:1;background:var(--panel);color:var(--steel);border:none;cursor:pointer;
-    font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;padding:12px 8px;transition:.15s}
+  .subtab{flex:1;background:var(--panel);color:var(--steel);border:none;cursor:pointer;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;padding:12px 8px;transition:.15s}
   .subtab + .subtab{border-left:1px solid var(--line)}
   .subtab:hover{color:var(--paper);background:var(--panel-2)}
   .subtab.on{background:var(--alert);color:#fff}
   .hint{margin:10px 0 0;font-size:11.5px;line-height:1.55;color:var(--steel-dim);letter-spacing:.02em}
 
   .block{border:1px solid var(--line);background:var(--panel);margin-bottom:18px}
-  .block > .cap{
-    display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);
-    font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--steel);
-  }
+  .block > .cap{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--steel)}
   .cap .n{color:var(--amber);font-weight:700}
   .cap.dec .n{color:var(--alert)}
   .pad{padding:14px}
 
-  textarea{
-    width:100%;min-height:110px;resize:vertical;background:var(--void);color:var(--paper);
-    border:1px solid var(--line);font-family:var(--mono);font-size:14px;line-height:1.55;
-    padding:12px;outline:none;
-  }
-  textarea:focus{border-color:var(--amber-dim)}
+  textarea,input.txt{width:100%;background:var(--void);color:var(--paper);border:1px solid var(--line);font-family:var(--mono);font-size:14px;line-height:1.55;padding:12px;outline:none}
+  textarea{min-height:110px;resize:vertical}
+  textarea:focus,input.txt:focus{border-color:var(--amber-dim)}
   textarea.dec:focus{border-color:var(--alert)}
+
+  /* ---- рецепты ---- */
+  .rrow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .preset{background:transparent;border:1px solid var(--amber-dim);color:var(--amber);font-family:var(--mono);font-size:12px;padding:7px 11px;cursor:pointer;transition:.13s}
+  .preset:hover{background:rgba(232,176,75,.1)}
+  .preset.ghost{border-color:var(--line);color:var(--steel)}
+  .preset.ghost:hover{color:var(--paper);border-color:var(--steel)}
+  .mine{display:inline-flex;align-items:stretch;border:1px solid var(--line)}
+  .mine button{background:var(--panel-2);border:0;color:var(--paper);font-family:var(--mono);font-size:12px;padding:6px 10px;cursor:pointer}
+  .mine button:hover{color:var(--amber)}
+  .mine button.x{border-left:1px solid var(--line);color:var(--steel-dim);padding:6px 8px}
+  .mine button.x:hover{color:var(--alert)}
+  .saverow{display:flex;gap:7px;margin-top:10px}
+  .saverow input{flex:1;min-width:0;padding:7px 10px;font-size:12.5px}
+  .saverow button{background:var(--panel-2);border:1px solid var(--line);color:var(--steel);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:0 12px;cursor:pointer}
+  .saverow button:hover{color:var(--amber);border-color:var(--amber-dim)}
+  .muted{color:var(--steel-dim);font-size:11.5px}
 
   /* ---- ПАЛИТРА ОПЕРАЦИЙ ---- */
   .grp-label{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--steel-dim);margin:14px 0 7px}
   .grp-label:first-child{margin-top:0}
   .palette{display:flex;flex-wrap:wrap;gap:7px}
-  .op{
-    background:var(--panel-2);color:var(--paper);border:1px solid var(--line);cursor:pointer;
-    font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;padding:8px 11px;transition:.13s;
-    display:inline-flex;align-items:center;gap:7px;
-  }
-  .op:hover{border-color:var(--amber-dim);color:var(--amber);background:rgba(232,176,75,.07)}
+  .op{background:var(--panel-2);color:var(--paper);border:1px solid var(--line);cursor:pointer;font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;padding:8px 11px;transition:.13s;display:inline-flex;align-items:center;gap:7px}
+  .op:hover,.op:focus-visible{border-color:var(--amber-dim);color:var(--amber);background:rgba(232,176,75,.07);outline:none}
   .op::before{content:"+";color:var(--amber);font-weight:700}
+  .dec-pal .op:hover,.dec-pal .op:focus-visible{border-color:var(--alert);color:#ff9d94;background:rgba(200,67,58,.08)}
+  .dec-pal .op::before{color:var(--alert)}
+  .opdesc{margin-top:12px;min-height:38px;padding:8px 11px;border-left:2px solid var(--amber-dim);font-size:11.5px;line-height:1.55;color:var(--steel)}
+  .opdesc b{color:var(--paper);font-weight:400}
+  .dec-pal + .opdesc{border-left-color:var(--alert)}
 
   /* ---- КОНВЕЙЕР ---- */
-  .pipe{display:flex;flex-direction:column;gap:0}
+  .pipe{display:flex;flex-direction:column;gap:0;position:relative}
   .pipe-empty{color:var(--steel-dim);font-size:13px;padding:22px 4px;text-align:center;border:1px dashed var(--line)}
-  .step{
-    display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--line);
-    padding:10px 12px;position:relative;
-  }
+  .step{display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--line);padding:10px 12px;position:relative;touch-action:pan-y}
   .step + .step{margin-top:-1px}
-  .step .idx{
-    font-size:12px;color:var(--void);background:var(--amber);min-width:26px;height:26px;
-    display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.05em;
-  }
-  .step .nm{flex:1;font-size:13.5px;color:var(--paper)}
+  .step .idx{font-size:12px;color:var(--void);background:var(--amber);min-width:30px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.05em;cursor:grab;touch-action:none;user-select:none}
+  .dec-pipe .step .idx{background:var(--alert);color:#fff}
+  .step .idx::after{content:"";position:absolute}
+  .step .nm{flex:1;min-width:0;font-size:13.5px;color:var(--paper)}
   .step .nm small{display:block;color:var(--steel-dim);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;margin-top:1px}
-  .step input.param{
-    width:86px;background:var(--void);border:1px solid var(--line);color:var(--amber);
-    font-family:var(--mono);font-size:13px;padding:6px 8px;outline:none;text-align:center;
-  }
+  .step input.param{width:86px;background:var(--void);border:1px solid var(--line);color:var(--amber);font-family:var(--mono);font-size:13px;padding:6px 8px;outline:none;text-align:center}
   .step input.param:focus{border-color:var(--amber)}
   .step .ctrl{display:flex;gap:4px}
-  .step .ctrl button{
-    background:transparent;border:1px solid var(--line);color:var(--steel);cursor:pointer;
-    width:28px;height:28px;font-family:var(--mono);font-size:13px;transition:.12s;line-height:1;
-  }
+  .step .ctrl button{background:transparent;border:1px solid var(--line);color:var(--steel);cursor:pointer;width:28px;height:28px;font-family:var(--mono);font-size:13px;transition:.12s;line-height:1}
   .step .ctrl button:hover{border-color:var(--steel);color:var(--paper)}
   .step .ctrl button.x:hover{border-color:var(--alert);color:var(--alert)}
-  .flow{color:var(--steel-dim);font-size:14px;text-align:center;line-height:.4;padding:2px 0}
+  .step.drag{z-index:5;box-shadow:0 10px 30px rgba(0,0,0,.55);border-color:var(--amber-dim);transition:none}
+  .step.drag .idx{cursor:grabbing}
+  .step.shift{transition:transform .15s}
+  .step.hl{border-color:var(--amber-dim)}
+  @media (max-width:520px){ .step{gap:8px;padding:9px} .step input.param{width:64px} .step .ctrl button{width:26px} }
+  .flow{color:var(--steel-dim);font-size:12px;text-align:center;line-height:1;padding:3px 0}
+  .step.active{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-dim),0 0 18px rgba(232,176,75,.18)}
+  .step.active .idx{background:#fff;color:var(--void);box-shadow:0 0 14px var(--amber)}
 
   /* ---- КНОПКИ ДЕЙСТВИЯ ---- */
-  .run{
-    width:100%;margin-top:2px;background:var(--amber);color:var(--void);border:none;cursor:pointer;
-    font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
-    padding:16px;transition:.15s;
-  }
+  .run{width:100%;margin-top:2px;background:var(--amber);color:var(--void);border:none;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:16px;transition:.15s}
   .run:hover{filter:brightness(1.08)}
   .run:active{transform:translateY(1px)}
   .run.dec{background:var(--alert);color:#fff}
   .run:disabled{background:var(--line);color:var(--steel-dim);cursor:not-allowed;filter:none}
 
   /* ---- ВЫВОД ---- */
-  .out-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:0}
-  .copy{
-    background:transparent;border:1px solid var(--line);color:var(--steel);cursor:pointer;
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;padding:6px 12px;transition:.13s;
-  }
+  .out-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .copy{background:transparent;border:1px solid var(--line);color:var(--steel);cursor:pointer;font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;padding:6px 12px;transition:.13s}
   .copy:hover{border-color:var(--amber);color:var(--amber)}
   .copy.dec:hover{border-color:var(--alert);color:var(--alert)}
-  .transmission{
-    background:var(--void);border:1px solid var(--line);padding:14px;font-size:13px;
-    word-break:break-all;white-space:pre-wrap;color:var(--amber);min-height:44px;
-  }
+  .transmission{background:var(--void);border:1px solid var(--line);padding:14px;font-size:13px;word-break:break-all;white-space:pre-wrap;color:var(--amber);min-height:44px}
   .transmission.plain{color:var(--paper)}
   .transmission.err{color:var(--alert);border-color:var(--alert)}
   .marker{color:var(--steel-dim)}
+  .warn{margin-top:10px;font-size:11.5px;color:#e88a6b;border-left:2px solid var(--alert);padding-left:10px;display:none}
+  .warn.on{display:block}
 
+  .toggle{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--steel);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;user-select:none}
+  .toggle input{accent-color:var(--amber)}
   .stages{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;display:none}
   .stages.on{display:block}
+  .stage{font-size:12px;margin-bottom:10px;word-break:break-all;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+  .stage .k{color:var(--amber);font-weight:700}
+  .stages.dec .stage .k{color:var(--alert)}
+  .stage .lbl{color:var(--steel);letter-spacing:.08em}
+  .stage .val{grid-column:2;color:var(--paper);white-space:pre-wrap;max-height:4.8em;overflow:hidden;position:relative;cursor:pointer}
+  .stage .val.open{max-height:none}
+  .stage .len{color:var(--steel-dim);font-size:10.5px;margin-left:6px}
 
-  /* лог дешифратора */
-  .console{display:none;margin-bottom:12px;border-left:2px solid var(--amber-dim);padding-left:12px;
-    font-size:11.5px;line-height:1.95;letter-spacing:.06em}
+  /* лог */
+  .console{display:none;margin-bottom:12px;border-left:2px solid var(--amber-dim);padding-left:12px;font-size:11.5px;line-height:1.95;letter-spacing:.06em}
   .console.on{display:block}
   .console div{color:var(--steel);opacity:.5;transition:.2s}
   .console div.hot{color:var(--amber);opacity:1;text-shadow:0 0 8px rgba(232,176,75,.4)}
@@ -183,35 +204,7 @@
   .transmission.live-dec{color:var(--alert);text-shadow:0 0 6px rgba(200,67,58,.28)}
   .console.dec{border-left-color:var(--alert)}
   .console.dec div.hot{color:var(--alert);text-shadow:0 0 8px rgba(200,67,58,.4)}
-  /* тултип с описанием шифра */
-  .op[data-desc]{position:relative}
-  .op[data-desc]:hover{z-index:40}
-  .op[data-desc]:hover::after{
-    content:attr(data-desc);position:absolute;left:0;top:calc(100% + 9px);z-index:40;
-    pointer-events:none;
-    width:max-content;max-width:min(280px,72vw);
-    background:var(--void);border:1px solid var(--amber-dim);color:var(--paper);
-    font-size:11.5px;line-height:1.55;letter-spacing:.01em;text-transform:none;text-align:left;
-    padding:9px 11px;box-shadow:0 10px 30px rgba(0,0,0,.6);white-space:normal;
-  }
-  .op[data-desc]:hover::before{
-    content:"";position:absolute;left:16px;top:calc(100% + 3px);z-index:41;
-    pointer-events:none;
-    border:6px solid transparent;border-bottom-color:var(--amber-dim);
-  }
-  @media (hover:none){ .op[data-desc]:hover::after,.op[data-desc]:hover::before{display:none} }
-  /* подсветка активного шага во время шифрования */
-  .step.active{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-dim),0 0 18px rgba(232,176,75,.18)}
-  .step.active .idx{background:#fff;color:var(--void);box-shadow:0 0 14px var(--amber)}
-  @media (prefers-reduced-motion: reduce){
-    .transmission.live{text-shadow:none}
-  }
-  .stage{font-size:12px;margin-bottom:9px;word-break:break-all}
-  .stage .lbl{color:var(--steel);letter-spacing:.1em}
-  .stage .val{color:var(--paper);white-space:pre-wrap}
-
-  .toggle{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--steel);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;user-select:none;margin-top:12px}
-  .toggle input{accent-color:var(--amber)}
+  @media (prefers-reduced-motion: reduce){ .transmission.live{text-shadow:none} }
 
   footer{margin-top:26px;font-size:10.5px;color:var(--steel-dim);letter-spacing:.1em;text-align:center;line-height:1.7}
   footer b{color:var(--steel)}
@@ -219,61 +212,75 @@
 </style>
 </head>
 <body>
+<canvas id="gl"></canvas>
 <div class="wrap">
+
+  <div class="topbar">
+    <button class="tb" id="back" type="button">&lt; A.C.EON</button>
+    <div id="langwrap"><button class="tb" id="langbtn" type="button">RU</button><div id="langmenu"></div></div>
+  </div>
 
   <header>
     <div class="stamp-row">
       <div class="stamp-title">
         <h1>A<span class="dot">.</span>C<span class="dot">.</span>EON<span class="dot"> // </span>CIPHER</h1>
-        <p>Конструктор шифрованных передач</p>
+        <p id="tSub"></p>
       </div>
-      <div class="grif"><span>Совершенно<br>секретно</span></div>
+      <div class="grif"><span id="tGrif"></span></div>
     </div>
     <div class="meta">
-      <span><b>Канал:</b> одноразовый</span>
-      <span><b>Ключ:</b> вшит в станцию</span>
-      <span><b>Разбор:</b> только A.C.EON</span>
+      <span><b id="tmCh"></b>: <span id="tmChV"></span></span>
+      <span><b id="tmKey"></b>: <span id="tmKeyV"></span></span>
+      <span><b id="tmParse"></b>: <span id="tmParseV"></span></span>
     </div>
   </header>
 
+  <div class="machine" id="machine">
+    <div class="cap"><span class="n">&#9881;</span> <span id="tMachine"></span><span class="mode" id="mMode"></span></div>
+    <div id="mscreen"><div id="rlabels"></div><div id="rempty"></div></div>
+  </div>
+
   <div class="tabs">
-    <button class="tab on" id="tab-enc" onclick="setMode('enc')">Шифровать</button>
-    <button class="tab dec" id="tab-dec" onclick="setMode('dec')">Расшифровать</button>
+    <button class="tab on" id="tab-enc" type="button"></button>
+    <button class="tab dec" id="tab-dec" type="button"></button>
   </div>
 
   <!-- ========== ШИФРОВАНИЕ ========== -->
   <section class="view on" id="view-enc">
+    <div class="block">
+      <div class="cap"><span class="n">01</span> <span id="tC1"></span></div>
+      <div class="pad"><textarea id="plain"></textarea></div>
+    </div>
 
     <div class="block">
-      <div class="cap"><span class="n">01</span> Открытый текст</div>
+      <div class="cap"><span class="n">02</span> <span id="tC2"></span></div>
       <div class="pad">
-        <textarea id="plain" placeholder="Введите сообщение, которое нужно засекретить…">место встречи изменить нельзя, ждём на явке в полночь</textarea>
+        <div class="grp-label" id="tPresets"></div>
+        <div class="rrow" id="presets"></div>
+        <div class="grp-label" id="tMine"></div>
+        <div class="rrow" id="mine"></div>
+        <div class="saverow"><input class="txt" id="rname" maxlength="32"><button type="button" id="rsave"></button></div>
+        <div style="height:16px"></div>
+        <div id="palette"></div>
+        <div class="opdesc" id="opdesc"></div>
       </div>
     </div>
 
     <div class="block">
-      <div class="cap"><span class="n">02</span> Собрать конвейер</div>
-      <div class="pad">
-        <div id="palette" class="palette"></div>
-      </div>
+      <div class="cap"><span class="n">03</span> <span id="tC3"></span></div>
+      <div class="pad"><div id="pipe" class="pipe"></div></div>
     </div>
 
-    <div class="block">
-      <div class="cap"><span class="n">03</span> Последовательность операций</div>
-      <div class="pad">
-        <div id="pipe" class="pipe"></div>
-      </div>
-    </div>
-
-    <button class="run" id="encBtn" onclick="doEncode()">▶ Собрать передачу</button>
+    <button class="run" id="encBtn" type="button"></button>
 
     <div class="block" style="margin-top:18px" id="encOutWrap" hidden>
-      <div class="cap"><span class="n">04</span> Готовая передача</div>
+      <div class="cap"><span class="n">04</span> <span id="tC4"></span></div>
       <div class="pad">
-        <div class="out-head"><span></span><button class="copy" onclick="copyOut('transOut', this)">Копировать</button></div>
-        <div style="height:8px"></div>
+        <div class="out-head"><label class="toggle"><input type="checkbox" id="encSt"> <span class="tStages"></span></label><button class="copy" id="encCopy" type="button"></button></div>
+        <div style="height:10px"></div>
         <div id="encConsole" class="console"></div>
         <div id="transOut" class="transmission"></div>
+        <div id="encStages" class="stages"></div>
       </div>
     </div>
   </section>
@@ -281,61 +288,59 @@
   <!-- ========== РАСШИФРОВКА ========== -->
   <section class="view" id="view-dec">
     <div class="subtabs">
-      <button class="subtab on" id="sub-auto" onclick="setDecMode('auto')">По маркеру ⟨ACEON⟩</button>
-      <button class="subtab" id="sub-man" onclick="setDecMode('man')">Вручную · по фразе</button>
+      <button class="subtab on" id="sub-auto" type="button"></button>
+      <button class="subtab" id="sub-man" type="button"></button>
     </div>
 
-    <!-- АВТО: по маркеру -->
     <div id="decAuto">
       <div class="block">
-        <div class="cap dec"><span class="n">↺</span> Вставьте перехваченную передачу</div>
-        <div class="pad">
-          <textarea id="cipher" class="dec" placeholder="⟨ACEON:…⟩…"></textarea>
-        </div>
+        <div class="cap dec"><span class="n">&#8634;</span> <span id="tDecPaste"></span></div>
+        <div class="pad"><textarea id="cipher" class="dec" placeholder="&#10216;ACEON:...&#10217;..."></textarea></div>
       </div>
-      <button class="run dec" id="decBtn" onclick="doDecode()">↺ Расшифровать по маркеру</button>
+      <button class="run dec" id="decBtn" type="button"></button>
     </div>
 
-    <!-- ВРУЧНУЮ: по фразе + свой рецепт -->
     <div id="decMan" hidden>
       <div class="block">
-        <div class="cap dec"><span class="n">✎</span> Зашифрованная фраза</div>
+        <div class="cap dec"><span class="n">&#9998;</span> <span id="tManPhrase"></span></div>
         <div class="pad">
-          <textarea id="cipherMan" class="dec" placeholder="Вставьте только зашифрованный текст, без метки ⟨ACEON…⟩"></textarea>
-          <p class="hint">Соберите ту же последовательность операций, что использовалась при шифровании — станция сама развернёт её в обратном порядке. Ключи и сдвиги введите вручную. Метку копировать не нужно.</p>
+          <textarea id="cipherMan" class="dec"></textarea>
+          <p class="hint" id="tManHint"></p>
         </div>
       </div>
       <div class="block">
-        <div class="cap dec"><span class="n">▤</span> Выберите операции</div>
-        <div class="pad"><div id="paletteMan" class="palette"></div></div>
+        <div class="cap dec"><span class="n">&#9636;</span> <span id="tManOps"></span></div>
+        <div class="pad"><div id="paletteMan" class="dec-pal"></div><div class="opdesc" id="opdescMan"></div></div>
       </div>
       <div class="block">
-        <div class="cap dec"><span class="n">▦</span> Последовательность (как при шифровании)</div>
-        <div class="pad"><div id="pipeMan" class="pipe"></div></div>
+        <div class="cap dec"><span class="n">&#9638;</span> <span id="tManSeq"></span></div>
+        <div class="pad"><div id="pipeMan" class="pipe dec-pipe"></div></div>
       </div>
-      <button class="run dec" id="decBtnMan" onclick="doDecodeManual()">↺ Расшифровать вручную</button>
+      <button class="run dec" id="decBtnMan" type="button"></button>
     </div>
 
-    <!-- общий вывод -->
     <div class="block" style="margin-top:18px" id="decOutWrap" hidden>
-      <div class="cap dec"><span class="n">✓</span> Восстановленный текст</div>
+      <div class="cap dec"><span class="n">&#10003;</span> <span id="tRestored"></span></div>
       <div class="pad">
-        <div class="out-head"><span></span><button class="copy dec" onclick="copyOut('plainOut', this)">Копировать</button></div>
-        <div style="height:8px"></div>
+        <div class="out-head"><label class="toggle"><input type="checkbox" id="decSt"> <span class="tStages"></span></label><button class="copy dec" id="decCopy" type="button"></button></div>
+        <div style="height:10px"></div>
         <div id="decConsole" class="console dec"></div>
         <div id="plainOut" class="transmission plain"></div>
+        <div class="warn" id="decWarn"></div>
+        <div id="decStages" class="stages dec"></div>
       </div>
     </div>
   </section>
 
-  <footer>
-    <b>Как это работает.</b> В шапку сообщения вшивается зашифрованный рецепт операций.<br>
-    Расшифровать можно только здесь — станция знает ключ и разворачивает конвейер в обратном порядке.<br>
-    A.C.EON STUDIO · шпионский конструктор · без ключа сообщение остаётся шумом
-  </footer>
+  <footer><b id="tF1"></b> <span id="tF2"></span><br><span id="tF3"></span><br><span id="tF4"></span><br><span id="tF5"></span></footer>
 </div>
 
-<script src="cipher-engine.js"></script>
-<script src="cipher-ui.js"></script>
+<script src="../games/shared/store.js?v=1"></script>
+<script src="../games/shared/i18n.js?v=1"></script>
+<script src="../shared/trace.js?v=1"></script>
+<script src="lang.js?v=1"></script>
+<script src="cipher-engine.js?v=2"></script>
+<script src="cipher-gl.js?v=1"></script>
+<script src="cipher-ui.js?v=2"></script>
 </body>
 </html>

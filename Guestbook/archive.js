@@ -4,7 +4,8 @@
    2 распад 12-14 с: звёзды падают и бьются в агонии, свет уходит из туманностей, следы гостей
      сбоят цветом и тонут, полосы, разрывы неба, трещины (U-3), вспышки, тряска; музыка замедляется и гаснет
    3 смерть: всё заливает белым
-   4 первый текст печатается по букве (240 знаков в минуту), потом исчезает
+   4 первый текст набирается неровно (буквы и целые слова), на белом оседает пепел,
+     после каждой фразы загорается одна звезда; потом текст исчезает
    5 пустота
    6 второй текст, и на белом загораются звёзды: следы гостей чёрными точками, их можно читать
    Время сценария идёт только пока вкладка открыта (тикает из кадра неба).
@@ -18,6 +19,7 @@ let running=false;
 function run(from){
   const GB=window.GB; if(!GB||running)return;
   running=true;
+  if(typeof GB.now!=='function')GB.now=()=>Date.now();   // на случай старого gb.js
   const sky=GB.sky, T=GB.T, tier=GB.tier, weak=tier<2||GB.reduce;
   const body=document.body;
   const rnd=(a,b)=>a+Math.random()*(b-a), rndI=(a,b)=>Math.floor(rnd(a,b+1)), pick=a=>a[Math.random()*a.length|0];
@@ -31,28 +33,54 @@ function run(from){
   const t1=el('div','ar-t1','ar-txt'), t2=el('div','ar-t2','ar-txt');
   const skip=el('button','ar-skip'); skip.type='button';
   const back=el('a','ar-back'); back.href=GB.DIR;
-  /* текст печатается по букве, как сообщение в чате: 240 знаков в минуту, пробелы и знаки тоже.
-     Невидимый остаток строки стоит на месте сразу, поэтому строки не прыгают при наборе. */
-  const CHAR_MS=250, LINE_GAP=700;
-  const prog=new Map([[t1,[]],[t2,[]]]);
-  let typing=null;                  // {box, line, acc, gap, done}
+  /* Текст набирается неровно, как будто его пишет кто-то живой и не до конца уверенный:
+     одни слова печатаются по буквам с плавающей скоростью (в среднем около 440 знаков в минуту),
+     другие появляются целиком, иногда пауза перед словом, изредка опечатка, которую стирают.
+     Невидимый остаток строки стоит на месте сразу, поэтому строки не прыгают при наборе.
+     После каждой законченной фразы на белом загорается одна чёрная звезда. */
+  const CHAR_MS=136, LINE_GAP=650;
+  const prog=new Map([[t1,[]],[t2,[]]]), wrong=new Map([[t1,[]],[t2,[]]]);
+  let typing=null;                  // {box, line, steps, si, acc, done}
   function renderBox(box){
-    const p=prog.get(box);
+    const p=prog.get(box), w=wrong.get(box);
     [...box.children].forEach((d,i)=>{
-      const chars=d._chars, n=Math.min(p[i]||0,chars.length);
-      d._ty.textContent=chars.slice(0,n).join(''); d._rest.textContent=chars.slice(n).join('');
+      const chars=d._chars, n=Math.min(p[i]||0,chars.length), wc=w[i]||'';
+      d._ty.textContent=chars.slice(0,n).join('')+wc; d._rest.textContent=chars.slice(n+(wc?1:0)).join('');
       d._cr.style.display=(typing&&typing.box===box&&typing.line===i)?'':'none';
     });
+  }
+  /* план набора строки: шаги {wait, n, wrong, sentence} */
+  function plan(chars,start){
+    const steps=[], jit=()=>CHAR_MS*(.45+Math.random()*1.1);
+    const letters=chars.filter(c=>/[^\s.,:;!?]/.test(c));
+    let i=start;
+    while(i<chars.length){
+      let j=i; while(j<chars.length&&chars[j]!==' ')j++; while(j<chars.length&&chars[j]===' ')j++;
+      const word=chars.slice(i,j).join('');
+      if(Math.random()<.14) steps.push({wait:rnd(250,800),n:i});
+      if(Math.random()<.33) steps.push({wait:rnd(90,280),n:j});
+      else {
+        const typo=(j-i>4&&Math.random()<.07)?i+rndI(1,j-i-3):-1;
+        for(let k=i+1;k<=j;k++){
+          if(k-1===typo&&letters.length){ steps.push({wait:jit(),n:k-1,wrong:pick(letters)}); steps.push({wait:rnd(220,460),n:k-1}); }
+          steps.push({wait:jit(),n:k});
+        }
+      }
+      if(/[.!?:]\s*$/.test(word)) steps[steps.length-1].sentence=true;
+      i=j;
+    }
+    return steps;
   }
   function fillTexts(){
     const a=T('ar.t1'), b=T('ar.t2');
     [[t1,a],[t2,b]].forEach(([box,lines])=>{
-      box.innerHTML='';
+      box.innerHTML=''; wrong.set(box,[]);
       lines.forEach((s,i)=>{
         const d=el('div',null,'al'+(i===lines.length-1?' em':'')+(box===t2&&i===0?' main':''),box);
         d._chars=Array.from(s);
         d._ty=el('span',null,'ty',d); d._cr=el('span',null,'cr',d); d._rest=el('span',null,'rest',d);
       });
+      if(typing&&typing.box===box){ const d=box.children[typing.line]; if(d){ typing.steps=plan(d._chars,Math.min(prog.get(box)[typing.line]||0,d._chars.length)); typing.si=0; } }
       renderBox(box);
     });
     skip.textContent=T('ar.skip'); back.textContent=T('ar.back');
@@ -91,10 +119,18 @@ function run(from){
   const GCOL=[[1,.13,.33],[0,1,.47],[0,.67,1],[1,.93,0],[.8,0,1],[1,.53,0]];
   const glitched=new Map();
   let die=0, ink=false, ignite=0, igniteDur=9000;
+  const early=new Map();             // звёзды, зажжённые фразами текста: id -> время
+  function lightOne(){
+    const W=innerWidth, list=[...GB.orbs.values()].filter(o=>o.x>40&&o.x<W-40&&!early.has(o.entry.id));
+    if(!list.length)return;
+    const o=pick(list); early.set(o.entry.id,GB.now());
+    setTimeout(()=>sky.burst(o.x,o.y),40);
+  }
   GB.mod=function(o,gg,nowMs){
     if(ink){
-      if(!ignite)return false;
-      if(o.appear===undefined)o.appear=ignite+Math.random()*igniteDur;
+      const e=early.get(o.entry.id);
+      if(!ignite&&e===undefined)return false;
+      if(o.appear===undefined)o.appear=e!==undefined?e:ignite+Math.random()*igniteDur;
       const k=Math.min(1,Math.max(0,(nowMs-o.appear)/1600));
       if(k<=0)return false;
       gg.a*=k; gg.fresh=0; return;
@@ -192,27 +228,50 @@ function run(from){
   /* набор текста: тикает из часов сценария */
   function typeBox(box,done){
     box.classList.add('on','tw');
-    prog.set(box,[...box.children].map(()=>0));
-    typing={box,line:0,acc:0,gap:0,done};
+    prog.set(box,[...box.children].map(()=>0)); wrong.set(box,[]);
+    typing={box,line:0,steps:plan(box.children[0]._chars,0),si:0,acc:0,done};
     renderBox(box);
   }
   function typeTick(dt){
     if(!typing)return;
-    const box=typing.box, lines=[...box.children], p=prog.get(box);
-    if(typing.gap>0){ typing.gap-=dt; if(typing.gap>0)return; typing.acc=0; }
+    const box=typing.box, lines=[...box.children], p=prog.get(box), w=wrong.get(box);
     typing.acc+=dt;
     let changed=false;
-    while(typing&&typing.acc>=CHAR_MS){
-      typing.acc-=CHAR_MS;
-      const ln=lines[typing.line];
-      if(!ln){ break; }
-      p[typing.line]=(p[typing.line]||0)+1; changed=true;
-      if(p[typing.line]>=ln._chars.length){
-        if(typing.line+1<lines.length){ typing.line++; typing.gap=LINE_GAP; break; }
+    while(typing){
+      const st=typing.steps[typing.si];
+      if(!st){
+        if(typing.line+1<lines.length){
+          typing.line++; typing.steps=[{wait:LINE_GAP,n:0}].concat(plan(lines[typing.line]._chars,0)); typing.si=0; changed=true; continue;
+        }
         const done=typing.done; typing=null; renderBox(box); done(); return;
       }
+      if(typing.acc<st.wait)break;
+      typing.acc-=st.wait; typing.si++;
+      p[typing.line]=st.n; w[typing.line]=st.wrong||''; changed=true;
+      if(st.sentence)lightOne();
     }
     if(changed)renderBox(box);
+  }
+
+  /* пепел умершего неба: медленно оседает на белом, пока идут тексты */
+  const ash=[]; let ashA=0, ashTarget=0;
+  const ASH_N=GB.reduce?0:(tier>=3?46:tier>=2?32:16);
+  function ashSpawn(top){ return {x:Math.random()*innerWidth,y:top?-10:Math.random()*innerHeight,vy:rnd(6,15),ph:Math.random()*6.28,
+    s:rnd(.6,1.8),rot:Math.random()*3,spin:rnd(-.8,.8),a:rnd(.12,.38),flake:Math.random()<.45}; }
+  function ashFrame(dt){
+    ashA+=(ashTarget-ashA)*Math.min(1,dt*.6);
+    if(ashA<.005&&ashTarget===0){ if(ash.length){ ash.length=0; g.clearRect(0,0,gcv.width,gcv.height); gcv.style.display='none'; } return; }
+    gcv.style.display='block';
+    while(ash.length<ASH_N)ash.push(ashSpawn(false));
+    g.clearRect(0,0,gcv.width,gcv.height);
+    const T=clock/1000;
+    ash.forEach((p,i)=>{
+      p.y+=p.vy*dt; p.x+=Math.sin(T*.6+p.ph)*8*dt; p.rot+=p.spin*dt;
+      if(p.y>gcv.height+10)ash[i]=ashSpawn(true);
+      g.fillStyle='rgba(40,40,48,'+(p.a*ashA).toFixed(3)+')';
+      if(p.flake){ g.save(); g.translate(p.x,p.y); g.rotate(p.rot); g.fillRect(-p.s*1.4,-p.s*.45,p.s*2.8,p.s*.9); g.restore(); }
+      else g.fillRect(p.x,p.y,p.s,p.s);
+    });
   }
 
   function toWhite(){
@@ -222,7 +281,7 @@ function run(from){
     at(3800,()=>{
       /* под белым меняем мир: небо становится белым, звёзды пока не горят */
       ink=true; sky.st.ink=1; sky.st.die=0; sky.st.starA=0; die=0;
-      body.classList.add('ink');
+      body.classList.add('ink'); ashTarget=1;
       white.classList.add('fast'); white.classList.remove('on');
       at(1400,text1);
     });
@@ -243,7 +302,7 @@ function run(from){
     ignite=GB.now(); igniteDur=fast?2500:9000;
     rampStars(fast?1500:6000);
     musicBack();
-    GB.lock=false;
+    GB.lock=false; ashTarget=0;
     GB.mem.archive=(GB.mem.archive||0)+1; GB.saveMem();
     skip.classList.remove('on');
     at(fast?800:3500,()=>back.classList.add('on'));
@@ -256,7 +315,7 @@ function run(from){
   skip.addEventListener('click',()=>{
     events.length=0; stopGlitch(); musicDie(1);
     ink=true; die=0; sky.st.die=0; sky.st.ink=1; sky.st.starA=0;
-    body.classList.add('ink'); white.classList.remove('on');
+    body.classList.add('ink'); white.classList.remove('on'); ashTarget=0;
     typing=null; t1.classList.remove('on'); t2.classList.add('on','tw');
     prog.set(t2,[...t2.children].map(d=>d._chars.length)); renderBox(t2);
     rebirth(true);
@@ -268,6 +327,7 @@ function run(from){
     clock+=dt; phaseT+=dt;
     for(let k=0;k<events.length;k++){ if(events[k].t<=clock){ const f=events[k].fn; events.splice(k,1); k--; f(); } }
     typeTick(dt);
+    if(ink)ashFrame(dt/1000);
     if(phase==='calm'&&phaseT>=calm){
       go('decay'); GB.lock=true; GB.setHover(null);
       sky.st.dur=D/1000; genCracks(); gcv.style.display='block';

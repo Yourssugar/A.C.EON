@@ -103,6 +103,13 @@ body.ar #cv{transition:filter .1s}
   opacity:0;transform:translateY(16px);transition:opacity 1.8s ease,transform 1.8s ease}
 .ar-txt .al.on{opacity:1;transform:none}
 body.ink .ar-txt .al{text-shadow:0 0 10px #fff,0 0 22px #fff,0 0 34px rgba(255,255,255,.9)}
+/* набор по букве: строки видны сразу, ненабранный остаток прозрачный и держит место */
+.ar-txt.tw .al{opacity:1;transform:none;transition:none}
+.ar-txt.tw.out .al{opacity:0;transform:translateY(-10px);transition:opacity 2.2s ease,transform 2.2s ease}
+.ar-txt .al .rest{color:transparent;text-shadow:none}
+.ar-txt .al .cr{display:inline-block;width:0;position:relative;vertical-align:baseline}
+.ar-txt .al .cr::after{content:'';position:absolute;left:1px;bottom:-.12em;width:1.5px;height:1.05em;background:currentColor;animation:arcaret 1s steps(1) infinite}
+@keyframes arcaret{50%{opacity:0}}
 .ar-txt .al.em{color:#0d0d10;font-weight:400;font-size:clamp(18px,2.4vw,25px)}
 .ar-txt .al.main{color:#0d0d10;font-weight:400;font-size:clamp(24px,3.6vw,36px);letter-spacing:-.01em}
 #ar-t2 .al{color:#4a4a52}

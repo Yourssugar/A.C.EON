@@ -64,6 +64,16 @@ function relTime(ts){
 
 const GB=window.GB={mod:null,afterFrame:null,lock:false};
 
+/* часы неба: стоят, пока вкладка свёрнута. Иначе за это время звёзды "улетали" за край без зрителя,
+   а при возврате все разом появлялись справа вертикальной полосой. */
+let pausedMs=0, hiddenAt=document.hidden?Date.now():0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ if(!hiddenAt)hiddenAt=Date.now(); }
+  else if(hiddenAt){ pausedMs+=Date.now()-hiddenAt; hiddenAt=0; }
+});
+function skyNow(){ return (hiddenAt||Date.now())-pausedMs; }
+GB.now=skyNow;
+
 /* ---------- память гостевой ---------- */
 const GKEY='aceon:gb';
 let mem=(function(){ try{ return JSON.parse(localStorage.getItem(GKEY)||'null')||{}; }catch(e){ return {}; } })();
@@ -118,15 +128,21 @@ async function loadEntries(initial){
     const res=await apiFetch('/entries?count='+MAX_FETCH);
     const data=await res.json();
     setCount(data.total);
-    const list=data.entries||[], N=Math.max(1,list.length), now=Date.now();
+    const list=data.entries||[], N=Math.max(1,list.length), now=skyNow();
     const prevLast=mem.lastId;
     let maxId=prevLast, fresh=0;
+    /* старые записи, которые уже пролетели и вернулись в список, входят не разом, а растянуто:
+       чем их больше, тем шире окно (до 10 минут) */
+    const back=initial?0:list.filter(e=>!orbs.has(e.id)&&e.id<=seenMax).length;
+    const spread=Math.min(CROSS_MS*.5,12000+back*3000);
     list.forEach((e,i)=>{
       const isNew=initial&&prevLast>0&&e.id>prevLast&&!isMine(e.id);
       if(isNew)fresh++;
-      addEntry(e,initial?now-(i/N)*CROSS_MS*.96:now+Math.random()*12000,isNew);
+      const birth=initial?now-(i/N)*CROSS_MS*.96:now+Math.random()*(e.id<=seenMax?spread:12000);
+      addEntry(e,birth,isNew);
       if(e.id>maxId)maxId=e.id;
     });
+    if(maxId>seenMax)seenMax=maxId;
     lastList=list;
     if(maxId>mem.lastId){ mem.lastId=maxId; saveMem(); }
     if(initial&&fresh>0)showMsg(T('new.since',{n:fresh}),'gold',7000);
@@ -136,11 +152,11 @@ async function loadEntries(initial){
     if(initial)showMsg(T('err.server'),'err',7000);
   }
 }
-let lastList=[];
+let lastList=[], seenMax=0;
 
 /* положение и вид следов на кадр */
 function scene(now){
-  const sw=innerWidth, r=rect(), t=now/1000, nowMs=Date.now(), out=[];
+  const sw=innerWidth, r=rect(), t=now/1000, nowMs=skyNow(), out=[];
   for(const [id,o] of orbs){
     if(o.hov<.01&&hoverId!==id){
       const x=sw-((nowMs-o.birth)/CROSS_MS)*(sw+100);
@@ -192,7 +208,7 @@ function setHover(id,pin){
 function release(id){
   const o=orbs.get(id); if(!o)return;
   const sw=innerWidth;
-  o.birth=Date.now()-Math.max(0,((sw-o.x)/(sw+100))*CROSS_MS);
+  o.birth=skyNow()-Math.max(0,((sw-o.x)/(sw+100))*CROSS_MS);
 }
 function nearest(px,py){
   let best=null, bd=isCoarse?24:14;
@@ -229,7 +245,7 @@ findBtn.addEventListener('click',e=>{
   const e2=lastList.filter(x=>isMine(x.id)).sort((a,b)=>b.id-a.id)[0];
   if(e2){
     orbs.delete(e2.id);
-    const o=addEntry(e2,Date.now()-CROSS_MS*.06,true);
+    const o=addEntry(e2,skyNow()-CROSS_MS*.06,true);
     o.x=sw-CROSS_MS*.06/CROSS_MS*(sw+100); o.y=rect().top+seedY(e2.id)/100*rect().height;
     sky.burst(o.x,o.y); setHover(e2.id,true);
     showMsg(T('find.back'),'gold',3500); return;
@@ -279,7 +295,7 @@ async function doSubmit(){
         if(e.id>mem.lastId)mem.lastId=e.id;
         saveMem(); updateFind();
         orbs.delete(e.id);
-        const o=addEntry(e,Date.now()-CROSS_MS*.02,true);
+        const o=addEntry(e,skyNow()-CROSS_MS*.02,true);
         const sw=innerWidth; o.x=sw-.02*(sw+100); o.y=rect().top+seedY(e.id)/100*rect().height;
         setTimeout(()=>sky.burst(o.x,o.y),60);
       }

@@ -44,6 +44,11 @@ function setLang(c){
   document.documentElement.lang=c;
   if(TR)TR.event('lang.change');
   applyTexts(); buildList(); updatePlayer();
+/* список TRACKS в index.html не прочитался (обычно пропущена запятая перед yt:): пишем об этом прямо в списке */
+if(!Array.isArray(window.TRACKS)){
+  $('trackList').innerHTML='<div class="empty" style="color:#fca5a5"><i class="ti ti-alert-triangle" style="color:#fca5a5"></i>TRACKS: syntax error in index.html (F12, Console)</div>';
+  console.error('[music] TRACKS не задан: ошибка в списке треков в index.html, проверь запятые между полями (src: "...", yt: "...")');
+}
 }
 document.documentElement.lang=lang();
 

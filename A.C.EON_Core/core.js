@@ -16,6 +16,13 @@ try{ PORTAL=(window.self!==window.top); }catch(e){ PORTAL=true; }
 if(PORTAL){ try{ parent.postMessage({aceon:'ready'},location.origin); }catch(e){} }
 function requestPortalClose(){ try{ parent.postMessage({aceon:'close'},location.origin); }catch(e){} }
 function goMain(){ if(PORTAL)requestPortalClose(); else location.href='../'; }
+/* страница из ядра открывается во всей вкладке, а не внутри портала главной:
+   иначе адрес в строке остаётся от ядра, а кнопка "назад" листает историю iframe */
+function openPage(url){
+  const abs=new URL(url,location.href).href;
+  if(PORTAL){ try{ window.top.location.href=abs; return; }catch(e){} }
+  location.href=abs;
+}
 
 /* язык: общий с главной и аркадой */
 const LANGS=['en','ru','de','fr','es','it','pl'];
@@ -607,7 +614,7 @@ function openNode(n){
     if(!d.url)return;
     try{ sessionStorage.setItem('aceon_access','granted'); }catch(e){}
     if(d.external){ if(TR)TR.event('ext.'+d.id); window.open(d.url,'_blank','noopener'); setTimeout(()=>{ n.hidden=false; n.swScale=null; n.pinned=false; n.x=n.tx; n.y=n.ty; },600); return; }
-    setTimeout(()=>{ location.href=d.url; },380);
+    setTimeout(()=>openPage(d.url),380);
   }),n.dragging?0:120);
 }
 function portalReject(n){
@@ -1035,7 +1042,7 @@ function openDirect(d){
   if(d.kind==='sector'){ path.push(d); buildLevel(false); return; }
   if(d.status==='soon'||!d.url)return;
   if(d.external){ if(TR)TR.event('ext.'+d.id); window.open(d.url,'_blank','noopener'); return; }
-  location.href=d.url;
+  openPage(d.url);
 }
 document.getElementById('map-toggle').addEventListener('click',()=>mapEl.classList.toggle('open'));
 

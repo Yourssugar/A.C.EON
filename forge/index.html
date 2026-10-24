@@ -2,8 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FORGE · КУЗНЯ · A.C.EON</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FORGE · A.C.EON</title>
+<link rel="preload" as="image" href="img/bg-smithy.webp">
+<link rel="preload" as="image" href="img/furnace.webp">
+<script src="../universe.js"></script>
 <style>
   :root{
     --bg:#0b0d10;
@@ -13,318 +16,304 @@
     --line:#232a32;
     --line-hi:#2f3a44;
     --text:#d7dde3;
-    --muted:#6b7580;
-    --dim:#464f58;
-    --run:#4fd6c8;      /* живое превью */
-    --gen:#e0a54a;      /* генерация кода */
+    --muted:#8a949e;
+    --dim:#56606a;
+    --run:#4fd6c8;      /* живое превью, то что можно править */
+    --gen:#e0a54a;      /* генерация кода, жар */
     --glitch:#ff4d6d;
     --radius:2px;
+    --mono:ui-monospace,"Cascadia Code","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
   }
-
   *{box-sizing:border-box;margin:0;padding:0}
-
-  html{-webkit-text-size-adjust:100%}
-
-  body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:ui-monospace,"Cascadia Code","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
-    line-height:1.5;
-    min-height:100vh;
-    /* чертёжная сетка */
-    background-image:
-      linear-gradient(var(--grid) 1px,transparent 1px),
-      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-    background-size:44px 44px;
-    background-position:center top;
-    padding:clamp(20px,5vw,56px) clamp(16px,5vw,56px) 48px;
-  }
-
-  .wrap{max-width:1000px;margin:0 auto}
+  html{-webkit-text-size-adjust:100%;background:var(--bg)}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);line-height:1.5;overflow-x:hidden}
+  a{color:inherit}
+  button{font-family:inherit}
 
   /* ── шапка ── */
-  .eyebrow{
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-    font-size:12px;letter-spacing:.14em;color:var(--muted);
-    text-transform:uppercase;
-    border:1px solid var(--line);
-    background:var(--panel-2);
-    padding:8px 12px;border-radius:var(--radius);
-    min-height:35px;
-  }
+  #top{position:fixed;left:0;right:0;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:max(12px,env(safe-area-inset-top)) clamp(14px,3vw,28px) 10px;pointer-events:none}
+  #top > *{pointer-events:auto}
+  .tbtn{background:rgba(11,13,16,.55);border:1px solid var(--line);color:var(--muted);border-radius:var(--radius);
+    padding:7px 11px;font-size:11px;letter-spacing:.14em;cursor:pointer;display:flex;align-items:center;gap:9px;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:color .15s,border-color .15s}
+  .tbtn:hover,.tbtn:focus-visible{color:var(--run);border-color:var(--run);outline:none}
+  .burger{width:16px;height:10px;position:relative;display:inline-block}
+  .burger::before,.burger::after,.burger i{content:'';position:absolute;left:0;right:0;height:1px;background:currentColor}
+  .burger::before{top:0}.burger i{top:4.5px}.burger::after{bottom:0}
+  @media (max-width:520px){ #menuBtn .lbl{display:none} }
+
+  /* ── прокрутка: высокий блок, внутри липкая сцена ── */
+  #scroller{position:relative;height:880vh}
+  #stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:#07080a}
+  #world{position:absolute;inset:0;will-change:transform}
+  #bg{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:.2;will-change:transform,opacity}
+  .ob{position:absolute;left:0;top:0;will-change:transform,opacity;user-select:none;-webkit-user-drag:none}
+  .ob img{display:block;width:100%;height:auto;pointer-events:none}
+  #shade{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 55%,transparent 30%,rgba(5,6,8,.75) 100%)}
+  #dark{position:absolute;inset:0;pointer-events:none;background:#06070a;opacity:0}
+  #grid{position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(79,214,200,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,214,200,.05) 1px,transparent 1px);
+    background-size:44px 44px}
+  #fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #flash{position:absolute;left:0;top:0;width:60vmin;height:60vmin;margin:-30vmin 0 0 -30vmin;border-radius:50%;pointer-events:none;opacity:0;
+    background:radial-gradient(circle,rgba(255,220,150,.55),rgba(255,140,40,.15) 40%,transparent 70%);mix-blend-mode:screen}
+
+  /* горн: огонь в жерле */
+  #furnace .mouth{position:absolute;left:24%;top:19%;width:48%;height:37%;pointer-events:none}
+  #fire{position:absolute;inset:0;width:100%;height:100%}
+  #furnace .static-fire{position:absolute;inset:0;border-radius:50% 50% 0 0/45% 45% 0 0;display:none;
+    background:radial-gradient(ellipse at 50% 100%,rgba(255,200,90,.9),rgba(255,110,20,.55) 35%,rgba(140,30,0,.2) 70%,transparent 80%)}
+  html.ufx1 #furnace .static-fire{display:block}
+  #glow{position:absolute;left:0;top:0;width:120vmax;height:120vmax;margin:-60vmax 0 0 -60vmax;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle,rgba(255,130,40,.22),rgba(255,100,20,.08) 30%,transparent 60%);mix-blend-mode:screen;will-change:opacity,transform}
+
+  /* слитки-языки */
+  .ingot{text-decoration:none;color:inherit;cursor:default}
+  .ingot .heat{position:absolute;left:5%;right:5%;top:10%;bottom:5%;border-radius:40%;pointer-events:none;
+    background:radial-gradient(ellipse,rgba(255,140,40,.45),transparent 70%);filter:blur(6px);animation:pulse 2.4s ease-in-out infinite}
+  .ingot.cold .heat{display:none}
+  @keyframes pulse{50%{opacity:.55}}
+  .ingot .glyph{position:absolute;left:50%;top:34%;font-weight:700;white-space:nowrap;letter-spacing:.04em;line-height:1;pointer-events:none;
+    transform:translate(-50%,-50%) matrix(.948,-.318,.915,.403,0,0);color:rgba(60,18,2,.82);text-shadow:0 1px 0 rgba(255,210,150,.35)}
+  .ingot.cold .glyph{color:rgba(170,182,192,.55);text-shadow:0 -1px 0 rgba(0,0,0,.6)}
+  .ingot .tag{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:4px;text-align:center;white-space:nowrap;opacity:0;transition:opacity .25s}
+  .ingot .nm{font-size:var(--fs,14px);font-weight:600;color:var(--text);letter-spacing:.02em}
+  .ingot .st{font-size:calc(var(--fs,14px)*.72);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:6px}
+  .ingot .st .dot{width:6px;height:6px;border-radius:50%}
+  .ingot.run .st{color:var(--run)} .ingot.run .st .dot{background:var(--run)}
+  .ingot.gen .st{color:var(--gen)} .ingot.gen .st .dot{border:1px solid var(--gen)}
+  .ingot.cold .st{color:var(--dim)} .ingot.cold .st .dot{background:var(--dim);border:0}
+  .ingot.live .tag{opacity:1}
+  .ingot.live.on{cursor:pointer}
+  .ingot .lift{transition:transform .2s ease,filter .2s}
+  .ingot.live.on:hover .lift,.ingot.live.on:focus-visible .lift{transform:translateY(-6%);filter:brightness(1.15) drop-shadow(0 0 14px rgba(255,140,40,.45))}
+  .ingot.live.on:hover .nm,.ingot.live.on:focus-visible .nm{color:var(--run)}
+  .ingot:focus-visible{outline:none}
+
+  /* молот, плита, корыто */
+  #hammer{transform-origin:50% 95%}
+  #plate .hot{position:absolute;inset:0;filter:sepia(1) saturate(6) hue-rotate(-28deg) brightness(1.75) contrast(1.05);opacity:0}
+  #trough-front{clip-path:inset(30% 0 0 0)}
+  #code{position:absolute;left:5.5%;right:5.5%;top:13%;bottom:12%;display:flex;flex-direction:column;justify-content:center;
+    font-size:var(--cfs,14px);line-height:1.55;color:#e6ecf1;opacity:0;white-space:pre;font-weight:500;
+    text-shadow:0 1px 0 rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.8)}
+  .tk{color:#aeb8c2}.at{color:var(--gen)}.ed{color:var(--run);border-bottom:1px dashed rgba(79,214,200,.6)}
+
+  /* окно кода при ковке */
+  #codebox{position:absolute;left:0;top:0;width:340px;background:rgba(15,18,22,.86);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 14px 14px;opacity:0;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #codebox::before,#codebox::after{content:'';position:absolute;width:9px;height:9px;border-color:var(--line-hi);border-style:solid}
+  #codebox::before{top:5px;left:5px;border-width:1px 0 0 1px}
+  #codebox::after{bottom:5px;right:5px;border-width:0 1px 1px 0}
+  #codebox .cb-h{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:8px}
+  #codebox .cb-h b{color:var(--gen);font-weight:500}
+  #cbLines{font-size:12.5px;line-height:1.7;white-space:pre}
+  .ln{display:flex;gap:12px;clip-path:inset(0 100% 0 0);opacity:.0;transition:clip-path .5s steps(26),opacity .1s}
+  .ln.on{clip-path:inset(0 0 0 0);opacity:1}
+  .ln .n{color:var(--dim);width:14px;text-align:right;flex:none}
+
+  /* подписи сцен */
+  .cap{position:absolute;left:0;top:0;opacity:0;pointer-events:none;will-change:opacity,transform}
+  .cap .k{font-size:12px;letter-spacing:.16em;color:var(--run)}
+  .cap h2{font-size:var(--h2,40px);line-height:1.05;font-weight:700;letter-spacing:.01em;margin-top:6px}
+  .cap p{margin-top:10px;color:var(--muted);font-size:var(--pfs,14px);max-width:38ch;line-height:1.55}
+
+  /* первый экран */
+  #hero{position:absolute;left:0;top:0;pointer-events:none}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;
+    border:1px solid var(--line);background:rgba(15,18,22,.7);padding:7px 11px;border-radius:var(--radius);min-height:31px}
   .eyebrow .cur{color:var(--run)}
   .blink{animation:blink 1.1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
-
-  .title{
-    position:relative;
-    font-size:clamp(48px,13vw,116px);
-    font-weight:700;
-    letter-spacing:.02em;
-    line-height:.92;
-    margin:26px 0 0;
-    color:var(--text);
-  }
-  .title::before,.title::after{
-    content:attr(data-text);
-    position:absolute;left:0;top:0;
-    clip-path:inset(0 0 0 0);
-    opacity:.0;pointer-events:none;
-  }
-  .title::before{color:var(--run);transform:translate(-2px,0)}
-  .title::after{color:var(--glitch);transform:translate(2px,0)}
-
-  .subname{margin-top:14px;font-size:clamp(13px,1.7vw,16px);letter-spacing:.06em;color:var(--muted)}
-  .subname .sl{color:var(--dim)}
-  .subname b{color:var(--run);font-weight:700;letter-spacing:.16em}
-
-  .tagline{
-    margin-top:14px;max-width:60ch;
-    color:var(--muted);font-size:clamp(13px,1.6vw,15px);
-  }
-  .tagline b{color:var(--text);font-weight:600}
-
-  /* ── секция выбора ── */
-  .section-mark{
-    display:flex;align-items:baseline;gap:12px;
-    margin:44px 0 18px;
-    color:var(--text);
-  }
-  .section-mark .arrow{color:var(--run)}
-  .section-mark .lbl{font-size:14px;letter-spacing:.06em}
-  .section-mark .note{margin-left:auto;font-size:12px;color:var(--dim);letter-spacing:.08em}
-
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(238px,1fr));
-    gap:14px;
-  }
-
-  /* ── карточка-модуль ── */
-  .mod{
-    position:relative;
-    display:flex;flex-direction:column;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:16px 16px 14px;
-    min-height:172px;
-    text-decoration:none;color:inherit;
-    transition:border-color .16s,background .16s,transform .16s;
-  }
-  .mod.on{cursor:pointer}
-  .mod.on:hover,.mod.on:focus-visible{
-    border-color:var(--run);
-    background:#141a1e;
-    transform:translateY(-2px);
-    outline:none;
-  }
-  .mod.soon{opacity:.62}
-  .mod:focus-visible{outline:1px solid var(--run);outline-offset:2px}
-
-  /* уголки-скобки */
-  .mod::before,.mod::after{
-    content:"";position:absolute;width:9px;height:9px;
-    border-color:var(--line-hi);border-style:solid;
-    transition:border-color .16s;
-  }
-  .mod::before{top:6px;left:6px;border-width:1px 0 0 1px}
-  .mod::after{bottom:6px;right:6px;border-width:0 1px 1px 0}
-  .mod.on:hover::before,.mod.on:hover::after,
-  .mod.on:focus-visible::before,.mod.on:focus-visible::after{border-color:var(--run)}
-
-  .mod-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .glyph{
-    font-size:15px;font-weight:700;letter-spacing:.02em;
-    color:var(--text);
-    border:1px solid var(--line);border-radius:var(--radius);
-    padding:3px 8px;background:var(--panel-2);
-  }
-  .badge{
-    display:inline-flex;align-items:center;gap:6px;
-    font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
-    color:var(--muted);
-  }
-  .badge .dot{width:7px;height:7px;border-radius:50%;flex:none}
-  .badge.run{color:var(--run)}
-  .badge.run .dot{background:var(--run)}
-  .badge.gen .dot{border:1px solid var(--gen)}
-  .badge.gen{color:var(--gen)}
-
-  .mod-name{margin-top:16px;font-size:19px;font-weight:600;letter-spacing:.01em;color:var(--text)}
-  .mod-desc{margin-top:7px;font-size:12.5px;color:var(--muted);line-height:1.55;flex:1}
-
-  .mod-foot{
-    margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
-    display:flex;align-items:center;justify-content:space-between;
-    font-size:12px;letter-spacing:.04em;
-  }
-  .mod-foot .go{color:var(--run)}
-  .mod-foot .soon-tag{color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-size:11px}
-  .mod-foot .id{color:var(--dim)}
-
-  /* ── подвал: как это работает ── */
-  .how{
-    margin-top:52px;
-    border-top:1px solid var(--line);
-    padding-top:28px;
-  }
-  .how-h{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
-  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px}
-  .step{display:flex;gap:12px}
-  .step .n{color:var(--run);font-size:13px;font-weight:700;flex:none;padding-top:1px}
-  .step .b{font-size:13px}
-  .step .b .st{color:var(--text);font-weight:600}
-  .step .b .sd{color:var(--muted);margin-top:4px;line-height:1.5;font-size:12.5px}
-
-  footer{margin-top:40px;font-size:11.5px;color:var(--dim);letter-spacing:.08em}
-
+  .title{position:relative;font-size:var(--tfs,110px);font-weight:700;letter-spacing:.02em;line-height:.92;margin-top:22px}
+  .title::before,.title::after{content:attr(data-text);position:absolute;left:0;top:0;opacity:0;pointer-events:none}
+  .title::before{color:var(--run)}
+  .title::after{color:var(--glitch)}
   @media (prefers-reduced-motion:no-preference){
-    .title.gl::before{animation:g1 3.6s infinite}
-    .title.gl::after{animation:g2 3.6s infinite}
+    html:not(.ufx1) .title::before{animation:g1 3.6s infinite}
+    html:not(.ufx1) .title::after{animation:g2 3.6s infinite}
   }
-  @keyframes g1{
-    0%,92%,100%{opacity:0;clip-path:inset(0 0 100% 0)}
-    93%{opacity:.7;clip-path:inset(12% 0 62% 0);transform:translate(-3px,0)}
-    96%{opacity:.7;clip-path:inset(48% 0 20% 0);transform:translate(3px,0)}
-    98%{opacity:0}
-  }
-  @keyframes g2{
-    0%,92%,100%{opacity:0}
-    93%{opacity:.6;clip-path:inset(30% 0 40% 0);transform:translate(2px,0)}
-    97%{opacity:.6;clip-path:inset(70% 0 8% 0);transform:translate(-2px,0)}
-    99%{opacity:0}
-  }
+  @keyframes g1{0%,92%,100%{opacity:0;clip-path:inset(0 0 100% 0)}93%{opacity:.7;clip-path:inset(12% 0 62% 0);transform:translate(-3px,0)}96%{opacity:.7;clip-path:inset(48% 0 20% 0);transform:translate(3px,0)}98%{opacity:0}}
+  @keyframes g2{0%,92%,100%{opacity:0}93%{opacity:.6;clip-path:inset(30% 0 40% 0);transform:translate(2px,0)}97%{opacity:.6;clip-path:inset(70% 0 8% 0);transform:translate(-2px,0)}99%{opacity:0}}
+  .subname{margin-top:12px;font-size:var(--pfs,15px);letter-spacing:.06em;color:var(--muted)}
+  .subname .sl{color:var(--dim)}
+  .subname b{color:var(--run);letter-spacing:.16em}
+  .tagline{margin-top:12px;max-width:52ch;color:var(--muted);font-size:var(--pfs,14px)}
+  #hint{position:absolute;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);font-size:11px;letter-spacing:.16em;
+    color:var(--dim);text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+  #hint i{width:1px;height:30px;background:linear-gradient(var(--run),transparent);animation:drip 1.8s ease-in-out infinite}
+  @keyframes drip{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+  /* финал: превью и кнопки */
+  #final{position:absolute;left:0;top:0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;opacity:0;pointer-events:none}
+  #final.live{pointer-events:auto}
+  #pv{padding:12px 24px;background:#4fd6c8;border-radius:6px;border:0;color:#06231f;font-weight:700;font-size:14px;cursor:pointer;transition:transform .12s}
+  #pv:active{transform:scale(.95)}
+  .cta{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid var(--run);color:var(--run);text-decoration:none;
+    font-size:12.5px;letter-spacing:.08em;border-radius:var(--radius);background:rgba(11,13,16,.7);cursor:pointer}
+  .cta:hover,.cta:focus-visible{background:var(--run);color:#06231f;outline:none}
+  .cta.alt{border-color:var(--line-hi);color:var(--muted)}
+  .cta.alt:hover,.cta.alt:focus-visible{background:var(--line-hi);color:var(--text)}
+
+  /* шкала сцен справа */
+  #rail{position:absolute;right:clamp(12px,2.2vw,28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:5}
+  #rail button{width:22px;height:22px;background:none;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  #rail button i{width:7px;height:7px;border:1px solid var(--line-hi);transform:rotate(45deg);transition:background .2s,border-color .2s}
+  #rail button.on i{background:var(--run);border-color:var(--run)}
+  #rail button:hover i{border-color:var(--run)}
+  @media (max-width:640px),(orientation:portrait){ #rail{display:none} }
+
+  /* подвал после сцены */
+  footer{position:relative;border-top:1px solid var(--line);padding:26px clamp(16px,5vw,56px) max(30px,env(safe-area-inset-bottom));
+    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);letter-spacing:.08em;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:44px 44px}
+  footer button{background:none;border:0;color:var(--muted);cursor:pointer;letter-spacing:.12em;font-size:11px;text-transform:uppercase}
+  footer button:hover{color:var(--run)}
+
+  /* ── выезжающее меню ── */
+  #veil{position:fixed;inset:0;z-index:40;background:rgba(4,5,7,.6);opacity:0;pointer-events:none;transition:opacity .3s}
+  #drawer{position:fixed;top:0;right:0;bottom:0;z-index:41;width:min(420px,100vw);background:var(--panel-2);border-left:1px solid var(--line);
+    transform:translateX(102%);transition:transform .38s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:44px 44px}
+  body.menu #veil{opacity:1;pointer-events:auto}
+  body.menu #drawer{transform:none}
+  .dr-h{display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top)) 18px 12px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .dr-h .t{font-size:12px;letter-spacing:.16em;color:var(--text)}
+  .dr-h .t b{color:var(--run);font-weight:400}
+  #drClose{background:none;border:1px solid var(--line);color:var(--muted);width:32px;height:32px;cursor:pointer;font-size:16px;border-radius:var(--radius)}
+  #drClose:hover{color:var(--run);border-color:var(--run)}
+  .dr-body{flex:1;overflow-y:auto;padding:14px 18px 18px;overscroll-behavior:contain}
+  .dr-sec{font-size:10.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin:6px 0 10px;display:flex;justify-content:space-between;gap:10px}
+  .dr-list{display:flex;flex-direction:column;gap:8px;margin-bottom:22px}
+  .mi{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;padding:11px 12px;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);text-decoration:none;color:inherit;
+    opacity:0;transform:translateX(24px);transition:opacity .3s,transform .3s,border-color .15s,background .15s}
+  body.menu .mi{opacity:1;transform:none}
+  .mi.on{cursor:pointer}
+  .mi.on:hover,.mi.on:focus-visible{border-color:var(--run);background:#141a1e;outline:none}
+  .mi.soon{opacity:.55}
+  body.menu .mi.soon{opacity:.55}
+  .mi .g{grid-row:span 2;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--panel-2);padding:4px 7px;min-width:44px;text-align:center}
+  .mi.on .g{border-color:rgba(224,165,74,.5);color:#ffd9a0}
+  .mi .nm{font-size:14px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+  .mi .nm small{font-weight:400;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+  .mi.run .nm small{color:var(--run)} .mi.gen .nm small{color:var(--gen)}
+  .mi .ds{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .scn{display:flex;align-items:center;gap:12px;width:100%;padding:9px 12px;background:none;border:1px solid transparent;color:var(--muted);
+    cursor:pointer;text-align:left;font-size:13px;border-radius:var(--radius);opacity:0;transform:translateX(24px);transition:opacity .3s,transform .3s,color .15s,border-color .15s}
+  body.menu .scn{opacity:1;transform:none}
+  .scn .n{color:var(--run);font-size:11px;width:18px}
+  .scn:hover,.scn:focus-visible{color:var(--text);border-color:var(--line);outline:none}
+  .scn.cur{color:var(--text)}
+  .dr-foot{border-top:1px solid var(--line);padding:12px 18px max(14px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--panel-2)}
+  #langs{display:flex;gap:4px;flex-wrap:wrap}
+  #langs button{background:none;border:1px solid var(--line);color:var(--dim);font-size:10.5px;letter-spacing:.08em;padding:4px 6px;cursor:pointer;border-radius:var(--radius)}
+  #langs button:hover{color:var(--text)}
+  #langs button.sel{color:var(--run);border-color:var(--run)}
+  #drBack{background:none;border:0;color:var(--muted);cursor:pointer;font-size:11px;letter-spacing:.14em}
+  #drBack:hover{color:var(--run)}
+
+  /* меньше движения: сцена листается кусками, без тряски и частиц (см. forge.js) */
+  @media (prefers-reduced-motion:reduce){ .ln{transition:none} #drawer,.mi,.scn{transition:none} }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="eyebrow" id="eyebrow">
-    <span class="cur">A.C.EON</span> // модуль · загрузка<span class="blink">_</span>
-  </div>
+<header id="top">
+  <button class="tbtn" id="back" type="button">&lt; A.C.EON</button>
+  <button class="tbtn" id="menuBtn" type="button" aria-controls="drawer" aria-expanded="false"><span class="lbl">МОДУЛИ</span><span class="burger"><i></i></span></button>
+</header>
 
-  <h1 class="title gl" data-text="FORGE">FORGE</h1>
-  <div class="subname"><span class="sl">//</span> <b>КУЗНЯ</b> · конструктор кода</div>
-
-  <p class="tagline">
-    Конструктор кода. Выбираешь язык, собираешь программу из готовых блоков и
-    <b>сразу видишь, как она устроена</b> — с подсказками, что можно менять руками.
-  </p>
-
-  <div class="section-mark">
-    <span class="arrow">&gt;</span>
-    <span class="lbl">выбери язык</span>
-    <span class="note" id="modcount">модулей: —</span>
-  </div>
-
-  <div class="grid" id="grid"></div>
-
-  <div class="how">
-    <div class="how-h">как это работает</div>
-    <div class="steps">
-      <div class="step"><span class="n">01</span><div class="b">
-        <div class="st">Выбери язык</div>
-        <div class="sd">Начни с того, что подходит под задачу — сайт, скрипт, программа.</div>
-      </div></div>
-      <div class="step"><span class="n">02</span><div class="b">
-        <div class="st">Собери блок</div>
-        <div class="sd">Крути опции: размер, цвет, функционал. Код меняется на глазах.</div>
-      </div></div>
-      <div class="step"><span class="n">03</span><div class="b">
-        <div class="st">Забери код</div>
-        <div class="sd">Готовый, с комментариями и подсвеченными зонами, что можно править.</div>
-      </div></div>
+<div id="scroller">
+  <div id="stage">
+    <div id="world">
+      <img id="bg" src="img/bg-smithy.webp" alt="" decoding="async">
+      <div id="grid"></div>
+      <div id="glow"></div>
+      <div class="ob" id="furnace"><img src="img/furnace.webp" alt="" decoding="async">
+        <div class="mouth"><canvas id="fire"></canvas><div class="static-fire"></div></div></div>
+      <div class="ob" id="trough-back"><img src="img/trough.webp" alt="" decoding="async"></div>
+      <div class="ob" id="anvil"><img src="img/anvil.webp" alt="" decoding="async"></div>
+      <div id="ingots"></div>
+      <div class="ob" id="plate"><img src="img/plate.webp" alt="" decoding="async"><img class="hot" src="img/plate.webp" alt="" decoding="async">
+        <div id="code" aria-hidden="true"></div></div>
+      <div class="ob" id="trough-front"><img src="img/trough.webp" alt="" decoding="async"></div>
+      <div class="ob" id="hammer"><img src="img/hammer.webp" alt="" decoding="async"></div>
+      <div id="flash"></div>
+      <div id="shade"></div>
+      <div id="dark"></div>
     </div>
+    <canvas id="fx"></canvas>
+
+    <div id="hero">
+      <div class="eyebrow" id="eyebrow"><span class="cur">A.C.EON</span><span class="blink">_</span></div>
+      <h1 class="title" data-text="FORGE">FORGE</h1>
+      <div class="subname"><span class="sl">//</span> <b id="subName">КУЗНЯ</b> · <span id="subTail">конструктор кода</span></div>
+      <p class="tagline" id="tagline"></p>
+    </div>
+    <div id="hint"><span id="hintT"></span><i></i></div>
+
+    <div class="cap" id="cap1"><div class="k">01 /</div><h2 id="s1t"></h2><p id="s1d"></p></div>
+    <div class="cap" id="cap2"><div class="k">02 /</div><h2 id="s2t"></h2><p id="s2d"></p></div>
+    <div class="cap" id="cap3"><div class="k">03 /</div><h2 id="s3t"></h2><p id="s3d"></p></div>
+
+    <div id="codebox"><div class="cb-h"><span>forge/button.html</span><b id="cbCount">0/6</b></div><div id="cbLines"></div></div>
+
+    <div id="final">
+      <button id="pv" type="button"></button>
+      <a class="cta" id="ctaStart" href="HTML-CSS-JS/"></a>
+      <button class="cta alt" id="ctaAll" type="button"></button>
+    </div>
+
+    <nav id="rail" aria-label="scenes"></nav>
   </div>
-
-  <footer>A.C.EON STUDIO · FORGE · КУЗНЯ v0.1 · собрано вручную, без фреймворков</footer>
-
 </div>
 
+<footer>
+  <span id="foot"></span>
+  <button id="toTop" type="button"></button>
+</footer>
+
+<div id="veil"></div>
+<aside id="drawer" aria-hidden="true">
+  <div class="dr-h"><span class="t"><b>FORGE</b> // <span id="drTitle">МОДУЛИ</span></span><button id="drClose" type="button" aria-label="close">&#10005;</button></div>
+  <div class="dr-body">
+    <div class="dr-sec"><span id="drMods">МОДУЛИ</span><span id="modcount"></span></div>
+    <div class="dr-list" id="drList"></div>
+    <div class="dr-sec"><span id="drPage"></span></div>
+    <div id="drScenes"></div>
+  </div>
+  <div class="dr-foot"><button id="drBack" type="button">&lt; A.C.EON</button><div id="langs"></div></div>
+</aside>
+
 <script>
-  /* ── каталог языков ──
-     чтобы добавить язык — добавь запись сюда.
-     mode: "run" = живое превью в браузере · "gen" = генерация кода
-     on:   true = страница готова, false = «скоро»                    */
-  const LANGS = [
-    { id:"html", glyph:"</>", name:"HTML · CSS · JS",
-      desc:"Сайты, страницы, интерфейсы. Логика на JS живёт прямо внутри.",
-      mode:"run", on:true, href:"HTML-CSS-JS/" },
-
-    { id:"py", glyph:"PY", name:"Python",
-      desc:"Автоматизация, обработка данных, скрипты, машинное обучение.",
-      mode:"gen", on:true, href:"Python/" },
-
-    { id:"cs", glyph:"C#", name:"C#",
-      desc:"Настольные приложения, игры на Unity, инструменты под Windows.",
-      mode:"gen", on:false, href:"CSharp/" },
-
-    { id:"cpp", glyph:"C++", name:"C++",
-      desc:"Скорость и контроль: игры, движки, системные и требовательные вещи.",
-      mode:"gen", on:false, href:"C++/" },
-
-    { id:"java", glyph:"JV", name:"Java",
-      desc:"Android-приложения и крупные системы, которым нужна надёжность.",
-      mode:"gen", on:false, href:"Java/" },
-
-    { id:"sql", glyph:"SQL", name:"SQL",
-      desc:"Базы данных: хранить, искать и доставать нужное запросами.",
-      mode:"gen", on:true, href:"SQL/" },
-  ];
-
-  const grid = document.getElementById("grid");
-
-  LANGS.forEach(function(l){
-    const badge = l.mode === "run"
-      ? '<span class="badge run"><span class="dot"></span>живое превью</span>'
-      : '<span class="badge gen"><span class="dot"></span>генерация кода</span>';
-
-    const foot = l.on
-      ? '<span class="go">открыть &rarr;</span>'
-      : '<span class="soon-tag">скоро</span>';
-
-    const inner =
-      '<div class="mod-top"><span class="glyph">'+l.glyph+'</span>'+badge+'</div>'+
-      '<div class="mod-name">'+l.name+'</div>'+
-      '<div class="mod-desc">'+l.desc+'</div>'+
-      '<div class="mod-foot">'+foot+'<span class="id">['+l.id+']</span></div>';
-
-    let el;
-    if(l.on){
-      el = document.createElement("a");
-      el.href = l.href;
-      el.className = "mod on";
-    } else {
-      el = document.createElement("div");
-      el.className = "mod soon";
-      el.setAttribute("aria-disabled","true");
-    }
-    el.innerHTML = inner;
-    grid.appendChild(el);
-  });
-
-  const ready = LANGS.filter(function(l){return l.on}).length;
-  document.getElementById("modcount").textContent =
-    "модулей: "+LANGS.length+" · готово: "+ready;
-
-  /* короткая «загрузка» в шапке, без нагрузки на слабое железо */
-  const eb = document.getElementById("eyebrow");
-  const line = "A.C.EON // модуль FORGE · v0.1 · инициализация ок";
-  if(window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches){
-    eb.innerHTML = '<span class="cur">A.C.EON</span> // модуль FORGE · v0.1 <span class="blink">_</span>';
-  } else {
-    let i = 0;
-    eb.innerHTML = '';
-    (function type(){
-      if(i <= line.length){
-        eb.innerHTML = line.slice(0,i).replace("A.C.EON",'<span class="cur">A.C.EON</span>')
-                       + '<span class="blink">_</span>';
-        i++;
-        setTimeout(type, 22);
-      }
-    })();
-  }
+/* ── каталог языков ──────────────────────────────────────────────
+   Новый язык: добавь запись. Описание на 7 языках лежит в lang.js (ключ d.<id>),
+   если его там нет, показывается desc отсюда.
+   mode: "run" = живое превью в браузере, "gen" = генерация кода
+   on:   true = страница готова (раскалённый слиток), false = скоро (холодный)
+   В сцене помещается 6 слитков, остальные будут только в меню. */
+var LANGS = [
+  { id: "html", glyph: "</>", name: "HTML · CSS · JS", mode: "run", on: true,  href: "HTML-CSS-JS/",
+    desc: "Сайты, страницы, интерфейсы. Логика на JS живёт прямо внутри." },
+  { id: "py",   glyph: "PY",  name: "Python",          mode: "gen", on: true,  href: "Python/",
+    desc: "Автоматизация, обработка данных, скрипты, машинное обучение." },
+  { id: "cs",   glyph: "C#",  name: "C#",              mode: "gen", on: false, href: "CSharp/",
+    desc: "Настольные приложения, игры на Unity, инструменты под Windows." },
+  { id: "cpp",  glyph: "C++", name: "C++",             mode: "gen", on: false, href: "C++/",
+    desc: "Скорость и контроль: игры, движки, системные и требовательные вещи." },
+  { id: "java", glyph: "JV",  name: "Java",            mode: "gen", on: false, href: "Java/",
+    desc: "Android-приложения и крупные системы, которым нужна надёжность." },
+  { id: "sql",  glyph: "SQL", name: "SQL",             mode: "gen", on: true,  href: "SQL/",
+    desc: "Базы данных: хранить, искать и доставать нужное запросами." }
+];
 </script>
+<script src="../games/shared/store.js?v=1"></script>
+<script src="../games/shared/i18n.js?v=1"></script>
+<script src="../shared/trace.js?v=1"></script>
+<script src="lang.js?v=1"></script>
+<script src="forge.js?v=1"></script>
 </body>
 </html>

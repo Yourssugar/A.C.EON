@@ -17,7 +17,7 @@ var UNDO_MAX=400,UNDO_SAVE=25;
 /* ── сохранения ── */
 Store.define('solitaire',{
   version:1,
-  defaults:{settings:{game:'klondike',draw:1,redeals:'inf',suits:1,table:'felt',back:'aceon',auto:true,tap:'select'},stats:{},save:null},
+  defaults:{settings:{game:'klondike',draw:1,redeals:'inf',suits:1,table:'felt',back:'aceon',auto:true,tap:'select',cards:'std'},stats:{},save:null},
   legacy:function(raw){
     var hi=parseInt(raw('aceon_hi_soli'),10)||0;
     return hi?{stats:{'klondike-d1':{played:0,won:0,bestScore:hi}}}:null;
@@ -32,6 +32,10 @@ if([1,2,4].indexOf(S.suits)<0)S.suits=1;
 if(['felt','blue','neon'].indexOf(S.table)<0)S.table='felt';
 if(['aceon','red','blue'].indexOf(S.back)<0)S.back='aceon';
 if(S.tap!=='auto')S.tap='select';
+if(S.cards!=='big')S.cards='std';
+function big(){return S.cards==='big';}
+/* сдвиг веера в сбросе: у крупных карт значение шире, видно больше карты */
+function fanX(){return big()?0.5:0.24;}
 function save(){Store.save('solitaire');}
 
 function optOf(game){
@@ -88,15 +92,15 @@ function buildStats(){
 function preview(){
   var p=$('preview');
   p.className='preview tbl-'+S.table;
-  p.innerHTML='<div class="pv-card up">'+Cards.face({s:0,r:1})+'</div>'+
-              '<div class="pv-card up">'+Cards.face({s:1,r:13})+'</div>'+
-              '<div class="pv-card up">'+Cards.face({s:2,r:7})+'</div>'+
+  p.innerHTML='<div class="pv-card up">'+Cards.face({s:0,r:1},big())+'</div>'+
+              '<div class="pv-card up">'+Cards.face({s:1,r:13},big())+'</div>'+
+              '<div class="pv-card up">'+Cards.face({s:2,r:10},big())+'</div>'+
               '<div class="pv-card">'+Cards.back(S.back)+'</div>';
 }
 function paintMenu(){
   buildGames();buildStats();preview();
   ['klondike','spider','freecell'].forEach(function(g){$('opt-'+g).classList.toggle('hidden',S.game!==g);});
-  [['tap',S.tap],['draw',String(S.draw)],['redeals',S.redeals],['suits',String(S.suits)],['auto',S.auto?'on':'off'],['table',S.table],['back',S.back]].forEach(function(x){
+  [['tap',S.tap],['draw',String(S.draw)],['redeals',S.redeals],['suits',String(S.suits)],['auto',S.auto?'on':'off'],['table',S.table],['back',S.back],['cards',S.cards]].forEach(function(x){
     document.querySelectorAll('#seg-'+x[0]+' .seg-btn').forEach(function(b){b.classList.toggle('sel',b.dataset.v===x[1]);});
   });
   $('opt-auto').classList.toggle('hidden',S.game==='spider');
@@ -340,7 +344,8 @@ function layout(){
   var top=tb.getBoundingClientRect().top+window.scrollY;
   var H=Math.max(260,window.innerHeight-top-6);
   var cw=W/(cols+0.12*(cols+1));
-  cw=Math.min(cw,H/(1.4*2.7+0.5),118);
+  /* крупные карты: потолок размера выше, веер стола шире */
+  cw=big()?Math.min(cw,H/(1.4*3.1+0.5),150):Math.min(cw,H/(1.4*2.7+0.5),118);
   cw=Math.max(30,Math.floor(cw));
   var ch=Math.round(cw*1.4),gap=Math.max(3,Math.round(cw*0.12));
   var width=cols*cw+(cols+1)*gap,ox=Math.max(0,Math.floor((W-width)/2));
@@ -363,23 +368,24 @@ function place(){
       var dx=0;
       if(tp.id==='waste'){
         var shown=Math.min(st.opt.draw,3),from=n-shown;            // видны последние 1 или 3 карты веером
-        if(i>=from)dx=Math.round((i-from)*cw*0.24);
+        if(i>=from)dx=Math.round((i-from)*cw*fanX());
       }else if(tp.id==='stock'&&st.game==='spider'){
         dx=Math.floor(i/10)*Math.round(cw*0.14);                    // каждая будущая сдача видна отдельной картой
       }
       pos[c.id]={x:x+dx,y:y,z:z++,up:c.up};
       loc[c.id]={pile:tp.id,idx:i};
     });
-    if(tp.id==='waste'&&n)L.piles.waste.w=cw+Math.round((Math.min(st.opt.draw,3,n)-1)*cw*0.24);
+    if(tp.id==='waste'&&n)L.piles.waste.w=cw+Math.round((Math.min(st.opt.draw,3,n)-1)*cw*fanX());
   });
   /* стол: веер вниз, сжимается, если столбец длинный */
   var avail=L.H-L.tabY-ch-L.gap;
   L.tabs.forEach(function(pid,ci){
     var p=st.piles[pid],x=L.colX(ci),nd=0,nu=0,i;
     for(i=0;i<p.length-1;i++){if(p[i].up)nu++;else nd++;}
-    var d=ch*0.13,u=ch*(st.game==='spider'?0.24:0.27);
+    var d=ch*0.13,u=big()?ch*0.4:ch*(st.game==='spider'?0.24:0.27);
     var need=nd*d+nu*u;
-    if(need>avail&&need>0){var k=Math.max(0.42,avail/need);d*=k;u*=k;}
+    /* длинный столбец сжимается; у крупных карт не сильнее, чем до видимого значения, дальше стол прокручивается */
+    if(need>avail&&need>0){var k=Math.max(big()?0.8:0.42,avail/need);d*=k;u*=k;}
     var y=L.tabY;
     p.forEach(function(c,j){
       pos[c.id]={x:x,y:Math.round(y),z:z++,up:c.up};
@@ -409,10 +415,10 @@ function render(anim){
     var e=cardEl[id],p=pos[id];
     if(!p){e.style.display='none';continue;}
     e.style.display='';
-    var face=p.up?'u':'d'+S.back;
+    var face=p.up?'u'+S.cards:'d'+S.back;
     if(e.dataset.face!==face){
       var c=findCard(+id);
-      e.innerHTML=p.up?Cards.face(c):Cards.back(S.back);
+      e.innerHTML=p.up?Cards.face(c,big()):Cards.back(S.back);
       e.dataset.face=face;
       e.classList.toggle('up',p.up);
     }
@@ -614,6 +620,7 @@ function boot(){
   bindSeg('tap',function(v){S.tap=v;});
   bindSeg('table',function(v){S.table=v;});
   bindSeg('back',function(v){S.back=v;});
+  bindSeg('cards',function(v){S.cards=v;});
   bindTable();
   $('btn-play').addEventListener('click',function(){newGame();});
   $('btn-continue').addEventListener('click',resume);

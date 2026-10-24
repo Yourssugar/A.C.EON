@@ -2,7 +2,8 @@
    поэтому карты одинаково выглядят на любом устройстве и в любом браузере.
 
    Cards.defs()          вставить символы мастей в страницу (один раз)
-   Cards.face(card)      SVG лица карты
+   Cards.face(card,big)  SVG лица карты; big: крупный вариант (огромное значение и масть в верхней полосе,
+                         которая видна, когда карты лежат веером, и одна большая масть или буква в центре)
    Cards.back(theme)     рубашка: 'aceon' | 'red' | 'blue'
    Cards.suit(s, cls)    маленький значок масти для интерфейса */
 (function(){
@@ -51,7 +52,8 @@ var PIPS={
   10:[[30,24,0],[70,24,0],[50,39,0],[30,54,0],[70,54,0],[30,86,1],[70,86,1],[50,101,1],[30,116,1],[70,116,1]]
 };
 
-function face(c){
+function face(c,big){
+  if(big)return faceBig(c);
   var col=(c.s===1||c.s===2)?RED:BLACK,rk=RANK[c.r],h='';
   h+='<svg class="cf" viewBox="0 0 100 140" preserveAspectRatio="none" xmlns="'+NS+'">';
   /* уголки: значение и масть, нижний перевёрнут */
@@ -75,6 +77,36 @@ function face(c){
     h+='<use href="#'+cr+'" xlink:href="#'+cr+'" x="32" y="34" width="36" height="22" fill="#d4a017" stroke="'+col+'" stroke-width="2"/>';
     h+='<text x="50" y="92" font-size="36" font-family="Georgia,\'Times New Roman\',serif" font-weight="bold" text-anchor="middle" fill="'+col+'">'+rk+'</text>';
     h+=use(c.s,42,96,16,false,col);
+  }
+  h+='</svg>';
+  return h;
+}
+
+/* крупные карты: для плохого зрения. Всё важное в верхних 40% карты (они видны в веере),
+   значение слева, масть справа, обе почти на всю высоту полосы. Цвета контрастнее. */
+var RED_B='#d0021b',BLACK_B='#000';
+function faceBig(c){
+  var red=(c.s===1||c.s===2),col=red?RED_B:BLACK_B,rk=RANK[c.r],h='';
+  var font='Arial,Helvetica,sans-serif';
+  h+='<svg class="cf cf-big" viewBox="0 0 100 140" preserveAspectRatio="none" xmlns="'+NS+'">';
+  /* значение: "10" ужимается по ширине, чтобы не налезть на масть */
+  var ten=rk==='10';
+  h+='<text x="5" y="44" font-family="'+font+'" font-weight="900" font-size="'+(ten?44:50)+'" fill="'+col+'"'+
+     (ten?' textLength="54" lengthAdjust="spacingAndGlyphs"':'')+'>'+rk+'</text>';
+  h+=use(c.s,ten?60:56,6,ten?36:40,false,col);
+  /* разделитель полосы */
+  h+='<rect x="6" y="52" width="88" height="2" fill="'+col+'" opacity=".25"/>';
+  if(c.r>=11){
+    var tint=red?'#fde4e4':'#e6e9f0';
+    h+='<rect x="12" y="60" width="76" height="72" rx="6" fill="'+tint+'" stroke="'+col+'" stroke-width="2.5"/>';
+    var cr={11:'crJ',12:'crQ',13:'crK'}[c.r];
+    h+='<use href="#'+cr+'" xlink:href="#'+cr+'" x="20" y="66" width="30" height="18" fill="#d4a017" stroke="'+col+'" stroke-width="2"/>';
+    h+=use(c.s,56,66,22,false,col);
+    h+='<text x="50" y="126" font-family="'+font+'" font-weight="900" font-size="44" text-anchor="middle" fill="'+col+'">'+rk+'</text>';
+  }else{
+    h+=use(c.s,22,62,56,false,col);
+    /* число повторено внизу справа вверх ногами, как на обычной карте */
+    h+='<text x="95" y="137" font-family="'+font+'" font-weight="900" font-size="22" text-anchor="end" fill="'+col+'" opacity=".9">'+rk+'</text>';
   }
   h+='</svg>';
   return h;

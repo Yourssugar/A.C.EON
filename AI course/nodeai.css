@@ -1,0 +1,212 @@
+/* ============================================================
+   NODE AI · общие стили компонентов курса
+   Цветовые токены (--green, --blue, --mono ...) берутся из :root
+   каждого слоя — они там уже определены.
+============================================================ */
+
+/* ── действия конструктора ── */
+.prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.ghost-btn {
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 1px solid rgba(96, 186, 255, 0.28);
+  border-radius: 4px;
+  background: rgba(2, 8, 12, 0.5);
+  color: #a9c6d2;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.ghost-btn:hover,
+.ghost-btn:focus-visible {
+  border-color: rgba(255, 82, 108, 0.5);
+  color: #f0c9d1;
+  outline: none;
+}
+
+.sim-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid rgba(242, 207, 98, 0.3);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: .04em;
+}
+
+.sim-badge i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+
+/* ── карточка ответа модели ── */
+.model-reply {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  transition: grid-template-rows 320ms ease, margin-top 320ms ease;
+}
+
+.model-reply.on {
+  grid-template-rows: 1fr;
+  margin-top: 14px;
+}
+
+.model-reply > div {
+  overflow: hidden;
+}
+
+.reply-card {
+  border: 1px solid rgba(96, 186, 255, 0.22);
+  border-radius: 6px;
+  background: rgba(3, 12, 18, 0.72);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+.reply-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  border-bottom: 1px solid rgba(96, 186, 255, 0.14);
+}
+
+.reply-avatar {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--blue);
+  box-shadow: 0 0 10px rgba(69, 170, 255, 0.35);
+}
+
+.reply-avatar::after {
+  position: absolute;
+  inset: 5px;
+  content: "";
+  border-radius: 50%;
+  background: var(--blue);
+  opacity: .55;
+  animation: nodeai-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes nodeai-pulse {
+  0%, 100% { opacity: .55; }
+  50% { opacity: .15; }
+}
+
+.reply-name {
+  color: var(--blue);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+.reply-model {
+  margin-left: auto;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+}
+
+.reply-body {
+  padding: 13px;
+  min-height: 40px;
+  color: #cde0e8;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.reply-body.cur::after {
+  content: "▋";
+  color: var(--green);
+  animation: nodeai-blink .7s step-end infinite;
+}
+
+@keyframes nodeai-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── кнопки уточнения (петля диалога) ── */
+.reply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 13px 12px;
+}
+
+.reply-actions:empty {
+  display: none;
+}
+
+.refine-btn {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid rgba(24, 226, 140, 0.4);
+  border-radius: 4px;
+  background: rgba(24, 226, 140, 0.08);
+  color: #cffbe9;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.refine-btn:hover,
+.refine-btn:focus-visible {
+  background: rgba(24, 226, 140, 0.16);
+  border-color: rgba(24, 226, 140, 0.7);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.reply-tip {
+  margin: 0;
+  padding: 10px 13px;
+  border-top: 1px solid rgba(96, 186, 255, 0.12);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.reply-tip.weak {
+  color: var(--red);
+}
+
+/* ── разбор ответа в тесте ── */
+.quiz-explain {
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-left: 2px solid rgba(24, 226, 140, 0.55);
+  background: rgba(24, 226, 140, 0.05);
+  color: #b9d2cd;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}

@@ -3,7 +3,8 @@
    Лица: img/faces-<форма>.webp, 8 штук сеткой 4x2, только свечение, рисуются поверх тёмного экрана головы.
    Последовательности кадров: img/seq-*.webp, сетка 4x4 по 256, ступни внизу по центру клетки.
    Единицы модели: пиксели исходного листа деталей (1254), начало координат: земля под роботом, y вниз.
-   NodeBot.create() -> {draw(ctx,x,y,h,dt), drawSeq(ctx,name,f,x,y,h,a), set(...), ready} */
+   NodeBot.create({base,reduce}) -> {draw(ctx,x,y,h,dt), drawSeq(ctx,name,f,x,y,h,a), set(...), emote, talk, jump}
+   Режимы: idle, wave, point, pointDown, think, proud, cheer, no (мотает головой). */
 (function(){
 'use strict';
 const BASE='img/';
@@ -28,17 +29,19 @@ const MH=-HEAD_TOP;            /* высота модели без антенн�
 const FACES=['neutral','happy','talk','think','wow','wink','proud','sleep'];
 const FC={w:256,h:191};
 /* масштаб кадров последовательностей: клетка атласа в единицах модели */
-const SEQ={'seq-wake':{k:1/(.8*.343)},'seq-up1':{k:1/(.8*.36)},'seq-up2':{k:1/(.8*.39)}};
-
-function load(src){ const i=new Image(); i.decoding='async'; i.src=BASE+src; return i; }
+const SEQ={'seq-wake':{k:1/(.8*.343)},'seq-up1':{k:1/(.8*.36)},'seq-up2':{k:1/(.8*.39)},
+  /* реакции слоя 1 (layer_01/img): сидячие кадры, масштаб по ширине головы */
+  'seq-cheer':{k:1/(.8*.39)},'seq-facepalm':{k:1/(.8*.39)},'seq-blush':{k:1/(.8*.39)},'seq-think':{k:1/(.8*.38)}};
 
 function create(o){
   o=o||{};
+  const base=o.base||BASE;
+  function load(src){ const i=new Image(); i.decoding='async'; i.src=base+src; return i; }
   const reduce=!!o.reduce;
   const img={novice:load('bot-novice.webp'),adv:load('bot-adv.webp'),pro:load('bot-pro.webp')};
   const face={novice:load('faces-novice.webp'),adv:load('faces-adv.webp'),pro:load('faces-pro.webp')};
   const seq={};
-  function seqImg(n){ return seq[n]||(seq[n]=load(n+'.webp')); }
+  function seqImg(n){ return seq[n]||(seq[n]=(o.seqBase&&/^seq-(cheer|facepalm|blush|think)$/.test(n)?(()=>{ const i=new Image(); i.decoding='async'; i.src=o.seqBase+n+'.webp'; return i; })():load(n+'.webp'))); }
   const ok=i=>i&&i.complete&&i.naturalWidth>0;
 
   /* состояние */
@@ -68,6 +71,7 @@ function create(o){
     else if(mode==='pointDown'){ g.uaL=.75; g.faL=.25; g.head-=.04; }
     else if(mode==='think'){ g.uaR=-1.15; g.faR=-1.6; g.head+=.08; }
     else if(mode==='proud'){ g.uaL=.35; g.faL=-1.9; g.uaR=-.35; g.faR=1.9; g.body-=4; }
+    else if(mode==='no'){ g.head+=reduce?0:Math.sin(modeT*16)*.14; g.uaL=.3; g.uaR=-.3; g.faL=-.5; g.faR=.5; }
     else if(mode==='cheer'){ const w=reduce?0:Math.sin(modeT*7); g.uaL=2.5+w*.15; g.uaR=-2.5-w*.15; g.faL=.3; g.faR=-.3; }
     const k=Math.min(1,dt*(reduce?60:9));
     for(const key in P)P[key]+=(g[key]-P[key])*k;

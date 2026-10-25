@@ -77,7 +77,7 @@ window.CORE_NODES = [
    desc:{ru:'ИИ-агенты студии за работой: наблюдай и поговори со свободным.', en:'The studio AI agents at work: watch them and talk to a free one.', de:'Die KI-Agenten des Studios bei der Arbeit: zuschauen und mit einem freien sprechen.', fr:'Les agents IA du studio au travail : observe-les et parle à celui qui est libre.', es:'Los agentes de IA del estudio trabajando: obsérvalos y habla con uno libre.', it:'Gli agenti IA dello studio al lavoro: osservali e parla con uno libero.', pl:'Agenci AI studia przy pracy: obserwuj ich i porozmawiaj z wolnym.'}},
 
   /* обучение */
-  {id:'ai_course', sector:'learn', name:{ru:'КУРС AI', en:'AI COURSE', de:'KI-KURS', fr:'COURS IA', es:'CURSO IA', it:'CORSO IA', pl:'KURS AI'}, url:'../layer_00/', status:'live', w:2.3,
+  {id:'ai_course', sector:'learn', name:{ru:'КУРС AI', en:'AI COURSE', de:'KI-KURS', fr:'COURS IA', es:'CURSO IA', it:'CORSO IA', pl:'KURS AI'}, url:'../AI course/', status:'live', w:2.3,
    tag:{ru:'работа с ИИ', en:'working with AI', de:'Arbeit mit KI', fr:'travailler avec l\'IA', es:'trabajar con IA', it:'lavorare con l\'IA', pl:'praca z AI'},
    desc:{ru:'Как работать с ИИ: курс по шагам.', en:'How to work with AI: a step-by-step course.', de:'Wie man mit KI arbeitet: ein Kurs Schritt für Schritt.', fr:'Travailler avec l\'IA : un cours pas à pas.', es:'Cómo trabajar con IA: un curso paso a paso.', it:'Come lavorare con l\'IA: un corso passo passo.', pl:'Jak pracować z AI: kurs krok po kroku.'}},
   {id:'forge', sector:'learn', name:'FORGE', url:'../forge/', status:'live', w:2.2,

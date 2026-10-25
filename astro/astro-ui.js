@@ -146,7 +146,7 @@ function renderFc(fresh){
   else if(mem.period==='week'){ sky=C.skyAt(new Date(now.getTime()+3*864e5)); }
   else sky=C.skyAt(now);
   const f=C.forecast(cur.sign,sky,seed,mem.period);
-  const pool=k=>{ const a=T('F.'+k); return Array.isArray(a)?a:[String(a)]; };
+  const pool=k=>{ const a=T('F.'+k), x=TX(), more=(x&&x.fc&&x.fc[k])||[]; return (Array.isArray(a)?a:[String(a)]).concat(more); };
   const pk=(k,salt)=>{ const a=pool(k); return a[f.pick(a.length,salt)]; };
   const st=f.state;
   $('fcTitle').innerHTML=esc(T('fcT.'+mem.period))+' <span class="tsg">'+C.SG[cur.sign]+' '+esc(sN(cur.sign))+'</span>';
@@ -184,12 +184,55 @@ $('ballBtn').addEventListener('click',gaze);
 $('ball').addEventListener('click',gaze);
 $('ballCss').addEventListener('click',gaze);
 
-/* ---------- тексты прочтений ---------- */
+/* ---------- тексты прочтений ----------
+   texts/<lang>.js кладёт в ASTRO_TEXT[lang] куски: pis (планета в знаке), seed + hp + hh (дом), ap/ah/at (аспекты карты),
+   sa/st/sh/ss/stl (синастрия), asp0/syn0 (ручные тексты, важнее шаблонов), fc (доп. варианты прогноза), ess.
+   ASTRO_IDX (interp.js) говорит, какой шаблон и хвост взять для каждого ключа, общий для всех языков. */
+const IDX=window.ASTRO_IDX||{asp:{},syn:{},pih:{}};
+const loadingTx={};
+function needTx(l,cb){
+  if((window.ASTRO_TEXT||{})[l]){ cb&&cb(); return; }
+  if(loadingTx[l]){ if(cb)loadingTx[l].push(cb); return; }
+  loadingTx[l]=cb?[cb]:[];
+  const sc=document.createElement('script'); sc.src='texts/'+l+'.js?v=1';
+  const done=()=>{ const q=loadingTx[l]||[]; q.forEach(f=>{ try{ f(); }catch(e){} }); };
+  sc.onload=done; sc.onerror=done; document.head.appendChild(sc);
+}
+const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s;
+const IT_ART={il:'l',lo:'llo',la:'lla',i:'i',gli:'gli',le:'lle'}, IT_PRE={di:'de',a:'a',in:'ne',su:'su',da:'da'};
+function fix(s){
+  const l=lang();
+  if(l==='fr'){
+    s=s.replace(/\bde les\b/g,'des').replace(/\bde le\b/g,'du').replace(/\bà les\b/g,'aux').replace(/\bà le\b/g,'au');
+    s=s.replace(/\b(de|que|ne|je|le|la|me|te|se) ([aeiouyéèêàâîôœ])/gi,(m,w,c)=>w.slice(0,-1)+"'"+c);
+  }
+  if(l==='es')s=s.replace(/\bde el\b/g,'del').replace(/\ba el\b/g,'al');
+  if(l==='it'){
+    s=s.replace(/\b(di|a|in|su|da) (il|lo|la|i|gli|le)\b/g,(m,p,a)=>IT_PRE[p]+IT_ART[a]);
+    s=s.replace(/\b(di|a|in|su|da) l'/g,(m,p)=>IT_PRE[p]+"ll'");
+    s=s.replace(/\ba ([aeiou])/g,'ad $1');
+  }
+  return cap(s);
+}
+const ord=(a,b)=>C.PLANETS.indexOf(a)<=C.PLANETS.indexOf(b)?[a,b]:[b,a];
 function tSign(k,s){ const x=TX(); const v=x&&x.pis&&x.pis[k+'.'+s]; return v||T('tplSign',{p:pN(k),s:sN(s),sph:T('ps.'+k),el:T('el.'+C.EL[s]),mod:T('mo.'+C.MOD[s])}); }
-function tHouse(k,h){ const x=TX(); const v=x&&x.pih&&x.pih[k+'.'+h]; return v||T('tplHouse',{p:pN(k),sph:T('ps.'+k),n:h,h:low(T('h.'+h))}); }
+function tHouse(k,h){
+  const x=TX(), key=k+'.'+h;
+  if(x&&x.seed&&x.seed[key]){ const v=IDX.pih[key]; return x.seed[key]+(x.hp&&v!==undefined?' '+x.hp[k][v]+x.hj+x.hh[h]:''); }
+  return T('tplHouse',{p:pN(k),sph:T('ps.'+k),n:h,h:low(T('h.'+h))});
+}
 function tAsp(kind,a,type,b){
-  const x=TX(), tb=x&&x[kind]; const v=tb&&(tb[a+'.'+type+'.'+b]||tb[b+'.'+type+'.'+a]);
-  return v||T(kind==='syn'?'tplSyn':'tplAsp',{a:pN(a),b:pN(b),tone:T('tone.'+type),asp:low(T('a.'+type))});
+  const x=TX(), [p,q]=ord(a,b), key=p+'.'+type+'.'+q;
+  if(x){
+    const hand=x[kind==='syn'?'syn0':'asp0']; const v=hand&&(hand[a+'.'+type+'.'+b]||hand[b+'.'+type+'.'+a]); if(v)return v;
+    const ix=(kind==='syn'?IDX.syn:IDX.asp)[key];
+    if(ix&&kind!=='syn'&&x.ah)return fix(x.ah[type][ix[0]].replace('{A}',x.ap[p]).replace('{B}',x.ap[q]))+'. '+x.at[ix[1]];
+    if(ix&&kind==='syn'&&x.sh){
+      const h=p===q?x.ss[type][ix[0]].replace('{T}',x.st[p]):x.sh[type][ix[0]].replace('{A}',x.sa[p]).replace('{BT}',x.st[q]).replace('{B}',x.sa[q]);
+      return fix(h)+'. '+x.stl[ix[1]];
+    }
+  }
+  return T(kind==='syn'?'tplSyn':'tplAsp',{a:pN(a),b:pN(b),tone:T('tone.'+type),asp:low(T('a.'+type))});
 }
 
 /* ---------- колесо ---------- */
@@ -516,7 +559,7 @@ addEventListener('resize',()=>{ if(narrow()!==bgW){ bgW=narrow(); applyTheme(THE
 
 /* персонаж темы: три позы, реплики из lang (seer.*, cat.*) */
 let CHAR=null, sayT=0;
-function setChar(k){ CHAR=k; $('char').hidden=!k; if(k){ $('char').dataset.c=k; $('charImg').src='themes/'+k+'-idle.webp'; } $('charSay').classList.remove('on'); }
+function setChar(k){ CHAR=k; $('char').hidden=!k; if(k){ ['speaking','happy'].forEach(p=>{ const i=new Image(); i.src='themes/'+k+'-'+p+'.webp'; }); $('char').dataset.c=k; $('charImg').src='themes/'+k+'-idle.webp'; } $('charSay').classList.remove('on'); }
 function charSay(key,pose){
   if(!CHAR)return;
   const a=T(CHAR+'.'+key); if(!Array.isArray(a))return;
@@ -568,7 +611,7 @@ function setLang(c){
   if(CODES.indexOf(c)<0||c===lang())return;
   if(hasI18n)I18n.set(c); else { fbLang=c; const o=readSite(); o.lang=c; if(!o.v)o.v=1; try{ localStorage.setItem('aceon:site',JSON.stringify(o)); }catch(e){} }
   if(TR)TR.event('lang.change');
-  texts(); refresh();
+  texts(); refresh(); needTx(c,refresh);
 }
 function texts(){
   document.documentElement.lang=lang();
@@ -585,7 +628,9 @@ function texts(){
 /* ---------- старт ---------- */
 texts();
 applyTheme(mem.theme);
-setMode(mode,true);
+/* первый показ ждёт тексты текущего языка (не дольше 1.5 с), иначе прогноз сменится после подгрузки */
+let started=false; const start=()=>{ if(started)return; started=true; setMode(mode,true); };
+needTx(lang(),start); setTimeout(start,1500);
 setInterval(()=>{ renderSky(); },10*60*1000);
 if(!mem.themeAsked)setTimeout(()=>openSettings(true),500);
 })();

@@ -297,3 +297,7 @@ body.modal-on #char{display:none}
 
 .more{display:block;margin:6px auto 0;background:none;border:1px solid var(--line);border-radius:10px;padding:9px 18px;cursor:pointer;color:var(--mut)}
 .more:hover{color:var(--ink);border-color:var(--ac)}
+html.th-img .wbg{opacity:.66}
+[data-theme=atlas].th-img .wbg{opacity:.5}
+html.th-img .brand b{text-shadow:0 0 10px rgba(0,0,0,.8)}
+[data-theme=atlas].th-img .brand b{text-shadow:0 0 10px rgba(255,248,230,.95),0 0 3px rgba(255,248,230,.95)}

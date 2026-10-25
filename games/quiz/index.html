@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>KOTAE! · A.C.EON</title>
+<meta name="description" content="KOTAE! Аниме-викторина A.C.EON: жанры, подтемы, 10 уровней в каждой, подсказки и коллекция карточек.">
+
+<!-- Загрузчик: data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"css/quiz.css","kb":27},
+  {"src":"fonts/russo-one-cyrillic-400-normal.woff2","kb":19,"prefetch":true},
+  {"src":"fonts/russo-one-latin-400-normal.woff2","kb":14,"prefetch":true},
+  {"src":"fonts/nunito-cyrillic-800-normal.woff2","kb":13,"prefetch":true},
+  {"src":"fonts/nunito-latin-800-normal.woff2","kb":19,"prefetch":true},
+  {"src":"fonts/nunito-cyrillic-600-normal.woff2","kb":13,"prefetch":true},
+  {"src":"fonts/nunito-latin-600-normal.woff2","kb":19,"prefetch":true},
+  {"src":"img/logo-mark.webp","kb":30,"prefetch":true},
+  {"src":"img/host-poses.webp","kb":207,"prefetch":true},
+  {"src":"img/icons.webp","kb":34,"prefetch":true},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/three-loader.js","kb":3},
+  {"src":"js/lang.js","kb":24},
+  {"src":"js/catalog.js","kb":79},
+  {"src":"js/scene3d.js","kb":15},
+  {"src":"js/intro.js","kb":9},
+  {"src":"js/ui.js","kb":13},
+  {"src":"js/quiz.js","kb":2}
+]}
+</script>
+
+<template id="boot-skin">
+  <style>
+    .k-logo{position:relative;font:900 clamp(40px,12vw,76px)/1 'Arial Black',Impact,sans-serif;letter-spacing:.04em;color:#fff;
+      text-shadow:3px 3px 0 #ff3d8b,0 0 calc(30px * var(--p)) rgba(255,61,139,.9);transform:skewX(-6deg)}
+    .k-jp{font:700 13px/1 'Yu Gothic','Hiragino Sans',sans-serif;letter-spacing:.6em;color:#2ef2e0;opacity:calc(.3 + .7 * var(--p));margin-top:-12px;padding-left:.6em}
+    .k-beams{position:absolute;inset:0;pointer-events:none;opacity:calc(.15 + .5 * var(--p));
+      background:conic-gradient(from 200deg at 50% 110%,transparent 0 6deg,rgba(46,242,224,.25) 7deg 9deg,transparent 10deg 26deg,rgba(255,61,139,.22) 27deg 29deg,transparent 30deg 44deg,rgba(255,176,32,.2) 45deg 47deg,transparent 48deg)}
+  </style>
+  <div class="k-beams"></div>
+  <div class="k-logo">KOTAE!</div>
+  <div class="k-jp">こたえ</div>
+</template>
+</head>
+<body>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="bgcss" aria-hidden="true"><i></i><i></i></div>
+
+<header id="top">
+  <a id="btnBack" class="tb" href="../">&#9664; <span class="lbl" data-i18n="arc.back"></span></a>
+  <div class="brand" id="brand" title="KOTAE!"><img src="img/logo-mark.webp" alt=""><b>KOTAE!</b><span class="jp">こたえ</span></div>
+  <div class="tr">
+    <button id="btnColl" class="tb" type="button" data-i18n-title="nav.coll"><i class="ico ico-coll"></i><b id="collN">0</b></button>
+    <button id="btnMenu" class="tb" type="button"><span class="burger"><i></i></span><span class="lbl" data-i18n="nav.menu"></span></button>
+  </div>
+</header>
+
+<nav id="rail" aria-label="scenes"></nav>
+
+<!-- ════════ ГЛАВНАЯ: скролл-вступление ════════ -->
+<main id="intro">
+  <div id="scroller">
+    <div id="stage">
+      <section class="scn s0" data-i="0">
+        <div class="eyebrow"><i></i>LIVE &middot; ON AIR</div>
+        <h1>KOTAE!<small>こたえ</small></h1>
+        <div class="tag" data-i18n="q.tag"></div>
+        <h2 class="it"></h2>
+        <p class="lead is"></p>
+        <div class="btns">
+          <button class="btn pk" type="button" data-go="genres" data-i18n="i.start"></button>
+          <button class="btn ghost hidden" type="button" id="resume0"></button>
+        </div>
+      </section>
+
+      <section class="scn s1" data-i="1">
+        <div class="eyebrow"><i></i>01 / 06</div>
+        <h2 class="it"></h2>
+        <p class="lead is"></p>
+        <div class="demo">
+          <div class="qcard" data-i18n="demo.q"></div>
+          <div class="plates" id="plates1"></div>
+        </div>
+      </section>
+
+      <section class="scn s2" data-i="2">
+        <div class="eyebrow"><i></i>02 / 06</div>
+        <h2 class="it"></h2>
+        <p class="lead is"></p>
+        <div class="gfall" id="gfall"></div>
+      </section>
+
+      <section class="scn s3" data-i="3">
+        <div class="eyebrow"><i></i>03 / 06</div>
+        <h2 class="it"></h2>
+        <p class="lead is"></p>
+        <div class="ladder" id="ladder"></div>
+        <div class="lives">
+          <div><span data-i18n="lv.a"></span><i class="ico ico-life"></i><i class="ico ico-life"></i></div>
+          <div><span data-i18n="lv.b"></span><i class="ico ico-life"></i></div>
+        </div>
+      </section>
+
+      <section class="scn s4" data-i="4">
+        <div class="eyebrow"><i></i>04 / 06</div>
+        <h2 class="it"></h2>
+        <p class="lead is"></p>
+        <div class="hintsrow">
+          <span class="hchip" id="hc0"><i class="ico ico-fifty"></i><span data-i18n="h.fifty"></span></span>
+          <span class="hchip" id="hc1"><i class="ico ico-node"></i><span data-i18n="h.node"></span></span>
+          <span class="hchip" id="hc2"><i class="ico ico-host"></i><span data-i18n="h.host"></span></span>
+        </div>
+        <div class="demo demo4">
+          <div class="plates" id="plates4"></div>
+          <div class="call" id="call4"><div class="scr"><i></i></div><p id="call4t"></p></div>
+          <div class="sure" id="sure4"><div class="bust"></div><p data-i18n="h.sure"></p></div>
+        </div>
+      </section>
+
+      <section class="scn s5" data-i="5">
+        <div class="eyebrow"><i></i>05 / 06</div>
+        <h2 class="it"></h2>
+        <p class="lead is"></p>
+      </section>
+
+      <section class="scn s6" data-i="6">
+        <div class="eyebrow"><i></i>06 / 06</div>
+        <h2 class="it"></h2>
+        <p class="lead is"></p>
+        <div class="btns">
+          <button class="btn pk" type="button" data-go="genres" data-i18n="i.start"></button>
+          <button class="btn ghost hidden" type="button" id="resume6"></button>
+        </div>
+      </section>
+
+      <div id="fan"></div>
+      <div id="host" class="off">
+        <div class="fig"></div><div class="fig"></div>
+        <div class="bubble" id="bubble"></div>
+      </div>
+      <div class="scrollhint" id="scrollhint"><span data-i18n="i.scroll"></span><i></i></div>
+    </div>
+  </div>
+</main>
+
+<!-- ════════ ЖАНРЫ ════════ -->
+<main id="vGenres" class="view hidden">
+  <div class="vh">
+    <h1 data-i18n="g.h"></h1>
+    <p id="gSub"></p>
+    <div class="note" data-i18n="g.wip"></div>
+    <div class="note hidden" id="ruNote" data-i18n="g.ruonly"></div>
+  </div>
+  <div class="ggrid" id="ggrid"></div>
+</main>
+
+<!-- ════════ ЖАНР: подтемы и уровни ════════ -->
+<main id="vGenre" class="view hidden">
+  <div class="gwrap">
+    <div>
+      <div class="ghead"><img id="gImg" alt=""><div><h1 id="gName"></h1><p id="gDesc"></p></div></div>
+      <div class="slist" id="slist"></div>
+    </div>
+    <aside class="spanel" id="spanel"></aside>
+  </div>
+</main>
+
+<!-- ════════ КОЛЛЕКЦИЯ ════════ -->
+<div id="coll" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="mbox">
+    <div class="mhead"><h2><i class="ico ico-coll"></i><span data-i18n="c.h"></span></h2><button class="x" type="button" id="collX" data-i18n-title="m.close">&#10005;</button></div>
+    <p id="collCount" style="color:var(--mut)"></p>
+    <p id="collEmpty" style="color:var(--mut);margin-top:6px" data-i18n="c.empty"></p>
+    <div id="collList"></div>
+  </div>
+</div>
+
+<!-- ════════ МЕНЮ ════════ -->
+<div id="menu" class="hidden">
+  <div class="shade" id="menuShade"></div>
+  <aside class="drawer">
+    <div class="mhead"><h2 style="font-size:22px">KOTAE!</h2><button class="x" type="button" id="menuX" data-i18n-title="m.close">&#10005;</button></div>
+    <button class="mi" type="button" data-go="genres"><i class="ico ico-star"></i><span data-i18n="nav.genres"></span></button>
+    <button class="mi" type="button" data-go="coll"><i class="ico ico-coll"></i><span data-i18n="nav.coll"></span></button>
+    <button class="mi" type="button" data-go="intro"><i class="ico ico-host"></i><span data-i18n="nav.intro"></span></button>
+    <div class="msec"><h4 data-i18n="arc.lang"></h4><div class="seg" id="mLang"></div></div>
+    <div class="msec"><h4 data-i18n="arc.sfx"></h4><label class="vol"><input type="range" min="0" max="100" step="5" id="mSfx"><b id="mSfxV"></b></label></div>
+    <div class="msec"><h4 data-i18n="m.gfx"></h4><div class="seg" id="mGfx">
+      <button type="button" data-v="auto" data-i18n="gfx.auto"></button><button type="button" data-v="high" data-i18n="gfx.high"></button><button type="button" data-v="low" data-i18n="gfx.low"></button>
+    </div></div>
+    <div class="msec">
+      <button class="mi" type="button" id="mReset"><span data-i18n="m.reset"></span></button>
+      <div class="confirm hidden" id="mConfirm"><p data-i18n="m.resetq"></p><div class="seg"><button type="button" id="mYes" data-i18n="m.yes"></button><button type="button" id="mNo" data-i18n="m.no"></button></div></div>
+      <a class="mi" href="../">&#9664; <span data-i18n="arc.back"></span></a>
+    </div>
+  </aside>
+</div>
+
+<div id="wipe"></div>
+</body>
+</html>

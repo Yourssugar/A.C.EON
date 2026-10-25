@@ -9,7 +9,10 @@
           'present' (руки вперёд, как будто разворачивает экран), 'bye' (машет рукой),
           'learn' + имя (сразу показывает выученное движение)
    opts.moves() -> {poses:[номера поз], specials:['flip','slide','headbang','wave']}: что робот уже выучил
-   opts.skin()  -> 'gold' или '': облик (золотой открывается за прослушивание всех треков) */
+   opts.skin()  -> 'gold' или '': облик (золотой открывается за прослушивание всех треков)
+   Наряд: window.AceonRobotLook = {acc:'headphones'|'cap'|'beret'|'glasses'|'helmet'|'scarf'|null} (ставит themes.js).
+   Лица love (лайк), wink (прощание, иногда на паузе), sleep (спит), sing (поёт с микрофоном на спокойных треках),
+   на громких треках в руках светящиеся палочки. Если этих картинок нет на сервере, робот работает по-старому. */
 (function(){
 'use strict';
 
@@ -26,6 +29,12 @@ const POSES=[
   {l:45,r:135,b:0},{l:135,r:45,b:0},{l:-20,r:-20,b:0},{l:110,r:110,b:0}
 ];
 
+/* наряд под тему страницы (window.AceonRobotLook.acc): место в координатах головы (scarf: корпуса) */
+const ACC={headphones:{x:-24,y:-40,w:356},cap:{x:22,y:-62,w:270},beret:{x:30,y:-55,w:250},glasses:{x:55,y:92,w:192},
+  helmet:{x:-40,y:-46,w:388},scarf:{x:56,y:182,w:200,body:true}};
+/* точка ладони в координатах руки (от плеча) */
+const HAND={armL:[28,120],armR:[-20,115]};
+
 function create(canvas,o){
   const ctx=canvas.getContext('2d');
   const base=o.base||'img/';
@@ -34,6 +43,13 @@ function create(canvas,o){
   load('head','rb-head.png'); load('body','rb-body.png');
   ['arm-left','arm-right','leg-left','leg-right'].forEach(n=>load(n,'rb-'+n+'.png'));
   FACES.forEach(f=>load('f-'+f,'rb-face-'+f+'.png'));
+  /* дополнительные картинки: не входят в счёт загрузки, без них робот просто обходится старыми */
+  function extra(k,src){ const i=new Image(); i.src=base+src; imgs[k]=i; }
+  ['love','sing','sleep','wink'].forEach(f=>extra('f-'+f,'rb-face-'+f+'.png'));
+  Object.keys(ACC).forEach(a=>extra('acc-'+a,'rb-acc-'+a+'.png'));
+  extra('mic','rb-prop-mic.png'); extra('glowL','rb-prop-glow-l.png'); extra('glowR','rb-prop-glow-r.png');
+  const ok=k=>imgs[k]&&imgs[k].complete&&imgs[k].naturalWidth>0;
+  const faceOk=f=>ok('f-'+f);
 
   /* состояние позы (текущее и целевое) */
   const P={bodyY:0,bodyRot:0,head:0,armL:-4,armR:-4,legL:0,legR:0,squash:0,spin:0,slide:0};
@@ -42,7 +58,7 @@ function create(canvas,o){
   let jumpV=0, jumpY=0, lastBeat=0, beatN=0, pose=null, lastPoseAt=0, pausedSince=performance.now(), sleeping=false;
   let special=null, specialAt=0;
   let shrugUntil=0, presentUntil=0, waveUntil=0, hearts=[], zs=[], zAt=0, lastT=performance.now(), peakAt=0;
-  let energyAvg=.25;
+  let energyAvg=.25, singUntil=0, singNext=performance.now()+12000, winkUntil=0, winkNext=performance.now()+9000, glow=0;
 
   function fit(){
     const r=canvas.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
@@ -55,12 +71,12 @@ function create(canvas,o){
   function emote(k,arg){
     const now=performance.now();
     wake();
-    if(k==='like'){ faceOver='fascinated'; faceUntil=now+1800; for(let i=0;i<5;i++)hearts.push({x:(Math.random()-.5)*60,y:0,vy:-(40+Math.random()*40),t:0,d:i*120}); }
+    if(k==='like'){ faceOver=faceOk('love')?'love':'fascinated'; faceUntil=now+1800; for(let i=0;i<5;i++)hearts.push({x:(Math.random()-.5)*60,y:0,vy:-(40+Math.random()*40),t:0,d:i*120}); }
     else if(k==='hide'){ faceOver='sad'; faceUntil=now+1600; shrugUntil=now+1200; }
     else if(k==='skip'){ faceOver='busy'; faceUntil=now+1200; }
     else if(k==='peak'){ faceOver='fascinated'; faceUntil=now+1500; }
     else if(k==='present'){ faceOver='fascinated'; faceUntil=now+1600; presentUntil=now+1300; }
-    else if(k==='bye'){ faceOver='happy'; faceUntil=now+1600; waveUntil=now+1500; }
+    else if(k==='bye'){ faceOver=faceOk('wink')?'wink':'happy'; faceUntil=now+1600; waveUntil=now+1500; }
     else if(k==='learn'){ faceOver='fascinated'; faceUntil=now+2200;
       if(arg&&['flip','slide','headbang','wave'].indexOf(arg)>=0)startSpecial(arg,now);
       else if(typeof arg==='number'){ pose=POSES[arg]||pose; lastPoseAt=now; G.armL=pose.l; G.armR=pose.r; } }
@@ -109,14 +125,21 @@ function create(canvas,o){
         G.legL=-pulse*8*amp; G.legR=pulse*8*amp; G.squash=pulse*.06*amp;
       }
       if(!faceOver||now>faceUntil){ faceOver=null; face=style==='sway'?'working':'happy'; }
+      /* поёт в микрофон на спокойных и средних треках, на громких машет светящимися палочками */
+      if(style!=='robot'&&!special&&now>singNext&&L.beat&&ok('mic')&&faceOk('sing')){ singUntil=now+5200+Math.random()*2500; singNext=singUntil+18000+Math.random()*16000; }
+      if(now<singUntil){ G.armR=-116+Math.sin(t*3)*4; G.head=G.head*.4-4; if(!faceOver)face='sing'; }
+      glow+=((style==='robot'?1:0)-glow)*Math.min(1,dt*2);
     } else {
+      glow+=(0-glow)*Math.min(1,dt*3); singUntil=0;
       /* пауза: дышит, ждёт; через минуту засыпает */
       const idle=(now-pausedSince)/1000;
       sleeping=idle>60;
       const br=Math.sin(t*1.3);
       G.bodyY=br*1.5+(sleeping?6:0); G.bodyRot=sleeping?-2:0; G.head=sleeping?14:br*1.5;
       G.armL=sleeping?2:-4+br*2; G.armR=sleeping?2:-4-br*2; G.legL=0; G.legR=0; G.squash=0;
-      if(!faceOver||now>faceUntil){ faceOver=null; face=sleeping?null:'busy'; }
+      if(!faceOver||now>faceUntil){ faceOver=null; face=sleeping?(faceOk('sleep')?'sleep':null):'busy'; }
+      if(!sleeping&&now>winkNext&&faceOk('wink')){ winkUntil=now+700; winkNext=now+14000+Math.random()*12000; }
+      if(now<winkUntil&&!faceOver)face='wink';
       if(sleeping&&now>zAt){ zAt=now+1400; zs.push({t:0}); }
     }
     if(now<shrugUntil){ G.armL=55; G.armR=55; G.head=-6; }
@@ -146,10 +169,20 @@ function create(canvas,o){
     draw(now,dt);
   }
 
-  function limb(spec,at,ang){
+  function limb(spec,at,ang,prop,hand){
     const im=imgs[spec.img]; if(!im||!im.complete)return;
     ctx.save(); ctx.translate(at[0],at[1]); ctx.rotate(ang*D2R);
+    /* предмет в руке рисуется до руки (пальцы поверх) и всегда стоит вертикально */
+    if(prop&&ok(prop.k)){
+      ctx.save(); ctx.translate(hand[0],hand[1]); ctx.rotate(-ang*D2R);
+      if(prop.glow){ ctx.shadowColor=prop.glow; ctx.shadowBlur=18; }
+      ctx.globalAlpha=prop.a; ctx.drawImage(imgs[prop.k],-prop.w/2,-prop.h*prop.grip,prop.w,prop.h); ctx.restore();
+    }
     ctx.drawImage(im,-spec.px,-spec.py,spec.w,spec.h); ctx.restore();
+  }
+  function acc(key){
+    const a=ACC[key], im=imgs['acc-'+key]; if(!a||!ok('acc-'+key))return;
+    ctx.drawImage(im,a.x,a.y,a.w,a.w*im.naturalHeight/im.naturalWidth);
   }
   function draw(now,dt){
     const W=canvas.width,H=canvas.height;
@@ -181,7 +214,9 @@ function create(canvas,o){
     ctx.drawImage(imgs.head,0,0,tw,th);
     const f=faceOver&&now<faceUntil?faceOver:face;
     if(gold)ctx.filter='none';
-    if(f&&!blink){ const sc=RIG.screen; ctx.drawImage(imgs['f-'+f],sc[0],sc[1],sc[2],sc[3]); }
+    if(f&&!blink&&(f.length&&imgs['f-'+f]&&imgs['f-'+f].complete)){ const sc=RIG.screen; ctx.drawImage(imgs['f-'+f],sc[0],sc[1],sc[2],sc[3]); }
+    const look=(o.look&&o.look())||window.AceonRobotLook||{};
+    if(look.acc&&ACC[look.acc]&&!ACC[look.acc].body)acc(look.acc);
     /* сердечки и сон рисуются над головой */
     const hx=RIG.neck[0], hy=RIG.screen[1]-6;
     for(let i=hearts.length-1;i>=0;i--){
@@ -195,10 +230,12 @@ function create(canvas,o){
       ctx.font='bold '+(18+z.t*8)+'px JetBrains Mono, monospace'; ctx.fillText('z',hx+50+z.t*18,hy-z.t*30); ctx.globalAlpha=1;
     }
     ctx.restore();
+    if(look.acc&&ACC[look.acc]&&ACC[look.acc].body)acc(look.acc);
     if(gold)ctx.filter='sepia(1) saturate(3.2) hue-rotate(-14deg) brightness(1.18)';
     /* руки поверх корпуса: угол от висящего положения, плюс = в сторону и вверх */
-    limb(RIG.armL,RIG.shoulderL,P.armL);
-    limb(RIG.armR,RIG.shoulderR,-P.armR);
+    const singing=now<singUntil, ga=Math.min(1,glow);
+    limb(RIG.armL,RIG.shoulderL,P.armL,ga>.05?{k:'glowL',w:32,h:96,grip:.74,a:ga,glow:'rgba(80,220,255,.9)'}:null,HAND.armL);
+    limb(RIG.armR,RIG.shoulderR,-P.armR,singing?{k:'mic',w:30,h:72,grip:.66,a:1}:(ga>.05?{k:'glowR',w:32,h:96,grip:.74,a:ga,glow:'rgba(200,90,255,.9)'}:null),HAND.armR);
     ctx.filter='none';
     ctx.restore();
   }

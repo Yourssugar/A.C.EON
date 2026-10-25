@@ -146,6 +146,7 @@ const FRAME=(AU.id||2)>=3?16:33;
 function loop(now){
   requestAnimationFrame(loop);
   if(document.hidden)return;
+  if(document.documentElement.classList.contains('th-img')){ cv.classList.remove('on'); return; }   /* тема с картинкой: сцена спит */
   if(now-lastDraw<FRAME-1)return; lastDraw=now;
   const dt=Math.min(.1,(now-last)/1000); last=now;
   const L=MP.levels||{}, on=MP.playing;

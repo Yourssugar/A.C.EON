@@ -146,6 +146,8 @@ function closeVideo(fromPop){
 }
 
 btn.addEventListener('click',()=>openVideo(btn.dataset.vid));
+/* кнопка YouTube в строке трека: видео открывается сразу, без выбора трека и прокрутки к плееру */
+window.MusicYT={open(trackId){ const t=MP.TRACKS.find(x=>x.id===trackId); const v=t&&ytId(t.yt); if(v)openVideo(v); }};
 $('yt-x').addEventListener('click',()=>closeVideo(false));
 $('yt-back').addEventListener('click',()=>closeVideo(false));
 $('yt-full').addEventListener('click',()=>{

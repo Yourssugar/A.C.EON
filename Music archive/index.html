@@ -166,7 +166,7 @@
     /* твоя кассета */
     #cass { position: fixed; inset: 0; z-index: 55; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(5,3,12,.72); backdrop-filter: blur(6px); }
     #cass.on { display: flex; animation: row-in .25s ease; }
-    .cass-box { width: min(640px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: rgba(14,10,26,.98); border: 1px solid rgba(124,58,237,.25); border-radius: 18px; padding: 16px; }
+    .cass-box { width: min(820px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: rgba(14,10,26,.98); border: 1px solid rgba(124,58,237,.25); border-radius: 18px; padding: 16px; }
     .cass-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 14px; font-weight: 600; color: var(--accent-light); }
     #cassX { background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; display: flex; }
     #cassX:hover { color: var(--text); }
@@ -175,8 +175,22 @@
     #cassSave { background: var(--accent); color: #fff; border: 0; border-radius: 16px; padding: 7px 14px; font-size: 12px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; }
     #cassSave:hover { filter: brightness(1.12); }
     .cass-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .12em; color: var(--dim); margin-bottom: 8px; text-transform: uppercase; }
-    .cass-tapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
-    .tape { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 10px; padding: 8px; text-align: left; cursor: default; font-family: inherit; color: var(--dim); opacity: .55; }
+    .cass-grid { display: grid; grid-template-columns: 1fr 190px; grid-template-areas: "card stage" "save save" "sub sub" "tapes tapes" "secret secret"; column-gap: 12px; align-items: stretch; }
+    .cass-tapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; align-content: start; }
+    #cassCv { grid-area: card; } .cass-actions { grid-area: save; } .cass-sub { grid-area: sub; } .cass-tapes { grid-area: tapes; } .cass-secret { grid-area: secret; }
+    .cass-stage { grid-area: stage; position: relative; border-radius: 14px; background: radial-gradient(ellipse 70% 40% at 50% 92%, rgba(124,58,237,.35), transparent 70%), rgba(0,0,0,.28); border: 1px solid var(--border); min-height: 160px; overflow: hidden; }
+    #cassRobot { position: absolute; left: 6%; top: 12%; width: 88%; height: 84%; }
+    .cass-floor { position: absolute; left: 15%; right: 15%; bottom: 6%; height: 10px; border-radius: 50%; background: rgba(167,139,250,.25); filter: blur(6px); }
+    .cass-move { position: absolute; left: 0; right: 0; top: 8px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: var(--accent-light); opacity: 0; transform: translateY(-4px); transition: .25s; padding: 0 6px; }
+    .cass-move.on { opacity: 1; transform: none; }
+    .tape.sel { box-shadow: 0 0 0 1px var(--tc), 0 0 14px color-mix(in srgb, var(--tc) 40%, transparent); }
+    @media (max-width: 560px) {
+      .cass-grid { grid-template-columns: 108px 1fr; grid-template-areas: "card card" "save save" "sub sub" "stage tapes" "secret secret"; column-gap: 8px; }
+      .cass-tapes { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .cass-tapes .tape { padding: 6px; }
+      .cass-stage { min-height: 0; height: 210px; align-self: start; position: sticky; top: 0; z-index: 1; }
+    }
+    .tape { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 10px; padding: 8px; text-align: left; cursor: pointer; font-family: inherit; color: var(--dim); opacity: .55; }
     .tape.ok { opacity: 1; cursor: pointer; border-color: color-mix(in srgb, var(--tc) 40%, transparent); color: var(--text); }
     .tape.ok:hover { background: color-mix(in srgb, var(--tc) 12%, transparent); }
     .tape-reels { display: flex; gap: 14px; justify-content: center; padding: 6px 0; margin-bottom: 6px; border-radius: 6px; background: rgba(0,0,0,.35); }
@@ -462,8 +476,11 @@
     @keyframes ytblink { 0%,100% { box-shadow: 0 0 0 0 rgba(255,0,51,.0); border-color: rgba(255,0,51,.35); } 50% { box-shadow: 0 0 18px 2px rgba(255,0,51,.45); border-color: rgba(255,60,90,.9); } }
     html.ufx1 .yt-btn { animation: none; box-shadow: 0 0 10px rgba(255,0,51,.35); }
     @media (max-width: 520px) { .yt-btn .yt-lbl { display: none; } .yt-btn { padding: 7px; } }
-    .row-yt { display: inline-block; width: 12px; height: 9px; border-radius: 3px; background: #ff0033; vertical-align: 1px; margin-left: 6px; position: relative; opacity: .85; }
-    .row-yt::after { content: ''; position: absolute; left: 4.5px; top: 2px; border-left: 4px solid #fff; border-top: 2.5px solid transparent; border-bottom: 2.5px solid transparent; }
+    /* кнопка видео прямо в строке: большая зона нажатия, видно всегда */
+    .row-ytb { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 38px; height: 30px; margin-right: 2px; cursor: pointer;
+      background: rgba(255,0,51,.08); border: 1px solid rgba(255,0,51,.3); border-radius: 9px; transition: background .15s, border-color .15s, transform .15s; }
+    .row-ytb:hover, .row-ytb:focus-visible { background: rgba(255,0,51,.22); border-color: rgba(255,60,90,.85); transform: scale(1.06); outline: none; }
+    .track-row.active .row-ytb { border-color: rgba(255,60,90,.8); box-shadow: 0 0 10px rgba(255,0,51,.35); }
     #ytChannel { display: flex; opacity: .55; transition: opacity .15s; }
     #ytChannel:hover { opacity: 1; }
 
@@ -522,6 +539,33 @@
     ::-webkit-scrollbar       { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+  
+    /* темы с картинкой (themes.js): фон, слой анимаций, стекло под списком */
+    #mbg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: #0a0714 center / cover no-repeat; opacity: 0; transition: opacity .8s; }
+    #mbg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 46% 80% at 50% 46%, rgba(8,5,18,.5), rgba(8,5,18,.12) 75%); }
+    html.th-img #mbg { opacity: 1; }
+    #amb { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .8s; }
+    #amb.on { opacity: 1; }
+    html.th-img #scene, html.th-img #bokeh, html.th-img .bg-orb, html.th-img .bg-grid, html.th-img .bg-scan { display: none; }
+    html.th-img .lower { background: rgba(10,7,20,.66); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 16px; padding: 4px 10px 10px; }
+    html.th-img .page-header { text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+    #mset { position: fixed; inset: 0; z-index: 56; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(5,3,12,.72); backdrop-filter: blur(6px); }
+    #mset.on { display: flex; animation: row-in .25s ease; }
+    .mset-box { width: min(680px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: rgba(14,10,26,.98); border: 1px solid rgba(124,58,237,.25); border-radius: 18px; padding: 16px; }
+    .mth-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .mth-card { padding: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.03); color: var(--text); font-family: inherit; cursor: pointer; text-align: left; transition: border-color .2s, transform .2s; }
+    .mth-card:hover { transform: translateY(-2px); border-color: rgba(167,139,250,.5); }
+    .mth-card.on { border-color: var(--accent-light); box-shadow: 0 0 0 1px var(--accent-light), 0 0 18px rgba(124,58,237,.35); }
+    .mth-pv { display: block; aspect-ratio: 16 / 10; background: center / cover no-repeat; }
+    .mth-scene { background: linear-gradient(to right, rgba(124,58,237,.35) 1px, transparent 1px) 0 0 / 14px 14px, linear-gradient(to bottom, rgba(124,58,237,.35) 1px, transparent 1px) 0 0 / 14px 14px, radial-gradient(ellipse at 50% 80%, #4c1d95, #0a0714 70%); }
+    .mth-nm { display: block; padding: 8px 10px; font-size: 12px; }
+    .mset-note { margin: 12px 0 8px; font-size: 12px; color: var(--muted); }
+    .mset-tg { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); cursor: pointer; }
+    .mset-tg input { accent-color: var(--accent); width: 16px; height: 16px; }
+    @media (max-width: 560px) { .mth-grid { grid-template-columns: 1fr 1fr; gap: 8px; } }
+    .tape-pic { display: block; aspect-ratio: 167 / 99; margin-bottom: 6px; background: center / contain no-repeat; filter: grayscale(1) brightness(.55); transition: filter .2s, transform .2s; }
+    .tape.ok .tape-pic { filter: none; }
+    .tape.ok:hover .tape-pic { transform: rotate(-3deg) scale(1.04); }
   </style>
 </head>
 <body>
@@ -683,11 +727,12 @@ var ALBUMS = [
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
 <script src="lang.js?v=3"></script>
-<script src="robot.js?v=3"></script>
-<script src="player.js?v=4"></script>
-<script src="youtube.js?v=2"></script>
-<script src="extras.js?v=1"></script>
-<script src="scene.js?v=1"></script>
+<script src="robot.js?v=4"></script>
+<script src="player.js?v=5"></script>
+<script src="youtube.js?v=3"></script>
+<script src="extras.js?v=3"></script>
+<script src="scene.js?v=2"></script>
+<script src="themes.js?v=1"></script>
 <script>
 var AU = window.AceonUniverse || { id: 1, fx: 1 };
 /* ── БОКЕ (U-3): всплывающие огоньки, оживают под музыку ────── */

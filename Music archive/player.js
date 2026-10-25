@@ -320,7 +320,8 @@ function buildList(){
     row.style.animationDelay=Math.min(i*.03,.45).toFixed(2)+'s';
     row.innerHTML='<div class="row-num">'+(i+1)+'</div>'
       +'<div class="row-cover" style="background:'+col.bg+';color:'+col.fg+';">'+esc(trackInitials(t.title))+'</div>'
-      +'<div class="row-title">'+esc(t.title)+(t.yt?' <span class="row-yt" aria-hidden="true"></span>':'')+'</div>'
+      +'<div class="row-title">'+esc(t.title)+'</div>'
+      +(t.yt&&!hid?'<button class="row-ytb" type="button"><span class="yt-ico"></span></button>':'')
       +(hid?'<button class="row-btn row-restore" type="button"><i class="ti ti-arrow-back-up"></i></button>'
            :'<button class="row-btn row-hide" type="button"><i class="ti ti-eye-off"></i></button><button class="row-heart" type="button"><i class="ti ti-heart"></i></button>');
     row._num=i+1; listNodes[t.id]=row; frag.appendChild(row);
@@ -329,6 +330,7 @@ function buildList(){
   el.querySelectorAll('.row-hide').forEach(b=>{ b.title=T('hide'); b.setAttribute('aria-label',T('hide')); });
   el.querySelectorAll('.row-restore').forEach(b=>{ b.title=T('restore'); b.setAttribute('aria-label',T('restore')); });
   el.querySelectorAll('.row-heart').forEach(b=>{ b.title=T('like'); b.setAttribute('aria-label',T('like')); });
+  el.querySelectorAll('.row-ytb').forEach(b=>{ b.title=T('yt'); b.setAttribute('aria-label',T('yt')); });
   updateRows();
 }
 function updateRows(){
@@ -350,6 +352,7 @@ $('trackList').addEventListener('click',e=>{
   if(e.target.closest('.album-playall')){ playAlbum(activeTab.slice(6)); return; }
   const row=e.target.closest('.track-row'); if(!row||row._swiped)return;
   const id=+row.dataset.id;
+  if(e.target.closest('.row-ytb')){ if(window.MusicYT)MusicYT.open(id); return; }
   if(e.target.closest('.row-heart')){ toggleLike(id); return; }
   if(e.target.closest('.row-hide')){ hideTrack(id); return; }
   if(e.target.closest('.row-restore')){ restoreTrack(id); return; }

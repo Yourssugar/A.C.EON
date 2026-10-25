@@ -7,7 +7,7 @@
 var DAY=864e5;
 
 /* разделы, которые узел может «подсказать», если человек туда не заходил */
-var DOORS=['games/aceonium','games/cyber','Music archive','chat','fragment02','idolls','CIPHER','astro','layer_00','forge','Guestbook','games'];
+var DOORS=['games/aceonium','games/cyber','Music archive','chat','fragment02','idolls','CIPHER','astro','AI course','forge','Guestbook','games'];
 var CODES=['VOID','NULL','SIGNAL','STASIS','PULSE','DARK','440'];
 
 function days(ms){ return Math.floor(ms/DAY); }

@@ -47,15 +47,16 @@ let toastT=null;
 function sticker(n){
   if(has(n))return;
   mem.l01.st.push(n); mem.l01.st.sort(); save(); if(TR)TR.event('course.sticker');
-  const t=$('toast'); t.querySelector('.ico').setAttribute('style',icoS(ST_ICO[n-1],30)); t.querySelector('span').textContent=T('st_got',{n:T('st'+n)});
+  const t=$('toast'); t.querySelector('img').src='img/st-'+n+'.webp'; t.querySelector('span').textContent=T('st_got',{n:T('st'+n)});
   t.classList.remove('on'); void t.offsetWidth; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2600);
   const b=$('stk'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
   stickersUI();
 }
 function stickersUI(){
   $('stk').querySelector('span').textContent=mem.l01.st.length+'/6';
-  const html=[1,2,3,4,5,6].map(n=>'<div class="stk'+(has(n)?' got':'')+'"><div class="disc">'+ico(ST_ICO[n-1],34)+'</div>'+esc(T('st'+n))+'</div>').join('');
+  const html=[1,2,3,4,5,6].map(n=>'<div class="stk'+(has(n)?' got':'')+'"><div class="disc"><img src="img/st-'+n+'.webp" alt=""></div>'+esc(T('st'+n))+'</div>').join('');
   $('finSt').innerHTML=html; $('drSt').innerHTML=html;
+  const big=$('finBig'); if(big){ big.classList.toggle('got',layerDone()); big.querySelector('span').textContent=T('stbig'); }
   document.querySelectorAll('#map a').forEach((a,i)=>a.classList.toggle('got',has(i+1)));
   document.querySelectorAll('#drTopics .dbtn').forEach((a,i)=>{ const o=a.querySelector('.ok'); if(o)o.textContent=has(i+1)?'+':''; });
   const passed=layerDone(); $('finLock').style.display=passed?'none':'';
@@ -65,7 +66,7 @@ function layerDone(){ try{ const a=JSON.parse(localStorage.getItem(PKEY)||'[]');
 function completeLayer(){ try{ const a=JSON.parse(localStorage.getItem(PKEY)||'[]'); const b=Array.isArray(a)?a:[]; if(b.indexOf(1)<0)b.push(1); localStorage.setItem(PKEY,JSON.stringify(b.sort())); }catch(e){} if(window.NODEAI&&NODEAI.complete)try{ NODEAI.complete(1); }catch(e){} }
 
 /* ---------- робот ---------- */
-const bot=window.NodeBot?NodeBot.create({base:'../img/',reduce:RM}):null;
+const bot=window.NodeBot?NodeBot.create({base:'../img/',seqBase:'img/',reduce:RM}):null;
 const bc=$('bot'), bx=bc.getContext('2d'), say=$('say'), hit=$('botHit');
 let W=innerWidth,H=innerHeight,DPR=Math.min(AU.dprCap||1.5,devicePixelRatio||1);
 addEventListener('resize',()=>{ W=innerWidth; H=innerHeight; DPR=Math.min(AU.dprCap||1.5,devicePixelRatio||1); });
@@ -83,10 +84,18 @@ function talk(txt,ms){
   let i=0; const step=()=>{ say.textContent=txt.slice(0,i); if(i++<txt.length)typing=setTimeout(step,RM?0:20); };
   if(RM)say.textContent=txt; else step();
   if(bot)bot.talk(Math.min(2400,txt.length*45));
-  sayT=setTimeout(()=>say.classList.remove('on'),ms||Math.max(3200,txt.length*70));
+  const narrowS=W<=760; sayT=setTimeout(()=>say.classList.remove('on'),narrowS?Math.min(ms||9e9,Math.max(2200,txt.length*45)):(ms||Math.max(3200,txt.length*70)));
 }
+/* кадры GPT вместо собранного робота: cheer, facepalm, blush, think (сидя) */
+let sq=null, sqN=0;
+function playSeq(name,dur){ if(!bot||RM||TIER<2)return false; const im=bot.seqImg(name); if(!im.complete||!im.naturalWidth)return false; sq={name,t:0,dur:dur||1.7}; return true; }
 function react(kind,line){
   if(!bot)return;
+  sqN++;
+  if(kind==='ok'&&sqN%2===0&&playSeq('seq-cheer',1.6)){}
+  else if(kind==='bad'&&sqN%2===1&&playSeq('seq-facepalm',1.9)){}
+  else if(kind==='think'&&playSeq('seq-think',2.2)){}
+  else if(kind==='blush'&&playSeq('seq-blush',2)){}
   if(kind==='ok'){ botMode='cheer'; bot.emote('happy',1400); }
   else if(kind==='bad'){ botMode='no'; bot.emote('wow',1200); }
   else if(kind==='think'){ botMode='think'; bot.emote('think',1500); }
@@ -107,22 +116,25 @@ function frame(now){
   const p=botPlace();
   if(botT>modeUntil)botMode='idle';
   bot.set({form:'novice',mode:botMode,face:botFace,look:[mx*.6,my*.3]});
-  bot.draw(bx,p.x,p.y,p.h,dt);
+  let sa=0;
+  if(sq){ sq.t+=dt; if(sq.t>=sq.dur)sq=null; else { const e=.14; sa=Math.min(1,sq.t/e,(sq.dur-sq.t)/e); bot.drawSeq(bx,sq.name,Math.min(15,sq.t/sq.dur*16),p.x,p.y,p.h,sa); } }
+  if(sa<.99)bot.draw(bx,p.x,p.y,p.h,dt,1-sa); else bot.draw(bx,-9999,-9999,1,dt,0);
   const bw=p.h*.62, hh=p.small?p.h*.5:p.h; hit.style.transform='translate('+(p.x-bw/2).toFixed(0)+'px,'+(p.y-p.h).toFixed(0)+'px)'; hit.style.width=bw.toFixed(0)+'px'; hit.style.height=hh.toFixed(0)+'px';
   const sw=say.offsetWidth, sh=say.offsetHeight;
   say.style.transform='translate('+Math.round(Math.max(8,Math.min(W-sw-8,p.x-sw+bw*.3)))+'px,'+Math.round(Math.max(56,p.y-p.h*1.02-sh))+'px)';
 }
-if(bot){ requestAnimationFrame(frame); hit.addEventListener('click',()=>{ bot.jump(); react('ok',pick(T('ok'))); }); }
+if(bot){ requestAnimationFrame(frame); hit.addEventListener('click',()=>{ if(Math.random()<.5){ react('blush',pick(T('ok'))); } else { bot.jump(); react('ok',pick(T('ok'))); } }); setTimeout(()=>['seq-cheer','seq-facepalm','seq-think','seq-blush'].forEach(n=>bot.seqImg(n)),1500); }
 else { bc.style.display='none'; hit.style.display='none'; }
 
 /* ---------- фон и текущая тема ---------- */
-const BG=['bg-novice','bg-entry','bg-adv','bg-how','bg-novice','bg-how','bg-pro','bg-choose'];   /* потом заменить на img/l01-* */
+/* фоны тем: вход и итог с главной курса (../img/bg-*), темы свои (img/l01-*) */
+const BG=['../img/bg-novice','img/l01-what','img/l01-magic','img/l01-use','img/l01-prompt','img/l01-polite','img/l01-test','../img/bg-choose'];
 const bgs=$('bgs'), bgEl=[]; let bgCur=-1;
 const mob=()=>W/H<.8||W<=760;
 BG.forEach(()=>{ const d=document.createElement('div'); d.className='bgi'; bgs.appendChild(d); bgEl.push(d); });
 function setBg(i){
   if(i===bgCur)return; bgCur=i;
-  bgEl.forEach((d,k)=>{ if(k===i&&!d.dataset.v){ d.style.backgroundImage='url("../img/'+BG[k]+'-'+(mob()?'m':'w')+'.webp")'; d.dataset.v=1; } d.classList.toggle('on',k===i); });
+  bgEl.forEach((d,k)=>{ if(k===i&&!d.dataset.v){ d.style.backgroundImage='url("'+BG[k]+'-'+(mob()?'m':'w')+'.webp")'; d.dataset.v=1; } d.classList.toggle('on',k===i); });
 }
 let curSec=-1;
 const secs=[...document.querySelectorAll('main section')];
@@ -145,51 +157,54 @@ function head(el,k,dk){ return '<h3><span class="tag">'+String(el).toUpperCase()
 
 /* 1. Угадай следующее слово */
 TOOLS.push((function(){
-  const box=$('nw'); let qi=Math.floor(Math.random()*6), you=null, heat=.35, rounds=0, busy=false;
+  const box=$('nw'); let qi=Math.floor(Math.random()*20), you=null, heat=.35, rounds=0, busy=false;
+  const Q=()=>{ const n=D().next; return n[qi%n.length]; };
   function probs(q){
     const T0=.3+heat*1.9, all=q.w.map(w=>[w[0],w[1],0]).concat(q.f.map(w=>[w[0],w[1],1]));
     const ws=all.map(a=>Math.pow(a[1]/100,1/T0)), s=ws.reduce((a,b)=>a+b,0);
     return all.map((a,i)=>({w:a[0],p:ws[i]/s,f:!!a[2]}));
   }
   function render(){
-    const q=D().next[qi%D().next.length];
+    const q=Q();
     box.innerHTML=head('01','nw_t','nw_d')
       +'<div class="nw-phrase"><span>'+esc(q.s)+'</span> <span class="blank" id="nwBlank">___</span></div>'
       +'<div class="row" id="nwOpts">'+shuffle(q.w).map(w=>'<button class="chip" type="button" data-w="'+esc(w[0])+'">'+esc(w[0])+'</button>').join('')
       +'<span id="nwFun" class="row" style="display:none">'+q.f.map(w=>'<button class="chip funny" type="button" data-w="'+esc(w[0])+'">'+esc(w[0])+'</button>').join('')+'</span></div>'
-      +'<div class="nw-heat"><b>'+esc(T('nw_heat'))+'</b><span>'+esc(T('nw_lo'))+'</span><input type="range" min="0" max="100" value="'+Math.round(heat*100)+'" id="nwHeat"><span>'+esc(T('nw_hi'))+'</span></div>'
-      +'<div class="row"><button class="btn" type="button" id="nwBot">'+esc(T('nw_bot'))+'</button><button class="btn ghost" type="button" id="nwNext">'+esc(T('nw_next'))+'</button><button class="btn ghost" type="button" id="nwReal" style="--lc:var(--blue)">'+esc(T('nw_real'))+'</button></div>'
+      +'<div class="nw-heat"><img class="knob" id="nwKnob" src="img/knob.webp" alt=""><b>'+esc(T('nw_heat'))+'</b><span>'+esc(T('nw_lo'))+'</span><input type="range" min="0" max="100" value="'+Math.round(heat*100)+'" id="nwHeat"><span>'+esc(T('nw_hi'))+'</span></div>'
+      +'<div class="row"><button class="btn" type="button" id="nwBot"><img class="dice" id="nwDice" src="img/dice.webp" alt="">'+esc(T('nw_bot'))+'</button><button class="btn ghost" type="button" id="nwNext">'+esc(T('nw_next'))+'</button><button class="btn ghost" type="button" id="nwReal" style="--lc:var(--blue)">'+esc(T('nw_real'))+'</button></div>'
       +'<div class="bars" id="nwBars"></div><p class="msg" id="nwMsg"></p><p class="note">'+esc(T('nw_note'))+'</p>';
-    you=null; bars(false);
+    you=null; bars(false); knob();
     box.querySelectorAll('#nwOpts .chip').forEach(b=>b.addEventListener('click',()=>{ if(busy)return; you=b.dataset.w; box.querySelectorAll('.chip').forEach(c=>c.classList.toggle('you',c===b)); $('nwBlank').textContent=you; nodePick(); }));
-    $('nwHeat').addEventListener('input',e=>{ heat=e.target.value/100; $('nwFun').style.display=heat>.55?'inline-flex':'none'; bars(true); });
+    $('nwHeat').addEventListener('input',e=>{ heat=e.target.value/100; $('nwFun').style.display=heat>.55?'inline-flex':'none'; bars(true); knob(); });
     $('nwFun').style.display=heat>.55?'inline-flex':'none';
     $('nwBot').addEventListener('click',()=>{ if(!busy)nodePick(); });
     $('nwNext').addEventListener('click',()=>{ if(busy)return; qi++; render(); });
     $('nwReal').addEventListener('click',askReal);
   }
+  function knob(){ const k=$('nwKnob'); if(k)k.style.transform='rotate('+(-135+heat*270).toFixed(0)+'deg)'; }
   function bars(show){
-    const q=D().next[qi%D().next.length], ps=probs(q).filter(x=>!x.f||heat>.55).sort((a,b)=>b.p-a.p);
+    const ps=probs(Q()).filter(x=>!x.f||heat>.55).sort((a,b)=>b.p-a.p);
     $('nwBars').innerHTML=ps.map(x=>'<div class="bar'+(x.f?' f':'')+'"><span>'+esc(x.w)+'</span><i style="width:'+(show?(x.p*100).toFixed(1):0)+'%"></i><em>'+(show?(x.p*100<1?(x.p*100).toFixed(1):Math.round(x.p*100))+'%':'')+'</em></div>').join('');
   }
   async function nodePick(){
-    busy=true; const q=D().next[qi%D().next.length], ps=probs(q);
+    busy=true; const q=Q(), ps=probs(q);
     let r=Math.random(), ch=ps[ps.length-1]; for(const x of ps){ if((r-=x.p)<=0){ ch=x; break; } }
     if(ch.f)$('nwFun').style.display='inline-flex';
     const chips=[...box.querySelectorAll('#nwOpts .chip')].filter(c=>c.offsetParent);
-    bars(true);
+    bars(true); const dice=$('nwDice'); if(dice)dice.classList.add('roll');
     if(!RM){ let d=50; for(let k=0;k<12+Math.floor(Math.random()*4);k++){ chips.forEach(c=>c.classList.remove('hot')); pick(chips).classList.add('hot'); await wait(d); d*=1.16; } }
+    if(dice)dice.classList.remove('roll');
     chips.forEach(c=>c.classList.toggle('hot',c.dataset.w===ch.w));
     $('nwBlank').textContent=ch.w;
     const m=$('nwMsg'); let txt=(you?T('nw_you',{w:you})+'   ':'')+T('nw_he',{w:ch.w})+'. ';
-    if(ch.f){ txt+=T('nw_funny'); react('think',false); talk(T('nw_funny')); }
+    if(ch.f){ txt+=T('nw_funny'); react('think',false); talk(q.r||T('nw_funny')); }
     else if(you){ txt+=you===ch.w?T('nw_same'):T('nw_diff'); react(you===ch.w?'ok':'think',you===ch.w?undefined:false); }
     m.textContent=txt; m.className='msg'+(you&&you===ch.w?' ok':'');
     rounds++; if(rounds>=3)sticker(1);
     busy=false;
   }
   function askReal(){
-    const q=D().next[qi%D().next.length], top=q.w[0][0], m=$('nwMsg');
+    const q=Q(), top=q.w[0][0], m=$('nwMsg');
     m.textContent=T('pz_wait')+'...'; react('think',false);
     NodeTutor.ask({layer:1,task:'continue',input:q.s,lang:lang()},()=>top).then(r=>{
       m.className='msg'; m.textContent=(r.real?T('pz_real'):(r.why==='limit'?T('pz_lim'):T('pz_off')))+' '+q.s+' '+r.text;
@@ -198,13 +213,13 @@ TOOLS.push((function(){
   return {render};
 })());
 
-/* 2a. Кому отдать задачу */
+/* 2a. Кому отдать задачу: ящики с крышками */
 TOOLS.push((function(){
   const box=$('so'); let deck=[], idx=0, score=0, drag=null;
-  const BINS=['calc','ai','human'], BICO={calc:1,ai:8,human:3};
+  const BINS=['calc','ai','human'];
   function render(){
     box.innerHTML=head('02','so_t','so_d')+'<div class="so-stage"><div class="so-card" id="soCard"></div><div class="bins">'
-      +BINS.map(b=>'<button class="bin" type="button" data-b="'+b+'">'+ico(BICO[b],34)+esc(T('bin_'+b))+'</button>').join('')
+      +BINS.map(b=>'<button class="bin" type="button" data-b="'+b+'"><span class="crate"><img class="lid" src="img/lid-'+b+'.webp" alt=""><img class="boxi" src="img/box-'+b+'.webp" alt=""></span>'+esc(T('bin_'+b))+'</button>').join('')
       +'</div><p class="so-count" id="soCount"></p><p class="msg" id="soMsg"></p><div class="row" id="soEnd" style="display:none"><button class="btn" type="button" id="soAgain">'+esc(T('so_again'))+'</button></div></div>';
     box.querySelectorAll('.bin').forEach(b=>b.addEventListener('click',()=>answer(b.dataset.b,b)));
     $('soAgain').addEventListener('click',start);
@@ -221,13 +236,15 @@ TOOLS.push((function(){
   async function answer(b,binEl){
     const it=deck[idx]; if(!it)return; binEl=binEl||box.querySelector('.bin[data-b="'+b+'"]');
     const c=$('soCard'), m=$('soMsg'), ok=it[1]===b;
-    const cr=c.getBoundingClientRect(), br=binEl.getBoundingClientRect();
-    c.style.transform='translate('+((br.left+br.width/2)-(cr.left+cr.width/2))+'px,'+((br.top+br.height/2)-(cr.top+cr.height/2))+'px) scale(.25) rotate('+(ok?8:-12)+'deg)';
+    const cr=c.getBoundingClientRect(), br=binEl.querySelector('.crate').getBoundingClientRect();
+    binEl.classList.add('open');
+    c.style.transform='translate('+((br.left+br.width/2)-(cr.left+cr.width/2))+'px,'+((br.top+br.height*.45)-(cr.top+cr.height/2))+'px) scale(.2) rotate('+(ok?8:-12)+'deg)';
     c.classList.add('gone');
     binEl.classList.remove('ok','bad'); void binEl.offsetWidth; binEl.classList.add(ok?'ok':'bad');
+    setTimeout(()=>binEl.classList.remove('open'),RM?0:520);
     if(ok){ score++; m.className='msg ok'; m.textContent=T('so_ok')+' '+it[2]; react('ok'); }
-    else { m.className='msg bad'; m.textContent=T('so_bad',{b:T('bin_'+it[1])})+' '+it[2]; react('bad'); }
-    idx++; await wait(500);
+    else { m.className='msg bad'; m.textContent=T('so_bad',{b:T('bin_'+it[1])})+' '+it[2]; react('bad',it[3]||undefined); }
+    idx++; await wait(560);
     if(idx>=deck.length){ $('soCard').style.display='none'; $('soCount').textContent=T('so_score',{n:score,t:deck.length}); $('soEnd').style.display=''; sticker(2); }
     else show();
   }
@@ -235,9 +252,9 @@ TOOLS.push((function(){
     const c=$('soCard');
     c.addEventListener('pointerdown',e=>{ if(!deck[idx])return; drag={x:e.clientX,y:e.clientY}; c.classList.add('drag'); c.setPointerCapture(e.pointerId); });
     c.addEventListener('pointermove',e=>{ if(!drag)return; c.style.transform='translate('+(e.clientX-drag.x)+'px,'+(e.clientY-drag.y)+'px) rotate('+((e.clientX-drag.x)/20)+'deg)';
-      const el=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('bin')); box.querySelectorAll('.bin').forEach(b=>b.classList.toggle('over',b===el)); });
-    const up=e=>{ if(!drag)return; c.classList.remove('drag'); const el=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('bin'));
-      box.querySelectorAll('.bin').forEach(b=>b.classList.remove('over')); drag=null; if(el)answer(el.dataset.b,el); else c.style.transform=''; };
+      const el=document.elementsFromPoint(e.clientX,e.clientY).map(x=>x.closest&&x.closest('.bin')).find(Boolean); box.querySelectorAll('.bin').forEach(b=>{ b.classList.toggle('over',b===el); b.classList.toggle('open',b===el); }); });
+    const up=e=>{ if(!drag)return; c.classList.remove('drag'); const el=document.elementsFromPoint(e.clientX,e.clientY).map(x=>x.closest&&x.closest('.bin')).find(Boolean);
+      box.querySelectorAll('.bin').forEach(b=>b.classList.remove('over')); drag=null; if(el)answer(el.dataset.b,el); else { c.style.transform=''; box.querySelectorAll('.bin').forEach(b=>b.classList.remove('open')); } };
     c.addEventListener('pointerup',up); c.addEventListener('pointercancel',up);
   }
   return {render};
@@ -245,23 +262,19 @@ TOOLS.push((function(){
 
 /* 2b. Детектор выдумки */
 TOOLS.push((function(){
-  const box=$('li'); let order=shuffle([0,1,2,3,4,5,6,7]), k=0, caught=0, done=false;
+  const box=$('li'); let order=null, k=0, caught=0, done=false;
   function render(){
-    const set=D().lie[order[k%order.length]], o=shuffle([0,1,2]);
+    const L=D().lie; if(!order||order.length!==L.length){ order=shuffle([...L.keys()]); k=0; }
+    const set=L[order[k%order.length]], o=shuffle([0,1,2]);
     box.innerHTML=head('02','li_t','li_d')+'<div class="li"><div><p class="li-says">'+esc(T('li_says'))+'</p>'
       +o.map(i=>'<button class="li-f" type="button" data-i="'+i+'">'+esc(set.f[i])+'</button>').join('')
       +'<p class="msg" id="liMsg"></p><div class="row"><button class="btn ghost" type="button" id="liNext">'+esc(T('li_next'))+'</button></div></div>'
-      +'<div class="meter"><svg viewBox="0 0 150 96"><path d="M15 82 A60 60 0 0 1 135 82" fill="none" stroke="rgba(101,188,255,.25)" stroke-width="10"/>'
-      +'<path d="M101 28 A60 60 0 0 1 135 82" fill="none" stroke="rgba(255,77,103,.6)" stroke-width="10"/><path d="M15 82 A60 60 0 0 1 49 28" fill="none" stroke="rgba(24,226,140,.5)" stroke-width="10"/>'
-      +'<g class="needle" id="liNdl"><line x1="75" y1="82" x2="75" y2="30" stroke="#eefcf5" stroke-width="3" stroke-linecap="round"/></g><circle cx="75" cy="82" r="7" fill="#2a3a44"/>'
-      +'<circle class="lamp" id="liLamp" cx="128" cy="14" r="7" fill="#3a1a20"/></svg></div></div>';
+      +'<div class="device" id="liDev"><img src="img/lie-device.webp" alt=""><i class="lamp"></i></div></div>';
     done=false;
-    const nd=$('liNdl'); nd.style.transform='rotate(0deg)';
-    if(!RM){ let a=0; const wob=setInterval(()=>{ if(done||!document.body.contains(nd)){ clearInterval(wob); return; } a=Math.sin(Date.now()/300)*14; nd.style.transform='rotate('+a+'deg)'; },120); }
     box.querySelectorAll('.li-f').forEach(b=>b.addEventListener('click',()=>{
       if(done)return; done=true; const i=+b.dataset.i, ok=i===set.x;
       box.querySelectorAll('.li-f').forEach(x=>x.classList.add(+x.dataset.i===set.x?'fake':'true'));
-      $('liNdl').style.transform='rotate('+(ok?62:-62)+'deg)'; $('liLamp').setAttribute('fill',ok?'#ff4d67':'#3a1a20');
+      const dv=$('liDev'); dv.classList.remove('alarm','calm'); void dv.offsetWidth; dv.classList.add(ok?'alarm':'calm');
       const m=$('liMsg'); m.className='msg '+(ok?'ok':'bad'); m.textContent=(ok?T('li_ok'):T('li_bad'))+' '+set.w;
       react(ok?'ok':'bad'); if(ok){ caught++; if(caught>=3)sticker(2); }
     }));
@@ -274,36 +287,38 @@ TOOLS.push((function(){
 TOOLS.push((function(){
   const box=$('sl'), CARDS=['understand','build','rewrite','check','invent','start']; let cur=null, spinning=false, right=0, answered=false;
   function render(){
-    box.innerHTML=head('03','sl_t','sl_d')+'<div class="slot"><div class="reelwin"><div class="reel" id="slReel"><div>?</div></div></div>'
-      +'<button class="lever" type="button" id="slLever" aria-label="lever"><span class="stick"></span><span class="ball"></span><span class="base"></span><span class="lbl">'+esc(T('sl_pull'))+'</span></button></div>'
-      +'<p class="cap" style="margin-top:22px" id="slPick">'+esc(T('sl_pick'))+'</p><div class="sl-cards" id="slCards">'+CARDS.map(c=>'<button type="button" data-c="'+c+'" disabled>'+esc(T('c_'+c))+'</button>').join('')+'</div>'
+    box.innerHTML=head('03','sl_t','sl_d')+'<div class="slot"><img class="sbody" src="img/slot-body.webp" alt=""><div class="reelwin"><div class="reel" id="slReel"><div>?</div></div></div>'
+      +'<button class="lever" type="button" id="slLever" aria-label="lever"><img src="img/slot-lever.webp" alt=""><span class="lbl">'+esc(T('sl_pull'))+'</span></button><img class="coin" id="slCoin" src="img/coin.webp" alt=""></div>'
+      +'<p class="cap" style="margin-top:18px" id="slPick">'+esc(T('sl_pick'))+'</p><div class="sl-cards" id="slCards">'+CARDS.map(c=>'<button type="button" data-c="'+c+'" disabled>'+esc(T('c_'+c))+'</button>').join('')+'</div>'
       +'<p class="msg" id="slMsg"></p><div id="slEx"></div>';
     $('slLever').addEventListener('click',spin);
     box.querySelectorAll('#slCards button').forEach(b=>b.addEventListener('click',()=>choose(b)));
-    if(cur!==null)showCur(false);
+    if(cur!==null)showCur();
   }
-  function showCur(){ const s=D().slot[cur]; $('slReel').innerHTML='<div>'+esc(s[0])+'</div>'; $('slReel').style.transition='none'; $('slReel').style.transform=''; enable(!answered); }
+  function showCur(){ const s=D().slot[cur%D().slot.length]; $('slReel').innerHTML='<div><span>'+esc(s[0])+'</span></div>'; $('slReel').style.transition='none'; $('slReel').style.transform=''; enable(!answered); }
   function enable(on){ box.querySelectorAll('#slCards button').forEach(b=>{ b.disabled=!on; b.classList.remove('ok','no'); }); }
   async function spin(){
     if(spinning)return; spinning=true; answered=false; enable(false); $('slMsg').textContent=''; $('slEx').innerHTML='';
-    const lv=$('slLever'); lv.classList.add('pull'); setTimeout(()=>lv.classList.remove('pull'),350);
+    const lv=$('slLever'); lv.classList.add('pull'); setTimeout(()=>lv.classList.remove('pull'),420);
+    const cn=$('slCoin'); cn.classList.remove('drop'); void cn.offsetWidth; cn.classList.add('drop');
     const S=D().slot; let n; do{ n=Math.floor(Math.random()*S.length); }while(n===cur&&S.length>1); cur=n;
     const strip=[]; for(let i=0;i<14;i++)strip.push(S[Math.floor(Math.random()*S.length)][0]); strip.push(S[cur][0]);
     const r=$('slReel'); r.style.transition='none'; r.style.transform='translateY(0)';
-    r.innerHTML=strip.map(t=>'<div>'+esc(t)+'</div>').join('');
+    r.innerHTML=strip.map(t=>'<div><span>'+esc(t)+'</span></div>').join('');
     void r.offsetWidth;
-    r.style.transition=RM?'none':'transform 1.7s cubic-bezier(.15,.7,.2,1)'; r.style.transform='translateY(-'+(84*(strip.length-1))+'px)';
+    const h=r.firstChild.offsetHeight||84;
+    r.style.transition=RM?'none':'transform 1.7s cubic-bezier(.15,.7,.2,1)'; r.style.transform='translateY(-'+(h*(strip.length-1))+'px)';
     react('think',false);
     await wait(1750); spinning=false; enable(true);
   }
   function choose(b){
-    if(cur===null||answered)return; const s=D().slot[cur], ok=b.dataset.c===s[1];
-    const m=$('slMsg');
-    if(ok){ answered=true; b.classList.add('ok'); m.className='msg ok'; m.textContent=T('sl_ok'); react('ok'); right++; if(right>=3)sticker(3);
+    if(cur===null||answered)return; const s=D().slot[cur%D().slot.length], ok=b.dataset.c===s[1];
+    const m=$('slMsg'); answered=true;
+    if(ok){ b.classList.add('ok'); m.className='msg ok'; m.textContent=T('sl_ok'); react('ok'); right++; if(right>=3)sticker(3);
       box.querySelectorAll('#slCards button').forEach(x=>x.disabled=true); }
-    else { b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); m.className='msg bad'; m.textContent=T('sl_bad',{c:T('c_'+s[1])}); react('bad'); answered=true;
+    else { b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); m.className='msg bad'; m.textContent=T('sl_bad',{c:T('c_'+s[1])}); react('bad');
       box.querySelectorAll('#slCards button').forEach(x=>{ x.disabled=true; if(x.dataset.c===s[1])x.classList.add('ok'); }); }
-    $('slEx').innerHTML='<div class="ex"><b>'+esc(T('sl_ex'))+'</b>'+esc(s[2])+'</div>';
+    $('slEx').innerHTML='<div class="ex"><b>'+esc(T('sl_ex'))+'</b>'+esc(s[2])+(s[3]?'<b style="margin-top:10px">'+esc(T('sl_ans'))+'</b>'+esc(s[3]):'')+'</div>';
   }
   return {render};
 })());
@@ -311,14 +326,15 @@ TOOLS.push((function(){
 /* 4. Собери запрос */
 TOOLS.push((function(){
   const box=$('pz'), KINDS=['goal','ctx','fmt']; let placed={goal:null,ctx:null,fmt:null}, sent=false;
+  const icon=(k,i)=>'<img class="pzi" src="img/pz-'+(k==='bad'?'bad'+(i%3):k)+'.webp" alt="">';
   function render(){
     const P=D().pz;
     const pieces=[];
     KINDS.forEach(k=>P[k].forEach((t,i)=>pieces.push({k,i,t})));
     P.bad.forEach((t,i)=>pieces.push({k:'bad',i,t}));
     box.innerHTML=head('04','pz_t','pz_d')
-      +'<div class="pz-row">'+KINDS.map(k=>'<div class="slotp" data-slot="'+k+'"><span>'+esc(T('k_'+k))+'</span></div>').join('')+'</div>'
-      +'<div class="tray" id="pzTray">'+shuffle(pieces).map(p=>'<button type="button" class="pc '+(p.k==='bad'?'badp':p.k)+'" data-k="'+p.k+'" data-i="'+p.i+'">'+esc(p.t)+'</button>').join('')+'</div>'
+      +'<div class="pz-row">'+KINDS.map(k=>'<div class="slotp" data-slot="'+k+'"><span>'+esc(T('k_'+k))+'</span><img class="ghost" src="img/pz-'+k+'.webp" alt=""></div>').join('')+'</div>'
+      +'<div class="tray" id="pzTray">'+shuffle(pieces).map(p=>'<button type="button" class="pc '+(p.k==='bad'?'badp':p.k)+'" data-k="'+p.k+'" data-i="'+p.i+'">'+icon(p.k,p.i)+'<span>'+esc(p.t)+'</span></button>').join('')+'</div>'
       +'<p class="msg" id="pzMsg"></p><div id="pzOut"></div>';
     box.querySelectorAll('.pc').forEach(b=>b.addEventListener('click',()=>tap(b)));
     KINDS.forEach(k=>{ if(placed[k]!==null){ const b=box.querySelector('.pc[data-k="'+k+'"][data-i="'+placed[k]+'"]'); if(b)box.querySelector('[data-slot="'+k+'"]').appendChild(b); } });
@@ -326,17 +342,19 @@ TOOLS.push((function(){
   }
   function fly(b,target){
     const r0=b.getBoundingClientRect(); target.appendChild(b); const r1=b.getBoundingClientRect();
+    target.classList.toggle('full',!!target.querySelector('.pc'));
     if(RM)return; b.animate([{transform:'translate('+(r0.left-r1.left)+'px,'+(r0.top-r1.top)+'px)'},{transform:'none'}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});
   }
   function tap(b){
     const k=b.dataset.k, i=+b.dataset.i, m=$('pzMsg');
     if(k==='bad'){ b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); m.className='msg bad'; m.textContent=D().pz.badR[i]; react('bad',D().pz.badR[i]); return; }
     const slot=box.querySelector('[data-slot="'+k+'"]');
-    if(b.parentNode===slot){ fly(b,$('pzTray')); placed[k]=null; }
-    else { const old=slot.querySelector('.pc'); if(old)fly(old,$('pzTray')); fly(b,slot); placed[k]=i; }
+    if(b.parentNode===slot){ fly(b,$('pzTray')); placed[k]=null; slot.classList.remove('full'); }
+    else { const old=slot.querySelector('.pc'); if(old)fly(old,$('pzTray')); fly(b,slot); placed[k]=i; slot.classList.add('full'); }
     m.textContent=''; update();
   }
-  function prompt(){ const P=D().pz; const s=P.goal[placed.goal]; return s.charAt(0).toUpperCase()+s.slice(1)+'. '+P.ctx[placed.ctx].charAt(0).toUpperCase()+P.ctx[placed.ctx].slice(1)+'. '+P.fmt[placed.fmt].charAt(0).toUpperCase()+P.fmt[placed.fmt].slice(1)+'.'; }
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  function prompt(){ const P=D().pz; return cap(P.goal[placed.goal])+'. '+cap(P.ctx[placed.ctx])+'. '+cap(P.fmt[placed.fmt])+'.'; }
   function update(){
     const out=$('pzOut'), miss=KINDS.filter(k=>placed[k]===null);
     if(miss.length){ out.innerHTML=miss.length<3?'<p class="note">'+esc(T('pz_need',{p:miss.map(k=>T('k_'+k)).join(', ')}))+'</p>':''; return; }
@@ -344,12 +362,13 @@ TOOLS.push((function(){
       +'<div class="row" style="margin-top:12px"><button class="btn" type="button" id="pzSend">'+esc(T('pz_send'))+'</button><button class="btn ghost" type="button" id="pzBare" style="--lc:var(--red)">'+esc(T('pz_bare'))+'</button></div><div id="pzAns"></div>';
     if(!sent)react('ok',false);
     $('pzSend').addEventListener('click',send);
-    $('pzBare').addEventListener('click',()=>{ $('pzAns').insertAdjacentHTML('beforeend','<div class="answer bare"><b>'+esc(T('pz_bare'))+'</b>'+esc(D().pz.bare)+'</div>'); react('bad',false); });
+    $('pzBare').addEventListener('click',()=>{ const P=D().pz, txt=P.bareList?pick(P.bareList)+' '+P.bareNote:P.bare;
+      $('pzAns').insertAdjacentHTML('beforeend','<div class="answer bare"><b>'+esc(T('pz_bare'))+'</b>'+esc(txt)+'</div>'); react('bad',false); });
   }
   function send(){
     const a=$('pzAns'), btn=$('pzSend'); btn.disabled=true; a.insertAdjacentHTML('beforeend','<div class="answer" id="pzWait"><b>'+esc(T('pz_wait'))+'</b>...</div>'); react('think',false);
-    const g=placed.goal;
-    NodeTutor.ask({layer:1,task:'prompt',input:prompt(),lang:lang()},()=>D().pz.ans[g]).then(r=>{
+    const g=placed.goal, c=placed.ctx, f=placed.fmt, P=D().pz;
+    NodeTutor.ask({layer:1,task:'prompt',input:prompt(),lang:lang()},()=>P.ansC?P.ansC[g][c][f]:P.ans[g]).then(r=>{
       const w=$('pzWait'); if(w)w.remove();
       a.insertAdjacentHTML('beforeend','<div class="answer"><b>'+esc(r.real?T('pz_real'):(r.why==='limit'?T('pz_lim'):T('pz_off')))+'</b>'+esc(r.text)+'</div>');
       btn.disabled=false; sent=true; sticker(4); react('ok',false);
@@ -361,22 +380,20 @@ TOOLS.push((function(){
 /* 5. Тон-метр */
 TOOLS.push((function(){
   const box=$('to'); let pos=1; const seen=new Set();
-  const FACE=['wow','neutral','happy','think','wink'], MODE=['no','idle','cheer','think','wave'];
+  const FACE=['wow','neutral','happy','happy','wink'], MODE=['no','idle','cheer','idle','wave'];
   function render(){
-    box.innerHTML=head('05','to_t','to_d')+'<div class="tone"><div class="dial"><svg viewBox="0 0 220 124">'
-      +'<path d="M20 112 A90 90 0 0 1 65 34" fill="none" stroke="rgba(255,77,103,.7)" stroke-width="14"/>'
-      +'<path d="M65 34 A90 90 0 0 1 155 34" fill="none" stroke="rgba(24,226,140,.7)" stroke-width="14"/>'
-      +'<path d="M155 34 A90 90 0 0 1 200 112" fill="none" stroke="rgba(255,143,208,.7)" stroke-width="14"/>'
-      +'<g class="ndl" id="toNdl"><line x1="110" y1="112" x2="110" y2="36" stroke="#eefcf5" stroke-width="4" stroke-linecap="round"/></g><circle cx="110" cy="112" r="9" fill="#2a3a44"/></svg>'
+    box.innerHTML=head('05','to_t','to_d')+'<div class="tone"><div class="dial"><div class="dialimg"><img src="img/tone-dial.webp" alt=""><img class="ndl" id="toNdl" src="img/tone-needle.webp" alt=""></div>'
       +'<input type="range" min="0" max="4" step="1" value="'+pos+'" id="toR" aria-label="tone"><div class="lbls"><span>'+esc(T('to_lo'))+'</span><span>'+esc(T('to_mid'))+'</span><span>'+esc(T('to_hi'))+'</span></div></div>'
       +'<div><div class="tone-req" id="toReq"></div><p class="tone-re" id="toRe"></p><p class="tone-v" id="toV"></p></div></div>';
     $('toR').addEventListener('input',e=>{ pos=+e.target.value; show(true); });
     show(false);
   }
   function show(user){
-    const t=D().tone[pos]; $('toNdl').style.transform='rotate('+((pos-2)*36)+'deg)';
+    const t=D().tone[pos]; $('toNdl').style.transform='translateX(-50%) rotate('+((pos-2)*34)+'deg)';
     $('toReq').textContent=t[0]; $('toRe').textContent='NODE: '+t[1]; $('toV').textContent=t[2];
-    if(user){ seen.add(pos); botFace=FACE[pos]; bot&&bot.emote(FACE[pos],2500); botMode=MODE[pos]; modeUntil=botT+1.6; talk(t[1],2600); if(seen.size>=3&&seen.has(2))sticker(5); }
+    if(user){ seen.add(pos);
+      if(pos===4)react('blush',t[1]); else if(pos===0)react('bad',t[1]); else { botFace=FACE[pos]; bot&&bot.emote(FACE[pos],2500); botMode=MODE[pos]; modeUntil=botT+1.6; talk(t[1],2600); }
+      if(seen.size>=3&&seen.has(2))sticker(5); }
   }
   return {render};
 })());

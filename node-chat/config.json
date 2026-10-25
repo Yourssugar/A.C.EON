@@ -1,7 +1,7 @@
 {
-  "api_url": "https://fixtures-warranty-understand-luxury.trycloudflare.com",
+  "api_url": "",
   "name": "NODE",
   "model": "gpt-5.4-mini",
-  "enabled": true,
-  "updated": "2026-10-25 09:55:50"
+  "enabled": false,
+  "updated": "2026-10-25 14:51:30"
 }

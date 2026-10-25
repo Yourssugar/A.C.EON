@@ -29,7 +29,7 @@ var NAMES=[
   ['games/solitaire','SOLITAIRE'],['games/battleship','BATTLESHIP'],['games','ARCADE'],
   ['Music archive','MUSIC ARCHIVE'],['A.C.EON_Core','CORE'],['info','INFO'],['chat','AI OFFICE'],
   ['fragment02','LIGURIA'],['idolls','IDOLLS'],['CIPHER','CIPHER'],['astro','A.S.T.R.O'],
-  ['layer_00','AI COURSE'],['forge','FORGE'],['Guestbook','GUESTBOOK'],['aceon-coin','A.C.EON COIN'],
+  ['AI course','AI COURSE'],['layer_00','AI COURSE'],['forge','FORGE'],['Guestbook','GUESTBOOK'],['aceon-coin','A.C.EON COIN'],
   ['LODA','LODA/OEIS'],['home','A.C.EON']
 ];
 function name(id){

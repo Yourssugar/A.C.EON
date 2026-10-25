@@ -30,6 +30,7 @@ ru:{
   resume:'Продолжить: {l}', chip:'Уровень: {lv}', noLevel:'Выбрать уровень',
   drLevels:'Уровни', drPage:'На этой странице', drLang:'Язык', drQuiz:'Определить уровень',
   sc0:'Вход', sc1:'Как устроен курс', sc5:'Выбор уровня',
+  say0:'Привет. Я NODE, проведу тебя по курсу.', say1:'Листай дальше, покажу три уровня.', say2:'Здесь всё начинается. Спешить некуда.', say3:'Теперь посмотрим, что у меня внутри.', say4:'Тут уже серьёзно: агенты и доступы.', say5:'', poke1:'Эй, я на работе.', poke2:'Щекотно.', poke3:'Я не кнопка. Хотя да, кнопка.', poke4:'Нажми лучше на слой, там интереснее.', 
   ruOnly:'',
   foot:'A.C.EON / NODE AI / курс работы с ИИ'
 },
@@ -63,6 +64,7 @@ en:{
   resume:'Continue: {l}', chip:'Level: {lv}', noLevel:'Choose a level',
   drLevels:'Levels', drPage:'On this page', drLang:'Language', drQuiz:'Find my level',
   sc0:'Entry', sc1:'How the course works', sc5:'Choose a level',
+  say0:"Hi. I'm NODE, I'll guide you through the course.", say1:"Keep scrolling, I'll show you three levels.", say2:'This is where it all starts. No rush.', say3:"Now let's see what's inside me.", say4:'Serious stuff here: agents and access.', say5:'', poke1:"Hey, I'm working.", poke2:'That tickles.', poke3:"I'm not a button. Well, I am.", poke4:"Click a layer instead, it's more fun there.", 
   ruOnly:'Lessons are in Russian for now. Translations will come later.',
   foot:'A.C.EON / NODE AI / working with AI'
 },
@@ -96,6 +98,7 @@ de:{
   resume:'Weiter: {l}', chip:'Stufe: {lv}', noLevel:'Stufe wählen',
   drLevels:'Stufen', drPage:'Auf dieser Seite', drLang:'Sprache', drQuiz:'Meine Stufe finden',
   sc0:'Eingang', sc1:'So funktioniert der Kurs', sc5:'Stufe wählen',
+  say0:'Hallo. Ich bin NODE und führe dich durch den Kurs.', say1:'Scroll weiter, ich zeige dir drei Stufen.', say2:'Hier fängt alles an. Keine Eile.', say3:'Jetzt schauen wir, was in mir steckt.', say4:'Hier wird es ernst: Agenten und Zugriffe.', say5:'', poke1:'Hey, ich arbeite.', poke2:'Das kitzelt.', poke3:'Ich bin kein Knopf. Na gut, doch.', poke4:'Klick lieber auf eine Ebene, da ist mehr los.', 
   ruOnly:'Die Lektionen gibt es vorerst nur auf Russisch. Übersetzungen folgen.',
   foot:'A.C.EON / NODE AI / Arbeit mit KI'
 },
@@ -129,6 +132,7 @@ fr:{
   resume:'Continuer : {l}', chip:'Niveau : {lv}', noLevel:'Choisir un niveau',
   drLevels:'Niveaux', drPage:'Sur cette page', drLang:'Langue', drQuiz:'Trouver mon niveau',
   sc0:'Entrée', sc1:'Comment marche le cours', sc5:'Choisir un niveau',
+  say0:'Salut. Je suis NODE, je te guide dans le cours.', say1:'Continue à défiler, je te montre trois niveaux.', say2:'Tout commence ici. Pas de stress.', say3:"Voyons maintenant ce qu'il y a dans ma tête.", say4:"Ici c'est sérieux : agents et accès.", say5:'', poke1:'Hé, je travaille.', poke2:'Ça chatouille.', poke3:'Je ne suis pas un bouton. Enfin si.', poke4:"Clique plutôt sur une couche, c'est plus intéressant.", 
   ruOnly:'Les leçons sont pour l\'instant en russe. Les traductions arriveront plus tard.',
   foot:'A.C.EON / NODE AI / travailler avec l\'IA'
 },
@@ -162,6 +166,7 @@ es:{
   resume:'Continuar: {l}', chip:'Nivel: {lv}', noLevel:'Elegir nivel',
   drLevels:'Niveles', drPage:'En esta página', drLang:'Idioma', drQuiz:'Encontrar mi nivel',
   sc0:'Entrada', sc1:'Cómo funciona el curso', sc5:'Elegir nivel',
+  say0:'Hola. Soy NODE, te guío por el curso.', say1:'Sigue bajando, te enseño tres niveles.', say2:'Aquí empieza todo. Sin prisa.', say3:'Ahora veamos qué llevo dentro.', say4:'Aquí va en serio: agentes y accesos.', say5:'', poke1:'Eh, estoy trabajando.', poke2:'Me haces cosquillas.', poke3:'No soy un botón. Bueno, sí.', poke4:'Mejor pulsa una capa, es más interesante.', 
   ruOnly:'Por ahora las lecciones están solo en ruso. Las traducciones llegarán más tarde.',
   foot:'A.C.EON / NODE AI / trabajar con IA'
 },
@@ -195,6 +200,7 @@ it:{
   resume:'Continua: {l}', chip:'Livello: {lv}', noLevel:'Scegli il livello',
   drLevels:'Livelli', drPage:'In questa pagina', drLang:'Lingua', drQuiz:'Trova il mio livello',
   sc0:'Ingresso', sc1:'Come funziona il corso', sc5:'Scegli il livello',
+  say0:'Ciao. Sono NODE, ti guido nel corso.', say1:'Continua a scorrere, ti mostro tre livelli.', say2:'Qui comincia tutto. Senza fretta.', say3:'Ora vediamo cosa ho dentro.', say4:'Qui si fa sul serio: agenti e accessi.', say5:'', poke1:'Ehi, sto lavorando.', poke2:'Mi fai il solletico.', poke3:'Non sono un pulsante. Beh, sì.', poke4:'Clicca su uno strato, è più interessante.', 
   ruOnly:'Per ora le lezioni sono solo in russo. Le traduzioni arriveranno più avanti.',
   foot:'A.C.EON / NODE AI / lavorare con l\'IA'
 },
@@ -228,6 +234,7 @@ pl:{
   resume:'Kontynuuj: {l}', chip:'Poziom: {lv}', noLevel:'Wybierz poziom',
   drLevels:'Poziomy', drPage:'Na tej stronie', drLang:'Język', drQuiz:'Znajdź mój poziom',
   sc0:'Wejście', sc1:'Jak działa kurs', sc5:'Wybór poziomu',
+  say0:'Cześć. Jestem NODE, poprowadzę cię przez kurs.', say1:'Przewijaj dalej, pokażę trzy poziomy.', say2:'Tu wszystko się zaczyna. Bez pośpiechu.', say3:'Teraz zobaczmy, co mam w środku.', say4:'Tu jest poważnie: agenci i dostępy.', say5:'', poke1:'Hej, pracuję.', poke2:'Łaskocze.', poke3:'Nie jestem przyciskiem. No dobra, jestem.', poke4:'Kliknij lepiej warstwę, tam ciekawiej.', 
   ruOnly:'Lekcje są na razie tylko po rosyjsku. Tłumaczenia pojawią się później.',
   foot:'A.C.EON / NODE AI / praca z AI'
 }

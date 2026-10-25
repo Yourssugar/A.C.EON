@@ -65,7 +65,7 @@ function setLevel(id){
 const stage=$('stage'), hint=$('hint');
 LEVELS.forEach((l,i)=>{
   const s=document.createElement('section'); s.className='scn lvl'; s.dataset.s=String(i+2); s.style.setProperty('--lc',l.col);
-  s.innerHTML='<div class="lvtag"><i>'+[1,2,3].map(k=>'<b'+(k<=l.n?' class="f"':'')+'></b>').join('')+'</i><span class="t"></span></div>'
+  s.innerHTML='<div class="lvtag"><i class="ico" style="'+icoS(l.n+8,42)+'"></i><span class="t"></span></div>'
     +'<h2></h2><p class="who"></p><p class="cap c1"></p><ul class="learn"></ul><p class="cap c2"></p><div class="lays"></div><a class="cta go" href="#"></a>';
   stage.insertBefore(s,hint);
   l.el=s;
@@ -163,7 +163,7 @@ const SC=[
 ];
 /* где сеть на экране: смещение и масштаб для широкого экрана и телефона */
 const VIEW_W=[{ox:0,oy:0,k:1.25,d:.75},{ox:.42,oy:0,k:1,d:1},{ox:.42,oy:0,k:1,d:1},{ox:.42,oy:0,k:1,d:1},{ox:.42,oy:0,k:1,d:1},{ox:0,oy:.05,k:1.05,d:.45}];
-const VIEW_M=[{ox:0,oy:0,k:1.7,d:.6},{ox:0,oy:.46,k:.95,d:1},{ox:0,oy:.46,k:1,d:1},{ox:0,oy:.46,k:1,d:1},{ox:0,oy:.46,k:1,d:1},{ox:0,oy:0,k:1,d:.35}];
+const VIEW_M=[{ox:0,oy:0,k:1.7,d:.6},{ox:.2,oy:.46,k:.85,d:1},{ox:.2,oy:.46,k:.9,d:1},{ox:.2,oy:.46,k:.9,d:1},{ox:.2,oy:.46,k:.9,d:1},{ox:0,oy:0,k:1,d:.35}];
 
 /* ---------- WebGL ---------- */
 const cv=$('net');
@@ -219,20 +219,20 @@ function frame(now){
   readScroll();
   const dtR=Math.min(.1,(now-last)/1000); last=now;
   sD+=(sT-sD)*(RM?1:Math.min(1,dtR*7)); if(Math.abs(sT-sD)<.0005)sD=sT;
-  placeText();
-  if(!gl||document.hidden)return;
+  placeText(); bgFrame();
+  if(document.hidden)return;
   if(now-lastDraw<(AU.capMs||16)-1)return;
   const dt=Math.min(.1,(now-lastDraw)/1000); lastDraw=now;
   if(!RM)tm+=dt;
   mx+=(tmx-mx)*Math.min(1,dt*3); my+=(tmy-my)*Math.min(1,dt*3);
-  draw(dt);
-  cv.classList.add('on');
+  if(gl){ draw(dt); cv.classList.add('on'); }
+  botFrame(dt);
 }
 function draw(dt){
   const s=Math.max(0,Math.min(5,sD)), a=Math.min(4,Math.floor(s)), fr=s-a, t=ss(.22,.78,fr), b=Math.min(5,a+1);
   const A=SC[a](tm), B=SC[b](tm);
   const VW=mobileView()?VIEW_M:VIEW_W, va=VW[a], vb=VW[b];
-  const view={ox:lerp(va.ox,vb.ox,t),oy:lerp(va.oy,vb.oy,t),k:lerp(va.k,vb.k,t)}, dim=lerp(va.d,vb.d,t);
+  const view={ox:lerp(va.ox,vb.ox,t),oy:lerp(va.oy,vb.oy,t),k:lerp(va.k,vb.k,t)}, dim=lerp(va.d,vb.d,t)*.62;
   const spin=lerp(A.spin,B.spin,t);
   const yaw=tm*.07*spin+Math.sin(tm*.23)*.2*(1-spin)+mx*.22, pitch=(.16*spin)+my*.1;
   /* узлы */
@@ -293,9 +293,12 @@ function draw(dt){
 if(gl)cv.addEventListener('webglcontextlost',e=>{ e.preventDefault(); gl=null; cv.classList.remove('on'); document.documentElement.classList.add('nogl'); if(!$('still').children.length)stillNodes(); });
 
 /* ---------- текст, карточки, меню ---------- */
+/* значок из img/icons.webp (сетка 4x3) */
+function icoS(i,sz){ const c=i%4, r=Math.floor(i/4); return 'width:'+sz+'px;height:'+sz+'px;background-size:'+(sz*4)+'px '+(sz*3)+'px;background-position:'+(-c*sz)+'px '+(-r*sz)+'px'; }
+document.querySelectorAll('.how .ico').forEach(e=>e.setAttribute('style',icoS(+e.dataset.i,38)));
 function layerRow(n,lv,tag){
   const d=done().indexOf(n)>=0;
-  return '<a class="lay'+(d?' dn':'')+'" href="'+href(n)+'"><span class="code">'+code(n)+'</span><span class="nm">'+esc(T('L'+n))+'</span><span class="st">'+(d?esc(T('done')):'')+'</span></a>';
+  return '<a class="lay'+(d?' dn':'')+'" href="'+href(n)+'"><i class="ico" style="'+icoS(n+2,30)+'"></i><span class="code">'+code(n)+'</span><span class="nm">'+esc(T('L'+n))+'</span><span class="st">'+(d?esc(T('done')):'')+'</span></a>';
 }
 function ctaFor(lv){
   const nx=nextLayer(lv), d=done(), any=lv.layers.some(n=>d.indexOf(n)>=0);
@@ -306,7 +309,7 @@ function renderDynamic(){
   const d=done();
   LEVELS.forEach(l=>{
     const s=l.el;
-    s.querySelector('.lays').innerHTML=l.layers.map(n=>layerRow(n,l)).join('')+l.soon.map(k=>'<div class="lay soon"><span class="code">LAYER_06</span><span class="nm">'+esc(T(k))+'</span><span class="st">'+esc(T('soon'))+'</span></div>').join('');
+    s.querySelector('.lays').innerHTML=l.layers.map(n=>layerRow(n,l)).join('')+l.soon.map(k=>'<div class="lay soon"><i class="ico" style="'+icoS(8,30)+'"></i><span class="code">LAYER_06</span><span class="nm">'+esc(T(k))+'</span><span class="st">'+esc(T('soon'))+'</span></div>').join('');
     const c=ctaFor(l), a=s.querySelector('.go'); a.href=c.href; a.textContent=c.text+' >';
   });
   /* карточки выбора */
@@ -314,7 +317,7 @@ function renderDynamic(){
   LEVELS.forEach(l=>{
     const n=l.layers.length, k=l.layers.filter(x=>d.indexOf(x)>=0).length, c=ctaFor(l);
     const el=document.createElement('div'); el.className='card'+(mem.level===l.id?' sel':''); el.style.setProperty('--lc',l.col);
-    el.innerHTML='<span class="selmark"></span><div class="lvtag"><i>'+[1,2,3].map(j=>'<b'+(j<=l.n?' class="f"':'')+'></b>').join('')+'</i><span></span></div><h3></h3><p class="who"></p>'
+    el.innerHTML='<span class="selmark"></span><div class="lvtag"><i class="ico" style="'+icoS(l.n+8,42)+'"></i><span></span></div><h3></h3><p class="who"></p>'
       +'<div class="bar"><i style="width:'+(k/n*100).toFixed(0)+'%"></i></div><p class="pg"></p><div class="row"><button class="cta ghost pk" type="button"></button><a class="cta" href="'+c.href+'"></a></div>';
     el.querySelector('.selmark').textContent=T('picked');
     el.querySelector('.lvtag span').textContent=T('lvtag',{n:l.n});
@@ -438,8 +441,115 @@ function texts(){
 addEventListener('storage',e=>{ if(e.key===PKEY)renderDynamic(); });
 addEventListener('pageshow',e=>{ if(e.persisted)renderDynamic(); });
 
+/* =========================================================
+   Фоны сцен и робот NODE
+   ========================================================= */
+const BGN=['entry','how','novice','adv','pro','choose'];
+const bgs=$('bgs'), bgEl=[];
+let bgVar='', bgReady=false;
+BGN.forEach(n=>{ const d=document.createElement('div'); d.className='bgi'; bgs.appendChild(d); bgEl.push(d); });
+function bgLoad(all){
+  const v=mobileView()?'m':'w'; if(v===bgVar&&!all)return; bgVar=v;
+  BGN.forEach((n,i)=>{ if(i===0||all||bgReady){ bgEl[i].style.backgroundImage='url("img/bg-'+n+'-'+v+'.webp")'; } });
+}
+function bgFrame(){
+  const s=Math.max(0,Math.min(5,sD));
+  bgEl.forEach((d,i)=>{ const w=Math.max(0,1-Math.abs(s-i)); d.style.opacity=w.toFixed(3); d.style.visibility=w>0?'visible':'hidden'; });
+}
+
+const bot=window.NodeBot?NodeBot.create({reduce:RM}):null;
+const bc=$('bot'), bx=bc.getContext('2d'), say=$('say'), hit=$('botHit');
+let botOn=!!bot&&TIER>=1;
+if(!botOn){ bc.style.display='none'; hit.style.display='none'; }
+/* где стоит робот: x середина, y земля (доли экрана), h высота (доля высоты экрана) */
+function botPlace(i){
+  const mob=mobileView();
+  if(i===0)return mob?{x:.5,y:.955,h:.25}:{x:.82,y:.93,h:.42};
+  if(mob)return {x:.24,y:.45,h:.24};
+  const left=Math.min(96,Math.max(18,W*.06)), right=left+Math.min(540,W*.46), h=.45, bw=h*H*.62;
+  return {x:Math.max(.56,(right+bw/2+16)/W),y:.93,h};
+}
+const PROPS=[[0,0,111,110],[115,0,82,127],[201,0,74,119],[279,0,100,129],[383,0,56,140],[443,0,102,111],[549,0,87,88],[640,0,74,133],[718,0,83,96],[805,0,75,68],[884,0,82,77],[970,0,77,74],[1051,0,31,64],[1086,0,41,59],[1131,0,50,74]];
+const PSET=[null,null,[0,1,2,3],[4,5,6,7,8],[9,10,11,12,13,14]];
+const propImg=new Image(); propImg.src='img/props.webp';
+let wake={t:0,on:botOn&&!RM&&TIER>=2&&sT<.6,done:false}, waveUntil=0, botT=0;
+let sayScene=-1, sayStable=0, sayShown=-1, sayTyping=null;
+function sayHide(){ say.classList.remove('on'); sayShown=-1; clearTimeout(sayTyping); }
+function sayShow(txt,ms){
+  clearTimeout(sayTyping); say.classList.add('on'); say.textContent='';
+  let i=0; const step=()=>{ say.textContent=txt.slice(0,i); if(i++<txt.length)sayTyping=setTimeout(step,RM?0:22); };
+  if(RM)say.textContent=txt; else step();
+  if(bot)bot.talk(Math.min(2600,txt.length*45));
+}
+function botFrame(dt){
+  if(!botOn)return;
+  botT+=dt;
+  const s=Math.max(0,Math.min(5,sD)), a=Math.min(4,Math.floor(s)), fr=s-a, t=ss(.22,.78,fr), b=Math.min(5,a+1);
+  const pa=botPlace(a), pb=botPlace(Math.min(4,b));
+  const x=lerp(pa.x,pb.x,t)*W, y=lerp(pa.y,pb.y,t)*H, h=lerp(pa.h,pb.h,t)*H;
+  const alpha=1-ss(4.4,4.7,s);
+  const dw=Math.round(W*DPR), dh=Math.round(H*DPR);
+  if(bc.width!==dw||bc.height!==dh){ bc.width=dw; bc.height=dh; }
+  bx.setTransform(DPR,0,0,DPR,0,0); bx.clearRect(0,0,W,H);
+  hit.style.display=alpha>.3?'block':'none';
+  if(alpha<=.01){ sayHide(); return; }
+  const cur=Math.round(s);
+  /* форма и поведение по сцене */
+  const form=s<2.5?'novice':s<3.5?'adv':'pro';
+  const mob=mobileView();
+  let mode='idle', face='happy';
+  if(cur===1){ mode=mob?'idle':'point'; face='neutral'; }
+  else if(cur===3){ mode='think'; face='think'; }
+  else if(cur===4){ face='proud'; mode=(Math.floor(botT/5)%3===0)?'cheer':'idle'; }
+  if(botT<waveUntil){ mode='wave'; face='happy'; }
+  bot.set({form,mode,face,look:[mx*.6,my*.3]});
+  /* предметы вокруг робота: позади */
+  const props=[];
+  if(propImg.complete&&propImg.naturalWidth&&!RM){
+    for(let i=2;i<=4;i++){ const w=Math.max(0,1-Math.abs(s-i)*2.6); if(w<.02)continue;
+      PSET[i].forEach((k,j)=>{ const n=PSET[i].length, ang=botT*.45+j/n*6.283, z=Math.sin(ang);
+        props.push({k,z,w,x:x+Math.cos(ang)*h*.5,y:y-h*.52+z*h*.08+Math.sin(botT*1.7+j)*h*.03,sz:h*(.12+z*.025)}); }); }
+  }
+  const drawProp=p=>{ const r=PROPS[p.k], sc=p.sz/Math.max(r[2],r[3]); bx.globalAlpha=alpha*p.w*(p.z<0?.55:1); bx.drawImage(propImg,r[0],r[1],r[2],r[3],p.x-r[2]*sc/2,p.y-r[3]*sc/2,r[2]*sc,r[3]*sc); bx.globalAlpha=1; };
+  props.filter(p=>p.z<0).forEach(drawProp);
+  /* пробуждение при входе: кадры по времени */
+  let drew=false;
+  if(wake.on&&!wake.done){
+    const im=bot.seqImg('seq-wake');
+    if(im.complete&&im.naturalWidth){ wake.t+=dt; const f=wake.t/3.2*16;
+      if(f>=15.5){ wake.done=true; waveUntil=botT+2.2; }
+      else { bot.drawSeq(bx,'seq-wake',f,x,y,h,alpha); drew=true; } }
+    else if(botT>2.5){ wake.done=true; }
+    else drew=true;
+  }
+  if(!drew){
+    /* превращения по прокрутке */
+    const win=[['seq-up1',2.18,2.82],['seq-up2',3.18,3.82]].find(w=>s>w[1]&&s<w[2]);
+    let sa=0;
+    if(win&&!RM){ const im=bot.seqImg(win[0]); if(im.complete&&im.naturalWidth){ sa=ss(win[1],win[1]+.07,s)*(1-ss(win[2]-.07,win[2],s)); bot.drawSeq(bx,win[0],(s-win[1])/(win[2]-win[1])*15,x,y,h,alpha*sa); } }
+    if(sa<.99)bot.draw(bx,x,y,h,dt,alpha*(1-sa)); else bot.draw(bx,-9999,-9999,1,dt,0);
+  }
+  props.filter(p=>p.z>=0).forEach(drawProp);
+  /* место для клика и облачко */
+  const bw=h*.62; hit.style.transform='translate('+(x-bw/2).toFixed(0)+'px,'+(y-h).toFixed(0)+'px)'; hit.style.width=bw.toFixed(0)+'px'; hit.style.height=h.toFixed(0)+'px';
+  const settled=Math.abs(s-cur)<.18&&(wake.done||!wake.on);
+  if(cur!==sayScene){ sayScene=cur; sayStable=0; if(sayShown!==cur)sayHide(); }
+  sayStable+=dt;
+  if(settled&&sayShown!==cur&&sayStable>.45){ sayShown=cur; if(T('say'+cur))sayShow(T('say'+cur)); }
+  if(!settled&&sayShown>=0)sayHide();
+  const sx=mob&&cur===0?x+bw*.3:x+bw*.42, sy=y-h*1.02;
+  say.style.transform='translate('+Math.round(Math.min(W-say.offsetWidth-10,sx))+'px,'+Math.round(Math.max(56,sy-say.offsetHeight))+'px)';
+}
+hit.addEventListener('click',()=>{
+  if(!bot)return; bot.jump();
+  const k=1+Math.floor(Math.random()*4); sayShown=-2; sayShow(T('poke'+k));
+  if(TR)TR.event('course.poke');
+});
+if(bot)setTimeout(()=>bot.preload(),1200);
+addEventListener('load',()=>{ bgReady=true; bgLoad(true); });
+
 /* ---------- старт ---------- */
-fit(); addEventListener('resize',fit);
+fit(); bgLoad(); addEventListener('resize',()=>{ fit(); bgLoad(); });
 texts();
 readScroll(); sD=sT; placeText();
 requestAnimationFrame(frame);

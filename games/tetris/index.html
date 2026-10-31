@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="1" defer></script>
+<script src="../shared/boot.js" data-v="2" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -17,10 +17,11 @@
   {"src":"../shared/sound.js","kb":9},
   {"src":"../shared/arcade.js","kb":5},
   {"src":"../shared/three-loader.js","kb":3},
-  {"src":"js/lang.js","kb":28},
+  {"src":"js/lang.js","kb":36},
   {"src":"js/rules.js","kb":13},
   {"src":"js/view2d.js","kb":12},
   {"src":"js/view3d.js","kb":11},
+  {"src":"js/ai.js","kb":6},
   {"src":"js/tetris.js","kb":31}
 ]}
 </script>
@@ -71,6 +72,21 @@
           <div class="seg" id="seg-dig">
             <button class="seg-btn" data-v="clear" data-i18n="dig.clear"></button>
             <button class="seg-btn" data-v="rise" data-i18n="dig.rise"></button>
+          </div></div>
+      </div>
+      <div class="opt-box" id="opt-invis">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.fade"></span>
+          <div class="seg" id="seg-fade">
+            <button class="seg-btn" data-v="slow" data-i18n="fade.slow"></button>
+            <button class="seg-btn" data-v="fast" data-i18n="fade.fast"></button>
+          </div></div>
+      </div>
+      <div class="opt-box" id="opt-duel">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.ai"></span>
+          <div class="seg" id="seg-ai">
+            <button class="seg-btn" data-v="easy" data-i18n="ai.easy"></button>
+            <button class="seg-btn" data-v="normal" data-i18n="ai.normal"></button>
+            <button class="seg-btn" data-v="hard" data-i18n="ai.hard"></button>
           </div></div>
       </div>
       <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
@@ -154,6 +170,7 @@
     </div>
     <div class="well" id="well">
       <canvas id="cv-field"></canvas>
+      <div class="meter" id="meter-me"></div>
       <div class="fx" id="fx"></div>
       <div class="count hidden" id="count"></div>
       <div class="b3-load hidden" id="b3-load"></div>
@@ -166,6 +183,13 @@
     </div>
     <div class="side side-r">
       <div class="panel"><div class="p-h" data-i18n="hud.next"></div><canvas id="cv-next"></canvas></div>
+    </div>
+    <!-- дуэль: поле компьютера -->
+    <div class="side side-cpu">
+      <div class="panel cpu-panel"><div class="p-h" data-i18n="hud.cpu"></div>
+        <div class="cpu-wrap" id="cpu-wrap"><canvas id="cv-cpu"></canvas><div class="meter" id="meter-cpu"></div></div>
+        <div class="cpu-sent" id="cpu-sent"></div>
+      </div>
     </div>
 
     <!-- робот BLOCKMIND: справа, если хватает места -->

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON TETRIS</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/tetris.css","kb":19},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"../shared/three-loader.js","kb":3},
+  {"src":"js/lang.js","kb":28},
+  {"src":"js/rules.js","kb":13},
+  {"src":"js/view2d.js","kb":12},
+  {"src":"js/view3d.js","kb":11},
+  {"src":"js/tetris.js","kb":31}
+]}
+</script>
+
+<!-- Обложка загрузки: стакан заполняется фигурами вместе с прогрессом (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .tt-well{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;width:min(150px,40vw);padding:3px;border:2px solid #1d3a66;background:#060b1c;}
+    .tt-well i{height:12px;--k:clamp(0,calc((var(--p) - var(--t)) * 14),1);opacity:var(--k);transform:translateY(calc(-30px * (1 - var(--k))));}
+    .tt-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .tt-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="tt-brand">A.C.EON</div>
+  <div class="tt-title">TETRIS</div>
+  <div class="tt-well"></div>
+</template>
+<script>
+(function(){
+  /* 8 рядов, снизу вверх, у каждого ряда одна дырка */
+  var g=document.getElementById('boot-skin').content.querySelector('.tt-well'),h='';
+  var col=['#26c6da','#ffee58','#ab47bc','#66bb6a','#ef5350','#42a5f5','#ffa726'];
+  for(var r=0;r<8;r++)for(var c=0;c<10;c++){
+    var hole=(r*7+3)%10===c,k=(7-r)*10+c;
+    h+='<i style="--t:'+(k/80*0.95).toFixed(3)+';background:'+(hole||r<1?'transparent':col[(r*3+c)%7])+'"></i>';
+  }
+  g.innerHTML=h;
+})();
+</script>
+</head>
+<body class="screen-menu th-neon">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="t.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <div class="opt-box" id="opt-marathon">
+        <label class="rng"><span data-i18n="opt.level"></span><input type="range" id="r-level" min="1" max="15" step="1"><b id="r-level-v"></b></label>
+      </div>
+      <div class="opt-box" id="opt-dig">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.dig"></span>
+          <div class="seg" id="seg-dig">
+            <button class="seg-btn" data-v="clear" data-i18n="dig.clear"></button>
+            <button class="seg-btn" data-v="rise" data-i18n="dig.rise"></button>
+          </div></div>
+      </div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.look"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.view"></span>
+        <div class="seg" id="seg-view">
+          <button class="seg-btn" data-v="2d">2D</button>
+          <button class="seg-btn" data-v="3d">3D</button>
+        </div></div>
+      <div class="themes" id="themes">
+        <button class="th-card" data-v="neon"><canvas class="th-cv" width="64" height="48"></canvas><span data-i18n="theme.neon"></span></button>
+        <button class="th-card" data-v="gb"><canvas class="th-cv" width="64" height="48"></canvas><span data-i18n="theme.gb"></span></button>
+        <button class="th-card" data-v="glass"><canvas class="th-cv" width="64" height="48"></canvas><span data-i18n="theme.glass"></span></button>
+      </div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.big"></span>
+        <div class="seg" id="seg-big">
+          <button class="seg-btn" data-v="no" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="opt.on"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.big"></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.next"></span>
+        <div class="seg" id="seg-next">
+          <button class="seg-btn" data-v="1">1</button><button class="seg-btn" data-v="2">2</button><button class="seg-btn" data-v="3">3</button>
+          <button class="seg-btn" data-v="4">4</button><button class="seg-btn" data-v="5">5</button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.ghost"></span>
+        <div class="seg" id="seg-ghost">
+          <button class="seg-btn" data-v="no" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="opt.on"></button>
+        </div></div>
+      <div class="opt-row" id="row-bot"><span class="opt-lbl" data-i18n="opt.bot"></span>
+        <div class="seg" id="seg-bot">
+          <button class="seg-btn" data-v="no" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="opt.on"></button>
+        </div></div>
+
+      <h2 class="m-h m-h2" data-i18n="menu.ctrl"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.buttons"></span>
+        <div class="seg" id="seg-buttons">
+          <button class="seg-btn" data-v="no" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="opt.on"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.touch"></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.repeat"></span>
+        <div class="seg" id="seg-repeat">
+          <button class="seg-btn" data-v="slow" data-i18n="rep.slow"></button>
+          <button class="seg-btn" data-v="normal" data-i18n="rep.normal"></button>
+          <button class="seg-btn" data-v="fast" data-i18n="rep.fast"></button>
+          <button class="seg-btn" data-v="instant" data-i18n="rep.instant"></button>
+        </div></div>
+      <div class="keys-h"><span class="opt-lbl" data-i18n="opt.keys"></span><button class="btn keys-reset" id="keys-reset" data-i18n="keys.reset"></button></div>
+      <div class="keys" id="keys"></div>
+    </section>
+  </div>
+
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn m-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="t-game" id="game">
+  <div class="hud">
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-cells" id="hud-cells"></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-view">3D</button>
+      <button class="btn" id="btn-pause"><svg class="i-pause" viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="1" width="3" height="8" fill="currentColor"/><rect x="6" y="1" width="3" height="8" fill="currentColor"/></svg><span data-i18n="hud.pause"></span></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+
+  <div class="arena" id="arena">
+    <div class="side side-l">
+      <div class="panel"><div class="p-h" data-i18n="hud.hold"></div><canvas id="cv-hold"></canvas></div>
+    </div>
+    <div class="well" id="well">
+      <canvas id="cv-field"></canvas>
+      <div class="fx" id="fx"></div>
+      <div class="count hidden" id="count"></div>
+      <div class="b3-load hidden" id="b3-load"></div>
+      <div class="pause-ov hidden" id="pause-ov">
+        <div class="po-title" data-i18n="pause.title"></div>
+        <button class="btn po-go" id="po-go">&#9654; <span data-i18n="pause.go"></span></button>
+        <button class="btn" id="po-restart" data-i18n="pause.restart"></button>
+        <button class="btn" id="po-menu" data-i18n="pause.menu"></button>
+      </div>
+    </div>
+    <div class="side side-r">
+      <div class="panel"><div class="p-h" data-i18n="hud.next"></div><canvas id="cv-next"></canvas></div>
+    </div>
+
+    <!-- робот BLOCKMIND: справа, если хватает места -->
+    <aside class="bot" id="bot" aria-hidden="true">
+      <div class="bot-stage">
+        <span class="bot-p bp1"></span><span class="bot-p bp2"></span><span class="bot-p bp3"></span>
+        <div class="bot-core">
+          <div class="bot-blocks"><span></span><span></span><span></span><span></span></div>
+          <div class="bot-head">
+            <div class="bot-eyes"><span class="bot-eye"></span><span class="bot-eye"></span></div>
+            <div class="bot-mouth"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bot-name" data-i18n="bot.name"></div>
+      <div class="bot-say" id="bot-say"></div>
+    </aside>
+  </div>
+
+  <!-- кнопки на экране (включаются в меню) -->
+  <div class="tpad hidden" id="tpad">
+    <div class="tp-group">
+      <button class="tp-b" data-a="left" aria-label="left"><i class="ar ar-l"></i></button>
+      <button class="tp-b" data-a="soft" aria-label="down"><i class="ar ar-d"></i></button>
+      <button class="tp-b" data-a="right" aria-label="right"><i class="ar ar-r"></i></button>
+    </div>
+    <div class="tp-group">
+      <button class="tp-b tp-s" data-a="hold" data-i18n="act.hold"></button>
+      <button class="tp-b" data-a="ccw" aria-label="rotate left"><svg viewBox="0 0 16 16"><path d="M7 2L3 5.5 7 9V6.5a4 4 0 110 7H5v2h2a6 6 0 100-12z" fill="currentColor"/></svg></button>
+      <button class="tp-b" data-a="cw" aria-label="rotate right"><svg viewBox="0 0 16 16"><path d="M9 2l4 3.5L9 9V6.5a4 4 0 100 7h2v2H9a6 6 0 110-12z" fill="currentColor"/></svg></button>
+      <button class="tp-b tp-drop" data-a="hard" aria-label="drop"><i class="ar ar-d"></i><i class="ar ar-d"></i></button>
+    </div>
+  </div>
+</main>
+
+<!-- конец партии -->
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <div class="over-title" id="over-title"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn" id="over-new">&#9654; <span data-i18n="over.new"></span></button>
+      <button class="btn" id="over-menu" data-i18n="over.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

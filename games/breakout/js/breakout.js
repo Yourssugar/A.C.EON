@@ -9,14 +9,15 @@ var $=function(id){return document.getElementById(id);};
 function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
 
-var MODES=['campaign','endless','time'],DIFFS=['easy','normal','hard'];
+var MODES=['campaign','endless','time','daily'],DIFFS=['easy','normal','hard'];
 var TYPES=['S','X','$','M','K','G','P','R','D'];
 
 /* ── сохранения ── */
 Store.define('breakout',{
   version:1,
   defaults:{settings:{mode:'campaign',diff:'normal',level:0,view:'2d',theme:'neon',big:false,buttons:false,sens:1},
-    progress:{unlocked:0,stars:[],best:[]},stats:{},save:null},
+    progress:{unlocked:0,stars:[],best:[]},stats:{},save:null,
+    daily:{history:{},streak:0,lastDate:0,bestStreak:0}},
   legacy:function(raw){
     var hi=parseInt(raw('aceon_hi_brkout'),10)||0;
     return hi?{stats:{'endless-normal':{played:0,best:hi,level:0}}}:null;
@@ -31,7 +32,30 @@ S.sens=[1,1.5,2].indexOf(+S.sens)>=0?+S.sens:1;
 P.unlocked=Math.max(0,Math.min(LV.COUNT-1,P.unlocked|0));
 S.level=Math.max(0,Math.min(P.unlocked,S.level|0));
 function save(){Store.save('breakout');}
-function statKey(st){return st.mode+'-'+st.diff;}
+function statKey(st){return st.mode==='daily'?'daily':st.mode+'-'+st.diff;}
+
+/* ── испытание дня: дата по UTC, чтобы у всех был один и тот же уровень ── */
+var D=DB.daily;if(!D.history||typeof D.history!=='object')D.history={};
+function dayNum(dt){return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate();}
+function today(){return dayNum(new Date());}
+function dayShift(num,k){var dt=new Date(Date.UTC(Math.floor(num/10000),Math.floor(num/100)%100-1,num%100));dt.setUTCDate(dt.getUTCDate()+k);return dayNum(dt);}
+function dayText(num){var d=num%100,m=Math.floor(num/100)%100;return (d<10?'0':'')+d+'.'+(m<10?'0':'')+m+'.'+Math.floor(num/10000);}
+function dayRec(num){return D.history[num]||{b:0,n:0,c:0};}
+function curStreak(){var t0=today();return D.lastDate===t0||D.lastDate===dayShift(t0,-1)?D.streak:0;}
+/* итог попытки: лучший счёт дня, пройдено ли, серия дней подряд; хранится не больше 40 дней */
+function dailyFinish(st,cleared){
+  var num=st.daily.date,r=dayRec(num),rec=st.score>r.b;
+  if(rec)r.b=st.score;
+  if(cleared&&!r.c){
+    r.c=1;
+    if(D.lastDate!==num){D.streak=D.lastDate===dayShift(num,-1)?D.streak+1:1;D.lastDate=num;}
+    D.bestStreak=Math.max(D.bestStreak||0,D.streak);
+  }
+  D.history[num]=r;
+  var keys=Object.keys(D.history).sort();while(keys.length>40)delete D.history[keys.shift()];
+  var s0=stat('daily');if(st.score>(s0.best||0))s0.best=st.score;
+  return rec;
+}
 function stat(k){if(!DB.stats[k])DB.stats[k]={played:0,best:0,level:0};return DB.stats[k];}
 function setOf(){return {theme:S.theme,big:!!S.big};}
 function starsTotal(){var n=0;for(var i=0;i<LV.COUNT;i++)n+=P.stars[i]||0;return n;}
@@ -47,6 +71,12 @@ Sound.define('bbad',function(tm,tone){[440,330,220].forEach(function(f,i){tone(t
 Sound.define('blost',function(tm,tone){[392,262,196].forEach(function(f,i){tone(tm+i*0.1,f,0.14,'triangle',0.08);});});
 Sound.define('blaser',function(tm,tone){tone(tm,1400,0.05,'sawtooth',0.02,500);});
 Sound.define('bportal',function(tm,tone){tone(tm,300,0.15,'sine',0.06,1200);});
+Sound.define('bshot',function(tm,tone){tone(tm,700,0.12,'sawtooth',0.03,180);});
+Sound.define('bbhit',function(tm,tone,noise){noise(tm,0.08,0.35,1500);tone(tm,160,0.1,'square',0.06,90);});
+Sound.define('bshieldup',function(tm,tone){tone(tm,400,0.25,'sine',0.05,1400);});
+Sound.define('bangry',function(tm,tone){[200,170,140].forEach(function(f,i){tone(tm+i*0.09,f,0.12,'sawtooth',0.06);});});
+Sound.define('bbossdown',function(tm,tone,noise){noise(tm,0.9,0.8,300);[523,659,784,1046].forEach(function(f,i){tone(tm+0.3+i*0.1,f,0.18,'triangle',0.07);});});
+Sound.define('bzap',function(tm,tone,noise){noise(tm,0.15,0.4,3000);tone(tm,120,0.2,'square',0.06,60);});
 Sound.define('bgate',function(tm,tone,noise){noise(tm,0.3,0.3,700);tone(tm,150,0.25,'square',0.05,300);});
 var breakSfx={};
 function breakSound(m){
@@ -73,6 +103,13 @@ function buildModes(){
 function modeIcon(cv,m){
   var g=cv.getContext('2d'),T=BkTheme.get(setOf());
   g.fillStyle=T.bg[0];g.fillRect(0,0,40,40);
+  if(m==='daily'){
+    /* листок календаря с золотым кирпичом */
+    g.fillStyle='#e8ecf8';g.fillRect(7,8,26,24);g.fillStyle=T.hp[2];g.fillRect(7,8,26,7);
+    g.fillStyle='#e8ecf8';g.fillRect(12,5,3,6);g.fillRect(25,5,3,6);
+    g.fillStyle=T.gold;g.fillRect(12,19,16,8);g.fillStyle='rgba(255,255,255,.6)';g.fillRect(19,20,2,6);
+    return;
+  }
   var rows=m==='campaign'?[[2,2,2],[1,0,1],[1,1,1]]:m==='endless'?[[2,1,2],[1,2,1],[0,1,0]]:[[2,2,2],[2,2,2],[2,2,2]];
   rows.forEach(function(r,y){r.forEach(function(v,x){if(!v)return;g.fillStyle=T.hp[v===2?2:0];g.fillRect(5+x*11,5+y*7,9,5);});});
   g.fillStyle=T.pad[0];g.fillRect(14,33,12,3);
@@ -105,6 +142,8 @@ function buildStats(){
       h+='<div class="st-row'+(cur?' cur':'')+'"><span><span data-i18n="'+m[1]+'"></span> / <span data-i18n="diff.'+d+'"></span></span><b>'+s.played+'</b><b>'+(s.best||'-')+'</b><b>'+(m[0]==='endless'?(s.level||'-'):'-')+'</b></div>';
     });
   });
+  var dd=DB.stats['daily']||{played:0,best:0};
+  h+='<div class="st-row'+(S.mode==='daily'?' cur':'')+'"><span data-i18n="mode.daily"></span><b>'+dd.played+'</b><b>'+(dd.best||'-')+'</b><b>'+(curStreak()||'-')+'</b></div>';
   var c=DB.stats['campaign']||{played:0};
   h+='<div class="st-row'+(S.mode==='campaign'?' cur':'')+'"><span data-i18n="mode.campaign"></span><b>'+c.played+'</b><b>'+starsTotal()+'/'+LV.COUNT*3+'</b><b>'+Math.min(LV.COUNT,P.unlocked+1)+'</b></div>';
   $('stats').innerHTML=h;I18n.apply($('stats'));
@@ -124,8 +163,37 @@ function brickPic(cv,ty){
   v.draw(st,performance.now(),setOf());
   var g=cv.getContext('2d');g.clearRect(0,0,48,24);g.drawImage(tmp,0,0,48,24,0,0,48,24);
 }
+/* окно испытания дня в меню: дата, условие, раскладка, лучший счёт, попытки, серия, неделя */
+function buildDaily(){
+  var num=today(),info=LV.daily(num),r=dayRec(num);
+  function row(k,v){return '<div class="dl-row"><span>'+t(k)+'</span><b>'+v+'</b></div>';}
+  var h='<div class="dl-head"><h2 class="m-h m-h2">'+t('daily.today',{d:dayText(num)})+'</h2>'+(r.c?'<span class="dl-ok">'+starSvg(1,1)+'</span>':'')+'</div>';
+  h+='<div class="dl-main"><canvas class="dl-map" width="120" height="90"></canvas><div class="dl-info">';
+  h+='<div class="dl-cond"><span>'+t('daily.cond')+'</span><b>'+t('mod.'+info.mod)+'</b></div>';
+  h+=row('daily.best',r.b||'-')+row('daily.tries',r.n)+row('daily.streak',curStreak());
+  h+='</div></div><div class="dl-wk-h">'+t('daily.week')+'</div><div class="dl-week">';
+  for(var k=-6;k<=0;k++){
+    var d=dayShift(num,k),x=dayRec(d);
+    h+='<div class="dl-day'+(x.c?' ok':x.n?' tried':'')+(k===0?' now':'')+'"><b>'+(d%100)+'</b><span>'+(x.b||'')+'</span></div>';
+  }
+  h+='</div><div class="opt-note">'+t('daily.note')+'</div>';
+  $('daily-box').innerHTML=h;
+  miniMap($('daily-box').querySelector('canvas'),info.rows);
+}
+/* уменьшенная раскладка уровня */
+function miniMap(cv,rows){
+  var g=cv.getContext('2d'),T=BkTheme.get(setOf()),cw=cv.width/12,chh=Math.min(8,cv.height/Math.max(8,rows.length+2));
+  g.fillStyle=T.bg[0];g.fillRect(0,0,cv.width,cv.height);
+  var map={'1':T.hp[0],'2':T.hp[1],'3':T.hp[2],S:T.steel,X:T.X,'$':T.gold,M:T.M,N:T.M,R:T.R,K:T.K,G:T.G,D:T.D,P:'#00e5ff',Q:'#ff2d78'};
+  rows.forEach(function(row,y){for(var x=0;x<12;x++){var c=map[row[x]];if(!c)continue;g.fillStyle=c;g.fillRect(x*cw+1,4+y*chh,cw-2,chh-2);}});
+  g.fillStyle=T.pad[0];g.fillRect(cv.width/2-12,cv.height-7,24,3);
+}
 function paintMenu(){
   buildModes();buildStats();buildLevels();buildLegend();
+  var daily=S.mode==='daily';
+  $('daily-box').classList.toggle('hidden',!daily);
+  $('h-diff').classList.toggle('hidden',daily);$('seg-diff').classList.toggle('hidden',daily);$('diff-note').classList.toggle('hidden',daily);
+  if(daily)buildDaily();
   [['diff',S.diff],['view',S.view],['big',S.big?'yes':'no'],['buttons',S.buttons?'yes':'no'],['sens',String(S.sens)]].forEach(function(x){
     var list=document.querySelectorAll('#seg-'+x[0]+' .seg-btn');
     for(var i=0;i<list.length;i++)list[i].classList.toggle('sel',list[i].getAttribute('data-v')===x[1]);
@@ -155,8 +223,12 @@ function showScreen(name){
 
 /* ════════ ПАРТИЯ ════════ */
 function newGame(level){
-  var lv=S.mode==='campaign'?(level==null?S.level:level):0;
-  var st=R.create({mode:S.mode,diff:S.diff,level:lv});
+  var lv=S.mode==='campaign'?(level==null?S.level:level):0,st;
+  if(S.mode==='daily'){
+    var num=today(),r=dayRec(num);
+    st=R.create({mode:'daily',diff:'normal',level:0,daily:{date:num,mod:LV.daily(num).mod}});
+    r.n++;D.history[num]=r;
+  }else st=R.create({mode:S.mode,diff:S.diff,level:lv});
   G={st:st,paused:false,over:false};
   stat(S.mode==='campaign'?'campaign':statKey(st)).played++;save();
   A.trackPlay();
@@ -165,6 +237,11 @@ function newGame(level){
   levelIntro();
   persist();
   showScreen('game');
+}
+/* заново: тот же режим и сложность, что в последней партии */
+function retry(){
+  if(G){S.mode=G.st.mode;if(G.st.mode!=='daily')S.diff=G.st.diff;}
+  newGame(G&&G.st.mode==='campaign'?G.st.level:null);
 }
 function persist(){
   if(!G)return;
@@ -193,6 +270,14 @@ function playing(){return G&&!G.over&&!G.paused&&document.body.classList.contain
 function levelIntro(){
   var st=G.st,el=$('intro');
   el.classList.add('hidden');
+  if(st.boss){
+    el.innerHTML='<div class="in-h boss-h">'+t('boss.title')+'</div><div class="in-boss">'+t('boss.'+st.boss.kind)+'</div><div class="in-txt">'+t('bossd.'+st.boss.kind)+'</div>';
+    el.classList.remove('hidden');return;
+  }
+  if(st.mode==='daily'){
+    el.innerHTML='<div class="in-h">'+t('daily.cond')+'</div><div class="in-txt">'+t('mod.'+st.daily.mod)+'</div>';
+    el.classList.remove('hidden');return;
+  }
   if(st.mode!=='campaign')return;
   var seen={},cur={};
   for(var i=0;i<st.level;i++)LV.CAMPAIGN[i].join('').split('').forEach(function(c){seen[c==='N'?'M':c==='Q'?'P':c]=1;});
@@ -226,6 +311,13 @@ function onEvent(ev){
     case 'ouch':Sound.sfx('bbad');pop(t('pop.ouch'),'bad');break;
     case 'shield':Sound.sfx('bpad');pop(t('pop.shield'),'good');break;
     case 'launch':$('intro').classList.add('hidden');break;
+    case 'bossShot':Sound.sfx('bshot');break;
+    case 'bossHit':Sound.sfx('bbhit');break;
+    case 'bossShield':Sound.sfx('bshieldup');break;
+    case 'gatesUp':Sound.sfx('bgate');break;
+    case 'bossAngry':Sound.sfx('bangry');pop(t('pop.angry'),'bad');break;
+    case 'bossDown':Sound.sfx('bbossdown');Sound.duck(0.3,1500);pop(t('pop.boss'),'big');break;
+    case 'zap':Sound.sfx('bzap');pop(t('pop.zap'),'bad');break;
     case 'clear':levelDone(ev);break;
     case 'over':gameOver(ev.crushed?'over.crushed':'over.lose');break;
     case 'done':gameOver('over.time');break;
@@ -255,6 +347,7 @@ function levelDone(ev){
     },1400);
     return;
   }
+  if(st.mode==='daily'){dailyOver(true);return;}
   /* кампания: звёзды, открыть следующий уровень */
   var i=st.level,rec=st.score>(P.best[i]||0);
   P.stars[i]=Math.max(P.stars[i]||0,st.stars);
@@ -276,8 +369,24 @@ function levelDone(ev){
   if(last)pop(t('clear.last'),'big');
   setTimeout(function(){if(G&&G.st.state==='clear')show('clear-modal');},900);
 }
+/* конец испытания дня (пройдено или нет): итог в общем окне конца игры */
+function dailyOver(cleared){
+  var st=G.st;if(G.over)return;
+  G.over=true;st.padDir=0;
+  var rec=dailyFinish(st,cleared);
+  DB.save=null;save();
+  if(!cleared){Sound.sfx('lose');Sound.duck(0.3,2500);}
+  $('over-title').textContent=t(cleared?'over.daily':'over.lose');
+  $('over-title').className='over-title '+(cleared?'win':'lose');
+  var r=dayRec(st.daily.date);
+  function row(k,v){return '<div class="ov-row"><span>'+t(k)+'</span><b>'+v+'</b></div>';}
+  $('over-rows').innerHTML=row('over.score',st.score)+row('over.today',r.b)+row('over.tries',r.n)+row('over.streak',curStreak())+row('over.combo',st.maxCombo);
+  $('over-rec').classList.toggle('hidden',!rec||r.n<2);
+  setTimeout(function(){if(G&&G.over)show('over-modal');},900);
+}
 function gameOver(title){
   var st=G.st;if(G.over)return;
+  if(st.mode==='daily'){dailyOver(false);return;}
   G.over=true;st.padDir=0;
   var rec=false;
   if(st.mode!=='campaign'){
@@ -395,10 +504,23 @@ function paintHud(){
   if(key!==hudCache){
     hudCache=key;
     $('hud-cells').innerHTML=cells.map(function(c){return '<div class="hc"><span>'+t(c[0])+'</span><b>'+c[1]+'</b></div>';}).join('');
-    $('hud-mode').textContent=t('mode.'+st.mode)+' / '+t('diff.'+st.diff);
+    $('hud-mode').textContent=t('mode.'+st.mode)+' / '+(st.mode==='daily'?t('mod.'+st.daily.mod):t('diff.'+st.diff));
     $('hud-cells').classList.toggle('low',st.mode==='time'&&st.timeLeft<20);
   }
   paintFx(st);
+  paintBoss(st);
+}
+/* полоска здоровья босса над полем */
+var bossCache='';
+function paintBoss(st){
+  var b=st.boss,on=!!b&&!b.dead,bar=$('bossbar');
+  bar.classList.toggle('hidden',!on);
+  if(!on){bossCache='';return;}
+  var key=b.kind+I18n.lang;
+  if(key!==bossCache){bossCache=key;$('boss-name').textContent=t('boss.'+b.kind);bar.setAttribute('data-k',b.kind);}
+  $('boss-hp').style.width=Math.max(0,b.hp/b.max)*100+'%';
+  bar.classList.toggle('angry',b.hp<=b.max/2);
+  bar.classList.toggle('inv',b.inv>0);
 }
 /* полоса действующих бонусов: значок и сколько осталось */
 var fxCache='';
@@ -475,7 +597,7 @@ document.addEventListener('visibilitychange',function(){
 window.addEventListener('pagehide',persist);
 window.addEventListener('blur',function(){keys={};if(G)G.st.padDir=0;});
 
-function onLang(){paintMenu();hudCache='';fxCache='';}
+function onLang(){paintMenu();hudCache='';fxCache='';bossCache='';}
 function bindSeg(id,fn){
   var list=document.querySelectorAll('#seg-'+id+' .seg-btn');
   for(var i=0;i<list.length;i++)(function(b){
@@ -504,12 +626,12 @@ function boot(){
   $('btn-pause').addEventListener('click',function(){if(G)setPause(!G.paused);});
   $('btn-view').addEventListener('click',toggleView);
   $('po-go').addEventListener('click',function(){setPause(false);});
-  $('po-restart').addEventListener('click',function(){newGame(G&&G.st.mode==='campaign'?G.st.level:null);});
+  $('po-restart').addEventListener('click',retry);
   $('po-menu').addEventListener('click',function(){showScreen('menu');});
   $('clear-next').addEventListener('click',function(){newGame(Math.min(LV.COUNT-1,G.st.level+1));});
   $('clear-retry').addEventListener('click',function(){newGame(G.st.level);});
   $('clear-menu').addEventListener('click',function(){showScreen('menu');});
-  $('over-retry').addEventListener('click',function(){newGame(G&&G.st.mode==='campaign'?G.st.level:null);});
+  $('over-retry').addEventListener('click',retry);
   $('over-menu').addEventListener('click',function(){showScreen('menu');});
   paintMenu();
   showScreen('menu');

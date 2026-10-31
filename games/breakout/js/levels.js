@@ -89,14 +89,14 @@ var CAMPAIGN=[
  '3.22222222.3',
  'SSSSS..SSSSS'],
 
+/* 10: босс «Страж» */
 ['............',
- 'SSSSSSSSSSSS',
- 'S3333333333S',
- 'S2X2222222XS',
- 'S1111$$1111S',
- 'S2X2222222XS',
- 'S3333333333S',
- 'SSSS....SSSS'],
+ '............',
+ '............',
+ '............',
+ 'S..2.$$.2..S',
+ '..X......X..',
+ '1.2......2.1'],
 
 /* ── мир 2: механика. Движущиеся, переключатели и ворота, порталы ── */
 ['............',
@@ -173,14 +173,14 @@ var CAMPAIGN=[
  '............',
  '1111111111111'.slice(0,12)],
 
+/* 20: босс «Механик» (ставит ворота, переключатели их открывают) */
 ['............',
- 'SSSSSSSSSSSS',
- 'GGGGGGGGGGGG',
- '33X333333X33',
- 'N...........',
- '222222222222',
- '.....M......',
- 'S.P..KK..Q.S'],
+ '............',
+ '............',
+ '............',
+ '..M......N..',
+ 'S.2.K..K.2.S',
+ '.....$$.....'],
 
 /* ── мир 3: буря. Восстанавливающиеся, обломки, всё вместе ── */
 ['............',
@@ -255,16 +255,14 @@ var CAMPAIGN=[
  '333333333333',
  'SGSGSKKSGSGS'],
 
+/* 30: босс «Ядро бури» */
 ['............',
- 'SSSSSSSSSSSS',
- 'SRRRRRRRRRRS',
- 'SR33333333RS',
- 'SR3X3$$3X3RS',
- 'SR33333333RS',
- 'SRRRRRRRRRRS',
- 'GGGGGGGGGGGG',
- 'D..P.KK.Q..D',
- '..M......N..']
+ '............',
+ '............',
+ '............',
+ 'R.R......R.R',
+ '..D..$$..D..',
+ 'S..........S']
 ];
 
 function norm(rows){return rows.map(function(r){r=(r+'............').slice(0,12);return r;});}
@@ -342,6 +340,16 @@ function unreachable(rows){
   return false;
 }
 
+/* испытание дня: раскладка и условие по дате (одинаковые у всех в этот день) */
+var MODS=['none','twoBalls','noBonus','fast','bombs','fog'];
+function daily(dateNum){
+  var r=rng(dateNum*31+17),n=6+Math.floor(r()*6);
+  var rows=endless(n,dateNum%100000);
+  var mod=MODS[Math.floor(r()*MODS.length)];
+  if(mod==='bombs')rows=rows.map(function(row){return row.split('').map(function(ch){return ch==='2'&&r()<0.35?'X':ch;}).join('');});
+  return {rows:rows,mod:mod,n:n};
+}
+
 /* стена для режима «На время»: один ряд, тем прочнее, чем дальше по времени */
 function timeRow(k,seed){
   var r=rng((seed||3)*99+k*131),row='';
@@ -358,6 +366,6 @@ function timeRow(k,seed){
   return row;
 }
 
-window.BkLevels={unreachable:unreachable,WORLDS:WORLDS,CAMPAIGN:CAMPAIGN,COUNT:CAMPAIGN.length,endless:endless,timeRow:timeRow,rng:rng,
+window.BkLevels={BOSS:{9:0,19:1,29:2},daily:daily,MODS:MODS,unreachable:unreachable,WORLDS:WORLDS,CAMPAIGN:CAMPAIGN,COUNT:CAMPAIGN.length,endless:endless,timeRow:timeRow,rng:rng,
   world:function(i){return Math.floor(i/10);}};
 })();

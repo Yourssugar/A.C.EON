@@ -53,13 +53,16 @@ function create(o){
     paddle:{x:W/2,w:d.pad,base:d.pad,y:PAD_Y,h:PAD_H},padTarget:null,padDir:0,
     balls:[],drops:[],debris:[],lasers:[],bricks:[],
     fx:{},shield:false,laserT:0,state:'serve',par:60,stars:0,
-    timeLeft:o.mode==='time'?TIME_MS:0,descendT:0,rowsAdded:0,ev:[]};
+    timeLeft:o.mode==='time'?TIME_MS:0,descendT:0,rowsAdded:0,ev:[],
+    daily:o.daily||null,boss:null,shots:[],stun:0};
   loadLevel(st);
   return st;
 }
 function loadLevel(st){
   var rows;
+  st.boss=null;st.shots=[];st.stun=0;
   if(st.mode==='campaign')rows=BkLevels.CAMPAIGN[st.level];
+  else if(st.mode==='daily')rows=BkLevels.daily(st.daily.date).rows;
   else if(st.mode==='endless')rows=BkLevels.endless(st.level+1,st.seed);
   else{rows=['............'];for(var k=0;k<6;k++)rows.push(BkLevels.timeRow(k,st.seed));st.rowsAdded=6;}
   st.bricks=makeBricks(rows);
@@ -67,13 +70,84 @@ function loadLevel(st){
   st.levelTime=0;st.lost=0;st.combo=0;
   var n=st.bricks.filter(breakable).length;
   st.par=Math.round(20+n*1.4);
+  if(st.mode==='campaign'&&BkLevels.BOSS[st.level]!=null){makeBoss(st,BkLevels.BOSS[st.level]);st.par=Math.round(50+st.boss.max*1.6);}
   st.paddle.w=st.paddle.base;
   serve(st);
 }
 function serve(st){
   st.state='serve';
   st.balls=[{x:st.paddle.x,y:st.paddle.y-BALL_R,vx:0,vy:0,r:BALL_R,stuck:0,cd:0}];
+  /* условие дня «два мяча»: второй мяч рядом на ракетке */
+  if(mod(st)==='twoBalls'){st.balls[0].stuck=-14;st.balls.push({x:st.paddle.x+14,y:st.paddle.y-BALL_R,vx:0,vy:0,r:BALL_R,stuck:14,cd:0});}
   st.combo=0;
+}
+function mod(st){return st.mode==='daily'&&st.daily?st.daily.mod:'none';}
+
+/* ════════ БОССЫ ════════
+   0 «Страж»: ездит по верху, стреляет вниз.
+   1 «Механик»: качается, стреляет веером из трёх, ставит ряд ворот (переключатели на поле их открывают).
+   2 «Ядро бури»: летает восьмёркой, стреляет прицельно, сыплет обломки, временами закрывается щитом.
+   На половине здоровья злеет: быстрее двигается и стреляет. */
+var BOSS_HP={easy:[20,30,34],normal:[28,40,46],hard:[36,50,56]};
+var BOSS_SIZE=[[180,56],[200,60],[150,70]];
+function makeBoss(st,kind){
+  var hp=(BOSS_HP[st.diff]||BOSS_HP.normal)[kind],sz=BOSS_SIZE[kind];
+  st.boss={kind:kind,x:W/2-sz[0]/2,y:40,w:sz[0],h:sz[1],hp:hp,max:hp,vx:kind===0?110:130,t:0,shootT:2,specialT:kind===1?6:7,shieldT:9,inv:0,flash:0,dead:false,deadT:0,gateT:0};
+}
+function bossMove(st,dt){
+  var b=st.boss,angry=b.hp<=b.max/2,k=angry?1.5:1;
+  b.t+=dt;
+  if(b.kind===2){
+    b.x=W/2-b.w/2+190*Math.sin(b.t*0.7*k);
+    b.y=52+20*Math.sin(b.t*1.4*k);
+  }else{
+    b.x+=b.vx*k*dt;
+    if(b.x<SIDE){b.x=SIDE;b.vx=Math.abs(b.vx);}
+    if(b.x+b.w>W-SIDE){b.x=W-SIDE-b.w;b.vx=-Math.abs(b.vx);}
+    if(b.kind===1)b.y=40+12*Math.sin(b.t*1.6);
+  }
+  if(b.flash>0)b.flash-=dt;
+  if(b.inv>0)b.inv-=dt;
+  /* выстрелы */
+  b.shootT-=dt;
+  if(b.shootT<=0){
+    var cx=b.x+b.w/2,cy=b.y+b.h;
+    if(b.kind===0){st.shots.push({x:cx,y:cy,vx:0,vy:260});b.shootT=angry?1.5:2.4;}
+    else if(b.kind===1){[-100,0,100].forEach(function(v){st.shots.push({x:cx,y:cy,vx:v,vy:240});});b.shootT=angry?2.1:3;}
+    else{var dx=st.paddle.x-cx,dy=st.paddle.y-cy,l=Math.sqrt(dx*dx+dy*dy)||1;st.shots.push({x:cx,y:cy,vx:dx/l*300,vy:dy/l*300});b.shootT=angry?1.15:1.8;}
+    st.ev.push({type:'bossShot'});
+  }
+  /* особые приёмы */
+  b.specialT-=dt;
+  if(b.specialT<=0){
+    if(b.kind===1){
+      /* ряд ворот под боссом, сами пропадают через 7 секунд */
+      var y=TOP+3*PITCH,id=9000+Math.floor(b.t*10);
+      for(var c=1;c<COLS-1;c++){
+        var x=SIDE+c*(BW+GAP),busy=st.bricks.some(function(o){return o.alive&&Math.abs(o.y-y)<2&&Math.abs(o.x-x)<2;});
+        if(!busy)st.bricks.push({id:id++,x:x,y:y,w:BW,h:BH,t:'G',hp:1,max:1,alive:true,vx:0,regen:0,temp:7});
+      }
+      st.ev.push({type:'gatesUp'});
+      b.specialT=angry?9:12;
+    }else if(b.kind===2){
+      for(var i=0;i<3;i++)st.debris.push({x:SIDE+Math.random()*(W-2*SIDE-BW),y:b.y+b.h,w:BW,h:BH,vy:40,rot:0});
+      b.specialT=angry?6:8;
+    }else b.specialT=99;
+  }
+  if(b.kind===2){
+    b.shieldT-=dt;
+    if(b.shieldT<=0){b.inv=1.6;b.shieldT=angry?7:9;st.ev.push({type:'bossShield'});}
+  }
+}
+function bossDamage(st,dmg){
+  var b=st.boss;if(!b||b.dead)return;
+  if(b.inv>0){st.ev.push({type:'clank',x:b.x+b.w/2,y:b.y+b.h});return;}
+  var half=b.hp>b.max/2;
+  b.hp=Math.max(0,b.hp-dmg);b.flash=0.12;
+  st.score+=Math.round(25*dmg)*mult(st);
+  st.ev.push({type:'bossHit',x:b.x+b.w/2,y:b.y+b.h/2});
+  if(half&&b.hp<=b.max/2)st.ev.push({type:'bossAngry'});
+  if(b.hp<=0){b.dead=true;b.deadT=1.3;st.shots=[];st.score+=2000;st.ev.push({type:'bossDown',x:b.x+b.w/2,y:b.y+b.h/2});}
 }
 
 /* ── скорость мяча: база по сложности, растёт за серию ударов без ракетки и со временем уровня ── */
@@ -85,6 +159,7 @@ function speed(st){
   if(st.mode==='time')s*=1+Math.min(0.25,(TIME_MS-st.timeLeft)/TIME_MS*0.25);
   if(st.fx.slow>0)s*=0.7;
   if(st.fx.fast>0)s*=1.3;
+  if(mod(st)==='fast')s*=1.2;
   return s;
 }
 function mult(st){return Math.min(8,1+Math.floor(st.combo/5));}
@@ -128,6 +203,7 @@ function applyBonus(st,t){
 }
 function maybeDrop(st,b,force){
   var d=DIFF[st.diff]||DIFF.normal;
+  if(mod(st)==='noBonus')return;
   if(!force&&Math.random()>d.drop)return;
   var t=(!force&&Math.random()<d.bad)?BAD[Math.floor(Math.random()*BAD.length)]:GOOD[Math.floor(Math.random()*GOOD.length)];
   if(t==='life'&&Math.random()<0.5)t='multi';
@@ -219,6 +295,20 @@ function moveBall(st,b,dt){
       }
     }
   }
+  /* босс: мяч отскакивает и наносит урон (огненный вдвое больше) */
+  var bs=st.boss;
+  if(bs&&!bs.dead){
+    var cb=circleRect(b,bs);
+    if(cb){
+      b.x+=cb.nx*cb.d;b.y+=cb.ny*cb.d;
+      var d0=b.vx*cb.nx+b.vy*cb.ny;
+      if(d0<0){b.vx-=2*d0*cb.nx;b.vy-=2*d0*cb.ny;}
+      if(Math.abs(b.vy)<speed(st)*0.25)b.vy=speed(st)*0.25;
+      bossDamage(st,st.fx.fire>0?2:1);
+      st.combo++;
+      return true;
+    }
+  }
   /* кирпичи: одна встреча за подшаг; огненный мяч проходит насквозь разбиваемые */
   for(var k=0;k<st.bricks.length;k++){
     var br=st.bricks[k];
@@ -252,11 +342,16 @@ function step(st,dt){
   /* ракетка: к цели (мышь, палец) или клавишами */
   var w=st.paddle.base*(st.fx.wide>0?1.5:1)*(st.fx.narrow>0?0.65:1);
   p.w+=(w-p.w)*Math.min(1,dt*10);
-  if(st.padTarget!=null){var dx=st.padTarget-p.x,mx=2400*dt;p.x+=Math.max(-mx,Math.min(mx,dx));}
-  if(st.padDir)p.x+=st.padDir*820*dt;
+  /* после попадания выстрела босса ракетка на миг замирает */
+  if(st.stun>0)st.stun-=dt;
+  else{
+    if(st.padTarget!=null){var dx=st.padTarget-p.x,mx=2400*dt;p.x+=Math.max(-mx,Math.min(mx,dx));}
+    if(st.padDir)p.x+=st.padDir*820*dt;
+  }
   p.x=Math.max(p.w/2,Math.min(W-p.w/2,p.x));
   /* эффекты */
   for(var k in st.fx)if(st.fx[k]>0){st.fx[k]-=dt;if(st.fx[k]<=0){st.fx[k]=0;st.ev.push({type:'fxEnd',bonus:k});}}
+  if(mod(st)==='fog')st.fx.fog=Math.max(st.fx.fog||0,0.6);
   if(st.state==='serve'){moveBall(st,st.balls[0],dt);return;}
   /* режим «На время» */
   if(st.mode==='time'){
@@ -315,6 +410,8 @@ function step(st,dt){
       if(!solid(br2))continue;
       if(L.x>br2.x&&L.x<br2.x+br2.w&&L.y>br2.y&&L.y<br2.y+br2.h){hitBrick(st,br2,false,false);gone=true;break;}
     }
+    var bz=st.boss;
+    if(!gone&&bz&&!bz.dead&&L.x>bz.x&&L.x<bz.x+bz.w&&L.y>bz.y&&L.y<bz.y+bz.h){bossDamage(st,0.34);gone=true;}
     if(gone)st.lasers.splice(i,1);
   }
   /* падающие бонусы (магнит тянет их к ракетке) */
@@ -336,13 +433,29 @@ function step(st,dt){
       st.ev.push({type:'ouch',x:e.x+e.w/2});
     }
   }
-  /* уровень пройден */
-  if(st.mode!=='time'&&bricksLeft(st)===0)levelClear(st);
+  /* босс, его выстрелы и временные ворота */
+  if(st.boss){
+    if(!st.boss.dead)bossMove(st,dt);
+    else{st.boss.deadT-=dt;if(st.boss.deadT<=0){levelClear(st);return;}}
+  }
+  for(i=st.shots.length-1;i>=0;i--){
+    var sh=st.shots[i];
+    sh.x+=sh.vx*dt;sh.y+=sh.vy*dt;
+    if(sh.y>H+20||sh.x<-20||sh.x>W+20){st.shots.splice(i,1);continue;}
+    if(sh.y+6>=p.y&&sh.y-6<=p.y+p.h&&sh.x+6>=p.x-p.w/2&&sh.x-6<=p.x+p.w/2){
+      st.shots.splice(i,1);
+      st.stun=0.5;st.fx.narrow=4;st.fx.wide=0;st.combo=0;
+      st.ev.push({type:'zap',x:sh.x});
+    }
+  }
+  st.bricks.forEach(function(br){if(br.alive&&br.temp!=null){br.temp-=dt;if(br.temp<=0)br.alive=false;}});
+  /* уровень пройден (в уровне с боссом: когда босс повержен) */
+  if(!st.boss&&st.mode!=='time'&&bricksLeft(st)===0)levelClear(st);
   else if(st.mode==='time'&&bricksLeft(st)===0){for(var r=0;r<3;r++)descend(st);}
 }
 function ballLost(st){
   st.lost++;st.combo=0;
-  st.fx={};st.shield=false;st.drops=[];st.lasers=[];
+  st.fx={};st.shield=false;st.drops=[];st.lasers=[];st.shots=[];
   st.ev.push({type:'lost'});
   if(st.mode==='time'){st.score=Math.max(0,st.score-300);serve(st);return;}
   st.lives--;

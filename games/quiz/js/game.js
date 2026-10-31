@@ -164,7 +164,8 @@ function result(){
   var res=run.finish(),won=run.won;
   QScene.set({a:won?'win':'lose',b:won?'win':'lose',mix:0,dark:won?.12:.25,conf:won?1:0,speed:0});
   QScene.flash(won?.45:.15);
-  sfx(won?'win':'lose');
+  if(window.QMusic)QMusic.end(won);
+  later(function(){sfx(won?'win':'lose');},won?0:900);
   var box=$('gRes');box.classList.remove('hidden','won','lost');box.classList.add(won?'won':'lost');$('vGame').classList.add('resulting');$('gCall').classList.remove('on');$('gSay').classList.remove('on');
   $('gResH').textContent=I18n.t(won?'p.win':'p.lose');
   $('gResS').textContent=I18n.t('p.score',{n:run.correct});
@@ -205,6 +206,7 @@ function enter(g,s,level){
   $('gRuNote').classList.toggle('hidden',I18n.lang==='ru');
   QScene.set({a:'studio',b:'studio',mix:0,side:0,dark:.12,blur:0,rain:0,conf:0,dust:.5,ring:0,speed:0,zoom:1.06});
   QScene.preload(['win','lose']);
+  if(window.QMusic)QMusic('show');
   expr('smile');
   var t=token;
   QEngine.start(g+'-'+s,level).then(function(r){

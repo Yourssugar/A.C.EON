@@ -17,13 +17,19 @@ var ARC={en:['LANGUAGE','SOUND','MUSIC'],ru:['ЯЗЫК','ЗВУКИ','МУЗЫК
 Object.keys(ARC).forEach(function(c){I18n.add(c,{'nav.core':'A.C.EON CORE','arc.lang':ARC[c][0],'arc.sfx':ARC[c][1],'arc.music':ARC[c][2]});});
 
 /* музыка: меню (вступление, жанры, уровни) и шоу (экран игры). Пустой список = тишина */
-var MUSIC={menu:['assets/koto-showdown.mp3'],show:[]},SET={};
+/* шоу: два трека Ticking Koto идут по кругу, наплывом друг в друга (sound.js) */
+var MUSIC={menu:['assets/koto-showdown.mp3'],show:['assets/ticking-koto-1.mp3','assets/ticking-koto-2.mp3']},SET={};
 window.QMusic=function(where){
   if(!window.Sound)return;
   var list=MUSIC[where]||[];
   if(!list.length){if(Sound.stop)Sound.stop(1.5);return;}
   if(!SET[where]){var map={};map[where]=list.map(function(u){return window.Boot?Boot.url(u):u;});Sound.playlists(map);SET[where]=1;}
   Sound.music(where);
+};
+/* конец уровня: победа плавно глушит шоу, проигрыш "останавливает плёнку" */
+window.QMusic.end=function(won){
+  if(!window.Sound)return;
+  if(!won&&Sound.tapeStop)Sound.tapeStop(2.4);else if(Sound.stop)Sound.stop(1.5);
 };
 if(window.Sound&&Sound.define){
   Sound.define('whoosh',function(t,tone,noise){noise(t,.32,.22,1400);tone(t,260,.3,'sine',.035,820);});

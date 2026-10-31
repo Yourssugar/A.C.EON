@@ -6,6 +6,7 @@
    Sound.playlists({menu:[url...], game:[url...]})  плейлисты страницы
    Sound.music('menu')                              включить плейлист (плавно)
    Sound.stop(1.5)                                  плавно выключить музыку
+   Sound.tapeStop(2.4)                              замедлить, исказить и заглушить (проигрыш)
    Sound.duck(0.3, 2000)                            приглушить музыку на время
    Sound.sfx('move')                                эффект
    Sound.define('eat', fn(t, tone, noise))          свой эффект игры
@@ -110,6 +111,37 @@ function next(){
 }
 
 function music(name){want=name;if(unlocked)start(name);}
+/* "магнитофон остановился": текущий трек замедляется с падением высоты, хрипит через перегруз
+   и фильтр, затихает за sec секунд (проигрыш в игре). Место в плейлисте не запоминается. */
+function tapeStop(sec){
+  sec=sec||2.4;
+  if(!cur||!ctx){stop(1);return;}
+  want=null;
+  var d=cur.deck,el=d.el,name=cur.name;cur=null;delete pos[name];
+  decks.forEach(function(x){if(x!==d){fade(x.gain,0,.3);setTimeout(function(){if(!cur||cur.deck!==x)x.el.pause();},400);}});
+  var now=ctx.currentTime;
+  var sh=ctx.createWaveShaper(),n=1024,curve=new Float32Array(n),k=30;
+  for(var i=0;i<n;i++){var x=i*2/n-1;curve[i]=(1+k)*x/(1+k*Math.abs(x));}
+  sh.curve=curve;sh.oversample='2x';
+  var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(9000,now);lp.frequency.exponentialRampToValueAtTime(320,now+sec);
+  var wet=ctx.createGain();wet.gain.setValueAtTime(0,now);wet.gain.linearRampToValueAtTime(.55,now+sec*.35);wet.gain.linearRampToValueAtTime(0,now+sec);
+  d.gain.connect(sh);sh.connect(lp);lp.connect(wet);wet.connect(musicGain);
+  d.gain.gain.cancelScheduledValues(now);d.gain.gain.setValueAtTime(d.gain.gain.value,now);
+  d.gain.gain.linearRampToValueAtTime(.85,now+sec*.5);d.gain.gain.linearRampToValueAtTime(0,now+sec);
+  try{el.preservesPitch=false;el.mozPreservesPitch=false;el.webkitPreservesPitch=false;}catch(e){}
+  var t0=performance.now();
+  function done(){
+    clearInterval(iv);
+    try{el.playbackRate=1;el.preservesPitch=true;}catch(e){}
+    try{d.gain.disconnect(sh);}catch(e){}sh.disconnect();lp.disconnect();wet.disconnect();
+  }
+  var iv=setInterval(function(){
+    if(cur&&cur.deck===d){done();return;}           // музыку снова включили на этой же деке
+    var p=Math.min(1,(performance.now()-t0)/(sec*1000));
+    try{el.playbackRate=Math.max(.25,1-.75*Math.pow(p,1.4));}catch(e){}
+    if(p>=1){el.pause();done();}
+  },30);
+}
 /* тишина: плавно убрать музыку (место в плейлисте запоминается, Sound.music продолжит с него) */
 function stop(sec){
   want=null;if(!cur)return;
@@ -183,5 +215,5 @@ function sfx(name){
 /* свой эффект игры: Sound.define('eat', function(t, tone, noise){ tone(t, 660, 0.08, 'square', 0.06); }) */
 function define(name,fn){SFX[name]=function(t){fn(t,tone,noise);};}
 
-window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,define:define,setVolume:setVolume,volume:volume,stop:stop};
+window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,define:define,setVolume:setVolume,volume:volume,stop:stop,tapeStop:tapeStop};
 })();

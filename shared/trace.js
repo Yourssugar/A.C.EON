@@ -25,7 +25,7 @@ var rootPath=decodeURIComponent(rootURL.pathname);
 
 /* имена разделов для сообщений: самый длинный подходящий префикс пути */
 var NAMES=[
-  ['games/aceonium','ACEONIUM'],['games/cyber','БРЕШЬ'],['games/chess','CHESS'],['games/snake','SNAKE'],
+  ['games/aceonium','ACEONIUM'],['games/quiz','KOTAE!'],['games/cyber','БРЕШЬ'],['games/chess','CHESS'],['games/snake','SNAKE'],
   ['games/solitaire','SOLITAIRE'],['games/battleship','BATTLESHIP'],['games','ARCADE'],
   ['Music archive','MUSIC ARCHIVE'],['A.C.EON_Core','CORE'],['info','INFO'],['chat','AI OFFICE'],
   ['fragment02','LIGURIA'],['idolls','IDOLLS'],['CIPHER','CIPHER'],['astro','A.S.T.R.O'],

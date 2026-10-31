@@ -27,8 +27,10 @@ var GENRES=[
   {id:'world',    col:'#ffc857',subs:['holidays','costumes','money','customs']}
 ];
 
-/* готовые уровни: 'animals-fish':2 значит уровни 1-2 можно играть */
-var READY={};
+/* готовые уровни: 'animals-fish':2 значит есть вопросы уровней 1-2 (data/ru/animals-fish.json) */
+var READY={'animals-fish':2};
+/* нарисованные карточки уровней: img/cards/<ключ>-lNN.webp для уровней 1..N */
+var ARTS={'animals-fish':2};
 
 var TXT={};
 TXT.ru=`
@@ -973,6 +975,7 @@ window.QCat={
   name:function(key){return entry(key).name;},
   desc:function(key){return entry(key).desc;},
   ready:function(key){return READY[key]||0;},
+  art:function(key,level){return level<=(ARTS[key]||0);},
   readyIn:function(gid){var g=byId[gid],n=0;if(g)g.subs.forEach(function(s){n+=READY[gid+'-'+s]||0;});return n;},
   levels:10,
   lives:function(level){return level<=5?2:1;},

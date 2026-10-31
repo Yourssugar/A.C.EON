@@ -20,7 +20,7 @@ var MOB=false;
 function isMob(){return innerWidth/innerHeight<0.8;}
 MOB=isMob();
 function imgUrl(name){var u='img/'+name+'.webp';return window.Boot?Boot.url(u):u;}
-function variant(key){return /^(intro-\d|kv)$/.test(key)?key+'-'+(MOB?'m':'w'):key;}
+function variant(key){return /^(intro-\d|kv|studio|win|lose)$/.test(key)?key+'-'+(MOB?'m':'w'):key;}
 
 /* ── запасной CSS-фон ── */
 var css={el:null,layers:null,shown:null,turn:0};

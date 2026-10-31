@@ -7,22 +7,22 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="1" defer></script>
+<script src="../shared/boot.js" data-v="2" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
-  {"src":"css/breakout.css","kb":16},
+  {"src":"css/breakout.css","kb":20},
   {"src":"../shared/store.js","kb":3},
   {"src":"../shared/i18n.js","kb":3},
   {"src":"../shared/sound.js","kb":9},
   {"src":"../shared/arcade.js","kb":5},
   {"src":"../shared/three-loader.js","kb":3},
-  {"src":"js/lang.js","kb":29},
-  {"src":"js/levels.js","kb":9},
-  {"src":"js/rules.js","kb":16},
-  {"src":"js/view2d.js","kb":16},
-  {"src":"js/view3d.js","kb":11},
-  {"src":"js/breakout.js","kb":26}
+  {"src":"js/lang.js","kb":39},
+  {"src":"js/levels.js","kb":10},
+  {"src":"js/rules.js","kb":22},
+  {"src":"js/view2d.js","kb":22},
+  {"src":"js/view3d.js","kb":16},
+  {"src":"js/breakout.js","kb":35}
 ]}
 </script>
 
@@ -61,7 +61,7 @@
     <section class="m-card">
       <h2 class="m-h" data-i18n="menu.mode"></h2>
       <div class="mode-list" id="mode-list"></div>
-      <h2 class="m-h m-h2" data-i18n="menu.diff"></h2>
+      <h2 class="m-h m-h2" id="h-diff" data-i18n="menu.diff"></h2>
       <div class="seg seg-wide" id="seg-diff">
         <button class="seg-btn" data-v="easy" data-i18n="diff.easy"></button>
         <button class="seg-btn" data-v="normal" data-i18n="diff.normal"></button>
@@ -72,6 +72,7 @@
         <div class="lv-head"><h2 class="m-h m-h2" data-i18n="menu.levels"></h2><span class="lv-stars" id="lv-stars"></span></div>
         <div class="levels" id="levels"></div>
       </div>
+      <div class="daily-box hidden" id="daily-box"></div>
       <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
       <div class="stats" id="stats"></div>
     </section>
@@ -134,6 +135,7 @@
   <div class="arena" id="arena">
     <div class="well" id="well">
       <canvas id="cv-field"></canvas>
+      <div class="bossbar hidden" id="bossbar"><span id="boss-name"></span><i><u id="boss-hp"></u></i></div>
       <div class="fx" id="fx"></div>
       <div class="intro hidden" id="intro"></div>
       <div class="launch hidden" id="launch" data-i18n="msg.launch"></div>

@@ -7,7 +7,8 @@
 <meta name="description" content="KOTAE! Аниме-викторина A.C.EON: жанры, подтемы, 10 уровней в каждой, подсказки и коллекция карточек.">
 
 <!-- Загрузчик: data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ -->
-<script src="../shared/boot.js" data-v="1" defer></script>
+<script src="../shared/boot.js" data-v="2" defer></script>
+<script src="../../shared/trace.js?v=2" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"css/quiz.css","kb":27},
@@ -52,7 +53,7 @@
 <div id="bgcss" aria-hidden="true"><i></i><i></i></div>
 
 <header id="top">
-  <a id="btnBack" class="tb" href="../">&#9664; <span class="lbl" data-i18n="arc.back"></span></a>
+  <a id="btnBack" class="tb" href="../../A.C.EON_Core/">&#9664; <span class="lbl" data-i18n="nav.core"></span></a>
   <div class="brand" id="brand" title="KOTAE!"><img src="img/logo-mark.webp" alt=""><b>KOTAE!</b><span class="jp">こたえ</span></div>
   <div class="tr">
     <button id="btnColl" class="tb" type="button" data-i18n-title="nav.coll"><i class="ico ico-coll"></i><b id="collN">0</b></button>
@@ -196,7 +197,7 @@
     <div class="msec">
       <button class="mi" type="button" id="mReset"><span data-i18n="m.reset"></span></button>
       <div class="confirm hidden" id="mConfirm"><p data-i18n="m.resetq"></p><div class="seg"><button type="button" id="mYes" data-i18n="m.yes"></button><button type="button" id="mNo" data-i18n="m.no"></button></div></div>
-      <a class="mi" href="../">&#9664; <span data-i18n="arc.back"></span></a>
+      <a class="mi" href="../../A.C.EON_Core/" id="mCore">&#9664; <span data-i18n="nav.core"></span></a>
     </div>
   </aside>
 </div>

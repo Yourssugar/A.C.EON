@@ -12,10 +12,19 @@ Store.define('quiz',{
 });
 
 /* общие строки (arcade.js на этой странице не подключён: игра самостоятельная, открывается из A.C.EON_Core) */
-var ARC={en:['LANGUAGE','SOUND'],ru:['ЯЗЫК','ЗВУКИ'],de:['SPRACHE','SOUND'],fr:['LANGUE','SONS'],
-  es:['IDIOMA','SONIDOS'],it:['LINGUA','SUONI'],pl:['JĘZYK','DŹWIĘKI']};
-Object.keys(ARC).forEach(function(c){I18n.add(c,{'nav.core':'A.C.EON CORE','arc.lang':ARC[c][0],'arc.sfx':ARC[c][1]});});
+var ARC={en:['LANGUAGE','SOUND','MUSIC'],ru:['ЯЗЫК','ЗВУКИ','МУЗЫКА'],de:['SPRACHE','SOUND','MUSIK'],fr:['LANGUE','SONS','MUSIQUE'],
+  es:['IDIOMA','SONIDOS','MÚSICA'],it:['LINGUA','SUONI','MUSICA'],pl:['JĘZYK','DŹWIĘKI','MUZYKA']};
+Object.keys(ARC).forEach(function(c){I18n.add(c,{'nav.core':'A.C.EON CORE','arc.lang':ARC[c][0],'arc.sfx':ARC[c][1],'arc.music':ARC[c][2]});});
 
+/* музыка: меню (вступление, жанры, уровни) и шоу (экран игры). Пустой список = тишина */
+var MUSIC={menu:['assets/koto-showdown.mp3'],show:[]},SET={};
+window.QMusic=function(where){
+  if(!window.Sound)return;
+  var list=MUSIC[where]||[];
+  if(!list.length){if(Sound.stop)Sound.stop(1.5);return;}
+  if(!SET[where]){var map={};map[where]=list.map(function(u){return window.Boot?Boot.url(u):u;});Sound.playlists(map);SET[where]=1;}
+  Sound.music(where);
+};
 if(window.Sound&&Sound.define){
   Sound.define('whoosh',function(t,tone,noise){noise(t,.32,.22,1400);tone(t,260,.3,'sine',.035,820);});
 }

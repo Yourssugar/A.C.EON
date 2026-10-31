@@ -59,6 +59,7 @@ function show(r){
     if(view!=='game')QScene.set({a:'kv',b:'kv',mix:0,side:0,dark:view==='genre'?.6:.52,blur:1,rain:0,conf:0,dust:.8,ring:0,speed:0,zoom:1.08});
   }
   if(view==='game'){gameAt=r;QGame.enter(r.g,r.s,r.l);}
+  if(window.QMusic)QMusic(view==='game'?'show':'menu');
   if(view==='genres')renderGenres();
   if(view==='genre')renderGenre(r.g,r.s,prev!=='genre'||genreId!==r.g);
   backBtn();
@@ -226,6 +227,7 @@ function paintMenu(){
     lg.appendChild(b);
   });
   var v=Math.round((window.Sound?Sound.volume('sfx'):.8)*100);$('mSfx').value=v;$('mSfxV').textContent=v;
+  var mv=Math.round((window.Sound?Sound.volume('music'):.6)*100);$('mMus').value=mv;$('mMusV').textContent=mv;
   var q=mem().settings.gfx||'auto';
   $('mGfx').querySelectorAll('button').forEach(function(b){b.classList.toggle('sel',b.dataset.v===q);});
 }
@@ -263,6 +265,7 @@ function start(){
   $('btnMenu').addEventListener('click',openMenu);
   $('menuX').addEventListener('click',closeMenu);
   $('menuShade').addEventListener('click',closeMenu);
+  $('mMus').addEventListener('input',function(){var v=+this.value;$('mMusV').textContent=v;if(window.Sound)Sound.setVolume('music',v/100);});
   $('mSfx').addEventListener('input',function(){var v=+this.value;$('mSfxV').textContent=v;if(window.Sound){Sound.setVolume('sfx',v/100);Sound.sfx('select');}});
   $('mGfx').querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
     mem().settings.gfx=b.dataset.v;save();paintMenu();setTimeout(function(){location.reload();},200);

@@ -11,10 +11,10 @@ Store.define('quiz',{
     stats:{runs:0,correct:0,wrong:0,hints:0,sureAsked:0,sureChanged:0}}
 });
 
-/* общие строки аркады (arcade.js на этой странице не подключён) */
-var ARC={en:['ARCADE','LANGUAGE','SOUND'],ru:['АРКАДА','ЯЗЫК','ЗВУКИ'],de:['ARCADE','SPRACHE','SOUND'],fr:['ARCADE','LANGUE','SONS'],
-  es:['ARCADE','IDIOMA','SONIDOS'],it:['ARCADE','LINGUA','SUONI'],pl:['ARCADE','JĘZYK','DŹWIĘKI']};
-Object.keys(ARC).forEach(function(c){I18n.add(c,{'arc.back':ARC[c][0],'arc.lang':ARC[c][1],'arc.sfx':ARC[c][2]});});
+/* общие строки (arcade.js на этой странице не подключён: игра самостоятельная, открывается из A.C.EON_Core) */
+var ARC={en:['LANGUAGE','SOUND'],ru:['ЯЗЫК','ЗВУКИ'],de:['SPRACHE','SOUND'],fr:['LANGUE','SONS'],
+  es:['IDIOMA','SONIDOS'],it:['LINGUA','SUONI'],pl:['JĘZYK','DŹWIĘKI']};
+Object.keys(ARC).forEach(function(c){I18n.add(c,{'nav.core':'A.C.EON CORE','arc.lang':ARC[c][0],'arc.sfx':ARC[c][1]});});
 
 if(window.Sound&&Sound.define){
   Sound.define('whoosh',function(t,tone,noise){noise(t,.32,.22,1400);tone(t,260,.3,'sine',.035,820);});

@@ -53,9 +53,13 @@ function show(r){
   backBtn();
   if(prev!==view&&view!=='intro')scrollTo(0,0);
 }
+/* игра открывается из A.C.EON_Core; в портале главной (iframe) просим главную закрыть портал */
+var CORE='../../A.C.EON_Core/',PORTAL=false;
+try{PORTAL=window.self!==window.top;}catch(e){PORTAL=true;}
+function toCore(e){if(PORTAL){e.preventDefault();try{parent.postMessage({aceon:'close'},location.origin);}catch(x){}}}
 function backBtn(){
   var b=$('btnBack');
-  if(view==='intro'){b.href='../';b.querySelector('span').dataset.i18n='arc.back';}
+  if(view==='intro'){b.href=CORE;b.querySelector('span').dataset.i18n='nav.core';}
   else{b.href=view==='genre'?'#genres':'#';b.querySelector('span').dataset.i18n='nav.back';}
   I18n.apply(b);
 }
@@ -201,6 +205,8 @@ function relang(){
 
 function start(){
   QIntro.build();
+  $('btnBack').addEventListener('click',function(e){if(view==='intro')toCore(e);});
+  $('mCore').addEventListener('click',toCore);
   document.addEventListener('click',function(e){
     var t=e.target.closest('[data-go]');if(!t)return;
     var go=t.dataset.go;

@@ -5,6 +5,7 @@
 
    Sound.playlists({menu:[url...], game:[url...]})  плейлисты страницы
    Sound.music('menu')                              включить плейлист (плавно)
+   Sound.stop(1.5)                                  плавно выключить музыку
    Sound.duck(0.3, 2000)                            приглушить музыку на время
    Sound.sfx('move')                                эффект
    Sound.define('eat', fn(t, tone, noise))          свой эффект игры
@@ -86,7 +87,7 @@ function swapTo(url,t,sec){
   var old=cur.deck,deck=decks[old===decks[0]?1:0];
   cur.deck=deck;
   fade(old.gain,0,sec);
-  setTimeout(function(){if(cur.deck!==old)old.el.pause();},sec*1000+100);
+  setTimeout(function(){if(!cur||cur.deck!==old)old.el.pause();},sec*1000+100);
   playOn(deck,url,t,sec);
 }
 function start(name){
@@ -109,6 +110,15 @@ function next(){
 }
 
 function music(name){want=name;if(unlocked)start(name);}
+/* тишина: плавно убрать музыку (место в плейлисте запоминается, Sound.music продолжит с него) */
+function stop(sec){
+  want=null;if(!cur)return;
+  sec=sec||1.2;remember();cur=null;
+  decks.forEach(function(d){
+    fade(d.gain,0,sec);
+    setTimeout(function(){if(!cur||cur.deck!==d)d.el.pause();},sec*1000+100);
+  });
+}
 function playlists(map){for(var k in map)lists[k]=map[k];}
 function duck(level,ms){
   if(!ctx||!musicGain)return;
@@ -173,5 +183,5 @@ function sfx(name){
 /* свой эффект игры: Sound.define('eat', function(t, tone, noise){ tone(t, 660, 0.08, 'square', 0.06); }) */
 function define(name,fn){SFX[name]=function(t){fn(t,tone,noise);};}
 
-window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,define:define,setVolume:setVolume,volume:volume};
+window.Sound={music:music,playlists:playlists,duck:duck,sfx:sfx,define:define,setVolume:setVolume,volume:volume,stop:stop};
 })();

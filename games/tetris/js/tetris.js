@@ -1,6 +1,6 @@
 /* A.C.EON TETRIS: меню, игровой цикл, клавиатура с повтором и переназначением, жесты, кнопки,
-   пауза, сохранение, статистика, 2D/3D, робот BLOCKMIND.
-   Правила в rules.js, рисование в view2d.js и view3d.js, тексты в lang.js. */
+   пауза, сохранение, статистика, 2D/3D, робот BLOCKMIND, «Невидимка» и дуэль с компьютером.
+   Правила в rules.js, соперник в ai.js, рисование в view2d.js и view3d.js, тексты в lang.js. */
 (function(){
 'use strict';
 
@@ -9,7 +9,8 @@ var $=function(id){return document.getElementById(id);};
 function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
 
-var MODES=['marathon','sprint','ultra','dig','zen'];
+var MODES=['marathon','sprint','ultra','dig','zen','invis','duel'];
+var AI_LEVELS=['easy','normal','hard'];
 var ACTIONS=['left','right','soft','hard','cw','ccw','hold','pause'];
 var DEFAULT_KEYS={left:['ArrowLeft','KeyA'],right:['ArrowRight','KeyD'],soft:['ArrowDown','KeyS'],hard:['Space','KeyW'],
   cw:['ArrowUp','KeyX'],ccw:['KeyZ','ControlLeft'],hold:['KeyC','ShiftLeft'],pause:['Escape','KeyP']};
@@ -18,7 +19,7 @@ var REPEAT={slow:{das:220,arr:60},normal:{das:167,arr:33},fast:{das:117,arr:16},
 /* ── сохранения ── */
 Store.define('tetris',{
   version:1,
-  defaults:{settings:{mode:'marathon',level:1,dig:'clear',view:'2d',theme:'neon',big:false,next:5,ghost:true,bot:true,
+  defaults:{settings:{mode:'marathon',level:1,dig:'clear',fade:'slow',ai:'normal',view:'2d',theme:'neon',big:false,next:5,ghost:true,bot:true,
     buttons:false,repeat:'normal',keys:null},stats:{},save:null},
   legacy:function(raw){
     var hi=parseInt(raw('aceon_hi_tetris'),10)||0;
@@ -29,6 +30,8 @@ var DB=Store.get('tetris'),S=DB.settings;
 if(MODES.indexOf(S.mode)<0)S.mode='marathon';
 S.level=Math.max(1,Math.min(15,S.level|0||1));
 if(S.dig!=='rise')S.dig='clear';
+if(S.fade!=='fast')S.fade='slow';
+if(AI_LEVELS.indexOf(S.ai)<0)S.ai='normal';
 if(S.view!=='3d')S.view='2d';
 if(['neon','gb','glass'].indexOf(S.theme)<0)S.theme='neon';
 S.next=Math.max(1,Math.min(5,S.next|0||5));
@@ -40,7 +43,7 @@ function keysOf(){
 }
 keysOf();
 function save(){Store.save('tetris');}
-function statKey(st){return st.mode==='dig'?'dig-'+st.dig:st.mode;}
+function statKey(st){return st.mode==='dig'?'dig-'+st.dig:st.mode==='duel'?'duel-'+(st.aiLevel||'normal'):st.mode;}
 function stat(k){if(!DB.stats[k])DB.stats[k]={played:0,best:0,lines:0,tetrises:0};return DB.stats[k];}
 /* по времени рекорд меньше лучше, в остальных больше */
 function byTime(k){return k==='sprint'||k==='dig-clear';}
@@ -86,28 +89,36 @@ function modeIcon(cv,m){
     sprint:[[0,4,'I'],[1,4,'I'],[2,4,'I'],[3,4,'I'],[0,3,'I'],[1,3,'I'],[2,3,'I'],[3,3,'I'],[4,0,'I'],[4,1,'I'],[4,2,'I'],[4,3,'I']],
     ultra:[[1,1,'Z'],[2,1,'Z'],[2,2,'Z'],[3,2,'Z'],[0,4,'S'],[1,4,'S'],[1,3,'S'],[2,3,'S'],[3,4,'O'],[4,4,'O'],[3,3,'O'],[4,3,'O']],
     dig:[[0,4,'G'],[1,4,'G'],[3,4,'G'],[4,4,'G'],[0,3,'G'],[2,3,'G'],[3,3,'G'],[4,3,'G'],[2,0,'T'],[1,1,'T'],[2,1,'T'],[3,1,'T']],
-    zen:[[0,4,'S'],[1,4,'S'],[3,4,'J'],[4,4,'J'],[2,2,'O'],[2,1,'O'],[0,1,'L'],[4,1,'L']]
+    zen:[[0,4,'S'],[1,4,'S'],[3,4,'J'],[4,4,'J'],[2,2,'O'],[2,1,'O'],[0,1,'L'],[4,1,'L']],
+    invis:[[1,0,'T'],[0,1,'T'],[1,1,'T'],[2,1,'T'],[0,4,'G'],[1,4,'G'],[2,4,'G'],[3,4,'G'],[4,4,'G']],
+    duel:[[0,4,'J'],[1,4,'J'],[0,3,'J'],[0,2,'I'],[3,4,'G'],[4,4,'G'],[3,3,'G'],[4,3,'Z'],[4,2,'Z']]
   }[m];
-  shapes.forEach(function(c){drawBlock(g,c[0]*s,c[1]*s,s,c[2],set);});
+  shapes.forEach(function(c){drawBlock(g,c[0]*s,c[1]*s,s,c[2],set,m==='invis'&&c[2]==='G'?0.25:1);});
+  if(m==='duel'){g.fillStyle='#ff2d78';g.fillRect(19,2,2,36);}
 }
-function drawBlock(g,x,y,s,type,set){
+function drawBlock(g,x,y,s,type,set,alpha){
   /* маленький значок: простой блок с бликом, чтобы не тянуть весь отрисовщик */
   var col=TetTheme.color(set.theme,set.big,type);
+  g.globalAlpha=alpha==null?1:alpha;
   g.fillStyle=col;g.fillRect(x,y,s-1,s-1);
   g.fillStyle='rgba(255,255,255,.3)';g.fillRect(x,y,s-1,2);
+  g.globalAlpha=1;
 }
 function fmtTime(ms){
   var s=ms/1000,m=Math.floor(s/60),r=s-m*60;
   return m+':'+(r<10?'0':'')+r.toFixed(m?0:2).replace(/\.00$/,'');
 }
 function fmtClock(ms){var s=Math.max(0,Math.floor(ms/1000));return Math.floor(s/60)+':'+('0'+s%60).slice(-2);}
-function fmtBest(k,v){if(!v)return '-';return byTime(k)?fmtTime(v):String(v);}
+function fmtBest(k,v){if(!v)return k.indexOf('duel')===0?'0':'-';return byTime(k)?fmtTime(v):String(v);}
 function buildStats(){
   var h='<div class="st-row st-head"><span></span><span data-i18n="st.games"></span><span data-i18n="st.best"></span><span data-i18n="st.lines"></span></div>';
-  [['marathon','mode.marathon'],['sprint','mode.sprint'],['ultra','mode.ultra'],['dig-clear','row.digClear'],['dig-rise','row.digRise'],['zen','mode.zen']].forEach(function(r){
+  /* у дуэли в колонке «рекорд» число побед */
+  [['marathon','mode.marathon'],['sprint','mode.sprint'],['ultra','mode.ultra'],['dig-clear','row.digClear'],['dig-rise','row.digRise'],['zen','mode.zen'],
+   ['invis','mode.invis'],['duel-easy','row.duel','ai.easy'],['duel-normal','row.duel','ai.normal'],['duel-hard','row.duel','ai.hard']].forEach(function(r){
     var s=DB.stats[r[0]]||{played:0,best:0,lines:0};
-    var cur=r[0]===(S.mode==='dig'?'dig-'+S.dig:S.mode);
-    h+='<div class="st-row'+(cur?' cur':'')+'"><span data-i18n="'+r[1]+'"></span><b>'+s.played+'</b><b>'+fmtBest(r[0],s.best)+'</b><b>'+(s.lines||0)+'</b></div>';
+    var cur=r[0]===(S.mode==='dig'?'dig-'+S.dig:S.mode==='duel'?'duel-'+S.ai:S.mode);
+    var name='<span data-i18n="'+r[1]+'"></span>'+(r[2]?' / <span data-i18n="'+r[2]+'"></span>':'');
+    h+='<div class="st-row'+(cur?' cur':'')+'"><span>'+name+'</span><b>'+s.played+'</b><b>'+fmtBest(r[0],s.best)+'</b><b>'+(s.lines||0)+'</b></div>';
   });
   $('stats').innerHTML=h;I18n.apply($('stats'));
 }
@@ -119,7 +130,9 @@ function paintMenu(){
   buildModes();buildStats();paintRange();
   $('opt-marathon').classList.toggle('hidden',S.mode!=='marathon');
   $('opt-dig').classList.toggle('hidden',S.mode!=='dig');
-  [['dig',S.dig],['view',S.view],['big',S.big?'yes':'no'],['next',String(S.next)],['ghost',S.ghost?'yes':'no'],
+  $('opt-invis').classList.toggle('hidden',S.mode!=='invis');
+  $('opt-duel').classList.toggle('hidden',S.mode!=='duel');
+  [['fade',S.fade],['ai',S.ai],['dig',S.dig],['view',S.view],['big',S.big?'yes':'no'],['next',String(S.next)],['ghost',S.ghost?'yes':'no'],
    ['bot',S.bot?'yes':'no'],['buttons',S.buttons?'yes':'no'],['repeat',S.repeat]].forEach(function(x){
     var list=document.querySelectorAll('#seg-'+x[0]+' .seg-btn');
     for(var i=0;i<list.length;i++)list[i].classList.toggle('sel',list[i].getAttribute('data-v')===x[1]);
@@ -196,8 +209,9 @@ function showScreen(name){
 
 /* ════════ ПАРТИЯ ════════ */
 function newGame(){
-  var st=R.create({mode:S.mode,level:S.level,dig:S.dig});
+  var st=R.create({mode:S.mode,level:S.level,dig:S.dig,fade:S.fade});
   G={st:st,paused:false,count:1300,over:false,started:false};
+  if(st.mode==='duel')startDuel(R.create({mode:'duel'}),S.ai);
   stat(statKey(st)).played++;save();
   A.trackPlay();
   held={};softHeld=false;
@@ -215,10 +229,23 @@ function persist(){
   if(G.over){DB.save=null;save();return;}
   G.st.ev=[];
   DB.save={st:G.st};
+  if(G.ai){G.ai.ev=[];DB.save.ai=G.ai;}
   save();
 }
+/* дуэль: второе состояние и управляющий им компьютер */
+function startDuel(aiSt,level){
+  G.st.aiLevel=level;
+  G.ai=aiSt;G.aiCtl=TetAI(level);
+  G.ai.ev=[];
+  cpuView=cpuView||TetView2D($('cv-cpu'));
+}
+var cpuView=null;
+function duel(){return !!(G&&G.ai);}
 function resume(){
-  if((!G||G.over)&&DB.save&&DB.save.st)G={st:DB.save.st,paused:true,count:0,over:false};
+  if((!G||G.over)&&DB.save&&DB.save.st){
+    G={st:DB.save.st,paused:true,count:0,over:false};
+    if(G.st.mode==='duel'&&DB.save.ai)startDuel(DB.save.ai,G.st.aiLevel||'normal');
+  }
   if(!G)return;
   G.paused=true;held={};softHeld=false;G.st.soft=false;
   hide('over-modal');
@@ -274,10 +301,26 @@ function onEvent(ev){
     case 'level':pop(t('pop.level',{n:ev.level}),'lvl');Sound.sfx('tlevel');bot('levelup');break;
     case 'rise':Sound.sfx('trise');break;
     case 'wipe':pop(t('pop.wipe'),'big');Sound.sfx('trise');break;
+    case 'attack':
+      if(G.ai){G.ai.incoming.push(ev.n);pop(t('pop.attack',{n:ev.n}),'atk');}
+      break;
+    case 'garbage':Sound.sfx('trise');if(view())view().event({type:'rise'},st,set);break;
     case 'over':finish(false);break;
     case 'done':finish(true);break;
   }
 }
+/* события компьютера: атака на игрока и его проигрыш */
+function drainAI(){
+  if(!G||!G.ai)return;
+  var ev=G.ai.ev;G.ai.ev=[];
+  for(var i=0;i<ev.length;i++){
+    var e=ev[i];
+    if(e.type==='attack'){G.st.incoming.push(e.n);Sound.sfx('thold');}
+    else if(e.type==='clear'&&cpuView)cpuView.event(e,G.ai,cpuSet());
+    else if(e.type==='over'&&!G.over)finish(true);
+  }
+}
+function cpuSet(){return {theme:S.theme,big:!!S.big,ghost:false};}
 var popN=0;
 function pop(txt,cls){
   var el=document.createElement('div');
@@ -294,6 +337,7 @@ function finish(done){
   var k=statKey(st),s=stat(k),rec=false;
   s.lines=Math.max(s.lines||0,st.lines);
   s.tetrises=(s.tetrises||0)+st.tetrises;
+  if(st.mode==='duel'){finishDuel(done,s);return;}
   if(byTime(k)){if(done&&(!s.best||st.time<s.best)){s.best=Math.round(st.time);rec=true;}}
   else if(k==='dig-rise'){if(st.lines>(s.best||0)){s.best=st.lines;rec=true;}}
   else if(st.score>(s.best||0)){s.best=st.score;rec=true;}
@@ -314,6 +358,21 @@ function finish(done){
   h+=row('over.tetrises',st.tetrises)+row('over.tspins',st.tspins)+row('over.combo',Math.max(0,st.maxCombo));
   $('over-rows').innerHTML=h;
   $('over-rec').classList.toggle('hidden',!rec);
+  setTimeout(function(){if(G&&G.over)show('over-modal');},900);
+}
+
+function finishDuel(won,s){
+  var st=G.st;
+  if(won)s.best=(s.best||0)+1;
+  DB.save=null;save();
+  Sound.sfx(won?'win':'lose');Sound.duck(0.3,2500);
+  bot(won?'done':'over');
+  $('over-title').textContent=t(won?'over.win':'over.defeat');
+  $('over-title').className='over-title '+(won?'win':'lose');
+  function row(key,v){return '<div class="ov-row"><span>'+t(key)+'</span><b>'+v+'</b></div>';}
+  $('over-rows').innerHTML=row('over.time2',fmtClock(st.time))+row('over.lines',st.lines)+row('over.sent',st.sent)+
+    row('over.tetrises',st.tetrises)+row('over.tspins',st.tspins)+row('over.combo',Math.max(0,st.maxCombo));
+  $('over-rec').classList.add('hidden');
   setTimeout(function(){if(G&&G.over)show('over-modal');},900);
 }
 
@@ -472,15 +531,36 @@ function frame(now){
     else if(!document.hidden){
       repeatInput(dt);
       var left=dt;
-      while(left>0&&!G.st.over&&!G.st.done){var step=Math.min(left,25);R.update(G.st,step);left-=step;drain();}
-      drain();
+      while(left>0&&!G.st.over&&!G.st.done&&!G.over){
+        var step=Math.min(left,25);
+        R.update(G.st,step);
+        if(G.ai&&!G.ai.over){G.aiCtl.step(G.ai,step);R.update(G.ai,step);}
+        left-=step;drain();drainAI();
+      }
+      drain();drainAI();
     }
   }
   var set=setOf();
   if(dirtyMini){paintMini();dirtyMini=false;}
   var v=view();
   if(v)v.draw(G.st,now,set);
+  if(G.ai&&cpuView)cpuView.draw(G.ai,now,cpuSet());
+  paintMeters();
   paintHud();
+}
+/* полоски входящего мусора: высота в клетках поля */
+var meterCache='';
+function paintMeters(){
+  if(!G||!G.st.incoming)return;
+  var me=R.incomingTotal(G.st),cp=G.ai?R.incomingTotal(G.ai):0;
+  var key=me+'|'+cp+'|'+L.cell;
+  if(key===meterCache)return;
+  meterCache=key;
+  $('meter-me').style.height=Math.min(20,me)*L.cell+'px';
+  if(G.ai){
+    $('meter-cpu').style.height=Math.min(20,cp)*L.cpu+'px';
+    $('cpu-sent').textContent=t('hud.sent')+' '+G.ai.sent;
+  }
 }
 
 /* запас и очередь */
@@ -497,7 +577,8 @@ function paintHud(){
   if(st.mode==='sprint')cells.push(['hud.lines',st.lines+'/'+R.SPRINT_LINES]);
   else if(st.mode==='dig'&&st.dig==='clear')cells.push(['hud.junk',R.garbageLeft(st)]);
   else cells.push(['hud.lines',st.lines]);
-  if(st.mode==='marathon'||st.mode==='ultra'||(st.mode==='dig'&&st.dig==='rise'))cells.push(['hud.level',st.level]);
+  if(st.mode==='duel')cells.push(['hud.sent',st.sent]);
+  if(st.mode==='marathon'||st.mode==='invis'||st.mode==='duel'||st.mode==='ultra'||(st.mode==='dig'&&st.dig==='rise'))cells.push(['hud.level',st.level]);
   if(st.mode==='ultra')cells.push(['hud.left',fmtClock(R.ULTRA_MS-st.time+999)]);
   else if(st.mode==='sprint'||(st.mode==='dig'&&st.dig==='clear'))cells.push(['hud.time',fmtClock(st.time)+'.'+Math.floor(st.time%1000/100)]);
   else cells.push(['hud.time',fmtClock(st.time)]);
@@ -505,7 +586,7 @@ function paintHud(){
   if(key===hudCache)return;
   hudCache=key;
   $('hud-cells').innerHTML=cells.map(function(c){return '<div class="hc"><span>'+t(c[0])+'</span><b>'+c[1]+'</b></div>';}).join('');
-  $('hud-mode').textContent=t('mode.'+st.mode);
+  $('hud-mode').textContent=t('mode.'+st.mode)+(st.mode==='duel'?' / '+t('ai.'+(st.aiLevel||'normal')):'');
   $('hud-cells').classList.toggle('low',st.mode==='ultra'&&R.ULTRA_MS-st.time<15000);
 }
 
@@ -525,28 +606,35 @@ function layout(){
   var ah=vh-top-30-(S.buttons&&!side?($('tpad').offsetHeight||150)+4:0);
   ah=Math.max(150,ah);
   var VIS=R.H-R.HIDDEN,big=!!S.big;
-  var narrow=aw<ah*0.95&&aw<640;
-  var cell,mini;
+  var narrow=aw<ah*0.95&&aw<640,dl=duel();
+  document.body.classList.toggle('duel',dl);
+  var cell,mini,ck=0;
   if(narrow){
     var k=big?0.44:0.38;
-    cell=Math.floor(Math.min(aw/10,(ah-24)/(VIS+3*k)));
+    /* дуэль на узком экране: поле компьютера справа от поля игрока */
+    ck=dl?0.3:0;
+    cell=Math.floor(Math.min((aw-(dl?22:0))/(10+10*ck),(ah-24)/(VIS+3*k)));
     mini=Math.max(7,Math.floor(cell*k));
   }else{
     var mk=big?0.66:0.62;
-    /* поле + две боковые колонки по 4.4 мини-клетки + отступы */
-    cell=Math.floor(Math.min(ah/VIS,(aw-60)/(10+2*4.4*mk)));
+    ck=dl?0.42:0;
+    /* поле + две боковые колонки по 4.4 мини-клетки + (в дуэли) поле компьютера + отступы */
+    cell=Math.floor(Math.min(ah/VIS,(aw-60-(dl?40:0))/(10+2*4.4*mk+10*ck)));
     mini=Math.max(8,Math.floor(cell*mk));
   }
   cell=Math.max(10,Math.min(big?46:40,cell));
   L.cell=cell;L.mini=mini;L.narrow=narrow;
+  L.cpu=Math.max(5,Math.floor(cell*ck));
+  if(dl&&cpuView)cpuView.resize(L.cpu);
+  meterCache='';
   document.body.classList.toggle('narrow',narrow);
   var w=10*cell,h=VIS*cell;
   $('well').style.width=w+'px';$('well').style.height=h+'px';
   if(v2)v2.resize(cell);
   if(v3)v3.resize(w,h);
   /* робот справа, если есть место */
-  var used=w+2*(4.4*mini+24)+40;
-  document.body.classList.toggle('bot-on',!!S.bot&&!narrow&&!side&&aw-used>=230);
+  var used=w+2*(4.4*mini+24)+40+(dl?10*L.cpu+40:0);
+  document.body.classList.toggle('bot-on',!!S.bot&&!narrow&&!side&&vh>=520&&aw-used>=230);
   dirtyMini=true;
 }
 
@@ -622,6 +710,8 @@ function boot(){
   v2=TetView2D($('cv-field'));
   bindTouch();bindPad();bindKeys();
   bindSeg('dig',function(v){S.dig=v;});
+  bindSeg('fade',function(v){S.fade=v;});
+  bindSeg('ai',function(v){S.ai=v;});
   bindSeg('view',function(v){S.view=v;if(v==='3d'&&has3d())Three3D.load().catch(function(){});});
   bindSeg('big',function(v){S.big=v==='yes';});
   bindSeg('next',function(v){S.next=+v;});

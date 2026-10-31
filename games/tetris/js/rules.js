@@ -72,6 +72,11 @@ function refill(st){
   st.queue=st.queue.concat(bag);
 }
 function emptyRow(){var r=[];for(var i=0;i<W;i++)r.push(0);return r;}
+/* время фиксации каждой клетки (для «Невидимки»); -1: видна всегда (мусор) */
+function ensureStamp(st){
+  if(st.stamp&&st.stamp.length===H)return;
+  st.stamp=[];for(var r=0;r<H;r++)st.stamp.push(emptyRow());
+}
 
 /* скорость падения: секунды на строку по формуле современных версий */
 function gravityMs(level){
@@ -90,9 +95,12 @@ function create(o){
     gAcc:0,lockT:0,resets:0,lowest:0,soft:false,
     clearRows:null,clearT:0,
     riseT:0,garbageHole:-1,zenWipes:0,
+    fade:o.fade==='fast'?'fast':'slow',revealT:0,
+    incoming:[],sent:0,lastAttack:0,
     over:false,done:false,ev:[]
   };
   for(var r=0;r<H;r++)st.board.push(emptyRow());
+  st.stamp=[];for(r=0;r<H;r++)st.stamp.push(emptyRow());
   st.level=st.mode==='marathon'?st.startLevel:1;
   if(st.mode==='dig'){
     var n=st.dig==='clear'?DIG_ROWS:5;
@@ -144,7 +152,7 @@ function spawn(st,type){
 function topOut(st){
   if(st.mode==='zen'){
     /* в дзене проигрыша нет: поле очищается, игра идёт дальше */
-    for(var r=0;r<H;r++)st.board[r]=emptyRow();
+    for(var r=0;r<H;r++){st.board[r]=emptyRow();st.stamp[r]=emptyRow();}
     st.zenWipes++;
     st.ev.push({type:'wipe'});
     spawn(st,st.cur?st.cur.t:null);
@@ -235,8 +243,9 @@ function tspinKind(st){
 function lock(st){
   var p=st.cur,cs=cells(st,p),above=true;
   var spin=tspinKind(st);
+  ensureStamp(st);
   cs.forEach(function(c){
-    if(c[1]>=0)st.board[c[1]][c[0]]=p.t;
+    if(c[1]>=0){st.board[c[1]][c[0]]=p.t;st.stamp[c[1]][c[0]]=st.time||1;}
     if(c[1]>=HIDDEN)above=false;
   });
   st.pieces++;
@@ -250,13 +259,55 @@ function lock(st){
     if(all)full.push(r);
   }
   score(st,full.length,spin);
+  if(st.mode==='duel')duelAfterLock(st,full.length);
+  if(st.over)return;
   if(full.length){
     st.clearRows=full;st.clearT=CLEAR_MS;
+    st.revealT=700;   // в «Невидимке» стопка ненадолго проявляется
     st.ev.push({type:'clear',rows:full});
   }else{
     nextPiece(st);
   }
 }
+
+/* ── дуэль: атака мусором ──
+   линии и приёмы отправляют сопернику ряды мусора; входящий мусор сначала гасится своими
+   очищенными линиями, остаток встаёт снизу после следующей фиксации без очистки */
+var ATTACK={lines1:0,lines2:1,lines3:2,lines4:4,tspin1:2,tspin2:4,tspin3:6,tmini1:0,tmini2:1};
+var COMBO_ATK=[0,0,1,1,2,2,3,3,4,4,4,5];
+function duelAfterLock(st,n){
+  var atk=st.lastAttack;st.lastAttack=0;
+  if(n){
+    while(atk>0&&st.incoming.length){
+      var k=Math.min(atk,st.incoming[0]);
+      atk-=k;st.incoming[0]-=k;
+      if(!st.incoming[0])st.incoming.shift();
+    }
+    if(atk>0){st.sent+=atk;st.ev.push({type:'attack',n:atk});}
+    return;
+  }
+  /* без очистки: входящий мусор поднимается, не больше 10 рядов за раз */
+  var budget=10,got=0;
+  while(budget>0&&st.incoming.length){
+    var m=Math.min(budget,st.incoming[0]);
+    if(addGarbage(st,m)){topOut(st);return;}
+    budget-=m;got+=m;st.incoming[0]-=m;
+    if(!st.incoming[0])st.incoming.shift();
+  }
+  if(got)st.ev.push({type:'garbage',n:got});
+}
+function addGarbage(st,n){
+  ensureStamp(st);
+  var hole=Math.floor(rnd(st)*W),hit=false;
+  for(var i=0;i<n;i++){
+    var row=[],srow=[];for(var x=0;x<W;x++){row.push(x===hole?0:'G');srow.push(-1);}
+    if(st.board[0].some(function(v){return !!v;}))hit=true;
+    st.board.shift();st.board.push(row);
+    st.stamp.shift();st.stamp.push(srow);
+  }
+  return hit;
+}
+function incomingTotal(st){var n=0;(st.incoming||[]).forEach(function(v){n+=v;});return n;}
 function score(st,n,spin){
   var lv=st.level,pts=0,hard=false,label=null;
   if(spin==='full'){pts=TSPIN_PTS[n]*lv;hard=n>0;label='tspin'+n;st.tspins++;}
@@ -285,15 +336,25 @@ function score(st,n,spin){
     if(!left){perfect=true;pts+=PERFECT_PTS[n]*lv;st.perfects++;}
   }
   st.score+=pts;
+  if(st.mode==='duel'){
+    var a=0;
+    if(n){
+      a=(ATTACK[label]||0)+(b2b?1:0)+COMBO_ATK[Math.min(COMBO_ATK.length-1,Math.max(0,st.combo))];
+      if(perfect)a+=10;
+    }
+    st.lastAttack=a;
+  }
   if(label||perfect)st.ev.push({type:'score',label:label,lines:n,pts:pts,b2b:b2b,combo:st.combo,perfect:perfect});
 }
 function collapse(st){
   var rows=st.clearRows;st.clearRows=null;
   rows.sort(function(a,b){return a-b;});
-  rows.forEach(function(r){st.board.splice(r,1);st.board.unshift(emptyRow());});
+  ensureStamp(st);
+  rows.forEach(function(r){st.board.splice(r,1);st.board.unshift(emptyRow());st.stamp.splice(r,1);st.stamp.unshift(emptyRow());});
   var before=st.level;
   st.lines+=rows.length;
   if(st.mode==='marathon')st.level=Math.min(20,st.startLevel+Math.floor(st.lines/10));
+  else if(st.mode==='invis')st.level=Math.min(20,1+Math.floor(st.lines/10));
   else if(st.mode==='ultra'||(st.mode==='dig'&&st.dig==='rise'))st.level=Math.min(15,1+Math.floor(st.lines/10));
   if(st.level>before)st.ev.push({type:'level',level:st.level});
   /* цели режимов */
@@ -316,13 +377,25 @@ function pushGarbage(st){
   if(st.garbageHole<0||rnd(st)<0.35)st.garbageHole=Math.floor(rnd(st)*W);
   var row=[];for(var x=0;x<W;x++)row.push(x===st.garbageHole?0:'G');
   var topHit=st.board[0].some(function(v){return !!v;});
+  ensureStamp(st);
   st.board.shift();st.board.push(row);
+  var srow=[];for(x=0;x<W;x++)srow.push(-1);
+  st.stamp.shift();st.stamp.push(srow);
   /* фигура, в которую въехал мусор, поднимается */
   if(st.cur&&!fits(st,st.cur)){
     var p=st.cur;
     if(fits(st,{t:p.t,r:p.r,x:p.x,y:p.y-1}))p.y--;
   }
   return topHit;
+}
+/* видимость клетки стопки: 1 видна, 0 нет. В «Невидимке» клетка гаснет через время после фиксации */
+function cellAlpha(st,r,x){
+  if(st.mode!=='invis'||st.over||st.done)return 1;
+  if(st.revealT>0||st.clearRows)return 1;
+  var s=st.stamp&&st.stamp[r]?st.stamp[r][x]:0;
+  if(s<0||!s)return 1;
+  var age=st.time-s,start=st.fade==='fast'?250:1500,dur=st.fade==='fast'?250:900;
+  return Math.max(0,Math.min(1,1-(age-start)/dur));
 }
 function riseMs(st){return Math.max(3500,10000-(st.level-1)*700);}
 
@@ -331,6 +404,12 @@ function update(st,ms){
   if(st.over||st.done)return;
   st.time+=ms;
   if(st.mode==='ultra'&&st.time>=ULTRA_MS){st.time=ULTRA_MS;finish(st);return;}
+  if(st.revealT>0)st.revealT-=ms;
+  if(st.mode==='duel'){
+    /* в дуэли скорость растёт со временем: уровень каждые 45 секунд */
+    var lv=Math.min(15,1+Math.floor(st.time/45000));
+    if(lv>st.level){st.level=lv;st.ev.push({type:'level',level:lv});}
+  }
   if(st.mode==='dig'&&st.dig==='rise'){
     st.riseT+=ms;
     if(st.riseT>=riseMs(st)){
@@ -362,6 +441,6 @@ function update(st,ms){
 }
 
 window.TetRules={W:W,H:H,HIDDEN:HIDDEN,TYPES:TYPES,SHAPES:SHAPES,SPRINT_LINES:SPRINT_LINES,ULTRA_MS:ULTRA_MS,DIG_ROWS:DIG_ROWS,
-  create:create,update:update,move:move,rotate:rotate,hold:hold,hardDrop:hardDrop,stepDown:stepDown,
+  create:create,update:update,cellAlpha:cellAlpha,incomingTotal:incomingTotal,addGarbage:addGarbage,move:move,rotate:rotate,hold:hold,hardDrop:hardDrop,stepDown:stepDown,
   cells:cells,fits:fits,ghostY:ghostY,gravityMs:gravityMs,garbageLeft:garbageLeft,riseMs:riseMs};
 })();

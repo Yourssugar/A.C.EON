@@ -133,7 +133,13 @@ window.TetView3D=function(THREE,wrap){
     for(var r=HID;r<H;r++)for(var x=0;x<W;x++){
       var t=st.board[r][x];if(!t)continue;
       if(clearing[r])put(x,r,t,Math.max(0.01,1-cp),0.8*(1-cp)+.2);
-      else put(x,r,t,1,(flashSet[x+','+r]||0)*0.5);
+      else{
+        /* «Невидимка»: кубик тускнеет и уменьшается */
+        var al=R.cellAlpha(st,r,x);
+        if(al<0.02)continue;
+        put(x,r,t,0.5+0.5*al,(flashSet[x+','+r]||0)*0.5);
+        if(al<1){blocks.getColorAt(n-1,C);C.multiplyScalar(al);blocks.setColorAt(n-1,C);}
+      }
     }
     var p=st.cur;ghosts.count=0;ghostEdges.forEach(function(l){l.visible=false;});
     if(p&&!st.over){

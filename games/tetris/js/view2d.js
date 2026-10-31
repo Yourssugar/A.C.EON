@@ -155,7 +155,11 @@ window.TetView2D=function(canvas){
           if(cp>d*0.6){var sc=Math.max(0,k);var cx=px+s/2,cy=py+s/2;block(g,cx-s*sc/2,cy-s*sc/2,s*sc,t,set,1);}
           else block(g,px,py,s,t,set,1);
           g.fillStyle='rgba(255,255,255,'+(0.75*(1-cp))+')';g.fillRect(px,py,s,s);
-        }else block(g,px,py,s,t,set,1);
+        }else{
+          /* «Невидимка»: блок гаснет через время после фиксации */
+          var al=R.cellAlpha(st,r,x);
+          if(al>0.01)block(g,px,py,s,t,set,al);
+        }
       }
     }
 

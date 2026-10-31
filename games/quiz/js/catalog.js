@@ -28,7 +28,7 @@ var GENRES=[
 ];
 
 /* готовые уровни: 'animals-fish':2 значит есть вопросы уровней 1-2 (data/ru/animals-fish.json) */
-var READY={'animals-fish':9};
+var READY={'animals-fish':10};
 /* нарисованные карточки уровней: img/cards/<ключ>-lNN.webp для уровней 1..N */
 var ARTS={'animals-fish':10};
 

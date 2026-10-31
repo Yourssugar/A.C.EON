@@ -7,7 +7,7 @@
 <meta name="description" content="KOTAE! Аниме-викторина A.C.EON: жанры, подтемы, 10 уровней в каждой, подсказки и коллекция карточек.">
 
 <!-- Загрузчик: data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ -->
-<script src="../shared/boot.js" data-v="2" defer></script>
+<script src="../shared/boot.js" data-v="3" defer></script>
 <script src="../../shared/trace.js?v=2" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
@@ -28,8 +28,12 @@
   {"src":"js/lang.js","kb":24},
   {"src":"js/catalog.js","kb":79},
   {"src":"js/scene3d.js","kb":15},
+  {"src":"js/phrases.js","kb":22},
+  {"src":"js/engine.js","kb":6},
+  {"src":"js/cards.js","kb":3},
   {"src":"js/intro.js","kb":9},
-  {"src":"js/ui.js","kb":13},
+  {"src":"js/game.js","kb":13},
+  {"src":"js/ui.js","kb":17},
   {"src":"js/quiz.js","kb":2}
 ]}
 </script>
@@ -171,6 +175,42 @@
   </div>
 </main>
 
+<!-- ════════ ИГРА ════════ -->
+<main id="vGame" class="game hidden">
+  <div class="g-top">
+    <div class="g-info"><div class="sico" id="gIco"></div><div><b id="gTitle"></b><span id="gLvl"></span></div></div>
+    <div class="g-prog" id="gProg"></div>
+    <div class="g-lives" id="gLives"></div>
+  </div>
+  <div class="g-host" id="gHost"><div class="bust on"></div><div class="bust"></div><div class="g-say" id="gSay"></div></div>
+  <div class="g-main">
+    <div class="g-load" id="gLoad"></div>
+    <div class="g-q" id="gQ"><span class="g-qn" id="gQn"></span><p id="gQt"></p></div>
+    <div class="plates g-plates" id="gPlates"></div>
+    <div class="g-sure hidden" id="gSure"><button class="btn pk" type="button" id="gKeep" data-i18n="p.keep"></button><button class="btn ghost" type="button" id="gChange" data-i18n="p.change"></button></div>
+    <div class="g-hints" id="gHints">
+      <button type="button" class="hchip" data-h="fifty"><i class="ico ico-fifty"></i><span data-i18n="h.fifty"></span></button>
+      <button type="button" class="hchip" data-h="node"><i class="ico ico-node"></i><span data-i18n="h.node"></span></button>
+      <button type="button" class="hchip" data-h="host"><i class="ico ico-host"></i><span data-i18n="h.host"></span></button>
+    </div>
+    <div class="g-after hidden" id="gAfter"><p id="gFact"></p><button class="btn" type="button" id="gNext"></button></div>
+    <p class="g-runote hidden" id="gRuNote" data-i18n="p.ruq"></p>
+  </div>
+  <div class="g-call" id="gCall"><div class="scr"><i id="gNodeFace"></i></div><p id="gCallT"></p></div>
+  <div class="g-start" id="gStart"><small id="gStartS"></small><b id="gStartT"></b></div>
+  <div class="g-hurt" id="gHurt"></div>
+  <div class="g-res hidden" id="gRes">
+    <div class="g-res-in">
+      <h2 id="gResH"></h2>
+      <div class="g-res-card" id="gResCard"></div>
+      <div class="g-stars" id="gResStars"></div>
+      <p class="g-res-s" id="gResS"></p>
+      <div class="say"><div class="bust" id="gResBust"></div><p id="gResSay"></p></div>
+      <div class="btns" id="gResBtns"></div>
+    </div>
+  </div>
+</main>
+
 <!-- ════════ КОЛЛЕКЦИЯ ════════ -->
 <div id="coll" class="modal hidden" role="dialog" aria-modal="true">
   <div class="mbox">
@@ -178,6 +218,7 @@
     <p id="collCount" style="color:var(--mut)"></p>
     <p id="collEmpty" style="color:var(--mut);margin-top:6px" data-i18n="c.empty"></p>
     <div id="collList"></div>
+    <div id="collSub" class="hidden"></div>
   </div>
 </div>
 

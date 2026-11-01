@@ -85,6 +85,7 @@ function info(){
   $('i-stats').innerHTML=st.length?st.map(function(r){return '<div class="is"><span>'+t(r[0])+'</span><b>'+r[1]+'</b></div>';}).join(''):
     '<div class="is none">'+t('s.none')+'</div>';
   $('i-last').classList.toggle('hidden',g.id!==DB.last);
+  paintAch(g.id);
   document.documentElement.style.setProperty('--gc',g.color);
   $('pos').textContent=(cur+1)+' / '+list.length;
   if(bg)bg.accent(g.color);
@@ -191,6 +192,91 @@ function play(){
   setTimeout(function(){location.href=g.url;},420);
 }
 
+
+/* ════════ ДОСТИЖЕНИЯ И АЛЬБОМ ════════ */
+var ACH=window.Achieve||null;
+function achOf(game){return ACH?ACH.list().filter(function(a){return a.game===game;}):[];}
+function fmtDate(ts){var d=new Date(ts);function z(n){return (n<10?'0':'')+n;}return z(d.getDate())+'.'+z(d.getMonth()+1)+'.'+d.getFullYear();}
+/* карточка: картинка в окне рамки, рамка по редкости; не полученная: рамка с замком */
+function cardFace(a,small){
+  var got=ACH.got(a.id);
+  return '<div class="ac'+(got?' got':' locked')+(small?' sm':'')+' r-'+a.r+'" data-ach="'+a.id+'">'+
+    (got?'<img class="ac-art" alt="" draggable="false" src="'+ART+'cards/'+a.id+'.webp">':'')+
+    '<img class="ac-frame" alt="" draggable="false" src="'+ART+'frames/'+(got?a.r:'locked')+'.webp">'+
+    (small?'':'<span class="ac-n">'+esc(ACH.name(a.id))+'</span>')+'</div>';
+}
+function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function paintAch(game){
+  var box=$('i-ach');if(!ACH){box.classList.add('hidden');return;}
+  var list=achOf(game),n=0;
+  list.forEach(function(a){if(ACH.got(a.id))n++;});
+  box.innerHTML='<span class="ia-l">'+t('hub.cards')+' <b>'+n+' / '+list.length+'</b></span><span class="ia-c">'+list.map(function(a){return cardFace(a,true);}).join('')+'</span>';
+  paintAlbumBtn();
+}
+function paintAlbumBtn(){
+  if(!ACH)return;
+  var all=ACH.list(),n=0;all.forEach(function(a){if(ACH.got(a.id))n++;});
+  $('album-n').textContent=n+'/'+all.length;
+}
+function openAlbum(focus){
+  if(!ACH)return;
+  ACH.album();
+  var all=ACH.list(),n=0;all.forEach(function(a){if(ACH.got(a.id))n++;});
+  $('al-count').textContent=t('al.progress',{n:n,m:all.length});
+  $('al-pts').textContent=ACH.points()+' / '+ACH.maxPoints();
+  $('al-bar').style.width=(n/all.length*100)+'%';
+  var h='',groups=C.GAMES.map(function(g){return g.id;}).concat(['meta']);
+  groups.forEach(function(gid){
+    var list=achOf(gid);if(!list.length)return;
+    var g=C.byId(gid);
+    h+='<section class="al-sec" id="al-'+gid+'"><h3 style="--gc:'+(g?g.color:'#ffd23a')+'">'+(g?t('g.'+gid):t('al.meta'))+'</h3><div class="al-row">'+
+      list.map(function(a){return cardFace(a,false);}).join('')+'</div></section>';
+  });
+  $('album').innerHTML=h;
+  $('album-ov').classList.remove('hidden');
+  $('album-ov').scrollTop=0;
+  if(focus){var el=$('al-'+focus);if(el)el.scrollIntoView({block:'center'});}
+  paintAlbumBtn();paintAch(list[cur]?list[cur].id:'');
+  Sound.sfx('select');
+}
+function closeAlbum(){$('album-ov').classList.add('hidden');if(location.hash==='#album')history.replaceState(null,'',location.pathname+location.search);}
+/* одна карточка: переворачивается рубашкой к лицу, наклоняется за курсором */
+function openCard(id){
+  var a=null;ACH.list().forEach(function(x){if(x.id===id)a=x;});if(!a)return;
+  var got=ACH.got(id);
+  $('cv-front').innerHTML=cardFace(a,false);
+  $('cv-r').textContent=ACH.rarity(a.r)+'  +'+ACH.POINTS[a.r];
+  $('cv-r').className='cv-r r-'+a.r;
+  $('cv-n').textContent=ACH.name(id);
+  $('cv-d').textContent=t('ad.'+id);
+  $('cv-date').textContent=got?t('al.got',{d:fmtDate(got)}):t('al.locked');
+  var c=$('cv-card');c.classList.remove('flip','tilt');c.style.transform='';
+  $('card-ov').classList.remove('hidden');
+  setTimeout(function(){c.classList.add('flip');Sound.sfx(got?'win':'select');},120);
+  setTimeout(function(){c.classList.add('tilt');},950);
+}
+function closeCard(){$('card-ov').classList.add('hidden');}
+function bindAlbum(){
+  if(!ACH){$('btn-album').classList.add('hidden');return;}
+  $('btn-album').addEventListener('click',function(){openAlbum(list[cur]?list[cur].id:null);});
+  $('album-close').addEventListener('click',closeAlbum);
+  $('cv-close').addEventListener('click',closeCard);
+  $('card-ov').addEventListener('click',function(e){if(e.target===this)closeCard();});
+  function pick(e){
+    var n=e.target;while(n&&n!==document&&!(n.getAttribute&&n.getAttribute('data-ach')))n=n.parentNode;
+    if(n&&n!==document){e.stopPropagation();openCard(n.getAttribute('data-ach'));}
+  }
+  $('album').addEventListener('click',pick);
+  $('i-ach').addEventListener('click',pick);
+  $('card-ov').addEventListener('pointermove',function(e){
+    var c=$('cv-card');if(!c.classList.contains('tilt'))return;
+    var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*2-1,y=(e.clientY-r.top)/r.height*2-1;
+    x=Math.max(-1.3,Math.min(1.3,x));y=Math.max(-1.3,Math.min(1.3,y));
+    c.style.transform='rotateY('+(180+x*14).toFixed(1)+'deg) rotateX('+(y*10).toFixed(1)+'deg)';
+    c.style.setProperty('--sx',(50-x*40)+'%');c.style.setProperty('--sy',(50+y*40)+'%');
+  });
+}
+
 /* ════════ СЕТКА ВСЕХ ИГР ════════ */
 function openGrid(){
   var h='';
@@ -224,6 +310,7 @@ function startBG(){
   }).catch(function(){});
 }
 function onLang(){
+  if(!$('album-ov').classList.contains('hidden'))openAlbum();
   $('count').textContent=t('hub.count',{n:list.length});
   info();
 }
@@ -254,6 +341,8 @@ function boot(){
     for(var i=0;i<list.length;i++)if(list[i].id===id){closeGrid();go(i);return;}
   });
   document.addEventListener('keydown',function(e){
+    if(!$('card-ov').classList.contains('hidden')){if(e.key==='Escape')closeCard();return;}
+    if(!$('album-ov').classList.contains('hidden')){if(e.key==='Escape')closeAlbum();return;}
     if(!$('grid-ov').classList.contains('hidden')){if(e.key==='Escape')closeGrid();return;}
     if(e.key==='ArrowLeft'){e.preventDefault();go(cur-1);}
     else if(e.key==='ArrowRight'){e.preventDefault();go(cur+1);}
@@ -264,7 +353,10 @@ function boot(){
   /* возврат кнопкой «назад» из игры: снять затемнение */
   window.addEventListener('pageshow',function(){document.body.classList.remove('leaving');cards.forEach(function(c){c.classList.remove('launch');});});
   document.addEventListener('visibilitychange',function(){if(bg)bg.pause(document.hidden);});
+  bindAlbum();
   build();layout();
+  /* карточки за то, что уже сыграно (в том числе до появления достижений) */
+  if(ACH)setTimeout(function(){ACH.check(null);paintAch(list[cur]?list[cur].id:'');if(location.hash==='#album')openAlbum();},700);
   Sound.music('menu');
   setTimeout(startBG,60);
 }

@@ -66,7 +66,16 @@ var L={
 "g.mastermind": "MASTERMIND",
 "gd.mastermind": "Crack the colour code in ten tries.",
 "g.puzzle15": "15 PUZZLE",
-"gd.puzzle15": "Slide the tiles into order."
+"gd.puzzle15": "Slide the tiles into order.",
+"hub.album": "ALBUM",
+"hub.cards": "CARDS",
+"hub.points": "POINTS",
+"al.title": "CARD ALBUM",
+"al.got": "Received {d}",
+"al.locked": "Not received yet",
+"al.how": "HOW TO GET",
+"al.meta": "A.C.EON",
+"al.progress": "{n} OF {m}"
 },
 "ru": {
 "hub.title": "АРКАДА",
@@ -132,7 +141,16 @@ var L={
 "g.mastermind": "МАСТЕРМАЙНД",
 "gd.mastermind": "Разгадайте цветовой код за десять попыток.",
 "g.puzzle15": "ПЯТНАШКИ",
-"gd.puzzle15": "Расставьте плитки по порядку."
+"gd.puzzle15": "Расставьте плитки по порядку.",
+"hub.album": "АЛЬБОМ",
+"hub.cards": "КАРТОЧКИ",
+"hub.points": "ОЧКИ",
+"al.title": "АЛЬБОМ КАРТОЧЕК",
+"al.got": "Получена {d}",
+"al.locked": "Ещё не получена",
+"al.how": "КАК ПОЛУЧИТЬ",
+"al.meta": "A.C.EON",
+"al.progress": "{n} ИЗ {m}"
 },
 "de": {
 "hub.title": "ARCADE",
@@ -198,7 +216,16 @@ var L={
 "g.mastermind": "MASTERMIND",
 "gd.mastermind": "Knacke den Farbcode in zehn Versuchen.",
 "g.puzzle15": "15ER-PUZZLE",
-"gd.puzzle15": "Schiebe die Plättchen in die richtige Reihenfolge."
+"gd.puzzle15": "Schiebe die Plättchen in die richtige Reihenfolge.",
+"hub.album": "ALBUM",
+"hub.cards": "KARTEN",
+"hub.points": "PUNKTE",
+"al.title": "KARTENALBUM",
+"al.got": "Erhalten am {d}",
+"al.locked": "Noch nicht erhalten",
+"al.how": "SO BEKOMMST DU SIE",
+"al.meta": "A.C.EON",
+"al.progress": "{n} VON {m}"
 },
 "fr": {
 "hub.title": "ARCADE",
@@ -264,7 +291,16 @@ var L={
 "g.mastermind": "MASTERMIND",
 "gd.mastermind": "Percez le code couleur en dix essais.",
 "g.puzzle15": "TAQUIN",
-"gd.puzzle15": "Remettez les tuiles dans l'ordre."
+"gd.puzzle15": "Remettez les tuiles dans l'ordre.",
+"hub.album": "ALBUM",
+"hub.cards": "CARTES",
+"hub.points": "POINTS",
+"al.title": "ALBUM DE CARTES",
+"al.got": "Obtenue le {d}",
+"al.locked": "Pas encore obtenue",
+"al.how": "COMMENT L'OBTENIR",
+"al.meta": "A.C.EON",
+"al.progress": "{n} SUR {m}"
 },
 "es": {
 "hub.title": "ARCADE",
@@ -330,7 +366,16 @@ var L={
 "g.mastermind": "MASTERMIND",
 "gd.mastermind": "Descifra el código de colores en diez intentos.",
 "g.puzzle15": "PUZLE 15",
-"gd.puzzle15": "Ordena las fichas deslizándolas."
+"gd.puzzle15": "Ordena las fichas deslizándolas.",
+"hub.album": "ÁLBUM",
+"hub.cards": "CARTAS",
+"hub.points": "PUNTOS",
+"al.title": "ÁLBUM DE CARTAS",
+"al.got": "Obtenida el {d}",
+"al.locked": "Aún no obtenida",
+"al.how": "CÓMO CONSEGUIRLA",
+"al.meta": "A.C.EON",
+"al.progress": "{n} DE {m}"
 },
 "it": {
 "hub.title": "ARCADE",
@@ -396,7 +441,16 @@ var L={
 "g.mastermind": "MASTERMIND",
 "gd.mastermind": "Decifra il codice di colori in dieci tentativi.",
 "g.puzzle15": "GIOCO DEL 15",
-"gd.puzzle15": "Rimetti in ordine le tessere."
+"gd.puzzle15": "Rimetti in ordine le tessere.",
+"hub.album": "ALBUM",
+"hub.cards": "CARTE",
+"hub.points": "PUNTI",
+"al.title": "ALBUM DELLE CARTE",
+"al.got": "Ottenuta il {d}",
+"al.locked": "Non ancora ottenuta",
+"al.how": "COME OTTENERLA",
+"al.meta": "A.C.EON",
+"al.progress": "{n} SU {m}"
 },
 "pl": {
 "hub.title": "ARCADE",
@@ -462,7 +516,16 @@ var L={
 "g.mastermind": "MASTERMIND",
 "gd.mastermind": "Złam kod kolorów w dziesięciu próbach.",
 "g.puzzle15": "PIĘTNASTKA",
-"gd.puzzle15": "Ułóż kafelki po kolei."
+"gd.puzzle15": "Ułóż kafelki po kolei.",
+"hub.album": "ALBUM",
+"hub.cards": "KARTY",
+"hub.points": "PUNKTY",
+"al.title": "ALBUM KART",
+"al.got": "Zdobyta {d}",
+"al.locked": "Jeszcze nie zdobyta",
+"al.how": "JAK ZDOBYĆ",
+"al.meta": "A.C.EON",
+"al.progress": "{n} Z {m}"
 }
 };
 for(var k in L)I18n.add(k,L[k]);

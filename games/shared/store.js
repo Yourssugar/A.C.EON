@@ -49,7 +49,8 @@ function get(ns){
   writeJSON(PREFIX+ns,data);
   return data;
 }
-function save(ns){if(cache[ns])writeJSON(PREFIX+ns,cache[ns]);}
+/* после сохранения игры проверить достижения (shared/achievements.js, если подключён) */
+function save(ns){if(cache[ns])writeJSON(PREFIX+ns,cache[ns]);if(window.Achieve&&ns!=='site'&&ns!=='hub')Achieve.later(ns);}
 
 /* общие настройки сайта */
 define('site',{

@@ -13,7 +13,7 @@ function lsGet(k,d){try{var v=localStorage.getItem(k);return v===null?d:v;}catch
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function getHi(id){return parseInt(lsGet('aceon_hi_'+id,'0'),10)||0;}
 function setHi(id,sc){if(sc>getHi(id))lsSet('aceon_hi_'+id,sc);return getHi(id);}
-function trackPlay(){var n=(parseInt(lsGet('aceon_plays','0'),10)||0)+1;lsSet('aceon_plays',n);return n;}
+function trackPlay(){var n=(parseInt(lsGet('aceon_plays','0'),10)||0)+1;lsSet('aceon_plays',n);if(window.Achieve)try{Achieve.played();}catch(e){}return n;}
 
 I18n.add('en',{'arc.back':'ARCADE','arc.settings':'SETTINGS','arc.lang':'LANGUAGE','arc.music':'MUSIC','arc.sfx':'SOUND'});
 I18n.add('ru',{'arc.back':'АРКАДА','arc.settings':'НАСТРОЙКИ','arc.lang':'ЯЗЫК','arc.music':'МУЗЫКА','arc.sfx':'ЗВУКИ'});

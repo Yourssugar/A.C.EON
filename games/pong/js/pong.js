@@ -19,7 +19,7 @@ Store.define('pong',{
     tour:{unlocked:0,medals:{},champ:0}}
 });
 /* картинки соперников и значков режимов: games/art/pong/; false: рисуются кодом */
-var ART_READY=false,ART=new URL('../art/pong/',location.href).href;
+var ART_READY=true,ART=new URL('../art/pong/',location.href).href;
 var OPP=R.OPP,MEDALS=['bronze','silver','gold'];
 var DB=Store.get('pong'),S=DB.settings;
 if(MODES.indexOf(S.mode)<0)S.mode='bot';

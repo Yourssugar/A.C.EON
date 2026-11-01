@@ -515,68 +515,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
        transition:transform .1s;box-shadow:0 2px 4px rgba(0,0,0,.3);}
 .mm-sw:hover{transform:scale(1.1);}
 #mm-submit:disabled{opacity:.35;cursor:default;}
-/* REACTION TEST */
-#rt-box{
-  position:relative;width:100%;max-width:720px;height:clamp(240px,54dvh,460px);margin:0 auto;
-  display:flex;align-items:center;justify-content:center;overflow:hidden;
-  background:radial-gradient(circle at 50% 40%,#3a3f48,#22252d);border:3px solid #243049;border-radius:18px;cursor:pointer;
-  transition:background .12s,box-shadow .2s;user-select:none;
-  box-shadow:inset 0 0 60px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.5);
-}
-#rt-box::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 32%,rgba(255,255,255,.10),transparent 60%);pointer-events:none;}
-#rt-box.wait{background:radial-gradient(circle at 50% 40%,#c0392b,#7a1f17);box-shadow:inset 0 0 70px rgba(0,0,0,.45),0 0 30px rgba(192,57,43,.35);}
-#rt-box.ready{background:radial-gradient(circle at 50% 40%,#2ec45f,#13863a);box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 0 50px rgba(46,196,95,.7);animation:rtPulse .5s ease-in-out infinite;}
-#rt-box.early{background:radial-gradient(circle at 50% 40%,#e0962a,#9c5f12);box-shadow:0 0 30px rgba(224,150,42,.4);}
-#rt-box.result{background:radial-gradient(circle at 50% 40%,#2f7fc4,#16467a);box-shadow:0 0 30px rgba(47,127,196,.4);}
-@keyframes rtPulse{0%,100%{box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 0 40px rgba(46,196,95,.6);}50%{box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 0 66px rgba(46,196,95,.95);}}
-#rt-text{position:relative;z-index:1;font-size:clamp(20px,4.5vw,34px);font-weight:bold;color:#fff;letter-spacing:2px;text-align:center;padding:0 20px;text-shadow:0 2px 6px rgba(0,0,0,.5);}
-#rt-summary{margin-top:12px;font-size:11px;letter-spacing:1px;color:var(--txt-d);text-align:center;}
-#rt-summary .rt-times{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;}
-#rt-summary .rt-chip{padding:4px 10px;background:var(--bg3);border:1px solid var(--bdr);font-size:11px;}
-
-/* BLACKJACK */
-#bj-table{background:#0a4a0a;border:2px solid #1a6a1a;border-radius:8px;padding:16px;max-width:520px;margin:0 auto;width:100%;}
-.bj-zone{margin-bottom:10px;}
-.bj-zlbl{font-size:9px;letter-spacing:3px;color:#2a8a2a;margin-bottom:6px;}
-.bj-hand{display:flex;gap:-8px;flex-wrap:wrap;gap:6px;min-height:80px;align-items:flex-start;}
-.bj-card{width:54px;height:80px;border-radius:5px;background:#f7f2e3;border:1px solid #bbb;
-         display:flex;flex-direction:column;justify-content:space-between;padding:4px 5px;
-         box-shadow:1px 2px 4px rgba(0,0,0,.4);flex-shrink:0;font-weight:bold;}
-.bj-card .top{font-size:13px;line-height:1;}
-.bj-card .suit{font-size:22px;text-align:center;line-height:1.3;}
-.bj-card .bot{font-size:13px;text-align:right;transform:rotate(180deg);line-height:1;}
-.bj-card.red .top,.bj-card.red .bot{color:#c0152f;}
-.bj-card.red .suit{color:#c0152f;}
-.bj-card.blk .top,.bj-card.blk .bot{color:#111;}
-.bj-card.blk .suit{color:#111;}
-.bj-card.back{background:repeating-linear-gradient(45deg,#1a3a8a,#1a3a8a 4px,#2a4a9a 4px,#2a4a9a 8px);}
-.bj-score{font-size:10px;color:#1a8a1a;margin-top:4px;letter-spacing:1px;}
-.bj-btns{display:flex;gap:8px;justify-content:center;margin-top:10px;}
-.bj-chips{display:flex;gap:8px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;}
-.bj-chip{width:44px;height:44px;border-radius:50%;cursor:pointer;border:3px solid rgba(255,255,255,.4);
-         font-size:11px;font-weight:bold;color:#fff;display:flex;align-items:center;justify-content:center;
-         box-shadow:0 2px 4px rgba(0,0,0,.4);transition:transform .1s;}
-.bj-chip:hover{transform:scale(1.1);}
-
-/* YAHTZEE */
-#yz-dice{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
-.yz-die{width:54px;height:54px;border-radius:8px;background:#f7f2e3;border:2px solid #bbb;
-        cursor:pointer;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;
-        padding:6px;gap:2px;box-shadow:2px 3px 6px rgba(0,0,0,.35);transition:transform .1s,border-color .15s;}
-.yz-die:hover{transform:scale(1.06);}
-.yz-die.held{border-color:#e67e22;box-shadow:0 0 8px rgba(230,126,34,.6);}
-.yz-dot{border-radius:50%;background:#1a1a1a;align-self:center;justify-self:center;width:8px;height:8px;}
-.yz-dot.hidden{background:transparent;}
-#yz-cats{display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:420px;margin:0 auto;}
-.yz-cat{display:flex;align-items:center;justify-content:space-between;
-        padding:5px 9px;background:var(--bg2);border:1px solid var(--bdr-d);font-size:11px;
-        cursor:pointer;transition:background .1s,border-color .15s;}
-.yz-cat:hover:not(.used){background:var(--sel);border-color:var(--bdr);}
-.yz-cat.used{color:var(--pri-b);cursor:default;}
-.yz-cat.preview{border-color:var(--pri-d);color:var(--pri);}
-.yz-cat-name{letter-spacing:.5px;}
-.yz-cat-val{font-weight:bold;min-width:24px;text-align:right;}
-
 /* 15-PUZZLE */
 #pz-grid{display:inline-grid;gap:4px;padding:6px;background:var(--bg2);border:2px solid var(--bdr);border-radius:6px;}
 .pz-tile{display:flex;align-items:center;justify-content:center;
@@ -636,24 +574,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .ss-btn.ss-on{cursor:pointer;}
 .ss-btn.ss-on:hover{filter:brightness(1.18);}
 
-/* Reaction Test */
-#rt-summary .rt-chip{background:#0a1426;border:1px solid #243049;border-radius:6px;color:#9fefff;font-family:'Press Start 2P',monospace;font-size:8px;padding:6px 9px;}
-
-/* Blackjack table */
-#bj-table{background:#001a0a;border-color:#003322;border-radius:0;}
-.bj-zlbl{font-family:'Press Start 2P',monospace;font-size:7px;color:#007744;letter-spacing:2px;}
-.bj-score{font-family:'Press Start 2P',monospace;font-size:7px;color:#00ff88;}
-.bj-chip{border-radius:0;}
-
-/* Yahtzee dice */
-.yz-die{border-radius:0;border-color:#003355;}
-.yz-die.held{border-color:#ffb830;box-shadow:0 0 10px rgba(255,184,48,.5);}
-.yz-dot{background:#00e5ff;}
-.yz-cat{background:#001020;border-color:#003355;font-family:'Press Start 2P',monospace;font-size:7px;}
-.yz-cat:hover:not(.used){background:#003355;border-color:#00e5ff;}
-.yz-cat.used{color:#007799;}
-.yz-cat.preview{border-color:#ffb830;color:#ffb830;}
-
 /* 15-Puzzle */
 .pz-tile{background:#001020;border-color:#003355;font-family:'Press Start 2P',monospace;border-radius:0;}
 .pz-tile:hover:not(.empty){background:#003355;}
@@ -661,7 +581,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .pz-tile.empty{background:#020208;border-color:#001a33;}
 
 /* Message text in game bars — inherit arcade font */
-#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ss-msg,#rt-text,#bj-msg{
+#sl-msg,#wl-msg,#fl-msg,#mm-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ss-msg{
   font-family:'Press Start 2P',monospace;
   font-size:clamp(6px,1.5vw,9px);
   letter-spacing:1px;
@@ -763,74 +683,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 #ck-bot.ckmood-lose .ckbot-crown{transform:translateX(-50%) translateY(6px) rotate(-10deg);}
 #ck-bot.ckmood-lose .ckbot-mouth{border-radius:12px 12px 0 0;height:8px;}
 
-/* ═══════════ REACTION: THE STARTER ENTITY (right, desktop) ═══════════ */
-#react-bot{
-  position:fixed;right:10px;top:50%;
-  transform:translateY(-50%) scale(var(--rb-scale,1.5));transform-origin:100% 50%;
-  z-index:500;width:190px;pointer-events:none;user-select:none;
-  display:none;flex-direction:column;align-items:center;gap:10px;
-  --rb-accent:#ffc23a;--rb-lamp:#c0392b;--rb-scale:1.5;font-family:'Press Start 2P',monospace;
-}
-#react-bot.on{display:flex;}
-@media(max-width:1600px){#react-bot{--rb-scale:1.4;}}
-@media(max-width:1440px){#react-bot{--rb-scale:1.3;}}
-@media(max-width:1280px){#react-bot{--rb-scale:1.15;}}
-@media(max-width:1120px){#react-bot{--rb-scale:1.0;}}
-@media(max-width:1040px){#react-bot{display:none!important;}}
-
-.rbot-stage{position:relative;width:190px;height:188px;display:flex;align-items:flex-end;justify-content:center;}
-.rbot-core{position:relative;width:150px;height:176px;display:flex;align-items:flex-end;justify-content:center;animation:rbFloat 3.4s ease-in-out infinite;}
-@keyframes rbFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-.rbot-core::before{content:'';position:absolute;bottom:6px;width:118%;height:82%;border-radius:50%;background:radial-gradient(circle,var(--rb-lamp) 0%,transparent 60%);opacity:.18;filter:blur(7px);z-index:0;transition:background .15s;}
-
-.rbot-head{position:relative;width:120px;height:130px;z-index:1;
-  background:linear-gradient(160deg,#11233a,#070d18);border:3px solid var(--rb-accent);border-radius:20px;
-  box-shadow:0 0 16px rgba(255,194,58,.4),inset 0 -8px 14px rgba(0,0,0,.6),inset 0 6px 12px rgba(255,255,255,.05);
-  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:12px;gap:10px;}
-.rbot-lamp{width:34px;height:34px;border-radius:50%;background:var(--rb-lamp);box-shadow:0 0 18px var(--rb-lamp),inset 0 -4px 8px rgba(0,0,0,.4);transition:background .12s,box-shadow .12s;}
-.rbot-eyes{display:flex;gap:18px;}
-.rbot-eye{width:15px;height:15px;border-radius:50%;background:var(--rb-accent);box-shadow:0 0 8px var(--rb-accent);animation:rbBlink 4.6s infinite;}
-@keyframes rbBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.12);}}
-.rbot-mouth{width:20px;height:6px;border-bottom:3px solid var(--rb-accent);border-radius:0 0 10px 10px;transition:all .15s;}
-
-.rbot-name{color:var(--rb-accent);font-size:9px;letter-spacing:2px;text-shadow:0 0 10px var(--rb-accent);}
-.rbot-status{color:#ffe6b0;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(255,194,58,.4);}
-
-.rbot-particle{position:absolute;width:4px;height:4px;border-radius:1px;background:var(--rb-accent);box-shadow:0 0 8px var(--rb-accent);opacity:.5;}
-.rbot-particle.rp1{top:20%;left:14%;animation:rbDrift 5.2s ease-in-out infinite;}
-.rbot-particle.rp2{top:34%;right:12%;animation:rbDrift 6.2s ease-in-out infinite .6s;}
-.rbot-particle.rp3{bottom:26%;left:18%;animation:rbDrift 5.6s ease-in-out infinite 1s;}
-@keyframes rbDrift{0%,100%{transform:translateY(0);opacity:.25;}50%{transform:translateY(-9px);opacity:.7;}}
-
-/* ── moods (lamp colour reflects the signal) ── */
-#react-bot.rmood-idle{--rb-lamp:#6b7280;}
-#react-bot.rmood-waiting{--rb-lamp:#c0392b;}
-#react-bot.rmood-waiting .rbot-eye{animation:rbScan 1.2s ease-in-out infinite;}
-@keyframes rbScan{0%,100%{transform:translateX(-2px);}50%{transform:translateX(2px);}}
-#react-bot.rmood-fake{--rb-lamp:#8a3ad9;}
-#react-bot.rmood-fake .rbot-mouth{width:14px;transform:rotate(-12deg);}
-#react-bot.rmood-fake .rbot-core{animation:rbTilt .3s ease;}
-@keyframes rbTilt{0%,100%{transform:rotate(0);}50%{transform:rotate(-4deg);}}
-#react-bot.rmood-ready{--rb-lamp:#2ee85f;}
-#react-bot.rmood-ready .rbot-lamp{box-shadow:0 0 30px #2ee85f,0 0 60px #2ee85f;}
-#react-bot.rmood-ready .rbot-mouth{width:30px;height:13px;border-radius:0 0 15px 15px;}
-#react-bot.rmood-ready .rbot-core{animation:rbBounce .4s ease;}
-@keyframes rbBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
-#react-bot.rmood-early{--rb-lamp:#ff4d5e;}
-#react-bot.rmood-early .rbot-core{animation:rbShake .45s;}
-@keyframes rbShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
-#react-bot.rmood-early .rbot-mouth{width:24px;height:11px;border-radius:0 0 12px 12px;}
-#react-bot.rmood-fast{--rb-lamp:#2ee85f;}
-#react-bot.rmood-fast .rbot-lamp{box-shadow:0 0 34px #2ee85f,0 0 64px #2ee85f;}
-#react-bot.rmood-fast .rbot-eye{border-radius:2px;height:9px;}
-#react-bot.rmood-fast .rbot-mouth{width:30px;height:13px;border-radius:0 0 15px 15px;}
-#react-bot.rmood-fast .rbot-core{animation:rbBounce .5s ease;}
-#react-bot.rmood-mid{--rb-lamp:#ffc23a;}
-#react-bot.rmood-mid .rbot-mouth{width:24px;height:9px;border-radius:0 0 12px 12px;}
-#react-bot.rmood-slow{--rb-lamp:#2f7fc4;}
-#react-bot.rmood-slow .rbot-mouth{border-radius:10px 10px 0 0;height:8px;}
-#react-bot.rmood-finish{--rb-lamp:#ffc23a;}
-#react-bot.rmood-finish .rbot-mouth{width:28px;height:12px;border-radius:0 0 14px 14px;}
 
 </style>
 </head>
@@ -907,9 +759,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
     <div class="game-icon" onclick="location.href='battleship/'"><span class="ico-pixel">&#128674;</span><span class="ico-label">BATTLESHIP</span></div>
     <div class="game-icon" onclick="openGame('mind')"><span class="ico-pixel">&#127919;</span><span class="ico-label">MASTERMIND</span></div>
-    <div class="game-icon" onclick="openGame('react')"><span class="ico-pixel">&#9889;</span><span class="ico-label">REACTION</span></div>
-    <div class="game-icon" onclick="openGame('bj')"><span class="ico-pixel">&#127920;</span><span class="ico-label">BLACKJACK</span></div>
-    <div class="game-icon" onclick="openGame('yahtzee')"><span class="ico-pixel">&#127922;</span><span class="ico-label">YAHTZEE</span></div>
     <div class="game-icon" onclick="openGame('puzzle')"><span class="ico-pixel">&#129513;</span><span class="ico-label">15-PUZZLE</span></div>
     <div class="game-icon" onclick="openGame('bubbles')"><span class="ico-pixel">&#129749;</span><span class="ico-label">BUBBLES</span></div>
     <div class="game-icon page-btn" onclick="showPage(1)"><span class="ico-page-arrow">&#9664;&#9664;</span><span class="ico-label">BACK</span></div>
@@ -1062,78 +911,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
 </div>
 
-<!-- REACTION TEST -->
-<div id="game-react" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">REACTION TEST</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>ROUND: <span id="rt-round">0</span>/5</span>
-      <button class="btn" onclick="initReact()">NEW</button>
-      <span>BEST: <span id="hi-react">&mdash;</span> ms</span>
-    </div>
-    <div id="rt-box" onclick="rtClickBox()">
-      <div id="rt-text">CLICK TO START</div>
-    </div>
-    <div id="rt-summary"></div>
-
-    <!-- REACTION AI ENTITY (desktop only) -->
-    <div id="react-bot" aria-hidden="true">
-      <div class="rbot-stage">
-        <span class="rbot-particle rp1"></span>
-        <span class="rbot-particle rp2"></span>
-        <span class="rbot-particle rp3"></span>
-        <div class="rbot-core">
-          <div class="rbot-head">
-            <div class="rbot-lamp"></div>
-            <div class="rbot-eyes"><span class="rbot-eye"></span><span class="rbot-eye"></span></div>
-            <div class="rbot-mouth"></div>
-          </div>
-        </div>
-      </div>
-      <div class="rbot-name">THE STARTER</div>
-      <div class="rbot-status" id="react-bot-status">READY?</div>
-    </div>
-  </div>
-</div>
-
-<!-- BLACKJACK -->
-<div id="game-bj" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">BLACKJACK</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>BALANCE: $<span id="bj-bal">1000</span></span>
-      <span>BET: $<span id="bj-bet">0</span></span>
-      <span>WINS: <span id="bj-wins">0</span> &nbsp;|&nbsp; LOSSES: <span id="bj-loss">0</span></span>
-      <button class="btn" onclick="bjNewGame()">RESET</button>
-    </div>
-    <div id="bj-msg" style="font-size:12px;letter-spacing:1px;min-height:16px;text-align:center;"></div>
-    <div id="bj-table">
-      <div class="bj-zone"><div class="bj-zlbl">DEALER</div><div class="bj-hand" id="bj-dhand"></div><div class="bj-score" id="bj-dscore"></div></div>
-      <div class="bj-zone"><div class="bj-zlbl">YOU</div><div class="bj-hand" id="bj-phand"></div><div class="bj-score" id="bj-pscore"></div></div>
-      <div class="bj-chips" id="bj-chips"></div>
-      <div class="bj-btns" id="bj-btns"></div>
-    </div>
-  </div>
-</div>
-
-<!-- YAHTZEE -->
-<div id="game-yahtzee" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">YAHTZEE</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>TURN: <span id="yz-turn">0</span>/13</span>
-      <span>ROLLS LEFT: <span id="yz-rolls">3</span></span>
-      <span>SCORE: <span id="yz-score">0</span></span>
-      <span>BEST: <span id="hi-yahtzee">0</span></span>
-      <button class="btn" onclick="initYahtzee()">NEW</button>
-    </div>
-    <div id="yz-msg" style="font-size:11px;letter-spacing:1px;min-height:16px;text-align:center;"></div>
-    <div id="yz-dice"></div>
-    <button class="btn sel" id="yz-roll" onclick="yzRoll()">ROLL DICE</button>
-    <div id="yz-cats"></div>
-  </div>
-</div>
-
 <!-- 15-PUZZLE -->
 <div id="game-puzzle" class="gwin hidden">
   <div class="gtb"><span class="gtb-t">15-PUZZLE</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
@@ -1249,7 +1026,7 @@ document.addEventListener('keydown',function(e){
 });
 
 /* ── OPEN / CLOSE ── */
-var PAGE2_GAMES={flood:1,battle:1,mind:1,react:1,bj:1,yahtzee:1,puzzle:1,bubbles:1};
+var PAGE2_GAMES={flood:1,battle:1,mind:1,puzzle:1,bubbles:1};
 window.openGame=function(id){
   document.getElementById('launcher').classList.add('hidden');
   document.getElementById('launcher-2').classList.add('hidden');
@@ -1260,8 +1037,8 @@ window.openGame=function(id){
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
   var fn={pong:initPong,
           checkers:initCheckers,pf:initPf,
-          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,react:initReact,
-          bj:initBJ,yahtzee:initYahtzee,puzzle:initPuzzle,bubbles:initBubble};
+          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,
+          puzzle:initPuzzle,bubbles:initBubble};
   /* Show PRESS START — init game only after player clicks */
   showGameSplash(function(){
     if(fn[id])fn[id]();
@@ -1273,7 +1050,6 @@ window.closeGame=function(){
   document.getElementById('game-'+cur).classList.add('hidden');
   if(cur==='pong')pongStop();
   if(cur==='pf')pfStop();if(cur==='ts')tsStop();
-  if(cur==='react'&&typeof rtTimer!=='undefined')clearTimeout(rtTimer);
   if(cur==='bubbles'&&typeof bubRaf!=='undefined'&&bubRaf){cancelAnimationFrame(bubRaf);bubRaf=null;}
   var wasP2=PAGE2_GAMES[cur];
   cur=null;
@@ -2085,413 +1861,6 @@ function renderMindPalette(){
 }
 
 (function(){var el=document.getElementById('hi-mind');if(el)el.textContent=localStorage.getItem('aceon_mm_wins')||'0';})();
-
-/* ════════════════ REACTION TEST ════════════════ */
-var rtState='idle',rtTimer=null,rtReadyAt,rtRound=0,rtTimes=[],rtMax=5,rtFakeTimer=null,rtFakeEnd=0;
-
-window.initReact=function(){
-  rtState='idle';rtRound=0;rtTimes=[];
-  clearTimeout(rtTimer);rtClearFake();
-  document.getElementById('rt-round').textContent='0';
-  document.getElementById('rt-summary').innerHTML='';
-  rtShowBest();
-  rtSetBox('','CLICK TO START');
-  if(window.ReactBot){ReactBot.show();ReactBot.react('idle');}
-  if(window.positionReactBot){positionReactBot();setTimeout(positionReactBot,60);}
-};
-
-function rtSetBox(cls,text){
-  var box=document.getElementById('rt-box');
-  if(!box)return;
-  box.className=cls;box.style.background='';
-  document.getElementById('rt-text').textContent=text;
-}
-
-/* ── distractor flashes during the wait (only GREEN means go) ── */
-function rtClearFake(){if(rtFakeTimer){clearTimeout(rtFakeTimer);rtFakeTimer=null;}}
-function rtScheduleFake(delay){
-  rtClearFake();
-  rtFakeEnd=performance.now()+delay-320;
-  var PAL=[['#d9a521','NOPE'],['#2a6ed9','NOT YET'],['#8a3ad9','STEADY'],['#d97a2a','HOLD'],['#d92a8a','ALMOST'],['#c0392b','WAIT...']];
-  function flash(){
-    if(rtState!=='waiting'||performance.now()>=rtFakeEnd){return;}
-    var f=PAL[Math.random()*PAL.length|0],box=document.getElementById('rt-box');
-    if(box){box.style.background=f[0];document.getElementById('rt-text').textContent=f[1];}
-    if(window.ReactBot)ReactBot.react('fake');
-    rtFakeTimer=setTimeout(function(){
-      if(rtState==='waiting'){var b=document.getElementById('rt-box');if(b){b.style.background='';b.className='wait';}document.getElementById('rt-text').textContent='WAIT FOR GREEN...';}
-      rtFakeTimer=setTimeout(flash,320+Math.random()*620);
-    },150+Math.random()*120);
-  }
-  rtFakeTimer=setTimeout(flash,480+Math.random()*700);
-}
-
-window.rtClickBox=function(){
-  if(cur!=='react')return;
-  if(rtState==='idle'){
-    rtRound=0;rtTimes=[];
-    document.getElementById('rt-round').textContent='0';
-    document.getElementById('rt-summary').innerHTML='';
-    rtStartRound();
-  }else if(rtState==='waiting'){
-    clearTimeout(rtTimer);rtClearFake();
-    rtState='early';
-    rtSetBox('early','TOO SOON! CLICK TO TRY AGAIN');
-    if(window.ReactBot)ReactBot.react('early');
-  }else if(rtState==='early'){
-    rtStartRound();
-  }else if(rtState==='ready'){
-    var elapsed=Math.round(performance.now()-rtReadyAt);
-    rtTimes.push(elapsed);
-    rtRound++;
-    document.getElementById('rt-round').textContent=rtRound;
-    rtState='result';
-    rtSetBox('result',elapsed+' ms');
-    if(window.ReactBot)ReactBot.react(elapsed<250?'fast':elapsed<450?'mid':'slow',elapsed);
-    if(rtRound>=rtMax){rtTimer=setTimeout(rtFinish,900);}
-    else{rtTimer=setTimeout(rtStartRound,1100);}
-  }
-};
-
-function rtStartRound(){
-  rtState='waiting';
-  rtSetBox('wait','WAIT FOR GREEN...');
-  if(window.ReactBot)ReactBot.react('waiting');
-  var delay=1200+Math.random()*3300;
-  rtScheduleFake(delay);
-  rtTimer=setTimeout(function(){
-    rtClearFake();
-    rtState='ready';
-    rtReadyAt=performance.now();
-    rtSetBox('ready','CLICK NOW!');
-    if(window.ReactBot)ReactBot.react('ready');
-  },delay);
-}
-
-function rtFinish(){
-  rtState='idle';
-  var avg=Math.round(rtTimes.reduce(function(a,b){return a+b;},0)/rtTimes.length);
-  var best=Math.min.apply(null,rtTimes);
-  rtSetBox('','CLICK TO PLAY AGAIN');
-  var allBest=rtGetBest();
-  var newBest=(allBest===null||best<allBest);
-  if(newBest){rtSetBest(best);rtShowBest();}
-  if(window.ReactBot)ReactBot.react('finish');
-  var html='AVERAGE: '+avg+' ms &nbsp;|&nbsp; BEST ROUND: '+best+' ms'+(newBest?' \u2014 NEW RECORD!':'');
-  html+='<div class="rt-times">'+rtTimes.map(function(t){return '<span class="rt-chip">'+t+' ms</span>';}).join('')+'</div>';
-  document.getElementById('rt-summary').innerHTML=html;
-}
-
-function rtGetBest(){var v=localStorage.getItem('aceon_hi_react');return v?parseInt(v):null;}
-function rtSetBest(ms){var b=rtGetBest();if(b===null||ms<b)localStorage.setItem('aceon_hi_react',ms);}
-function rtShowBest(){var b=rtGetBest();var el=document.getElementById('hi-react');if(el)el.textContent=b===null?'\u2014':b;}
-
-/* ── THE STARTER entity ── */
-var ReactBot=(function(){
-  var root=null,st=null,shown=false,cur2='idle',rt=null;
-  var SAY={
-    idle:['READY?','LET\'S GO','FOCUS UP','EYES OPEN'],
-    waiting:['STEADY...','HOLD IT...','NOT YET...','WAIT FOR IT'],
-    fake:['GOTCHA?','NOT THAT ONE','TRICKED YA?','HA, NOPE'],
-    ready:['GO GO GO!','NOW! NOW!','SMASH IT!'],
-    early:['TOO SOON!','HAH! JUMPY','PATIENCE!','GOT BAITED'],
-    fast:['LIGHTNING!','INHUMAN!','SO FAST!','WOW!'],
-    mid:['NOT BAD!','SOLID.','DECENT!'],
-    slow:['...SLOW.','WAKE UP!','C\'MON!'],
-    finish:['GG!','NICE RUN','THAT\'S FIVE!']
-  };
-  function pick(a){return a[Math.random()*a.length|0];}
-  function grab(){if(!root){root=document.getElementById('react-bot');st=document.getElementById('react-bot-status');}return root;}
-  function mood(m){if(!grab())return;cur2=m;root.className=(shown?'on ':'')+'rmood-'+m;if(st)st.textContent=pick(SAY[m]||['...']);}
-  return {
-    show:function(){if(!grab())return;shown=true;root.classList.add('on');mood('idle');},
-    hide:function(){if(grab()){shown=false;root.classList.remove('on');}},
-    react:function(m,ms){
-      if(!grab()||!shown)return;
-      if(rt){clearTimeout(rt);rt=null;}
-      mood(m);
-      if(typeof ms==='number'&&st)st.textContent=ms+' ms';
-      var transient={fake:1,early:1,fast:1,mid:1,slow:1,ready:1};
-      if(transient[m])rt=setTimeout(function(){if(cur2===m&&rtState==='waiting')mood('waiting');else if(cur2===m&&rtState!=='waiting')mood('idle');},1500);
-    }
-  };
-})();
-window.ReactBot=ReactBot;
-function positionReactBot(){
-  var box=document.getElementById('rt-box'),bot=document.getElementById('react-bot');
-  if(!box||!bot)return;
-  var win=document.getElementById('game-react');
-  if(win&&win.classList.contains('hidden'))return;
-  if(!bot.classList.contains('on'))return;
-  var br=box.getBoundingClientRect();if(!br.width)return;
-  var vw=window.innerWidth||document.documentElement.clientWidth,GAP=18,EDGE=10;
-  bot.style.display='';
-  var bw=bot.getBoundingClientRect().width||0,rg=vw-br.right;
-  if(bw&&rg>=bw+GAP+EDGE){
-    var cx=br.right+rg/2,rightEdge=cx+bw/2,ro=vw-rightEdge;
-    ro=Math.min(Math.max(EDGE,ro),vw-br.right-GAP-bw);
-    bot.style.right=ro+'px';bot.style.display='';
-  }else{bot.style.display='none';}
-}
-window.positionReactBot=positionReactBot;
-if(!window.__rbResize){window.__rbResize=true;window.addEventListener('resize',function(){if(typeof cur!=='undefined'&&cur==='react')positionReactBot();});}
-
-/* ════════════════ BLACKJACK ════════════════ */
-var BJ_SUITS=['\u2660','\u2665','\u2666','\u2663'];
-var BJ_RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-var bjDeck,bjPlayer,bjDealer,bjBet,bjBal,bjPhase,bjWins,bjLoss;
-
-function bjCardVal(rank){
-  if(rank==='A')return 11;
-  if(['J','Q','K'].indexOf(rank)>=0)return 10;
-  return parseInt(rank);
-}
-function bjHandTotal(hand){
-  var total=0,aces=0;
-  hand.forEach(function(c){if(c.hidden)return;total+=bjCardVal(c.rank);if(c.rank==='A')aces++;});
-  while(total>21&&aces>0){total-=10;aces--;}
-  return total;
-}
-function bjNewDeck(){
-  bjDeck=[];
-  for(var s=0;s<4;s++)for(var r=0;r<13;r++)bjDeck.push({suit:BJ_SUITS[s],rank:BJ_RANKS[r],red:(s===1||s===2)});
-  for(var i=bjDeck.length-1;i>0;i--){var j=Math.random()*(i+1)|0;var t=bjDeck[i];bjDeck[i]=bjDeck[j];bjDeck[j]=t;}
-}
-function bjDraw(hidden){var c=bjDeck.pop();c.hidden=!!hidden;return c;}
-
-window.bjNewGame=function(){
-  bjBal=1000;bjBet=0;bjWins=0;bjLoss=0;bjPhase='bet';
-  document.getElementById('bj-wins').textContent='0';
-  document.getElementById('bj-loss').textContent='0';
-  bjRender();
-};
-window.initBJ=function(){
-  if(typeof bjBal==='undefined')bjBal=1000;
-  if(typeof bjWins==='undefined')bjWins=0;
-  if(typeof bjLoss==='undefined')bjLoss=0;
-  bjBet=0;bjPhase='bet';bjRender();
-};
-
-window.bjPlaceBet=function(amount){
-  if(bjPhase!=='bet')return;
-  if(bjBal<=0){document.getElementById('bj-msg').textContent='NO MONEY \u2014 RESET TO RESTART';return;}
-  bjBet=Math.min(amount,bjBal);
-  bjNewDeck();
-  bjPlayer=[bjDraw(),bjDraw()];
-  bjDealer=[bjDraw(),bjDraw(true)];
-  bjPhase='play';
-  var pt=bjHandTotal(bjPlayer);
-  if(pt===21){bjRevealAndSettle();return;}
-  bjRender();
-};
-
-window.bjHit=function(){
-  if(bjPhase!=='play')return;
-  bjPlayer.push(bjDraw());
-  if(bjHandTotal(bjPlayer)>21){bjPhase='bust';bjRevealAndSettle();}
-  else bjRender();
-};
-
-window.bjStand=function(){
-  if(bjPhase!=='play')return;
-  bjPhase='dealer';
-  bjRevealAndSettle();
-};
-
-window.bjDouble=function(){
-  if(bjPhase!=='play'||bjPlayer.length>2||bjBet*2>bjBal)return;
-  bjBet*=2;
-  bjPlayer.push(bjDraw());
-  bjPhase=bjHandTotal(bjPlayer)>21?'bust':'dealer';
-  bjRevealAndSettle();
-};
-
-function bjRevealAndSettle(){
-  bjDealer.forEach(function(c){c.hidden=false;});
-  if(bjPhase!=='bust'){
-    while(bjHandTotal(bjDealer)<17)bjDealer.push(bjDraw());
-  }
-  var pt=bjHandTotal(bjPlayer),dt=bjHandTotal(bjDealer);
-  var msg='',win=false;
-  if(bjPhase==='bust'){msg='BUST! YOU LOSE';win=false;}
-  else if(pt===21&&bjPlayer.length===2&&!(dt===21&&bjDealer.length===2)){msg='BLACKJACK! \u2713';win=true;bjBal+=Math.floor(bjBet*2.5);}
-  else if(dt>21){msg='DEALER BUSTS \u2014 YOU WIN!';win=true;bjBal+=bjBet*2;}
-  else if(pt>dt){msg='YOU WIN!';win=true;bjBal+=bjBet*2;}
-  else if(pt===dt){msg='PUSH (TIE)';bjBal+=bjBet;}
-  else{msg='DEALER WINS';win=false;}
-  if(!msg.includes('BLACKJACK')&&!msg.includes('PUSH')){bjBal-=bjBet*(win?0:1);}
-  if(win)bjWins++;else if(!msg.includes('PUSH'))bjLoss++;
-  document.getElementById('bj-wins').textContent=bjWins;
-  document.getElementById('bj-loss').textContent=bjLoss;
-  bjPhase='over';bjBet=0;
-  document.getElementById('bj-msg').textContent=msg;
-  bjRender();
-}
-
-function bjRenderCard(c){
-  var el=document.createElement('div');
-  el.className='bj-card '+(c.hidden?'back':(c.red?'red':'blk'));
-  if(!c.hidden){
-    el.innerHTML='<div class="top">'+c.rank+c.suit+'</div><div class="suit">'+c.suit+'</div><div class="bot">'+c.rank+c.suit+'</div>';
-  }
-  return el;
-}
-function bjRender(){
-  document.getElementById('bj-bal').textContent=bjBal;
-  document.getElementById('bj-bet').textContent=bjBet;
-  var dh=document.getElementById('bj-dhand'),ph=document.getElementById('bj-phand');
-  dh.innerHTML='';ph.innerHTML='';
-  (bjDealer||[]).forEach(function(c){dh.appendChild(bjRenderCard(c));});
-  (bjPlayer||[]).forEach(function(c){ph.appendChild(bjRenderCard(c));});
-  document.getElementById('bj-dscore').textContent=bjDealer?'Total: '+bjHandTotal(bjDealer):'';
-  document.getElementById('bj-pscore').textContent=bjPlayer?'Total: '+bjHandTotal(bjPlayer):'';
-  var chips=document.getElementById('bj-chips');
-  var btns=document.getElementById('bj-btns');
-  chips.innerHTML='';btns.innerHTML='';
-  if(bjPhase==='bet'){
-    document.getElementById('bj-msg').textContent=bjBal>0?'PLACE YOUR BET':'NO MONEY \u2014 CLICK RESET';
-    [[5,'#c0392b'],[25,'#2980b9'],[100,'#27ae60'],[500,'#8e44ad']].forEach(function(ch){
-      if(ch[0]>bjBal)return;
-      var btn=document.createElement('div');btn.className='bj-chip';btn.style.background=ch[1];btn.textContent='$'+ch[0];
-      btn.addEventListener('click',function(){bjPlaceBet(ch[0]);});chips.appendChild(btn);
-    });
-  }else if(bjPhase==='play'){
-    var mkBtn=function(lbl,fn){var b=document.createElement('button');b.className='btn sel';b.textContent=lbl;b.addEventListener('click',fn);btns.appendChild(b);};
-    mkBtn('HIT',bjHit);mkBtn('STAND',bjStand);
-    if(bjPlayer.length===2&&bjBet*2<=bjBal)mkBtn('DOUBLE',bjDouble);
-  }else if(bjPhase==='over'){
-    var nb=document.createElement('button');nb.className='btn sel';nb.textContent='NEXT HAND';
-    nb.addEventListener('click',function(){bjPhase='bet';bjBet=0;bjRender();});
-    btns.appendChild(nb);
-  }
-}
-
-/* ════════════════ YAHTZEE ════════════════ */
-var YZ_CATS=[
-  {id:'ones',name:'Ones',section:'upper'},
-  {id:'twos',name:'Twos',section:'upper'},
-  {id:'threes',name:'Threes',section:'upper'},
-  {id:'fours',name:'Fours',section:'upper'},
-  {id:'fives',name:'Fives',section:'upper'},
-  {id:'sixes',name:'Sixes',section:'upper'},
-  {id:'3ok',name:'Three of a Kind',section:'lower'},
-  {id:'4ok',name:'Four of a Kind',section:'lower'},
-  {id:'fh',name:'Full House',section:'lower'},
-  {id:'ss',name:'Small Straight',section:'lower'},
-  {id:'ls',name:'Large Straight',section:'lower'},
-  {id:'yahtzee',name:'YAHTZEE!',section:'lower'},
-  {id:'chance',name:'Chance',section:'lower'}
-];
-var yzDice,yzHeld,yzRollsLeft,yzTurn,yzScores,yzRolled;
-
-window.initYahtzee=function(){
-  yzDice=[0,0,0,0,0];yzHeld=[false,false,false,false,false];
-  yzRollsLeft=3;yzTurn=0;yzScores={};yzRolled=false;
-  document.getElementById('yz-turn').textContent='0';
-  document.getElementById('yz-rolls').textContent='3';
-  document.getElementById('yz-score').textContent='0';
-  document.getElementById('yz-msg').textContent='ROLL THE DICE TO START';
-  document.getElementById('yz-roll').disabled=false;
-  showHi('yahtzee');
-  renderYzDice();renderYzCats();
-};
-
-window.yzRoll=function(){
-  if(yzRollsLeft<=0)return;
-  for(var i=0;i<5;i++)if(!yzHeld[i])yzDice[i]=Math.ceil(Math.random()*6);
-  yzRollsLeft--;yzRolled=true;
-  document.getElementById('yz-rolls').textContent=yzRollsLeft;
-  document.getElementById('yz-msg').textContent=yzRollsLeft>0?'CLICK DICE TO HOLD, THEN ROLL AGAIN OR SCORE':'CHOOSE A SCORING CATEGORY BELOW';
-  document.getElementById('yz-roll').disabled=yzRollsLeft<=0;
-  renderYzDice();renderYzCats();
-};
-
-window.yzToggleHold=function(i){
-  if(!yzRolled||yzRollsLeft<=0)return;
-  yzHeld[i]=!yzHeld[i];renderYzDice();
-};
-
-function yzCalc(cat){
-  var d=yzDice,sum=d.reduce(function(a,b){return a+b;},0);
-  var counts=Array(7).fill(0);d.forEach(function(v){counts[v]++;});
-  var hasN=function(n){return counts.some(function(c){return c>=n;});};
-  switch(cat){
-    case 'ones':return counts[1]*1;
-    case 'twos':return counts[2]*2;
-    case 'threes':return counts[3]*3;
-    case 'fours':return counts[4]*4;
-    case 'fives':return counts[5]*5;
-    case 'sixes':return counts[6]*6;
-    case '3ok':return hasN(3)?sum:0;
-    case '4ok':return hasN(4)?sum:0;
-    case 'fh':{var hasTriple=counts.some(function(c){return c===3;});var hasPair=counts.some(function(c){return c===2;});return hasTriple&&hasPair?25:0;}
-    case 'ss':{var u=d.filter(function(v,i){return d.indexOf(v)===i;}).sort();var run=1,max=1;for(var i=1;i<u.length;i++){run=u[i]-u[i-1]===1?run+1:1;max=Math.max(max,run);}return max>=4?30:0;}
-    case 'ls':{var u2=[...new Set(d)].sort(function(a,b){return a-b;});var r2=1,mx=1;for(var i=1;i<u2.length;i++){r2=u2[i]-u2[i-1]===1?r2+1:1;mx=Math.max(mx,r2);}return mx>=5?40:0;}
-    case 'yahtzee':return hasN(5)?50:0;
-    case 'chance':return sum;
-    default:return 0;
-  }
-}
-window.yzScore=function(catId){
-  if(!yzRolled||yzScores.hasOwnProperty(catId))return;
-  yzScores[catId]=yzCalc(catId);
-  yzTurn++;yzRollsLeft=3;yzRolled=false;
-  yzHeld=[false,false,false,false,false];
-  document.getElementById('yz-turn').textContent=yzTurn;
-  document.getElementById('yz-rolls').textContent='3';
-  document.getElementById('yz-roll').disabled=false;
-  var total=yzTotalScore();
-  document.getElementById('yz-score').textContent=total;
-  if(yzTurn>=13){
-    var upper=0;['ones','twos','threes','fours','fives','sixes'].forEach(function(c){upper+=yzScores[c]||0;});
-    var bonus=upper>=63?35:0;var grand=total+bonus;
-    document.getElementById('yz-msg').textContent='GAME OVER! TOTAL: '+grand+(bonus?' (incl. +35 bonus!)':'');
-    document.getElementById('yz-roll').disabled=true;
-    setHi('yahtzee',grand);showHi('yahtzee');
-  }else{
-    document.getElementById('yz-msg').textContent='SCORED! ROLL AGAIN OR KEEP ROLLING';
-  }
-  renderYzCats();
-};
-function yzTotalScore(){
-  var t=0;Object.keys(yzScores).forEach(function(k){t+=yzScores[k];});return t;}
-
-function renderYzDice(){
-  var el=document.getElementById('yz-dice');el.innerHTML='';
-  var DOT_POS={1:[[1,1]],2:[[0,0],[2,2]],3:[[0,0],[1,1],[2,2]],4:[[0,0],[0,2],[2,0],[2,2]],
-    5:[[0,0],[0,2],[1,1],[2,0],[2,2]],6:[[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]]};
-  yzDice.forEach(function(val,i){
-    var die=document.createElement('div');
-    die.className='yz-die'+(yzHeld[i]?' held':'');
-    var positions=DOT_POS[val]||[];
-    for(var r=0;r<3;r++)for(var c=0;c<3;c++){
-      var dot=document.createElement('div');
-      dot.className='yz-dot'+(positions.some(function(p){return p[0]===r&&p[1]===c;})?'':' hidden');
-      die.appendChild(dot);
-    }
-    die.addEventListener('click',(function(i){return function(){yzToggleHold(i);};})(i));
-    el.appendChild(die);
-  });
-}
-function renderYzCats(){
-  var el=document.getElementById('yz-cats');el.innerHTML='';
-  YZ_CATS.forEach(function(cat){
-    var row=document.createElement('div');
-    var scored=yzScores.hasOwnProperty(cat.id);
-    var preview=yzRolled&&!scored?yzCalc(cat.id):null;
-    row.className='yz-cat'+(scored?' used':'')+(preview!==null&&!scored?' preview':'');
-    var nameEl=document.createElement('span');nameEl.className='yz-cat-name';nameEl.textContent=cat.name;
-    var valEl=document.createElement('span');valEl.className='yz-cat-val';
-    valEl.textContent=scored?yzScores[cat.id]:(preview!==null?preview:'\u2014');
-    row.appendChild(nameEl);row.appendChild(valEl);
-    if(!scored)row.addEventListener('click',function(){yzScore(cat.id);});
-    el.appendChild(row);
-  });
-  var upper=0;['ones','twos','threes','fours','fives','sixes'].forEach(function(c){upper+=yzScores[c]||0;});
-  var bonusRow=document.createElement('div');bonusRow.className='yz-cat';bonusRow.style.opacity='.7';
-  bonusRow.innerHTML='<span class="yz-cat-name">Upper Bonus (need 63)</span><span class="yz-cat-val">'+upper+'/63'+(upper>=63?' +35':'')+'</span>';
-  el.appendChild(bonusRow);
-}
 
 /* ════════════════ 15-PUZZLE ════════════════ */
 var pzN=4,pzTiles,pzMoves,pzOver;

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON PONG</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="2" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/pong.css","kb":19},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"../shared/achievements.js","kb":30},
+  {"src":"js/lang.js","kb":36},
+  {"src":"js/rules.js","kb":14},
+  {"src":"js/view.js","kb":10},
+  {"src":"js/pong.js","kb":24}
+]}
+</script>
+
+<!-- Обложка загрузки: мяч летает между ракетками, линия прогресса посередине (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .pg-court{position:relative;width:min(220px,62vw);height:110px;border:2px solid #1d3a66;}
+    .pg-court::before{content:'';position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed rgba(0,229,255,.35);}
+    .pg-l,.pg-r{position:absolute;top:36px;width:6px;height:36px;border-radius:3px;}
+    .pg-l{left:8px;background:#00e5ff;box-shadow:0 0 10px #00e5ff;}
+    .pg-r{right:8px;background:#ff2d78;box-shadow:0 0 10px #ff2d78;}
+    .pg-b{position:absolute;top:50px;width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 10px #fff;left:calc(14px + (100% - 37px) * var(--p));}
+    .pg-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .pg-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="pg-brand">A.C.EON</div>
+  <div class="pg-title">PONG</div>
+  <div class="pg-court"><i class="pg-l"></i><i class="pg-r"></i><i class="pg-b"></i></div>
+</template>
+</head>
+<body class="screen-menu th-neon">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="p.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <div class="bot-box" id="bot-box">
+        <h2 class="m-h m-h2" data-i18n="menu.level"></h2>
+        <div class="seg seg-wide" id="seg-level">
+          <button class="seg-btn" data-v="easy" data-i18n="lvl.easy"></button>
+          <button class="seg-btn" data-v="normal" data-i18n="lvl.normal"></button>
+          <button class="seg-btn" data-v="hard" data-i18n="lvl.hard"></button>
+          <button class="seg-btn" data-v="master" data-i18n="lvl.master"></button>
+        </div>
+        <div class="opt-note" id="level-note"></div>
+      </div>
+      <div class="tour-box hidden" id="tour-box">
+        <div class="tb-head"><h2 class="m-h m-h2" data-i18n="tour.title"></h2><span class="tb-prog" id="tour-prog"></span></div>
+        <div class="tour-list" id="tour-list"></div>
+        <div class="tour-info" id="tour-info"></div>
+        <div class="opt-note" data-i18n="medal.note"></div>
+      </div>
+      <div class="opt-note hidden" id="squash-note" data-i18n="note.squash"></div>
+      <div class="opt-row" id="target-row"><span class="opt-lbl" data-i18n="opt.target"></span>
+        <div class="seg" id="seg-target">
+          <button class="seg-btn" data-v="5">5</button>
+          <button class="seg-btn" data-v="7">7</button>
+          <button class="seg-btn" data-v="11">11</button>
+        </div></div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.look"></h2>
+      <div class="themes" id="themes">
+        <button class="th-card" data-v="neon"><canvas class="th-cv" width="72" height="45"></canvas><span data-i18n="theme.neon"></span></button>
+        <button class="th-card" data-v="retro"><canvas class="th-cv" width="72" height="45"></canvas><span data-i18n="theme.retro"></span></button>
+        <button class="th-card" data-v="table"><canvas class="th-cv" width="72" height="45"></canvas><span data-i18n="theme.table"></span></button>
+      </div>
+      <div class="bonus-box" id="bonus-box">
+      <h2 class="m-h m-h2" data-i18n="menu.bonus"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.bonus"></span>
+        <div class="seg" id="seg-bonus">
+          <button class="seg-btn" data-v="no" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="yes" data-i18n="opt.on"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.bonus"></div>
+      <div class="legend" id="legend"></div>
+      </div>
+      <h2 class="m-h m-h2" data-i18n="menu.ctrl"></h2>
+      <div class="opt-note" id="ctrl-note"></div>
+    </section>
+  </div>
+
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn m-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="t-game" id="game">
+  <div class="hud">
+    <div class="score">
+      <div class="sc sc-a" id="sc-a"></div>
+      <div class="sc-to" id="hud-target"></div>
+      <div class="sc sc-b" id="sc-b"></div>
+      <div class="hc" id="hud-rally"></div>
+    </div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-pause"><svg class="i-pause" viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="1" width="3" height="8" fill="currentColor"/><rect x="6" y="1" width="3" height="8" fill="currentColor"/></svg><span data-i18n="hud.pause"></span></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+
+  <div class="arena" id="arena">
+    <div class="well" id="well">
+      <canvas id="cv"></canvas>
+      <div class="fx" id="fx"></div>
+      <div class="serve hidden" id="serve" data-i18n="hud.serve"></div>
+      <div class="intro hidden" id="intro"></div>
+      <div class="pause-ov hidden" id="pause-ov">
+        <div class="po-title" data-i18n="pause.title"></div>
+        <button class="btn po-go" id="po-go">&#9654; <span data-i18n="pause.go"></span></button>
+        <button class="btn" id="po-restart" data-i18n="pause.restart"></button>
+        <button class="btn" id="po-menu" data-i18n="pause.menu"></button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- конец матча -->
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <div class="over-title" id="over-title"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn b-next hidden" id="over-next">&#9654; <span data-i18n="tour.next"></span></button>
+      <button class="btn" id="over-retry"><span data-i18n="over.retry"></span></button>
+      <button class="btn" id="over-menu" data-i18n="over.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

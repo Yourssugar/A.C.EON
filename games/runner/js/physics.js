@@ -95,7 +95,8 @@ function step(h,inp,dt,world){
   h.ground=world.collide(h,'y');
   if(h.ground&&!wasGround){h.landed=Math.min(1,vyBefore/1200);h.squash=0.12;if(world.onLand)world.onLand(h,vyBefore);}
   if(h.squash>0)h.squash-=dt;
-  if(h.ground)h.run+=dt*(world.auto?world.speed/330:Math.abs(h.vx)/330)*9;
+  /* шаги: h.run растёт на 1 за шаг; темп растёт с корнем скорости, чтобы на 1000+ не мельтешило */
+  if(h.ground){var v=world.auto?world.speed:Math.abs(h.vx);if(v>20)h.run+=dt*Math.min(9,5.2*Math.pow(v/330,0.45));}
 }
 
 window.RunPhys={C:C,hero:hero,step:step,vFor:vFor};

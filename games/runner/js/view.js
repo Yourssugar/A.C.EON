@@ -243,15 +243,20 @@ window.RunView=function(canvas){
   }
   function drawHero(h,pose,now,blink){
     if(blink&&Math.floor(now/80)%2)return;
-    var name=pose==='run'?(Math.floor(h.run)%2?'hero_run1':'hero_run2'):'hero_'+pose;
+    var step=Math.floor(h.run),ph=h.run-step;
+    var name=pose==='run'?(step%2?'hero_run1':'hero_run2'):'hero_'+pose;
     var img=IMG[name]||(pose==='run'?IMG.hero_idle:null);
     var chg=h.charging?h.charge:0;
     if(img&&IMG.hero_idle){
       /* кадр 256x256, ноги на 96% высоты, сам робот около 86% кадра */
       var dh=pose==='duck'?92:100,dw=dh,sq=h.squash>0?1-h.squash*1.2:1;
       sq*=1-chg*0.1;
-      g.save();g.translate(h.x+h.w/2,h.y+h.h);
+      /* бег: подскок между шагами, лёгкий наклон вперёд, короткое сжатие на постановке ноги */
+      var bob=0,lean=0;
+      if(pose==='run'){bob=-Math.sin(ph*Math.PI)*4;lean=0.07;if(ph<0.15)sq*=1-(0.15-ph)*0.25;}
+      g.save();g.translate(h.x+h.w/2,h.y+h.h+bob);
       if(h.face<0)g.scale(-1,1);
+      g.rotate(lean);
       g.scale(2-sq,sq);
       g.drawImage(img,-dw/2,-dh*0.96,dw,dh);
       g.restore();

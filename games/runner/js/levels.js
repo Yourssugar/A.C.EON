@@ -341,16 +341,17 @@ starFlyer:[
 '############',
 '############'],
 starMover:[
-'..................',
+/* над ямой ступенька, чтобы пройти без платформы; звезда высоко: с едущей платформы или полным прыжком */
 '..................',
 '..................',
 '.............*....',
 '..................',
 '..................',
+'..................',
 '.....M............',
 '..................',
 '..................',
-'..................',
+'........==........',
 '###............###',
 '###............###']
 };
@@ -384,10 +385,10 @@ function build(n){
     var c=CH[id];if(!c)throw new Error('chunk '+id);
     for(r=0;r<12;r++)rows[r]+=c[r];
   });
-  /* в уровне с автопрокруткой контрольных точек нет: экран всё равно едет */
-  var auto=n%5===4;
-  if(auto)rows=rows.map(function(s){return s.replace(/C/g,'.');});
-  return {grid:rows,w:rows[0].length,h:12,auto:auto,world:Math.floor(n/5)};
+  /* экран едет сам во всех уровнях. Пятый уровень мира (boss): быстрее и без контрольных точек */
+  var boss=n%5===4;
+  if(boss)rows=rows.map(function(s){return s.replace(/C/g,'.');});
+  return {grid:rows,w:rows[0].length,h:12,auto:true,boss:boss,world:Math.floor(n/5)};
 }
 
 window.RunLevels={CH:CH,LEVELS:LEVELS,COUNT:LEVELS.length,build:build,TILE:48};

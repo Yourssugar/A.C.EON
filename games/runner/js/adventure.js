@@ -13,7 +13,7 @@ var SOLID='#BD',ONEWAY='=';
 
 function create(n){
   var lv=L.build(n),grid=lv.grid.map(function(r){return r.split('');});
-  var st={mode:'adv',n:n,world:lv.world,auto:lv.auto,w:lv.w*T,h:lv.h*T,grid:grid,cols:lv.w,
+  var st={mode:'adv',n:n,world:lv.world,auto:lv.auto,boss:lv.boss,at:0,wait:1.2,w:lv.w*T,h:lv.h*T,grid:grid,cols:lv.w,
     coins:0,coinTotal:0,stars:[],hearts:3,deaths:0,key:false,time:0,over:false,clear:false,
     enemies:[],movers:[],items:[],springs:[],checks:[],exit:null,cp:null,cam:{x:0,y:0},
     inv:0,ev:[],shake:0};
@@ -79,14 +79,24 @@ function hurt(st,kx){
 }
 function die(st){
   st.deaths++;st.ev.push({type:'die'});
-  if(st.auto){
-    /* автопрокрутка: уровень заново, монеты и звёзды тоже */
+  if(st.auto&&st.boss){
+    /* пятый уровень мира: заново целиком, монеты и звёзды тоже */
     var fresh=create(st.n);fresh.deaths=st.deaths;fresh.time=st.time;fresh.ev=st.ev;
     for(var k in fresh)st[k]=fresh[k];
     return;
   }
   st.hearts=3;st.inv=1;
   st.hero=P.hero(st.cp.x,st.cp.y);
+  if(st.auto){
+    /* экран к контрольной точке, пауза перед стартом, скорость чуть ниже */
+    st.cam.x=Math.max(0,Math.min(st.w-VW,st.cp.x-VW*0.3));st.wait=1.2;st.at=Math.max(0,st.at-8);
+  }
+}
+/* скорость экрана: обычные уровни мягче и разгоняются медленнее, пятый как раньше */
+function autoSpeed(st){
+  if(st.boss)return Math.min(230,120+st.at*4);
+  var i=st.n%5,w=st.world;
+  return Math.min(150+w*25+i*8,100+w*15+st.at*3);
 }
 
 function update(st,inp,dt){
@@ -103,7 +113,8 @@ function update(st,inp,dt){
     onJump:function(){st.ev.push({type:'jump'});},onLand:function(o,v){if(v>500)st.ev.push({type:'land'});}});
   /* автопрокрутка: экран едет, отставших выталкивает край */
   if(st.auto){
-    st.cam.x=Math.min(st.w-VW,st.cam.x+Math.min(230,120+st.time*4)*dt);
+    if(st.wait>0)st.wait-=dt;
+    else{st.at+=dt;st.cam.x=Math.min(st.w-VW,st.cam.x+autoSpeed(st)*dt);}
     if(h.x<st.cam.x-4){h.x=st.cam.x-4;if(h.hitWall)die(st);}
     if(h.x+h.w>st.cam.x+VW)h.x=st.cam.x+VW-h.w;
     h.hitWall=false;
@@ -167,5 +178,5 @@ function update(st,inp,dt){
   if(st.exit){var ex=hx-st.exit.x,ey=hy-st.exit.y;if(ex*ex+ey*ey<st.exit.r*st.exit.r){st.clear=true;st.ev.push({type:'clear'});}}
 }
 
-window.RunAdv={T:T,VW:VW,VH:VH,create:create,update:update,cell:cell,solidCell:solidCell};
+window.RunAdv={T:T,VW:VW,VH:VH,autoSpeed:autoSpeed,create:create,update:update,cell:cell,solidCell:solidCell};
 })();

@@ -84,7 +84,7 @@ function buildAdv(){
   $('levels').innerHTML=h;
   var tot=0;for(var k=0;k<LV.COUNT;k++)tot+=starsOf(k);
   $('adv-stars').textContent=t('adv.stars',{n:tot,m:LV.COUNT*3});
-  $('lv-note').textContent=S.level%5===4?t('adv.autoNote'):'';
+  $('lv-note').textContent=t(S.level%5===4?'adv.bossNote':'adv.autoNote');
   I18n.apply($('adv-box'));
 }
 function buildDaily(){

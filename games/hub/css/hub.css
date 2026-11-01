@@ -1,0 +1,139 @@
+/* A.C.EON ARCADE: новая страница игр. Карусель карточек, панель игры, категории, сетка.
+   --cw: ширина карточки (ставит hub.js), --gc: цвет выбранной игры. */
+
+html,body{height:100%;}
+body.hub{display:flex;flex-direction:column;overflow:hidden;min-height:100vh;min-height:100dvh;--cw:260px;--gc:#00e5ff;}
+
+/* ── фон: CSS-вариант виден, пока не загрузился WebGL, и остаётся без него ── */
+.bg{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 60% 35% at 50% 62%,rgba(255,45,120,.28),transparent 70%),
+    radial-gradient(circle at 50% 58%,rgba(255,210,58,.35) 0,rgba(255,45,120,.25) 9%,transparent 16%),
+    linear-gradient(180deg,#050510 0%,#0b0420 45%,#2a0838 62%,#050510 63%,#050510 100%);}
+.bg::after{content:'';position:absolute;left:-50%;right:-50%;top:63%;bottom:-10%;
+  background:
+    repeating-linear-gradient(90deg,rgba(0,229,255,.35) 0 2px,transparent 2px 60px),
+    repeating-linear-gradient(0deg,rgba(0,229,255,.35) 0 2px,transparent 2px 40px);
+  transform:perspective(300px) rotateX(60deg);transform-origin:50% 0;opacity:.5;}
+.bg3d{position:absolute;top:0;left:0;display:block;opacity:0;transition:opacity 1.2s;}
+.bg-on .bg3d{opacity:1;}
+.bg-on .bg::after{opacity:0;transition:opacity 1.2s;}
+/* затемнение у краёв, чтобы карточки и текст читались */
+.hub-main::before{content:'';position:fixed;left:0;right:0;bottom:0;height:52%;pointer-events:none;z-index:-1;
+  background:linear-gradient(to top,rgba(5,5,16,.92),rgba(5,5,16,.55) 55%,transparent);}
+
+.arc-top{position:relative;z-index:5;}
+.hub-main{position:relative;z-index:1;flex:1 1 auto;display:flex;flex-direction:column;min-height:0;}
+
+/* ── категории ── */
+.cats{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:12px 10px 0;}
+.cat{padding:9px 14px;background:rgba(0,16,32,.75);border:1px solid var(--bdr);color:#8fb6c9;font-size:8px;letter-spacing:1px;cursor:pointer;
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);}
+.cat:hover{border-color:var(--pri);color:#fff;}
+.cat.sel{border-color:var(--pri);color:#fff;background:rgba(0,51,85,.85);box-shadow:0 0 12px rgba(0,229,255,.35);}
+
+/* ── сцена с каруселью ── */
+.stage{position:relative;flex:1 1 auto;min-height:calc(var(--cw) * 1.45);display:flex;align-items:center;justify-content:center;
+  perspective:1200px;perspective-origin:50% 45%;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab;overflow:hidden;}
+.stage.drag{cursor:grabbing;}
+.track{position:relative;width:var(--cw);height:calc(var(--cw) * 4 / 3);transform-style:preserve-3d;}
+.card{position:absolute;left:0;top:0;width:100%;height:100%;transform-style:preserve-3d;will-change:transform,opacity;
+  -webkit-tap-highlight-color:transparent;}
+.c-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .25s ease-out;--sx:50%;--sy:30%;}
+.c-cover{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:14px;overflow:hidden;
+  background:radial-gradient(circle at 50% 38%,rgba(255,255,255,.08),transparent 60%),linear-gradient(165deg,#141434,#07071a 60%,#030310);
+  border:2px solid rgba(255,255,255,.12);box-shadow:0 18px 40px rgba(0,0,0,.6);}
+.c-cover::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:var(--gc);opacity:.16;mix-blend-mode:screen;}
+.c-cover::after{content:'';position:absolute;left:10%;right:10%;bottom:-30%;height:60%;border-radius:50%;background:var(--gc);opacity:.35;filter:blur(30px);}
+.c-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:1;}
+.c-emoji{position:absolute;left:0;right:0;top:30%;text-align:center;font-size:calc(var(--cw) * .34);line-height:1;
+  filter:drop-shadow(0 0 18px var(--gc));transform:translateZ(0);}
+.c-img+.c-emoji{display:none;}
+.c-hero{position:absolute;left:8%;top:6%;width:84%;transform:translateZ(46px);pointer-events:none;
+  filter:drop-shadow(0 12px 18px rgba(0,0,0,.6));transition:transform .3s;}
+.c-shine{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:14px;pointer-events:none;
+  background:radial-gradient(circle at var(--sx) var(--sy),rgba(255,255,255,.28),transparent 45%);opacity:0;transition:opacity .3s;}
+.c-plate{position:absolute;left:0;right:0;bottom:0;padding:22px 10px 14px;border-radius:0 0 14px 14px;text-align:center;
+  background:linear-gradient(to top,rgba(3,3,16,.95),rgba(3,3,16,.6) 60%,transparent);transform:translateZ(20px);}
+.c-plate b{font-weight:normal;font-size:calc(var(--cw) * .045);font-size:clamp(8px,calc(var(--cw) * .045),12px);letter-spacing:1px;color:#fff;
+  text-shadow:0 0 10px var(--gc),0 2px 0 #000;line-height:1.5;}
+.c-badge{position:absolute;top:10px;right:10px;padding:5px 7px;font-size:6px;letter-spacing:1px;color:#ffd23a;background:rgba(0,0,0,.7);border:1px solid #ffd23a;
+  transform:translateZ(24px);}
+.card.active .c-cover{border-color:var(--gc);box-shadow:0 0 0 1px var(--gc),0 0 30px rgba(0,229,255,.35),0 24px 50px rgba(0,0,0,.7);}
+.card.active .c-shine{opacity:1;}
+.card:not(.active){cursor:pointer;}
+.card:not(.active) .c-cover{filter:brightness(.6) saturate(.8);}
+.card.active .c-in{animation:cardFloat 4s ease-in-out infinite;}
+.card.active .c-in[style*="rotate"]{animation:none;}
+@keyframes cardFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+/* запуск игры: карточка летит в камеру */
+.card.launch{transition:transform .42s ease-in,opacity .42s ease-in!important;transform:translate3d(0,0,500px) scale(1.2)!important;opacity:0!important;}
+body.leaving .hub-main>*:not(.stage){opacity:0;transition:opacity .3s;}
+
+.arrow{position:absolute;top:50%;width:46px;height:46px;margin-top:-23px;z-index:200;background:rgba(0,16,32,.7);border:1px solid var(--bdr);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+.arrow:hover{border-color:var(--pri);background:rgba(0,51,85,.85);}
+.arrow i{width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;}
+.arrow.prev{left:max(12px,calc(50% - var(--cw) * 1.9));}
+.arrow.prev i{border-right:12px solid var(--pri);}
+.arrow.next{right:max(12px,calc(50% - var(--cw) * 1.9));}
+.arrow.next i{border-left:12px solid var(--pri);}
+
+/* ── панель игры ── */
+.info{position:relative;width:min(640px,calc(100% - 24px));margin:0 auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;
+  background:rgba(4,4,18,.78);border:1px solid var(--bdr);border-top:3px solid var(--gc);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+.info.in{animation:infoIn .3s ease-out;}
+@keyframes infoIn{from{opacity:.2;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.i-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:7px;letter-spacing:1px;}
+.i-cat{color:var(--gc);}
+.i-classic{color:#ffd23a;border:1px solid #ffd23a;padding:3px 5px;}
+.i-last{color:#7dffa0;border:1px solid #2ee87a;padding:3px 5px;}
+.i-pos{margin-left:auto;color:#5f8fa6;}
+.i-name{margin:0;font-weight:normal;font-size:clamp(14px,3.4vw,22px);letter-spacing:2px;color:#fff;text-shadow:0 0 14px var(--gc);line-height:1.3;}
+.i-desc{margin:0;font-family:Tahoma,Arial,sans-serif;font-size:14px;line-height:1.5;color:#b9d4e2;}
+.i-stats{display:flex;gap:6px;flex-wrap:wrap;}
+.is{display:flex;flex-direction:column;gap:5px;padding:6px 10px;background:#000;border:1px solid var(--bdr);font-size:7px;letter-spacing:1px;color:#6a93a8;}
+.is b{font-weight:normal;font-size:11px;color:#fff;}
+.is.none{font-family:Tahoma,Arial,sans-serif;font-size:12px;letter-spacing:0;color:#6a93a8;}
+.i-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.i-play{flex:1 1 auto;padding:15px 24px;font-size:12px;letter-spacing:3px;color:#fff;border-color:var(--gc);
+  background:linear-gradient(180deg,#003a55,#001a2a);animation:playGlow 2s ease-in-out infinite;}
+@keyframes playGlow{0%,100%{box-shadow:0 0 10px rgba(0,229,255,.3);}50%{box-shadow:0 0 26px rgba(0,229,255,.65);}}
+.i-grid{display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:8px;}
+.gi{display:grid;grid-template-columns:5px 5px;gap:2px;}
+.gi i{width:5px;height:5px;background:currentColor;}
+.hub-foot{padding:8px 10px calc(10px + env(safe-area-inset-bottom));text-align:center;font-size:7px;letter-spacing:1px;color:#5f8fa6;line-height:1.6;}
+
+/* ── сетка всех игр ── */
+.grid-ov{position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(3,3,12,.88);display:flex;justify-content:center;overflow-y:auto;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+.grid-ov.hidden{display:none;}
+.grid-box{width:min(980px,100%);padding:16px 12px 30px;}
+.grid-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:10px;letter-spacing:2px;color:var(--pri);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+.gt{position:relative;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;padding:10px 6px;overflow:hidden;
+  background:linear-gradient(165deg,#141434,#07071a);border:1px solid var(--bdr);border-bottom:3px solid var(--gc);color:#fff;cursor:pointer;font-family:inherit;}
+.gt:hover{border-color:var(--gc);box-shadow:0 0 16px rgba(0,229,255,.25);}
+.gt img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;}
+.gt-e{position:absolute;top:24%;left:0;right:0;font-size:46px;text-align:center;filter:drop-shadow(0 0 12px var(--gc));}
+.gt img~.gt-e{display:none;}
+.gt b{position:relative;font-weight:normal;font-size:8px;letter-spacing:1px;line-height:1.5;text-shadow:0 2px 0 #000,0 0 8px var(--gc);}
+.gt i{position:absolute;top:6px;right:6px;font-style:normal;font-size:6px;color:#ffd23a;border:1px solid #ffd23a;padding:3px 4px;background:rgba(0,0,0,.7);}
+@supports not (aspect-ratio:1){.gt{height:190px;}}
+
+/* ── телефон ── */
+@media (max-width:600px){
+  .cats{gap:4px;padding-top:8px;}
+  .cat{padding:8px 9px;font-size:7px;}
+  .arrow{display:none;}
+  .info{padding:10px 12px;gap:8px;}
+  .i-desc{font-size:13px;}
+}
+@media (max-height:640px) and (min-width:601px){
+  .i-desc{display:none;}
+}
+@media (prefers-reduced-motion:reduce){
+  .card.active .c-in{animation:none;}
+  .i-play{animation:none;}
+}

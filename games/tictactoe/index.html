@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON TIC TAC TOE</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/tictactoe.css","kb":14},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"js/lang.js","kb":17},
+  {"src":"js/rules.js","kb":9},
+  {"src":"js/tictactoe.js","kb":17}
+]}
+</script>
+
+<!-- Обложка загрузки: клетки заполняются крестиками и ноликами по мере загрузки (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .x-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:min(150px,44vw);background:#00e5ff;box-shadow:0 0 14px rgba(0,229,255,.6);}
+    .x-grid i{height:46px;background:#050510;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:20px;
+      --k:clamp(0,calc((var(--p) - var(--t)) * 10),1);opacity:var(--k);}
+    .x-grid i.x{color:#ff3b4d;text-shadow:0 0 10px #ff3b4d;}
+    .x-grid i.o{color:#00e5ff;text-shadow:0 0 10px #00e5ff;}
+    .x-title{font-size:clamp(14px,4vw,22px);letter-spacing:.25em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.25em;}
+    .x-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="x-brand">A.C.EON</div>
+  <div class="x-title">TIC TAC TOE</div>
+  <div class="x-grid"></div>
+</template>
+<script>
+(function(){
+  var g=document.getElementById('boot-skin').content.querySelector('.x-grid'),h='',ord=[4,0,8,2,6,1,7,3,5],m='xoxoxoxox';
+  var cells=[];for(var i=0;i<9;i++)cells.push('');
+  ord.forEach(function(c,k){cells[c]='<i class="'+m[k]+'" style="--t:'+(k/9*0.95).toFixed(3)+'">'+(m[k]==='x'?'X':'O')+'</i>';});
+  g.innerHTML=cells.join('');
+})();
+</script>
+</head>
+<body class="screen-menu th-neon">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="t.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.opp"></h2>
+      <div class="seg seg-wide" id="seg-opp">
+        <button class="seg-btn" data-v="bot" data-i18n="opp.bot"></button>
+        <button class="seg-btn" data-v="duo" data-i18n="opp.duo"></button>
+      </div>
+      <div class="bot-box" id="bot-box">
+        <h2 class="m-h m-h2" data-i18n="menu.level"></h2>
+        <div class="seg seg-wide" id="seg-level">
+          <button class="seg-btn" data-v="easy" data-i18n="lvl.easy"></button>
+          <button class="seg-btn" data-v="normal" data-i18n="lvl.normal"></button>
+          <button class="seg-btn" data-v="hard" data-i18n="lvl.hard"></button>
+        </div>
+        <div class="opt-note" id="level-note"></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="menu.first"></span>
+          <div class="seg" id="seg-first">
+            <button class="seg-btn" data-v="me" data-i18n="first.me"></button>
+            <button class="seg-btn" data-v="bot" data-i18n="first.bot"></button>
+            <button class="seg-btn" data-v="alt" data-i18n="first.alt"></button>
+          </div></div>
+      </div>
+    </section>
+
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.look"></h2>
+      <div class="themes" id="themes">
+        <button class="th-card" data-v="neon"><span class="th-prev"></span><span data-i18n="theme.neon"></span></button>
+        <button class="th-card" data-v="chalk"><span class="th-prev"></span><span data-i18n="theme.chalk"></span></button>
+        <button class="th-card" data-v="paper"><span class="th-prev"></span><span data-i18n="theme.paper"></span></button>
+      </div>
+      <div class="m-help" data-i18n="menu.help"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+  </div>
+
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+    <button class="btn m-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
+  </div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="m-game" id="game">
+  <div class="hud">
+    <div class="score" id="score"></div>
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-reset" data-i18n="hud.reset"></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="arena" id="arena">
+    <div class="board" id="board">
+      <i class="gl gl-v1"></i><i class="gl gl-v2"></i><i class="gl gl-h1"></i><i class="gl gl-h2"></i>
+      <div class="cells" id="cells"></div>
+      <svg class="winline" id="winline" viewBox="0 0 300 300" aria-hidden="true"><line id="wl" x1="0" y1="0" x2="0" y2="0"/></svg>
+    </div>
+    <button class="btn b-next hidden" id="btn-next">&#9654; <span data-i18n="hud.next"></span></button>
+  </div>
+</main>
+
+</body>
+</html>

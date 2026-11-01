@@ -31,7 +31,7 @@ const FC={w:256,h:191};
 /* масштаб кадров последовательностей: клетка атласа в единицах модели */
 const SEQ={'seq-wake':{k:1/(.8*.343)},'seq-up1':{k:1/(.8*.36)},'seq-up2':{k:1/(.8*.39)},
   /* реакции слоя 1 (layer_01/img): сидячие кадры, масштаб по ширине головы */
-  'seq-cheer':{k:1/(.8*.39)},'seq-facepalm':{k:1/(.8*.39)},'seq-blush':{k:1/(.8*.39)},'seq-think':{k:1/(.8*.38)}};
+  'seq-cheer':{k:1/(.8*.39)},'seq-facepalm':{k:1/(.8*.39)},'seq-blush':{k:1/(.8*.39)},'seq-think':{k:1/(.8*.38)},'seq-read':{k:1/(.8*.335)}};
 
 function create(o){
   o=o||{};
@@ -41,7 +41,9 @@ function create(o){
   const img={novice:load('bot-novice.webp'),adv:load('bot-adv.webp'),pro:load('bot-pro.webp')};
   const face={novice:load('faces-novice.webp'),adv:load('faces-adv.webp'),pro:load('faces-pro.webp')};
   const seq={};
-  function seqImg(n){ return seq[n]||(seq[n]=(o.seqBase&&/^seq-(cheer|facepalm|blush|think)$/.test(n)?(()=>{ const i=new Image(); i.decoding='async'; i.src=o.seqBase+n+'.webp'; return i; })():load(n+'.webp'))); }
+  /* seqBase: строка (папка для реакций cheer/facepalm/blush/think) или словарь {имя: папка} */
+  function seqSrc(n){ const sb=o.seqBase; if(sb&&typeof sb==='object'&&sb[n])return sb[n]+n+'.webp'; if(typeof sb==='string'&&/^seq-(cheer|facepalm|blush|think)$/.test(n))return sb+n+'.webp'; return base+n+'.webp'; }
+  function seqImg(n){ if(!seq[n]){ const i=new Image(); i.decoding='async'; i.src=seqSrc(n); seq[n]=i; } return seq[n]; }
   const ok=i=>i&&i.complete&&i.naturalWidth>0;
 
   /* состояние */
@@ -66,13 +68,13 @@ function create(o){
     const g={body:0,lean:0,head:0,uaL:.08,faL:0,uaR:-.08,faR:0,legL:0,legR:0,ant:0};
     const br=reduce?0:Math.sin(t*2.1);
     g.body=br*5; g.uaL+=br*.03; g.uaR-=br*.03; g.head=(reduce?0:Math.sin(t*1.3)*.035)+lookX*.08; g.ant=reduce?0:Math.sin(t*2.7)*.06;
-    if(mode==='wave'){ const w=reduce?0:Math.sin(modeT*9); g.uaR=-2.55+w*.12; g.faR=-.25+w*.42; g.head+=.05; g.lean=.03; }
+    if(mode==='wave'){ const w=reduce?0:Math.sin(modeT*9), C=[2.0,.5]; g.uaR=-C[0]+w*.1; g.faR=C[1]+w*.4; g.head+=.05; g.lean=.03; }
     else if(mode==='point'){ g.uaL=1.2+(reduce?0:Math.sin(t*2)*.05); g.faL=.45; g.head-=.06; g.lean=-.02; }
     else if(mode==='pointDown'){ g.uaL=.75; g.faL=.25; g.head-=.04; }
     else if(mode==='think'){ g.uaR=-1.15; g.faR=-1.6; g.head+=.08; }
     else if(mode==='proud'){ g.uaL=.35; g.faL=-1.9; g.uaR=-.35; g.faR=1.9; g.body-=4; }
     else if(mode==='no'){ g.head+=reduce?0:Math.sin(modeT*16)*.14; g.uaL=.3; g.uaR=-.3; g.faL=-.5; g.faR=.5; }
-    else if(mode==='cheer'){ const w=reduce?0:Math.sin(modeT*7); g.uaL=2.5+w*.15; g.uaR=-2.5-w*.15; g.faL=.3; g.faR=-.3; }
+    else if(mode==='cheer'){ const w=reduce?0:Math.sin(modeT*7); const C=[2.0,-.6]; g.uaL=C[0]+w*.15; g.uaR=-C[0]-w*.15; g.faL=C[1]; g.faR=-C[1]; }
     const k=Math.min(1,dt*(reduce?60:9));
     for(const key in P)P[key]+=(g[key]-P[key])*k;
     if(hopV!==0||hop<0){ hopV+=2200*dt; hop+=hopV*dt; if(hop>=0){ hop=0; hopV=0; } }
@@ -84,6 +86,26 @@ function create(o){
   function part(ctx,name,piv,f){
     const r=PR[name], im=img[f];
     ctx.drawImage(im,r[0]*PS,r[1]*PS,r[2]*PS,r[3]*PS,-piv[0],-piv[1],r[2],r[3]);
+  }
+  /* руки: сначала предплечье, сверху плечо.
+     Поднятая рука (плечо выше горизонтали) рисуется зеркально: изгиб детали смотрит наружу, а не внутрь,
+     угол доворачивается так, что локоть остаётся на месте;  */
+  const UP=1.5;
+  function armDir(u){ const e=RIG[u].elb, p=RIG[u].piv; return Math.atan2(e[1]-p[1],e[0]-p[0]); }
+  const MIRD={uaL:armDir('uaL')-(Math.PI-armDir('uaL')),uaR:armDir('uaR')-(Math.PI-armDir('uaR'))};
+  function arm(ctx,f,u,fa,sh,a1,a2,mir){
+    const R=RIG, e=R[u].elb, pv=R[u].piv;
+    ctx.save(); ctx.translate(sh[0],sh[1]);
+    if(mir){ ctx.rotate(a1+MIRD[u]); ctx.scale(-1,1); a2=-a2; } else ctx.rotate(a1);
+    ctx.save(); ctx.translate(e[0]-pv[0],e[1]-pv[1]); ctx.rotate(a2); part(ctx,fa,R[fa].piv,f); ctx.restore();
+    part(ctx,u,pv,f);
+    ctx.restore();
+  }
+  function arms(ctx,f){
+    const R=RIG;
+    [['uaL','faL',R.torso.shL,P.uaL,P.faL],['uaR','faR',R.torso.shR,P.uaR,P.faR]].forEach(([u,fa,sh,a1,a2])=>{
+      arm(ctx,f,u,fa,sh,a1,a2,Math.abs(a1)>UP);
+    });
   }
   function drawForm(ctx,f,a){
     if(a<.01||!ok(img[f]))return;
@@ -113,14 +135,7 @@ function create(o){
       ctx.drawImage(fi,(i%4)*FC.w,Math.floor(i/4)*FC.h,FC.w,FC.h,ox-15+lookX*10,oy-12+lookY*6,fw,fh);
     }
     ctx.restore();
-    /* руки: сначала предплечье, сверху плечо */
-    [['uaL','faL',R.torso.shL,P.uaL,P.faL],['uaR','faR',R.torso.shR,P.uaR,P.faR]].forEach(([u,fa,sh,a1,a2])=>{
-      ctx.save(); ctx.translate(sh[0],sh[1]); ctx.rotate(a1);
-      const e=R[u].elb, pv=R[u].piv;
-      ctx.save(); ctx.translate(e[0]-pv[0],e[1]-pv[1]); ctx.rotate(a2); part(ctx,fa,R[fa].piv,f); ctx.restore();
-      part(ctx,u,pv,f);
-      ctx.restore();
-    });
+    arms(ctx,f);
     ctx.restore();
     ctx.restore();
   }

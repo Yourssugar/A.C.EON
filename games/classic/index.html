@@ -588,7 +588,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 }
 
 /* canvas fullscreen scaling — browser keeps aspect ratio via width:auto + max constraints */
-#pong-cv   { max-height:calc(100dvh - 130px); width:auto; }
 #pf-cv     { max-height:calc(100dvh - 130px); width:auto; }
 #ts-cv     { max-height:calc(100dvh - 130px); width:auto; }
 #bub-cv    { max-height:calc(100dvh - 130px); width:auto; }
@@ -736,7 +735,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="arc-coin">INSERT COIN &nbsp;<span>&#x25CF;</span>&nbsp; CREDITS: <span id="play-cnt">0</span></div>
   </div>
   <div class="game-grid">
-    <div class="game-icon" onclick="openGame('pong')"><span class="ico-pixel">&#127955;</span><span class="ico-label">PONG</span></div>
     <div class="game-icon" onclick="openGame('checkers')"><span class="ico-pixel">&#9823;</span><span class="ico-label">CHECKERS</span></div>
     <div class="game-icon" onclick="openGame('pf')"><span class="ico-pixel">&#127939;</span><span class="ico-label">RUNNER</span></div>
     <div class="game-icon" onclick="openGame('simon')"><span class="ico-pixel">&#127918;</span><span class="ico-label">SIMON SAYS</span></div>
@@ -751,25 +749,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 <!-- вторая страница больше не нужна, блок оставлен пустым для старого кода showPage -->
 <div id="launcher-2" class="hidden"></div>
-
-<!-- PONG -->
-<div id="game-pong" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">PONG</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>FIRST TO 7</span>
-      <button class="btn" onclick="initPong()">NEW</button>
-      <span><button class="btn sel" id="pdb-easy" onclick="setPongDiff('easy')">EASY</button><button class="btn" id="pdb-med" onclick="setPongDiff('med')">MED</button><button class="btn" id="pdb-hard" onclick="setPongDiff('hard')">HARD</button></span>
-    </div>
-    <canvas id="pong-cv" class="gcv" width="560" height="320" style="border:2px solid #003355;box-shadow:0 0 12px rgba(0,229,255,.1);"></canvas>
-    <div class="m-ctrl" id="mc-pong">
-      <button class="m-btn" style="height:60px;width:60px;font-size:22px;"
-        onpointerdown="pongHold(-1)" onpointerup="pongRelease()" ontouchend="pongRelease()">&#9650;</button>
-      <button class="m-btn" style="height:60px;width:60px;font-size:22px;"
-        onpointerdown="pongHold(1)" onpointerup="pongRelease()" ontouchend="pongRelease()">&#9660;</button>
-    </div>
-  </div>
-</div>
 
 <!-- CHECKERS -->
 <div id="game-checkers" class="gwin hidden">
@@ -1040,7 +1019,7 @@ window.openGame=function(id,direct){
   var cnt=localStorage.getItem('aceon_plays')||'0';
   var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
-  var fn={pong:initPong,
+  var fn={
           checkers:initCheckers,pf:initPf,
           simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,
           puzzle:initPuzzle,bubbles:initBubble};
@@ -1054,7 +1033,6 @@ window.openGame=function(id,direct){
 window.closeGame=function(){
   if(!cur)return;
   document.getElementById('game-'+cur).classList.add('hidden');
-  if(cur==='pong')pongStop();
   if(cur==='pf')pfStop();if(cur==='ts')tsStop();
   if(cur==='bubbles'&&typeof bubRaf!=='undefined'&&bubRaf){cancelAnimationFrame(bubRaf);bubRaf=null;}
   var wasP2=PAGE2_GAMES[cur];
@@ -1062,22 +1040,6 @@ window.closeGame=function(){
   if(FROM_LINK){location.href='../';return;}
   showPage(wasP2?2:1);
 };
-
-/* ════════════════ PONG ════════════════ */
-var pongCtx,pongRaf,pongRun,pBall,pPad1,pPad2,pSc1,pSc2,pongDiff='easy',pongMT;
-var PW=560,PH=320,WIN=7;
-var PONG_SPD={easy:0.03,med:0.055,hard:0.1};
-window.setPongDiff=function(d){pongDiff=d;['easy','med','hard'].forEach(function(x){document.getElementById('pdb-'+x).className='btn'+(x===d?' sel':'');});initPong();};
-function pongStop(){if(pongRaf){cancelAnimationFrame(pongRaf);pongRaf=null;}if(pongMT)clearInterval(pongMT);pongRun=false;}window.pongStop=pongStop;
-window.initPong=function(){pSc1=0;pSc2=0;var cv=document.getElementById('pong-cv');pongCtx=cv.getContext('2d');pPad1={y:PH/2-35,h:70,x:18,w:12};pPad2={y:PH/2-35,h:70,x:PW-30,w:12};pResetBall();cv.onmousemove=function(e){var r=cv.getBoundingClientRect();var sc=PH/r.height;var my=(e.clientY-r.top)*sc;pPad1.y=Math.max(0,Math.min(my-pPad1.h/2,PH-pPad1.h));};pongStop();pongRun=true;pLoop();};
-function pResetBall(){var sp=4.5;pBall={x:PW/2,y:PH/2,vx:sp*(Math.random()>.5?1:-1),vy:sp*(Math.random()-.5)*1.2,r:8};}
-function pLoop(){if(!pongRun)return;pUpdate();pRender();pongRaf=requestAnimationFrame(pLoop);}
-function pUpdate(){pBall.x+=pBall.vx;pBall.y+=pBall.vy;if(pBall.y-pBall.r<0){pBall.y=pBall.r;pBall.vy*=-1;}if(pBall.y+pBall.r>PH){pBall.y=PH-pBall.r;pBall.vy*=-1;}var h1=pBall.x-pBall.r<pPad1.x+pPad1.w&&pBall.x+pBall.r>pPad1.x&&pBall.y>pPad1.y&&pBall.y<pPad1.y+pPad1.h;var h2=pBall.x+pBall.r>pPad2.x&&pBall.x-pBall.r<pPad2.x+pPad2.w&&pBall.y>pPad2.y&&pBall.y<pPad2.y+pPad2.h;if(h1){pBall.x=pPad1.x+pPad1.w+pBall.r;pBall.vx=Math.abs(pBall.vx)*1.05;pBall.vy+=((pBall.y-(pPad1.y+pPad1.h/2))/pPad1.h)*4;}if(h2){pBall.x=pPad2.x-pBall.r;pBall.vx=-Math.abs(pBall.vx)*1.05;pBall.vy+=((pBall.y-(pPad2.y+pPad2.h/2))/pPad2.h)*4;}Math.abs(pBall.vx)>14&&(pBall.vx=14*(pBall.vx>0?1:-1));Math.abs(pBall.vy)>11&&(pBall.vy=11*(pBall.vy>0?1:-1));if(pBall.x<0){pSc2++;pResetBall();}if(pBall.x>PW){pSc1++;if(pSc1===7&&pSc2<7)clWin('pong',pongDiff);pResetBall();}var tc=pPad2.y+pPad2.h/2,bc=pBall.y,spd=PONG_SPD[pongDiff];pPad2.y+=(bc-tc)*spd;pPad2.y=Math.max(0,Math.min(pPad2.y,PH-pPad2.h));}
-window.pongHold=function(dir){if(pongMT)clearInterval(pongMT);pongMT=setInterval(function(){pPad1.y=Math.max(0,Math.min(pPad1.y+dir*16,PH-pPad1.h));},40);};
-window.pongRelease=function(){if(pongMT){clearInterval(pongMT);pongMT=null;}};
-function pRender(){if(!pongCtx)return;var ctx=pongCtx,C=gC();ctx.fillStyle=C.bg;ctx.fillRect(0,0,PW,PH);ctx.setLineDash([8,8]);ctx.strokeStyle=C.bdr;ctx.beginPath();ctx.moveTo(PW/2,0);ctx.lineTo(PW/2,PH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.pri;ctx.fillRect(pPad1.x,pPad1.y,pPad1.w,pPad1.h);ctx.fillStyle='#ef5350';ctx.fillRect(pPad2.x,pPad2.y,pPad2.w,pPad2.h);ctx.fillStyle=C.prim;ctx.beginPath();ctx.arc(pBall.x,pBall.y,pBall.r,0,Math.PI*2);ctx.fill();ctx.font='bold 28px Tahoma';ctx.textAlign='center';ctx.fillStyle=C.pri;ctx.fillText(pSc1,PW/4,40);ctx.fillStyle='#ef5350';ctx.fillText(pSc2,3*PW/4,40);ctx.textAlign='left';if(pSc1>=WIN||pSc2>=WIN){pongStop();ctx.fillStyle='rgba(0,0,0,0.72)';ctx.fillRect(0,0,PW,PH);ctx.font='bold 24px Tahoma';ctx.textAlign='center';var won=pSc1>=WIN;ctx.fillStyle=won?C.prib:'#ef5350';ctx.fillText(won?'YOU WIN!':'AI WINS',PW/2,PH/2-10);ctx.fillStyle=C.pri;ctx.font='13px Tahoma';ctx.fillText('Press NEW to play again',PW/2,PH/2+20);ctx.textAlign='left';}}
-document.addEventListener('keydown',function(e){if(cur!=='pong')return;if(e.key==='ArrowUp'){pPad1.y=Math.max(0,pPad1.y-18);e.preventDefault();}if(e.key==='ArrowDown'){pPad1.y=Math.min(PH-pPad1.h,pPad1.y+18);e.preventDefault();}});
-
 
 /* ════════════════ CHECKERS ════════════════ */
 var ckBrd,ckSel,ckTurn,ckDead,ckChain,ckLast=null,ckBusy=false,ckNodes=0;
@@ -2200,7 +2162,7 @@ function bubDrawCircle(ctx,x,y,r,color){
   var abar=document.getElementById('assembly-bar');
   var afill=document.getElementById('assembly-bar-fill');
   if(!overlay)return;
-  /* classic/#pong и т.п.: сразу открыть игру */
+  /* classic/#wordle и т.п.: сразу открыть игру */
   var hashId=(location.hash||'').slice(1);
   if(hashId&&document.getElementById('game-'+hashId)){
     overlay.style.display='none';launchIcons(true);FROM_LINK=true;
@@ -2234,7 +2196,7 @@ function bubDrawCircle(ctx,x,y,r,color){
   if(crEl){crEl.textContent=String(Math.max(0,99-parseInt(localStorage.getItem('aceon_plays')||'0')));}
 
   var STEPS=[
-    {t:60,   msg:'LOADING GAME ROM  [10 TITLES]',  pct:14, ok:340},
+    {t:60,   msg:'LOADING GAME ROM  [9 TITLES]',  pct:14, ok:340},
     {t:500,  msg:'CHECKING HIGH SCORES...........',  pct:32, ok:280},
     {t:880,  msg:'WARMING UP DISPLAY.............',  pct:55, ok:260},
     {t:1200, msg:'CALIBRATING JOYSTICK...........',  pct:74, ok:240},

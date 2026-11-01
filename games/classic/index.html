@@ -927,6 +927,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
 </div>
 
+<script src="../shared/achievements.js"></script>
 <script>
 
 (function(){
@@ -935,7 +936,19 @@ var cur=null,mcOn=false;
 
 /* ── HELPERS ── */
 function getHi(id){return parseInt(localStorage.getItem('aceon_hi_'+id)||'0');}
-function setHi(id,sc){if(sc>getHi(id))localStorage.setItem('aceon_hi_'+id,sc);return getHi(id);}
+function setHi(id,sc){if(sc>getHi(id))localStorage.setItem('aceon_hi_'+id,sc);achLater(id);return getHi(id);}
+/* достижения (shared/achievements.js): имена игр в каталоге новой страницы отличаются от старых id */
+var ACH_ID={pf:'runner',ts:'stacker',mind:'mastermind',puzzle:'puzzle15',bubble:'bubbles'};
+function achId(id){return ACH_ID[id]||id;}
+function achLater(id){if(window.Achieve)try{Achieve.later(achId(id));}catch(e){}}
+/* победа в игре, где раньше ничего не сохранялось: счётчик aceon_cl_<игра>[_уровень] */
+function clWin(id,lv){
+  try{
+    var k='aceon_cl_'+id;localStorage.setItem(k,(parseInt(localStorage.getItem(k),10)||0)+1);
+    if(lv){k+='_'+lv;localStorage.setItem(k,(parseInt(localStorage.getItem(k),10)||0)+1);}
+  }catch(e){}
+  achLater(id);
+}
 function showHi(id){var el=document.getElementById('hi-'+id);if(el)el.textContent=getHi(id);}
 
 function gC(){
@@ -1022,6 +1035,8 @@ window.openGame=function(id,direct){
   document.getElementById('launcher-2').classList.add('hidden');
   document.getElementById('game-'+id).classList.remove('hidden');
   cur=id;trackPlay();
+  try{localStorage.setItem('aceon_cl_play_'+achId(id),'1');}catch(e){}
+  if(window.Achieve)try{Achieve.played(achId(id));}catch(e){}
   var cnt=localStorage.getItem('aceon_plays')||'0';
   var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
@@ -1057,7 +1072,7 @@ function pongStop(){if(pongRaf){cancelAnimationFrame(pongRaf);pongRaf=null;}if(p
 window.initPong=function(){pSc1=0;pSc2=0;var cv=document.getElementById('pong-cv');pongCtx=cv.getContext('2d');pPad1={y:PH/2-35,h:70,x:18,w:12};pPad2={y:PH/2-35,h:70,x:PW-30,w:12};pResetBall();cv.onmousemove=function(e){var r=cv.getBoundingClientRect();var sc=PH/r.height;var my=(e.clientY-r.top)*sc;pPad1.y=Math.max(0,Math.min(my-pPad1.h/2,PH-pPad1.h));};pongStop();pongRun=true;pLoop();};
 function pResetBall(){var sp=4.5;pBall={x:PW/2,y:PH/2,vx:sp*(Math.random()>.5?1:-1),vy:sp*(Math.random()-.5)*1.2,r:8};}
 function pLoop(){if(!pongRun)return;pUpdate();pRender();pongRaf=requestAnimationFrame(pLoop);}
-function pUpdate(){pBall.x+=pBall.vx;pBall.y+=pBall.vy;if(pBall.y-pBall.r<0){pBall.y=pBall.r;pBall.vy*=-1;}if(pBall.y+pBall.r>PH){pBall.y=PH-pBall.r;pBall.vy*=-1;}var h1=pBall.x-pBall.r<pPad1.x+pPad1.w&&pBall.x+pBall.r>pPad1.x&&pBall.y>pPad1.y&&pBall.y<pPad1.y+pPad1.h;var h2=pBall.x+pBall.r>pPad2.x&&pBall.x-pBall.r<pPad2.x+pPad2.w&&pBall.y>pPad2.y&&pBall.y<pPad2.y+pPad2.h;if(h1){pBall.x=pPad1.x+pPad1.w+pBall.r;pBall.vx=Math.abs(pBall.vx)*1.05;pBall.vy+=((pBall.y-(pPad1.y+pPad1.h/2))/pPad1.h)*4;}if(h2){pBall.x=pPad2.x-pBall.r;pBall.vx=-Math.abs(pBall.vx)*1.05;pBall.vy+=((pBall.y-(pPad2.y+pPad2.h/2))/pPad2.h)*4;}Math.abs(pBall.vx)>14&&(pBall.vx=14*(pBall.vx>0?1:-1));Math.abs(pBall.vy)>11&&(pBall.vy=11*(pBall.vy>0?1:-1));if(pBall.x<0){pSc2++;pResetBall();}if(pBall.x>PW){pSc1++;pResetBall();}var tc=pPad2.y+pPad2.h/2,bc=pBall.y,spd=PONG_SPD[pongDiff];pPad2.y+=(bc-tc)*spd;pPad2.y=Math.max(0,Math.min(pPad2.y,PH-pPad2.h));}
+function pUpdate(){pBall.x+=pBall.vx;pBall.y+=pBall.vy;if(pBall.y-pBall.r<0){pBall.y=pBall.r;pBall.vy*=-1;}if(pBall.y+pBall.r>PH){pBall.y=PH-pBall.r;pBall.vy*=-1;}var h1=pBall.x-pBall.r<pPad1.x+pPad1.w&&pBall.x+pBall.r>pPad1.x&&pBall.y>pPad1.y&&pBall.y<pPad1.y+pPad1.h;var h2=pBall.x+pBall.r>pPad2.x&&pBall.x-pBall.r<pPad2.x+pPad2.w&&pBall.y>pPad2.y&&pBall.y<pPad2.y+pPad2.h;if(h1){pBall.x=pPad1.x+pPad1.w+pBall.r;pBall.vx=Math.abs(pBall.vx)*1.05;pBall.vy+=((pBall.y-(pPad1.y+pPad1.h/2))/pPad1.h)*4;}if(h2){pBall.x=pPad2.x-pBall.r;pBall.vx=-Math.abs(pBall.vx)*1.05;pBall.vy+=((pBall.y-(pPad2.y+pPad2.h/2))/pPad2.h)*4;}Math.abs(pBall.vx)>14&&(pBall.vx=14*(pBall.vx>0?1:-1));Math.abs(pBall.vy)>11&&(pBall.vy=11*(pBall.vy>0?1:-1));if(pBall.x<0){pSc2++;pResetBall();}if(pBall.x>PW){pSc1++;if(pSc1===7&&pSc2<7)clWin('pong',pongDiff);pResetBall();}var tc=pPad2.y+pPad2.h/2,bc=pBall.y,spd=PONG_SPD[pongDiff];pPad2.y+=(bc-tc)*spd;pPad2.y=Math.max(0,Math.min(pPad2.y,PH-pPad2.h));}
 window.pongHold=function(dir){if(pongMT)clearInterval(pongMT);pongMT=setInterval(function(){pPad1.y=Math.max(0,Math.min(pPad1.y+dir*16,PH-pPad1.h));},40);};
 window.pongRelease=function(){if(pongMT){clearInterval(pongMT);pongMT=null;}};
 function pRender(){if(!pongCtx)return;var ctx=pongCtx,C=gC();ctx.fillStyle=C.bg;ctx.fillRect(0,0,PW,PH);ctx.setLineDash([8,8]);ctx.strokeStyle=C.bdr;ctx.beginPath();ctx.moveTo(PW/2,0);ctx.lineTo(PW/2,PH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.pri;ctx.fillRect(pPad1.x,pPad1.y,pPad1.w,pPad1.h);ctx.fillStyle='#ef5350';ctx.fillRect(pPad2.x,pPad2.y,pPad2.w,pPad2.h);ctx.fillStyle=C.prim;ctx.beginPath();ctx.arc(pBall.x,pBall.y,pBall.r,0,Math.PI*2);ctx.fill();ctx.font='bold 28px Tahoma';ctx.textAlign='center';ctx.fillStyle=C.pri;ctx.fillText(pSc1,PW/4,40);ctx.fillStyle='#ef5350';ctx.fillText(pSc2,3*PW/4,40);ctx.textAlign='left';if(pSc1>=WIN||pSc2>=WIN){pongStop();ctx.fillStyle='rgba(0,0,0,0.72)';ctx.fillRect(0,0,PW,PH);ctx.font='bold 24px Tahoma';ctx.textAlign='center';var won=pSc1>=WIN;ctx.fillStyle=won?C.prib:'#ef5350';ctx.fillText(won?'YOU WIN!':'AI WINS',PW/2,PH/2-10);ctx.fillStyle=C.pri;ctx.font='13px Tahoma';ctx.fillText('Press NEW to play again',PW/2,PH/2+20);ctx.textAlign='left';}}
@@ -1226,7 +1241,7 @@ function ckCount(side){var n=0;for(var r=0;r<8;r++)for(var c=0;c<8;c++){if(side=
 function ckWin(side){
   ckDead=true;ckBusy=false;
   var m=document.getElementById('ck-msg');
-  if(side==='p'){m.textContent='\u2713 YOU WIN!';m.style.color='var(--pri-b)';if(window.CheckBot)CheckBot.react('lose');}
+  if(side==='p'){clWin('checkers');m.textContent='\u2713 YOU WIN!';m.style.color='var(--pri-b)';if(window.CheckBot)CheckBot.react('lose');}
   else{m.textContent='AI WINS \u2014 TRY AGAIN';m.style.color='var(--err)';if(window.CheckBot)CheckBot.react('win');}
 }
 function ckAfterMove(mover){
@@ -1607,7 +1622,7 @@ var WL=("ABOUT,ABOVE,ACTOR,ADMIT,ADULT,AFTER,AGAIN,AGENT,AGREE,ALARM,ALBUM,ALERT
 var wlWord,wlGuesses,wlCur,wlState;
 window.initWordle=function(){wlWord=WL[Math.random()*WL.length|0];wlGuesses=[];wlCur='';wlState='play';document.getElementById('wl-msg').textContent='GUESS THE WORD (6 TRIES)';showHi('wordle');fitCells('wl-key',10,{max:34,min:22,extra:36,margin:48});renderWlGrid();renderWlKeys();};
 function wlScore(guess,word){var result=Array(5).fill(''),wordArr=word.split(''),used=Array(5).fill(false);for(var i=0;i<5;i++)if(guess[i]===word[i]){result[i]='c';used[i]=true;}for(var i=0;i<5;i++){if(result[i])continue;for(var j=0;j<5;j++){if(!used[j]&&guess[i]===wordArr[j]){result[i]='p';used[j]=true;break;}}if(!result[i])result[i]='a';}return result;}
-function wlKey(k){if(wlState!=='play')return;if(k==='DEL'){wlCur=wlCur.slice(0,-1);}else if(k==='ENTER'){if(wlCur.length!==5){document.getElementById('wl-msg').textContent='NEED 5 LETTERS';return;}if(WL.indexOf(wlCur)<0){document.getElementById('wl-msg').textContent='NOT IN WORD LIST';return;}wlGuesses.push(wlCur);wlCur='';if(wlGuesses[wlGuesses.length-1]===wlWord){wlState='won';var wins=parseInt(localStorage.getItem('aceon_wl_wins')||'0')+1;localStorage.setItem('aceon_wl_wins',wins);document.getElementById('hi-wordle').textContent=wins;document.getElementById('wl-msg').textContent='\u2713 GOT IT IN '+wlGuesses.length+'! WINS: '+wins;}else if(wlGuesses.length>=6){wlState='lost';document.getElementById('wl-msg').textContent='THE WORD WAS: '+wlWord;}else{document.getElementById('wl-msg').textContent=(6-wlGuesses.length)+' TRIES LEFT';}}else if(wlCur.length<5&&/^[A-Z]$/.test(k)){wlCur+=k;}renderWlGrid();renderWlKeys();}
+function wlKey(k){if(wlState!=='play')return;if(k==='DEL'){wlCur=wlCur.slice(0,-1);}else if(k==='ENTER'){if(wlCur.length!==5){document.getElementById('wl-msg').textContent='NEED 5 LETTERS';return;}if(WL.indexOf(wlCur)<0){document.getElementById('wl-msg').textContent='NOT IN WORD LIST';return;}wlGuesses.push(wlCur);wlCur='';if(wlGuesses[wlGuesses.length-1]===wlWord){wlState='won';var wins=parseInt(localStorage.getItem('aceon_wl_wins')||'0')+1;localStorage.setItem('aceon_wl_wins',wins);achLater('wordle');document.getElementById('hi-wordle').textContent=wins;document.getElementById('wl-msg').textContent='\u2713 GOT IT IN '+wlGuesses.length+'! WINS: '+wins;}else if(wlGuesses.length>=6){wlState='lost';document.getElementById('wl-msg').textContent='THE WORD WAS: '+wlWord;}else{document.getElementById('wl-msg').textContent=(6-wlGuesses.length)+' TRIES LEFT';}}else if(wlCur.length<5&&/^[A-Z]$/.test(k)){wlCur+=k;}renderWlGrid();renderWlKeys();}
 function renderWlGrid(){var g=document.getElementById('wl-grid');if(!g)return;g.innerHTML='';for(var row=0;row<6;row++)for(var col=0;col<5;col++){var cell=document.createElement('div');cell.className='wl-cell';var letter='',state='';if(row<wlGuesses.length){letter=wlGuesses[row][col];state=wlScore(wlGuesses[row],wlWord)[col];}else if(row===wlGuesses.length){letter=wlCur[col]||'';}cell.textContent=letter;if(state==='c')cell.classList.add('wl-correct');else if(state==='p')cell.classList.add('wl-present');else if(state==='a')cell.classList.add('wl-absent');else if(letter)cell.classList.add('wl-filled');g.appendChild(cell);}}
 function renderWlKeys(){var letterState={};wlGuesses.forEach(function(guess){var sc=wlScore(guess,wlWord);guess.split('').forEach(function(ch,i){var s=sc[i],cur=letterState[ch];if(!cur||(s==='c')||(s==='p'&&cur!=='c'))letterState[ch]=s;});});var rows=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','DEL']];var el=document.getElementById('wl-keys');if(!el)return;el.innerHTML='';rows.forEach(function(row){var re=document.createElement('div');re.className='wl-kr';row.forEach(function(key){var btn=document.createElement('button');btn.className='wl-k'+(key.length>1?' wl-kw':'');var st=letterState[key];if(st==='c')btn.classList.add('wl-kc');else if(st==='p')btn.classList.add('wl-kp');else if(st==='a')btn.classList.add('wl-ka');btn.textContent=key;btn.addEventListener('click',(function(k){return function(){wlKey(k);};})(key));re.appendChild(btn);});el.appendChild(re);});}
 document.addEventListener('keydown',function(e){if(cur!=='wordle')return;if(e.key==='Enter')wlKey('ENTER');else if(e.key==='Backspace'){wlKey('DEL');e.preventDefault();}else if(/^[a-zA-Z]$/.test(e.key))wlKey(e.key.toUpperCase());});
@@ -1664,7 +1679,7 @@ function flCheckWin(){
   var m=document.getElementById('fl-msg');
   if(allSame){
     flDone=true;
-    flSetBest(flMoves);
+    flSetBest(flMoves);clWin('flood',flDiff);
     flShowBest();
     m.textContent='\u2713 SOLVED IN '+flMoves+' MOVES!';
     m.style.color='var(--pri-b)';
@@ -1771,7 +1786,7 @@ window.mmSubmit=function(){
   if(fb.black===mmLen){
     mmOver=true;
     var wins=parseInt(localStorage.getItem('aceon_mm_wins')||'0')+1;
-    localStorage.setItem('aceon_mm_wins',wins);
+    localStorage.setItem('aceon_mm_wins',wins);achLater('mind');
     document.getElementById('hi-mind').textContent=wins;
     var m=document.getElementById('mm-msg');
     m.textContent='\u2713 CRACKED IN '+mmTries+' GUESSES!';m.style.color='var(--pri-b)';
@@ -1921,7 +1936,7 @@ function renderPuzzle(){
 }
 
 function pzGetBest(){var k='aceon_hi_pz'+pzN;var v=localStorage.getItem(k);return v?parseInt(v):null;}
-function pzSetBest(moves){var k='aceon_hi_pz'+pzN;var b=pzGetBest();if(b===null||moves<b)localStorage.setItem(k,moves);}
+function pzSetBest(moves){var k='aceon_hi_pz'+pzN;var b=pzGetBest();if(b===null||moves<b)localStorage.setItem(k,moves);achLater('puzzle');}
 function pzShowBest(){var b=pzGetBest();var el=document.getElementById('hi-puzzle');if(el)el.textContent=b===null?'\u2014':b;}
 
 /* ════════════════ BUBBLE SHOOTER ════════════════ */

@@ -48,7 +48,7 @@ var L={
 "g.battleship": "BATTLESHIP",
 "gd.battleship": "Against the computer, salvo mode or two players.",
 "g.pong": "PONG",
-"gd.pong": "Paddles and a ball against the computer.",
+"gd.pong": "Against a bot or a friend, a tournament of 8 opponents and squash against a wall. Spin and bonuses.",
 "g.runner": "RUNNER",
 "gd.runner": "Jump over obstacles as long as you can.",
 "g.stacker": "STACKER",
@@ -75,7 +75,8 @@ var L={
 "al.locked": "Not received yet",
 "al.how": "HOW TO GET",
 "al.meta": "A.C.EON",
-"al.progress": "{n} OF {m}"
+"al.progress": "{n} OF {m}",
+"s.rally": "BEST RALLY"
 },
 "ru": {
 "hub.title": "АРКАДА",
@@ -123,7 +124,7 @@ var L={
 "g.battleship": "МОРСКОЙ БОЙ",
 "gd.battleship": "Против компьютера, залпами или вдвоём.",
 "g.pong": "ПОНГ",
-"gd.pong": "Ракетки и мяч против компьютера.",
+"gd.pong": "Против бота или друга, турнир из 8 соперников и сквош против стены. Подкрутка и бонусы.",
 "g.runner": "РАННЕР",
 "gd.runner": "Перепрыгивайте препятствия как можно дольше.",
 "g.stacker": "БАШНЯ",
@@ -150,7 +151,8 @@ var L={
 "al.locked": "Ещё не получена",
 "al.how": "КАК ПОЛУЧИТЬ",
 "al.meta": "A.C.EON",
-"al.progress": "{n} ИЗ {m}"
+"al.progress": "{n} ИЗ {m}",
+"s.rally": "ЛУЧШИЙ РОЗЫГРЫШ"
 },
 "de": {
 "hub.title": "ARCADE",
@@ -198,7 +200,7 @@ var L={
 "g.battleship": "SCHIFFE VERSENKEN",
 "gd.battleship": "Gegen den Computer, Salven oder zu zweit.",
 "g.pong": "PONG",
-"gd.pong": "Schläger und Ball gegen den Computer.",
+"gd.pong": "Gegen einen Bot oder Freund, ein Turnier mit 8 Gegnern und Squash gegen die Wand. Drall und Boni.",
 "g.runner": "RUNNER",
 "gd.runner": "Springe so lange wie möglich über Hindernisse.",
 "g.stacker": "STAPLER",
@@ -225,7 +227,8 @@ var L={
 "al.locked": "Noch nicht erhalten",
 "al.how": "SO BEKOMMST DU SIE",
 "al.meta": "A.C.EON",
-"al.progress": "{n} VON {m}"
+"al.progress": "{n} VON {m}",
+"s.rally": "LÄNGSTER BALLWECHSEL"
 },
 "fr": {
 "hub.title": "ARCADE",
@@ -273,7 +276,7 @@ var L={
 "g.battleship": "BATAILLE NAVALE",
 "gd.battleship": "Contre l'ordinateur, en salves ou à deux.",
 "g.pong": "PONG",
-"gd.pong": "Raquettes et balle contre l'ordinateur.",
+"gd.pong": "Contre un bot ou un ami, un tournoi de 8 adversaires et du squash contre un mur. Effet et bonus.",
 "g.runner": "COUREUR",
 "gd.runner": "Sautez les obstacles le plus longtemps possible.",
 "g.stacker": "EMPILEUR",
@@ -300,7 +303,8 @@ var L={
 "al.locked": "Pas encore obtenue",
 "al.how": "COMMENT L'OBTENIR",
 "al.meta": "A.C.EON",
-"al.progress": "{n} SUR {m}"
+"al.progress": "{n} SUR {m}",
+"s.rally": "PLUS LONG ÉCHANGE"
 },
 "es": {
 "hub.title": "ARCADE",
@@ -348,7 +352,7 @@ var L={
 "g.battleship": "HUNDIR LA FLOTA",
 "gd.battleship": "Contra el ordenador, por salvas o dos jugadores.",
 "g.pong": "PONG",
-"gd.pong": "Palas y pelota contra el ordenador.",
+"gd.pong": "Contra un bot o un amigo, un torneo de 8 rivales y squash contra la pared. Efecto y bonus.",
 "g.runner": "CORREDOR",
 "gd.runner": "Salta obstáculos todo el tiempo que puedas.",
 "g.stacker": "APILADOR",
@@ -375,7 +379,8 @@ var L={
 "al.locked": "Aún no obtenida",
 "al.how": "CÓMO CONSEGUIRLA",
 "al.meta": "A.C.EON",
-"al.progress": "{n} DE {m}"
+"al.progress": "{n} DE {m}",
+"s.rally": "MEJOR PELOTEO"
 },
 "it": {
 "hub.title": "ARCADE",
@@ -423,7 +428,7 @@ var L={
 "g.battleship": "BATTAGLIA NAVALE",
 "gd.battleship": "Contro il computer, a salve o in due.",
 "g.pong": "PONG",
-"gd.pong": "Racchette e palla contro il computer.",
+"gd.pong": "Contro un bot o un amico, un torneo di 8 avversari e squash contro il muro. Effetto e bonus.",
 "g.runner": "CORRIDORE",
 "gd.runner": "Salta gli ostacoli il più a lungo possibile.",
 "g.stacker": "IMPILATORE",
@@ -450,7 +455,8 @@ var L={
 "al.locked": "Non ancora ottenuta",
 "al.how": "COME OTTENERLA",
 "al.meta": "A.C.EON",
-"al.progress": "{n} SU {m}"
+"al.progress": "{n} SU {m}",
+"s.rally": "SCAMBIO PIÙ LUNGO"
 },
 "pl": {
 "hub.title": "ARCADE",
@@ -498,7 +504,7 @@ var L={
 "g.battleship": "STATKI",
 "gd.battleship": "Z komputerem, salwami lub we dwóch.",
 "g.pong": "PONG",
-"gd.pong": "Paletki i piłka przeciw komputerowi.",
+"gd.pong": "Z botem lub przyjacielem, turniej 8 rywali i squash przeciw ścianie. Podkręcanie i bonusy.",
 "g.runner": "BIEGACZ",
 "gd.runner": "Przeskakuj przeszkody jak najdłużej.",
 "g.stacker": "WIEŻA",
@@ -525,7 +531,8 @@ var L={
 "al.locked": "Jeszcze nie zdobyta",
 "al.how": "JAK ZDOBYĆ",
 "al.meta": "A.C.EON",
-"al.progress": "{n} Z {m}"
+"al.progress": "{n} Z {m}",
+"s.rally": "NAJDŁUŻSZA WYMIANA"
 }
 };
 for(var k in L)I18n.add(k,L[k]);

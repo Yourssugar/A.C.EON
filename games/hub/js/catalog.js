@@ -57,8 +57,13 @@ var GAMES=[
     var st=load('tictactoe').stats||{},p=sum(st,function(s){return s.played;});
     return p?[['s.won',sum(st,function(s){return s.win;})+' / '+p]]:[];}},
   {id:'battleship',cat:'board',url:'battleship/',color:'#4aa8ff',emoji:'🚢',stats:function(){return wonPlayed('battleship');}},
+  {id:'pong',cat:'arcade',url:'pong/',color:'#00e5ff',emoji:'\uD83C\uDFD3',stats:function(){
+    var st=load('pong').stats||{},out=[],w=0,p=0;
+    for(var k in st)if(k.indexOf('bot-')===0&&st[k]){w+=st[k].won||0;p+=st[k].played||0;}
+    if(p)out.push(['s.won',w+' / '+p]);
+    var r=max(st,function(s){return s.bestRally;});if(r)out.push(['s.rally',r]);
+    return out;}},
   /* ещё не переделанные: страница classic/ */
-  {id:'pong',cat:'arcade',url:'classic/#pong',color:'#00e5ff',emoji:'🏓',classic:true,stats:function(){return [];}},
   {id:'runner',cat:'arcade',url:'classic/#pf',color:'#ff8a1a',emoji:'🏃',classic:true,stats:function(){var h=hi('pf');return h?[['s.best',h]]:[];}},
   {id:'stacker',cat:'arcade',url:'classic/#ts',color:'#ffb02e',emoji:'🔶',classic:true,stats:function(){var h=hi('ts');return h?[['s.best',h]]:[];}},
   {id:'bubbles',cat:'arcade',url:'classic/#bubbles',color:'#ff5ad8',emoji:'🫧',classic:true,stats:function(){var h=hi('bubble');return h?[['s.best',h]]:[];}},

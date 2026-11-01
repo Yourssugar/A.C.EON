@@ -440,15 +440,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 /* CANVAS AUTO-SCALE — keeps internal game resolution intact, only shrinks visually */
 .gcv{max-width:100%;height:auto;display:block;margin:0 auto;max-height:calc(100dvh - 130px);width:auto;}
 
-/* TIC TAC TOE */
-#ttt-grid{display:inline-grid;grid-template-columns:repeat(3,var(--ttt-cell,96px));grid-template-rows:repeat(3,var(--ttt-cell,96px));gap:8px;
-  background:linear-gradient(160deg,#0c1430,#070b1c);padding:12px;border-radius:16px;border:3px solid #243049;
-  box-shadow:0 12px 32px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.03);}
-.ttt{width:var(--ttt-cell,96px);height:var(--ttt-cell,96px);position:relative;border-radius:11px;cursor:pointer;
-     background:rgba(255,255,255,.04);box-shadow:inset 0 2px 8px rgba(0,0,0,.55);transition:background .12s,box-shadow .12s;}
-.ttt:hover{background:rgba(0,229,255,.10);box-shadow:inset 0 0 0 2px rgba(0,229,255,.35);}
-.ttt.X,.ttt.O{cursor:default;}
-
 /* CHECKERS */
 #ck-board{display:inline-grid;grid-template-columns:repeat(8,var(--ck-cell,54px));grid-template-rows:repeat(8,var(--ck-cell,54px));border:2px solid var(--bdr);}
 .ck-cell{width:var(--ck-cell,54px);height:var(--ck-cell,54px);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
@@ -600,19 +591,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 /* ══ ARCADE OVERRIDES FOR GAME-SPECIFIC ELEMENTS ══ */
 
-/* TicTacToe */
-.ttt-mark{position:absolute;inset:0;}
-.ttt.X .ttt-mark::before,.ttt.X .ttt-mark::after{content:'';position:absolute;top:50%;left:50%;width:58%;height:12%;border-radius:7px;background:#ff3b4d;box-shadow:0 0 14px #ff3b4d,0 0 5px #ff3b4d;}
-.ttt.X .ttt-mark::before{transform:translate(-50%,-50%) rotate(45deg);}
-.ttt.X .ttt-mark::after{transform:translate(-50%,-50%) rotate(-45deg);}
-.ttt.O .ttt-mark::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:54%;height:54%;border-radius:50%;box-sizing:border-box;border:calc(var(--ttt-cell,96px)*0.13) solid #00e5ff;box-shadow:0 0 14px #00e5ff,inset 0 0 10px rgba(0,229,255,.35);}
-@keyframes tttPop{0%{transform:scale(.2);opacity:0;}70%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
-.ttt-pop .ttt-mark{animation:tttPop .2s ease-out;}
-.ttt-win{background:rgba(255,214,58,.16);}
-.ttt-win.X .ttt-mark::before,.ttt-win.X .ttt-mark::after{background:#ffd23a;box-shadow:0 0 16px #ffd23a;}
-.ttt-win.O .ttt-mark::before{border-color:#ffd23a;box-shadow:0 0 16px #ffd23a,inset 0 0 10px rgba(255,210,58,.4);}
-.ttt-win{animation:tttWinPulse 1s ease-in-out infinite;}
-@keyframes tttWinPulse{0%,100%{box-shadow:inset 0 0 0 2px rgba(255,214,58,.65),0 0 14px rgba(255,214,58,.35);}50%{box-shadow:inset 0 0 0 2px rgba(255,214,58,.95),0 0 26px rgba(255,214,58,.7);}}
 
 /* Wordle cells */
 .wl-cell{border-color:#003355;background:#001020;color:#00e5ff;font-family:'Press Start 2P',monospace;font-size:16px;}
@@ -683,7 +661,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .pz-tile.empty{background:#020208;border-color:#001a33;}
 
 /* Message text in game bars — inherit arcade font */
-#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ttt-msg,#ss-msg,#rt-text,#bj-msg{
+#sl-msg,#wl-msg,#fl-msg,#mm-msg,#yz-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ss-msg,#rt-text,#bj-msg{
   font-family:'Press Start 2P',monospace;
   font-size:clamp(6px,1.5vw,9px);
   letter-spacing:1px;
@@ -905,7 +883,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="game-icon" onclick="location.href='snake/'"><span class="ico-pixel">&#128027;</span><span class="ico-label">SNAKE</span></div>
     <div class="game-icon" onclick="location.href='breakout/'"><span class="ico-pixel">&#129667;</span><span class="ico-label">BREAKOUT</span></div>
     <div class="game-icon" onclick="location.href='2048/'"><span class="ico-pixel">&#127922;</span><span class="ico-label">2048</span></div>
-    <div class="game-icon" onclick="openGame('ttt')"><span class="ico-pixel">&#10060;</span><span class="ico-label">TIC TAC TOE</span></div>
+    <div class="game-icon" onclick="location.href='tictactoe/'"><span class="ico-pixel">&#10060;</span><span class="ico-label">TIC TAC TOE</span></div>
     <div class="game-icon" onclick="location.href='tetris/'"><span class="ico-pixel">&#129001;</span><span class="ico-label">TETRIS</span></div>
     <div class="game-icon" onclick="openGame('pong')"><span class="ico-pixel">&#127955;</span><span class="ico-label">PONG</span></div>
     <div class="game-icon" onclick="openGame('checkers')"><span class="ico-pixel">&#9823;</span><span class="ico-label">CHECKERS</span></div>
@@ -935,19 +913,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="game-icon" onclick="openGame('puzzle')"><span class="ico-pixel">&#129513;</span><span class="ico-label">15-PUZZLE</span></div>
     <div class="game-icon" onclick="openGame('bubbles')"><span class="ico-pixel">&#129749;</span><span class="ico-label">BUBBLES</span></div>
     <div class="game-icon page-btn" onclick="showPage(1)"><span class="ico-page-arrow">&#9664;&#9664;</span><span class="ico-label">BACK</span></div>
-  </div>
-</div>
-
-<!-- TIC TAC TOE -->
-<div id="game-ttt" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">TIC-TAC-TOE</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span id="ttt-msg">YOUR TURN (X)</span>
-      <button class="btn" onclick="initTTT()">NEW</button>
-      <span>YOU: <span id="ttt-wp">0</span> &nbsp;|&nbsp; AI: <span id="ttt-ap">0</span></span>
-    </div>
-    <div id="ttt-grid"></div>
   </div>
 </div>
 
@@ -1293,7 +1258,7 @@ window.openGame=function(id){
   var cnt=localStorage.getItem('aceon_plays')||'0';
   var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
-  var fn={ttt:initTTT,pong:initPong,
+  var fn={pong:initPong,
           checkers:initCheckers,pf:initPf,
           simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,react:initReact,
           bj:initBJ,yahtzee:initYahtzee,puzzle:initPuzzle,bubbles:initBubble};
@@ -1314,17 +1279,6 @@ window.closeGame=function(){
   cur=null;
   showPage(wasP2?2:1);
 };
-
-/* ════════════════ TIC-TAC-TOE ════════════════ */
-var tttB,tttGo,tttWp=0,tttAp=0,tttLast=-1,tttWinLine=null;
-window.initTTT=function(){tttB=Array(9).fill('');tttGo=false;tttLast=-1;tttWinLine=null;document.getElementById('ttt-msg').textContent='YOUR TURN (X)';fitCells('ttt-cell',3,{min:56,max:130,extra:54});renderTTT();};
-function renderTTT(){var g=document.getElementById('ttt-grid');g.innerHTML='';tttB.forEach(function(v,i){var el=document.createElement('div');el.className='ttt'+(v?' '+v:'')+(i===tttLast?' ttt-pop':'')+((tttWinLine&&tttWinLine.indexOf(i)>=0)?' ttt-win':'');if(v){var m=document.createElement('span');m.className='ttt-mark';el.appendChild(m);}if(!v&&!tttGo)el.addEventListener('click',function(){tttClick(i);});g.appendChild(el);});}
-function tttClick(i){if(tttB[i]||tttGo)return;tttB[i]='X';tttLast=i;if(tttChk()){tttGo=true;tttWp++;document.getElementById('ttt-wp').textContent=tttWp;document.getElementById('ttt-msg').textContent='YOU WIN!';renderTTT();return;}if(tttB.every(function(x){return x;})){tttGo=true;document.getElementById('ttt-msg').textContent='DRAW';renderTTT();return;}document.getElementById('ttt-msg').textContent='AI...';renderTTT();setTimeout(function(){var m=tttAI();if(m===-1)return;tttB[m]='O';tttLast=m;if(tttChk()){tttGo=true;tttAp++;document.getElementById('ttt-ap').textContent=tttAp;document.getElementById('ttt-msg').textContent='AI WINS';renderTTT();return;}if(tttB.every(function(x){return x;})){tttGo=true;document.getElementById('ttt-msg').textContent='DRAW';renderTTT();return;}document.getElementById('ttt-msg').textContent='YOUR TURN (X)';renderTTT();},400);}
-var LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-function tttChk(){var w=null;LINES.some(function(l){if(tttB[l[0]]&&tttB[l[0]]===tttB[l[1]]&&tttB[l[1]]===tttB[l[2]]){w=l;return true;}return false;});tttWinLine=w;return !!w;}
-if(!window.__tttResize){window.__tttResize=true;window.addEventListener('resize',function(){if(typeof cur!=='undefined'&&cur==='ttt'){fitCells('ttt-cell',3,{min:56,max:130,extra:54});renderTTT();}});}
-function tttSc2(b,d,mx){if(LINES.some(function(l){return b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[1]]===b[l[2]];}))return mx?-10+d:10-d;if(b.every(function(x){return x;}))return 0;var mv=b.map(function(v,i){return v?null:i;}).filter(function(i){return i!==null;});var best=mx?-Infinity:Infinity;mv.forEach(function(i){var nb=b.slice();nb[i]=mx?'O':'X';var s=tttSc2(nb,d+1,!mx);best=mx?Math.max(best,s):Math.min(best,s);});return best;}
-function tttAI(){var best=-Infinity,bi=-1;tttB.forEach(function(v,i){if(v)return;var nb=tttB.slice();nb[i]='O';var s=tttSc2(nb,0,false);if(s>best){best=s;bi=i;}});return bi;}
 
 /* ════════════════ PONG ════════════════ */
 var pongCtx,pongRaf,pongRun,pBall,pPad1,pPad2,pSc1,pSc2,pongDiff='easy',pongMT;

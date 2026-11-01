@@ -8,8 +8,8 @@
 var t=I18n.t,C=window.HubCatalog;
 var $=function(id){return document.getElementById(id);};
 var ART=new URL('art/',location.href).href;
-/* картинки от Codex ещё не выложены: пока false, вместо обложек рисуются заглушки и лишних запросов нет */
-var ART_READY=false;
+/* картинки лежат в games/art/; false: вместо обложек заглушки с эмодзи (если папку не выложили) */
+var ART_READY=true;
 
 Sound.define('hubtick',function(tm,tone){tone(tm,900,0.025,'square',0.025);});
 
@@ -25,7 +25,6 @@ function cardHtml(g){
   var h='<div class="c-in"><div class="c-cover" style="--gc:'+g.color+'">';
   if(ART_READY)h+='<img class="c-img" alt="" draggable="false" src="'+ART+'covers/'+g.id+'.webp" onerror="this.remove()">';
   h+='<span class="c-emoji">'+g.emoji+'</span></div>';
-  if(ART_READY)h+='<img class="c-hero" alt="" draggable="false" src="'+ART+'heroes/'+g.id+'.webp" onerror="this.remove()">';
   h+='<div class="c-shine"></div><div class="c-plate"><b data-i18n="g.'+g.id+'"></b></div>';
   if(g.classic)h+='<span class="c-badge" data-i18n="hub.classic"></span>';
   return h+'</div>';
@@ -78,6 +77,7 @@ function info(){
   var p=$('info');
   p.classList.remove('in');void p.offsetWidth;p.classList.add('in');
   $('i-name').textContent=t('g.'+g.id);
+  var hi=$('i-hero');if(ART_READY){hi.src=ART+'heroes/'+g.id+'.webp';hi.classList.remove('hidden');}else hi.classList.add('hidden');
   $('i-cat').textContent=t('cat.'+g.cat);
   $('i-classic').classList.toggle('hidden',!g.classic);
   $('i-desc').textContent=t('gd.'+g.id)+(g.classic?' '+t('hub.classicNote'):'');
@@ -106,9 +106,8 @@ function tick(now){
   if(drag.on){lastT=0;return;}
   if(target!==null){
     var d=target-pos;
-    vel=vel*Math.pow(0.0006,dt)+d*dt*60*0.18;
-    pos+=vel*dt*4;
-    if(Math.abs(d)<0.002&&Math.abs(vel)<0.01){pos=target;vel=0;target=null;place();lastT=0;return;}
+    pos+=d*(1-Math.exp(-dt*11));
+    if(Math.abs(d)<0.003){pos=target;target=null;place();lastT=0;return;}
   }
   place();
   raf=requestAnimationFrame(tick);
@@ -236,7 +235,7 @@ function boot(){
   var cb=$('cats');
   C.CATS.forEach(function(c){
     var b=document.createElement('button');b.type='button';b.className='cat';b.setAttribute('data-c',c);
-    b.innerHTML='<span data-i18n="cat.'+c+'"></span>';
+    b.innerHTML=(ART_READY?'<img class="cat-i" alt="" src="'+ART+'icons/cat_'+c+'.webp">':'')+'<span data-i18n="cat.'+c+'"></span>';
     b.addEventListener('click',function(){if(DB.cat===c)return;DB.cat=c;save();build();Sound.sfx('select');});
     cb.appendChild(b);
   });

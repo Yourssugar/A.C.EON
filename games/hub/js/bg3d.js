@@ -36,7 +36,7 @@ window.HubBG=function(THREE,wrap,ART){
 
   /* ── небо: градиент, звёзды и полосатое солнце в шейдере ── */
   var skyU={uAccent:{value:accent},uTime:{value:0},uMap:{value:null},uHasMap:{value:0}};
-  var sky=new THREE.Mesh(new THREE.PlaneGeometry(520,260),new THREE.ShaderMaterial({
+  var sky=new THREE.Mesh(new THREE.PlaneGeometry(480,270),new THREE.ShaderMaterial({
     uniforms:skyU,depthWrite:false,fog:false,
     vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
     fragmentShader:[
@@ -84,16 +84,21 @@ window.HubBG=function(THREE,wrap,ART){
     }
     var t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;return t;
   }
-  function layer(tex,w,h,z,y,name){
-    var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,fog:true}));
-    m.position.set(0,y,z);scene.add(m);
-    tryTex(name,function(t){m.material.map=t;m.material.needsUpdate=true;});
+  /* слой: пока нет картинки, рисованный город (повторяется дважды); картинка встаёт со своими пропорциями */
+  function layer(tex,w,h,z,y,name,artW,artY){
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,fog:true}));
+    m.scale.set(w,h,1);m.position.set(0,y,z);scene.add(m);
+    tex.repeat.set(2,1);
+    tryTex(name,function(t){
+      var a=t.image.width/t.image.height;
+      m.material.map=t;m.material.needsUpdate=true;
+      m.scale.set(artW,artW/a,1);m.position.y=artY+artW/a/2;
+    });
     return m;
   }
-  var far=layer(cityTex(7,true),340,85,-120,30,'city_far');
-  var near=layer(cityTex(91,false),220,55,-70,17,'city_near');
-  far.material.map.repeat.set(2,1);near.material.map.repeat.set(2,1);
-
+  /* нижний край слоя чуть ниже пола, его закрывает сетка */
+  var far=layer(cityTex(7,true),340,85,-120,30,'city_far',300,-6);
+  var near=layer(cityTex(91,false),220,55,-70,17,'city_near',190,-4);
   /* ── пол: сетка бежит к камере ── */
   var floorU={uAccent:{value:accent},uTime:{value:0},fogColor:{value:new THREE.Color(0x0b0420)},fogNear:{value:40},fogFar:{value:150}};
   var floor=new THREE.Mesh(new THREE.PlaneGeometry(400,300,1,1),new THREE.ShaderMaterial({

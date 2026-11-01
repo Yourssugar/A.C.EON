@@ -11,16 +11,18 @@
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"shared/arcade.css","kb":7},
-  {"src":"hub/css/hub.css","kb":11},
+  {"src":"hub/css/hub.css","kb":16},
   {"src":"shared/store.js","kb":3},
   {"src":"shared/i18n.js","kb":3},
   {"src":"shared/sound.js","kb":9},
   {"src":"shared/arcade.js","kb":5},
+  {"src":"shared/achievements.js","kb":30},
   {"src":"shared/three-loader.js","kb":3},
-  {"src":"hub/js/lang.js","kb":18},
+  {"src":"hub/js/lang.js","kb":20},
+  {"src":"hub/js/ach-lang.js","kb":24},
   {"src":"hub/js/catalog.js","kb":6},
   {"src":"hub/js/bg3d.js","kb":9},
-  {"src":"hub/js/hub.js","kb":12}
+  {"src":"hub/js/hub.js","kb":18}
 ]}
 </script>
 
@@ -63,13 +65,42 @@
     <h1 class="i-name" id="i-name"></h1>
     <p class="i-desc" id="i-desc"></p>
     <div class="i-stats" id="i-stats"></div>
+    <div class="i-ach" id="i-ach"></div>
     <div class="i-btns">
       <button class="btn i-play" id="btn-play" type="button">&#9654; <span data-i18n="hub.play"></span></button>
       <button class="btn i-grid" id="btn-grid" type="button"><span class="gi"><i></i><i></i><i></i><i></i></span><span data-i18n="hub.list"></span></button>
+      <button class="btn i-album" id="btn-album" type="button"><img class="ib-i" alt="" src="art/icons/album.webp"><span data-i18n="hub.album"></span><b id="album-n"></b></button>
     </div>
   </section>
   <div class="hub-foot"><span id="count"></span> &middot; <span data-i18n="hub.hint"></span></div>
 </main>
+
+<!-- альбом карточек -->
+<div class="grid-ov album-ov hidden" id="album-ov">
+  <div class="grid-box">
+    <div class="grid-head">
+      <span data-i18n="al.title"></span>
+      <span class="al-sum"><span id="al-count"></span><span class="al-pts"><img alt="" src="art/icons/coin.webp"><b id="al-pts"></b></span></span>
+      <button class="btn" id="album-close" type="button" data-i18n="hub.close"></button>
+    </div>
+    <div class="al-bar"><i id="al-bar"></i></div>
+    <div class="album" id="album"></div>
+  </div>
+</div>
+<!-- одна карточка крупно -->
+<div class="card-ov hidden" id="card-ov">
+  <div class="cv-wrap" id="cv-wrap">
+    <div class="cv-card" id="cv-card"><div class="cv-face cv-back"></div><div class="cv-face cv-front" id="cv-front"></div></div>
+  </div>
+  <div class="cv-info">
+    <div class="cv-r" id="cv-r"></div>
+    <div class="cv-n" id="cv-n"></div>
+    <div class="cv-h" data-i18n="al.how"></div>
+    <div class="cv-d" id="cv-d"></div>
+    <div class="cv-date" id="cv-date"></div>
+    <button class="btn" id="cv-close" type="button" data-i18n="hub.close"></button>
+  </div>
+</div>
 
 <div class="grid-ov hidden" id="grid-ov">
   <div class="grid-box">

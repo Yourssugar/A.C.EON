@@ -50,7 +50,7 @@ var L={
 "g.pong": "PONG",
 "gd.pong": "Against a bot or a friend, a tournament of 8 opponents and squash against a wall. Spin and bonuses.",
 "g.runner": "RUNNER",
-"gd.runner": "Jump over obstacles as long as you can.",
+"gd.runner": "Endless run, a daily run and an adventure: 3 worlds, 15 levels with platforms, enemies and hidden stars.",
 "g.stacker": "STACKER",
 "gd.stacker": "Stack the blocks into a tower as high as possible.",
 "g.bubbles": "BUBBLES",
@@ -76,7 +76,8 @@ var L={
 "al.how": "HOW TO GET",
 "al.meta": "A.C.EON",
 "al.progress": "{n} OF {m}",
-"s.rally": "BEST RALLY"
+"s.rally": "BEST RALLY",
+"s.distM": "BEST RUN (M)"
 },
 "ru": {
 "hub.title": "АРКАДА",
@@ -126,7 +127,7 @@ var L={
 "g.pong": "ПОНГ",
 "gd.pong": "Против бота или друга, турнир из 8 соперников и сквош против стены. Подкрутка и бонусы.",
 "g.runner": "РАННЕР",
-"gd.runner": "Перепрыгивайте препятствия как можно дольше.",
+"gd.runner": "Бесконечный бег, забег дня и приключение: 3 мира, 15 уровней с платформами, врагами и спрятанными звёздами.",
 "g.stacker": "БАШНЯ",
 "gd.stacker": "Сложите башню из блоков как можно выше.",
 "g.bubbles": "ПУЗЫРИ",
@@ -152,7 +153,8 @@ var L={
 "al.how": "КАК ПОЛУЧИТЬ",
 "al.meta": "A.C.EON",
 "al.progress": "{n} ИЗ {m}",
-"s.rally": "ЛУЧШИЙ РОЗЫГРЫШ"
+"s.rally": "ЛУЧШИЙ РОЗЫГРЫШ",
+"s.distM": "РЕКОРД (М)"
 },
 "de": {
 "hub.title": "ARCADE",
@@ -202,7 +204,7 @@ var L={
 "g.pong": "PONG",
 "gd.pong": "Gegen einen Bot oder Freund, ein Turnier mit 8 Gegnern und Squash gegen die Wand. Drall und Boni.",
 "g.runner": "RUNNER",
-"gd.runner": "Springe so lange wie möglich über Hindernisse.",
+"gd.runner": "Endloslauf, Tageslauf und ein Abenteuer: 3 Welten, 15 Level mit Plattformen, Gegnern und versteckten Sternen.",
 "g.stacker": "STAPLER",
 "gd.stacker": "Staple die Blöcke so hoch wie möglich.",
 "g.bubbles": "BLASEN",
@@ -228,7 +230,8 @@ var L={
 "al.how": "SO BEKOMMST DU SIE",
 "al.meta": "A.C.EON",
 "al.progress": "{n} VON {m}",
-"s.rally": "LÄNGSTER BALLWECHSEL"
+"s.rally": "LÄNGSTER BALLWECHSEL",
+"s.distM": "REKORD (M)"
 },
 "fr": {
 "hub.title": "ARCADE",
@@ -278,7 +281,7 @@ var L={
 "g.pong": "PONG",
 "gd.pong": "Contre un bot ou un ami, un tournoi de 8 adversaires et du squash contre un mur. Effet et bonus.",
 "g.runner": "COUREUR",
-"gd.runner": "Sautez les obstacles le plus longtemps possible.",
+"gd.runner": "Course infinie, course du jour et aventure : 3 mondes, 15 niveaux avec plateformes, ennemis et étoiles cachées.",
 "g.stacker": "EMPILEUR",
 "gd.stacker": "Empilez les blocs le plus haut possible.",
 "g.bubbles": "BULLES",
@@ -304,7 +307,8 @@ var L={
 "al.how": "COMMENT L'OBTENIR",
 "al.meta": "A.C.EON",
 "al.progress": "{n} SUR {m}",
-"s.rally": "PLUS LONG ÉCHANGE"
+"s.rally": "PLUS LONG ÉCHANGE",
+"s.distM": "RECORD (M)"
 },
 "es": {
 "hub.title": "ARCADE",
@@ -354,7 +358,7 @@ var L={
 "g.pong": "PONG",
 "gd.pong": "Contra un bot o un amigo, un torneo de 8 rivales y squash contra la pared. Efecto y bonus.",
 "g.runner": "CORREDOR",
-"gd.runner": "Salta obstáculos todo el tiempo que puedas.",
+"gd.runner": "Carrera infinita, carrera del día y aventura: 3 mundos, 15 niveles con plataformas, enemigos y estrellas ocultas.",
 "g.stacker": "APILADOR",
 "gd.stacker": "Apila los bloques lo más alto posible.",
 "g.bubbles": "BURBUJAS",
@@ -380,7 +384,8 @@ var L={
 "al.how": "CÓMO CONSEGUIRLA",
 "al.meta": "A.C.EON",
 "al.progress": "{n} DE {m}",
-"s.rally": "MEJOR PELOTEO"
+"s.rally": "MEJOR PELOTEO",
+"s.distM": "RÉCORD (M)"
 },
 "it": {
 "hub.title": "ARCADE",
@@ -430,7 +435,7 @@ var L={
 "g.pong": "PONG",
 "gd.pong": "Contro un bot o un amico, un torneo di 8 avversari e squash contro il muro. Effetto e bonus.",
 "g.runner": "CORRIDORE",
-"gd.runner": "Salta gli ostacoli il più a lungo possibile.",
+"gd.runner": "Corsa infinita, corsa del giorno e avventura: 3 mondi, 15 livelli con piattaforme, nemici e stelle nascoste.",
 "g.stacker": "IMPILATORE",
 "gd.stacker": "Impila i blocchi il più in alto possibile.",
 "g.bubbles": "BOLLE",
@@ -456,7 +461,8 @@ var L={
 "al.how": "COME OTTENERLA",
 "al.meta": "A.C.EON",
 "al.progress": "{n} SU {m}",
-"s.rally": "SCAMBIO PIÙ LUNGO"
+"s.rally": "SCAMBIO PIÙ LUNGO",
+"s.distM": "RECORD (M)"
 },
 "pl": {
 "hub.title": "ARCADE",
@@ -506,7 +512,7 @@ var L={
 "g.pong": "PONG",
 "gd.pong": "Z botem lub przyjacielem, turniej 8 rywali i squash przeciw ścianie. Podkręcanie i bonusy.",
 "g.runner": "BIEGACZ",
-"gd.runner": "Przeskakuj przeszkody jak najdłużej.",
+"gd.runner": "Bieg bez końca, bieg dnia i przygoda: 3 światy, 15 poziomów z platformami, wrogami i ukrytymi gwiazdkami.",
 "g.stacker": "WIEŻA",
 "gd.stacker": "Ułóż wieżę z bloków jak najwyżej.",
 "g.bubbles": "BĄBELKI",
@@ -532,7 +538,8 @@ var L={
 "al.how": "JAK ZDOBYĆ",
 "al.meta": "A.C.EON",
 "al.progress": "{n} Z {m}",
-"s.rally": "NAJDŁUŻSZA WYMIANA"
+"s.rally": "NAJDŁUŻSZA WYMIANA",
+"s.distM": "REKORD (M)"
 }
 };
 for(var k in L)I18n.add(k,L[k]);

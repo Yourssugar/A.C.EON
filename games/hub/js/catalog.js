@@ -57,6 +57,12 @@ var GAMES=[
     var st=load('tictactoe').stats||{},p=sum(st,function(s){return s.played;});
     return p?[['s.won',sum(st,function(s){return s.win;})+' / '+p]]:[];}},
   {id:'battleship',cat:'board',url:'battleship/',color:'#4aa8ff',emoji:'🚢',stats:function(){return wonPlayed('battleship');}},
+  {id:'runner',cat:'arcade',url:'runner/',color:'#ff8a1a',emoji:'\uD83C\uDFC3',stats:function(){
+    var d=load('runner'),out=[],b=d.stats&&d.stats.best,old=hi('pf');
+    if(b)out.push(['s.distM',Math.floor(b)]);else if(old)out.push(['s.best',old]);
+    var stars=0,sv=(d.adv||{}).stars||{};for(var k in sv)stars+=(sv[k]||[]).length;
+    if(stars)out.push(['s.stars',stars+' / 45']);
+    return out;}},
   {id:'pong',cat:'arcade',url:'pong/',color:'#00e5ff',emoji:'\uD83C\uDFD3',stats:function(){
     var st=load('pong').stats||{},out=[],w=0,p=0;
     for(var k in st)if(k.indexOf('bot-')===0&&st[k]){w+=st[k].won||0;p+=st[k].played||0;}
@@ -64,7 +70,6 @@ var GAMES=[
     var r=max(st,function(s){return s.bestRally;});if(r)out.push(['s.rally',r]);
     return out;}},
   /* ещё не переделанные: страница classic/ */
-  {id:'runner',cat:'arcade',url:'classic/#pf',color:'#ff8a1a',emoji:'🏃',classic:true,stats:function(){var h=hi('pf');return h?[['s.best',h]]:[];}},
   {id:'stacker',cat:'arcade',url:'classic/#ts',color:'#ffb02e',emoji:'🔶',classic:true,stats:function(){var h=hi('ts');return h?[['s.best',h]]:[];}},
   {id:'bubbles',cat:'arcade',url:'classic/#bubbles',color:'#ff5ad8',emoji:'🫧',classic:true,stats:function(){var h=hi('bubble');return h?[['s.best',h]]:[];}},
   {id:'checkers',cat:'board',url:'classic/#checkers',color:'#ff5a6a',emoji:'⛀',classic:true,stats:function(){return [];}},

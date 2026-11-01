@@ -589,7 +589,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 /* canvas fullscreen scaling — browser keeps aspect ratio via width:auto + max constraints */
 #ts-cv     { max-height:calc(100dvh - 130px); width:auto; }
-#bub-cv    { max-height:calc(100dvh - 130px); width:auto; }
 
 /* пульсация заголовка итогов (используется пасьянсом) */
 @keyframes repPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);}}
@@ -741,7 +740,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
     <div class="game-icon" onclick="openGame('mind')"><span class="ico-pixel">&#127919;</span><span class="ico-label">MASTERMIND</span></div>
     <div class="game-icon" onclick="openGame('puzzle')"><span class="ico-pixel">&#129513;</span><span class="ico-label">15-PUZZLE</span></div>
-    <div class="game-icon" onclick="openGame('bubbles')"><span class="ico-pixel">&#129749;</span><span class="ico-label">BUBBLES</span></div>
   </div>
 </div>
 
@@ -874,19 +872,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
 </div>
 
-<!-- BUBBLE SHOOTER -->
-<div id="game-bubbles" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">BUBBLE SHOOTER</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>SCORE: <span id="bub-sc">0</span></span>
-      <button class="btn" onclick="initBubble()">NEW</button>
-      <span>BEST: <span id="hi-bubble">0</span></span>
-      <span id="bub-msg" style="font-size:10px;"></span>
-    </div>
-    <canvas id="bub-cv" class="gcv" style="border:2px solid #003355;box-shadow:0 0 14px rgba(0,229,255,.12);cursor:crosshair;touch-action:none;"></canvas>
-  </div>
-</div>
 
 <script src="../shared/achievements.js"></script>
 <script>
@@ -1004,7 +989,7 @@ window.openGame=function(id,direct){
   var fn={
           checkers:initCheckers,
           simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,
-          puzzle:initPuzzle,bubbles:initBubble};
+          puzzle:initPuzzle};
   /* Show PRESS START — init game only after player clicks */
   if(direct){if(fn[id])fn[id]();setTimeout(refitCurrent,40);return;}
   showGameSplash(function(){
@@ -1016,7 +1001,6 @@ window.closeGame=function(){
   if(!cur)return;
   document.getElementById('game-'+cur).classList.add('hidden');
   if(cur==='ts')tsStop();
-  if(cur==='bubbles'&&typeof bubRaf!=='undefined'&&bubRaf){cancelAnimationFrame(bubRaf);bubRaf=null;}
   var wasP2=PAGE2_GAMES[cur];
   cur=null;
   if(FROM_LINK){location.href='../';return;}
@@ -1774,258 +1758,6 @@ function pzGetBest(){var k='aceon_hi_pz'+pzN;var v=localStorage.getItem(k);retur
 function pzSetBest(moves){var k='aceon_hi_pz'+pzN;var b=pzGetBest();if(b===null||moves<b)localStorage.setItem(k,moves);achLater('puzzle');}
 function pzShowBest(){var b=pzGetBest();var el=document.getElementById('hi-puzzle');if(el)el.textContent=b===null?'\u2014':b;}
 
-/* ════════════════ BUBBLE SHOOTER ════════════════ */
-var BUB_R=18,BUB_COLS=10,BUB_INIT_ROWS=7;
-var BUB_RH=Math.round(BUB_R*Math.sqrt(3)); // row height ~31px
-var BUB_CW=BUB_COLS*2*BUB_R+BUB_R;        // canvas width ~378
-var BUB_CH=520;
-var BUB_SY=BUB_CH-BUB_R*3;                // shooter Y
-var BUB_COLORS=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22'];
-var bubGrid,bubCur,bubNext,bubBall,bubScore,bubOver,bubCtx,bubRaf,bubShotCount;
-var bubAimX=BUB_CW/2,bubAimY=0;
-
-/* ── hex grid helpers ── */
-function bubNC(r){return r%2===0?BUB_COLS:BUB_COLS-1;}
-function bubCX(r,c){return c*2*BUB_R+BUB_R+(r%2?BUB_R:0);}
-function bubCY(r){return r*BUB_RH+BUB_R;}
-
-function bubMakeGrid(){
-  bubGrid=[];
-  for(var r=0;r<15;r++){
-    var row=new Array(bubNC(r)).fill(-1);
-    if(r<BUB_INIT_ROWS)for(var c=0;c<bubNC(r);c++)row[c]=Math.random()*BUB_COLORS.length|0;
-    bubGrid.push(row);
-  }
-}
-
-window.initBubble=function(){
-  var cv=document.getElementById('bub-cv');
-  if(!cv)return;
-  cv.width=BUB_CW;cv.height=BUB_CH;
-  bubCtx=cv.getContext('2d');
-  bubMakeGrid();
-  bubCur=Math.random()*BUB_COLORS.length|0;
-  bubNext=Math.random()*BUB_COLORS.length|0;
-  bubBall=null;bubScore=0;bubOver=false;bubShotCount=0;
-  bubAimX=BUB_CW/2;bubAimY=0;
-  document.getElementById('bub-sc').textContent='0';
-  var m=document.getElementById('bub-msg');m.textContent='CLICK TO SHOOT';m.style.color='';
-  showHi('bubble');
-  cv.onmousemove=function(e){
-    var rect=cv.getBoundingClientRect();
-    bubAimX=(e.clientX-rect.left)*(BUB_CW/rect.width);
-    bubAimY=(e.clientY-rect.top)*(BUB_CH/rect.height);
-  };
-  cv.onclick=function(e){
-    if(bubOver){initBubble();return;}
-    var rect=cv.getBoundingClientRect();
-    bubShoot((e.clientX-rect.left)*(BUB_CW/rect.width),(e.clientY-rect.top)*(BUB_CH/rect.height));
-  };
-  cv.ontouchstart=function(e){
-    e.preventDefault();
-    if(bubOver){initBubble();return;}
-    var rect=cv.getBoundingClientRect(),t=e.touches[0];
-    var ax=(t.clientX-rect.left)*(BUB_CW/rect.width),ay=(t.clientY-rect.top)*(BUB_CH/rect.height);
-    bubAimX=ax;bubAimY=ay;bubShoot(ax,ay);
-  };
-  cv.ontouchmove=function(e){
-    e.preventDefault();
-    var rect=cv.getBoundingClientRect(),t=e.touches[0];
-    bubAimX=(t.clientX-rect.left)*(BUB_CW/rect.width);
-    bubAimY=(t.clientY-rect.top)*(BUB_CH/rect.height);
-  };
-  if(bubRaf){cancelAnimationFrame(bubRaf);bubRaf=null;}
-  bubRaf=requestAnimationFrame(bubLoop);
-};
-
-function bubLoop(){
-  if(cur!=='bubbles'){bubRaf=null;return;}
-  bubUpdate();bubDraw();
-  bubRaf=requestAnimationFrame(bubLoop);
-}
-
-function bubUpdate(){
-  if(!bubBall)return;
-  var b=bubBall;
-  b.x+=b.vx;b.y+=b.vy;
-  if(b.x-BUB_R<0){b.x=BUB_R;b.vx*=-1;}
-  if(b.x+BUB_R>BUB_CW){b.x=BUB_CW-BUB_R;b.vx*=-1;}
-  if(b.y-BUB_R<=BUB_R){b.y=BUB_R*2;bubLand(b);return;}
-  for(var r=0;r<bubGrid.length;r++){
-    for(var c=0;c<bubNC(r);c++){
-      if(bubGrid[r][c]<0)continue;
-      var dx=b.x-bubCX(r,c),dy=b.y-bubCY(r,c);
-      if(dx*dx+dy*dy<(BUB_R*1.95)*(BUB_R*1.95)){bubLand(b);return;}
-    }
-  }
-}
-
-function bubSnap(x,y){
-  var br=0,bc=0,bd=Infinity;
-  for(var r=0;r<bubGrid.length;r++){
-    for(var c=0;c<bubNC(r);c++){
-      if(bubGrid[r][c]>=0)continue;
-      var dx=x-bubCX(r,c),dy=y-bubCY(r,c);
-      var d=dx*dx+dy*dy;
-      if(d<bd){bd=d;br=r;bc=c;}
-    }
-  }
-  return{r:br,c:bc};
-}
-
-function bubLand(b){
-  var p=bubSnap(b.x,b.y);
-  if(p.r>=bubGrid.length||p.c>=bubNC(p.r)){bubBall=null;bubCur=bubNext;bubNext=Math.random()*BUB_COLORS.length|0;return;}
-  bubGrid[p.r][p.c]=b.color;
-  bubBall=null;
-  var grp=bubBFS(p.r,p.c,b.color);
-  var popped=0;
-  if(grp.length>=3){
-    grp.forEach(function(q){bubGrid[q.r][q.c]=-1;});
-    var fl=bubFloating();
-    fl.forEach(function(q){bubGrid[q.r][q.c]=-1;});
-    popped=grp.length+fl.length;
-    bubScore+=popped*10+(popped>5?(popped-5)*5:0);
-    document.getElementById('bub-sc').textContent=bubScore;
-  }
-  bubShotCount++;
-  if(bubShotCount%8===0)bubAddRow();
-  // game over check
-  for(var r=0;r<bubGrid.length;r++){
-    if(bubGrid[r].some(function(v){return v>=0;})&&bubCY(r)+BUB_R>BUB_SY-BUB_R*2){
-      bubOver=true;
-      var m=document.getElementById('bub-msg');
-      m.textContent='GAME OVER — SCORE: '+bubScore;m.style.color='var(--err)';
-      setHi('bubble',bubScore);showHi('bubble');
-      return;
-    }
-  }
-  if(bubGrid.every(function(row){return row.every(function(v){return v<0;});})){
-    bubOver=true;
-    var m2=document.getElementById('bub-msg');
-    m2.textContent='CLEARED! SCORE: '+bubScore;m2.style.color='var(--pri-b)';
-    setHi('bubble',bubScore);showHi('bubble');
-    return;
-  }
-  bubCur=bubNext;
-  bubNext=Math.random()*BUB_COLORS.length|0;
-}
-
-function bubAddRow(){
-  // shift all rows down by prepending a new row
-  var newRow=new Array(bubNC(0)).fill(-1);
-  for(var c=0;c<bubNC(0);c++)newRow[c]=Math.random()*BUB_COLORS.length|0;
-  bubGrid.unshift(newRow);
-  while(bubGrid.length>16)bubGrid.pop();
-}
-
-function bubNeighbors(r,c){
-  var ns=[],even=r%2===0;
-  var dirs=even?[[-1,-1],[-1,0],[0,-1],[0,1],[1,-1],[1,0]]:[[-1,0],[-1,1],[0,-1],[0,1],[1,0],[1,1]];
-  dirs.forEach(function(d){
-    var nr=r+d[0],nc=c+d[1];
-    if(nr>=0&&nr<bubGrid.length&&nc>=0&&nc<bubNC(nr))ns.push({r:nr,c:nc});
-  });
-  return ns;
-}
-
-function bubBFS(sr,sc,color){
-  var vis=[],q=[[sr,sc]],seen={};seen[sr+'_'+sc]=true;
-  while(q.length){
-    var p=q.shift();vis.push({r:p[0],c:p[1]});
-    bubNeighbors(p[0],p[1]).forEach(function(n){
-      var k=n.r+'_'+n.c;
-      if(!seen[k]&&bubGrid[n.r][n.c]===color){seen[k]=true;q.push([n.r,n.c]);}
-    });
-  }
-  return vis;
-}
-
-function bubFloating(){
-  var anch={},q=[];
-  for(var c=0;c<bubNC(0);c++){
-    if(bubGrid[0][c]>=0){var k='0_'+c;if(!anch[k]){anch[k]=true;q.push([0,c]);}}
-  }
-  while(q.length){
-    var p=q.shift();
-    bubNeighbors(p[0],p[1]).forEach(function(n){
-      var k=n.r+'_'+n.c;
-      if(!anch[k]&&bubGrid[n.r][n.c]>=0){anch[k]=true;q.push([n.r,n.c]);}
-    });
-  }
-  var fl=[];
-  for(var r=0;r<bubGrid.length;r++){
-    for(var c=0;c<bubNC(r);c++){
-      if(bubGrid[r][c]>=0&&!anch[r+'_'+c])fl.push({r:r,c:c});
-    }
-  }
-  return fl;
-}
-
-function bubShoot(ax,ay){
-  if(bubBall||bubOver)return;
-  var sx=BUB_CW/2,sy=BUB_SY;
-  var dx=ax-sx,dy=ay-sy;
-  if(dy>=0)return; // no shooting down
-  var len=Math.sqrt(dx*dx+dy*dy)||1;
-  bubBall={x:sx,y:sy,vx:dx/len*9,vy:dy/len*9,color:bubCur};
-}
-
-function bubDraw(){
-  if(!bubCtx)return;
-  var ctx=bubCtx,C=gC();
-  ctx.fillStyle=C.bg;ctx.fillRect(0,0,BUB_CW,BUB_CH);
-  // danger line
-  ctx.strokeStyle=C.err;ctx.lineWidth=1;ctx.setLineDash([4,6]);
-  ctx.beginPath();ctx.moveTo(0,BUB_SY-BUB_R*2);ctx.lineTo(BUB_CW,BUB_SY-BUB_R*2);ctx.stroke();
-  ctx.setLineDash([]);
-  // grid bubbles
-  for(var r=0;r<bubGrid.length;r++){
-    for(var c=0;c<bubNC(r);c++){
-      if(bubGrid[r][c]<0)continue;
-      bubDrawCircle(ctx,bubCX(r,c),bubCY(r,c),BUB_R-1,BUB_COLORS[bubGrid[r][c]]);
-    }
-  }
-  // aim guide + shooter
-  if(!bubBall&&!bubOver){
-    var sx=BUB_CW/2,sy=BUB_SY;
-    var dx=bubAimX-sx,dy=bubAimY-sy;
-    if(dy<0){
-      var len=Math.sqrt(dx*dx+dy*dy)||1;
-      var vx=dx/len*9,vy=dy/len*9,tx=sx,ty=sy;
-      ctx.setLineDash([5,10]);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1.5;
-      ctx.beginPath();ctx.moveTo(sx,sy);
-      for(var i=0;i<55;i++){
-        tx+=vx;ty+=vy;
-        if(tx-BUB_R<0){vx*=-1;tx=BUB_R;}
-        if(tx+BUB_R>BUB_CW){vx*=-1;tx=BUB_CW-BUB_R;}
-        if(ty<BUB_R)break;
-        ctx.lineTo(tx,ty);
-      }
-      ctx.stroke();ctx.setLineDash([]);
-    }
-    bubDrawCircle(ctx,sx,sy,BUB_R,BUB_COLORS[bubCur]);
-    ctx.fillStyle=C.txtd||'#888';ctx.font='9px Tahoma';ctx.textAlign='left';
-    ctx.fillText('NEXT',BUB_CW-54,sy+4);
-    bubDrawCircle(ctx,BUB_CW-22,sy,BUB_R-5,BUB_COLORS[bubNext]);
-    ctx.textAlign='left';
-  }
-  if(bubBall)bubDrawCircle(ctx,bubBall.x,bubBall.y,BUB_R-1,BUB_COLORS[bubBall.color]);
-  if(bubOver){
-    ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect(0,0,BUB_CW,BUB_CH);
-    ctx.fillStyle='#fff';ctx.font='bold 14px Tahoma';ctx.textAlign='center';
-    ctx.fillText('CLICK TO PLAY AGAIN',BUB_CW/2,BUB_CH/2);ctx.textAlign='left';
-  }
-}
-
-function bubDrawCircle(ctx,x,y,r,color){
-  var g=ctx.createRadialGradient(x-r*.3,y-r*.35,r*.05,x,y,r);
-  g.addColorStop(0,'rgba(255,255,255,.55)');
-  g.addColorStop(0.55,color);
-  g.addColorStop(1,'rgba(0,0,0,.25)');
-  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
-}
-
 /* ── BOOT SEQUENCE + ICON ASSEMBLY ── */
 (function(){
   var overlay=document.getElementById('boot-overlay');
@@ -2069,7 +1801,7 @@ function bubDrawCircle(ctx,x,y,r,color){
   if(crEl){crEl.textContent=String(Math.max(0,99-parseInt(localStorage.getItem('aceon_plays')||'0')));}
 
   var STEPS=[
-    {t:60,   msg:'LOADING GAME ROM  [8 TITLES]',  pct:14, ok:340},
+    {t:60,   msg:'LOADING GAME ROM  [7 TITLES]',  pct:14, ok:340},
     {t:500,  msg:'CHECKING HIGH SCORES...........',  pct:32, ok:280},
     {t:880,  msg:'WARMING UP DISPLAY.............',  pct:55, ok:260},
     {t:1200, msg:'CALIBRATING JOYSTICK...........',  pct:74, ok:240},

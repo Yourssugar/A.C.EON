@@ -12,11 +12,11 @@ function hide(id){$(id).classList.add('hidden');}
 var MODES=['endless','adventure','daily'];
 var ART=new URL('../art/runner/',location.href).href;
 /* картинки от Codex: пока не выложены, false; тогда всё рисуется кодом и лишних запросов нет */
-var ART_READY=false;
+var ART_READY=true;
 
 Store.define('runner',{
   version:1,
-  defaults:{settings:{mode:'endless',world:0,level:0,buttons:'auto'},
+  defaults:{settings:{mode:'endless',world:0,level:0,buttons:'auto',jump:'charge'},
     stats:{runs:0,best:0,bestCoins:0,coins:0,meters:0,jumps:0},
     adv:{unlocked:0,stars:{},best:{}},
     daily:{history:{},streak:0,lastDate:0}}
@@ -27,6 +27,8 @@ AD.unlocked=Math.max(0,Math.min(LV.COUNT-1,AD.unlocked|0));
 S.level=Math.max(0,Math.min(AD.unlocked,S.level|0));
 S.world=Math.floor(S.level/5);
 if(['auto','on','off'].indexOf(S.buttons)<0)S.buttons='auto';
+if(['charge','tap'].indexOf(S.jump)<0)S.jump='charge';
+RunPhys.C.MODE=S.jump;
 function save(){Store.save('runner');}
 
 /* ── звуки ── */
@@ -107,6 +109,8 @@ function paintMenu(){
   if(S.mode==='daily')buildDaily();
   var list=document.querySelectorAll('#seg-buttons .seg-btn');
   for(var i=0;i<list.length;i++)list[i].classList.toggle('sel',list[i].getAttribute('data-v')===S.buttons);
+  list=document.querySelectorAll('#seg-jump .seg-btn');
+  for(i=0;i<list.length;i++)list[i].classList.toggle('sel',list[i].getAttribute('data-v')===S.jump);
 }
 function showScreen(name){
   document.body.classList.toggle('screen-menu',name==='menu');
@@ -329,6 +333,8 @@ function boot(){
   bindTouch();
   var sb=document.querySelectorAll('#seg-buttons .seg-btn');
   for(var i=0;i<sb.length;i++)(function(b){b.addEventListener('click',function(){S.buttons=b.getAttribute('data-v');save();paintMenu();Sound.sfx('select');});})(sb[i]);
+  sb=document.querySelectorAll('#seg-jump .seg-btn');
+  for(i=0;i<sb.length;i++)(function(b){b.addEventListener('click',function(){S.jump=b.getAttribute('data-v');RunPhys.C.MODE=S.jump;save();paintMenu();Sound.sfx('select');});})(sb[i]);
   $('adv-box').addEventListener('click',function(e){
     var n=e.target;while(n&&n!==this&&!(n.getAttribute&&(n.getAttribute('data-i')||n.getAttribute('data-w'))))n=n.parentNode;
     if(!n||n===this||n.disabled)return;

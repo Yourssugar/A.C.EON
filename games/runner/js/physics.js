@@ -6,6 +6,11 @@
    чтобы прыжок срабатывал, даже если нажал чуть раньше приземления или чуть позже края.
    Вниз на земле: пригнуться (ниже рост), вниз в воздухе: быстрое падение.
 
+   Режим заряда (C.MODE='charge', по умолчанию): кнопку держат, шкала копится CHARGE секунд,
+   прыжок происходит, когда кнопку отпустили. Высота от HMIN (касание) до HMAX (полный заряд,
+   столько же, сколько давал самый высокий обычный прыжок). Копить можно и в воздухе:
+   отпустил до приземления, прыжок сработает при касании земли (буфер).
+
    RunPhys.hero(x, y)                         новый герой (x, y: левый нижний угол ног)
    RunPhys.step(h, inp, dt, world)            inp: {left, right, jump, jumpHit, down}
    world.collide(h, axis)                     разбирает столкновения после сдвига по оси, возвращает true, если стоит на земле
@@ -24,11 +29,16 @@ var C={
   MAXFALL:1500,
   RUN:330,ACC:2600,FRIC:2900,AIR:0.65,
   COYOTE:0.09,BUFFER:0.13,
-  W:38,H:62,DUCK_H:34
+  W:38,H:62,DUCK_H:34,
+  MODE:'charge',   // 'charge' | 'tap'
+  CHARGE:1.1,      // секунд до полного заряда
+  HMIN:72,HMAX:255 // высота прыжка в пикселях: касание и полный заряд
 };
+/* скорость отрыва для заданной высоты (без удержания, обычная гравитация) */
+function vFor(hgt){return Math.sqrt(2*C.G*hgt);}
 
 function hero(x,y){
-  return {x:x,y:y-C.H,w:C.W,h:C.H,vx:0,vy:0,ground:false,duck:false,coyote:0,buffer:0,hold:0,face:1,
+  return {x:x,y:y-C.H,w:C.W,h:C.H,vx:0,vy:0,ground:false,duck:false,coyote:0,buffer:0,hold:0,face:1,charging:false,charge:0,power:0,
     run:0,jumps:0,landed:0,squash:0};
 }
 
@@ -48,15 +58,26 @@ function step(h,inp,dt,world){
     if(h.vx>max)h.vx=Math.max(max,h.vx-C.FRIC*dt);if(h.vx<-max)h.vx=Math.min(-max,h.vx+C.FRIC*dt);
   }
   /* прыжок */
-  if(inp.jumpHit)h.buffer=C.BUFFER;else if(h.buffer>0)h.buffer-=dt;
+  var charge=C.MODE==='charge';
+  if(charge){
+    if(inp.jumpHit&&!h.charging){h.charging=true;h.charge=0;}
+    if(h.charging){
+      if(inp.jump)h.charge=Math.min(1,h.charge+dt/C.CHARGE);
+      else{h.charging=false;h.power=h.charge;h.charge=0;h.buffer=C.BUFFER;}
+    }else if(h.buffer>0)h.buffer-=dt;
+  }else{
+    if(inp.jumpHit)h.buffer=C.BUFFER;else if(h.buffer>0)h.buffer-=dt;
+  }
   if(h.ground)h.coyote=C.COYOTE;else if(h.coyote>0)h.coyote-=dt;
   if(h.buffer>0&&h.coyote>0&&!h.duck){
-    h.vy=-C.JUMP;h.ground=false;h.coyote=0;h.buffer=0;h.hold=C.HOLD;h.jumps++;
+    if(charge){h.vy=-vFor(C.HMIN+(C.HMAX-C.HMIN)*h.power);h.hold=0;}
+    else{h.vy=-C.JUMP;h.hold=C.HOLD;}
+    h.ground=false;h.coyote=0;h.buffer=0;h.jumps++;
     if(world.onJump)world.onJump(h);
   }
   /* гравитация */
   var g=C.G;
-  if(h.vy<0){
+  if(h.vy<0&&!charge){
     if(inp.jump&&h.hold>0){g*=C.HOLD_G;h.hold-=dt;}
     else if(!inp.jump&&h.hold>0){
       /* короткое касание всё равно даёт нормальный низкий прыжок */
@@ -77,5 +98,5 @@ function step(h,inp,dt,world){
   if(h.ground)h.run+=dt*(world.auto?world.speed/330:Math.abs(h.vx)/330)*9;
 }
 
-window.RunPhys={C:C,hero:hero,step:step};
+window.RunPhys={C:C,hero:hero,step:step,vFor:vFor};
 })();

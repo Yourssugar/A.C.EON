@@ -14,8 +14,16 @@ var BIOME_M=1000;
 
 function rng(seed){var a=seed|0;return function(){a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};}
 
-/* препятствия: размеры хитбоксов (картинка рисуется чуть больше) */
-var SIZE={low:[46,60],tall:[46,104],duck:[78,44],high:[78,44]};
+/* препятствия: размеры хитбоксов по мирам (картинка рисуется чуть больше).
+   В городе низкое препятствие: широкий барьер, в пустыне кактус, в космосе блок. */
+var FLY=[78,44];
+var SIZES=[
+  {low:[80,36],tall:[44,104],duck:FLY,high:FLY},
+  {low:[46,64],tall:[36,104],duck:FLY,high:FLY},
+  {low:[84,40],tall:[46,104],duck:FLY,high:FLY}];
+var SIZE=SIZES[0];
+/* какой мир будет в точке x экрана, когда герой до неё добежит */
+function worldAt(st,x){return Math.floor((st.meters+(x-HX)/M)/BIOME_M)%3;}
 
 function create(o){
   var seed=o.seed||Math.floor(Math.random()*1e9);
@@ -28,9 +36,9 @@ function create(o){
 
 /* ── связки препятствий: [доля сложности, функция(st, x) -> ширина связки] ── */
 function add(st,k,x,yb){
-  var s=SIZE[k],y=k==='duck'?GY-44-s[1]:k==='high'?GY-185-s[1]:GY-s[1];
+  var wd=worldAt(st,x),s=SIZES[wd][k],y=k==='duck'?GY-44-s[1]:k==='high'?GY-185-s[1]:GY-s[1];
   if(yb!=null)y=yb;
-  st.obs.push({k:k,x:x,y:y,w:s[0],h:s[1],t:st.r()*6});
+  st.obs.push({k:k,x:x,y:y,w:s[0],h:s[1],t:st.r()*6,wd:wd});
   return s[0];
 }
 function coins(st,x,n,yFn){for(var i=0;i<n;i++)st.items.push({k:'coin',x:x+i*36,y:yFn(i),r:13});}
@@ -45,7 +53,7 @@ var PATTERNS=[
   {lv:2,f:function(st,x){var w=add(st,'duck',x);coins(st,x-10,3,function(){return GY-20;});return w;}},
   {lv:2,f:function(st,x){var w=add(st,'low',x),g=st.speed*0.55+90;add(st,'low',x+w+g);arc(st,x+w/2,4);arc(st,x+w+g+w/2,4);return w*2+g;}},
   /* низкое внизу и летун сверху: прыгать коротко, не держать */
-  {lv:3,f:function(st,x){var w=add(st,'low',x);add(st,'high',x-16);arc(st,x+w/2,4,80);return w+16;}},
+  {lv:3,f:function(st,x){var w=add(st,'low',x);add(st,'high',x+w/2-39);arc(st,x+w/2,4,80);return w;}},
   {lv:3,f:function(st,x){var w=add(st,'tall',x),g=st.speed*0.6+110;add(st,'duck',x+w+g);return w+g+78;}},
   {lv:4,f:function(st,x){var w=add(st,'duck',x),g=st.speed*0.5+80;add(st,'low',x+w+g);arc(st,x+w+g+23,4);return w+g+46;}},
   {lv:4,f:function(st,x){var w=add(st,'low',x);add(st,'low',x+w+4);add(st,'low',x+w*2+8);arc(st,x+w*1.5,7,170);return w*3+8;}},
@@ -127,5 +135,5 @@ function update(st,inp,dt){
   }
 }
 
-window.RunEndless={W:W,H:H,GY:GY,M:M,BIOME_M:BIOME_M,SIZE:SIZE,create:create,update:update,rng:rng};
+window.RunEndless={W:W,H:H,GY:GY,M:M,HX:HX,BIOME_M:BIOME_M,SIZE:SIZE,SIZES:SIZES,create:create,update:update,rng:rng};
 })();

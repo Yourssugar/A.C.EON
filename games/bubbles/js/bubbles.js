@@ -11,7 +11,7 @@ function hide(id){$(id).classList.add('hidden');}
 var MODES=['classic','levels','daily'],AIMS=['full','short','off'],THEMES=['neon','flat'];
 var ART=new URL('../art/bubbles/',location.href).href;
 /* картинки от Codex: пока не выложены, false; тогда всё рисуется кодом и лишних запросов нет */
-var ART_READY=false;
+var ART_READY=true;
 
 Store.define('bubbles',{
   version:1,
@@ -139,7 +139,8 @@ function newGame(resume){
 function coarse(){return !!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);}
 function setBg(){
   var a=$('arena');
-  if(ART_READY&&G&&G.st.mode==='levels'&&S.theme!=='flat')a.style.backgroundImage='linear-gradient(rgba(5,5,16,.35),rgba(5,5,16,.6)),url('+ART+L.WORLDS[Math.floor(G.st.level/10)]+'_bg.webp)';
+  var w=G&&G.st.mode==='levels'?L.WORLDS[Math.floor(G.st.level/10)]:'nebula';
+  if(ART_READY&&G&&S.theme!=='flat')a.style.backgroundImage='linear-gradient(rgba(5,5,16,.35),rgba(5,5,16,.6)),url('+ART+w+'_bg.webp)';
   else a.style.backgroundImage='';
 }
 function setPause(on){

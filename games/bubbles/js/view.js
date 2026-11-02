@@ -91,9 +91,10 @@ window.BubView=function(canvas){
       if(b.t==='n')img=IMG['ball_'+NAMES_C[b.c]];
       else img=IMG['ball_'+({stone:'stone',bomb:'bomb',rain:'rainbow',bolt:'bolt'})[b.t]];
     }
-    if(img)g.drawImage(img,x-r,y-r,r*2,r*2);
+    /* у картинок шар занимает 224 из 256 пикселей: растягиваем, чтобы радиус совпал с сеткой */
+    if(img){var q=r*1.143;g.drawImage(img,x-q,y-q,q*2,q*2);}
     else{var cv=procBall(b.t==='n'?'n':b.t,b.t==='n'?b.c:0,flat);g.drawImage(cv,x-r*1.09,y-r*1.09,r*2.18,r*2.18);}
-    if(b.ice){var ic=!flat&&IMG.ice_overlay;if(ic)g.drawImage(ic,x-r,y-r,r*2,r*2);else{var c2=procBall('ice',0);g.drawImage(c2,x-r*1.09,y-r*1.09,r*2.18,r*2.18);}}
+    if(b.ice){var ic=!flat&&IMG.ice_overlay;if(ic){var q2=r*1.143;g.drawImage(ic,x-q2,y-q2,q2*2,q2*2);}else{var c2=procBall('ice',0);g.drawImage(c2,x-r*1.09,y-r*1.09,r*2.18,r*2.18);}}
     if(ui.symbols&&b.t==='n'&&b.c>=0)symbol(g,b.c,x,y,r);
   }
 
@@ -118,7 +119,7 @@ window.BubView=function(canvas){
   function burst(x,y,n,col,spd){for(var i=0;i<n;i++){var a=Math.random()*Math.PI*2,s=(spd||150)*(0.4+Math.random());parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col:col,s:2+Math.random()*3});}}
 
   function bg(st,ui){
-    var key=st.mode==='levels'?WORLDS[ui.world||0]:'classic',fi=IMG[key+'_field'];
+    var key=st.mode==='levels'?WORLDS[ui.world||0]:'nebula',fi=IMG[key+'_field'];
     if(fi&&ui.theme!=='flat'){var sw=W,sh=W*fi.height/fi.width;g.drawImage(fi,0,H-sh,sw,sh);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,0,W,H);}
     else{var c=BG[key]||BG.classic,gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,c[0]);gr.addColorStop(1,c[1]);g.fillStyle=gr;g.fillRect(0,0,W,H);
       g.strokeStyle='rgba(255,255,255,.03)';g.lineWidth=1;for(var x=R;x<W;x+=R*2){g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();}}
@@ -202,15 +203,15 @@ window.BubView=function(canvas){
     if(st.next)drawBall(st.next,nx,ny,R*0.75,ui);
     g.fillStyle='#8fb6c9';g.font='9px "Press Start 2P",monospace';g.textAlign='center';g.fillText('⇄',nx,ny+R*1.65);
     /* шкала особого шара */
-    var mx=sx-R*6.2,my=sy+R*0.9,mw=R*3.4,f=Math.min(1,st.meter/B.METER);
+    var mx=sx-R*6.4,my=sy+R*1.55,mw=R*3.6,f=Math.min(1,st.meter/B.METER);
     g.fillStyle='rgba(0,0,0,.5)';g.fillRect(mx,my,mw,7);
     var gr=g.createLinearGradient(mx,0,mx+mw,0);gr.addColorStop(0,'#00e5ff');gr.addColorStop(1,'#ff2d78');g.fillStyle=gr;g.fillRect(mx,my,mw*f,7);
     g.strokeStyle='rgba(255,255,255,.4)';g.lineWidth=1;g.strokeRect(mx,my,mw,7);
     /* помощник */
     var hi=IMG[cheer>0?'helper_cheer':'helper_idle'];
-    if(hi){var hs=R*3.6;g.drawImage(hi,mx+mw/2-hs/2,sy-hs*0.85+Math.sin(now/300)*2,hs,hs);}
+    if(hi){var hh=R*3.4,hw=hh*hi.width/hi.height;g.drawImage(hi,mx+mw/2-hw/2,my-hh-1+Math.sin(now/300)*1.5,hw,hh);}
     /* очередь до нового ряда (классика): точки */
-    if(ui.dots){g.textAlign='left';for(var d=0;d<ui.dots[1];d++){g.fillStyle=d<ui.dots[0]?'#ff2d78':'rgba(255,255,255,.18)';g.beginPath();g.arc(R*0.9+d*11,sy+R*1.4,3.5,0,Math.PI*2);g.fill();}}
+    if(ui.dots){g.textAlign='left';for(var d=0;d<ui.dots[1];d++){g.fillStyle=d<ui.dots[0]?'#ff2d78':'rgba(255,255,255,.18)';g.beginPath();g.arc(R*0.9+d*11,R+B.DANGER*RH+R*0.6,3.5,0,Math.PI*2);g.fill();}}
   }
 
   /* попадание пальцем в «следующий шар» */

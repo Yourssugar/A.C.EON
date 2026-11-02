@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON SIMON</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/simon.css","kb":16},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"../shared/achievements.js","kb":30},
+  {"src":"js/lang.js","kb":25},
+  {"src":"js/simon.js","kb":22}
+]}
+</script>
+
+<!-- Обложка загрузки: четыре сектора загораются по мере загрузки (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .sm-dev{position:relative;width:110px;height:110px;border-radius:50%;border:4px solid #00e5ff;box-shadow:0 0 20px rgba(0,229,255,.5);overflow:hidden;
+      background:conic-gradient(#00e5ff 0 calc(var(--p) * 25%),#08323a 0 25%,#ff2d78 25% calc(25% + var(--p) * 25%),#3a0a22 0 50%,#ffd23a 50% calc(50% + var(--p) * 25%),#3a3008 0 75%,#2ee87a 75% calc(75% + var(--p) * 25%),#0a3a1e 0);}
+    .sm-dev::after{content:'';position:absolute;left:32%;top:32%;width:36%;height:36%;border-radius:50%;background:#0c0c22;box-shadow:0 0 0 3px #00e5ff;}
+    .sm-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .sm-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="sm-brand">A.C.EON</div>
+  <div class="sm-title">SIMON</div>
+  <div class="sm-dev"></div>
+</template>
+</head>
+<body class="screen-menu">
+
+<!-- ════════ МЕНЮ ════════ -->
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="s.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <div class="adv-box hidden" id="diff-box">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.diff"></span>
+          <div class="seg" id="seg-diff">
+            <button class="seg-btn" data-v="easy" data-i18n="diff.easy"></button>
+            <button class="seg-btn" data-v="normal" data-i18n="diff.normal"></button>
+            <button class="seg-btn" data-v="hard" data-i18n="diff.hard"></button>
+          </div></div>
+        <div class="opt-note" id="diff-note"></div>
+      </div>
+      <div class="adv-box hidden" id="duo-box">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.duoShow"></span>
+          <div class="seg" id="seg-duo">
+            <button class="seg-btn" data-v="on" data-i18n="opt.on"></button>
+            <button class="seg-btn" data-v="off" data-i18n="opt.off"></button>
+          </div></div>
+        <div class="opt-note" data-i18n="note.duo"></div>
+      </div>
+      <div class="daily-box hidden" id="daily-box"></div>
+    </section>
+
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.opts"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.theme"></span>
+        <div class="seg" id="seg-theme">
+          <button class="seg-btn" data-v="neon" data-i18n="theme.neon"></button>
+          <button class="seg-btn" data-v="retro" data-i18n="theme.retro"></button>
+          <button class="seg-btn" data-v="space" data-i18n="theme.space"></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.labels"></span>
+        <div class="seg" id="seg-labels">
+          <button class="seg-btn" data-v="on" data-i18n="opt.on"></button>
+          <button class="seg-btn" data-v="off" data-i18n="opt.off"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.labels"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.ctrl"></h2>
+      <div class="opt-note" data-i18n="note.ctrl"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="stats" id="stats"></div>
+    </section>
+  </div>
+
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+  </div>
+</main>
+
+<!-- ════════ ИГРА ════════ -->
+<main class="t-game" id="game">
+  <div class="hud">
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-cells" id="hud-cells"></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-pause"><svg class="i-pause" viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="1" width="3" height="8" fill="currentColor"/><rect x="6" y="1" width="3" height="8" fill="currentColor"/></svg><span data-i18n="hud.pause"></span></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+
+  <div class="arena" id="arena">
+    <div class="status" id="status"></div>
+    <div class="stage">
+      <img class="host hidden" id="host" alt="">
+      <div class="dev-wrap">
+        <svg class="dev" id="dev" viewBox="0 0 1000 1000"></svg>
+        <div class="limit hidden" id="limit"><i id="limit-bar"></i></div>
+      </div>
+    </div>
+    <div class="fx" id="fx"></div>
+    <div class="pause-ov hidden" id="pause-ov">
+      <div class="po-title" data-i18n="pause.title"></div>
+      <div class="opt-note po-note" data-i18n="pause.note"></div>
+      <button class="btn po-go" id="po-go">&#9654; <span data-i18n="pause.go"></span></button>
+      <button class="btn" id="po-restart" data-i18n="pause.restart"></button>
+      <button class="btn" id="po-menu" data-i18n="pause.menu"></button>
+    </div>
+  </div>
+</main>
+
+<!-- передать ход (вдвоём) -->
+<div class="arc-modal hidden over-modal" id="pass-modal">
+  <div class="arc-box over-box">
+    <div class="over-title win" id="pass-title"></div>
+    <div class="opt-note pass-text" id="pass-text"></div>
+    <div class="over-btns"><button class="btn m-play" id="pass-go">&#9654; <span data-i18n="pass.go"></span></button></div>
+  </div>
+</div>
+<!-- конец игры -->
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <div class="over-title lose" id="over-title"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn" id="over-retry">&#9654; <span data-i18n="over.retry"></span></button>
+      <button class="btn" id="over-menu" data-i18n="over.menu"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

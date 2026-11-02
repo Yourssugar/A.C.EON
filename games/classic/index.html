@@ -452,18 +452,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .ck-blk{background:radial-gradient(circle at 35% 35%,#555,#111);}
 .ck-king::after{content:'♛';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:calc(var(--ck-cell,54px) * 0.31);color:rgba(255,215,0,0.9);}
 
-/* SIMON SAYS */
-#ss-btns{position:relative;display:grid;grid-template-columns:repeat(2,var(--ss-cell,150px));grid-template-rows:repeat(2,var(--ss-cell,150px));gap:12px;padding:18px;}
-#ss-btns::before{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#0e1730,#070b1c);border:3px solid #243049;box-shadow:0 14px 36px rgba(0,0,0,.6),inset 0 0 30px rgba(0,0,0,.5);z-index:0;}
-#ss-btns::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(var(--ss-cell,150px)*0.66);height:calc(var(--ss-cell,150px)*0.66);border-radius:50%;background:radial-gradient(circle at 42% 38%,#1a2742,#070b14);border:4px solid #2c3a55;box-shadow:inset 0 0 22px rgba(0,0,0,.7),0 0 0 7px rgba(0,0,0,.35);z-index:3;pointer-events:none;}
-.ss-btn{position:relative;z-index:1;width:var(--ss-cell,150px);height:var(--ss-cell,150px);cursor:default;border:none;user-select:none;
-        transition:box-shadow .1s,transform .1s,background .1s,filter .1s;
-        box-shadow:inset 0 3px 10px rgba(255,255,255,.12),inset 0 -6px 14px rgba(0,0,0,.5);}
-.ss-btn.lit{transform:scale(1.05);z-index:2;}
-.ss-q0{border-radius:78% 14px 14px 14px;}
-.ss-q1{border-radius:14px 78% 14px 14px;}
-.ss-q2{border-radius:14px 14px 14px 78%;}
-.ss-q3{border-radius:14px 14px 78% 14px;}
 
 /* TOWER STACKER */
 #ts-cv{border:2px solid #1a3550;border-radius:10px;box-shadow:0 0 18px rgba(0,229,255,.12);}
@@ -569,10 +557,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .mm-row{background:#001020;border-color:#003355;}
 .mm-fbdot.black{background:#1a1a1a;border-color:#444;}
 .mm-fbdot.white{background:#fff;border-color:#999;}
-
-/* Simon Says */
-.ss-btn.ss-on{cursor:pointer;}
-.ss-btn.ss-on:hover{filter:brightness(1.18);}
 
 /* 15-Puzzle */
 .pz-tile{background:#001020;border-color:#003355;font-family:'Press Start 2P',monospace;border-radius:0;}
@@ -734,7 +718,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
   <div class="game-grid">
     <div class="game-icon" onclick="openGame('checkers')"><span class="ico-pixel">&#9823;</span><span class="ico-label">CHECKERS</span></div>
-    <div class="game-icon" onclick="openGame('simon')"><span class="ico-pixel">&#127918;</span><span class="ico-label">SIMON SAYS</span></div>
     <div class="game-icon" onclick="openGame('ts')"><span class="ico-pixel">&#128310;</span><span class="ico-label">STACKER</span></div>
     <div class="game-icon" onclick="openGame('wordle')"><span class="ico-pixel">&#128172;</span><span class="ico-label">WORDLE</span></div>
     <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
@@ -779,20 +762,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
   </div>
 </div>
 
-
-<!-- SIMON SAYS -->
-<div id="game-simon" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">SIMON SAYS</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>ROUND: <span id="ss-sc">0</span></span>
-      <button class="btn" onclick="ssStart()">START</button>
-      <span>BEST: <span id="hi-simon">0</span></span>
-      <span id="ss-msg" style="font-size:10px;">PRESS START</span>
-    </div>
-    <div id="ss-btns"></div>
-  </div>
-</div>
 
 <!-- TOWER STACKER -->
 <div id="game-ts" class="gwin hidden">
@@ -988,7 +957,7 @@ window.openGame=function(id,direct){
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
   var fn={
           checkers:initCheckers,
-          simon:initSimon,ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,
+          ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,
           puzzle:initPuzzle};
   /* Show PRESS START — init game only after player clicks */
   if(direct){if(fn[id])fn[id]();setTimeout(refitCurrent,40);return;}
@@ -1335,17 +1304,6 @@ function positionCkBot(){
 }
 window.positionCkBot=positionCkBot;
 if(!window.__ckBotResize){window.__ckBotResize=true;window.addEventListener('resize',function(){positionCkBot();});}
-
-/* ════════════════ SIMON SAYS ════════════════ */
-var SS_COLS=[{d1:'#a01e2b',d2:'#5e0f17',lit:'#ff4d5e',glow:'#ff4d5e'},{d1:'#1c7a39',d2:'#0e3d1d',lit:'#3ee87a',glow:'#3ee87a'},{d1:'#a07300',d2:'#5e4300',lit:'#ffc23a',glow:'#ffc23a'},{d1:'#155a9e',d2:'#0a335e',lit:'#3aa0ff',glow:'#3aa0ff'}];
-var ssSeq,ssIdx,ssState,ssSc;
-window.initSimon=function(){ssSeq=[];ssIdx=0;ssState='start';ssSc=0;showHi('simon');document.getElementById('ss-sc').textContent='0';document.getElementById('ss-msg').textContent='PRESS START';fitCells('ss-cell',2,{min:90,max:220,extra:60});renderSimon(-1);};
-function renderSimon(active){var el=document.getElementById('ss-btns');if(!el)return;el.innerHTML='';SS_COLS.forEach(function(col,i){var btn=document.createElement('div');var lit=(i===active);btn.className='ss-btn ss-q'+i+(lit?' lit':'')+(ssState==='input'?' ss-on':'');btn.style.background=lit?'radial-gradient(circle at 42% 34%, rgba(255,255,255,.6), transparent 58%), '+col.lit:'linear-gradient(155deg,'+col.d1+','+col.d2+')';if(lit)btn.style.boxShadow='0 0 38px '+col.glow+', 0 0 70px '+col.glow+', inset 0 0 26px rgba(255,255,255,.45)';if(ssState==='input')btn.addEventListener('click',(function(i){return function(){ssClick(i);};})(i));el.appendChild(btn);});}
-if(!window.__ssResize){window.__ssResize=true;window.addEventListener('resize',function(){if(typeof cur!=='undefined'&&cur==='simon')fitCells('ss-cell',2,{min:90,max:220,extra:60});});}
-function ssAddRound(){ssSeq.push(Math.random()*4|0);ssSc=ssSeq.length-1;document.getElementById('ss-sc').textContent=ssSc;ssShowSeq(0);}
-function ssShowSeq(i){if(i>=ssSeq.length){ssState='input';ssIdx=0;document.getElementById('ss-msg').textContent='YOUR TURN — '+ssSeq.length+' STEP'+(ssSeq.length>1?'S':'');renderSimon(-1);return;}ssState='showing';document.getElementById('ss-msg').textContent='WATCH...';renderSimon(-1);setTimeout(function(){renderSimon(ssSeq[i]);setTimeout(function(){renderSimon(-1);setTimeout(function(){ssShowSeq(i+1);},220);},550);},300);}
-function ssClick(i){if(ssState!=='input')return;renderSimon(i);setTimeout(function(){renderSimon(-1);},180);if(i!==ssSeq[ssIdx]){ssState='dead';setHi('simon',ssSc);showHi('simon');document.getElementById('ss-msg').textContent='WRONG! ROUND: '+ssSc+' | BEST: '+getHi('simon');return;}ssIdx++;if(ssIdx>=ssSeq.length){ssSc=ssSeq.length;setHi('simon',ssSc);showHi('simon');ssState='wait';document.getElementById('ss-msg').textContent='CORRECT!';setTimeout(function(){ssAddRound();},900);}}
-window.ssStart=function(){ssSeq=[];ssIdx=0;ssSc=0;document.getElementById('ss-sc').textContent='0';ssAddRound();};
 
 /* ════════════════ TOWER STACKER ════════════════ */
 var tsCtx,tsRaf,tsRun,tsScale=1;
@@ -1801,7 +1759,7 @@ function pzShowBest(){var b=pzGetBest();var el=document.getElementById('hi-puzzl
   if(crEl){crEl.textContent=String(Math.max(0,99-parseInt(localStorage.getItem('aceon_plays')||'0')));}
 
   var STEPS=[
-    {t:60,   msg:'LOADING GAME ROM  [7 TITLES]',  pct:14, ok:340},
+    {t:60,   msg:'LOADING GAME ROM  [6 TITLES]',  pct:14, ok:340},
     {t:500,  msg:'CHECKING HIGH SCORES...........',  pct:32, ok:280},
     {t:880,  msg:'WARMING UP DISPLAY.............',  pct:55, ok:260},
     {t:1200, msg:'CALIBRATING JOYSTICK...........',  pct:74, ok:240},

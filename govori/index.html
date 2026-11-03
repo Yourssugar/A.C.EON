@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f1ec">
+<title>Говорилка</title>
+<style>
+:root{
+  --bg:#f4f1ec; --panel:#fbfaf7; --card:#ffffff; --ink:#3b3a36; --soft:#8a877f; --line:#e3ded5;
+  --glow:#fff1bf; --glow-edge:#f2c94c; --accent:#5b8def; --accent-soft:#eef3ff;
+  --t-p:#f2d16b; --t-a:#8fcf9b; --t-n:#f3b07c; --t-f:#8db8e8; --t-s:#e8a3c0;
+  --card-w:112px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+body{display:flex;flex-direction:column;overflow:hidden;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+
+/* ── верх: строка фразы ── */
+.top{padding:10px 12px 8px;background:var(--panel);border-bottom:1px solid var(--line);
+  display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.row{display:flex;gap:10px;align-items:stretch}
+.strip{flex:1;min-height:104px;background:#fff;border:2px solid var(--line);border-radius:18px;
+  padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;position:relative;
+  touch-action:none;transition:border-color .2s,background .2s}
+.strip.over{border-color:var(--accent);background:var(--accent-soft)}
+.strip-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#b9b5ac;font-size:18px;pointer-events:none;text-align:center;padding:0 10px}
+.caret{width:6px;border-radius:3px;background:var(--accent);align-self:stretch;min-height:80px;opacity:.7}
+
+.actions{display:flex;flex-direction:column;gap:8px;width:150px}
+.btn-say{flex:1;border-radius:18px;background:#7bbf8a;color:#fff;font-size:22px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:8px;min-height:64px;
+  box-shadow:0 2px 0 #5f9e6d;transition:filter .2s,opacity .2s}
+.btn-say:active{filter:brightness(.95)}
+.btn-say[disabled]{opacity:.55}
+.small-row{display:flex;gap:8px}
+.btn-sm{flex:1;height:44px;border-radius:14px;background:#fff;border:2px solid var(--line);font-size:22px}
+.btn-sm:active{background:#f1eee8}
+
+.phrase-row{display:flex;align-items:center;gap:10px;min-height:40px}
+.phrase{flex:1;font-size:22px;line-height:1.35;color:var(--ink);min-height:30px}
+.phrase .seg{border-radius:7px;padding:0 2px;transition:background .18s}
+.phrase .seg.cur{background:var(--glow);box-shadow:0 0 0 2px var(--glow-edge)}
+.phrase.plain{color:var(--soft)}
+.btn-retry{height:40px;padding:0 14px;border-radius:12px;background:#fff;border:2px solid var(--line);
+  font-size:16px;color:var(--soft);white-space:nowrap}
+.dots span{display:inline-block;width:10px;height:10px;margin:0 4px;border-radius:50%;
+  background:#c9c4ba;animation:dot 1.2s infinite ease-in-out}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{opacity:.3}40%{opacity:1}}
+
+/* ── рубрики ── */
+.tabs{display:flex;gap:8px;padding:10px 12px;overflow-x:auto;flex:0 0 auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:10px 16px;border-radius:16px;
+  background:#fff;border:2px solid var(--line);font-size:18px}
+.tab .ti{font-size:24px}
+.tab.on{background:#fff6dc;border-color:var(--glow-edge)}
+
+/* ── карточки ── */
+.grid-wrap{flex:1;overflow-y:auto;padding:4px 12px 90px;-webkit-overflow-scrolling:touch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card-w),1fr));gap:12px}
+.card,.chip{position:relative;background:var(--card);border-radius:18px;border:2px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;
+  box-shadow:inset 0 -7px 0 var(--tc,#ddd);transition:transform .18s,box-shadow .18s,background .18s,opacity .18s}
+.card{aspect-ratio:1/1.08;padding:6px 4px 12px;touch-action:pan-y;cursor:pointer}
+.chip{width:84px;height:88px;padding:4px 3px 10px;cursor:grab}
+.t-p{--tc:var(--t-p)}.t-a{--tc:var(--t-a)}.t-n{--tc:var(--t-n)}.t-f{--tc:var(--t-f)}.t-s{--tc:var(--t-s)}
+.pic{flex:1;width:100%;display:flex;align-items:center;justify-content:center;font-size:54px;line-height:1;min-height:0}
+.chip .pic{font-size:38px}
+.pic img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;pointer-events:none}
+.lbl{font-size:18px;font-weight:500;text-align:center;line-height:1.1;margin-top:4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.chip .lbl{font-size:15px}
+.card.press,.chip.press{background:#faf8f3}
+.card.armed{transform:scale(.96)}
+.chip.added{border-style:dashed;border-color:#cfc9bd}
+.chip.added::after{content:"+";position:absolute;top:2px;right:6px;font-size:14px;color:#b0aa9e}
+.chip.dragging{opacity:.25}
+.hl{background:var(--glow)!important;border-color:var(--glow-edge)!important;
+  box-shadow:inset 0 -7px 0 var(--tc,#ddd),0 0 0 3px var(--glow-edge),0 0 22px 6px rgba(242,201,76,.45)!important;
+  transform:scale(1.07)}
+.ghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;opacity:.92;
+  box-shadow:0 10px 24px rgba(0,0,0,.18);transform-origin:center}
+
+/* ── шестерёнка (только для взрослых: держать) ── */
+.gear{position:fixed;right:14px;bottom:14px;width:52px;height:52px;border-radius:50%;
+  background:#fff;border:2px solid var(--line);font-size:24px;z-index:20;display:flex;
+  align-items:center;justify-content:center;opacity:.75}
+.gear .ring{position:absolute;inset:-4px;border-radius:50%;border:4px solid transparent}
+.gear.hold .ring{border-color:var(--accent);animation:ring 1.2s linear forwards}
+@keyframes ring{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+.gear .st{position:absolute;right:2px;top:2px;width:11px;height:11px;border-radius:50%;background:#c9c4ba;border:2px solid #fff}
+.gear .st.on{background:#7bbf8a}
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#3b3a36;color:#fff;
+  padding:10px 16px;border-radius:12px;font-size:15px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:.92}
+
+/* ── полоса режима картинок ── */
+.banner{position:fixed;left:12px;right:80px;bottom:14px;z-index:20;background:#3b3a36;color:#fff;
+  border-radius:16px;padding:10px 14px;display:none;align-items:center;gap:10px;font-size:16px}
+.banner.on{display:flex}
+.banner span{flex:1}
+.banner button{background:#fff;color:#3b3a36;border-radius:10px;padding:8px 12px}
+
+/* ── окна ── */
+.sheet-bg{position:fixed;inset:0;background:rgba(40,38,34,.35);z-index:70;display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.on{display:flex}
+.sheet{background:#fff;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;border-radius:22px 22px 0 0;
+  padding:18px 18px 28px;user-select:text;-webkit-user-select:text}
+.sheet h2{margin:0 0 12px;font-size:21px;display:flex;align-items:center;gap:10px}
+.sheet h2 .x{margin-left:auto;font-size:26px;width:40px;height:40px;border-radius:12px;background:#f3f0ea}
+.field{margin:14px 0}
+.field>label{display:block;font-size:14px;color:var(--soft);margin-bottom:6px}
+.seg-btns{display:flex;gap:8px;flex-wrap:wrap}
+.seg-btns button,.sheet .b{padding:10px 14px;border-radius:12px;border:2px solid var(--line);background:#fff;font-size:16px}
+.seg-btns button.on{border-color:var(--accent);background:var(--accent-soft)}
+.sheet select,.sheet input[type=text]{width:100%;font:inherit;font-size:16px;padding:10px;border-radius:12px;border:2px solid var(--line);background:#fff}
+.sheet input[type=range]{width:100%}
+.status{display:flex;align-items:center;gap:8px;font-size:15px}
+.status i{width:12px;height:12px;border-radius:50%;background:#c9c4ba;display:inline-block}
+.status i.on{background:#7bbf8a}
+.note{font-size:13px;color:var(--soft);line-height:1.45}
+.pick-head{display:flex;gap:12px;align-items:center}
+.pick-head .chip{cursor:default}
+.pick-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}
+.results button{aspect-ratio:1;border:2px solid var(--line);border-radius:14px;background:#fff;padding:6px}
+.results img{width:100%;height:100%;object-fit:contain}
+
+@media (max-width:620px){
+  :root{--card-w:96px}
+  .row{flex-wrap:wrap}
+  .strip{flex-basis:100%;min-height:96px}
+  .actions{width:100%;flex-direction:row-reverse}
+  .btn-say{min-height:56px}
+  .small-row{flex:0 0 112px}
+  .pic{font-size:46px}
+  .lbl{font-size:16px}
+  .phrase{font-size:19px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .hl{transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="row">
+    <div class="strip" id="strip"><div class="strip-hint" id="stripHint"></div></div>
+    <div class="actions">
+      <button class="btn-say" id="btnSay"><span>🗣</span><span id="sayLbl"></span></button>
+      <div class="small-row">
+        <button class="btn-sm" id="btnBack" aria-label="стереть последнюю">⌫</button>
+        <button class="btn-sm" id="btnClear" aria-label="очистить">🗑</button>
+      </div>
+    </div>
+  </div>
+  <div class="phrase-row">
+    <div class="phrase" id="phrase"></div>
+    <button class="btn-retry" id="btnRetry" hidden></button>
+  </div>
+</div>
+
+<nav class="tabs" id="tabs"></nav>
+<main class="grid-wrap" id="gridWrap"><div class="grid" id="grid"></div></main>
+
+<button class="gear" id="gear" aria-label="настройки"><span class="ring"></span>⚙️<span class="st" id="gearSt"></span></button>
+<div class="banner" id="banner"><span id="bannerTxt"></span><button id="bannerDone"></button></div>
+<div class="toast" id="toast"></div>
+
+<!-- настройки -->
+<div class="sheet-bg" id="setBg"><div class="sheet" id="setSheet">
+  <h2><span id="setTitle"></span><button class="x" data-close>×</button></h2>
+  <div class="field"><label id="lLang"></label>
+    <div class="seg-btns" id="langBtns">
+      <button data-lang="ru">Русский</button><button data-lang="pl">Polski</button>
+    </div></div>
+  <div class="field"><label id="lVoice"></label><select id="voiceSel"></select></div>
+  <div class="field"><label id="lRate"></label><input type="range" id="rate" min="0.6" max="1.2" step="0.05"></div>
+  <div class="field"><button class="b" id="btnTest"></button></div>
+  <div class="field"><label id="lAi"></label>
+    <div class="seg-btns" id="aiBtns"><button data-ai="1"></button><button data-ai="0"></button></div>
+    <div class="status" style="margin-top:8px"><i id="srvDot"></i><span id="srvTxt"></span></div>
+  </div>
+  <div class="field"><label id="lPics"></label>
+    <div class="seg-btns"><button class="b" id="btnPicMode"></button><button class="b" id="btnFull"></button></div>
+  </div>
+  <p class="note" id="noteAra"></p>
+</div></div>
+
+<!-- выбор картинки для карточки -->
+<div class="sheet-bg" id="picBg"><div class="sheet">
+  <h2><span id="picTitle"></span><button class="x" data-close>×</button></h2>
+  <div class="pick-head" id="picHead"></div>
+  <div class="pick-actions">
+    <button class="b" id="btnPhoto"></button>
+    <button class="b" id="btnEmoji"></button>
+  </div>
+  <div class="field"><label id="lSearch"></label>
+    <div class="row"><input type="text" id="araQ"><button class="b" id="araGo">🔍</button></div>
+    <div class="results" id="araRes"></div>
+    <p class="note" id="araNote"></p>
+  </div>
+</div></div>
+
+<script src="cards.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ═══════════════ настройки подключения ═══════════════
+   Адрес сервера берётся из того же config.json, что у NODE:
+   его пишет gptappio при запуске туннеля. */
+var CONFIG_URL = '../node-chat/config.json';
+var ARASAAC_API = 'https://api.arasaac.org/v1/pictograms/';
+var ARASAAC_IMG = function(id){ return 'https://static.arasaac.org/pictograms/'+id+'/'+id+'_300.png'; };
+
+var DATA = window.GOVORI_CARDS, CARDS = DATA.cards, CATS = DATA.categories;
+
+/* ── хранилище (может быть недоступно — тогда просто без памяти) ── */
+var LS = {
+  get:function(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set:function(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+};
+var S = LS.get('govori_settings', {});
+S.lang  = S.lang==='pl' ? 'pl' : 'ru';
+S.rate  = +S.rate || 0.9;
+S.voice = S.voice || '';
+S.ai    = S.ai !== false;
+S.cat   = S.cat || CATS[0].id;
+function saveS(){ LS.set('govori_settings', S); }
+var PICS  = LS.get('govori_pics', {});      // id -> {k:'photo'|'ara', v}
+var CACHE = LS.get('govori_cache', {});     // кэш ответов ИИ
+
+var T = {
+  ru:{ hint:'Нажми на картинки', say:'Сказать', retry:'↻ Не то', set:'Настройки', lang:'Язык',
+       voice:'Голос', rate:'Скорость речи', test:'🔊 Проверить голос', testPhrase:'Привет! Я говорю.',
+       ai:'Умная фраза (ИИ)', aiOn:'Включена', aiOff:'Выключена', online:'Сервер на связи', offline:'Сервер не отвечает — карточки читаются как есть',
+       pics:'Картинки', picMode:'🖼 Поменять картинки', full:'⛶ Во весь экран',
+       banner:'Нажмите на карточку, чтобы поменять картинку', done:'Готово',
+       holdGear:'Держите кнопку, чтобы открыть настройки', picTitle:'Картинка для карточки',
+       photo:'📷 Своё фото', emoji:'↺ Вернуть как было', search:'Найти пиктограмму ARASAAC',
+       araErr:'Не получилось загрузить пиктограммы. Проверьте интернет.', araNone:'Ничего не нашлось, попробуйте другое слово.',
+       noVoice:'В этом браузере нет голоса для выбранного языка', defVoice:'Автоматически',
+       araNote:'Пиктограммы: Sergio Palao. Источник: ARASAAC (arasaac.org). Лицензия CC BY-NC-SA. Собственность Правительства Арагона (Испания).',
+       saveErr:'Не хватило памяти браузера для картинки' },
+  pl:{ hint:'Dotknij obrazka', say:'Powiedz', retry:'↻ Nie to', set:'Ustawienia', lang:'Język',
+       voice:'Głos', rate:'Tempo mowy', test:'🔊 Sprawdź głos', testPhrase:'Cześć! Mówię.',
+       ai:'Mądre zdanie (AI)', aiOn:'Włączone', aiOff:'Wyłączone', online:'Serwer działa', offline:'Serwer nie odpowiada — karty są czytane po kolei',
+       pics:'Obrazki', picMode:'🖼 Zmień obrazki', full:'⛶ Pełny ekran',
+       banner:'Dotknij karty, aby zmienić obrazek', done:'Gotowe',
+       holdGear:'Przytrzymaj przycisk, aby otworzyć ustawienia', picTitle:'Obrazek karty',
+       photo:'📷 Własne zdjęcie', emoji:'↺ Przywróć', search:'Szukaj piktogramu ARASAAC',
+       araErr:'Nie udało się pobrać piktogramów. Sprawdź internet.', araNone:'Nic nie znaleziono, spróbuj inne słowo.',
+       noVoice:'Brak głosu dla tego języka w przeglądarce', defVoice:'Automatycznie',
+       araNote:'Piktogramy: Sergio Palao. Źródło: ARASAAC (arasaac.org). Licencja CC BY-NC-SA. Własność Rządu Aragonii (Hiszpania).',
+       saveErr:'Za mało pamięci przeglądarki na obrazek' }
+};
+function t(k){ return (T[S.lang]||T.ru)[k]; }
+function word(id){ var c=CARDS[id]; return c ? (c[S.lang]||c.ru) : id; }
+var $ = function(id){ return document.getElementById(id); };
+
+/* ═══════════════ отрисовка ═══════════════ */
+var stripEl=$('strip'), gridEl=$('grid'), tabsEl=$('tabs'), phraseEl=$('phrase');
+var strip = [];          // [{id, added}]
+var last  = null;        // последний ответ ИИ: {picked, texts[]}
+
+function face(id, cls){
+  var c=CARDS[id]||{}, el=document.createElement('div');
+  el.className=cls+' t-'+(c.t||'n'); el.dataset.id=id;
+  var pic=document.createElement('div'); pic.className='pic';
+  var p=PICS[id];
+  if(p){
+    var im=new Image(); im.alt=''; im.draggable=false;
+    im.src = p.k==='ara' ? ARASAAC_IMG(p.v) : p.v;
+    im.onerror=function(){ pic.textContent=c.e||'❔'; };
+    pic.appendChild(im);
+  } else pic.textContent=c.e||'❔';
+  var lb=document.createElement('div'); lb.className='lbl'; lb.textContent=word(id);
+  el.appendChild(pic); el.appendChild(lb);
+  return el;
+}
+
+function renderTabs(){
+  tabsEl.innerHTML='';
+  CATS.forEach(function(c){
+    var b=document.createElement('button'); b.className='tab'+(c.id===S.cat?' on':'');
+    b.innerHTML='<span class="ti"></span><span></span>';
+    b.firstChild.textContent=c.icon; b.lastChild.textContent=c[S.lang]||c.ru;
+    b.onclick=function(){ S.cat=c.id; saveS(); renderTabs(); renderGrid(); $('gridWrap').scrollTop=0; };
+    tabsEl.appendChild(b);
+  });
+}
+function renderGrid(){
+  gridEl.innerHTML='';
+  var cat=CATS.filter(function(c){return c.id===S.cat;})[0]||CATS[0];
+  cat.cards.forEach(function(id){ if(CARDS[id]) gridEl.appendChild(face(id,'card')); });
+}
+function renderStrip(){
+  Array.prototype.slice.call(stripEl.querySelectorAll('.chip,.caret')).forEach(function(n){ n.remove(); });
+  strip.forEach(function(s,i){
+    var el=face(s.id,'chip'+(s.added?' added':'')); el.dataset.idx=i; stripEl.appendChild(el);
+  });
+  $('stripHint').style.display = strip.length ? 'none' : '';
+}
+function renderTexts(){
+  $('stripHint').textContent=t('hint'); $('sayLbl').textContent=t('say'); $('btnRetry').textContent=t('retry');
+  document.documentElement.lang=S.lang;
+}
+function renderAll(){ renderTexts(); renderTabs(); renderGrid(); renderStrip(); }
+
+/* ── изменения строки ── */
+function stripChanged(){ last=null; $('btnRetry').hidden=true; phraseEl.innerHTML=''; phraseEl.className='phrase'; renderStrip(); }
+function addCard(id, at){
+  if(strip.length>=14) return;
+  if(at==null || at>strip.length) at=strip.length;
+  strip.splice(at,0,{id:id,added:false}); stripChanged();
+}
+
+/* ═══════════════ голос ═══════════════ */
+var hasTTS = 'speechSynthesis' in window;
+var voices = [];
+function loadVoices(){ try{ voices=speechSynthesis.getVoices()||[]; }catch(e){ voices=[]; } fillVoices(); }
+if(hasTTS){ loadVoices(); try{ speechSynthesis.addEventListener('voiceschanged', loadVoices); }catch(e){ speechSynthesis.onvoiceschanged=loadVoices; } }
+function langTag(){ return S.lang==='pl' ? 'pl-PL' : 'ru-RU'; }
+function langVoices(){ return voices.filter(function(v){ return (v.lang||'').toLowerCase().replace('_','-').indexOf(S.lang)===0; }); }
+function pickVoice(){
+  var list=langVoices();
+  if(S.voice){ for(var i=0;i<list.length;i++) if(list[i].name===S.voice) return list[i]; }
+  return list.filter(function(v){return /google/i.test(v.name);})[0] || list.filter(function(v){return v.localService;})[0] || list[0] || null;
+}
+var token=0, curAudio=null;
+function stopSpeech(){
+  token++;
+  if(hasTTS) try{ speechSynthesis.cancel(); }catch(e){}
+  if(curAudio){ try{ curAudio.pause(); }catch(e){} curAudio=null; }
+  clearHL();
+}
+function sayText(text){
+  return new Promise(function(res){
+    if(!hasTTS || !text){ setTimeout(res, 250); return; }
+    var u=new SpeechSynthesisUtterance(text);
+    u.lang=langTag(); var v=pickVoice(); if(v) u.voice=v; u.rate=S.rate; u.pitch=1.05;
+    var done=false, tm;
+    function fin(){ if(done) return; done=true; clearTimeout(tm); res(); }
+    u.onend=fin; u.onerror=fin;
+    // на некоторых Android onend не приходит — страхуемся таймером
+    tm=setTimeout(fin, 1600 + text.length*150/S.rate);
+    try{ speechSynthesis.resume(); speechSynthesis.speak(u); }catch(e){ fin(); }
+  });
+}
+function playFile(src){
+  return new Promise(function(res){
+    var a=new Audio(src); curAudio=a; var done=false;
+    function fin(){ if(done) return; done=true; res(); }
+    a.onended=fin; a.onerror=fin; a.play().catch(fin); setTimeout(fin, 8000);
+  });
+}
+function sayCard(id){
+  var c=CARDS[id]||{};
+  return (c.audio && c.audio[S.lang]) ? playFile(c.audio[S.lang]) : sayText(word(id));
+}
+function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+/* подсветка */
+function clearHL(){
+  Array.prototype.slice.call(document.querySelectorAll('.hl')).forEach(function(n){ n.classList.remove('hl'); });
+  Array.prototype.slice.call(phraseEl.querySelectorAll('.cur')).forEach(function(n){ n.classList.remove('cur'); });
+}
+function lightCard(id, chipIdx){
+  if(chipIdx!=null){ var ch=stripEl.querySelector('.chip[data-idx="'+chipIdx+'"]'); if(ch) ch.classList.add('hl'); }
+  if(id){ var g=gridEl.querySelector('.card[data-id="'+id+'"]'); if(g) g.classList.add('hl'); }
+}
+
+/* одна карточка: озвучить и мягко подсветить */
+function speakOne(id, el){
+  stopSpeech(); var my=token;
+  if(el) el.classList.add('hl');
+  wait(40).then(function(){ return my===token ? sayCard(id) : null; })
+    .then(function(){ if(my===token){ setTimeout(function(){ if(my===token) clearHL(); }, 150); } });
+}
+
+/* ── фраза по кускам: каждая карточка вспыхивает, когда звучит ──
+   segs: [{t:'текст', id:'id карточки'|null}]
+   Связки без карточки приклеиваются к следующей карточке, чтобы было меньше пауз. */
+function buildGroups(segs){
+  var groups=[], pend=[];
+  segs.forEach(function(s,i){
+    if(s.id){ groups.push({idx:pend.concat([i]), text:pend.map(function(j){return segs[j].t;}).concat([s.t]).join(' '), id:s.id}); pend=[]; }
+    else pend.push(i);
+  });
+  if(pend.length){
+    if(groups.length){ var g=groups[groups.length-1]; g.idx=g.idx.concat(pend); g.text+=' '+pend.map(function(j){return segs[j].t;}).join(' '); }
+    else groups.push({idx:pend, text:pend.map(function(j){return segs[j].t;}).join(' '), id:null});
+  }
+  return groups;
+}
+function showPhrase(segs, plain){
+  phraseEl.innerHTML=''; phraseEl.className='phrase'+(plain?' plain':'');
+  segs.forEach(function(s,i){
+    var sp=document.createElement('span'); sp.className='seg'; sp.dataset.i=i; sp.textContent=s.t;
+    phraseEl.appendChild(sp); phraseEl.appendChild(document.createTextNode(' '));
+  });
+}
+function speakSegs(segs){
+  stopSpeech(); var my=token;
+  var groups=buildGroups(segs), chip=0;
+  var chain=wait(60);
+  groups.forEach(function(g){
+    var ci = g.id ? chip++ : null;
+    chain=chain.then(function(){
+      if(my!==token) return;
+      clearHL(); lightCard(g.id, ci);
+      g.idx.forEach(function(i){ var sp=phraseEl.querySelector('.seg[data-i="'+i+'"]'); if(sp) sp.classList.add('cur'); });
+      return sayText(g.text);
+    });
+  });
+  return chain.then(function(){ if(my===token) setTimeout(function(){ if(my===token) clearHL(); }, 250); });
+}
+
+/* ═══════════════ сервер и ИИ ═══════════════ */
+var API='';
+function fetchTO(url, ms, opt){
+  var c=new AbortController(), id=setTimeout(function(){ c.abort(); }, ms);
+  opt=opt||{}; opt.signal=c.signal;
+  return fetch(url,opt).finally(function(){ clearTimeout(id); });
+}
+function setOnline(on){
+  $('gearSt').className='st'+(on?' on':'');
+  $('srvDot').className=on?'on':''; $('srvTxt').textContent=on?t('online'):t('offline');
+}
+function connect(){
+  var q=new URLSearchParams(location.search).get('api');      // для проверки: ?api=https://...
+  var p = q ? Promise.resolve({api_url:q}) :
+    fetchTO(CONFIG_URL+'?t='+Date.now(), 6000, {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); });
+  p.then(function(c){
+      if(!c.api_url || c.enabled===false) throw 0;
+      var u=c.api_url.replace(/\/$/,'');
+      return fetchTO(u+'/api/state', 6000).then(function(r){ if(!r.ok) throw 0; API=u; setOnline(true); });
+    })
+    .catch(function(){ API=''; setOnline(false); });
+}
+
+function vocabList(){
+  var seen={}, out=[];
+  CATS.forEach(function(c){ c.cards.forEach(function(id){ if(!seen[id] && CARDS[id]){ seen[id]=1; out.push(id+'='+word(id)); } }); });
+  return out.join('; ');
+}
+
+/* Промпт для запасного пути через /api/chat (пока на сервере нет /api/cards).
+   Основной промпт лежит на сервере в cards_api.py. */
+var FALLBACK_PROMPT =
+'[СЛУЖЕБНАЯ ЗАДАЧА, ответь только JSON, без роли и без пояснений]\n'+
+'Девочка 6 лет с аутизмом общается карточками-словами. Собери из её карточек ОДНУ короткую простую фразу от её имени '+
+'(первое лицо, женский род, до 12 слов). Используй все выбранные карточки по одному разу, не придумывай новых предметов, людей и событий — '+
+'добавляй только связки. Обращение (мама/папа) в начало с запятой. Если добавленное слово есть в словаре — укажи его id. '+
+'Язык ответа: lang (ru — русский, pl — польский). Фразы из avoid не повторяй.\n'+
+'Ответ строго: {"segments":[{"t":"кусок","id":"id или null"}]} — склеенные t дают всю фразу.\n'+
+'Пример: карточки magazin, pizza, moloko, est, papa → {"segments":[{"t":"Папа,","id":"papa"},{"t":"пойдём в","id":null},{"t":"магазин.","id":"magazin"},{"t":"Я","id":null},{"t":"хочу","id":"hochu"},{"t":"есть","id":"est"},{"t":"пиццу","id":"pizza"},{"t":"и","id":null},{"t":"пить","id":"pit"},{"t":"молоко.","id":"moloko"}]}\n'+
+'Данные: ';
+
+function parseLoose(txt){
+  if(!txt || typeof txt!=='string') return null;
+  var a=txt.indexOf('{'), b=txt.lastIndexOf('}');
+  if(a<0||b<=a) return null;
+  try{ var o=JSON.parse(txt.slice(a,b+1)); return o.segments||null; }catch(e){ return null; }
+}
+
+function callAI(payload){
+  var body=JSON.stringify(payload);
+  return fetchTO(API+'/api/cards', 30000, {method:'POST', headers:{'Content-Type':'application/json'}, body:body})
+    .then(function(r){
+      if(r.status===404 || r.status===405){       // на сервере ещё нет /api/cards — пробуем через чат NODE
+        return fetchTO(API+'/api/chat', 45000, {method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({prompt: FALLBACK_PROMPT + body})})
+          .then(function(r2){ if(!r2.ok) throw 0; return r2.json(); })
+          .then(function(d){ return parseLoose(d.text); });
+      }
+      if(!r.ok) throw 0;
+      return r.json().then(function(d){ return d.segments || parseLoose(d.text); });
+    });
+}
+
+/* проверяем ответ модели: только известные карточки, без повторов, выбранные почти все на месте */
+function validate(segs, picked){
+  if(!Array.isArray(segs) || !segs.length || segs.length>30) return null;
+  var used={}, out=[], total=0;
+  for(var i=0;i<segs.length;i++){
+    var s=segs[i]; if(!s || typeof s.t!=='string') continue;
+    var tx=s.t.replace(/\s+/g,' ').trim(); if(!tx) continue;
+    total+=tx.length;
+    var id = (typeof s.id==='string' && CARDS[s.id] && !used[s.id]) ? s.id : null;
+    if(id) used[id]=1;
+    out.push({t:tx, id:id});
+  }
+  if(!out.length || total>220) return null;
+  var missing=picked.filter(function(id){ return !used[id]; });
+  if(missing.length > picked.length/2) return null;
+  return out;
+}
+
+function applyAI(segs, picked){
+  var ids=[]; segs.forEach(function(s){ if(s.id) ids.push(s.id); });
+  var newStrip=ids.map(function(id){ return {id:id, added: picked.indexOf(id)<0}; });
+  picked.forEach(function(id){ if(ids.indexOf(id)<0) newStrip.push({id:id, added:false}); });
+  strip=newStrip; renderStrip();
+  showPhrase(segs,false);
+  var text=segs.map(function(s){return s.t;}).join(' ');
+  if(!last || last.picked.join()!==picked.join()) last={picked:picked.slice(), texts:[]};
+  if(last.texts.indexOf(text)<0) last.texts.push(text);
+  $('btnRetry').hidden=false;
+  speakSegs(segs);
+}
+
+function speakPlain(){
+  var segs=strip.map(function(s){ return {t:word(s.id), id:s.id}; });
+  showPhrase(segs,true); speakSegs(segs);
+}
+
+var busy=false;
+function setBusy(on){
+  busy=on; $('btnSay').disabled=on; $('btnRetry').disabled=on;
+  if(on) phraseEl.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';
+}
+function ask(retry){
+  if(busy) return;
+  var picked = retry && last ? last.picked.slice() : strip.map(function(s){ return s.id; });
+  if(!picked.length) return;
+  stopSpeech();
+  if(!S.ai || !API){ speakPlain(); return; }
+  var key=S.lang+'|'+picked.join(',');
+  if(!retry && CACHE[key]){ applyAI(CACHE[key], picked); return; }
+  setBusy(true);
+  var payload={ lang:S.lang,
+    picked: picked.map(function(id){ return {id:id, w:word(id)}; }),
+    vocab: vocabList(),
+    avoid: retry && last ? last.texts.slice(-4) : [] };
+  callAI(payload)
+    .then(function(segs){
+      setBusy(false);
+      var ok=validate(segs, picked);
+      if(!ok) throw 0;
+      CACHE[key]=ok;
+      var keys=Object.keys(CACHE); if(keys.length>300) delete CACHE[keys[0]];
+      LS.set('govori_cache', CACHE);
+      applyAI(ok, picked);
+    })
+    .catch(function(e){
+      setBusy(false);
+      console.warn('[Говорилка] ИИ не ответил, читаю карточки как есть', e);
+      if(retry && last) return;            // повтор не удался — оставляем прошлую фразу
+      speakPlain();
+    });
+}
+
+/* ═══════════════ касания и перетаскивание ═══════════════
+   Тап по карточке: озвучить и добавить в строку.
+   Перетащить карточку в строку: добавить в нужное место
+   (на телефоне/планшете — сначала чуть придержать палец, иначе это прокрутка).
+   Карточки в строке можно двигать, а вытащив за пределы строки — убрать. */
+var drag=null, picMode=false;
+
+function overStrip(x,y){ var r=stripEl.getBoundingClientRect(); return x>=r.left && x<=r.right && y>=r.top-10 && y<=r.bottom+10; }
+function insertIndex(x,y){
+  var chips=Array.prototype.slice.call(stripEl.querySelectorAll('.chip')).filter(function(c){ return !c.classList.contains('dragging'); });
+  for(var i=0;i<chips.length;i++){
+    var r=chips[i].getBoundingClientRect();
+    if(y < r.top) return i;
+    if(y <= r.bottom && x < r.left + r.width/2) return i;
+  }
+  return chips.length;
+}
+function showCaret(i){
+  var c=stripEl.querySelector('.caret');
+  if(i==null){ if(c) c.remove(); return; }
+  if(!c){ c=document.createElement('div'); c.className='caret'; }
+  var chips=Array.prototype.slice.call(stripEl.querySelectorAll('.chip')).filter(function(n){ return !n.classList.contains('dragging'); });
+  if(i<chips.length) stripEl.insertBefore(c, chips[i]); else stripEl.appendChild(c);
+}
+
+document.addEventListener('pointerdown', function(e){
+  if(drag || (e.button && e.button>0)) return;
+  var el=e.target.closest && e.target.closest('.card,.chip');
+  if(!el || el.closest('.sheet')) return;
+  var src=el.classList.contains('chip') ? 'strip' : 'grid';
+  drag={src:src, id:el.dataset.id, idx:src==='strip'?+el.dataset.idx:-1, el:el, pid:e.pointerId,
+        x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, started:false,
+        armed: !(e.pointerType!=='mouse' && src==='grid'), ins:null};
+  el.classList.add('press');
+  if(!drag.armed){
+    drag.hold=setTimeout(function(){ if(drag && !drag.started){ drag.armed=true; el.classList.add('armed'); } }, 220);
+  }
+});
+document.addEventListener('pointermove', function(e){
+  if(!drag || e.pointerId!==drag.pid) return;
+  drag.x=e.clientX; drag.y=e.clientY;
+  if(!drag.started){
+    if(Math.hypot(drag.x-drag.x0, drag.y-drag.y0) < 12) return;
+    if(!drag.armed || picMode){ cancelDrag(); return; }   // палец поехал сразу — это прокрутка
+    startDrag();
+  }
+  moveDrag();
+});
+document.addEventListener('pointerup', function(e){ if(drag && e.pointerId===drag.pid) endDrag(); });
+document.addEventListener('pointercancel', function(e){ if(drag && e.pointerId===drag.pid){ if(drag.started) endDrag(); else cancelDrag(); } });
+document.addEventListener('touchmove', function(e){ if(drag && (drag.started || (drag.armed && drag.src==='grid'))) e.preventDefault(); }, {passive:false});
+document.addEventListener('contextmenu', function(e){ if(e.target.closest && e.target.closest('.card,.chip,.gear')) e.preventDefault(); });
+
+function startDrag(){
+  drag.started=true; clearTimeout(drag.hold);
+  var r=drag.el.getBoundingClientRect();
+  var g=drag.el.cloneNode(true); g.classList.remove('press','armed','hl'); g.classList.add('ghost');
+  g.style.width=r.width+'px'; g.style.height=r.height+'px'; drag.w=r.width; drag.h=r.height;
+  document.body.appendChild(g); drag.ghost=g;
+  if(drag.src==='strip') drag.el.classList.add('dragging');
+}
+function moveDrag(){
+  drag.ghost.style.transform='translate('+(drag.x-drag.w/2)+'px,'+(drag.y-drag.h/2)+'px) scale(1.05)';
+  var over=overStrip(drag.x, drag.y);
+  stripEl.classList.toggle('over', over);
+  if(over){ var i=insertIndex(drag.x, drag.y); if(i!==drag.ins){ drag.ins=i; showCaret(i); } }
+  else if(drag.ins!=null){ drag.ins=null; showCaret(null); }
+}
+function cleanup(){
+  if(!drag) return;
+  clearTimeout(drag.hold);
+  drag.el.classList.remove('press','armed','dragging');
+  if(drag.ghost) drag.ghost.remove();
+  showCaret(null); stripEl.classList.remove('over');
+  drag=null;
+}
+function cancelDrag(){ cleanup(); }
+function endDrag(){
+  var d=drag;
+  if(!d.started){                         // это тап
+    cleanup();
+    if(picMode && d.src==='grid'){ openPicker(d.id); return; }
+    if(d.src==='grid'){ addCard(d.id); speakOne(d.id, d.el); }
+    else { speakOne(d.id, stripEl.querySelector('.chip[data-idx="'+d.idx+'"]')); }
+    return;
+  }
+  var over=overStrip(d.x,d.y), ins=d.ins;
+  cleanup();
+  if(d.src==='grid'){
+    if(over){ addCard(d.id, ins); speakOne(d.id, stripEl.querySelector('.chip[data-idx="'+(ins==null?strip.length-1:Math.min(ins,strip.length-1))+'"]')); }
+  } else {
+    var item=strip.splice(d.idx,1)[0];
+    if(over){ if(ins==null||ins>strip.length) ins=strip.length; strip.splice(ins,0,item); }
+    stripChanged();
+  }
+}
+
+/* ── кнопки ── */
+$('btnSay').onclick=function(){ if(!strip.length){ return; } ask(false); };
+$('btnRetry').onclick=function(){ ask(true); };
+$('btnBack').onclick=function(){ if(!strip.length) return; stopSpeech(); strip.pop(); stripChanged(); };
+$('btnClear').onclick=function(){ stopSpeech(); strip=[]; stripChanged(); };
+
+/* ═══════════════ настройки (держать шестерёнку) ═══════════════ */
+var gear=$('gear'), gearT=null;
+function toast(msg){ var el=$('toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(function(){ el.classList.remove('on'); }, 2200); }
+gear.addEventListener('pointerdown', function(){
+  gear.classList.add('hold');
+  gearT=setTimeout(function(){ gear.classList.remove('hold'); gearT=null; openSettings(); }, 1200);
+});
+['pointerup','pointerleave','pointercancel'].forEach(function(ev){
+  gear.addEventListener(ev, function(){ if(gearT){ clearTimeout(gearT); gearT=null; gear.classList.remove('hold'); if(ev==='pointerup') toast(t('holdGear')); } });
+});
+
+function fillVoices(){
+  var sel=$('voiceSel'); if(!sel) return;
+  var list=langVoices(); sel.innerHTML='';
+  var o=document.createElement('option'); o.value=''; o.textContent=list.length?t('defVoice'):t('noVoice'); sel.appendChild(o);
+  list.forEach(function(v){ var op=document.createElement('option'); op.value=v.name; op.textContent=v.name+(v.localService?'':' ☁'); sel.appendChild(op); });
+  sel.value=S.voice;
+}
+function paintSettings(){
+  $('setTitle').textContent='⚙️ '+t('set'); $('lLang').textContent=t('lang'); $('lVoice').textContent=t('voice');
+  $('lRate').textContent=t('rate')+': '+S.rate.toFixed(2); $('btnTest').textContent=t('test');
+  $('lAi').textContent=t('ai'); $('lPics').textContent=t('pics'); $('btnPicMode').textContent=t('picMode');
+  $('btnFull').textContent=t('full'); $('noteAra').textContent=t('araNote');
+  var ab=$('aiBtns').children; ab[0].textContent=t('aiOn'); ab[1].textContent=t('aiOff');
+  ab[0].classList.toggle('on',S.ai); ab[1].classList.toggle('on',!S.ai);
+  Array.prototype.forEach.call($('langBtns').children, function(b){ b.classList.toggle('on', b.dataset.lang===S.lang); });
+  $('rate').value=S.rate; fillVoices(); setOnline(!!API);
+}
+function openSettings(){ paintSettings(); $('setBg').classList.add('on'); connect(); }
+Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function(b){
+  b.onclick=function(){ b.closest('.sheet-bg').classList.remove('on'); };
+});
+Array.prototype.forEach.call(document.querySelectorAll('.sheet-bg'), function(bg){
+  bg.addEventListener('click', function(e){ if(e.target===bg) bg.classList.remove('on'); });
+});
+$('langBtns').onclick=function(e){ var b=e.target.closest('button'); if(!b) return;
+  S.lang=b.dataset.lang; S.voice=''; saveS(); stopSpeech(); strip.length && stripChanged(); renderAll(); paintSettings(); };
+$('voiceSel').onchange=function(){ S.voice=this.value; saveS(); };
+$('rate').oninput=function(){ S.rate=+this.value; saveS(); $('lRate').textContent=t('rate')+': '+S.rate.toFixed(2); };
+$('btnTest').onclick=function(){ stopSpeech(); sayText(t('testPhrase')); };
+$('aiBtns').onclick=function(e){ var b=e.target.closest('button'); if(!b) return; S.ai=b.dataset.ai==='1'; saveS(); paintSettings(); };
+$('btnFull').onclick=function(){ var d=document.documentElement; (d.requestFullscreen||d.webkitRequestFullscreen||function(){}).call(d); };
+$('btnPicMode').onclick=function(){ $('setBg').classList.remove('on'); setPicMode(true); };
+$('bannerDone').onclick=function(){ setPicMode(false); };
+function setPicMode(on){ picMode=on; $('bannerTxt').textContent=t('banner'); $('bannerDone').textContent=t('done'); $('banner').classList.toggle('on',on); }
+
+/* ── выбор картинки: ARASAAC / своё фото / вернуть эмодзи ── */
+var picId=null;
+function savePics(){ if(!LS.set('govori_pics', PICS)) toast(t('saveErr')); renderGrid(); renderStrip(); paintPickHead(); }
+function paintPickHead(){ var h=$('picHead'); h.innerHTML=''; if(picId) h.appendChild(face(picId,'chip')); }
+function openPicker(id){
+  picId=id; $('picTitle').textContent=t('picTitle'); $('btnPhoto').textContent=t('photo'); $('btnEmoji').textContent=t('emoji');
+  $('lSearch').textContent=t('search'); $('araQ').value=word(id); $('araRes').innerHTML=''; $('araNote').textContent='';
+  paintPickHead(); $('picBg').classList.add('on'); searchAra();
+}
+function searchAra(){
+  var q=$('araQ').value.trim(), res=$('araRes'), note=$('araNote'); if(!q) return;
+  res.innerHTML='<span class="dots"><span></span><span></span><span></span></span>'; note.textContent='';
+  fetchTO(ARASAAC_API+S.lang+'/search/'+encodeURIComponent(q), 12000)
+    .then(function(r){ if(r.status===404) return []; if(!r.ok) throw 0; return r.json(); })
+    .then(function(list){
+      res.innerHTML='';
+      if(!list.length){ note.textContent=t('araNone'); return; }
+      list.slice(0,24).forEach(function(p){
+        var b=document.createElement('button'), im=new Image(); im.loading='lazy'; im.alt=''; im.src=ARASAAC_IMG(p._id);
+        b.appendChild(im); b.onclick=function(){ PICS[picId]={k:'ara', v:p._id}; savePics(); $('picBg').classList.remove('on'); };
+        res.appendChild(b);
+      });
+    })
+    .catch(function(){ res.innerHTML=''; note.textContent=t('araErr'); });
+}
+$('araGo').onclick=searchAra;
+$('araQ').onkeydown=function(e){ if(e.key==='Enter') searchAra(); };
+$('btnEmoji').onclick=function(){ delete PICS[picId]; savePics(); };
+$('btnPhoto').onclick=function(){
+  var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=function(){
+    var f=inp.files && inp.files[0]; if(!f) return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      var img=new Image();
+      img.onload=function(){
+        var s=256, cv=document.createElement('canvas'); cv.width=cv.height=s;
+        var m=Math.min(img.width,img.height), cx=cv.getContext('2d');
+        cx.fillStyle='#fff'; cx.fillRect(0,0,s,s);
+        cx.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,s,s);
+        PICS[picId]={k:'photo', v:cv.toDataURL('image/jpeg',0.82)}; savePics(); $('picBg').classList.remove('on');
+      };
+      img.src=rd.result;
+    };
+    rd.readAsDataURL(f);
+  };
+  inp.click();
+};
+
+/* ═══════════════ старт ═══════════════ */
+renderAll();
+connect();
+setInterval(connect, 60000);
+window.GOVORI = { ask:ask, get strip(){ return strip; }, speakSegs:speakSegs };   // для отладки в консоли
+})();
+</script>
+</body>
+</html>

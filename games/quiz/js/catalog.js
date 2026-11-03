@@ -28,9 +28,9 @@ var GENRES=[
 ];
 
 /* готовые уровни: 'animals-fish':2 значит есть вопросы уровней 1-2 (data/ru/animals-fish.json) */
-var READY={'animals-fish':10,'animals-pets':10,'games-heroes':10,'science-body':8};
+var READY={'animals-fish':10,'animals-pets':10,'games-heroes':10,'science-body':10};
 /* нарисованные карточки уровней: img/cards/<ключ>-lNN.webp для уровней 1..N */
-var ARTS={'animals-fish':10,'animals-pets':10,'games-heroes':10,'science-body':8};
+var ARTS={'animals-fish':10,'animals-pets':10,'games-heroes':10,'science-body':10};
 
 var TXT={};
 TXT.ru=`

@@ -440,17 +440,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 /* CANVAS AUTO-SCALE — keeps internal game resolution intact, only shrinks visually */
 .gcv{max-width:100%;height:auto;display:block;margin:0 auto;max-height:calc(100dvh - 130px);width:auto;}
 
-/* CHECKERS */
-#ck-board{display:inline-grid;grid-template-columns:repeat(8,var(--ck-cell,54px));grid-template-rows:repeat(8,var(--ck-cell,54px));border:2px solid var(--bdr);}
-.ck-cell{width:var(--ck-cell,54px);height:var(--ck-cell,54px);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
-.ck-light{background:#d4b896;}.ck-dark{background:#8b5e3c;}
-.ck-dark:hover{background:#9b6e4c;}
-.ck-sel{outline:3px solid #ffdd00;outline-offset:-3px;}
-.ck-hint::after{content:'';position:absolute;width:calc(var(--ck-cell,54px) * 0.33);height:calc(var(--ck-cell,54px) * 0.33);border-radius:50%;background:rgba(255,230,0,0.45);}
-.ck-piece{width:calc(var(--ck-cell,54px) * 0.74);height:calc(var(--ck-cell,54px) * 0.74);border-radius:50%;border:3px solid rgba(0,0,0,0.35);box-shadow:0 3px 6px rgba(0,0,0,0.4);position:relative;cursor:pointer;}
-.ck-red{background:radial-gradient(circle at 35% 35%,#ef9a9a,#c62828);}
-.ck-blk{background:radial-gradient(circle at 35% 35%,#555,#111);}
-.ck-king::after{content:'♛';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:calc(var(--ck-cell,54px) * 0.31);color:rgba(255,215,0,0.9);}
 
 
 /* TOWER STACKER */
@@ -531,21 +520,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .wl-ka{background:#050510;border-color:#001a33;color:#002233;}
 
 /* Checkers board: classic colours */
-.ck-light{background:#e8d2a6;}.ck-dark{background:#9c6b3f;}
-.ck-hint::after{background:rgba(80,220,120,.55);}
 
 /* Checkers — richer board, pieces, hints */
-#ck-board{border:5px solid #3a281a;border-radius:3px;box-shadow:0 8px 28px rgba(0,0,0,.55),inset 0 0 0 2px #5a4128;}
-.ck-dark:hover{background:#ad7b4d;}
-.ck-sel{outline:none;box-shadow:inset 0 0 0 3px #ffd23a,inset 0 0 14px rgba(255,210,58,.35);}
-.ck-last{box-shadow:inset 0 0 0 3px rgba(0,229,255,.55);}
-.ck-capt::after{content:'';position:absolute;width:calc(var(--ck-cell,54px) * 0.86);height:calc(var(--ck-cell,54px) * 0.86);border-radius:50%;box-sizing:border-box;border:3px solid rgba(255,70,70,.9);background:rgba(255,70,70,.16);}
-.ck-piece{width:calc(var(--ck-cell,54px) * 0.76);height:calc(var(--ck-cell,54px) * 0.76);border-radius:50%;border:none;position:relative;cursor:pointer;
-  box-shadow:0 4px 7px rgba(0,0,0,.5),inset 0 -3px 6px rgba(0,0,0,.4),inset 0 3px 5px rgba(255,255,255,.18);}
-.ck-piece::before{content:'';position:absolute;inset:14%;border-radius:50%;border:2px dashed rgba(255,255,255,.22);}
-.ck-red{background:radial-gradient(circle at 36% 30%,#ff9a9a,#d22f2f 62%,#8e1414);}
-.ck-blk{background:radial-gradient(circle at 36% 30%,#6a6f7a,#23262e 62%,#0a0c10);}
-.ck-king::after{content:'\265B';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:calc(var(--ck-cell,54px) * 0.4);color:#ffd23a;text-shadow:0 0 6px rgba(255,210,58,.7),0 1px 2px rgba(0,0,0,.6);z-index:1;}
 
 /* Flood-It palette swatches */
 .fl-sw{border-color:rgba(0,229,255,.25);border-radius:0;}
@@ -565,7 +541,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .pz-tile.empty{background:#020208;border-color:#001a33;}
 
 /* Message text in game bars — inherit arcade font */
-#sl-msg,#wl-msg,#fl-msg,#mm-msg,#pz-msg,#bub-msg,#bs-msg,#ck-msg,#ss-msg{
+#sl-msg,#wl-msg,#fl-msg,#mm-msg,#pz-msg,#bub-msg,#bs-msg,#ss-msg{
   font-family:'Press Start 2P',monospace;
   font-size:clamp(6px,1.5vw,9px);
   letter-spacing:1px;
@@ -576,94 +552,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 /* пульсация заголовка итогов (используется пасьянсом) */
 @keyframes repPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);}}
-
-/* ═══════════ CHECKERS: AI OPPONENT ENTITY (right, desktop) ═══════════ */
-#ck-bot{
-  position:fixed;right:10px;top:50%;
-  transform:translateY(-50%) scale(var(--ckb-scale,1.5));transform-origin:100% 50%;
-  z-index:500;width:190px;pointer-events:none;user-select:none;
-  display:none;flex-direction:column;align-items:center;gap:10px;
-  --ckb-accent:#e8b84b;--ckb-scale:1.5;font-family:'Press Start 2P',monospace;
-}
-#ck-bot.on{display:flex;}
-@media(max-width:1600px){#ck-bot{--ckb-scale:1.4;}}
-@media(max-width:1440px){#ck-bot{--ckb-scale:1.3;}}
-@media(max-width:1280px){#ck-bot{--ckb-scale:1.15;}}
-@media(max-width:1120px){#ck-bot{--ckb-scale:1.0;}}
-@media(max-width:1000px){#ck-bot{--ckb-scale:.92;}}
-@media(max-width:900px){#ck-bot{display:none!important;}}
-
-.ckbot-stage{position:relative;width:190px;height:186px;display:flex;align-items:flex-end;justify-content:center;}
-.ckbot-core{position:relative;width:150px;height:172px;display:flex;align-items:flex-end;justify-content:center;animation:ckbFloat 3.5s ease-in-out infinite;}
-@keyframes ckbFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-.ckbot-core::before{content:'';position:absolute;bottom:6px;width:120%;height:90%;border-radius:50%;
-  background:radial-gradient(circle,var(--ckb-accent) 0%,transparent 60%);opacity:.15;filter:blur(6px);z-index:0;animation:ckbHalo 3s ease-in-out infinite;}
-@keyframes ckbHalo{0%,100%{opacity:.12;}50%{opacity:.26;}}
-
-/* crown */
-.ckbot-crown{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:3px;align-items:flex-end;z-index:3;transition:transform .25s;}
-.ckbot-crown span{width:10px;background:linear-gradient(#ffe79a,var(--ckb-accent));border-radius:2px 2px 0 0;box-shadow:0 0 8px rgba(232,184,75,.6);}
-.ckbot-crown span:nth-child(1){height:16px;}
-.ckbot-crown span:nth-child(2){height:24px;}
-.ckbot-crown span:nth-child(3){height:16px;}
-
-/* dark checker disc face */
-.ckbot-disc{position:relative;width:124px;height:124px;border-radius:50%;z-index:1;
-  background:radial-gradient(circle at 36% 30%,#5a606c,#21242c 60%,#0a0c11);
-  border:3px solid var(--ckb-accent);
-  box-shadow:0 0 16px var(--ckb-accent),inset 0 -8px 16px rgba(0,0,0,.7),inset 0 6px 12px rgba(255,255,255,.08);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-  transition:box-shadow .2s,border-color .2s,filter .2s;}
-.ckbot-disc::after{content:'';position:absolute;inset:13%;border-radius:50%;border:2px dashed rgba(232,184,75,.35);}
-
-.ckbot-eyes{display:flex;gap:18px;z-index:1;}
-.ckbot-eye{width:18px;height:18px;border-radius:50%;background:#0a0c11;border:2px solid var(--ckb-accent);box-shadow:0 0 8px var(--ckb-accent);position:relative;animation:ckbBlink 4.5s infinite;overflow:hidden;}
-.ckbot-eye::after{content:'';position:absolute;top:3px;left:3px;width:6px;height:6px;border-radius:50%;background:#fff3c4;}
-@keyframes ckbBlink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.12);}}
-.ckbot-mouth{width:22px;height:7px;border-bottom:3px solid var(--ckb-accent);border-radius:0 0 12px 12px;z-index:1;transition:all .15s;}
-
-.ckbot-name{color:var(--ckb-accent);font-size:9px;letter-spacing:2px;text-shadow:0 0 10px var(--ckb-accent);}
-.ckbot-status{color:#ffe6b0;font-size:7px;letter-spacing:1px;min-height:11px;text-align:center;text-shadow:0 0 6px rgba(232,184,75,.4);}
-
-.ckbot-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--ckb-accent);box-shadow:0 0 8px var(--ckb-accent);opacity:.5;}
-.ckbot-particle.kp1{top:18%;left:14%;animation:ckbDrift 5.2s ease-in-out infinite;}
-.ckbot-particle.kp2{top:32%;right:12%;animation:ckbDrift 6.4s ease-in-out infinite .6s;}
-.ckbot-particle.kp3{bottom:24%;left:18%;animation:ckbDrift 5.8s ease-in-out infinite 1s;}
-@keyframes ckbDrift{0%,100%{transform:translateY(0);opacity:.25;}50%{transform:translateY(-9px);opacity:.7;}}
-
-/* ── moods ── */
-#ck-bot.ckmood-thinking .ckbot-eye{animation:ckbScan 1.1s ease-in-out infinite;}
-@keyframes ckbScan{0%,100%{transform:translateX(-3px);}50%{transform:translateX(3px);}}
-#ck-bot.ckmood-thinking .ckbot-disc{box-shadow:0 0 24px var(--ckb-accent),inset 0 -8px 16px rgba(0,0,0,.7);}
-
-#ck-bot.ckmood-capture .ckbot-disc{animation:ckbPulse .45s ease;box-shadow:0 0 28px var(--ckb-accent),inset 0 -8px 16px rgba(0,0,0,.7);}
-#ck-bot.ckmood-capture .ckbot-mouth{width:26px;height:11px;border-radius:0 0 13px 13px;}
-#ck-bot.ckmood-capture .ckbot-eye{height:7px;border-radius:2px;}
-@keyframes ckbPulse{0%,100%{transform:scale(1);}45%{transform:scale(1.12);}}
-
-#ck-bot.ckmood-multi .ckbot-core{animation:ckbWin .7s ease;}
-#ck-bot.ckmood-multi .ckbot-disc{box-shadow:0 0 36px var(--ckb-accent),0 0 64px var(--ckb-accent),inset 0 -8px 16px rgba(0,0,0,.7);}
-#ck-bot.ckmood-multi .ckbot-mouth{width:30px;height:13px;border-radius:0 0 15px 15px;}
-
-#ck-bot.ckmood-king .ckbot-crown{transform:translateX(-50%) translateY(-6px) scale(1.15);}
-#ck-bot.ckmood-king .ckbot-disc{box-shadow:0 0 34px var(--ckb-accent),inset 0 -8px 16px rgba(0,0,0,.7);}
-
-#ck-bot.ckmood-hurt .ckbot-core{animation:ckbShake .45s;}
-#ck-bot.ckmood-hurt .ckbot-disc{filter:brightness(.7);}
-@keyframes ckbShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
-
-#ck-bot.ckmood-win .ckbot-core{animation:ckbWin .7s ease;}
-@keyframes ckbWin{0%{transform:translateY(0);}30%{transform:translateY(-20px) scale(1.05);}60%{transform:translateY(0);}80%{transform:translateY(-7px);}100%{transform:translateY(0);}}
-#ck-bot.ckmood-win .ckbot-disc{box-shadow:0 0 34px var(--ckb-accent),inset 0 -8px 16px rgba(0,0,0,.7);}
-#ck-bot.ckmood-win .ckbot-mouth{width:30px;height:13px;border-radius:0 0 15px 15px;}
-
-#ck-bot.ckmood-lose .ckbot-core{animation:ckbGlitch .12s steps(2) 6;}
-@keyframes ckbGlitch{0%{transform:translate(0,0);}25%{transform:translate(-4px,2px);}50%{transform:translate(3px,-2px);opacity:.7;}75%{transform:translate(-2px,-1px);}100%{transform:translate(0,0);}}
-#ck-bot.ckmood-lose .ckbot-disc{filter:grayscale(.6) brightness(.8);}
-#ck-bot.ckmood-lose .ckbot-eye{height:5px;border-radius:2px;}
-#ck-bot.ckmood-lose .ckbot-crown{transform:translateX(-50%) translateY(6px) rotate(-10deg);}
-#ck-bot.ckmood-lose .ckbot-mouth{border-radius:12px 12px 0 0;height:8px;}
-
 
 /* ссылка назад на новую страницу игр */
 .l-head{position:relative;}
@@ -717,7 +605,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="arc-coin">INSERT COIN &nbsp;<span>&#x25CF;</span>&nbsp; CREDITS: <span id="play-cnt">0</span></div>
   </div>
   <div class="game-grid">
-    <div class="game-icon" onclick="openGame('checkers')"><span class="ico-pixel">&#9823;</span><span class="ico-label">CHECKERS</span></div>
     <div class="game-icon" onclick="openGame('ts')"><span class="ico-pixel">&#128310;</span><span class="ico-label">STACKER</span></div>
     <div class="game-icon" onclick="openGame('wordle')"><span class="ico-pixel">&#128172;</span><span class="ico-label">WORDLE</span></div>
     <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
@@ -728,40 +615,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 <!-- вторая страница больше не нужна, блок оставлен пустым для старого кода showPage -->
 <div id="launcher-2" class="hidden"></div>
-
-<!-- CHECKERS -->
-<div id="game-checkers" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">CHECKERS</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span id="ck-msg">YOUR TURN</span>
-      <button class="btn" onclick="initCheckers()">NEW</button>
-      <span><button class="btn sel" id="ckr-russian" onclick="setCkRules('russian')">RUSSIAN</button><button class="btn" id="ckr-standard" onclick="setCkRules('standard')">STANDARD</button></span>
-      <span><button class="btn sel" id="ckd-novice" onclick="setCkDiff('novice')">NOVICE</button><button class="btn" id="ckd-master" onclick="setCkDiff('master')">MASTER</button></span>
-      <span style="font-size:9px;color:var(--txt-d);">RED = YOU</span>
-    </div>
-    <div id="ck-board"></div>
-
-    <!-- CHECKERS AI ENTITY (desktop only) -->
-    <div id="ck-bot" aria-hidden="true">
-      <div class="ckbot-stage">
-        <span class="ckbot-particle kp1"></span>
-        <span class="ckbot-particle kp2"></span>
-        <span class="ckbot-particle kp3"></span>
-        <div class="ckbot-core">
-          <div class="ckbot-crown"><span></span><span></span><span></span></div>
-          <div class="ckbot-disc">
-            <div class="ckbot-eyes"><span class="ckbot-eye"></span><span class="ckbot-eye"></span></div>
-            <div class="ckbot-mouth"></div>
-          </div>
-        </div>
-      </div>
-      <div class="ckbot-name">THE OPPONENT</div>
-      <div class="ckbot-status" id="ck-bot-status">YOUR MOVE</div>
-    </div>
-  </div>
-</div>
-
 
 <!-- TOWER STACKER -->
 <div id="game-ts" class="gwin hidden">
@@ -879,7 +732,7 @@ function gC(){
    to a CSS custom property. The grid/board CSS reads that variable via var(),
    so cells shrink on phones without any change to game logic or click handling. */
 /* ── Dynamic cell fitter — always uses available screen space ── */
-var ARC_MAX={'ck-cell':96,'wl-key':46,'fl-cell':52,'bs-cell':46};
+var ARC_MAX={'wl-key':46,'fl-cell':52,'bs-cell':46};
 function fitCells(varName,cols,opts){
   opts=opts||{};
   /* dynamic margin: small fraction of screen width, never more than 48px */
@@ -899,7 +752,6 @@ function fitCells(varName,cols,opts){
 }
 function refitCurrent(){
   /* fitCells is now self-aware — just re-call each game's fit function */
-  if(cur==='checkers'){fitCells('ck-cell',8,{min:30,extra:4});ckRender();}
   if(cur==='wordle'){fitCells('wl-key',10,{min:22,extra:36});renderWlGrid();renderWlKeys();}
   if(cur==='flood'&&typeof flN==='number'){fitCells('fl-cell',flN,{min:13,extra:2});renderFlood();}
   if(cur==='puzzle')renderPuzzle();
@@ -956,7 +808,6 @@ window.openGame=function(id,direct){
   var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
   var fn={
-          checkers:initCheckers,
           ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,
           puzzle:initPuzzle};
   /* Show PRESS START — init game only after player clicks */
@@ -975,335 +826,6 @@ window.closeGame=function(){
   if(FROM_LINK){location.href='../';return;}
   showPage(wasP2?2:1);
 };
-
-/* ════════════════ CHECKERS ════════════════ */
-var ckBrd,ckSel,ckTurn,ckDead,ckChain,ckLast=null,ckBusy=false,ckNodes=0;
-var ckRules='russian',ckDiff='novice';
-
-function ckIsP(v){return v===1||v===2;}
-function ckIsA(v){return v===3||v===4;}
-function ckIsK(v){return v===2||v===4;}
-function ckSideOf(v){return ckIsP(v)?'p':(ckIsA(v)?'a':null);}
-function ckClone(b){var n=[];for(var r=0;r<8;r++)n[r]=b[r].slice();return n;}
-
-/* ── single-step captures from (r,c) (rule-aware: russian men capture both ways + flying kings) ── */
-function ckPieceCaptures(r,c,b){
-  var v=b[r][c];if(!v)return [];
-  var enemy=ckIsP(v)?ckIsA:ckIsP,king=ckIsK(v),res=[],dirs=[[-1,-1],[-1,1],[1,-1],[1,1]];
-  dirs.forEach(function(d){
-    if(king&&ckRules==='russian'){
-      var i=1,foe=null;
-      while(true){
-        var rr=r+d[0]*i,cc=c+d[1]*i;
-        if(rr<0||rr>7||cc<0||cc>7)break;
-        var cell=b[rr][cc];
-        if(cell===0){if(foe)res.push({tr:rr,tc:cc,mr:foe[0],mc:foe[1]});i++;continue;}
-        if(foe)break;
-        if(enemy(cell)){foe=[rr,cc];i++;continue;}
-        break;
-      }
-    }else{
-      if(!king&&ckRules==='standard'){if(ckIsP(v)&&d[0]>0)return;if(ckIsA(v)&&d[0]<0)return;}
-      var mr=r+d[0],mc=c+d[1],tr=r+2*d[0],tc=c+2*d[1];
-      if(tr<0||tr>7||tc<0||tc>7)return;
-      if(enemy(b[mr][mc])&&b[tr][tc]===0)res.push({tr:tr,tc:tc,mr:mr,mc:mc});
-    }
-  });
-  return res;
-}
-
-/* ── simple (non-capture) moves ── */
-function ckPieceMoves(r,c,b){
-  var v=b[r][c];if(!v)return [];
-  var king=ckIsK(v),res=[],dirs=[[-1,-1],[-1,1],[1,-1],[1,1]];
-  dirs.forEach(function(d){
-    if(king&&ckRules==='russian'){
-      var i=1;
-      while(true){var rr=r+d[0]*i,cc=c+d[1]*i;if(rr<0||rr>7||cc<0||cc>7)break;if(b[rr][cc]!==0)break;res.push({tr:rr,tc:cc});i++;}
-    }else{
-      if(!king){if(ckIsP(v)&&d[0]>0)return;if(ckIsA(v)&&d[0]<0)return;}
-      var tr=r+d[0],tc=c+d[1];
-      if(tr>=0&&tr<=7&&tc>=0&&tc<=7&&b[tr][tc]===0)res.push({tr:tr,tc:tc});
-    }
-  });
-  return res;
-}
-
-/* ── full capture sequences from (r,c): array of step-arrays [{tr,tc,mr,mc}...] ── */
-function ckSequences(r,c,b){
-  var first=ckPieceCaptures(r,c,b);
-  if(!first.length)return [];
-  var out=[];
-  first.forEach(function(s){
-    var nb=ckClone(b),mv=nb[r][c];
-    nb[r][c]=0;nb[s.mr][s.mc]=0;
-    var promoted=false;
-    if(mv===1&&s.tr===0){mv=2;promoted=true;}
-    if(mv===3&&s.tr===7){mv=4;promoted=true;}
-    nb[s.tr][s.tc]=mv;
-    var cont=(ckRules==='standard'&&promoted)?[]:ckSequences(s.tr,s.tc,nb);
-    if(cont.length)cont.forEach(function(cs){out.push([{tr:s.tr,tc:s.tc,mr:s.mr,mc:s.mc}].concat(cs));});
-    else out.push([{tr:s.tr,tc:s.tc,mr:s.mr,mc:s.mc}]);
-  });
-  return out;
-}
-
-/* ── all legal moves for a side (mandatory capture) ── */
-function ckLegalMoves(side,b){
-  var caps=[],simple=[],r,c,v;
-  for(r=0;r<8;r++)for(c=0;c<8;c++){
-    v=b[r][c];if(ckSideOf(v)!==side)continue;
-    var seqs=ckSequences(r,c,b);
-    if(seqs.length)seqs.forEach(function(sq){caps.push({fr:r,fc:c,steps:sq});});
-  }
-  if(caps.length)return {caps:caps,simple:[],must:true};
-  for(r=0;r<8;r++)for(c=0;c<8;c++){
-    v=b[r][c];if(ckSideOf(v)!==side)continue;
-    ckPieceMoves(r,c,b).forEach(function(m){simple.push({fr:r,fc:c,steps:[{tr:m.tr,tc:m.tc,mr:-1,mc:-1}]});});
-  }
-  return {caps:[],simple:simple,must:false};
-}
-function ckAllMoves(side,b){var L=ckLegalMoves(side,b);return L.must?L.caps:L.simple;}
-
-/* ── apply a full move to a board copy ── */
-function ckApply(b,m){
-  var nb=ckClone(b),v=nb[m.fr][m.fc],cr=m.fr,cc=m.fc;nb[m.fr][m.fc]=0;
-  for(var i=0;i<m.steps.length;i++){var s=m.steps[i];if(s.mr>=0)nb[s.mr][s.mc]=0;cr=s.tr;cc=s.tc;if(v===1&&cr===0)v=2;if(v===3&&cr===7)v=4;}
-  nb[cr][cc]=v;return nb;
-}
-
-/* ── evaluation (positive = good for AI / black) ── */
-function ckEval(b){
-  var s=0,r,c,v;
-  for(r=0;r<8;r++)for(c=0;c<8;c++){
-    v=b[r][c];if(!v)continue;
-    if(v===1)s-=100+(7-r)*4;
-    else if(v===2)s-=330;
-    else if(v===3)s+=100+r*4;
-    else if(v===4)s+=330;
-    var center=(c>=2&&c<=5)?(r>=2&&r<=5?4:2):0;
-    if(ckIsA(v))s+=center;else if(ckIsP(v))s-=center;
-  }
-  return s;
-}
-function ckMinimax(b,depth,alpha,beta,side){
-  ckNodes++;
-  var moves=ckAllMoves(side,b);
-  if(!moves.length)return side==='a'?-100000:100000;
-  if(depth<=0||ckNodes>140000)return ckEval(b);
-  var other=side==='a'?'p':'a',i,nb,val;
-  if(side==='a'){
-    var best=-1e9;
-    for(i=0;i<moves.length;i++){nb=ckApply(b,moves[i]);val=ckMinimax(nb,depth-1,alpha,beta,other);if(val>best)best=val;if(best>alpha)alpha=best;if(alpha>=beta)break;}
-    return best;
-  }else{
-    var bestL=1e9;
-    for(i=0;i<moves.length;i++){nb=ckApply(b,moves[i]);val=ckMinimax(nb,depth-1,alpha,beta,other);if(val<bestL)bestL=val;if(bestL<beta)beta=bestL;if(alpha>=beta)break;}
-    return bestL;
-  }
-}
-function ckPickAiMove(){
-  var moves=ckAllMoves('a',ckBrd);
-  if(!moves.length)return null;
-  if(moves.length===1)return moves[0];
-  if(ckDiff==='novice'&&Math.random()<0.30)return moves[Math.random()*moves.length|0];
-  var depth=ckDiff==='master'?5:2;
-  ckNodes=0;
-  var best=[],bestVal=-1e15;
-  for(var i=0;i<moves.length;i++){
-    var nb=ckApply(ckBrd,moves[i]);
-    var val=ckMinimax(nb,depth-1,-1e9,1e9,'p');
-    if(ckDiff==='novice')val+=Math.random()*30-15;
-    if(val>bestVal+0.5){bestVal=val;best=[moves[i]];}
-    else if(val>=bestVal-0.5)best.push(moves[i]);
-  }
-  return best[Math.random()*best.length|0];
-}
-
-/* ── difficulty / rules selectors ── */
-window.setCkRules=function(rl){ckRules=rl;['russian','standard'].forEach(function(x){var b=document.getElementById('ckr-'+x);if(b)b.className='btn'+(x===rl?' sel':'');});initCheckers();};
-window.setCkDiff=function(d){ckDiff=d;['novice','master'].forEach(function(x){var b=document.getElementById('ckd-'+x);if(b)b.className='btn'+(x===d?' sel':'');});initCheckers();};
-
-window.initCheckers=function(){
-  ckBrd=[];for(var r=0;r<8;r++){ckBrd[r]=[];for(var c=0;c<8;c++){var dk=(r+c)%2===1;ckBrd[r][c]=dk&&r<3?3:dk&&r>4?1:0;}}
-  ckSel=null;ckTurn='p';ckDead=false;ckChain=null;ckLast=null;ckBusy=false;
-  var m=document.getElementById('ck-msg');m.textContent='YOUR TURN';m.style.color='';
-  fitCells('ck-cell',8,{min:30,extra:4,margin:48});
-  if(window.CheckBot)CheckBot.show();
-  ckRender();
-};
-
-/* ── win / turn flow ── */
-function ckCount(side){var n=0;for(var r=0;r<8;r++)for(var c=0;c<8;c++){if(side==='p'&&ckIsP(ckBrd[r][c]))n++;if(side==='a'&&ckIsA(ckBrd[r][c]))n++;}return n;}
-function ckWin(side){
-  ckDead=true;ckBusy=false;
-  var m=document.getElementById('ck-msg');
-  if(side==='p'){clWin('checkers');m.textContent='\u2713 YOU WIN!';m.style.color='var(--pri-b)';if(window.CheckBot)CheckBot.react('lose');}
-  else{m.textContent='AI WINS \u2014 TRY AGAIN';m.style.color='var(--err)';if(window.CheckBot)CheckBot.react('win');}
-}
-function ckAfterMove(mover){
-  var opp=mover==='p'?'a':'p';
-  if(ckCount(opp)===0||ckAllMoves(opp,ckBrd).length===0){ckWin(mover);return true;}
-  return false;
-}
-
-/* ── human interaction ── */
-function ckSelectable(r,c,L){
-  if(L.must)return L.caps.some(function(m){return m.fr===r&&m.fc===c;});
-  return ckPieceMoves(r,c,ckBrd).length>0;
-}
-window.ckClick=function(r,c){
-  if(ckDead||ckTurn!=='p'||ckBusy)return;
-  var L=ckLegalMoves('p',ckBrd),i;
-  if(ckChain){
-    var cs=ckPieceCaptures(ckChain.r,ckChain.c,ckBrd);
-    for(i=0;i<cs.length;i++)if(cs[i].tr===r&&cs[i].tc===c){ckHumanJump(ckChain.r,ckChain.c,cs[i]);return;}
-    return;
-  }
-  var v=ckBrd[r][c];
-  if(ckSel){
-    if(ckSel.r===r&&ckSel.c===c){ckSel=null;ckRender();return;}
-    if(L.must){
-      var caps=ckPieceCaptures(ckSel.r,ckSel.c,ckBrd);
-      for(i=0;i<caps.length;i++)if(caps[i].tr===r&&caps[i].tc===c){ckHumanJump(ckSel.r,ckSel.c,caps[i]);return;}
-    }else{
-      var mvs=ckPieceMoves(ckSel.r,ckSel.c,ckBrd);
-      for(i=0;i<mvs.length;i++)if(mvs[i].tr===r&&mvs[i].tc===c){ckHumanMove(ckSel.r,ckSel.c,r,c);return;}
-    }
-    if(ckIsP(v)&&ckSelectable(r,c,L)){ckSel={r:r,c:c};ckRender();return;}
-    ckSel=null;ckRender();return;
-  }
-  if(ckIsP(v)&&ckSelectable(r,c,L)){ckSel={r:r,c:c};ckRender();}
-};
-function ckHumanMove(fr,fc,tr,tc){
-  var v=ckBrd[fr][fc];ckBrd[tr][tc]=v;ckBrd[fr][fc]=0;
-  if(v===1&&tr===0)ckBrd[tr][tc]=2;
-  ckLast={fr:fr,fc:fc,tr:tr,tc:tc};ckSel=null;ckChain=null;ckRender();
-  ckEndPlayer();
-}
-function ckHumanJump(fr,fc,step){
-  var v=ckBrd[fr][fc];ckBrd[step.mr][step.mc]=0;ckBrd[fr][fc]=0;
-  var promoted=false;
-  if(v===1&&step.tr===0){v=2;promoted=true;}
-  ckBrd[step.tr][step.tc]=v;
-  ckLast={fr:fr,fc:fc,tr:step.tr,tc:step.tc};
-  if(window.CheckBot)CheckBot.react('hurt');
-  var canCont=!(ckRules==='standard'&&promoted)&&ckPieceCaptures(step.tr,step.tc,ckBrd).length>0;
-  if(canCont){ckChain={r:step.tr,c:step.tc};ckSel={r:step.tr,c:step.tc};ckRender();}
-  else{ckChain=null;ckSel=null;ckRender();ckEndPlayer();}
-}
-function ckEndPlayer(){
-  if(ckAfterMove('p'))return;
-  ckTurn='a';ckBusy=true;
-  var m=document.getElementById('ck-msg');m.textContent='AI THINKING...';m.style.color='';
-  if(window.CheckBot)CheckBot.react('thinking');
-  setTimeout(ckAITurn,430);
-}
-
-/* ── AI turn (animated multi-jump) ── */
-function ckAITurn(){
-  if(ckDead||ckTurn!=='a'){ckBusy=false;return;}
-  var mv=ckPickAiMove();
-  if(!mv){ckWin('p');return;}
-  ckAnimateAi(mv,0);
-}
-function ckAnimateAi(mv,i){
-  if(i===0)mv._wasMan=(ckBrd[mv.fr][mv.fc]===3);
-  var fromR=i===0?mv.fr:mv.steps[i-1].tr,fromC=i===0?mv.fc:mv.steps[i-1].tc;
-  var s=mv.steps[i],v=ckBrd[fromR][fromC];
-  if(s.mr>=0)ckBrd[s.mr][s.mc]=0;
-  ckBrd[fromR][fromC]=0;
-  if(v===3&&s.tr===7)v=4;
-  ckBrd[s.tr][s.tc]=v;
-  ckLast={fr:mv.fr,fc:mv.fc,tr:s.tr,tc:s.tc};
-  ckRender();
-  if(i<mv.steps.length-1){setTimeout(function(){ckAnimateAi(mv,i+1);},370);return;}
-  ckBusy=false;
-  if(ckAfterMove('a'))return;
-  var caps=mv.steps.filter(function(x){return x.mr>=0;}).length;
-  var becameKing=mv._wasMan&&ckBrd[s.tr][s.tc]===4;
-  ckTurn='p';
-  var m=document.getElementById('ck-msg');m.style.color='';
-  if(becameKing){m.textContent='AI CROWNED A KING! YOUR TURN';if(window.CheckBot)CheckBot.react('king');}
-  else if(caps>=2){m.textContent='AI MULTI-CAPTURE! YOUR TURN';if(window.CheckBot)CheckBot.react('multi');}
-  else if(caps===1){m.textContent='AI CAPTURED! YOUR TURN';if(window.CheckBot)CheckBot.react('capture');}
-  else{m.textContent='YOUR TURN';if(window.CheckBot)CheckBot.react('moved');}
-}
-
-/* ── render ── */
-function ckRender(){
-  var el=document.getElementById('ck-board');if(!el)return;el.innerHTML='';
-  var L=ckLegalMoves('p',ckBrd),caps=[],moves=[];
-  if(ckSel){
-    if(ckChain||L.must)caps=ckPieceCaptures(ckSel.r,ckSel.c,ckBrd);
-    else moves=ckPieceMoves(ckSel.r,ckSel.c,ckBrd);
-  }
-  for(var r=0;r<8;r++)for(var c=0;c<8;c++){
-    (function(r,c){
-      var cell=document.createElement('div'),dk=(r+c)%2===1,i;
-      cell.className='ck-cell '+(dk?'ck-dark':'ck-light');
-      if(ckLast&&((ckLast.fr===r&&ckLast.fc===c)||(ckLast.tr===r&&ckLast.tc===c)))cell.classList.add('ck-last');
-      if(ckSel&&ckSel.r===r&&ckSel.c===c)cell.classList.add('ck-sel');
-      for(i=0;i<caps.length;i++)if(caps[i].tr===r&&caps[i].tc===c){cell.classList.add('ck-capt');break;}
-      for(i=0;i<moves.length;i++)if(moves[i].tr===r&&moves[i].tc===c){cell.classList.add('ck-hint');break;}
-      var v=ckBrd[r][c];
-      if(v){var p=document.createElement('div');p.className='ck-piece '+(ckIsP(v)?'ck-red':'ck-blk');if(ckIsK(v))p.classList.add('ck-king');cell.appendChild(p);}
-      cell.addEventListener('click',function(){ckClick(r,c);});
-      el.appendChild(cell);
-    })(r,c);
-  }
-  if(window.positionCkBot)positionCkBot();
-}
-
-/* ── AI ENTITY (right of board, reacts) ── */
-var CheckBot=(function(){
-  var root=null,st=null,shown=false,cur='idle',rt=null;
-  var SAY={
-    idle:['YOUR MOVE','I AM WATCHING','BRING IT ON','HMMM...'],
-    thinking:['CALCULATING','PLOTTING...','LET ME SEE','HMMM...'],
-    moved:['YOUR MOVE.','GO ON.','YOUR TURN.'],
-    capture:['GOT ONE!','TASTY.','THANK YOU.','MINE NOW.'],
-    multi:['DOUBLE!','CHAIN!','DEVASTATION!','TOO EASY.'],
-    king:['KING ME!','CROWNED!','BOW DOWN.'],
-    hurt:['...OW.','LUCKY.','NOTED.','GRR.'],
-    win:['I WIN.','PREDICTABLE.','GG.'],
-    lose:['...IMPOSSIBLE.','WELL PLAYED.','REMATCH!']
-  };
-  function pick(a){return a[Math.random()*a.length|0];}
-  function grab(){if(!root){root=document.getElementById('ck-bot');st=document.getElementById('ck-bot-status');}return root;}
-  function mood(m){if(!grab())return;cur=m;root.className=(shown?'on ':'')+'ckmood-'+m;if(st)st.textContent=pick(SAY[m]||['...']);}
-  return {
-    show:function(){if(!grab())return;shown=true;root.classList.add('on');mood('idle');},
-    hide:function(){if(grab()){shown=false;root.classList.remove('on');}},
-    react:function(m){
-      if(!grab()||!shown)return;
-      if(rt){clearTimeout(rt);rt=null;}
-      mood(m);
-      var transient={moved:1,capture:1,multi:1,king:1,hurt:1};
-      if(transient[m])rt=setTimeout(function(){if(cur===m)mood(ckTurn==='a'?'thinking':'idle');},1700);
-    }
-  };
-})();
-window.CheckBot=CheckBot;
-
-function positionCkBot(){
-  var board=document.getElementById('ck-board'),bot=document.getElementById('ck-bot');
-  if(!board||!bot)return;
-  var win=document.getElementById('game-checkers');
-  if(win&&win.classList.contains('hidden'))return;
-  if(!bot.classList.contains('on'))return;
-  var br=board.getBoundingClientRect();if(!br.width)return;
-  var vw=window.innerWidth||document.documentElement.clientWidth,GAP=18,EDGE=10;
-  bot.style.display='';
-  var bw=bot.getBoundingClientRect().width||0,rg=vw-br.right;
-  if(bw&&rg>=bw+GAP+EDGE){
-    var cx=br.right+rg/2,rightEdge=cx+bw/2,ro=vw-rightEdge;
-    ro=Math.min(Math.max(EDGE,ro),vw-br.right-GAP-bw);
-    bot.style.right=ro+'px';bot.style.display='';
-  }else{bot.style.display='none';}
-}
-window.positionCkBot=positionCkBot;
-if(!window.__ckBotResize){window.__ckBotResize=true;window.addEventListener('resize',function(){positionCkBot();});}
 
 /* ════════════════ TOWER STACKER ════════════════ */
 var tsCtx,tsRaf,tsRun,tsScale=1;
@@ -1759,7 +1281,7 @@ function pzShowBest(){var b=pzGetBest();var el=document.getElementById('hi-puzzl
   if(crEl){crEl.textContent=String(Math.max(0,99-parseInt(localStorage.getItem('aceon_plays')||'0')));}
 
   var STEPS=[
-    {t:60,   msg:'LOADING GAME ROM  [6 TITLES]',  pct:14, ok:340},
+    {t:60,   msg:'LOADING GAME ROM  [5 TITLES]',  pct:14, ok:340},
     {t:500,  msg:'CHECKING HIGH SCORES...........',  pct:32, ok:280},
     {t:880,  msg:'WARMING UP DISPLAY.............',  pct:55, ok:260},
     {t:1200, msg:'CALIBRATING JOYSTICK...........',  pct:74, ok:240},

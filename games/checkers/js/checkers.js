@@ -11,7 +11,7 @@ function hide(id){$(id).classList.add('hidden');}
 var MODES=['bot','duo'],RULES=['russian','english','giveaway'],LEVELS=['easy','normal','hard','master'],THEMES=['wood','neon','flat'],SIDES=['white','black','random'];
 var ART=new URL('../art/checkers/',location.href).href;
 /* картинки от Codex: пока не выложены, false; тогда доска и шашки рисуются кодом */
-var ART_READY=false;
+var ART_READY=true;
 
 Store.define('checkers',{
   version:1,

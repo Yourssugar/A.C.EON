@@ -442,8 +442,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 
 
-/* TOWER STACKER */
-#ts-cv{border:2px solid #1a3550;border-radius:10px;box-shadow:0 0 18px rgba(0,229,255,.12);}
 
 /* WORDLE */
 #wl-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
@@ -548,7 +546,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 }
 
 /* canvas fullscreen scaling — browser keeps aspect ratio via width:auto + max constraints */
-#ts-cv     { max-height:calc(100dvh - 130px); width:auto; }
 
 /* пульсация заголовка итогов (используется пасьянсом) */
 @keyframes repPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);}}
@@ -605,7 +602,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="arc-coin">INSERT COIN &nbsp;<span>&#x25CF;</span>&nbsp; CREDITS: <span id="play-cnt">0</span></div>
   </div>
   <div class="game-grid">
-    <div class="game-icon" onclick="openGame('ts')"><span class="ico-pixel">&#128310;</span><span class="ico-label">STACKER</span></div>
     <div class="game-icon" onclick="openGame('wordle')"><span class="ico-pixel">&#128172;</span><span class="ico-label">WORDLE</span></div>
     <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
     <div class="game-icon" onclick="openGame('mind')"><span class="ico-pixel">&#127919;</span><span class="ico-label">MASTERMIND</span></div>
@@ -615,19 +611,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 <!-- вторая страница больше не нужна, блок оставлен пустым для старого кода showPage -->
 <div id="launcher-2" class="hidden"></div>
-
-<!-- TOWER STACKER -->
-<div id="game-ts" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">TOWER STACKER</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>LEVEL: <span id="ts-sc">0</span></span>
-      <button class="btn" onclick="initTs()">NEW</button>
-      <span>BEST: <span id="hi-ts">0</span></span>
-    </div>
-    <canvas id="ts-cv" class="gcv" width="300" height="420"></canvas>
-  </div>
-</div>
 
 <!-- WORDLE -->
 <div id="game-wordle" class="gwin hidden">
@@ -808,7 +791,7 @@ window.openGame=function(id,direct){
   var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
   var fn={
-          ts:initTs,wordle:initWordle,flood:initFlood,mind:initMind,
+          wordle:initWordle,flood:initFlood,mind:initMind,
           puzzle:initPuzzle};
   /* Show PRESS START — init game only after player clicks */
   if(direct){if(fn[id])fn[id]();setTimeout(refitCurrent,40);return;}
@@ -820,101 +803,11 @@ window.openGame=function(id,direct){
 window.closeGame=function(){
   if(!cur)return;
   document.getElementById('game-'+cur).classList.add('hidden');
-  if(cur==='ts')tsStop();
   var wasP2=PAGE2_GAMES[cur];
   cur=null;
   if(FROM_LINK){location.href='../';return;}
   showPage(wasP2?2:1);
 };
-
-/* ════════════════ TOWER STACKER ════════════════ */
-var tsCtx,tsRaf,tsRun,tsScale=1;
-var tsStack,tsMoving,tsState,tsSc,tsSpd,tsFalling,tsCam,tsFlash;
-var TS_W=300,TS_H=420,TS_PH=28;
-window.initTs=function(){tsStack=[{x:75,w:150}];tsMoving={x:0,dir:1,w:150};tsState='idle';tsSc=0;tsSpd=2.5;tsFalling=[];tsCam=0;tsFlash=0;showHi('ts');document.getElementById('ts-sc').textContent='0';tsStop();tsFit();tsRun=true;tsLoop();};
-function tsStop(){if(tsRaf){cancelAnimationFrame(tsRaf);tsRaf=null;}tsRun=false;}window.tsStop=tsStop;
-function tsFit(){
-  var cv=document.getElementById('ts-cv');if(!cv)return;
-  var availH=(window.innerHeight||document.documentElement.clientHeight)-150;
-  var availW=(window.innerWidth||document.documentElement.clientWidth)-24;
-  var S=Math.min(availW/TS_W,availH/TS_H);S=Math.max(0.6,Math.min(2.6,S));
-  tsScale=S;
-  cv.width=Math.round(TS_W*S);cv.height=Math.round(TS_H*S);
-  cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
-  tsCtx=cv.getContext('2d');
-  tsDraw();
-}
-window.tsFit=tsFit;
-function tsLoop(){if(!tsRun)return;tsUpdate();tsDraw();tsRaf=requestAnimationFrame(tsLoop);}
-function tsHue(i){return (i*20+195)%360;}
-function tsFall(x,w,y,hue){tsFalling.push({x:x,w:w,y:y,vy:0,vx:(x+w/2<TS_W/2?-1:1)*(1+Math.random()),rot:0,vr:(Math.random()-0.5)*0.25,life:60,hue:hue});}
-function tsSparkle(x,w,y){for(var i=0;i<12;i++)tsFalling.push({spark:true,x:x+Math.random()*w,y:y+Math.random()*TS_PH,vy:-1-Math.random()*2.5,vx:(Math.random()-0.5)*2.5,life:26});}
-function tsUpdate(){
-  var visible=Math.floor(TS_H/TS_PH)-1,target=Math.max(0,tsStack.length-visible);
-  tsCam+=(target-tsCam)*0.15;
-  for(var i=tsFalling.length-1;i>=0;i--){var f=tsFalling[i];f.vy+=f.spark?0.12:0.6;f.y+=f.vy;f.x+=f.vx;if(!f.spark)f.rot+=f.vr;f.life--;if(f.life<=0||f.y>TS_H+50)tsFalling.splice(i,1);}
-  if(tsFlash>0)tsFlash--;
-  if(tsState!=='run')return;
-  var m=tsMoving;m.x+=m.dir*tsSpd;if(m.x<=0){m.x=0;m.dir=1;}if(m.x+m.w>=TS_W){m.x=TS_W-m.w;m.dir=-1;}
-}
-window.tsDrop=function(){
-  if(tsState==='idle'){tsState='run';return;}
-  if(tsState==='dead'){initTs();return;}
-  if(tsState!=='run')return;
-  var top=tsStack[tsStack.length-1],m=tsMoving;
-  var base=TS_H-TS_PH,dropY=base-((tsStack.length)-tsCam)*TS_PH;
-  var hueNew=tsHue(tsStack.length);
-  if(Math.abs(m.x-top.x)<=6){
-    tsStack.push({x:top.x,w:m.w});tsFlash=15;tsSparkle(top.x,m.w,dropY);
-  }else{
-    var left=Math.max(m.x,top.x),right=Math.min(m.x+m.w,top.x+top.w),ov=right-left;
-    if(ov<=3){tsState='dead';setHi('ts',tsSc);showHi('ts');document.getElementById('ts-sc').textContent=tsSc;tsFall(m.x,m.w,dropY,hueNew);return;}
-    if(m.x<left)tsFall(m.x,left-m.x,dropY,hueNew);
-    if(m.x+m.w>right)tsFall(right,(m.x+m.w)-right,dropY,hueNew);
-    tsStack.push({x:left,w:ov});
-  }
-  tsSc=tsStack.length-1;document.getElementById('ts-sc').textContent=tsSc;
-  tsSpd=Math.min(9,2.5+(tsStack.length-1)*0.18);
-  var nw=tsStack[tsStack.length-1].w;
-  tsMoving={x:Math.random()<.5?0:TS_W-nw,dir:Math.random()<.5?1:-1,w:nw};
-};
-function tsRR(ctx,x,y,w,h,r){r=Math.min(r,w/2,h/2);if(w<=0)return;ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-function tsBlock(ctx,x,y,w,h,hue,moving){
-  var g=ctx.createLinearGradient(0,y,0,y+h);g.addColorStop(0,'hsl('+hue+',72%,63%)');g.addColorStop(1,'hsl('+hue+',74%,42%)');
-  ctx.save();if(moving){ctx.shadowColor='hsl('+hue+',80%,60%)';ctx.shadowBlur=16;}
-  tsRR(ctx,x,y,w,h,4);ctx.fillStyle=g;ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.25)';if(w>6)ctx.fillRect(x+3,y+2,w-6,2);
-  ctx.fillStyle='rgba(0,0,0,.18)';if(w>6)ctx.fillRect(x+3,y+h-2,w-6,1.5);
-  ctx.restore();
-}
-function tsDraw(){
-  if(!tsCtx)return;var ctx=tsCtx,C=gC();
-  ctx.setTransform(tsScale,0,0,tsScale,0,0);
-  var sky=ctx.createLinearGradient(0,0,0,TS_H);sky.addColorStop(0,'#0b1430');sky.addColorStop(1,'#05070f');ctx.fillStyle=sky;ctx.fillRect(0,0,TS_W,TS_H);
-  for(var i=0;i<20;i++){ctx.fillStyle='rgba(210,230,255,'+(0.05+(i%3)*0.05)+')';ctx.fillRect((i*61+13)%TS_W,(i*47+9)%TS_H,2,2);}
-  var base=TS_H-TS_PH,h=TS_PH-3;
-  tsStack.forEach(function(p,i){var y=base-(i-tsCam)*TS_PH;if(y<-TS_PH||y>TS_H)return;tsBlock(ctx,p.x,y,p.w,h,tsHue(i),false);});
-  if((tsState==='run'||tsState==='idle')&&tsMoving){var lvl=tsStack.length,y=base-(lvl-tsCam)*TS_PH;tsBlock(ctx,tsMoving.x,y,tsMoving.w,h,tsHue(lvl),true);}
-  tsFalling.forEach(function(f){ctx.globalAlpha=Math.max(0,f.life/(f.spark?26:60));if(f.spark){ctx.fillStyle='#fff4c2';ctx.fillRect(f.x,f.y,3,3);}else{ctx.save();ctx.translate(f.x+f.w/2,f.y+h/2);ctx.rotate(f.rot);ctx.fillStyle='hsl('+f.hue+',66%,52%)';tsRR(ctx,-f.w/2,-h/2,f.w,h,3);ctx.fill();ctx.restore();}});ctx.globalAlpha=1;
-  if(tsFlash>0){ctx.globalAlpha=Math.min(1,tsFlash/12);ctx.fillStyle='#ffe07a';ctx.font='bold 22px Tahoma';ctx.textAlign='center';ctx.fillText('PERFECT!',TS_W/2,TS_H*0.32);ctx.globalAlpha=1;ctx.textAlign='left';}
-  if(tsState!=='dead'&&tsSc>0){ctx.save();ctx.shadowColor='#2ad6c8';ctx.shadowBlur=8;ctx.fillStyle='#eafcff';ctx.font='bold 26px Tahoma';ctx.textAlign='center';ctx.fillText(tsSc,TS_W/2,32);ctx.restore();ctx.textAlign='left';}
-  if(tsState==='idle'){
-    ctx.fillStyle='rgba(2,5,12,.6)';ctx.fillRect(0,0,TS_W,TS_H);
-    ctx.textAlign='center';ctx.fillStyle='#2ad6c8';ctx.font='bold 19px Tahoma';ctx.fillText('TOWER STACKER',TS_W/2,TS_H/2-26);
-    ctx.fillStyle='#cfe9ff';ctx.font='bold 14px Tahoma';ctx.fillText('CLICK / SPACE / TAP',TS_W/2,TS_H/2+2);
-    ctx.fillStyle='#9fc6d8';ctx.font='11px Tahoma';ctx.fillText('STACK THE BLOCKS \u2014 LINE THEM UP!',TS_W/2,TS_H/2+24);ctx.textAlign='left';
-  }
-  if(tsState==='dead'){
-    ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,TS_W,TS_H);
-    ctx.textAlign='center';ctx.fillStyle=C.err||'#ff5a6a';ctx.font='bold 22px Tahoma';ctx.fillText('MISSED!',TS_W/2,TS_H/2-26);
-    ctx.fillStyle='#2ad6c8';ctx.font='13px Tahoma';ctx.fillText('LEVEL '+tsSc+'   BEST '+getHi('ts'),TS_W/2,TS_H/2);
-    ctx.fillStyle='#cfe9ff';ctx.font='11px Tahoma';ctx.fillText('CLICK / TAP TO RESTART',TS_W/2,TS_H/2+26);ctx.textAlign='left';
-  }
-}
-function lerpHex(a,b,t){try{var pa=parseInt(a.replace('#',''),16),pb=parseInt(b.replace('#',''),16);var ar=(pa>>16)&255,ag=(pa>>8)&255,ab=pa&255;var br=(pb>>16)&255,bg2=(pb>>8)&255,bb=pb&255;var r=ar+(br-ar)*t|0,g=ag+(bg2-ag)*t|0,bl=ab+(bb-ab)*t|0;return '#'+('0'+r.toString(16)).slice(-2)+('0'+g.toString(16)).slice(-2)+('0'+bl.toString(16)).slice(-2);}catch(e){return a;}}
-if(!window.__tsResize){window.__tsResize=true;window.addEventListener('resize',function(){if(typeof cur!=='undefined'&&cur==='ts')tsFit();});}
-document.addEventListener('click',function(){if(cur==='ts')tsDrop();});
-document.addEventListener('keydown',function(e){if(cur==='ts'&&e.key===' '){e.preventDefault();tsDrop();}});
 
 /* ════════════════ WORDLE ════════════════ */
 var WL=("ABOUT,ABOVE,ACTOR,ADMIT,ADULT,AFTER,AGAIN,AGENT,AGREE,ALARM,ALBUM,ALERT,ALIEN,ALIVE,ALLOW,ALONE,ALONG,ALTER,ANGEL,ANGER,ANGLE,ANKLE,APPLE,ARENA,ARGUE,ASIDE,ASSET,AVOID,AWARD,AWARE,BASIC,BEAST,BEGAN,BEGIN,BEING,BELOW,BIRTH,BLAST,BLOOD,BOARD,BOOST,BOUND,BRAIN,BRAND,BRAVE,BREAD,BREAK,BREED,BRICK,BRIDE,BRIEF,BRING,BROAD,BROKE,BROWN,BRUSH,BUILD,BUILT,BURST,CABIN,CANDY,CARRY,CATCH,CAUSE,CHAIN,CHAIR,CHAOS,CHARM,CHEAP,CHECK,CHESS,CHEST,CHIEF,CHILD,CHINA,CHOSE,CHUNK,CIVIL,CLAIM,CLASS,CLEAN,CLEAR,CLICK,CLIFF,CLIMB,CLOCK,CLONE,CLOSE,CLOUD,COACH,COAST,COUNT,COVER,CRACK,CRANE,CRASH,CREAM,CRIME,CROSS,CROWD,CROWN,CRUEL,CRUSH,CURVE,CYCLE,DAILY,DANCE,DEATH,DELAY,DENSE,DEPTH,DEVIL,DOUBT,DRAFT,DRAIN,DRAMA,DREAM,DRESS,DRIFT,DRINK,DRIVE,DROVE,DROWN,DRUNK,EARLY,EARTH,EIGHT,ELECT,EMPTY,ENEMY,ENTER,EQUAL,ERROR,EVENT,EVERY,EXIST,EXTRA,FAINT,FAITH,FALSE,FANCY,FAULT,FEAST,FENCE,FIELD,FIGHT,FINAL,FIRST,FIXED,FLAME,FLASH,FLESH,FLOAT,FLOOD,FLOOR,FOCUS,FORCE,FORGE,FRAME,FRAUD,FRESH,FRONT,FROST,FRUIT,FUNNY,GIANT,GIVEN,GLASS,GLOBE,GLORY,GLOVE,GRACE,GRADE,GRAIN,GRAND,GRANT,GRASP,GRASS,GREAT,GREEN,GREET,GRIEF,GRIND,GROSS,GROUP,GROVE,GUARD,GUESS,GUIDE,GUILD,HEART,HEAVY,HERBS,HONEY,HONOR,HORSE,HOTEL,HOUSE,HUMAN,HUMOR,HURRY,IMAGE,INDEX,INNER,INPUT,ISSUE,JELLY,JUDGE,JUICE,LABEL,LARGE,LASER,LATER,LAYER,LEARN,LEAST,LEAVE,LEVEL,LIGHT,LIMIT,LOGIC,LUNAR,LUNCH,MAGIC,MATCH,MAYBE,MAYOR,MERIT,METAL,MIGHT,MODEL,MONEY,MONTH,MOUSE,MUSIC,NIGHT,NOBLE,NOISE,NORTH,NOVEL,NURSE,OCEAN,OFFER,OFTEN,ORDER,OTHER,OUTER,PAINT,PANIC,PARTY,PASTA,PAUSE,PEACE,PEARL,PHONE,PHOTO,PLACE,PLAIN,PLANE,PLANT,POINT,POWER,PRESS,PRICE,PRIME,PRINT,PRIZE,PROBE,PROOF,PROUD,PROVE,PUNCH,QUEEN,QUEST,QUICK,QUIET,QUOTE,RADAR,RADIO,RANGE,RAPID,REACH,REALM,REBEL,REPLY,RIDER,RIDGE,RISKY,RIVER,ROBOT,ROCKY,ROUND,ROUGH,ROYAL,RULER,SAINT,SAUCE,SCALE,SCENE,SCOPE,SCORE,SCOUT,SERVE,SEVEN,SHADE,SHAME,SHAPE,SHARE,SHARK,SHARP,SHELF,SHELL,SHIFT,SHINE,SHIRT,SHOCK,SHORE,SHORT,SHOUT,SIGHT,SINCE,SKILL,SLATE,SLOPE,SMART,SMILE,SMOKE,SNAKE,SOLAR,SOLID,SOLVE,SOUND,SOUTH,SPACE,SPEAK,SPEED,SPEND,SPLIT,SPORT,SPRAY,STACK,STAFF,STAGE,STAMP,STAND,STARK,STATE,STEAM,STEEL,STILL,STOCK,STONE,STORM,STORY,STUCK,STUDY,STYLE,SUGAR,SUPER,SWEAT,SWEEP,SWEET,SWIFT,SWING,SWORD,TABLE,TASTE,TEACH,THEME,THERE,THICK,THING,THINK,THORN,THREE,THUMB,TIGER,TIRED,TITLE,TODAY,TOTAL,TOUCH,TOUGH,TOWER,TRACK,TRADE,TRAIL,TRAIN,TREAT,TREND,TRIAL,TRIBE,TRUCK,TRULY,TRUST,TRUTH,TWICE,TWIST,ULTRA,UNDER,UNITE,UNTIL,UPPER,UPSET,URBAN,USUAL,VALUE,VAPOR,VAULT,VIDEO,VIGOR,VIRAL,VIRUS,VISIT,VOICE,VOTER,WASTE,WATER,WEAVE,WEIRD,WHEAT,WHERE,WHILE,WHITE,WHOLE,WORLD,WRATH,YIELD,YOUTH,ZEBRA").split(',');
@@ -1281,7 +1174,7 @@ function pzShowBest(){var b=pzGetBest();var el=document.getElementById('hi-puzzl
   if(crEl){crEl.textContent=String(Math.max(0,99-parseInt(localStorage.getItem('aceon_plays')||'0')));}
 
   var STEPS=[
-    {t:60,   msg:'LOADING GAME ROM  [5 TITLES]',  pct:14, ok:340},
+    {t:60,   msg:'LOADING GAME ROM  [4 TITLES]',  pct:14, ok:340},
     {t:500,  msg:'CHECKING HIGH SCORES...........',  pct:32, ok:280},
     {t:880,  msg:'WARMING UP DISPLAY.............',  pct:55, ok:260},
     {t:1200, msg:'CALIBRATING JOYSTICK...........',  pct:74, ok:240},

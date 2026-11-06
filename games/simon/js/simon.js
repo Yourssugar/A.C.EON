@@ -12,7 +12,7 @@ function hide(id){$(id).classList.add('hidden');}
 var MODES=['classic','duo','daily'],DIFFS=['easy','normal','hard'],THEMES=['neon','retro','space'];
 var ART=new URL('../art/simon/',location.href).href;
 /* картинки от Codex: пока не выложены, false; тогда пульт целиком кодом и лишних запросов нет */
-var ART_READY=false;
+var ART_READY=true;
 var DAILY_TRIES=3;
 
 /* цвета кнопок по темам: [тёмный, светлый] */
@@ -85,10 +85,10 @@ function buildDevice(){
     el('text',{x:0,y:64,'text-anchor':'middle','class':'key'},g).textContent=['Q','W','S','A'][i];
     symEls.push(g);
   }
-  if(ART_READY)el('image',{href:ART+'device_center.webp',x:330,y:330,width:340,height:340},svg);
+  if(ART_READY)el('image',{href:ART+'device_center.webp',x:305,y:305,width:390,height:390},svg);
   else{el('circle',{cx:500,cy:500,r:168,fill:'#0c0c22',stroke:'#00e5ff','stroke-width':5},svg);
     el('circle',{cx:500,cy:500,r:150,fill:'none',stroke:'rgba(140,108,255,.6)','stroke-width':2},svg);}
-  el('circle',{cx:500,cy:500,r:86,fill:'#02020a','class':'screen'},svg);
+  if(!ART_READY)el('circle',{cx:500,cy:500,r:86,fill:'#02020a','class':'screen'},svg);
   screenTxt=el('text',{x:500,y:518,'text-anchor':'middle','class':'scr'},svg);
   paintPads();
 }

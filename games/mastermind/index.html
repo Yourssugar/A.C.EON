@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON MASTERMIND</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="2" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/mastermind.css","kb":10},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"../shared/achievements.js","kb":30},
+  {"src":"js/lang.js","kb":24},
+  {"src":"js/rules.js","kb":5},
+  {"src":"js/mastermind.js","kb":24}
+]}
+</script>
+
+<!-- Обложка загрузки: четыре фишки кода загораются по мере загрузки (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .mm-t{display:flex;gap:10px;}
+    .mm-t i{width:22px;height:22px;border-radius:50%;border:2px solid #2a2a55;background:radial-gradient(circle at 35% 30%,#fff 0 8%,var(--c) 30%,#000 140%);
+      opacity:calc(var(--p) * 4 - var(--k));box-shadow:0 0 10px var(--c);}
+    .mm-n{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .mm-b{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="mm-b">A.C.EON</div>
+  <div class="mm-n">MASTERMIND</div>
+  <div class="mm-t"><i style="--k:0;--c:#ff2d78"></i><i style="--k:1;--c:#00d8f0"></i><i style="--k:2;--c:#1fd47a"></i><i style="--k:3;--c:#ffc83a"></i></div>
+</template>
+</head>
+<body class="screen-menu th-neon">
+
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="t.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <div class="opt-box" id="box-classic">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.preset"></span>
+          <div class="seg" id="seg-preset">
+            <button class="seg-btn" data-v="easy" data-i18n="pr.easy"></button>
+            <button class="seg-btn" data-v="normal" data-i18n="pr.normal"></button>
+            <button class="seg-btn" data-v="hard" data-i18n="pr.hard"></button>
+            <button class="seg-btn" data-v="expert" data-i18n="pr.expert"></button>
+          </div></div>
+        <div class="opt-note" id="preset-note"></div>
+      </div>
+      <div class="opt-box" id="box-duel">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.opp"></span>
+          <div class="seg" id="seg-opp">
+            <button class="seg-btn" data-v="easy" data-i18n="opp.easy"></button>
+            <button class="seg-btn" data-v="normal" data-i18n="opp.normal"></button>
+            <button class="seg-btn" data-v="hard" data-i18n="opp.hard"></button>
+          </div></div>
+        <div class="opt-note" id="opp-note"></div>
+      </div>
+      <div class="opt-note" id="mode-note"></div>
+    </section>
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.opts"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.fb"></span>
+        <div class="seg" id="seg-fb">
+          <button class="seg-btn" data-v="classic" data-i18n="fb.classic"></button>
+          <button class="seg-btn" data-v="pos" data-i18n="fb.pos"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.fb"></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.check"></span>
+        <div class="seg" id="seg-check">
+          <button class="seg-btn" data-v="0" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="2" data-i18n="opt.on"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.check"></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.theme"></span>
+        <div class="seg" id="seg-theme">
+          <button class="seg-btn" data-v="neon" data-i18n="theme.neon"></button>
+          <button class="seg-btn" data-v="wood" data-i18n="theme.wood"></button>
+          <button class="seg-btn" data-v="flat" data-i18n="theme.flat"></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.symbols"></span>
+        <div class="seg" id="seg-sym">
+          <button class="seg-btn" data-v="0" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="2" data-i18n="opt.on"></button>
+        </div></div>
+      <h2 class="m-h m-h2" data-i18n="menu.how"></h2>
+      <div class="how">
+        <div class="how-row"><span class="pins demo"><i class="b"></i></span><span data-i18n="how.b"></span></div>
+        <div class="how-row"><span class="pins demo"><i class="w"></i></span><span data-i18n="how.w"></span></div>
+        <div class="opt-note" data-i18n="how.keys"></div>
+      </div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="over-rows" id="stats"></div>
+    </section>
+  </div>
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+  </div>
+</main>
+
+<main class="t-game" id="game">
+  <div class="hud">
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-cells" id="hud-cells"></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-hint"><span data-i18n="hud.hint"></span></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="arena" id="arena">
+    <div class="msg" id="msg"></div>
+    <div class="boards" id="boards">
+      <div class="bcol" id="col-me">
+        <div class="b-head" id="head-me"></div>
+        <div class="board" id="board-me"></div>
+      </div>
+      <div class="bcol bot hidden" id="col-bot">
+        <div class="b-head" id="head-bot"></div>
+        <img class="bot-img hidden" id="bot-img" alt="">
+        <div class="board small" id="board-bot"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="palette" id="palette"></div>
+      <div class="ctl-row">
+        <button class="btn" id="btn-del">&#9003; <span data-i18n="ctl.del"></span></button>
+        <button class="btn hidden" id="btn-rand" data-i18n="ctl.rand"></button>
+        <button class="btn b-go" id="btn-go"><span data-i18n="ctl.check"></span></button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <img class="over-img hidden" id="over-img" alt="">
+    <div class="over-title" id="over-title"></div>
+    <div class="over-code" id="over-code"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn b-next" id="over-share"><span data-i18n="over.share"></span></button>
+      <button class="btn b-next" id="over-again">&#9654; <span data-i18n="over.again"></span></button>
+      <button class="btn" id="over-board" data-i18n="over.board"></button>
+      <button class="btn" id="over-menu" data-i18n="over.menu"></button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

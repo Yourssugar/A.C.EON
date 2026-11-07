@@ -28,7 +28,7 @@ var NAMES=[
   ['games/aceonium','ACEONIUM'],['games/quiz','KOTAE!'],['games/cyber','БРЕШЬ'],['games/chess','CHESS'],['games/snake','SNAKE'],
   ['games/solitaire','SOLITAIRE'],['games/battleship','BATTLESHIP'],['games','ARCADE'],
   ['Music archive','MUSIC ARCHIVE'],['A.C.EON_Core','CORE'],['info','INFO'],['chat','AI OFFICE'],
-  ['fragment02','LIGURIA'],['idolls','IDOLLS'],['CIPHER','CIPHER'],['astro','A.S.T.R.O'],
+  ['fragment02','LIGURIA'],['idolls','IDOLLS'],['library','БИБЛИОТЕКА'],['CIPHER','CIPHER'],['astro','A.S.T.R.O'],
   ['AI course','AI COURSE'],['layer_00','AI COURSE'],['forge','FORGE'],['Guestbook','GUESTBOOK'],['aceon-coin','A.C.EON COIN'],
   ['LODA','LODA/OEIS'],['home','A.C.EON']
 ];

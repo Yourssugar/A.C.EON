@@ -89,7 +89,6 @@ var GAMES=[
     var stars=0,sv=(d.lv||{}).stars||{};for(var k in sv)stars+=sv[k]|0;
     if(stars)out.push(['s.stars',stars+' / 60']);
     return out;}},
-  /* ещё не переделанные: страница classic/ */
   {id:'wordle',cat:'puzzle',url:'wordle/',color:'#1fd47a',emoji:'🔤',stats:function(){
     var d=load('wordle'),st=d.stats||{},w=Math.max(st.wins||0,parseInt(raw('aceon_wl_wins'),10)||0),out=[];
     if(w)out.push(['s.wins',w]);
@@ -106,7 +105,11 @@ var GAMES=[
     if(w)out.push(['s.wins',w]);
     ['easy','normal','hard'].forEach(function(k){dw+=(du[k]||{}).w||0;});if(dw)out.push(['s.duel',dw]);
     return out;}},
-  {id:'puzzle15',cat:'puzzle',url:'classic/#puzzle',color:'#7dffb0',emoji:'🧩',classic:true,stats:function(){var b=raw('aceon_hi_pz4');return b?[['s.moves',b]]:[];}}
+  {id:'puzzle15',cat:'puzzle',url:'puzzle15/',color:'#7dffb0',emoji:'🧩',stats:function(){
+    var d=load('puzzle15'),st=d.stats||{},b4=((st.by||{})[4]||{}).bestMoves||parseInt(raw('aceon_hi_pz4'),10)||0,out=[];
+    if(st.solved)out.push(['s.solved',st.solved]);
+    if(b4)out.push(['s.moves',b4]);
+    return out;}}
 ];
 var CATS=['all','arcade','puzzle','board','cards'];
 

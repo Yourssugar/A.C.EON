@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Библиотека A.C.EON</title>
+<meta name="description" content="Книжный шкаф A.C.EON: наши повести и истории песен.">
+<meta name="theme-color" content="#060403">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/cormorant-garamond-cyrillic-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/shelf.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="scene" aria-label="Книжный шкаф"></canvas>
+
+<header class="top">
+  <a class="brand" href="../A.C.EON_Core/">
+    <span class="brand-mark">A</span>
+    <span class="brand-text"><span>A.C.EON</span><strong>Библиотека</strong></span>
+  </a>
+  <div class="top-right">
+    <button id="quality" class="chip" type="button">Графика</button>
+    <a class="chip" href="../A.C.EON_Core/">Ядро</a>
+  </div>
+</header>
+
+<div id="loader" class="loader" role="status">Расставляем книги</div>
+
+<div id="intro" class="intro" aria-hidden="true">
+  <h1>Библиотека</h1>
+  <p>Усаживайтесь поудобнее и заварите чай.</p>
+</div>
+
+<footer class="status">
+  <div class="status-text" aria-live="polite">
+    <span id="status-title" class="status-title">Наведите на корешок</span>
+    <span id="status-note" class="status-note">Книги с золотым названием можно открыть</span>
+  </div>
+  <div class="hints">стрелки: выбор / Enter: открыть / Esc: назад</div>
+</footer>
+
+<aside id="card" class="card" aria-hidden="true" aria-labelledby="card-title">
+  <p id="card-kicker" class="card-kicker"></p>
+  <h2 id="card-title" class="card-title"></h2>
+  <div class="card-rule"></div>
+  <div id="card-about" class="card-about"></div>
+  <p id="card-state" class="card-state"></p>
+  <div class="card-actions">
+    <a id="card-read" class="btn btn-main" href="#">Читать</a>
+    <button id="card-close" class="btn btn-ghost" type="button">Вернуть на полку</button>
+  </div>
+</aside>
+
+<nav class="list-wrap" aria-label="Книги библиотеки">
+  <h2 class="list-head">Библиотека A.C.EON</h2>
+  <p class="list-note">3D-шкаф не запустился в этом браузере, книги списком.</p>
+  <ul id="book-list" class="book-list"></ul>
+</nav>
+
+<div class="veil" aria-hidden="true"></div>
+
+<script src="../shared/trace.js"></script>
+<script type="module" src="js/shelf.js"></script>
+</body>
+</html>

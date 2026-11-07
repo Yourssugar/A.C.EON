@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON FLOOD</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="2" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/flood.css","kb":10},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"../shared/achievements.js","kb":30},
+  {"src":"js/lang.js","kb":22},
+  {"src":"js/rules.js","kb":7},
+  {"src":"js/flood.js","kb":22}
+]}
+</script>
+
+<!-- Обложка загрузки: поле 6x6 заливается цветом по мере загрузки (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .fl-t{display:grid;grid-template-columns:repeat(6,14px);gap:2px;}
+    .fl-t i{width:14px;height:14px;background:var(--c);}
+    .fl-t i.f{box-shadow:inset 0 0 0 7px rgba(0,229,255,calc(var(--p) * 12 - var(--k)));}
+    .fl-n{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .fl-b{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="fl-b">A.C.EON</div>
+  <div class="fl-n">FLOOD</div>
+  <div class="fl-t"><i class="f" style="--k:0;--c:#ff2d78"></i><i class="f" style="--k:1;--c:#ffd23a"></i><i class="f" style="--k:2;--c:#ff8a2a"></i><i class="f" style="--k:3;--c:#1fd47a"></i><i class="f" style="--k:4;--c:#8c6cff"></i><i class="f" style="--k:5;--c:#ff2d78"></i><i class="f" style="--k:1;--c:#ffd23a"></i><i class="f" style="--k:2;--c:#ff8a2a"></i><i class="f" style="--k:3;--c:#1fd47a"></i><i class="f" style="--k:4;--c:#8c6cff"></i><i class="f" style="--k:5;--c:#ff2d78"></i><i class="f" style="--k:6;--c:#ffd23a"></i><i class="f" style="--k:2;--c:#ff8a2a"></i><i class="f" style="--k:3;--c:#1fd47a"></i><i class="f" style="--k:4;--c:#8c6cff"></i><i class="f" style="--k:5;--c:#ff2d78"></i><i class="f" style="--k:6;--c:#ffd23a"></i><i class="f" style="--k:7;--c:#ff8a2a"></i><i class="f" style="--k:3;--c:#1fd47a"></i><i class="f" style="--k:4;--c:#8c6cff"></i><i class="f" style="--k:5;--c:#ff2d78"></i><i class="f" style="--k:6;--c:#ffd23a"></i><i class="f" style="--k:7;--c:#ff8a2a"></i><i class="f" style="--k:8;--c:#1fd47a"></i><i class="f" style="--k:4;--c:#8c6cff"></i><i class="f" style="--k:5;--c:#ff2d78"></i><i class="f" style="--k:6;--c:#ffd23a"></i><i class="f" style="--k:7;--c:#ff8a2a"></i><i class="f" style="--k:8;--c:#1fd47a"></i><i class="f" style="--k:9;--c:#8c6cff"></i><i class="f" style="--k:5;--c:#ff2d78"></i><i class="f" style="--k:6;--c:#ffd23a"></i><i class="f" style="--k:7;--c:#ff8a2a"></i><i class="f" style="--k:8;--c:#1fd47a"></i><i class="f" style="--k:9;--c:#8c6cff"></i><i class="f" style="--k:10;--c:#ff2d78"></i></div>
+</template>
+</head>
+<body class="screen-menu th-neon">
+
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="t.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <div class="opt-box" id="box-classic">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.size"></span>
+          <div class="seg" id="seg-size">
+            <button class="seg-btn" data-v="10">10</button><button class="seg-btn" data-v="14">14</button>
+            <button class="seg-btn" data-v="18">18</button><button class="seg-btn" data-v="22">22</button>
+          </div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.colors"></span>
+          <div class="seg" id="seg-colors">
+            <button class="seg-btn" data-v="4">4</button><button class="seg-btn" data-v="5">5</button>
+            <button class="seg-btn" data-v="6">6</button><button class="seg-btn" data-v="7">7</button>
+          </div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.diff"></span>
+          <div class="seg" id="seg-diff">
+            <button class="seg-btn" data-v="easy" data-i18n="diff.easy"></button>
+            <button class="seg-btn" data-v="normal" data-i18n="diff.normal"></button>
+            <button class="seg-btn" data-v="hard" data-i18n="diff.hard"></button>
+          </div></div>
+      </div>
+      <div class="opt-box" id="box-duel">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.opp"></span>
+          <div class="seg" id="seg-opp">
+            <button class="seg-btn" data-v="easy" data-i18n="opp.easy"></button>
+            <button class="seg-btn" data-v="normal" data-i18n="opp.normal"></button>
+            <button class="seg-btn" data-v="hard" data-i18n="opp.hard"></button>
+            <button class="seg-btn" data-v="friend" data-i18n="opp.friend"></button>
+          </div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.field"></span>
+          <div class="seg" id="seg-dsize">
+            <button class="seg-btn" data-v="s" data-i18n="field.s"></button>
+            <button class="seg-btn" data-v="m" data-i18n="field.m"></button>
+            <button class="seg-btn" data-v="l" data-i18n="field.l"></button>
+          </div></div>
+      </div>
+      <div class="opt-note" id="mode-note"></div>
+    </section>
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.opts"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.theme"></span>
+        <div class="seg" id="seg-theme">
+          <button class="seg-btn" data-v="neon" data-i18n="theme.neon"></button>
+          <button class="seg-btn" data-v="paint" data-i18n="theme.paint"></button>
+          <button class="seg-btn" data-v="retro" data-i18n="theme.retro"></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.symbols"></span>
+        <div class="seg" id="seg-sym">
+          <button class="seg-btn" data-v="0" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="2" data-i18n="opt.on"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.symbols"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.how"></h2>
+      <div class="opt-note" id="how"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="over-rows" id="stats"></div>
+    </section>
+  </div>
+  <div class="m-actions">
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+  </div>
+</main>
+
+<main class="t-game" id="game">
+  <div class="hud">
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-cells" id="hud-cells"></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-hint"><span data-i18n="hud.hint"></span></button>
+      <button class="btn" id="btn-undo"><span data-i18n="hud.undo"></span></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="arena" id="arena">
+    <div class="side side-l hidden" id="side-bot"><img class="bot-img hidden" id="bot-img" alt=""><div class="bot-name" id="bot-name"></div></div>
+    <div class="play-col">
+      <div class="msg" id="msg"></div>
+      <div class="bar hidden" id="duel-bar"><i class="b1" id="bar1"></i><i class="b2" id="bar2"></i><b></b></div>
+      <div class="board" id="board"></div>
+      <div class="palette" id="palette"></div>
+      <div class="palette p2 hidden" id="palette2"></div>
+    </div>
+  </div>
+</main>
+
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <img class="over-img hidden" id="over-img" alt="">
+    <div class="over-title" id="over-title"></div>
+    <div class="medal hidden" id="over-medal"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn b-next" id="over-again">&#9654; <span data-i18n="over.again"></span></button>
+      <button class="btn" id="over-board" data-i18n="over.board"></button>
+      <button class="btn" id="over-menu" data-i18n="over.menu"></button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

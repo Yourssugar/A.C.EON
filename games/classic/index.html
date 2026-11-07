@@ -443,32 +443,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 
 
-/* FLOOD-IT */
-#fl-grid{display:inline-grid;gap:1px;background:var(--bdr-d);border:2px solid var(--bdr-d);}
-.fl-cell{width:var(--fl-cell,28px);height:var(--fl-cell,28px);}
-#fl-palette{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
-.fl-sw{width:42px;height:42px;border-radius:9px;cursor:pointer;border:2px solid rgba(255,255,255,.18);
-       transition:transform .1s,box-shadow .1s;box-shadow:0 2px 4px rgba(0,0,0,.3);}
-.fl-sw:hover{transform:scale(1.08);}
-.fl-sw:active{transform:scale(0.94);}
-.fl-sw.cur{outline:3px solid #fff;outline-offset:2px;}
-
-/* MASTERMIND */
-#mm-history{display:flex;flex-direction:column;gap:6px;width:100%;max-width:480px;max-height:min(360px,40vh);overflow-y:auto;margin:0 auto;}
-.mm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 8px;background:var(--bg2);border:1px solid var(--bdr-d);}
-.mm-pegs{display:flex;gap:5px;}
-.mm-peg{width:24px;height:24px;border-radius:50%;border:2px solid rgba(0,0,0,.3);box-shadow:0 1px 2px rgba(0,0,0,.35);flex-shrink:0;cursor:pointer;}
-.mm-peg.empty{background:var(--bg3);border-style:dashed;border-color:var(--bdr);}
-.mm-fb{display:flex;flex-wrap:wrap;gap:3px;width:22px;}
-.mm-fbdot{width:8px;height:8px;border-radius:50%;background:transparent;}
-.mm-fbdot.black{background:#1a1a1a;border:1px solid #555;}
-.mm-fbdot.white{background:#fff;border:1px solid #999;}
-#mm-current{display:flex;gap:8px;justify-content:center;margin:12px 0 8px;}
-#mm-palette{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
-.mm-sw{width:38px;height:38px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.18);
-       transition:transform .1s;box-shadow:0 2px 4px rgba(0,0,0,.3);}
-.mm-sw:hover{transform:scale(1.1);}
-#mm-submit:disabled{opacity:.35;cursor:default;}
 /* 15-PUZZLE */
 #pz-grid{display:inline-grid;gap:4px;padding:6px;background:var(--bg2);border:2px solid var(--bdr);border-radius:6px;}
 .pz-tile{display:flex;align-items:center;justify-content:center;
@@ -488,16 +462,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 
 /* Checkers — richer board, pieces, hints */
 
-/* Flood-It palette swatches */
-.fl-sw{border-color:rgba(0,229,255,.25);border-radius:0;}
-.fl-sw.cur{outline:3px solid #00e5ff;outline-offset:2px;}
 
-/* Mastermind swatches */
-.mm-sw{border-color:rgba(0,229,255,.2);border-radius:0;}
-.mm-peg.empty{background:#001020;border-color:#003355;}
-.mm-row{background:#001020;border-color:#003355;}
-.mm-fbdot.black{background:#1a1a1a;border-color:#444;}
-.mm-fbdot.white{background:#fff;border-color:#999;}
 
 /* 15-Puzzle */
 .pz-tile{background:#001020;border-color:#003355;font-family:'Press Start 2P',monospace;border-radius:0;}
@@ -506,7 +471,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
 .pz-tile.empty{background:#020208;border-color:#001a33;}
 
 /* Message text in game bars — inherit arcade font */
-#sl-msg,#fl-msg,#mm-msg,#pz-msg,#bub-msg,#bs-msg,#ss-msg{
+#sl-msg,#pz-msg,#bub-msg,#bs-msg,#ss-msg{
   font-family:'Press Start 2P',monospace;
   font-size:clamp(6px,1.5vw,9px);
   letter-spacing:1px;
@@ -569,48 +534,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9001;
     <div class="arc-coin">INSERT COIN &nbsp;<span>&#x25CF;</span>&nbsp; CREDITS: <span id="play-cnt">0</span></div>
   </div>
   <div class="game-grid">
-    <div class="game-icon" onclick="openGame('flood')"><span class="ico-pixel">&#127754;</span><span class="ico-label">FLOOD-IT</span></div>
-    <div class="game-icon" onclick="openGame('mind')"><span class="ico-pixel">&#127919;</span><span class="ico-label">MASTERMIND</span></div>
     <div class="game-icon" onclick="openGame('puzzle')"><span class="ico-pixel">&#129513;</span><span class="ico-label">15-PUZZLE</span></div>
   </div>
 </div>
 
 <!-- вторая страница больше не нужна, блок оставлен пустым для старого кода showPage -->
 <div id="launcher-2" class="hidden"></div>
-
-<!-- FLOOD-IT -->
-<div id="game-flood" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">FLOOD-IT</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>MOVES: <span id="fl-mv">0</span> / <span id="fl-max">0</span></span>
-      <span><button class="btn sel" id="flb-easy" onclick="setFloodDiff('easy')">EASY</button><button class="btn" id="flb-med" onclick="setFloodDiff('med')">MED</button><button class="btn" id="flb-hard" onclick="setFloodDiff('hard')">HARD</button></span>
-      <button class="btn" onclick="initFlood()">NEW</button>
-      <span>BEST: <span id="hi-flood">&mdash;</span></span>
-    </div>
-    <div id="fl-msg" style="font-size:11px;letter-spacing:1px;min-height:16px;"></div>
-    <div id="fl-grid"></div>
-    <div id="fl-palette"></div>
-  </div>
-</div>
-
-<!-- MASTERMIND -->
-<div id="game-mind" class="gwin hidden">
-  <div class="gtb"><span class="gtb-t">MASTERMIND</span><div class="gtb-x" onclick="closeGame()">&#10005;</div></div>
-  <div class="garea">
-    <div class="gbar">
-      <span>GUESS: <span id="mm-tries">0</span> / <span id="mm-max">10</span></span>
-      <span><button class="btn sel" id="mmb-easy" onclick="setMindDiff('easy')">EASY</button><button class="btn" id="mmb-med" onclick="setMindDiff('med')">MED</button><button class="btn" id="mmb-hard" onclick="setMindDiff('hard')">HARD</button></span>
-      <button class="btn" onclick="initMind()">NEW</button>
-      <span>WINS: <span id="hi-mind">0</span></span>
-    </div>
-    <div id="mm-msg" style="font-size:11px;letter-spacing:1px;min-height:16px;"></div>
-    <div id="mm-history"></div>
-    <div id="mm-current"></div>
-    <div id="mm-palette"></div>
-    <button class="btn sel" id="mm-submit" onclick="mmSubmit()" disabled>SUBMIT GUESS</button>
-  </div>
-</div>
 
 <!-- 15-PUZZLE -->
 <div id="game-puzzle" class="gwin hidden">
@@ -665,7 +594,7 @@ function gC(){
    to a CSS custom property. The grid/board CSS reads that variable via var(),
    so cells shrink on phones without any change to game logic or click handling. */
 /* ── Dynamic cell fitter — always uses available screen space ── */
-var ARC_MAX={'fl-cell':52,'bs-cell':46};
+var ARC_MAX={'bs-cell':46};
 function fitCells(varName,cols,opts){
   opts=opts||{};
   /* dynamic margin: small fraction of screen width, never more than 48px */
@@ -685,7 +614,6 @@ function fitCells(varName,cols,opts){
 }
 function refitCurrent(){
   /* fitCells is now self-aware — just re-call each game's fit function */
-  if(cur==='flood'&&typeof flN==='number'){fitCells('fl-cell',flN,{min:13,extra:2});renderFlood();}
   if(cur==='puzzle')renderPuzzle();
 }
 var resizeTmr;
@@ -740,7 +668,6 @@ window.openGame=function(id,direct){
   var el=document.getElementById('play-cnt');if(el)el.textContent=cnt;
   var el2=document.getElementById('play-cnt-2');if(el2)el2.textContent=cnt;
   var fn={
-          flood:initFlood,mind:initMind,
           puzzle:initPuzzle};
   /* Show PRESS START — init game only after player clicks */
   if(direct){if(fn[id])fn[id]();setTimeout(refitCurrent,40);return;}
@@ -757,248 +684,6 @@ window.closeGame=function(){
   if(FROM_LINK){location.href='../';return;}
   showPage(wasP2?2:1);
 };
-
-/* ════════════════ FLOOD-IT ════════════════ */
-var FL_COLORS=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22'];
-var flCfg={easy:{n:9,max:18},med:{n:12,max:22},hard:{n:14,max:26}};
-var flDiff='easy',flN,flMax,flGrid,flMoves,flDone;
-
-window.setFloodDiff=function(d){flDiff=d;['easy','med','hard'].forEach(function(x){document.getElementById('flb-'+x).className='btn'+(x===d?' sel':'');});initFlood();};
-
-window.initFlood=function(){
-  var c=flCfg[flDiff];flN=c.n;flMax=c.max;flMoves=0;flDone=false;
-  flGrid=[];
-  for(var r=0;r<flN;r++){flGrid.push([]);for(var cc=0;cc<flN;cc++)flGrid[r].push(Math.random()*FL_COLORS.length|0);}
-  document.getElementById('fl-mv').textContent='0';
-  document.getElementById('fl-max').textContent=flMax;
-  document.getElementById('fl-msg').textContent='';
-  flShowBest();
-  fitCells('fl-cell',flN,{max:34,min:13,extra:2,margin:48});
-  renderFlood();
-  renderFloodPalette();
-};
-
-function flRegion(){
-  var col=flGrid[0][0];
-  var seen=[];for(var i=0;i<flN;i++)seen.push(Array(flN).fill(false));
-  var stack=[[0,0]];seen[0][0]=true;var cells=[[0,0]];
-  while(stack.length){
-    var p=stack.pop(),r=p[0],c=p[1];
-    [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
-      var nr=r+d[0],nc=c+d[1];
-      if(nr>=0&&nr<flN&&nc>=0&&nc<flN&&!seen[nr][nc]&&flGrid[nr][nc]===col){seen[nr][nc]=true;cells.push([nr,nc]);stack.push([nr,nc]);}
-    });
-  }
-  return cells;
-}
-
-window.flPick=function(colorIdx){
-  if(flDone)return;
-  if(colorIdx===flGrid[0][0])return;
-  var cells=flRegion();
-  cells.forEach(function(p){flGrid[p[0]][p[1]]=colorIdx;});
-  flMoves++;
-  document.getElementById('fl-mv').textContent=flMoves;
-  renderFlood();
-  renderFloodPalette();
-  flCheckWin();
-};
-
-function flCheckWin(){
-  var first=flGrid[0][0],allSame=true;
-  for(var r=0;r<flN&&allSame;r++)for(var c=0;c<flN;c++)if(flGrid[r][c]!==first){allSame=false;break;}
-  var m=document.getElementById('fl-msg');
-  if(allSame){
-    flDone=true;
-    flSetBest(flMoves);clWin('flood',flDiff);
-    flShowBest();
-    m.textContent='\u2713 SOLVED IN '+flMoves+' MOVES!';
-    m.style.color='var(--pri-b)';
-  }else if(flMoves>=flMax){
-    flDone=true;
-    m.textContent='OUT OF MOVES \u2014 TRY AGAIN';
-    m.style.color='var(--err)';
-  }
-}
-
-function renderFlood(){
-  var g=document.getElementById('fl-grid');
-  g.style.gridTemplateColumns='repeat('+flN+',var(--fl-cell,28px))';
-  g.innerHTML='';
-  for(var r=0;r<flN;r++)for(var c=0;c<flN;c++){
-    var el=document.createElement('div');
-    el.className='fl-cell';
-    el.style.background=FL_COLORS[flGrid[r][c]];
-    g.appendChild(el);
-  }
-}
-
-function renderFloodPalette(){
-  var p=document.getElementById('fl-palette');
-  p.innerHTML='';
-  FL_COLORS.forEach(function(col,i){
-    var sw=document.createElement('div');
-    sw.className='fl-sw'+(i===flGrid[0][0]?' cur':'');
-    sw.style.background=col;
-    sw.addEventListener('click',function(){flPick(i);});
-    p.appendChild(sw);
-  });
-}
-
-function flGetBest(){var v=localStorage.getItem('aceon_hi_flood');return v?parseInt(v):null;}
-function flSetBest(moves){var b=flGetBest();if(b===null||moves<b)localStorage.setItem('aceon_hi_flood',moves);}
-function flShowBest(){var b=flGetBest();var el=document.getElementById('hi-flood');if(el)el.textContent=b===null?'\u2014':b;}
-
-/* ════════════════ MASTERMIND ════════════════ */
-var MM_COLORS=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c','#ecf0f1'];
-var mmCfg={easy:{len:4,colors:6,max:10},med:{len:5,colors:6,max:10},hard:{len:5,colors:8,max:10}};
-var mmDiff='easy',mmLen,mmColors,mmMax,mmSecret,mmGuess,mmTries,mmOver,mmHistory;
-
-window.setMindDiff=function(d){mmDiff=d;['easy','med','hard'].forEach(function(x){document.getElementById('mmb-'+x).className='btn'+(x===d?' sel':'');});initMind();};
-
-window.initMind=function(){
-  var c=mmCfg[mmDiff];
-  mmLen=c.len;mmColors=c.colors;mmMax=c.max;
-  mmSecret=[];for(var i=0;i<mmLen;i++)mmSecret.push(Math.random()*mmColors|0);
-  mmGuess=Array(mmLen).fill(null);
-  mmTries=0;mmOver=false;mmHistory=[];
-  document.getElementById('mm-tries').textContent='0';
-  document.getElementById('mm-max').textContent=mmMax;
-  var msg=document.getElementById('mm-msg');msg.textContent='';msg.style.color='';
-  renderMindHistory();
-  renderMindCurrent();
-  renderMindPalette();
-  mmUpdateSubmit();
-};
-
-function mmScoreGuess(secret,guess){
-  var black=0,secretLeft=[],guessLeft=[];
-  for(var i=0;i<secret.length;i++){
-    if(guess[i]===secret[i])black++;
-    else{secretLeft.push(secret[i]);guessLeft.push(guess[i]);}
-  }
-  var white=0,used=Array(secretLeft.length).fill(false);
-  guessLeft.forEach(function(g){
-    for(var j=0;j<secretLeft.length;j++){
-      if(!used[j]&&secretLeft[j]===g){used[j]=true;white++;break;}
-    }
-  });
-  return {black:black,white:white};
-}
-
-window.mmPickColor=function(ci){
-  if(mmOver)return;
-  var idx=mmGuess.indexOf(null);
-  if(idx===-1)return;
-  mmGuess[idx]=ci;
-  renderMindCurrent();
-  mmUpdateSubmit();
-};
-
-window.mmClearSlot=function(i){
-  if(mmOver)return;
-  mmGuess[i]=null;
-  renderMindCurrent();
-  mmUpdateSubmit();
-};
-
-function mmUpdateSubmit(){
-  var btn=document.getElementById('mm-submit');
-  if(btn)btn.disabled=mmOver||mmGuess.indexOf(null)!==-1;
-}
-
-window.mmSubmit=function(){
-  if(mmOver||mmGuess.indexOf(null)!==-1)return;
-  var fb=mmScoreGuess(mmSecret,mmGuess);
-  mmHistory.push({guess:mmGuess.slice(),fb:fb});
-  mmTries++;
-  document.getElementById('mm-tries').textContent=mmTries;
-  renderMindHistory();
-  if(fb.black===mmLen){
-    mmOver=true;
-    var wins=parseInt(localStorage.getItem('aceon_mm_wins')||'0')+1;
-    localStorage.setItem('aceon_mm_wins',wins);achLater('mind');
-    document.getElementById('hi-mind').textContent=wins;
-    var m=document.getElementById('mm-msg');
-    m.textContent='\u2713 CRACKED IN '+mmTries+' GUESSES!';m.style.color='var(--pri-b)';
-  }else if(mmTries>=mmMax){
-    mmOver=true;
-    var m2=document.getElementById('mm-msg');
-    m2.textContent='OUT OF GUESSES \u2014 CODE REVEALED BELOW';m2.style.color='var(--err)';
-    renderMindReveal();
-  }else{
-    mmGuess=Array(mmLen).fill(null);
-    renderMindCurrent();
-  }
-  mmUpdateSubmit();
-};
-
-function renderMindReveal(){
-  var row=document.createElement('div');
-  row.className='mm-row';
-  var pegs=document.createElement('div');pegs.className='mm-pegs';
-  mmSecret.forEach(function(ci){
-    var p=document.createElement('div');p.className='mm-peg';p.style.background=MM_COLORS[ci];p.style.cursor='default';pegs.appendChild(p);
-  });
-  row.appendChild(pegs);
-  var lbl=document.createElement('span');lbl.style.fontSize='10px';lbl.style.color='var(--err)';lbl.style.letterSpacing='1px';lbl.textContent='SECRET';
-  row.appendChild(lbl);
-  var hist=document.getElementById('mm-history');
-  hist.appendChild(row);
-  hist.scrollTop=hist.scrollHeight;
-}
-
-function renderMindHistory(){
-  var el=document.getElementById('mm-history');
-  el.innerHTML='';
-  mmHistory.forEach(function(h){
-    var row=document.createElement('div');row.className='mm-row';
-    var pegs=document.createElement('div');pegs.className='mm-pegs';
-    h.guess.forEach(function(ci){
-      var p=document.createElement('div');p.className='mm-peg';p.style.background=MM_COLORS[ci];p.style.cursor='default';pegs.appendChild(p);
-    });
-    row.appendChild(pegs);
-    var fb=document.createElement('div');fb.className='mm-fb';
-    var dots=[];
-    for(var i=0;i<h.fb.black;i++)dots.push('black');
-    for(var i=0;i<h.fb.white;i++)dots.push('white');
-    while(dots.length<mmLen)dots.push('');
-    dots.forEach(function(d){
-      var dot=document.createElement('div');dot.className='mm-fbdot'+(d?' '+d:'');fb.appendChild(dot);
-    });
-    row.appendChild(fb);
-    el.appendChild(row);
-  });
-  el.scrollTop=el.scrollHeight;
-}
-
-function renderMindCurrent(){
-  var el=document.getElementById('mm-current');
-  el.innerHTML='';
-  mmGuess.forEach(function(ci,i){
-    var p=document.createElement('div');
-    p.className='mm-peg'+(ci===null?' empty':'');
-    if(ci!==null)p.style.background=MM_COLORS[ci];
-    p.addEventListener('click',function(){mmClearSlot(i);});
-    el.appendChild(p);
-  });
-}
-
-function renderMindPalette(){
-  var el=document.getElementById('mm-palette');
-  el.innerHTML='';
-  for(var i=0;i<mmColors;i++){
-    (function(i){
-      var sw=document.createElement('div');
-      sw.className='mm-sw';
-      sw.style.background=MM_COLORS[i];
-      sw.addEventListener('click',function(){mmPickColor(i);});
-      el.appendChild(sw);
-    })(i);
-  }
-}
-
-(function(){var el=document.getElementById('hi-mind');if(el)el.textContent=localStorage.getItem('aceon_mm_wins')||'0';})();
 
 /* ════════════════ 15-PUZZLE ════════════════ */
 var pzN=4,pzTiles,pzMoves,pzOver;
@@ -1079,7 +764,7 @@ function pzShowBest(){var b=pzGetBest();var el=document.getElementById('hi-puzzl
   var abar=document.getElementById('assembly-bar');
   var afill=document.getElementById('assembly-bar-fill');
   if(!overlay)return;
-  /* classic/#flood и т.п.: сразу открыть игру */
+  /* classic/#puzzle и т.п.: сразу открыть игру */
   var hashId=(location.hash||'').slice(1);
   if(hashId&&document.getElementById('game-'+hashId)){
     overlay.style.display='none';launchIcons(true);FROM_LINK=true;
@@ -1113,7 +798,7 @@ function pzShowBest(){var b=pzGetBest();var el=document.getElementById('hi-puzzl
   if(crEl){crEl.textContent=String(Math.max(0,99-parseInt(localStorage.getItem('aceon_plays')||'0')));}
 
   var STEPS=[
-    {t:60,   msg:'LOADING GAME ROM  [3 TITLES]',  pct:14, ok:340},
+    {t:60,   msg:'LOADING GAME ROM  [1 TITLES]',  pct:14, ok:340},
     {t:500,  msg:'CHECKING HIGH SCORES...........',  pct:32, ok:280},
     {t:880,  msg:'WARMING UP DISPLAY.............',  pct:55, ok:260},
     {t:1200, msg:'CALIBRATING JOYSTICK...........',  pct:74, ok:240},

@@ -49,6 +49,9 @@ window.CORE_NODES = [
   {id:'idolls', sector:'music', name:'IDOLLS', url:'../idolls/', status:'live', w:2.2,
    tag:{ru:'история песни', en:'song story', de:'Song-Geschichte', fr:'histoire d\'un titre', es:'historia de canción', it:'storia di un brano', pl:'historia piosenki'},
    desc:{ru:'Dark opera: история создания, интерактив.', en:'Dark opera: the making of, interactive.', de:'Dark Opera: die Entstehung, interaktiv.', fr:'Dark opera : la création, en interactif.', es:'Dark opera: cómo se hizo, interactivo.', it:'Dark opera: come è nata, interattivo.', pl:'Dark opera: historia powstania, interaktywnie.'}},
+  {id:'library', sector:'music', name:{ru:'БИБЛИОТЕКА', en:'LIBRARY', de:'BIBLIOTHEK', fr:'BIBLIOTHÈQUE', es:'BIBLIOTECA', it:'BIBLIOTECA', pl:'BIBLIOTEKA'}, url:'../library/', status:'beta', added:'2026-11-07', w:2.4,
+   tag:{ru:'книги студии', en:'studio books', de:'Bücher des Studios', fr:'livres du studio', es:'libros del estudio', it:'libri dello studio', pl:'książki studia'},
+   desc:{ru:'Наши повести и истории песен на книжной полке.', en:'Our novellas and song stories on a bookshelf.', de:'Unsere Novellen und Song-Geschichten im Bücherregal.', fr:'Nos récits et histoires de titres sur une étagère.', es:'Nuestras novelas cortas e historias de canciones en una estantería.', it:'I nostri racconti e le storie dei brani su uno scaffale.', pl:'Nasze opowieści i historie piosenek na półce z książkami.'}},
   {id:'music_soon', sector:'music', status:'soon', w:1.6,
    desc:{ru:'Новая история песни готовится.', en:'A new song story is in the works.', de:'Eine neue Song-Geschichte entsteht.', fr:'Une nouvelle histoire de titre se prépare.', es:'Se prepara una nueva historia de canción.', it:'Una nuova storia di un brano è in arrivo.', pl:'Nowa historia piosenki w przygotowaniu.'}},
 

@@ -16,7 +16,7 @@ var HISTORY_MAX=200,HISTORY_FULL=30;
 Store.define('chess',{
   version:2,
   defaults:{
-    settings:{level:'beginner',theme:'wood',view:'2d',side:'r',blitz:300,lclock:0,rotate:'auto'},
+    settings:{level:'beginner',theme:'wood',view:'2d',side:'r',blitz:300,lclock:0,rotate:'auto',log:true},
     rating:{adaptive:M.START,blitz:null},
     wins:{},history:[],game:null
   },
@@ -916,6 +916,8 @@ function render(anim){
 var QMARK={inacc:'?!',mistake:'?',blunder:'??'};
 function renderLog(){
   var body=$('ch-movelog-body'),h=G.history;
+  $('ch-log-count').textContent=h.length?'('+Math.ceil(h.length/2)+')':'';
+  if(S.log===false)return;
   if(!h.length){body.innerHTML='<div class="mlog-empty">'+t('log.empty')+'</div>';return;}
   function cell(e,cls){
     if(!e)return '<span class="'+cls+'"></span>';
@@ -974,7 +976,13 @@ function onLang(){
 }
 
 /* ── запуск ── */
+/* свернуть или развернуть журнал ходов; выбор запоминается */
+function paintLogToggle(){
+  var on=S.log!==false;$('ch-movelog').classList.toggle('collapsed',!on);$('ch-log-toggle').setAttribute('aria-expanded',on?'true':'false');
+}
 function boot(){
+  $('ch-log-toggle').addEventListener('click',function(){S.log=S.log===false;saveDB();paintLogToggle();if(S.log)renderLog();Sound.sfx('select');});
+  paintLogToggle();
   A.topbar('ch.title');
   Bot.init();
   buildPreview();

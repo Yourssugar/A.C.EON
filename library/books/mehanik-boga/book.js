@@ -18,7 +18,7 @@ export const META = {
 /* Песня на каждую главу: youtube - id ролика, title - подпись на экране радио.
    illustration - картинка на левую страницу перед главой (путь от папки library) или null. */
 export const MEDIA = [
-  { youtube: '3R2NS6yeffs', title: 'Wiegenlied', illustration: null },
+  { youtube: '8NCeS6WIjtA', title: 'Der Mechaniker Gottes', illustration: null },
   { youtube: null, title: null, illustration: null },
   { youtube: null, title: null, illustration: null },
   { youtube: null, title: null, illustration: null },

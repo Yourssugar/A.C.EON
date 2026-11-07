@@ -95,8 +95,17 @@ var GAMES=[
     if(w)out.push(['s.wins',w]);
     var ds=st.daily||{},bs=Math.max((ds.ru||{}).best||0,(ds.en||{}).best||0);if(bs)out.push(['s.streak',bs]);
     return out;}},
-  {id:'flood',cat:'puzzle',url:'classic/#flood',color:'#4aa8ff',emoji:'🌊',classic:true,stats:function(){var b=raw('aceon_hi_flood');return b?[['s.moves',b]]:[];}},
-  {id:'mastermind',cat:'puzzle',url:'classic/#mind',color:'#b06cff',emoji:'🎯',classic:true,stats:function(){var w=raw('aceon_mm_wins');return w?[['s.wins',w]]:[];}},
+  {id:'flood',cat:'puzzle',url:'flood/',color:'#4aa8ff',emoji:'🌊',stats:function(){
+    var d=load('flood'),st=d.stats||{},out=[],du=d.duel||{},w=0;
+    if(st.solved)out.push(['s.solved',st.solved]);
+    ['easy','normal','hard'].forEach(function(k){w+=(du[k]||{}).w||0;});if(w)out.push(['s.won',w]);
+    if(!out.length){var b=raw('aceon_hi_flood');if(b)out.push(['s.moves',b]);}
+    return out;}},
+  {id:'mastermind',cat:'puzzle',url:'mastermind/',color:'#b06cff',emoji:'🎯',stats:function(){
+    var d=load('mastermind'),st=d.stats||{},w=Math.max(st.wins||0,parseInt(raw('aceon_mm_wins'),10)||0),out=[],du=d.duel||{},dw=0;
+    if(w)out.push(['s.wins',w]);
+    ['easy','normal','hard'].forEach(function(k){dw+=(du[k]||{}).w||0;});if(dw)out.push(['s.duel',dw]);
+    return out;}},
   {id:'puzzle15',cat:'puzzle',url:'classic/#puzzle',color:'#7dffb0',emoji:'🧩',classic:true,stats:function(){var b=raw('aceon_hi_pz4');return b?[['s.moves',b]]:[];}}
 ];
 var CATS=['all','arcade','puzzle','board','cards'];

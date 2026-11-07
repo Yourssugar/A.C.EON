@@ -12,6 +12,11 @@
   </url>
 
   <url>
+    <loc>https://yourssugar.github.io/A.C.EON/library/</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
     <loc>https://yourssugar.github.io/A.C.EON/games/cyber/courses/sqli/</loc>
   </url>
 

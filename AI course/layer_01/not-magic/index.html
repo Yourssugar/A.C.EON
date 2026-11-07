@@ -116,17 +116,23 @@
   @keyframes cIn{from{opacity:0;transform:translateY(-16px) rotate(-2deg)}}
   .qn2{font:500 10px var(--mono);letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin-bottom:6px;text-align:center}
 
-  /* две ямы */
-  .pits{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-items:end;margin:4px 0 6px}
-  .pz{border:1px solid transparent;background:none;padding:4px;position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .2s,border-color .2s}
-  .pz img{width:100%;max-width:220px;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
-  .pz span{font:600 11px/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
-  .pz.o span{color:#7fe6ff} .pz.m span{color:var(--green)} .pz.n span{color:var(--amber)}
-  .pz:hover{transform:translateY(-3px);border-color:var(--line)}
+  /* сколько доверия */
+  .pq{max-width:520px;margin:0 auto 14px}
+  .pq > span{display:block;font:500 10px var(--mono);letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin:0 0 6px 4px}
+  .qcard.think{position:relative;border-radius:16px 16px 16px 4px;margin:0;font-style:italic}
+  .pits{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-items:end;margin:4px 0 0}
+  .pz{border:1px solid transparent;background:none;padding:6px 4px;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .2s,border-color .2s,background .2s}
+  .pz img{width:100%;max-width:200px;display:block;margin-bottom:6px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+  .pz .lb{font:700 13px/1.2 var(--sans);text-align:center}
+  .pz small{font-size:12px;line-height:1.3;color:var(--muted);text-align:center}
+  .pz.o .lb{color:#7fe6ff} .pz.m .lb{color:var(--green)} .pz.n .lb{color:var(--amber)}
+  .pz:hover{transform:translateY(-3px);border-color:var(--line);background:rgba(255,255,255,.02)}
   .pz.ok{animation:binok .6s} .pz.bad{animation:shake .45s}
-  .pz b{position:absolute;top:8px;right:8px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:rgba(3,14,20,.9);border:1px solid var(--line-hi);font:600 11px/20px var(--mono);color:#fff}
+  .pz b{position:absolute;top:6px;right:6px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:rgba(3,14,20,.9);border:1px solid var(--line-hi);font:600 11px/20px var(--mono);color:#fff;z-index:1}
+  .tbar{position:relative;display:flex;justify-content:space-between;padding-top:12px;margin:8px 4px 0;font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .tbar i{position:absolute;left:0;right:0;top:0;height:4px;border-radius:2px;background:linear-gradient(90deg,#7fe6ff,var(--green) 50%,var(--amber))}
   .qcard.drop{transition:transform .55s cubic-bezier(.5,0,.8,.4),opacity .55s;opacity:0}
-  @media (max-width:520px){ .pz span{font-size:9px;letter-spacing:.04em} }
+  @media (max-width:520px){ .pz .lb{font-size:12px} .pz small{font-size:11px} .tbar{font-size:9px;letter-spacing:.06em} }
 
   /* две машины */
   .mcIn{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
@@ -378,7 +384,7 @@
 <script src="../../../games/shared/i18n.js?v=1"></script>
 <script src="../../../shared/trace.js?v=1"></script>
 <script src="w02-lang.js?v=1"></script>
-<script src="../../bot.js?v=6"></script>
+<script src="../../bot.js?v=7"></script>
 <script src="w02.js?v=1"></script>
 </body>
 </html>

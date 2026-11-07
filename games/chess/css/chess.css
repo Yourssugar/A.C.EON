@@ -9,7 +9,7 @@ body.screen-game #menu{display:none;}
 /* компьютер: три колонки во всю высоту окна. Боковые колонки прокручиваются сами,
    поэтому их содержимое не растягивает страницу и не увеличивает доску */
 .ch-layout{
-  flex:1;min-height:0;display:flex;gap:14px;padding:12px;
+  flex:0 0 auto;min-height:0;display:flex;gap:14px;padding:12px;
   height:calc(100vh - var(--top-h));height:calc(100dvh - var(--top-h));
 }
 .ch-left{grid-area:left;flex:0 0 240px;width:240px;display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto;}
@@ -122,7 +122,7 @@ body.theme-neon{
 /* журнал ходов */
 #ch-movelog{flex:1;min-height:120px;display:flex;flex-direction:column;overflow:hidden;}
 .mlog-head{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;padding:7px 12px;font-size:8px;letter-spacing:1px;color:#4a7a90;border-bottom:1px solid #001a2e;}
-.mlog-body{flex:1;overflow-y:auto;padding:7px 12px 11px;scrollbar-width:thin;scrollbar-color:#003355 transparent;}
+.mlog-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:7px 12px 11px;scrollbar-width:thin;scrollbar-color:#003355 transparent;}
 .mlog-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;font-size:8px;line-height:2.2;letter-spacing:.5px;}
 .mlog-n{color:#3a6a80;}
 .mlog-w{color:#e6f2ff;}
@@ -553,3 +553,15 @@ body.view-3d #ch-board{visibility:hidden;}
 @media (max-width:1100px){.ch-left .btn{padding-left:6px;padding-right:6px;letter-spacing:1px;}}
 .game-lvl{flex-wrap:wrap;line-height:1.6;}
 .game-lvl>span:first-child{min-width:0;overflow-wrap:anywhere;}
+
+/* журнал ходов можно свернуть: остаётся только заголовок со счётчиком ходов */
+.mlog-toggle{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:none;border:0;border-bottom:1px solid #002a44;
+  font-family:inherit;cursor:pointer;}
+.mlog-toggle:hover{color:#fff;}
+.mlog-arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;transition:transform .15s;}
+.mlog-toggle small{font-size:7px;letter-spacing:1px;color:#4a7a90;display:none;}
+#ch-movelog.collapsed{flex:0 0 auto;min-height:0;}
+#ch-movelog.collapsed .mlog-head,#ch-movelog.collapsed .mlog-body{display:none;}
+#ch-movelog.collapsed .mlog-arrow{transform:rotate(-90deg);}
+#ch-movelog.collapsed .mlog-toggle{border-bottom:0;}
+#ch-movelog.collapsed .mlog-toggle small{display:inline;}

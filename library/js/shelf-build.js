@@ -6,8 +6,9 @@ import { RoundedBoxGeometry } from 'three/addons/RoundedBoxGeometry.js';
 import {
   seeded, toTexture, shade,
   paintTitledSpine, paintPlainSpine, paintCover, paintPlainCover, paintPages,
-  paintWood, paintWallpaper, paintCatalogLabel, paintSoftDot
+  paintWood, paintWallpaper, paintCatalogLabel
 } from './textures.js';
+import { buildTea, buildDust } from './props.js';
 
 export const SHELF_TOP = [0.77, 2.25, 3.77, 5.29];
 const SHELF_Y = [0.62, 2.14, 3.66, 5.18, 6.68];
@@ -76,7 +77,7 @@ export function buildLibrary(scene, profile, books) {
   const tea = buildTeaTable(root, woodDarkCanvas, profile);
   updaters.push(tea.update);
   // пыль строится всегда на максимум, профиль только меняет сколько точек рисовать
-  const dust = buildDust(root, 320);
+  const dust = buildShelfDust(root, 320);
   updaters.push(dust.update);
 
   return { root, interactive, updaters, lamp, dust };
@@ -460,30 +461,9 @@ function buildTeaTable(root, woodCanvas, profile) {
   foot.position.y = 0.03;
   g.add(foot);
 
-  const porcelain = new THREE.MeshStandardMaterial({ color: '#efe6d6', roughness: 0.22, metalness: 0 });
-  const saucer = new THREE.Mesh(new THREE.LatheGeometry([
-    new THREE.Vector2(0, 0), new THREE.Vector2(0.36, 0.0), new THREE.Vector2(0.44, 0.04), new THREE.Vector2(0.45, 0.055), new THREE.Vector2(0.36, 0.03), new THREE.Vector2(0, 0.03)
-  ], 40), porcelain);
-  saucer.position.set(0.15, 2.04, 0.2);
-  saucer.castShadow = true;
-  g.add(saucer);
-  const cupProfile = [
-    new THREE.Vector2(0, 0.03), new THREE.Vector2(0.13, 0.03), new THREE.Vector2(0.15, 0.05), new THREE.Vector2(0.2, 0.18),
-    new THREE.Vector2(0.24, 0.34), new THREE.Vector2(0.245, 0.36), new THREE.Vector2(0.225, 0.36), new THREE.Vector2(0.22, 0.34),
-    new THREE.Vector2(0.18, 0.18), new THREE.Vector2(0.12, 0.07), new THREE.Vector2(0, 0.07)
-  ];
-  const cup = new THREE.Mesh(new THREE.LatheGeometry(cupProfile, 40), porcelain);
-  cup.position.set(0.15, 2.05, 0.2);
-  cup.castShadow = true;
-  g.add(cup);
-  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.022, 10, 24, Math.PI * 1.25), porcelain);
-  handle.position.set(0.15 + 0.25, 2.05 + 0.22, 0.2);
-  handle.rotation.z = -Math.PI * 0.62;
-  g.add(handle);
-  const tea = new THREE.Mesh(new THREE.CircleGeometry(0.21, 32), new THREE.MeshStandardMaterial({ color: '#4a2208', roughness: 0.08 }));
-  tea.rotation.x = -Math.PI / 2;
-  tea.position.set(0.15, 2.05 + 0.31, 0.2);
-  g.add(tea);
+  const tea = buildTea({ scale: 1, steam: profile.steam });
+  tea.group.position.set(0.15, 2.04, 0.2);
+  g.add(tea.group);
   // книга под рукой на столике
   const lying = new THREE.Mesh(bookGeometry(0.16, 0.9, 0.62), new THREE.MeshStandardMaterial({ color: '#2c3a2c', roughness: 0.7 }));
   lying.rotation.set(0, 0.5, Math.PI / 2);
@@ -491,66 +471,11 @@ function buildTeaTable(root, woodCanvas, profile) {
   lying.castShadow = true;
   g.add(lying);
 
-  const dot = toTexture(paintSoftDot(), true);
-  const puffs = [];
-  for (let i = 0; i < profile.steam; i++) {
-    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, color: '#fff3e0', transparent: true, opacity: 0, depthWrite: false }));
-    m.userData.phase = i / profile.steam;
-    m.userData.drift = (seeded(i + 40)() - 0.5) * 0.3;
-    g.add(m);
-    puffs.push(m);
-  }
-  const origin = new THREE.Vector3(0.15, 2.05 + 0.36, 0.2);
-  return {
-    update(dt, t) {
-      for (const p of puffs) {
-        const life = (t * 0.16 + p.userData.phase) % 1;
-        const sway = Math.sin(t * 0.9 + p.userData.phase * 9) * 0.06 * life;
-        p.position.set(origin.x + sway + p.userData.drift * life, origin.y + life * 1.1, origin.z + sway * 0.5);
-        const s = 0.12 + life * 0.42;
-        p.scale.set(s, s, s);
-        p.material.opacity = Math.sin(life * Math.PI) * 0.16;
-      }
-    }
-  };
+  return { update: tea.update };
 }
 
-function buildDust(root, count) {
-  const geo = new THREE.BufferGeometry();
-  const pos = new Float32Array(count * 3);
-  const seedsArr = new Float32Array(count);
-  const r = seeded(77);
-  for (let i = 0; i < count; i++) {
-    pos[i * 3] = -5 + r() * 10;
-    pos[i * 3 + 1] = 0.6 + r() * 6.8;
-    pos[i * 3 + 2] = 0.6 + r() * 3.4;
-    seedsArr[i] = r() * 100;
-  }
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({
-    size: 0.035,
-    map: toTexture(paintSoftDot(32), true),
-    color: '#ffd8a8',
-    transparent: true,
-    opacity: 0.55,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    sizeAttenuation: true
-  });
-  const points = new THREE.Points(geo, mat);
-  root.add(points);
-  const base = pos.slice();
-  return {
-    points,
-    update(dt, t) {
-      if (!points.visible) return;
-      for (let i = 0; i < count; i++) {
-        const s = seedsArr[i];
-        pos[i * 3] = base[i * 3] + Math.sin(t * 0.07 + s) * 0.35;
-        pos[i * 3 + 1] = base[i * 3 + 1] + Math.sin(t * 0.05 + s * 1.7) * 0.25 - ((t * 0.02 + s) % 1) * 0.1;
-        pos[i * 3 + 2] = base[i * 3 + 2] + Math.cos(t * 0.06 + s * 0.6) * 0.3;
-      }
-      geo.attributes.position.needsUpdate = true;
-    }
-  };
+function buildShelfDust(root, count) {
+  const dust = buildDust(count, [-5, 0.6, 0.6, 5, 7.4, 4]);
+  root.add(dust.points);
+  return dust;
 }

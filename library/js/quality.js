@@ -2,9 +2,9 @@
    localStorage 'aceon:site' в поле gfx, чтобы другие страницы могли его прочитать. */
 
 export const PROFILES = {
-  low: { label: 'низкая', pixelRatio: 1, shadows: false, shadowSize: 512, dust: 0, steam: 6, spine: 64, cover: 256 },
-  medium: { label: 'средняя', pixelRatio: 1.5, shadows: true, shadowSize: 1024, dust: 140, steam: 12, spine: 128, cover: 512 },
-  high: { label: 'высокая', pixelRatio: 2, shadows: true, shadowSize: 2048, dust: 320, steam: 18, spine: 128, cover: 1024 }
+  low: { label: 'низкая', pixelRatio: 1, shadows: false, shadowSize: 512, dust: 0, steam: 6, spine: 64, cover: 256, pageTexture: 1024, pageSegments: 14 },
+  medium: { label: 'средняя', pixelRatio: 1.5, shadows: true, shadowSize: 1024, dust: 140, steam: 12, spine: 128, cover: 512, pageTexture: 1536, pageSegments: 22 },
+  high: { label: 'высокая', pixelRatio: 2, shadows: true, shadowSize: 2048, dust: 320, steam: 18, spine: 128, cover: 1024, pageTexture: 2048, pageSegments: 30 }
 };
 
 export const ORDER = ['low', 'medium', 'high'];

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON 15 PUZZLE</title>
+
+<!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
+<script src="../shared/boot.js" data-v="2" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/puzzle15.css","kb":10},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"../shared/achievements.js","kb":30},
+  {"src":"js/lang.js","kb":22},
+  {"src":"js/rules.js","kb":5},
+  {"src":"js/puzzle15.js","kb":24}
+]}
+</script>
+
+<!-- Обложка загрузки: плитки 3x3 встают на места по мере загрузки (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .pz-t{display:grid;grid-template-columns:repeat(3,26px);gap:3px;}
+    .pz-t i{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;color:#fff;
+      background:#0c1a30;border:1px solid #00e5ff;opacity:calc(var(--p) * 8 - var(--k));box-shadow:0 0 6px rgba(0,229,255,.5);}
+    .pz-t i.e{background:none;border:none;box-shadow:none;}
+    .pz-n{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.8);padding-left:.3em;}
+    .pz-b{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
+  </style>
+  <div class="pz-b">A.C.EON</div>
+  <div class="pz-n">15</div>
+  <div class="pz-t"><i style="--k:0">1</i><i style="--k:1">2</i><i style="--k:2">3</i><i style="--k:3">4</i><i style="--k:4">5</i><i style="--k:5">6</i><i style="--k:6">7</i><i style="--k:7">8</i><i class="e"></i></div>
+</template>
+</head>
+<body class="screen-menu th-neon">
+
+<main class="m-menu" id="menu">
+  <div class="m-head">
+    <h1 class="m-title"><span class="m-brand">A.C.EON</span><span data-i18n="t.title"></span></h1>
+    <div class="m-sub" data-i18n="menu.sub"></div>
+  </div>
+  <div class="m-cols">
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.mode"></h2>
+      <div class="mode-list" id="mode-list"></div>
+      <div class="opt-box" id="box-classic">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="opt.size"></span>
+          <div class="seg" id="seg-size">
+            <button class="seg-btn" data-v="3">3x3</button><button class="seg-btn" data-v="4">4x4</button>
+            <button class="seg-btn" data-v="5">5x5</button><button class="seg-btn" data-v="6">6x6</button>
+          </div></div>
+      </div>
+      <div class="opt-note" id="mode-note"></div>
+    </section>
+    <section class="m-card">
+      <h2 class="m-h" data-i18n="menu.opts"></h2>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.look"></span>
+        <div class="seg" id="seg-look">
+          <button class="seg-btn" data-v="num" data-i18n="look.num"></button>
+          <button class="seg-btn" data-v="pic" data-i18n="look.pic"></button>
+        </div></div>
+      <div class="pics" id="pics"></div>
+      <div class="opt-row" id="row-nums"><span class="opt-lbl" data-i18n="opt.nums"></span>
+        <div class="seg" id="seg-nums">
+          <button class="seg-btn" data-v="0" data-i18n="opt.off"></button>
+          <button class="seg-btn" data-v="2" data-i18n="opt.on"></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.theme"></span>
+        <div class="seg" id="seg-theme">
+          <button class="seg-btn" data-v="neon" data-i18n="theme.neon"></button>
+          <button class="seg-btn" data-v="wood" data-i18n="theme.wood"></button>
+          <button class="seg-btn" data-v="flat" data-i18n="theme.flat"></button>
+        </div></div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.keys"></span>
+        <div class="seg" id="seg-inv">
+          <button class="seg-btn" data-v="0" data-i18n="keys.tile"></button>
+          <button class="seg-btn" data-v="2" data-i18n="keys.gap"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.keys"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
+      <div class="over-rows" id="stats"></div>
+    </section>
+  </div>
+  <div class="m-actions">
+    <button class="btn m-cont hidden" id="btn-cont">&#9654; <span data-i18n="menu.cont"></span></button>
+    <button class="btn m-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
+  </div>
+</main>
+
+<main class="t-game" id="game">
+  <div class="hud">
+    <div class="hud-mode" id="hud-mode"></div>
+    <div class="hud-cells" id="hud-cells"></div>
+    <div class="hud-btns">
+      <button class="btn" id="btn-hint"><span data-i18n="hud.hint"></span></button>
+      <button class="btn" id="btn-peek"><span data-i18n="hud.peek"></span></button>
+      <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="arena" id="arena">
+    <div class="msg" id="msg"></div>
+    <div class="board" id="board"><div class="peek hidden" id="peek"></div></div>
+  </div>
+</main>
+
+<div class="arc-modal hidden over-modal" id="over-modal">
+  <div class="arc-box over-box">
+    <img class="over-img hidden" id="over-img" alt="">
+    <div class="over-title" id="over-title"></div>
+    <div class="medal hidden" id="over-medal"></div>
+    <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
+    <div class="over-rows" id="over-rows"></div>
+    <div class="over-btns">
+      <button class="btn b-next" id="over-again">&#9654; <span data-i18n="over.again"></span></button>
+      <button class="btn" id="over-board" data-i18n="over.board"></button>
+      <button class="btn" id="over-menu" data-i18n="over.menu"></button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

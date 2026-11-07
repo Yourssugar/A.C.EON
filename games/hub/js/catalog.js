@@ -90,7 +90,11 @@ var GAMES=[
     if(stars)out.push(['s.stars',stars+' / 60']);
     return out;}},
   /* ещё не переделанные: страница classic/ */
-  {id:'wordle',cat:'puzzle',url:'classic/#wordle',color:'#ffd23a',emoji:'🔤',classic:true,stats:function(){var w=raw('aceon_wl_wins');return w?[['s.wins',w]]:[];}},
+  {id:'wordle',cat:'puzzle',url:'wordle/',color:'#1fd47a',emoji:'🔤',stats:function(){
+    var d=load('wordle'),st=d.stats||{},w=Math.max(st.wins||0,parseInt(raw('aceon_wl_wins'),10)||0),out=[];
+    if(w)out.push(['s.wins',w]);
+    var ds=st.daily||{},bs=Math.max((ds.ru||{}).best||0,(ds.en||{}).best||0);if(bs)out.push(['s.streak',bs]);
+    return out;}},
   {id:'flood',cat:'puzzle',url:'classic/#flood',color:'#4aa8ff',emoji:'🌊',classic:true,stats:function(){var b=raw('aceon_hi_flood');return b?[['s.moves',b]]:[];}},
   {id:'mastermind',cat:'puzzle',url:'classic/#mind',color:'#b06cff',emoji:'🎯',classic:true,stats:function(){var w=raw('aceon_mm_wins');return w?[['s.wins',w]]:[];}},
   {id:'puzzle15',cat:'puzzle',url:'classic/#puzzle',color:'#7dffb0',emoji:'🧩',classic:true,stats:function(){var b=raw('aceon_hi_pz4');return b?[['s.moves',b]]:[];}}

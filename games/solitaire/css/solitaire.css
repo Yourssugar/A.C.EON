@@ -256,3 +256,98 @@ body.art .cb-red{background-image:url(../../art/cardgames/back_red.webp);}
 body.art .cb-blue{background-image:url(../../art/cardgames/back_blue.webp);}
 .win-img{display:block;width:130px;height:130px;object-fit:contain;margin:-14px auto -4px;}
 .win-img.hidden{display:none;}
+
+/* ════════ 21 ════════ */
+body.screen-bj #menu,body.screen-bj #game{display:none;}
+body:not(.screen-bj) #bj{display:none;}
+.bj-game{flex:1 0 auto;display:flex;flex-direction:column;}
+.bj-wrap{display:flex;flex-direction:column;}
+.bj-table{--cw:72px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:10px;padding:14px 10px 10px;min-height:calc(100vh - var(--top-h) - 140px);}
+.bj-dealer{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.bj-who{display:flex;align-items:center;gap:8px;justify-content:center;}
+.bj-name{font-size:8px;letter-spacing:2px;color:#cfe6f2;text-shadow:0 1px 2px #000;}
+.bj-tot{font-weight:normal;font-size:11px;color:#fff;padding:4px 9px;border-radius:999px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15);min-width:2ch;text-align:center;}
+.bj-tot:empty{display:none;}
+.bj-ava{width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.25);background:#0a1020;display:inline-block;}
+.bj-ava.big{width:56px;height:56px;}
+.bj-ava img{width:100%;height:100%;object-fit:cover;display:block;}
+.bj-ava-f{display:block;width:100%;height:100%;background:radial-gradient(circle at 50% 40%,var(--c) 0 22%,#0a1020 23%);}
+.bj-c0{--c:#ffd23a;}.bj-c1{--c:#2ee87a;}.bj-c2{--c:#b18cff;}.bj-c3{--c:#4fb8ff;}.bj-c4{--c:#ff8a2a;}.bj-c5{--c:#ff2d78;}.bj-c6{--c:#ff3344;}
+.bj-hand{display:flex;justify-content:center;min-height:calc(var(--cw) * 1.4);padding-right:calc(var(--cw) * .62);}
+.bj-card{position:relative;width:var(--cw);height:calc(var(--cw) * 1.4);border-radius:calc(var(--cw) * .07);margin-right:calc(var(--cw) * -.62);
+  box-shadow:0 2px 6px rgba(0,0,0,.5);flex-shrink:0;}
+.bj-card.up{background:linear-gradient(160deg,#fffdf6,#f1ead8);border:1px solid #cfc6ad;}
+.bj-card .cf{position:absolute;left:0;top:0;width:100%;height:100%;display:block;}
+.bj-card.in{animation:bjIn .32s cubic-bezier(.25,.8,.3,1);}
+@keyframes bjIn{from{transform:translate(40vw,-40vh) rotate(25deg);opacity:0;}to{transform:none;opacity:1;}}
+.bj-msg{min-height:22px;text-align:center;font-size:clamp(8px,2vw,11px);letter-spacing:1px;line-height:1.6;color:#fff;text-shadow:0 1px 3px #000;padding:6px 14px;
+  border-radius:999px;background:rgba(0,0,0,.35);}
+.bj-msg:empty{background:none;}
+.bj-msg.good{color:#7dffa0;}.bj-msg.bad{color:#ff8a95;}
+.bj-seats{display:flex;justify-content:center;align-items:flex-end;gap:clamp(10px,3vw,34px);width:100%;flex-wrap:nowrap;}
+.bj-seat{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 8px 10px;border-radius:16px;border:1px solid transparent;transition:border-color .2s,background .2s;min-width:0;}
+.bj-seat:not(.me){--cw:var(--cwb,52px);}
+.bj-seat.turn{border-color:rgba(111,227,242,.45);background:rgba(0,229,255,.06);}
+.bj-hands{display:flex;gap:14px;align-items:flex-end;}
+.bj-hand-w{display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px;border-radius:12px;}
+.bj-hand-w.act{box-shadow:0 0 0 2px #ffd23a;}
+.bj-hand-w.bust .bj-card{filter:brightness(.6);}
+.bj-under{display:flex;gap:6px;align-items:center;min-height:22px;}
+.bj-res{font-size:8px;letter-spacing:1px;padding:4px 8px;border-radius:999px;}
+.r-win{background:#1fae5c;color:#fff;}.r-loss{background:#a3172a;color:#fff;}.r-push{background:#555c70;color:#fff;}
+.bj-ctl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:rgba(2,10,20,.86);border-top:1px solid var(--soft-d);}
+.bj-ctl .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 18px;font-size:10px;}
+.bj-ctl .btn.hidden{display:none;}
+.bj-ctl .btn:disabled{opacity:.35;cursor:default;}
+.bj-ctl small{font-size:7px;color:#5f8fa6;}
+.bj-act{min-width:110px;justify-content:center;border-color:var(--soft);}
+.bj-deal{border-color:#2ee87a;color:#fff;background:linear-gradient(180deg,rgba(20,110,60,.7),rgba(10,50,30,.85));}
+.bj-st2{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:8px;letter-spacing:1px;color:#6a93a8;margin-top:6px;line-height:1.8;}
+.bj-st2 b{font-weight:normal;color:#fff;}
+@media (max-width:560px){.bj-ctl .btn{padding:12px 12px;}.bj-act{min-width:0;flex:1 1 0;}.bj-ctl small{display:none;}.bj-seats{gap:6px;}.bj-seat{padding:6px 4px;}}
+/* 21 на телефоне: кнопка меню в одной строке со счётом */
+@media (max-width:700px){
+  #bj .hud{flex-wrap:nowrap;}
+  #bj .hud-cell{padding:5px 6px;gap:4px;min-width:0;}
+  #bj .hud-cell{flex:1 1 0;justify-content:center;}
+  #bj .hud-cell span{font-size:6px;letter-spacing:0;white-space:nowrap;overflow:hidden;}
+  #bj .hud-btns{width:auto;margin-left:auto;flex:0 0 auto;}
+  #bj .hud-btns .btn{padding:8px 10px;}
+}
+/* 21 узко с 2-3 ботами: боты строкой сверху, игрок отдельно снизу */
+.bj-narrow .bj-seats{flex-wrap:wrap;gap:8px 4px;align-items:flex-start;}
+.bj-narrow .bj-seat:not(.me){flex:1 1 0;padding:4px 2px 6px;gap:5px;}
+.bj-narrow .bj-seat.me{order:9;flex:0 0 100%;}
+.bj-narrow .bj-seat:not(.me) .bj-card{margin-right:calc(var(--cw) * -.7);}
+.bj-narrow .bj-seat:not(.me) .bj-hand{padding-right:calc(var(--cw) * .7);}
+.bj-narrow .bj-seat:not(.me) .bj-who{flex-direction:column;gap:3px;}
+.bj-narrow .bj-seat:not(.me) .bj-ava{width:30px;height:30px;}
+.bj-narrow .bj-seat:not(.me) .bj-name{font-size:7px;letter-spacing:1px;text-align:center;max-width:100%;}
+.bj-narrow .bj-seat:not(.me) .bj-under{flex-direction:column;gap:3px;min-height:0;}
+.bj-narrow .bj-seat:not(.me) .bj-res{font-size:7px;padding:3px 6px;}
+.bj-narrow .bj-seat:not(.me) .bj-tot{font-size:9px;padding:3px 7px;}
+.bj-narrow .bj-seat:not(.me) .bj-hand-w{padding:2px;}
+.bj-narrow .bj-seat.me .bj-who{display:none;}
+/* узкий экран: кнопки в одну строку, у подсказки только знак */
+@media (max-width:420px){
+  .bj-ctl{gap:5px;padding-left:5px;padding-right:5px;flex-wrap:nowrap;}
+  .bj-ctl .btn{margin:0;box-sizing:border-box;min-width:0;}
+  .bj-ctl .btn{font-size:8px;letter-spacing:.5px;padding:12px 6px;}
+  .bj-hint{flex:0 0 auto;padding:12px 12px !important;}
+  .bj-hint span{display:none;}
+  .bj-deal{flex:1 1 auto;justify-content:center;}
+}
+/* кнопки 21 всегда на экране */
+.bj-ctl{position:sticky;bottom:0;z-index:5;}
+/* телефон боком: без имён, плотнее */
+@media (max-height:500px){
+  .bj-table{min-height:0;padding:6px 8px;gap:4px;}
+  .bj-dealer{flex-direction:row;gap:12px;}
+  .bj-ava.big{width:36px;height:36px;}
+  .bj-seat{padding:3px 6px;gap:3px;}
+  .bj-seat .bj-name{display:none;}
+  .bj-seat .bj-ava{width:24px;height:24px;}
+  .bj-msg{padding:4px 12px;}
+  .bj-ctl{padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom));}
+  .bj-ctl .btn{padding:9px 14px;}
+}

@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<title>A.C.EON SOLITAIRE</title>
+<title>A.C.EON CARDS</title>
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="7" defer></script>
+<script src="../shared/boot.js" data-v="8" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -20,7 +20,9 @@
   {"src":"js/lang.js","kb":18},
   {"src":"js/cards.js","kb":6},
   {"src":"js/rules.js","kb":14},
-  {"src":"js/solitaire.js","kb":28}
+  {"src":"js/solitaire.js","kb":28},
+  {"src":"js/bjrules.js","kb":4},
+  {"src":"js/blackjack.js","kb":14}
 ]}
 </script>
 
@@ -36,7 +38,7 @@
     .bs-brand{font-size:9px;letter-spacing:.5em;color:#ff2d78;text-shadow:0 0 10px #ff2d78;padding-left:.5em;margin-bottom:-14px;}
   </style>
   <div class="bs-brand">A.C.EON</div>
-  <div class="bs-title">SOLITAIRE</div>
+  <div class="bs-title">CARDS</div>
   <div class="bs-fan"><i style="--t:0">&#9824;</i><i style="--t:.25">&#9829;</i><i style="--t:.5">&#9827;</i><i style="--t:.75">&#9830;</i></div>
 </template>
 </head>
@@ -69,7 +71,15 @@
           </div></div>
       </div>
       <div class="opt hidden" id="opt-freecell"><div class="opt-note" data-i18n="opt.freecellNote"></div></div>
-      <div class="opt">
+      <div class="opt hidden" id="opt-blackjack">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="bj.rules"></span>
+          <div class="seg" id="seg-bjrules"><button class="seg-btn" data-v="bj" data-i18n="bj.kind.bj"></button><button class="seg-btn" data-v="ochko" data-i18n="bj.kind.ochko"></button></div></div>
+        <div class="opt-note" id="bj-rules-note"></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="bj.bots"></span>
+          <div class="seg" id="seg-bjbots"><button class="seg-btn" data-v="0">0</button><button class="seg-btn" data-v="1">1</button><button class="seg-btn" data-v="2">2</button><button class="seg-btn" data-v="3">3</button></div></div>
+        <div class="opt-note" data-i18n="bj.botsNote"></div>
+      </div>
+      <div class="opt" id="opt-tap">
         <div class="opt-row"><span class="opt-lbl" data-i18n="opt.tap"></span>
           <div class="seg" id="seg-tap"><button class="seg-btn" data-v="select" data-i18n="tap.select"></button><button class="seg-btn" data-v="auto" data-i18n="tap.auto"></button></div></div>
         <div class="opt-note" id="tap-note"></div>
@@ -135,6 +145,33 @@
     <button class="btn" id="stuck-new" data-i18n="hud.new"></button>
   </div>
   <div class="table-wrap"><div class="table" id="table"></div></div>
+</main>
+
+<!-- ════════ 21 ════════ -->
+<main class="bj-game" id="bj">
+  <div class="hud">
+    <div class="hud-title"><b id="bj-title"></b><span id="bj-shoe"></span></div>
+    <div class="hud-cell"><span data-i18n="bj.st.win"></span><b id="bj-w">0</b></div>
+    <div class="hud-cell"><span data-i18n="bj.st.loss"></span><b id="bj-l">0</b></div>
+    <div class="hud-cell"><span data-i18n="bj.st.push"></span><b id="bj-p">0</b></div>
+    <div class="hud-btns">
+      <button class="btn" id="bj-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="table-wrap bj-wrap">
+    <div class="bj-table" id="bj-table">
+      <div class="bj-dealer" id="bj-dealer"></div>
+      <div class="bj-msg" id="bj-msg"></div>
+      <div class="bj-seats" id="bj-seats"></div>
+    </div>
+  </div>
+  <div class="bj-ctl" id="bj-ctl">
+    <button class="btn bj-act" id="bj-hit"><span data-i18n="bj.hit"></span><small>H</small></button>
+    <button class="btn bj-act" id="bj-stand"><span data-i18n="bj.stand"></span><small>S</small></button>
+    <button class="btn bj-act" id="bj-split"><span data-i18n="bj.split"></span><small>P</small></button>
+    <button class="btn bj-hint" id="bj-hintb">? <span data-i18n="hud.hint"></span></button>
+    <button class="btn bj-deal hidden" id="bj-deal">&#9654; <span data-i18n="bj.deal"></span><small>ENTER</small></button>
+  </div>
 </main>
 
 <!-- победа -->

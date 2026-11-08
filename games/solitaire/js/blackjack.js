@@ -197,10 +197,13 @@ function cardHtml(c,down,fresh){
 var shown={};   /* сколько карт уже нарисовано в каждой руке: новые прилетают с анимацией */
 function handHtml(key,cards,hideFrom){
   var n=shown[key]||0,h='';
+  var mode=hideFrom===0?'c':'o';if(shown[key+'m']&&shown[key+'m']!==mode)n=cards.length;shown[key+'m']=mode;
   cards.forEach(function(c,i){h+=cardHtml(c,hideFrom!=null&&i>=hideFrom,i>=n);});
   shown[key]=cards.length;
   return h;
 }
+/* в очко карты соперников закрыты до конца раунда, в блэкджеке все карты игроков открыты, как в казино */
+function hidden(seat){return !seat.me&&B.kind==='ochko'&&B.phase!=='done';}
 function totalTxt(cards,hideFrom){
   if(!cards.length)return '';
   var vis=hideFrom!=null?cards.slice(0,hideFrom):cards;
@@ -233,13 +236,13 @@ function paint(){
   $('bj-dt').textContent=totalTxt(B.dealer,hf);
   B.seats.forEach(function(seat,i){
     var el=$('bj-s'+i);el.classList.toggle('turn',i===B.turn&&(B.phase==='play'));
-    var h='';
+    var h='',closed=hidden(seat);
     seat.hands.forEach(function(hd,j){
       var act=i===B.turn&&j===B.hi&&B.phase==='play'&&seat.hands.length>1;
       var res=hd.res?'<span class="bj-res r-'+hd.res+'">'+t('bj.r.'+hd.res)+'</span>':'';
-      var bust=R.bust(B.kind,hd.cards)?' bust':'';
-      h+='<div class="bj-hand-w'+(act?' act':'')+bust+'"><div class="bj-hand">'+handHtml(i+'-'+j,hd.cards,null)+'</div>'+
-        '<div class="bj-under"><b class="bj-tot">'+totalTxt(hd.cards,null)+'</b>'+res+'</div></div>';
+      var bust=!closed&&R.bust(B.kind,hd.cards)?' bust':'';
+      h+='<div class="bj-hand-w'+(act?' act':'')+bust+'"><div class="bj-hand">'+handHtml(i+'-'+j,hd.cards,closed?0:null)+'</div>'+
+        '<div class="bj-under"><b class="bj-tot">'+(closed?(hd.cards.length?'?':''):totalTxt(hd.cards,null))+'</b>'+res+'</div></div>';
     });
     $('bj-hs'+i).innerHTML=h;
   });
@@ -271,10 +274,14 @@ function layout(){
     cw=Math.floor(Math.min(84,(w-20)/3.4,hgt/5.6));cw=Math.max(34,cw);
     cwb=Math.floor(Math.min(cw*0.72,((w-16)/bots-14)/2.2));cwb=Math.max(24,cwb);
   }else{
-    /* рука игрока около 2.4 ширины карты, у ботов карты в 0.72 раза меньше */
-    cw=Math.floor(Math.min(96,(w-20-bots*24)/(2.6+bots*0.72*2.4),hgt/4.6));
-    cw=Math.max(34,cw);cwb=Math.max(26,Math.round(cw*0.72));
+    /* по ширине: рука игрока около 2.6 ширины карты, у ботов 0.8 от неё;
+       по высоте: две руки карт (дилер и места) плюс портреты, подписи и сообщение */
+    var hh=(window.innerHeight||600)-tb.getBoundingClientRect().top-80;
+    cw=Math.floor(Math.min(150,(w-20-bots*28)/(2.6+bots*0.8*2.4),(hh-285)/2.85));
+    cw=Math.max(34,cw);cwb=Math.max(26,Math.round(cw*0.8));
   }
+  var ava=narrow?40:Math.round(Math.max(40,Math.min(76,cw*0.6)));
+  tb.style.setProperty('--ava',ava+'px');
   tb.style.setProperty('--cw',cw+'px');tb.style.setProperty('--cwb',cwb+'px');
 }
 window.addEventListener('resize',function(){setTimeout(layout,60);});

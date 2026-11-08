@@ -11,9 +11,9 @@ var $=function(id){return document.getElementById(id);};
 function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
 
-var GAMES=['klondike','spider','freecell','blackjack'];
+var GAMES=['klondike','spider','freecell','blackjack','durak'];
 /* группы в списке игр: сюда будут добавляться 21, дурак, червы, восьмёрки */
-var GROUPS=[{key:'grp.patience',games:['klondike','spider','freecell']},{key:'grp.dealer',games:['blackjack']}];
+var GROUPS=[{key:'grp.patience',games:['klondike','spider','freecell']},{key:'grp.dealer',games:['blackjack']},{key:'grp.bots',games:['durak']}];
 /* картинки от Codex (фон, сукно, рубашки, значки игр): пока не выложены, false; тогда всё рисуется кодом */
 var ART_READY=true,ART=new URL('../art/cardgames/',location.href).href;
 var UNDO_MAX=400,UNDO_SAVE=25;
@@ -21,8 +21,9 @@ var UNDO_MAX=400,UNDO_SAVE=25;
 /* ── сохранения ── */
 Store.define('solitaire',{
   version:1,
-  defaults:{settings:{game:'klondike',draw:1,redeals:'inf',suits:1,table:'felt',back:'aceon',auto:true,tap:'select',cards:'std',bjRules:'bj',bjBots:2},stats:{},save:null,
-    bj:{bj:{hands:0,win:0,loss:0,push:0,nat:0,streak:0,best:0},ochko:{hands:0,win:0,loss:0,push:0,nat:0,streak:0,best:0}}},
+  defaults:{settings:{game:'klondike',draw:1,redeals:'inf',suits:1,table:'felt',back:'aceon',auto:true,tap:'select',cards:'std',bjRules:'bj',bjBots:2,dkMode:'podk',dkBots:2,dkLevel:'normal'},stats:{},save:null,
+    bj:{bj:{hands:0,win:0,loss:0,push:0,nat:0,streak:0,best:0},ochko:{hands:0,win:0,loss:0,push:0,nat:0,streak:0,best:0}},
+    dk:{podk:{games:0,win:0,fool:0,draw:0,first:0,streak:0,best:0},perev:{games:0,win:0,fool:0,draw:0,first:0,streak:0,best:0}}},
   legacy:function(raw){
     var hi=parseInt(raw('aceon_hi_soli'),10)||0;
     return hi?{stats:{'klondike-d1':{played:0,won:0,bestScore:hi}}}:null;
@@ -86,6 +87,7 @@ function buildGames(){
 function fmt(ms){if(ms==null)return '-';var s=Math.round(ms/1000);return Math.floor(s/60)+':'+('0'+s%60).slice(-2);}
 function buildStats(){
   if(S.game==='blackjack'&&window.BJ){BJ.stats($('stats'));return;}
+  if(S.game==='durak'&&window.DK){DK.stats($('stats'));return;}
   var rows=[['klondike-d1','game.klondike',' / 1'],['klondike-d3','game.klondike',' / 3'],['spider-1','game.spider',' / 1'],
             ['spider-2','game.spider',' / 2'],['spider-4','game.spider',' / 4'],['freecell','game.freecell','']];
   var h='<div class="st-row st-head"><span></span><span data-i18n="st.won"></span><span data-i18n="st.time"></span><span data-i18n="st.best"></span></div>';
@@ -109,10 +111,11 @@ function preview(){
 }
 function paintMenu(){
   buildGames();buildStats();preview();
-  ['klondike','spider','freecell','blackjack'].forEach(function(g){$('opt-'+g).classList.toggle('hidden',S.game!==g);});
-  var isBJ=S.game==='blackjack';
+  ['klondike','spider','freecell','blackjack','durak'].forEach(function(g){$('opt-'+g).classList.toggle('hidden',S.game!==g);});
+  var isBJ=S.game==='blackjack'||S.game==='durak';
   $('opt-tap').classList.toggle('hidden',isBJ);
   if(window.BJ)BJ.paintMenu();
+  if(window.DK)DK.paintMenu();
   [['tap',S.tap],['draw',String(S.draw)],['redeals',S.redeals],['suits',String(S.suits)],['auto',S.auto?'on':'off'],['table',S.table],['back',S.back],['cards',S.cards]].forEach(function(x){
     document.querySelectorAll('#seg-'+x[0]+' .seg-btn').forEach(function(b){b.classList.toggle('sel',b.dataset.v===x[1]);});
   });
@@ -126,7 +129,7 @@ function paintMenu(){
 function showScreen(name){
   document.body.classList.toggle('screen-menu',name==='menu');
   document.body.classList.toggle('screen-game',name==='game');
-  document.body.classList.remove('screen-bj');
+  document.body.classList.remove('screen-bj','screen-dk');
   if(name==='menu'){stopClock();paintMenu();}
   Sound.music(name==='menu'?'menu':'game');
   window.scrollTo(0,0);
@@ -638,7 +641,7 @@ function boot(){
   bindSeg('back',function(v){S.back=v;});
   bindSeg('cards',function(v){S.cards=v;});
   bindTable();
-  $('btn-play').addEventListener('click',function(){if(S.game==='blackjack'&&window.BJ)BJ.start();else newGame();});
+  $('btn-play').addEventListener('click',function(){if(S.game==='blackjack'&&window.BJ)BJ.start();else if(S.game==='durak'&&window.DK)DK.start();else newGame();});
   $('btn-continue').addEventListener('click',resume);
   $('btn-menu').addEventListener('click',function(){showScreen('menu');});
   $('btn-undo').addEventListener('click',undo);

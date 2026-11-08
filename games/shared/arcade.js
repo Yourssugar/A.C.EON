@@ -15,13 +15,13 @@ function getHi(id){return parseInt(lsGet('aceon_hi_'+id,'0'),10)||0;}
 function setHi(id,sc){if(sc>getHi(id))lsSet('aceon_hi_'+id,sc);return getHi(id);}
 function trackPlay(){var n=(parseInt(lsGet('aceon_plays','0'),10)||0)+1;lsSet('aceon_plays',n);if(window.Achieve)try{Achieve.played();}catch(e){}return n;}
 
-I18n.add('en',{'arc.back':'ARCADE','arc.settings':'SETTINGS','arc.lang':'LANGUAGE','arc.music':'MUSIC','arc.sfx':'SOUND'});
-I18n.add('ru',{'arc.back':'АРКАДА','arc.settings':'НАСТРОЙКИ','arc.lang':'ЯЗЫК','arc.music':'МУЗЫКА','arc.sfx':'ЗВУКИ'});
-I18n.add('de',{'arc.back':'ARCADE','arc.settings':'EINSTELLUNGEN','arc.lang':'SPRACHE','arc.music':'MUSIK','arc.sfx':'SOUND'});
-I18n.add('fr',{'arc.back':'ARCADE','arc.settings':'RÉGLAGES','arc.lang':'LANGUE','arc.music':'MUSIQUE','arc.sfx':'SONS'});
-I18n.add('es',{'arc.back':'ARCADE','arc.settings':'AJUSTES','arc.lang':'IDIOMA','arc.music':'MÚSICA','arc.sfx':'SONIDOS'});
-I18n.add('it',{'arc.back':'ARCADE','arc.settings':'IMPOSTAZIONI','arc.lang':'LINGUA','arc.music':'MUSICA','arc.sfx':'SUONI'});
-I18n.add('pl',{'arc.back':'ARCADE','arc.settings':'USTAWIENIA','arc.lang':'JĘZYK','arc.music':'MUZYKA','arc.sfx':'DŹWIĘKI'});
+I18n.add('en',{'arc.back':'BACK','arc.settings':'SETTINGS','arc.lang':'LANGUAGE','arc.music':'MUSIC','arc.sfx':'SOUND'});
+I18n.add('ru',{'arc.back':'НАЗАД','arc.settings':'НАСТРОЙКИ','arc.lang':'ЯЗЫК','arc.music':'МУЗЫКА','arc.sfx':'ЗВУКИ'});
+I18n.add('de',{'arc.back':'ZURÜCK','arc.settings':'EINSTELLUNGEN','arc.lang':'SPRACHE','arc.music':'MUSIK','arc.sfx':'SOUND'});
+I18n.add('fr',{'arc.back':'RETOUR','arc.settings':'RÉGLAGES','arc.lang':'LANGUE','arc.music':'MUSIQUE','arc.sfx':'SONS'});
+I18n.add('es',{'arc.back':'VOLVER','arc.settings':'AJUSTES','arc.lang':'IDIOMA','arc.music':'MÚSICA','arc.sfx':'SONIDOS'});
+I18n.add('it',{'arc.back':'INDIETRO','arc.settings':'IMPOSTAZIONI','arc.lang':'LINGUA','arc.music':'MUSICA','arc.sfx':'SUONI'});
+I18n.add('pl',{'arc.back':'WSTECZ','arc.settings':'USTAWIENIA','arc.lang':'JĘZYK','arc.music':'MUZYKA','arc.sfx':'DŹWIĘKI'});
 
 var GEAR='<svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><rect x="7" y="1" width="2" height="3"/><rect x="7" y="12" width="2" height="3"/><rect x="1" y="7" width="3" height="2"/><rect x="12" y="7" width="3" height="2"/><rect x="3" y="3" width="2" height="2"/><rect x="11" y="3" width="2" height="2"/><rect x="3" y="11" width="2" height="2"/><rect x="11" y="11" width="2" height="2"/><path fill-rule="evenodd" d="M5 4h6v1h1v6h-1v1H5v-1H4V5h1zM7 6v4h2V6z"/></g></svg>';
 

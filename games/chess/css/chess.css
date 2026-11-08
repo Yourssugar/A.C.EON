@@ -565,3 +565,84 @@ body.view-3d #ch-board{visibility:hidden;}
 #ch-movelog.collapsed .mlog-arrow{transform:rotate(-90deg);}
 #ch-movelog.collapsed .mlog-toggle{border-bottom:0;}
 #ch-movelog.collapsed .mlog-toggle small{display:inline;}
+
+/* ════════ МЯГКИЙ ВИД: скруглённые формы, неон приглушён ════════
+   Блок идёт последним и переопределяет старые правила, чтобы не трогать раскладку выше. */
+body{--soft:#6fe3f2;--soft-d:rgba(111,227,242,.22);--soft-b:rgba(111,227,242,.38);--soft-bg:rgba(8,20,36,.78);--soft-bg2:rgba(14,30,50,.85);
+  --r-card:18px;--r-in:12px;--r-pill:999px;}
+/* заголовки мягче */
+.menu-title{color:#8eeefa;text-shadow:0 0 14px rgba(0,229,255,.45),0 0 34px rgba(0,229,255,.18);}
+.menu-brand{text-shadow:0 0 8px rgba(255,45,120,.6);}
+.menu-h,.panel-title{color:var(--soft);text-shadow:0 0 6px rgba(0,229,255,.3);}
+.menu-sub{color:#6f98ab;}
+/* карточки меню и панели партии */
+.menu-card,.panel{border:1px solid var(--soft-d);border-radius:var(--r-card);
+  background:linear-gradient(165deg,rgba(12,28,48,.82),rgba(4,10,22,.86));
+  box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.02) inset,0 0 24px rgba(0,229,255,.05);}
+.menu-card{border-top:1px solid var(--soft-b);}
+.panel{border-left:1px solid var(--soft-d);overflow:hidden;}
+.panel-title{border-bottom:1px solid rgba(111,227,242,.12);}
+/* уровни: полоска цвета слева стала точкой-индикатором */
+.lvl-card{border:1px solid rgba(111,227,242,.14);border-left:1px solid rgba(111,227,242,.14);border-radius:var(--r-in);background:rgba(4,14,28,.7);padding-left:30px;}
+.lvl-card::before{content:'';position:absolute;left:13px;top:21px;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--acc);
+  box-shadow:0 0 8px var(--acc);opacity:.85;}
+.lvl-card:has(.lvl-ava){padding-left:12px;}
+.lvl-card:has(.lvl-ava)::before{display:none;}
+.lvl-card:hover{background:rgba(10,28,48,.85);transform:translateX(2px);}
+.lvl-card.sel{background:#0a2438;background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 16%,rgba(4,14,28,.9)),rgba(4,14,28,.9) 85%);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--acc) 70%,transparent),0 0 14px color-mix(in srgb,var(--acc) 25%,transparent);}
+.bars i{border-radius:3px;}
+.bars i.on{box-shadow:0 0 4px var(--acc);}
+.lvl-pop{border-radius:14px;}
+.lvl-pop::before{display:none;}
+.fr-tag,.soon-tag,.pin-soon{border-radius:var(--r-pill);padding:5px 9px;}
+/* переключатели: таблетки */
+.seg{gap:5px;}
+.seg-btn{border-radius:var(--r-pill);border-color:rgba(111,227,242,.18);background:rgba(4,14,28,.7);padding:8px 10px;}
+.seg-btn:hover{border-color:var(--soft-b);}
+.seg-btn.sel{background:rgba(0,229,255,.14);border-color:var(--soft);box-shadow:0 0 8px rgba(0,229,255,.18);}
+.sw{border-radius:4px;}
+.side-r{border-radius:50%;}
+.preview-tags span{border-radius:var(--r-pill);border-color:rgba(111,227,242,.2);}
+.preview-board{border-radius:10px;overflow:hidden;}
+/* кнопки страницы шахмат */
+body .btn{border-radius:var(--r-pill);}
+.menu-play{border-radius:var(--r-pill);padding:16px 46px;background:linear-gradient(180deg,rgba(0,90,120,.75),rgba(0,40,60,.85));
+  border-color:var(--soft);animation:playGlowSoft 2.6s ease-in-out infinite;}
+@keyframes playGlowSoft{0%,100%{box-shadow:0 0 10px rgba(0,229,255,.22);}50%{box-shadow:0 0 22px rgba(0,229,255,.42);}}
+.menu-actions{background:linear-gradient(to bottom,rgba(5,5,16,0),rgba(5,5,16,.85) 40%);}
+/* статус, часы, полоска оценки */
+#ch-msg{border-radius:var(--r-pill);border:1px solid var(--soft-d);border-left:1px solid var(--soft-d);background:rgba(4,14,28,.78);color:var(--soft);text-shadow:none;}
+#ch-msg.check{border-color:rgba(255,51,68,.6);}
+#ch-msg[class*="q-"]{border-left:1px solid currentColor;}
+.clk{border-radius:var(--r-pill);border-color:var(--soft-d);background:rgba(4,14,28,.78);}
+.ev-bar{border-radius:var(--r-pill);}
+.game-lvl{border-radius:var(--r-in);border-color:rgba(111,227,242,.14);background:rgba(4,14,28,.7);}
+/* доска: скруглённые углы */
+#ch-board{border-radius:14px;overflow:hidden;}
+body.theme-neon{--brd-shadow:0 0 22px rgba(0,229,255,.22),0 0 60px rgba(0,229,255,.08);--brd:rgba(111,227,242,.75);}
+body.theme-wood{--brd-shadow:0 12px 34px rgba(0,0,0,.55),0 0 0 2px #5a4128 inset;}
+.b3-btn{border-radius:50%;}
+.b3-load{border-radius:var(--r-pill);}
+/* журнал и взятые */
+.mlog-last{text-shadow:0 0 6px rgba(0,229,255,.6);}
+.mlog-head{border-bottom-color:rgba(111,227,242,.1);}
+/* окна (итог, превращение, PIN, лицензии) */
+.arc-box{border-radius:22px;}
+.ch-rep-row{border-radius:var(--r-in);border:1px solid rgba(111,227,242,.12);border-left:1px solid rgba(111,227,242,.12);}
+.ch-promo-btn{border-radius:16px;border:1px solid var(--soft-d);border-bottom:1px solid var(--soft-d);}
+.pin-input{border-radius:16px;border-width:1px;}
+.lic-item{border-radius:var(--r-in);border-left-width:1px;}
+.menu-bg::before{opacity:.7;}
+
+/* ════════ КАРТИНКИ (art/chess, включаются флагом ART_READY в chess.js) ════════ */
+body.art .menu-bg{display:none;}
+body.art{background:#050510 url(../../art/chess/bg_wide.webp) center/cover no-repeat fixed;}
+@media (max-aspect-ratio:1/1){body.art{background-image:url(../../art/chess/bg_tall.webp);}}
+/* фигуры-картинки: та же клетка, что у SVG; тень от темы */
+.pc-img{object-fit:contain;user-select:none;-webkit-user-drag:none;pointer-events:none;}
+.theme-neon .pc-img.pc-b{filter:drop-shadow(0 0 .6cqw rgba(255,45,120,.35));}
+.cap-row .pc-img{width:26px;height:26px;}
+/* портрет соперника в карточке уровня */
+.lvl-ava{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid color-mix(in srgb,var(--acc) 60%,transparent);
+  background:rgba(0,0,0,.4);}

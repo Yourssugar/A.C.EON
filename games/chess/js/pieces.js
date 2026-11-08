@@ -44,10 +44,15 @@ var SHAPES={
     '<path class="pc-line" d="M38 60h24"/>'
 };
 
+/* набор фигур-картинок (от Codex): если задан, вместо SVG рисуется <img>; 3D-доска его не использует */
+var ART=null;
+function setArt(base){ART=base||null;}
+
 /* type: 'P','N','B','R','Q','K'; color: 'w'|'b' */
 function svg(type,color){
+  if(ART)return '<img class="pc pc-img pc-'+color+'" src="'+ART+color+'_'+type.toLowerCase()+'.webp" alt="" draggable="false">';
   return '<svg class="pc pc-'+color+'" viewBox="0 0 100 100" aria-hidden="true">'+SHAPES[type]+'</svg>';
 }
 
-window.ChessPieces={svg:svg,types:['K','Q','R','B','N','P']};
+window.ChessPieces={svg:svg,setArt:setArt,types:['K','Q','R','B','N','P']};
 })();

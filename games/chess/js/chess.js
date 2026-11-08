@@ -11,12 +11,14 @@ function pieceSvg(p){return PC.svg(p[1],p[0]);}
 var VAL={P:1,N:3,B:3,R:5,Q:9,K:0};
 var MODES=M.MODES;
 var HISTORY_MAX=200,HISTORY_FULL=30;
+/* картинки от Codex (фон, фигуры, портреты соперников): пока не выложены, false; тогда всё рисуется кодом */
+var ART_READY=true,ART=new URL('../art/chess/',location.href).href;
 
 /* ── хранилище: настройки, уровни, история, незаконченная партия ── */
 Store.define('chess',{
   version:2,
   defaults:{
-    settings:{level:'beginner',theme:'wood',view:'2d',side:'r',blitz:300,lclock:0,rotate:'auto',log:true},
+    settings:{level:'beginner',theme:'wood',view:'2d',side:'r',blitz:300,lclock:0,rotate:'auto',log:true,pieces:'art'},
     rating:{adaptive:M.START,blitz:null},
     wins:{},history:[],game:null
   },
@@ -152,7 +154,7 @@ function buildLevels(){
     if(m.clock)rows+=popRow('pop.clock',i18nSpan('pop.min',{n:S.blitz/60}));
     rows+=popRow('pop.undo',i18nSpan(m.undo===Infinity?'pop.unlimited':m.undo?'pop.undoN':'pop.no',{n:m.undo}));
     rows+=popRow('pop.strength','<span class="bars">'+barsHtml(bars)+'</span>');
-    b.innerHTML=
+    b.innerHTML=(ART_READY?'<img class="lvl-ava" alt="" src="'+ART+'opp_'+k+'.webp">':'')+
       '<span class="lvl-name"><span data-i18n="lvl.'+k+'"></span>'+(L!=null?'<small>'+t('lvl.n',{n:L})+'</small>':'')+'</span>'+
       '<span class="bars">'+barsHtml(bars)+'</span>'+
       '<span class="lvl-pop" role="tooltip">'+
@@ -231,7 +233,7 @@ function buildPreview(){
 function paintMenu(){
   buildLevels();buildFriends();
   document.querySelectorAll('.lvl-card').forEach(function(b){b.classList.toggle('sel',b.dataset.lvl===S.level);});
-  ['view','theme','side','blitz','lclock','rotate'].forEach(function(k){
+  ['view','theme','side','blitz','lclock','rotate','pieces'].forEach(function(k){
     document.querySelectorAll('#seg-'+k+' .seg-btn').forEach(function(b){b.classList.toggle('sel',b.dataset.v===String(S[k]));});
   });
   var local=S.level==='local';
@@ -239,11 +241,21 @@ function paintMenu(){
   $('opt-lclock').classList.toggle('hidden',!local);
   $('opt-rotate').classList.toggle('hidden',!local);
   $('opt-side').classList.toggle('hidden',local);
-  setTheme(S.theme);
+  setTheme(S.theme);usePieces();
+  $('opt-pieces').classList.toggle('hidden',!ART_READY);
   $('preview').classList.toggle('tilt',S.view==='3d');
   $('tag-view').textContent=S.view.toUpperCase();
   $('tag-theme').textContent=t('theme.'+S.theme);
   $('btn-continue').classList.toggle('hidden',!(G.started&&!G.dead&&G.history.length));
+}
+/* набор фигур: SVG (рисуется кодом) или картинки; превью перерисовывается */
+var piecesNow='';
+function usePieces(){
+  var k=ART_READY&&S.pieces==='art'?'art':'svg';
+  if(k===piecesNow)return;piecesNow=k;
+  PC.setArt(k==='art'?ART+'pieces/':null);
+  buildPreview();
+  if(document.body.classList.contains('screen-game')&&G.st)render();
 }
 function setTheme(th){
   document.body.classList.remove('theme-wood','theme-neon');
@@ -981,6 +993,8 @@ function paintLogToggle(){
   var on=S.log!==false;$('ch-movelog').classList.toggle('collapsed',!on);$('ch-log-toggle').setAttribute('aria-expanded',on?'true':'false');
 }
 function boot(){
+  document.body.classList.toggle('art',ART_READY);
+  bindSeg('pieces');
   $('ch-log-toggle').addEventListener('click',function(){S.log=S.log===false;saveDB();paintLogToggle();if(S.log)renderLog();Sound.sfx('select');});
   paintLogToggle();
   A.topbar('ch.title');

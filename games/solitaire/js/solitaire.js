@@ -12,6 +12,10 @@ function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
 
 var GAMES=['klondike','spider','freecell'];
+/* группы в списке игр: сюда будут добавляться 21, дурак, червы, восьмёрки */
+var GROUPS=[{key:'grp.patience',games:['klondike','spider','freecell']}];
+/* картинки от Codex (фон, сукно, рубашки, значки игр): пока не выложены, false; тогда всё рисуется кодом */
+var ART_READY=true,ART=new URL('../art/cardgames/',location.href).href;
 var UNDO_MAX=400,UNDO_SAVE=25;
 
 /* ── сохранения ── */
@@ -64,13 +68,17 @@ function Rl(){return R.get(Gm.st.game);}
 /* ════════ МЕНЮ ════════ */
 function buildGames(){
   var list=$('game-list');list.innerHTML='';
-  GAMES.forEach(function(g){
-    var b=document.createElement('button');
-    b.type='button';b.className='g-card'+(S.game===g?' sel':'');
-    b.innerHTML='<span class="g-ico g-ico-'+g+'"></span><span class="g-txt"><span class="g-name" data-i18n="game.'+g+'"></span>'+
-      '<span class="g-desc" data-i18n="desc.'+g+'"></span></span>';
-    b.addEventListener('click',function(){S.game=g;save();paintMenu();Sound.sfx('select');});
-    list.appendChild(b);
+  GROUPS.forEach(function(gr){
+    var h=document.createElement('div');h.className='g-group';h.setAttribute('data-i18n',gr.key);list.appendChild(h);
+    gr.games.forEach(function(g){
+      var b=document.createElement('button');
+      b.type='button';b.className='g-card'+(S.game===g?' sel':'');
+      var ico=ART_READY?'<img class="g-img" alt="" src="'+ART+'game_'+g+'.webp">':'<span class="g-ico g-ico-'+g+'"></span>';
+      b.innerHTML=ico+'<span class="g-txt"><span class="g-name" data-i18n="game.'+g+'"></span>'+
+        '<span class="g-desc" data-i18n="desc.'+g+'"></span></span>';
+      b.addEventListener('click',function(){S.game=g;save();paintMenu();Sound.sfx('select');});
+      list.appendChild(b);
+    });
   });
   I18n.apply(list);
 }
@@ -258,6 +266,7 @@ function win(){
     row('hud.time',fmt(time),rec.indexOf('st.time')>=0)+
     row('win.deal','#'+st.seed);
   $('win-rec').classList.toggle('hidden',!rec.length);
+  if(ART_READY){$('win-img').src=ART+'result_win.webp';show('win-img');}
   setTimeout(function(){show('win-modal');},1400);
 }
 /* классическая победная анимация: карты с базы по очереди отскакивают по столу */
@@ -610,6 +619,7 @@ function bindSeg(id,fn){
 }
 function rebuildFaces(){for(var id in cardEl)cardEl[id].dataset.face='';}
 function boot(){
+  document.body.classList.toggle('art',ART_READY);
   A.topbar('sol.title');
   Cards.defs();
   I18n.apply();I18n.onChange(onLang);

@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="5" defer></script>
+<script src="../shared/boot.js" data-v="7" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -140,6 +140,7 @@
 <!-- победа -->
 <div class="arc-modal hidden win-modal" id="win-modal">
   <div class="arc-box win-box">
+    <img class="win-img hidden" id="win-img" alt="">
     <div class="win-title" data-i18n="win.title"></div>
     <div class="win-rec hidden" id="win-rec" data-i18n="win.record"></div>
     <div class="win-rows" id="win-rows"></div>

@@ -205,3 +205,54 @@ body.screen-game #menu{display:none;}
   animation:slTgt 1s ease-in-out infinite;}
 @keyframes slTgt{50%{background:rgba(46,232,122,.28);}}
 .slot.tgt{animation:slTgt 1s ease-in-out infinite;}
+
+/* ════════ МЯГКИЙ ВИД (как в шахматах): скруглённые формы, неон приглушён ════════ */
+body{--soft:#6fe3f2;--soft-d:rgba(111,227,242,.22);--soft-b:rgba(111,227,242,.38);--r-card:18px;--r-in:12px;--r-pill:999px;}
+.sl-title{color:#8eeefa;text-shadow:0 0 14px rgba(0,229,255,.45),0 0 34px rgba(0,229,255,.18);}
+.sl-brand{text-shadow:0 0 8px rgba(255,45,120,.6);}
+.sl-h{color:var(--soft);text-shadow:0 0 6px rgba(0,229,255,.3);}
+.sl-card{border:1px solid var(--soft-d);border-top:1px solid var(--soft-b);border-radius:var(--r-card);
+  background:linear-gradient(165deg,rgba(12,28,48,.82),rgba(4,10,22,.86));box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 24px rgba(0,229,255,.05);}
+.g-group{font-size:7px;letter-spacing:3px;color:#5f8fa6;margin:4px 0 -2px 4px;}
+.g-card{border:1px solid rgba(111,227,242,.14);border-left:1px solid rgba(111,227,242,.14);border-radius:var(--r-in);background:rgba(4,14,28,.7);
+  transition:background .12s,box-shadow .15s,transform .12s;}
+.g-card:hover{background:rgba(10,28,48,.85);transform:translateX(2px);}
+.g-card.sel{background:linear-gradient(90deg,rgba(46,232,122,.14),rgba(4,14,28,.9) 85%);border-color:rgba(46,232,122,.7);
+  box-shadow:0 0 14px rgba(46,232,122,.2);}
+.g-img{flex-shrink:0;width:48px;height:48px;object-fit:contain;}
+.seg{gap:5px;}
+.seg-btn{border-radius:var(--r-pill);border-color:rgba(111,227,242,.18);background:rgba(4,14,28,.7);padding:8px 11px;}
+.seg-btn:hover{border-color:var(--soft-b);}
+.seg-btn.sel{background:rgba(0,229,255,.14);border-color:var(--soft);box-shadow:0 0 8px rgba(0,229,255,.18);}
+.sw{border-radius:4px;}
+.preview{border:1px solid var(--soft-d);border-radius:14px;}
+.st-row>*{border-radius:8px;border-color:rgba(111,227,242,.1);background:rgba(4,14,28,.7);}
+.st-head>*{background:none;border-color:transparent;}
+body .btn{border-radius:var(--r-pill);}
+.sl-play{border-radius:var(--r-pill);padding:16px 46px;background:linear-gradient(180deg,rgba(0,90,120,.75),rgba(0,40,60,.85));
+  border-color:var(--soft);animation:slGlowSoft 2.6s ease-in-out infinite;}
+@keyframes slGlowSoft{0%,100%{box-shadow:0 0 10px rgba(0,229,255,.22);}50%{box-shadow:0 0 22px rgba(0,229,255,.42);}}
+.sl-actions{background:linear-gradient(to bottom,rgba(5,5,16,0),rgba(5,5,16,.85) 40%);}
+.hud{background:rgba(2,10,20,.86);border-bottom:1px solid var(--soft-d);}
+.hud-cell{border-radius:var(--r-pill);border:1px solid var(--soft-d);border-left:1px solid var(--soft-d);background:rgba(4,14,28,.78);}
+.stuck{border-bottom-color:rgba(255,51,68,.5);}
+.arc-box{border-radius:22px;}
+.ov-row{border-radius:var(--r-in);border:1px solid rgba(111,227,242,.12);border-left:1px solid rgba(111,227,242,.12);}
+.flash{border-radius:14px;}
+
+/* ════════ КАРТИНКИ (art/cardgames, включаются флагом ART_READY в solitaire.js) ════════ */
+body.art .sl-menu{background:none;}
+body.art{background:#050510 url(../../art/cardgames/bg_wide.webp) center/cover no-repeat fixed;}
+@media (max-aspect-ratio:1/1){body.art{background-image:url(../../art/cardgames/bg_tall.webp);}}
+/* сукно: бесшовная текстура поверх цвета стола */
+body.art.tbl-felt .table-wrap,body.art .preview.tbl-felt{background:#14592f url(../../art/cardgames/felt_green.webp) 0 0/512px 512px repeat;}
+body.art.tbl-blue .table-wrap,body.art .preview.tbl-blue{background:#143866 url(../../art/cardgames/felt_blue.webp) 0 0/512px 512px repeat;}
+body.art.tbl-neon .table-wrap,body.art .preview.tbl-neon{background:#050510 url(../../art/cardgames/felt_neon.webp) 0 0/512px 512px repeat;}
+/* рубашки: картинка на всю карту, узор и надпись кода прячутся */
+body.art .cb{border:0;background:#0a1430 center/100% 100% no-repeat;}
+body.art .cb::before,body.art .cb span{display:none;}
+body.art .cb-aceon{background-image:url(../../art/cardgames/back_aceon.webp);}
+body.art .cb-red{background-image:url(../../art/cardgames/back_red.webp);}
+body.art .cb-blue{background-image:url(../../art/cardgames/back_blue.webp);}
+.win-img{display:block;width:130px;height:130px;object-fit:contain;margin:-14px auto -4px;}
+.win-img.hidden{display:none;}

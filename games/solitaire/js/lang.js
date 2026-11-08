@@ -5,6 +5,7 @@ var L={
 "en": {
 "sol.title": "SOLITAIRE",
 "menu.sub": "3 GAMES / CLASSIC CARDS",
+"grp.patience": "PATIENCE",
 "menu.game": "GAME",
 "menu.look": "LOOK",
 "menu.stats": "STATISTICS",
@@ -64,6 +65,7 @@ var L={
 "ru": {
 "sol.title": "ПАСЬЯНС",
 "menu.sub": "3 ИГРЫ / КЛАССИЧЕСКИЕ КАРТЫ",
+"grp.patience": "ПАСЬЯНСЫ",
 "menu.game": "ИГРА",
 "menu.look": "ОФОРМЛЕНИЕ",
 "menu.stats": "СТАТИСТИКА",
@@ -123,6 +125,7 @@ var L={
 "de": {
 "sol.title": "SOLITÄR",
 "menu.sub": "3 SPIELE / KLASSISCHE KARTEN",
+"grp.patience": "PATIENCEN",
 "menu.game": "SPIEL",
 "menu.look": "AUSSEHEN",
 "menu.stats": "STATISTIK",
@@ -182,6 +185,7 @@ var L={
 "fr": {
 "sol.title": "SOLITAIRE",
 "menu.sub": "3 JEUX / CARTES CLASSIQUES",
+"grp.patience": "RÉUSSITES",
 "menu.game": "JEU",
 "menu.look": "APPARENCE",
 "menu.stats": "STATISTIQUES",
@@ -241,6 +245,7 @@ var L={
 "es": {
 "sol.title": "SOLITARIO",
 "menu.sub": "3 JUEGOS / CARTAS CLÁSICAS",
+"grp.patience": "SOLITARIOS",
 "menu.game": "JUEGO",
 "menu.look": "ASPECTO",
 "menu.stats": "ESTADÍSTICAS",
@@ -300,6 +305,7 @@ var L={
 "it": {
 "sol.title": "SOLITARIO",
 "menu.sub": "3 GIOCHI / CARTE CLASSICHE",
+"grp.patience": "SOLITARI",
 "menu.game": "GIOCO",
 "menu.look": "ASPETTO",
 "menu.stats": "STATISTICHE",
@@ -359,6 +365,7 @@ var L={
 "pl": {
 "sol.title": "PASJANS",
 "menu.sub": "3 GRY / KLASYCZNE KARTY",
+"grp.patience": "PASJANSE",
 "menu.game": "GRA",
 "menu.look": "WYGLĄD",
 "menu.stats": "STATYSTYKI",

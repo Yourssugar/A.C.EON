@@ -87,6 +87,21 @@
     .hgg { color:#001d09; }
     #greet { color:#005a20; letter-spacing:3px; min-height:14px; }
     @keyframes npls { 0%,100%{opacity:1} 50%{opacity:.08} }
+    /* кнопка «скачать лаунчер» под HUD справа вверху. HUD не ловит мышь, а сама кнопка ловит */
+    #tw-dl {
+      display:inline-flex; align-items:center; gap:9px; margin-top:10px; pointer-events:auto;
+      font-family:'JetBrains Mono',monospace; text-decoration:none; text-align:left; line-height:1.35;
+      color:#4DAFFF; background:rgba(0,8,20,.86); border:1px solid #163a5a; padding:7px 13px 7px 10px;
+      clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+      cursor:var(--cur-p); transition:border-color .2s, box-shadow .2s, color .2s;
+    }
+    #tw-dl:hover { border-color:#4DAFFF; color:#b8e4ff; box-shadow:inset 0 0 14px rgba(77,175,255,.28); }
+    #tw-dl svg { width:15px; height:15px; flex:none; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+    #tw-dl b { display:block; font-weight:400; font-size:9px; letter-spacing:4px; }
+    #tw-dl i { display:block; font-style:normal; font-size:7px; letter-spacing:3px; color:#2a6f9e; margin-top:2px; }
+    #tw-dl:hover i { color:#4DAFFF; }
+    /* лаунчер только для Windows: на телефонах и планшетах кнопку не показываем */
+    @media (pointer:coarse){ #tw-dl { display:none; } }
     #hud-l { position:fixed; top:14px; left:18px; z-index:50; font-size:9px; letter-spacing:3px; line-height:2.1; color:#141414; pointer-events:none; transition:opacity .6s; }
     #sb {
       position:fixed; bottom:12px; left:18px; right:18px; z-index:50;
@@ -398,6 +413,10 @@
   <div class="hg"  id="ns1">OBSERVING</div>
   <div class="hg"  id="nc1">SIG: 01</div>
   <div class="hgg" id="ut1">UP: 00:00:00</div>
+  <a id="tw-dl" href="https://github.com/Yourssugar/twenty-words-launcher/releases/latest/download/Twenty-Words-Launcher-Setup.exe" title="Twenty Words Launcher: games and books of the studio. Windows 10/11, free.">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8v8.4M4.4 6.8 8 10.4l3.6-3.6M2.6 13.6h10.8"/></svg>
+    <span><b>TW LAUNCHER</b><i>DOWNLOAD &middot; WINDOWS</i></span>
+  </a>
 </div>
 <div id="hud-l">
   <div id="layerlbl">LAYER_01 // SINGULARITY</div>

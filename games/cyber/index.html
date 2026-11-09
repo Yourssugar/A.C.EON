@@ -1,97 +1,75 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>БРЕШЬ — кибер-полигон · A.C.EON</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="engine.css">
-</head>
-<body>
-<canvas id="bg" aria-hidden="true"></canvas>
-<div class="scan" aria-hidden="true"></div>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>A.C.EON BREACH</title>
 
-<!-- ======= PORTAL (view) ======= -->
-<div id="hub">
-  <header class="hub-head">
-    <div class="eyebrow">A.C.EON // CYBER RANGE</div>
-    <h1 class="wordmark">БРЕШЬ</h1>
-    <p class="tagline">Полигон кибер-атаки и защиты. Каждое «дело» — игра-курс: сюжет, уровни, нарастающая сложность. На верхних уровнях — реальный код, который движок исполняет. Всё в песочнице, никаких настоящих систем.</p>
-    <div class="rank" id="rank"></div>
-  </header>
-  <main class="catalog" id="catalog"></main>
-  <footer class="hub-foot">
-    <span>A.C.EON Studio · vanilla · оффлайн</span>
-    <span id="reset-all" class="reset-all">сбросить прогресс</span>
-  </footer>
+<!-- Загрузчик: качает файлы из списка с прогрессом и дописывает к ним ?v=.
+     data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared).
+     Картинки пролога идут с "nov":true: gl.js грузит их по адресу без ?v=, так они берутся из кэша. -->
+<script src="../shared/boot.js" data-v="1" defer></script>
+<script type="application/json" id="boot-manifest">
+{"files":[
+  {"src":"../shared/arcade.css","kb":7},
+  {"src":"css/cyber.css","kb":7},
+  {"src":"../shared/store.js","kb":3},
+  {"src":"../shared/i18n.js","kb":3},
+  {"src":"../shared/sound.js","kb":9},
+  {"src":"../shared/arcade.js","kb":5},
+  {"src":"js/lang.js","kb":6},
+  {"src":"js/gl.js","kb":7},
+  {"src":"js/prologue.js","kb":7},
+  {"src":"js/cyber.js","kb":2},
+  {"src":"../art/cyber/bg/server_sky.webp","kb":125,"nov":true},
+  {"src":"../art/cyber/bg/server_mid.webp","kb":211,"nov":true},
+  {"src":"../art/cyber/bg/server_near.webp","kb":91,"nov":true},
+  {"src":"../art/cyber/bg/archive.webp","kb":105,"nov":true},
+  {"src":"../art/cyber/bg/archive_dust.webp","kb":31,"nov":true},
+  {"src":"../art/cyber/bg/building_sky.webp","kb":20,"nov":true},
+  {"src":"../art/cyber/bg/building_far.webp","kb":82,"nov":true},
+  {"src":"../art/cyber/bg/building_near.webp","kb":90,"nov":true},
+  {"src":"../art/cyber/fx/glow.webp","kb":6,"nov":true},
+  {"src":"../art/cyber/fx/scan.webp","kb":1,"nov":true},
+  {"src":"../art/cyber/fx/noise.webp","kb":135,"nov":true},
+  {"src":"../art/cyber/fx/vignette.webp","kb":152,"nov":true}
+]}
+</script>
+
+<!-- Обложка загрузки: щит, по которому идёт полоса проверки (--p от загрузчика) -->
+<template id="boot-skin">
+  <style>
+    .cy-brand{font-size:9px;letter-spacing:.5em;color:#ffb347;text-shadow:0 0 10px rgba(255,179,71,.7);padding-left:.5em;margin-bottom:-14px;}
+    .cy-title{font-size:clamp(14px,4vw,22px);letter-spacing:.3em;color:#4fe3d0;text-shadow:0 0 14px rgba(79,227,208,.8);padding-left:.3em;}
+    .cy-shield{position:relative;width:64px;height:76px;overflow:hidden;
+      clip-path:polygon(50% 0,100% 14%,100% 52%,50% 100%,0 52%,0 14%);
+      background:linear-gradient(180deg,#0f1c1d,#071012);box-shadow:inset 0 0 0 2px #2a6b65;}
+    .cy-shield::before{content:'';position:absolute;inset:3px;
+      clip-path:polygon(50% 0,100% 14%,100% 52%,50% 100%,0 52%,0 14%);border:2px solid #4fe3d0;opacity:.55;}
+    .cy-scan{position:absolute;left:0;right:0;height:3px;background:#4fe3d0;box-shadow:0 0 12px #4fe3d0;
+      top:calc(76px * var(--p) - 3px);}
+  </style>
+  <div class="cy-brand">A.C.EON</div>
+  <div class="cy-title">БРЕШЬ / BREACH</div>
+  <div class="cy-shield"><i class="cy-scan"></i></div>
+</template>
+</head>
+<body class="cy-page">
+
+<canvas id="cy-gl"></canvas>
+
+<div class="cy-ui">
+  <div class="cy-kicker" id="cy-kicker"></div>
+  <button class="cy-skip" id="cy-skip" data-i18n="ui.skip"></button>
+  <div class="cy-center hidden" id="cy-center"></div>
+  <div class="cy-lower hidden" id="cy-lower"><div class="cy-inner" id="cy-lower-inner"></div></div>
 </div>
 
-<!-- ======= COURSE APP (view) ======= -->
-<div id="app" style="display:none"></div>
+<div class="cy-foot">
+  <div class="cy-progress" id="cy-progress"></div>
+  <div class="cy-hint" id="cy-hint" data-i18n="ui.hint"></div>
+  <button class="cy-cta" id="cy-cta"><span data-i18n="ui.start"></span> &#9654;</button>
+</div>
 
-<script src="engine.js"></script>
-<script src="sqli.js"></script>
-<script>
-/* ---- catalog (add a course = add a *.js + one line here) ---- */
-var COURSES=[
-  {id:'sqli', code:'ДОСЬЕ · SQLI', icon:'⌘', name:'SQL-инъекция',
-   desc:'Шесть дел: обход входа, разведка, UNION, обход WAF, error-based и слепые инъекции. Терминал, куратор, защита реальным кодом.',
-   data:(typeof SQLI_COURSE!=='undefined'?SQLI_COURSE:null), status:'avail'},
-  {id:'brute', code:'ДЕЛО · BRUTE', icon:'⧉', name:'Брутфорс паролей', desc:'Подбор, словари, rate-limit, 2FA. В разработке.', data:null, levels:4, status:'soon'},
-  {id:'xss', code:'ДЕЛО · XSS', icon:'❰❱', name:'XSS', desc:'Внедрение скрипта, угон сессии, экранирование, CSP. В разработке.', data:null, levels:4, status:'soon'},
-];
-var store={get:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
-  del:function(k){try{localStorage.removeItem(k);}catch(e){}}};
-
-function courseLevels(c){
-  if(c.data&&c.data.cases)return c.data.cases.reduce(function(n,cs){return n+cs.lessons.length;},0);
-  return c.levels||4;
-}
-function renderCatalog(){
-  var cat=document.getElementById('catalog');cat.innerHTML='';var totalDone=0,totalLevels=0;
-  COURSES.forEach(function(c){
-    var lv=courseLevels(c);
-    var done=(store.get('bresh:'+c.id+':done',[])||[]).length;totalDone+=done;totalLevels+=lv;
-    var pct=Math.round(done/lv*100),avail=c.status==='avail';
-    var node=document.createElement(avail?'a':'div');
-    node.className='course '+(avail?'avail':'locked');if(avail)node.href='javascript:void(0)';
-    node.innerHTML='<div class="c-top"><span class="c-icon">'+c.icon+'</span><span class="c-status '+(avail?'on':'')+'">'+(avail?'доступно':'скоро')+'</span></div>'+
-      '<div class="c-code">'+c.code+'</div><h2 class="c-name">'+c.name+'</h2><p class="c-desc">'+c.desc+'</p>'+
-      '<div class="c-foot"><div class="c-prog"><div class="c-bar"><i style="width:'+pct+'%"></i></div><span class="c-pct">'+done+'/'+lv+'</span></div>'+
-      '<span class="c-go">'+(avail?(done>0?'продолжить ▸':'начать ▸'):'🔒')+'</span></div>';
-    if(avail&&c.data)node.onclick=function(){enterCourse(c);};
-    cat.appendChild(node);
-  });
-  var title=totalDone===0?'НОВОБРАНЕЦ':totalDone<3?'ОПЕРАТИВНИК':totalDone<7?'АНАЛИТИК':'ПРИЗРАК';
-  document.getElementById('rank').innerHTML='ранг: <b>'+title+'</b> · пройдено уровней: <b>'+totalDone+'</b> / '+totalLevels;
-}
-function enterCourse(c){
-  document.getElementById('hub').style.display='none';
-  var app=document.getElementById('app');app.style.display='block';app.innerHTML='';
-  window.scrollTo(0,0);
-  CyberEngine.boot(c.data);
-}
-/* engine calls this to return to the portal (no page navigation) */
-window.CYBER_HOME=function(){
-  var app=document.getElementById('app');app.style.display='none';app.innerHTML='';
-  document.getElementById('hub').style.display='';window.scrollTo(0,0);renderCatalog();
-};
-
-document.getElementById('reset-all').onclick=function(){
-  if(confirm('Сбросить весь прогресс по всем делам?')){
-    COURSES.forEach(function(c){store.del('bresh:'+c.id+':done');store.del('bresh:'+c.id+':wins');});renderCatalog();
-  }
-};
-
-/* ambient starfield */
-(function(){var c=document.getElementById('bg');if(!c)return;var x=c.getContext('2d'),w,h,st,mx=0,my=0;
- function sz(){w=c.width=innerWidth;h=c.height=innerHeight;st=Array.from({length:Math.min(90,Math.floor(w*h/16000))},function(){return{x:Math.random()*w,y:Math.random()*h,z:Math.random()*.8+.2,t:Math.random()*6};});}
- sz();addEventListener('resize',sz);addEventListener('mousemove',function(e){mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;});
- (function loop(t){requestAnimationFrame(loop);x.clearRect(0,0,w,h);st.forEach(function(s){var px=s.x+mx*22*s.z,py=s.y+my*22*s.z,a=.2+Math.abs(Math.sin(t/900+s.t))*.5*s.z;x.fillStyle='rgba(120,150,170,'+a+')';x.fillRect(px,py,s.z*1.6,s.z*1.6);});})(0);})();
-
-renderCatalog();
-</script>
 </body>
 </html>

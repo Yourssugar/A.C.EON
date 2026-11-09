@@ -4,20 +4,27 @@
 'use strict';
 
 var t=I18n.t,A=window.Arcade,R=window.WlRules;
+var Fx=window.WlFx||{set:function(){},tiles:function(){},burst:function(){},flash:function(){}};
 var $=function(id){return document.getElementById(id);};
 function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
 
-var MODES=['daily','free','timed'],THEMES=['neon','flat','contrast'],WLANGS=['ru','en'],LENS=[4,5,6];
+var MODES=['daily','free','timed'],WLANGS=['ru','en'],LENS=[4,5,6];
+/* фоны: library от первого задания Codex, space и study от второго (false: фон скрыт в меню) */
+var BGS=['library','space','study','none'],BG_ART={library:true,space:true,study:true};
+/* плавающие плитки в фоне (второе задание Codex); false: в фоне только пятна света и пыль */
+var TILES_READY=true;
 var ART=new URL('../art/wordle/',location.href).href;
 /* картинки от Codex: пока не выложены, false; тогда значки и фон рисуются кодом */
 var ART_READY=true;
+if(TILES_READY)Fx.tiles(['green','yellow','gray'].reduce(function(a,c){
+  return a.concat([{src:ART+'tile_'+c+'.webp'},{src:ART+'tile_'+c+'_blur.webp',blur:true}]);},[]));
 var TIMED=180,SKIP=10;
 
 function newDaily(){return {played:0,wins:0,streak:0,best:0,last:-9,dist:[0,0,0,0,0,0]};}
 Store.define('wordle',{
   version:1,
-  defaults:{settings:{mode:'daily',wlang:'',len:5,hard:false,theme:'neon'},
+  defaults:{settings:{mode:'daily',wlang:'',len:5,hard:false,bg:'library',colors:'normal'},
     stats:{wins:0,daily:{ru:newDaily(),en:newDaily()},free:{games:0,wins:0,streak:0,best:0,dist:[0,0,0,0,0,0,0]},
       timed:{ru:{best:0,games:0,words:0},en:{best:0,games:0,words:0}}},
     day:{ru:null,en:null}},
@@ -25,7 +32,10 @@ Store.define('wordle',{
 });
 var DB=Store.get('wordle'),S=DB.settings,ST=DB.stats;
 if(MODES.indexOf(S.mode)<0)S.mode='daily';
-if(THEMES.indexOf(S.theme)<0)S.theme='neon';
+/* старая настройка «стиль»: плоский стал «без фона», контраст стал отдельной настройкой цветов */
+if(S.theme){if(S.theme==='flat')S.bg='none';if(S.theme==='contrast')S.colors='contrast';delete S.theme;}
+if(BGS.indexOf(S.bg)<0||(S.bg!=='none'&&!BG_ART[S.bg]))S.bg='library';
+if(S.colors!=='contrast')S.colors='normal';
 if(WLANGS.indexOf(S.wlang)<0)S.wlang=I18n.lang==='ru'?'ru':'en';
 if(LENS.indexOf(S.len|0)<0)S.len=5;
 WLANGS.forEach(function(l){if(!ST.daily[l])ST.daily[l]=newDaily();if(!ST.timed[l])ST.timed[l]={best:0,games:0,words:0};if(!DB.day)DB.day={};});
@@ -83,14 +93,16 @@ function distHtml(dist,hl){
   var mx=1;dist.forEach(function(v){mx=Math.max(mx,v);});
   return '<div class="dist">'+dist.map(function(v,i){return '<div class="d-row"><span>'+(i+1)+'</span><i class="'+(hl===i?'hl':'')+'" style="width:'+Math.max(8,Math.round(v/mx*100))+'%">'+v+'</i></div>';}).join('')+'</div>';
 }
+function tileStat(k,v){return '<div class="st-tile"><b>'+v+'</b><span>'+t(k)+'</span></div>';}
 function buildStats(){
   var h='';
   if(S.mode==='daily'){var d=ST.daily[S.wlang];
-    h=row('st.played',d.played)+row('st.winp',(d.played?Math.round(d.wins/d.played*100):0)+'%')+row('st.streak',dailyStreak(d))+row('st.bestStreak',d.best)+
+    h='<div class="st-grid">'+tileStat('st.played',d.played)+tileStat('st.winp',(d.played?Math.round(d.wins/d.played*100):0)+'%')+tileStat('st.streak',dailyStreak(d))+tileStat('st.bestStreak',d.best)+'</div>'+
       '<div class="st-h" data-i18n="st.dist"></div>'+distHtml(d.dist,-1);}
   else if(S.mode==='free'){var f=ST.free;
-    h=row('st.games',f.games)+row('st.wins',f.wins)+row('st.streak',f.streak)+row('st.bestStreak',f.best)+'<div class="st-h" data-i18n="st.dist"></div>'+distHtml(f.dist,-1);}
-  else{var tt=ST.timed[S.wlang];h=row('st.bestWords',tt.best)+row('st.games',tt.games)+row('st.words',tt.words);}
+    h='<div class="st-grid">'+tileStat('st.games',f.games)+tileStat('st.wins',f.wins)+tileStat('st.streak',f.streak)+tileStat('st.bestStreak',f.best)+'</div>'+
+      '<div class="st-h" data-i18n="st.dist"></div>'+distHtml(f.dist,-1);}
+  else{var tt=ST.timed[S.wlang];h='<div class="st-grid g3">'+tileStat('st.bestWords',tt.best)+tileStat('st.games',tt.games)+tileStat('st.words',tt.words)+'</div>';}
   h+=row('st.total',ST.wins);
   $('stats').innerHTML=h;I18n.apply($('stats'));
 }
@@ -104,12 +116,19 @@ function untilTomorrow(){var n=new Date(),m=new Date(n.getFullYear(),n.getMonth(
   var hh=Math.floor(s/3600),mm=Math.floor(s%3600/60);return hh+':'+(mm<10?'0':'')+mm;}
 function paintMenu(){
   buildModes();buildStats();
-  segSel('seg-wlang',S.wlang);segSel('seg-len',S.len);segSel('seg-hard',S.hard?'1':'0');segSel('seg-theme',S.theme);
+  segSel('seg-wlang',S.wlang);segSel('seg-len',S.len);segSel('seg-hard',S.hard?'1':'0');segSel('seg-bg',S.bg);segSel('seg-colors',S.colors);
+  var bb=document.querySelectorAll('#seg-bg .seg-btn');for(var i=0;i<bb.length;i++){var v=bb[i].getAttribute('data-v');bb[i].classList.toggle('hidden',v!=='none'&&!BG_ART[v]);}
   $('row-len').classList.toggle('hidden',S.mode!=='free');
   $('mode-note').textContent=S.mode==='daily'?dailyNote():S.mode==='timed'?t('note.timed',{s:TIMED/60,k:SKIP}):t('note.free',{n:R.tries(S.len)});
   applyTheme();
 }
-function applyTheme(){THEMES.forEach(function(x){document.body.classList.toggle('th-'+x,S.theme===x);});document.body.classList.toggle('art',ART_READY&&S.theme!=='flat');}
+function applyTheme(){
+  document.body.classList.toggle('th-contrast',S.colors==='contrast');
+  var art=ART_READY&&S.bg!=='none';
+  document.body.classList.toggle('art',art);
+  BGS.forEach(function(b){document.body.classList.toggle('bg-'+b,S.bg===b);});
+  Fx.set(art);
+}
 function showScreen(name){
   document.body.classList.toggle('screen-menu',name==='menu');
   document.body.classList.toggle('screen-game',name==='game');
@@ -160,6 +179,16 @@ function buildBoard(){
   for(r=0;r<G.rows.length;r++)paintRow(r,false);
   paintCur();
 }
+/* ряды: сыгранные, текущий (подсвечен), будущие (затухают тем сильнее, чем дальше) */
+function rowStates(){
+  var rows=$('board').children,cur=G.over?-1:G.rows.length;
+  for(var r=0;r<rows.length;r++){
+    var cls='b-row'+(r<G.rows.length?' done':r===cur?' cur':' fut');
+    if(rows[r].className.indexOf('shake')>=0&&r===cur)cls+=' shake';
+    rows[r].className=cls;
+    rows[r].style.setProperty('--k',cur<0?0:Math.max(0,r-cur));
+  }
+}
 function tileAt(r,c){var row=$('board').children[r];return row?row.children[c]:null;}
 var SCLS=['ab','pr','ok'];
 function paintRow(r,anim){
@@ -175,7 +204,9 @@ function paintRow(r,anim){
   }
 }
 function paintCur(){
-  if(!G||G.over)return;
+  if(!G)return;
+  rowStates();
+  if(G.over)return;
   var r=G.rows.length;if(r>=G.tries)return;
   for(var c=0;c<G.len;c++){var el=tileAt(r,c),ch=G.cur.charAt(c).toUpperCase();
     el.children[0].textContent=ch;el.children[1].textContent='';
@@ -217,13 +248,15 @@ function submit(){
   if(!G.D.ok[w]){bad(t(G.l==='ru'?'msg.unknownRu':'msg.unknown'));return;}
   if(G.hard){var e=R.hardCheck(G.rows,w);if(e){bad(e.type==='pos'?t('msg.hardPos',{n:e.i+1,c:e.ch.toUpperCase()}):t('msg.hardHas',{c:e.ch.toUpperCase()}));return;}}
   var s=R.score(w,G.ans);G.rows.push({w:w,s:s});G.cur='';
+  if(!R.solved(s))rowStates();
   if(G.mode==='daily'){DB.day[G.l].rows.push(w);save();}
   var r=G.rows.length-1;G.busy=true;$('msg').textContent='';$('msg').className='msg';
   paintRow(r,true);
   setTimeout(function(){
     G.busy=false;paintKeys();
     var win=R.solved(s);
-    if(win)winRow(r);
+    if(win){winRow(r);Fx.burst($('board'));}
+    else if(G.mode!=='timed'&&G.rows.length>=G.tries)Fx.flash();
     if(G.mode==='timed'){
       if(win){G.solved++;ST.wins++;G.words.push({w:G.ans,ok:true});save();setTimeout(nextTimed,700);}
       else if(G.rows.length>=G.tries){G.words.push({w:G.ans,ok:false});$('msg').textContent=t('msg.was',{w:G.ans.toUpperCase()});setTimeout(nextTimed,1300);}
@@ -274,7 +307,7 @@ function endTimed(){
 
 /* ── конец слова (день и свободная) ── */
 function endRound(win,restored){
-  G.over=true;
+  G.over=true;rowStates();
   var n=G.rows.length,hl=-1,dist=null;
   if(!restored){
     if(G.mode==='daily'){
@@ -301,7 +334,7 @@ function endRound(win,restored){
   finishModal(win,G.mode==='daily');
 }
 function finishModal(win,share){
-  var im=$('over-img');if(ART_READY&&S.theme!=='flat'){im.src=ART+(win?'result_win':'result_lose')+'.webp';im.classList.remove('hidden');}else im.classList.add('hidden');
+  var im=$('over-img');if(ART_READY&&S.bg!=='none'){im.src=ART+(win?'result_win':'result_lose')+'.webp';im.classList.remove('hidden');}else im.classList.add('hidden');
   $('over-share').classList.toggle('hidden',!share);
   $('over-next').classList.toggle('hidden',G.mode==='daily');
   $('over-next').querySelector('span').textContent=t(G.mode==='timed'?'over.again':'over.next');
@@ -310,7 +343,7 @@ function finishModal(win,share){
   setTimeout(function(){if(G&&G.over)show('over-modal');},G.mode==='timed'?400:win?1100:700);
 }
 function shareText(){
-  var sq=S.theme==='contrast'?['⬛','🟦','🟧']:['⬛','🟨','🟩'];
+  var sq=S.colors==='contrast'?['⬛','🟦','🟧']:['⬛','🟨','🟩'];
   var win=G.rows.length&&R.solved(G.rows[G.rows.length-1].s);
   var head='A.C.EON WORDLE '+G.l.toUpperCase()+' #'+(G.day+1)+' '+(win?G.rows.length:'X')+'/'+G.tries+(G.hard?'*':'');
   return head+'\n'+G.rows.map(function(r){return r.s.map(function(v){return sq[v];}).join('');}).join('\n');
@@ -377,7 +410,8 @@ function boot(){
   seg('seg-wlang',function(v){S.wlang=v;});
   seg('seg-len',function(v){S.len=+v;});
   seg('seg-hard',function(v){S.hard=v==='1';});
-  seg('seg-theme',function(v){S.theme=v;});
+  seg('seg-bg',function(v){S.bg=v;});
+  seg('seg-colors',function(v){S.colors=v;});
   $('kb').addEventListener('click',function(e){var n=e.target;while(n&&n!==this&&!(n.getAttribute&&n.getAttribute('data-k')))n=n.parentNode;if(!n||n===this)return;press(n.getAttribute('data-k'));});
   $('btn-play').addEventListener('click',newGame);
   $('btn-menu').addEventListener('click',function(){showScreen('menu');});

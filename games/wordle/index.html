@@ -8,7 +8,7 @@
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared).
      Словари words-ru.js и words-en.js здесь не указаны: игра подгружает нужный сама. -->
-<script src="../shared/boot.js" data-v="3" defer></script>
+<script src="../shared/boot.js" data-v="5" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -20,6 +20,7 @@
   {"src":"../shared/achievements.js","kb":30},
   {"src":"js/lang.js","kb":20},
   {"src":"js/rules.js","kb":3},
+  {"src":"js/fx.js","kb":5},
   {"src":"js/wordle.js","kb":20}
 ]}
 </script>
@@ -50,6 +51,12 @@
       <h2 class="m-h" data-i18n="menu.mode"></h2>
       <div class="mode-list" id="mode-list"></div>
       <div class="opt-note" id="mode-note"></div>
+      <h2 class="m-h m-h2" data-i18n="menu.how"></h2>
+      <div class="how">
+        <div class="how-row"><span class="tile shown ok"><span class="tf">A</span><span class="tb">A</span></span><span data-i18n="how.ok"></span></div>
+        <div class="how-row"><span class="tile shown pr"><span class="tf">B</span><span class="tb">B</span></span><span data-i18n="how.pr"></span></div>
+        <div class="how-row"><span class="tile shown ab"><span class="tf">C</span><span class="tb">C</span></span><span data-i18n="how.ab"></span></div>
+      </div>
     </section>
     <section class="m-card">
       <h2 class="m-h" data-i18n="menu.opts"></h2>
@@ -58,6 +65,7 @@
           <button class="seg-btn" data-v="ru" data-i18n="wl.ru"></button>
           <button class="seg-btn" data-v="en" data-i18n="wl.en"></button>
         </div></div>
+      <div class="opt-note" data-i18n="note.wlang"></div>
       <div class="opt-row" id="row-len"><span class="opt-lbl" data-i18n="opt.len"></span>
         <div class="seg" id="seg-len">
           <button class="seg-btn" data-v="4">4</button>
@@ -67,21 +75,22 @@
       <div class="opt-row"><span class="opt-lbl" data-i18n="opt.hard"></span>
         <div class="seg" id="seg-hard">
           <button class="seg-btn" data-v="0" data-i18n="opt.hardOff"></button>
-          <button class="seg-btn" data-v="2" data-i18n="opt.hardOn"></button>
+          <button class="seg-btn" data-v="1" data-i18n="opt.hardOn"></button>
         </div></div>
       <div class="opt-note" data-i18n="note.hard"></div>
-      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.theme"></span>
-        <div class="seg" id="seg-theme">
-          <button class="seg-btn" data-v="neon" data-i18n="theme.neon"></button>
-          <button class="seg-btn" data-v="flat" data-i18n="theme.flat"></button>
-          <button class="seg-btn" data-v="contrast" data-i18n="theme.contrast"></button>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.bg"></span>
+        <div class="seg" id="seg-bg">
+          <button class="seg-btn" data-v="library" data-i18n="bg.library"></button>
+          <button class="seg-btn" data-v="space" data-i18n="bg.space"></button>
+          <button class="seg-btn" data-v="study" data-i18n="bg.study"></button>
+          <button class="seg-btn" data-v="none" data-i18n="bg.none"></button>
         </div></div>
-      <h2 class="m-h m-h2" data-i18n="menu.how"></h2>
-      <div class="how">
-        <div class="how-row"><span class="tile shown ok"><span class="tf">A</span><span class="tb">A</span></span><span data-i18n="how.ok"></span></div>
-        <div class="how-row"><span class="tile shown pr"><span class="tf">B</span><span class="tb">B</span></span><span data-i18n="how.pr"></span></div>
-        <div class="how-row"><span class="tile shown ab"><span class="tf">C</span><span class="tb">C</span></span><span data-i18n="how.ab"></span></div>
-      </div>
+      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.colors"></span>
+        <div class="seg" id="seg-colors">
+          <button class="seg-btn" data-v="normal" data-i18n="colors.normal"></button>
+          <button class="seg-btn" data-v="contrast" data-i18n="colors.contrast"></button>
+        </div></div>
+      <div class="opt-note" data-i18n="note.colors"></div>
       <h2 class="m-h m-h2" data-i18n="menu.stats"></h2>
       <div class="over-rows" id="stats"></div>
     </section>

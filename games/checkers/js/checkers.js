@@ -90,8 +90,14 @@ function paintMenu(){
   if(S.mode==='bot')buildLevels();
   segSel('seg-rules',S.rules);segSel('seg-side',S.side);segSel('seg-theme',S.theme);segSel('seg-hints',S.hints?'on':'off');segSel('seg-flip',S.flip?'on':'off');
   $('rules-note').textContent=t('rnote.'+S.rules);
+  applyTheme();
   var sv=DB.save;$('btn-cont').classList.toggle('hidden',!sv);
   if(sv)$('cont-info').textContent=t('rules.'+sv.rules)+' / '+(sv.mode==='duo'?t('mode.duo'):t('lv.'+sv.level));
+}
+/* фон страницы и цвета кнопок по виду доски: дерево тёплое, неон и плоский бирюзовые */
+function applyTheme(){
+  THEMES.forEach(function(x){document.body.classList.toggle('ck-'+x,S.theme===x);});
+  document.body.classList.toggle('art',ART_READY&&S.theme!=='flat');
 }
 function showScreen(name){
   document.body.classList.toggle('screen-menu',name==='menu');
@@ -209,8 +215,7 @@ function buildBoard(){
   pcLayer=document.createElement('div');pcLayer.className='pcs';b.appendChild(pcLayer);
   var co=document.createElement('div');co.className='coords';b.appendChild(co);
   if(ART_READY&&S.theme!=='flat'){var fr=document.createElement('img');fr.className='frame';fr.alt='';fr.src=ART+'frame_'+S.theme+'.webp';b.appendChild(fr);}
-  if(ART_READY&&S.theme!=='flat')$('arena').style.backgroundImage='linear-gradient(rgba(5,5,16,.3),rgba(5,5,16,.55)),url('+ART+'bg_'+S.theme+'.webp)';
-  else $('arena').style.backgroundImage='';
+  $('arena').style.backgroundImage='';   /* фон теперь у всей страницы (body.art), и в меню, и в игре */
 }
 function placeSquares(){
   /* при перевороте меняется порядок клеток в сетке */

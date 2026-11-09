@@ -11,9 +11,9 @@ var $=function(id){return document.getElementById(id);};
 function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
 
-var GAMES=['klondike','spider','freecell','blackjack','durak','hearts'];
+var GAMES=['klondike','spider','freecell','blackjack','durak','hearts','eights'];
 /* группы в списке игр: сюда будут добавляться 21, дурак, червы, восьмёрки */
-var GROUPS=[{key:'grp.patience',games:['klondike','spider','freecell']},{key:'grp.dealer',games:['blackjack']},{key:'grp.bots',games:['durak','hearts']}];
+var GROUPS=[{key:'grp.patience',games:['klondike','spider','freecell']},{key:'grp.dealer',games:['blackjack']},{key:'grp.bots',games:['durak','hearts','eights']}];
 /* картинки от Codex (фон, сукно, рубашки, значки игр): пока не выложены, false; тогда всё рисуется кодом */
 var ART_READY=true,ART=new URL('../art/cardgames/',location.href).href;
 var UNDO_MAX=400,UNDO_SAVE=25;
@@ -21,10 +21,11 @@ var UNDO_MAX=400,UNDO_SAVE=25;
 /* ── сохранения ── */
 Store.define('solitaire',{
   version:1,
-  defaults:{settings:{game:'klondike',draw:1,redeals:'inf',suits:1,table:'felt',back:'aceon',auto:true,tap:'select',cards:'std',bjRules:'bj',bjBots:2,dkMode:'podk',dkBots:2,dkLevel:'normal',hrTarget:100,hrPass:'on',hrLevel:'normal'},stats:{},save:null,
+  defaults:{settings:{game:'klondike',draw:1,redeals:'inf',suits:1,table:'felt',back:'aceon',auto:true,tap:'select',cards:'std',bjRules:'bj',bjBots:2,dkMode:'podk',dkDeck:36,dkBots:2,dkLevel:'normal',hrTarget:100,hrPass:'on',hrLevel:'normal',ceMode:'classic',ceBots:2,ceTarget:100,ceLevel:'normal'},stats:{},save:null,
     bj:{bj:{hands:0,win:0,loss:0,push:0,nat:0,streak:0,best:0},ochko:{hands:0,win:0,loss:0,push:0,nat:0,streak:0,best:0}},
     dk:{podk:{games:0,win:0,fool:0,draw:0,first:0,streak:0,best:0},perev:{games:0,win:0,fool:0,draw:0,first:0,streak:0,best:0}},
-    hr:{games:0,win:0,low:null,moons:0,rounds:0,streak:0,bstreak:0},hrSave:null},
+    hr:{games:0,win:0,low:null,moons:0,rounds:0,streak:0,bstreak:0},hrSave:null,
+    ce:{games:0,win:0,rounds:0,rwin:0,best:0,streak:0,bstreak:0},ceSave:null},
   legacy:function(raw){
     var hi=parseInt(raw('aceon_hi_soli'),10)||0;
     return hi?{stats:{'klondike-d1':{played:0,won:0,bestScore:hi}}}:null;
@@ -90,6 +91,7 @@ function buildStats(){
   if(S.game==='blackjack'&&window.BJ){BJ.stats($('stats'));return;}
   if(S.game==='durak'&&window.DK){DK.stats($('stats'));return;}
   if(S.game==='hearts'&&window.HR){HR.stats($('stats'));return;}
+  if(S.game==='eights'&&window.CE){CE.stats($('stats'));return;}
   var rows=[['klondike-d1','game.klondike',' / 1'],['klondike-d3','game.klondike',' / 3'],['spider-1','game.spider',' / 1'],
             ['spider-2','game.spider',' / 2'],['spider-4','game.spider',' / 4'],['freecell','game.freecell','']];
   var h='<div class="st-row st-head"><span></span><span data-i18n="st.won"></span><span data-i18n="st.time"></span><span data-i18n="st.best"></span></div>';
@@ -113,12 +115,13 @@ function preview(){
 }
 function paintMenu(){
   buildGames();buildStats();preview();
-  ['klondike','spider','freecell','blackjack','durak','hearts'].forEach(function(g){$('opt-'+g).classList.toggle('hidden',S.game!==g);});
-  var isHR=S.game==='hearts',isBJ=S.game==='blackjack'||S.game==='durak'||isHR;
+  ['klondike','spider','freecell','blackjack','durak','hearts','eights'].forEach(function(g){$('opt-'+g).classList.toggle('hidden',S.game!==g);});
+  var isHR=S.game==='hearts',isCE=S.game==='eights',isBJ=S.game==='blackjack'||S.game==='durak'||isHR||isCE;
   $('opt-tap').classList.toggle('hidden',isBJ);
   if(window.BJ)BJ.paintMenu();
   if(window.DK)DK.paintMenu();
   if(window.HR)HR.paintMenu();
+  if(window.CE)CE.paintMenu();
   $('sl-keys').classList.toggle('hidden',isBJ);   /* клавиши пасьянса не для 21, дурака и черв */
   [['tap',S.tap],['draw',String(S.draw)],['redeals',S.redeals],['suits',String(S.suits)],['auto',S.auto?'on':'off'],['table',S.table],['back',S.back],['cards',S.cards]].forEach(function(x){
     document.querySelectorAll('#seg-'+x[0]+' .seg-btn').forEach(function(b){b.classList.toggle('sel',b.dataset.v===x[1]);});
@@ -126,14 +129,14 @@ function paintMenu(){
   $('opt-auto').classList.toggle('hidden',S.game==='spider'||isBJ);
   $('tap-note').textContent=t('tapd.'+S.tap);
   var sv=DB.save;
-  $('btn-continue').classList.toggle('hidden',isHR?!(window.HR&&HR.hasSave()):isBJ||(!(Gm.st&&!Gm.over)&&!(sv&&sv.st)));
+  $('btn-continue').classList.toggle('hidden',isHR?!(window.HR&&HR.hasSave()):isCE?!(window.CE&&CE.hasSave()):isBJ||(!(Gm.st&&!Gm.over)&&!(sv&&sv.st)));
   document.body.className=document.body.className.replace(/\btbl-\w+/g,'')+' tbl-'+S.table;
 }
 
 function showScreen(name){
   document.body.classList.toggle('screen-menu',name==='menu');
   document.body.classList.toggle('screen-game',name==='game');
-  document.body.classList.remove('screen-bj','screen-dk','screen-hr');
+  document.body.classList.remove('screen-bj','screen-dk','screen-hr','screen-ce');
   if(name==='menu'){stopClock();paintMenu();}
   Sound.music(name==='menu'?'menu':'game');
   window.scrollTo(0,0);
@@ -645,8 +648,8 @@ function boot(){
   bindSeg('back',function(v){S.back=v;});
   bindSeg('cards',function(v){S.cards=v;});
   bindTable();
-  $('btn-play').addEventListener('click',function(){if(S.game==='blackjack'&&window.BJ)BJ.start();else if(S.game==='durak'&&window.DK)DK.start();else if(S.game==='hearts'&&window.HR)HR.start();else newGame();});
-  $('btn-continue').addEventListener('click',function(){if(S.game==='hearts'&&window.HR)HR.resume();else resume();});
+  $('btn-play').addEventListener('click',function(){if(S.game==='blackjack'&&window.BJ)BJ.start();else if(S.game==='durak'&&window.DK)DK.start();else if(S.game==='hearts'&&window.HR)HR.start();else if(S.game==='eights'&&window.CE)CE.start();else newGame();});
+  $('btn-continue').addEventListener('click',function(){if(S.game==='hearts'&&window.HR)HR.resume();else if(S.game==='eights'&&window.CE)CE.resume();else resume();});
   $('btn-menu').addEventListener('click',function(){showScreen('menu');});
   $('btn-undo').addEventListener('click',undo);
   $('btn-hint').addEventListener('click',hint);

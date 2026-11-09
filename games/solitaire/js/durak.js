@@ -16,6 +16,7 @@ function hide(id){$(id).classList.add('hidden');}
 if(['podk','perev'].indexOf(S.dkMode)<0)S.dkMode='podk';
 S.dkBots=Math.max(1,Math.min(3,S.dkBots|0||2));
 if(['easy','normal','hard'].indexOf(S.dkLevel)<0)S.dkLevel='normal';
+if(S.dkDeck!==52)S.dkDeck=36;
 var BOT_N=6,DELAY=650,END_PAUSE=950;
 
 /* G: партия из DKRules; bots: номера портретов; sel: выделенная карта; hold: стол закончившегося отбоя на паузе */
@@ -33,8 +34,8 @@ function pickBots(){
 }
 function start(){
   stop();pickBots();
-  D.G=R.newGame({n:S.dkBots+1,mode:S.dkMode});D.sel=null;D.hold=null;D.counted=false;D.shown={};
-  document.body.classList.remove('screen-menu','screen-game','screen-bj');document.body.classList.add('screen-dk');
+  D.G=R.newGame({n:S.dkBots+1,mode:S.dkMode,deck:S.dkDeck});D.sel=null;D.hold=null;D.counted=false;D.shown={};
+  document.body.classList.remove('screen-menu','screen-game','screen-bj','screen-hr','screen-ce');document.body.classList.add('screen-dk');
   Sound.music('game');window.scrollTo(0,0);
   $('dk-title').textContent=t('dk.mode.'+S.dkMode);
   hide('dk-new');buildTable();
@@ -250,7 +251,7 @@ function paintHand(){
   var r=roleOf(0);
   $('dk-myrole').textContent=r[1];$('dk-myrole').className='dk-role'+(r[0]?' r-'+r[0]:'');
   $('dk-me').classList.toggle('turn',my);
-  fanHand();
+  fanHand();fit();
 }
 /* веер руки: шаг между картами по ширине, много карт уходит в два ряда */
 function fanHand(){
@@ -276,7 +277,7 @@ function setButtons(){
 }
 function paintHud(){
   var st=stats();$('dk-w').textContent=st.win;$('dk-l').textContent=st.fool;$('dk-p').textContent=st.draw;
-  $('dk-sub').textContent=t('dk.lvl.'+S.dkLevel);
+  $('dk-sub').textContent=t('dk.lvl.'+S.dkLevel)+' / '+(D.G?D.G.size:S.dkDeck);
 }
 /* размер карт: стол до 6 пар, соперники сверху, рука снизу; подбирается по ширине и высоте */
 function layout(){
@@ -289,16 +290,29 @@ function layout(){
     var opp=low?44:Math.max(64,Math.min(120,cw*0.95)),need=opp+rows*cw*1.4*1.22+(low?30:44)+cw*1.4+(low?16:34)+(low?10:30);
     if(need<=H)break;
   }
+  setSize(tb,cw);fit();
+}
+function setSize(tb,cw){
   tb.style.setProperty('--cw',cw+'px');
   tb.style.setProperty('--ocw',Math.round(Math.max(18,Math.min(58,cw*0.42)))+'px');
   tb.style.setProperty('--ava',Math.round(Math.max(32,Math.min(72,cw*0.6)))+'px');
   fanHand();
 }
+/* оценка могла ошибиться (второй ряд руки, подписи): рука не должна уходить под кнопки */
+function fit(){
+  var tb=$('dk-table'),ctl=$('dk-ctl'),hand=$('dk-hand');if(!tb||!onScreen())return;
+  var cw=parseFloat(tb.style.getPropertyValue('--cw'))||70;
+  for(var k=0;k<20&&cw>34;k++){
+    var bottom=hand.getBoundingClientRect().bottom+window.scrollY,lim=(window.innerHeight||600)-ctl.offsetHeight-4;
+    if(bottom<=lim)break;
+    cw-=3;setSize(tb,cw);
+  }
+}
 window.addEventListener('resize',function(){setTimeout(layout,60);});
 
 /* ── меню ── */
 function paintMenu(){
-  [['dkmode',S.dkMode],['dkbots',String(S.dkBots)],['dklevel',S.dkLevel]].forEach(function(x){
+  [['dkmode',S.dkMode],['dkdeck',String(S.dkDeck)],['dkbots',String(S.dkBots)],['dklevel',S.dkLevel]].forEach(function(x){
     document.querySelectorAll('#seg-'+x[0]+' .seg-btn').forEach(function(b){b.classList.toggle('sel',b.dataset.v===x[1]);});
   });
   $('dk-mode-note').textContent=t('dk.note.'+S.dkMode);
@@ -317,6 +331,7 @@ function statsHtml(el){
 function bind(){
   function seg(id,fn){document.querySelectorAll('#seg-'+id+' .seg-btn').forEach(function(b){b.addEventListener('click',function(){fn(b.dataset.v);Sh.save();Sh.paintMenu();Sound.sfx('select');});});}
   seg('dkmode',function(v){S.dkMode=v;});
+  seg('dkdeck',function(v){S.dkDeck=+v;});
   seg('dkbots',function(v){S.dkBots=+v;});
   seg('dklevel',function(v){S.dkLevel=v;});
   $('dk-hand').addEventListener('click',function(e){var c=e.target.closest('[data-h]');if(c)tapCard(+c.getAttribute('data-h'));});

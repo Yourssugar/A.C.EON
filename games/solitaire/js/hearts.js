@@ -41,7 +41,7 @@ function pickBots(){
   D.bots=all.slice(0,3);
 }
 function enter(){
-  document.body.classList.remove('screen-menu','screen-game','screen-bj','screen-dk');document.body.classList.add('screen-hr');
+  document.body.classList.remove('screen-menu','screen-game','screen-bj','screen-dk','screen-ce');document.body.classList.add('screen-hr');
   Sound.music('game');window.scrollTo(0,0);
   hide('hr-panel');buildTable();
 }

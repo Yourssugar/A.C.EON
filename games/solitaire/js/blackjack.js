@@ -49,7 +49,7 @@ function pickBots(){
 }
 function start(){
   B.kind=S.bjRules;B.shoe=R.shoe(B.kind,Math.random);pickBots();
-  document.body.classList.remove('screen-menu','screen-game');document.body.classList.add('screen-bj');
+  document.body.classList.remove('screen-menu','screen-game','screen-dk','screen-hr','screen-ce');document.body.classList.add('screen-bj');
   Sound.music('game');window.scrollTo(0,0);
   $('bj-title').textContent=t('bj.kind.'+B.kind);
   deal();

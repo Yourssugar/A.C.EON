@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="11" defer></script>
+<script src="../shared/boot.js" data-v="12" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -26,7 +26,9 @@
   {"src":"js/durules.js","kb":13},
   {"src":"js/durak.js","kb":17},
   {"src":"js/hrrules.js","kb":11},
-  {"src":"js/hearts.js","kb":16}
+  {"src":"js/hearts.js","kb":16},
+  {"src":"js/cerules.js","kb":11},
+  {"src":"js/eights.js","kb":16}
 ]}
 </script>
 
@@ -87,6 +89,9 @@
         <div class="opt-row"><span class="opt-lbl" data-i18n="dk.rules"></span>
           <div class="seg" id="seg-dkmode"><button class="seg-btn" data-v="podk" data-i18n="dk.mode.podk"></button><button class="seg-btn" data-v="perev" data-i18n="dk.mode.perev"></button></div></div>
         <div class="opt-note" id="dk-mode-note"></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="dk.deck"></span>
+          <div class="seg" id="seg-dkdeck"><button class="seg-btn" data-v="36">36</button><button class="seg-btn" data-v="52">52</button></div></div>
+        <div class="opt-note" data-i18n="dk.deckNote"></div>
         <div class="opt-row"><span class="opt-lbl" data-i18n="bj.bots"></span>
           <div class="seg" id="seg-dkbots"><button class="seg-btn" data-v="1">1</button><button class="seg-btn" data-v="2">2</button><button class="seg-btn" data-v="3">3</button></div></div>
         <div class="opt-row"><span class="opt-lbl" data-i18n="dk.level"></span>
@@ -102,6 +107,18 @@
         <div class="opt-row"><span class="opt-lbl" data-i18n="dk.level"></span>
           <div class="seg" id="seg-hrlevel"><button class="seg-btn" data-v="easy" data-i18n="dk.lvl.easy"></button><button class="seg-btn" data-v="normal" data-i18n="dk.lvl.normal"></button><button class="seg-btn" data-v="hard" data-i18n="dk.lvl.hard"></button></div></div>
         <div class="opt-note" id="hr-level-note"></div>
+      </div>
+      <div class="opt hidden" id="opt-eights">
+        <div class="opt-row"><span class="opt-lbl" data-i18n="dk.rules"></span>
+          <div class="seg" id="seg-cemode"><button class="seg-btn" data-v="classic" data-i18n="ce.mode.classic"></button><button class="seg-btn" data-v="special" data-i18n="ce.mode.special"></button></div></div>
+        <div class="opt-note" id="ce-mode-note"></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="bj.bots"></span>
+          <div class="seg" id="seg-cebots"><button class="seg-btn" data-v="1">1</button><button class="seg-btn" data-v="2">2</button><button class="seg-btn" data-v="3">3</button></div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="ce.match"></span>
+          <div class="seg" id="seg-cetarget"><button class="seg-btn" data-v="one" data-i18n="ce.target.one"></button><button class="seg-btn" data-v="100">100</button></div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="dk.level"></span>
+          <div class="seg" id="seg-celevel"><button class="seg-btn" data-v="easy" data-i18n="dk.lvl.easy"></button><button class="seg-btn" data-v="normal" data-i18n="dk.lvl.normal"></button><button class="seg-btn" data-v="hard" data-i18n="dk.lvl.hard"></button></div></div>
+        <div class="opt-note" id="ce-level-note"></div>
       </div>
       <div class="opt" id="opt-tap">
         <div class="opt-row"><span class="opt-lbl" data-i18n="opt.tap"></span>
@@ -256,6 +273,37 @@
   <div class="bj-ctl dk-ctl" id="hr-ctl">
     <button class="btn bj-deal" id="hr-pass"><span id="hr-pass-t"></span></button>
     <button class="btn bj-hint" id="hr-hintb">? <span data-i18n="hud.hint"></span></button>
+  </div>
+</main>
+
+<!-- ════════ ВОСЬМЁРКИ ════════ -->
+<main class="dk-game" id="ce">
+  <div class="hud">
+    <div class="hud-title"><b id="ce-title"></b><span id="ce-sub"></span></div>
+    <div class="hud-cell"><span data-i18n="hr.st.games"></span><b id="ce-g">0</b></div>
+    <div class="hud-cell"><span data-i18n="hr.st.win"></span><b id="ce-w">0</b></div>
+    <div class="hud-cell"><span data-i18n="ce.st.rwin"></span><b id="ce-rw">0</b></div>
+    <div class="hud-btns">
+      <button class="btn" id="ce-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="table-wrap dk-wrap">
+    <div class="dk-table hr-table" id="ce-table">
+      <div class="dk-opps" id="ce-opps"></div>
+      <div class="dk-mid ce-mid">
+        <div class="ce-deck" id="ce-deck"></div>
+        <div class="ce-pile" id="ce-pile"></div>
+        <div class="ce-info" id="ce-info"></div>
+      </div>
+      <div class="dk-msg bj-msg" id="ce-msg"></div>
+      <div class="dk-me hr-me" id="ce-me"><div class="hr-mybar" id="ce-mybar"></div><div class="dk-hand" id="ce-hand"></div></div>
+      <div class="hr-panel hidden" id="ce-panel"></div>
+    </div>
+  </div>
+  <div class="bj-ctl dk-ctl" id="ce-ctl">
+    <button class="btn bj-act" id="ce-draw"><span id="ce-draw-t"></span><small>SPACE</small></button>
+    <button class="btn bj-act hidden" id="ce-pass"><span data-i18n="ce.pass"></span><small>SPACE</small></button>
+    <button class="btn bj-hint" id="ce-hintb">? <span data-i18n="hud.hint"></span></button>
   </div>
 </main>
 

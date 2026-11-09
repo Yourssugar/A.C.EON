@@ -515,3 +515,34 @@ body:not(.screen-hr) #hr{display:none;}
   .hr-side .dk-who{gap:2px;}
   .hr-side .bj-name{display:none;}
 }
+
+/* ════════ ВОСЬМЁРКИ ════════ */
+body.screen-ce #menu,body.screen-ce #game{display:none;}
+body:not(.screen-ce) #ce{display:none;}
+.ce-mid{gap:calc(var(--cw) * .35);max-width:none;padding-bottom:16px;}
+.ce-deck{position:relative;width:var(--cw);height:calc(var(--cw) * 1.4);cursor:pointer;}
+.ce-deck .dk-card{position:absolute;left:0;top:0;box-shadow:2px 2px 0 rgba(255,255,255,.12),4px 4px 0 rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.5);}
+.ce-empty{position:absolute;left:0;top:0;width:var(--cw);height:calc(var(--cw) * 1.4);border-radius:calc(var(--cw) * .07);border:2px dashed rgba(255,255,255,.25);}
+.ce-pile{position:relative;width:calc(var(--cw) * 1.25);height:calc(var(--cw) * 1.4);}
+.ce-pile .ce-under{position:absolute;left:0;top:0;transform:rotate(-8deg);opacity:.85;}
+.ce-pile .ce-top{position:absolute;left:calc(var(--cw) * .2);top:0;transform:rotate(4deg);}
+.ce-pile .ce-top.in{animation:hrIn .25s ease-out;}
+.ce-info{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:calc(var(--cw) * .7);}
+.ce-suit{width:calc(var(--cw) * .62);height:calc(var(--cw) * .62);border-radius:50%;background:rgba(255,255,255,.88);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--soft-d,#2a6f7a);}
+.ce-suit.named{box-shadow:0 0 0 3px #ffd23a,0 0 14px rgba(255,210,58,.6);}
+.ce-dir{font-family:Tahoma,Arial,sans-serif;font-size:calc(var(--cw) * .32);color:#6fe3f2;line-height:1;}
+.ce-pend{font-size:11px;color:#fff;padding:4px 9px;border-radius:999px;background:#a3172a;}
+.dk-cnt.one{background:#a3172a;}
+.ce-suits{gap:14px;}
+.ce-sbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ce-sbtn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;font-size:9px;}
+.ce-sbtn.rec{border-color:#ffd23a;}
+.ce-su{width:34px;height:34px;background:rgba(255,255,255,.9);border-radius:50%;padding:6px;box-sizing:border-box;}
+.ce-suits #ce-cancel{align-self:center;}
+@media (max-width:700px){
+  #ce .hud{flex-wrap:nowrap;}
+  #ce .hud-cell{padding:5px 6px;gap:4px;min-width:0;flex:1 1 0;justify-content:center;}
+  #ce .hud-cell span{font-size:6px;letter-spacing:0;white-space:nowrap;overflow:hidden;}
+  #ce .hud-btns{width:auto;margin-left:auto;flex:0 0 auto;}
+  #ce .hud-btns .btn{padding:8px 10px;}
+}

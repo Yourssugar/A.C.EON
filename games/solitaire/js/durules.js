@@ -1,6 +1,6 @@
 /* A.C.EON CARDS: правила дурака и боты. Без DOM, проверяется в node.
 
-   Колода 36 карт (6..туз), по 6 карт, козырь снизу колоды. Первым ходит тот, у кого младший козырь.
+   Колода 36 карт (6..туз) или 52 (2..туз), по 6 карт, козырь снизу колоды. Первым ходит тот, у кого младший козырь.
    Ход идёт по кругу (по часовой): атакующий заходит, следующий за ним отбивается.
    Подкидывают все, кроме отбивающегося, карты тех же значений, что уже на столе.
    В первом отбое не больше 5 карт, дальше не больше 6, и не больше, чем карт у отбивающегося.
@@ -23,9 +23,10 @@ function cid(c){return c.s*20+c.r;}
 function same(a,b){return a.s===b.s&&a.r===b.r;}
 function beats(a,d,trump){return (d.s===a.s&&rk(d)>rk(a))||(d.s===trump&&a.s!==trump);}
 
-function deck36(rnd){
+var R36=[1,6,7,8,9,10,11,12,13],R52=[1,2,3,4,5,6,7,8,9,10,11,12,13];
+function makeDeck(ranks,rnd){
   var cards=[];
-  for(var s=0;s<4;s++)[1,6,7,8,9,10,11,12,13].forEach(function(r){cards.push({s:s,r:r});});
+  for(var s=0;s<4;s++)ranks.forEach(function(r){cards.push({s:s,r:r});});
   for(var i=cards.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1)),t=cards[i];cards[i]=cards[j];cards[j]=t;}
   return cards;
 }
@@ -45,7 +46,8 @@ function nextActive(G,i){
 
 function newGame(o){
   var rnd=o.rnd||Math.random,n=o.n;
-  var G={mode:o.mode==='perev'?'perev':'podk',n:n,deck:deck36(rnd),hands:[],out:[],places:[],table:[],discard:[],known:[],
+  var ranks=o.deck===52?R52:R36;
+  var G={mode:o.mode==='perev'?'perev':'podk',n:n,size:ranks.length*4,ranks:ranks,deck:makeDeck(ranks,rnd),hands:[],out:[],places:[],table:[],discard:[],known:[],
     att:0,def:1,phase:'attack',turn:0,taking:false,ti:0,passes:0,first:true,over:false,fool:-1,last:null,bout:0};
   for(var i=0;i<n;i++){G.hands.push([]);G.known.push([]);G.out.push(false);}
   for(var r=0;r<6;r++)for(var p=0;p<n;p++)G.hands[p].push(G.deck.pop());
@@ -172,7 +174,7 @@ function unseen(G,p){
   G.table.forEach(function(x){gone[cid(x.a)]=1;if(x.d)gone[cid(x.d)]=1;});
   G.known.forEach(function(k,j){if(j!==p)k.forEach(function(c){gone[cid(c)]=1;});});
   if(G.deck.length)gone[cid(G.trumpCard)]=1;
-  var l=[];for(var s=0;s<4;s++)[1,6,7,8,9,10,11,12,13].forEach(function(r){if(!gone[s*20+r])l.push({s:s,r:r});});
+  var l=[];for(var s=0;s<4;s++)(G.ranks||R36).forEach(function(r){if(!gone[s*20+r])l.push({s:s,r:r});});
   return l;
 }
 /* может ли игрок q, по сведениям p, побить карту c */

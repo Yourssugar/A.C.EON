@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="10" defer></script>
+<script src="../shared/boot.js" data-v="11" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -24,7 +24,9 @@
   {"src":"js/bjrules.js","kb":4},
   {"src":"js/blackjack.js","kb":16},
   {"src":"js/durules.js","kb":13},
-  {"src":"js/durak.js","kb":17}
+  {"src":"js/durak.js","kb":17},
+  {"src":"js/hrrules.js","kb":11},
+  {"src":"js/hearts.js","kb":16}
 ]}
 </script>
 
@@ -91,6 +93,16 @@
           <div class="seg" id="seg-dklevel"><button class="seg-btn" data-v="easy" data-i18n="dk.lvl.easy"></button><button class="seg-btn" data-v="normal" data-i18n="dk.lvl.normal"></button><button class="seg-btn" data-v="hard" data-i18n="dk.lvl.hard"></button></div></div>
         <div class="opt-note" id="dk-level-note"></div>
       </div>
+      <div class="opt hidden" id="opt-hearts">
+        <div class="opt-note" data-i18n="hr.note"></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="hr.target"></span>
+          <div class="seg" id="seg-hrtarget"><button class="seg-btn" data-v="50">50</button><button class="seg-btn" data-v="100">100</button></div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="hr.passOpt"></span>
+          <div class="seg" id="seg-hrpass"><button class="seg-btn" data-v="on" data-i18n="hr.on"></button><button class="seg-btn" data-v="off" data-i18n="hr.off"></button></div></div>
+        <div class="opt-row"><span class="opt-lbl" data-i18n="dk.level"></span>
+          <div class="seg" id="seg-hrlevel"><button class="seg-btn" data-v="easy" data-i18n="dk.lvl.easy"></button><button class="seg-btn" data-v="normal" data-i18n="dk.lvl.normal"></button><button class="seg-btn" data-v="hard" data-i18n="dk.lvl.hard"></button></div></div>
+        <div class="opt-note" id="hr-level-note"></div>
+      </div>
       <div class="opt" id="opt-tap">
         <div class="opt-row"><span class="opt-lbl" data-i18n="opt.tap"></span>
           <div class="seg" id="seg-tap"><button class="seg-btn" data-v="select" data-i18n="tap.select"></button><button class="seg-btn" data-v="auto" data-i18n="tap.auto"></button></div></div>
@@ -132,7 +144,7 @@
     <button class="btn sl-play" id="btn-play">&#9654; <span data-i18n="menu.play"></span></button>
     <button class="btn sl-cont hidden" id="btn-continue" data-i18n="menu.continue"></button>
   </div>
-  <div class="sl-keys" data-i18n="help.keys"></div>
+  <div class="sl-keys" id="sl-keys" data-i18n="help.keys"></div>
 </main>
 
 <!-- ════════ ИГРА ════════ -->
@@ -214,6 +226,36 @@
     <button class="btn bj-act" id="dk-done"><span id="dk-done-t"></span><small>SPACE</small></button>
     <button class="btn bj-hint" id="dk-hintb">? <span data-i18n="hud.hint"></span></button>
     <button class="btn bj-deal hidden" id="dk-new">&#9654; <span data-i18n="dk.new"></span><small>ENTER</small></button>
+  </div>
+</main>
+
+<!-- ════════ ЧЕРВЫ ════════ -->
+<main class="dk-game" id="hr">
+  <div class="hud">
+    <div class="hud-title"><b id="hr-title"></b><span id="hr-sub"></span></div>
+    <div class="hud-cell"><span data-i18n="hr.st.games"></span><b id="hr-g">0</b></div>
+    <div class="hud-cell"><span data-i18n="hr.st.win"></span><b id="hr-w">0</b></div>
+    <div class="hud-cell"><span data-i18n="hr.st.low"></span><b id="hr-lo">-</b></div>
+    <div class="hud-btns">
+      <button class="btn" id="hr-menu">&#9664; <span data-i18n="hud.menu"></span></button>
+    </div>
+  </div>
+  <div class="table-wrap dk-wrap">
+    <div class="dk-table hr-table" id="hr-table">
+      <div class="dk-opp hr-seat hr-top" id="hr-s2"></div>
+      <div class="hr-mid">
+        <div class="dk-opp hr-seat hr-side" id="hr-s1"></div>
+        <div class="hr-trick" id="hr-trick"></div>
+        <div class="dk-opp hr-seat hr-side" id="hr-s3"></div>
+      </div>
+      <div class="dk-msg bj-msg" id="hr-msg"></div>
+      <div class="dk-me hr-me" id="hr-me"><div class="hr-mybar hr-seat" id="hr-s0"></div><div class="dk-hand" id="hr-hand"></div></div>
+      <div class="hr-panel hidden" id="hr-panel"></div>
+    </div>
+  </div>
+  <div class="bj-ctl dk-ctl" id="hr-ctl">
+    <button class="btn bj-deal" id="hr-pass"><span id="hr-pass-t"></span></button>
+    <button class="btn bj-hint" id="hr-hintb">? <span data-i18n="hud.hint"></span></button>
   </div>
 </main>
 

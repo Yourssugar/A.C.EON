@@ -444,3 +444,74 @@ body:not(.screen-dk) #dk{display:none;}
   .dk-me>.dk-role{display:none;}
   .dk-msg{padding:3px 12px;}
 }
+
+/* ════════ ЧЕРВЫ ════════ */
+body.screen-hr #menu,body.screen-hr #game{display:none;}
+body:not(.screen-hr) #hr{display:none;}
+.hr-table{position:relative;}
+.hr-mid{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;flex:1;}
+.hr-side{flex:0 0 auto;width:clamp(70px,calc(var(--cw) * 1.3),170px);}
+.hr-side .dk-who{flex-direction:column;gap:4px;}
+.hr-side .dk-nm{align-items:center;}
+.hr-seat.turn{border-color:rgba(111,227,242,.45);background:rgba(0,229,255,.06);}
+.hr-sc{display:flex;gap:6px;align-items:center;}
+.hr-sc b{font-weight:normal;font-size:10px;color:#fff;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);}
+.hr-sc i{font-style:normal;font-size:9px;color:#ff8a95;font-family:Tahoma,Arial,sans-serif;font-weight:bold;}
+.hr-sc i:empty{display:none;}
+.hr-side .dk-ofan{flex-wrap:nowrap;}
+.hr-mybar{display:flex;gap:10px;align-items:center;justify-content:center;padding:2px 10px;border-radius:999px;border:1px solid transparent;}
+/* взятка: карты лежат со стороны того, кто их положил */
+.hr-trick{position:relative;width:calc(var(--cw) * 3.3);height:calc(var(--cw) * 1.4 * 2.15);flex-shrink:0;transition:transform .3s ease-in,opacity .3s ease-in;}
+.hr-tc{position:absolute;}
+.hr-tc.in{animation:hrIn .22s ease-out;}
+.hr-tc.hr-me{left:calc(50% - var(--cw) / 2);bottom:0;}
+.hr-tc.hr-top{left:calc(50% - var(--cw) / 2);top:0;}
+.hr-tc.hr-left{left:0;top:calc(50% - var(--cw) * .7);transform:rotate(-6deg);}
+.hr-tc.hr-right{right:0;top:calc(50% - var(--cw) * .7);transform:rotate(6deg);}
+@keyframes hrIn{from{opacity:0;}to{opacity:1;}}
+.hr-trick.go-me{transform:translateY(60%) scale(.5);opacity:0;}
+.hr-trick.go-top{transform:translateY(-60%) scale(.5);opacity:0;}
+.hr-trick.go-left{transform:translateX(-60%) scale(.5);opacity:0;}
+.hr-trick.go-right{transform:translateX(60%) scale(.5);opacity:0;}
+.dk-hand .dk-card.got{box-shadow:0 0 0 3px #6fe3f2,0 0 12px rgba(111,227,242,.7);}
+/* итоги раздачи */
+.hr-panel{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,14,.55);z-index:20;padding:12px;}
+.hr-panel.hidden{display:none;}
+.hr-pbox{width:min(440px,100%);display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:var(--r-card,18px);background:rgba(5,12,26,.94);border:1px solid var(--soft-d,#2a6f7a);box-shadow:0 10px 40px rgba(0,0,0,.6);}
+.hr-ptitle{font-weight:normal;font-size:12px;letter-spacing:2px;color:var(--soft,#6fe3f2);text-align:center;}
+.hr-moon{text-align:center;font-size:9px;letter-spacing:1px;line-height:1.7;color:#ffd23a;}
+.hr-rows{display:flex;flex-direction:column;gap:6px;}
+.hr-row{display:grid;grid-template-columns:1fr 60px 60px;gap:8px;align-items:center;font-size:9px;letter-spacing:1px;color:#cfe6f2;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);}
+.hr-row span:nth-child(n+2),.hr-row b{text-align:center;}
+.hr-row b{font-weight:normal;color:#fff;}
+.hr-row.hr-head{background:none;color:#5f8fa6;font-size:7px;padding:0 10px;}
+.hr-row.me{border:1px solid var(--soft-d,#2a6f7a);}
+.hr-row.win{background:rgba(46,232,122,.14);color:#7dffa0;}
+.hr-note{text-align:center;font-size:8px;color:#6a93a8;letter-spacing:1px;}
+.hr-pbox .bj-deal{align-self:center;padding:13px 22px;font-size:10px;}
+@media (max-width:700px){
+  #hr .hud{flex-wrap:nowrap;}
+  #hr .hud-cell{padding:5px 6px;gap:4px;min-width:0;flex:1 1 0;justify-content:center;}
+  #hr .hud-cell span{font-size:6px;letter-spacing:0;white-space:nowrap;overflow:hidden;}
+  #hr .hud-btns{width:auto;margin-left:auto;flex:0 0 auto;}
+  #hr .hud-btns .btn{padding:8px 10px;}
+  .hr-side .dk-card.mini{display:none;}
+  .hr-side .dk-cnt{margin-left:0;}
+  .hr-side .dk-ofan{padding:0;min-height:0;}
+  .hr-mid{gap:4px;}
+}
+@media (max-height:500px){
+  .hr-top{flex-direction:row;padding:2px 8px;}
+  .hr-top .dk-card.mini,.hr-side .dk-card.mini{display:none;}
+  .hr-top .dk-ofan,.hr-side .dk-ofan{padding:0;min-height:0;}
+  .hr-top .dk-cnt,.hr-side .dk-cnt{margin-left:0;}
+  .hr-me{padding:0;gap:0;}
+  .hr-mybar{display:none;}
+}
+.hr-side .dk-card.mini:nth-child(n+5){display:none;}
+.hr-side .dk-ofan{justify-content:center;}
+@media (max-height:500px){
+  .dk-opp.hr-side{flex-direction:column;gap:2px;padding:2px;}
+  .hr-side .dk-who{gap:2px;}
+  .hr-side .bj-name{display:none;}
+}

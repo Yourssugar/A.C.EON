@@ -1,5 +1,5 @@
 /* A.C.EON TETRIS: меню, игровой экран, панели запаса и очереди, надписи, кнопки, робот.
-   Размер клетки ставит tetris.js (layout). Темы: body.th-neon / th-gb / th-glass, крупный вид: body.big. */
+   Размер клетки ставит tetris.js (layout). Темы: body.th-neon / th-crystal / th-gb, крупный вид: body.big. */
 
 body{display:flex;flex-direction:column;}
 body.screen-menu #game{display:none;}
@@ -105,7 +105,6 @@ body.screen-game #menu{display:none;}
 .well{position:relative;flex-shrink:0;width:240px;height:480px;box-sizing:content-box;border:3px solid #1d3a66;
   box-shadow:0 0 0 1px #000,0 0 30px rgba(0,229,255,.18),0 12px 30px rgba(0,0,0,.6);overflow:hidden;}
 .well canvas{position:absolute;left:0;top:0;display:block;}
-body.view-3d #cv-field{display:none;}
 .b3-canvas{background:radial-gradient(ellipse at 50% 40%,#0e1838,#03050c 75%);}
 /* узкий экран: запас и очередь полосой над полем */
 body.narrow .arena{display:grid;grid-template-columns:auto auto;justify-content:center;align-content:start;gap:6px 8px;padding-top:6px;}
@@ -178,8 +177,8 @@ body.pad-side .tp-b[data-a=soft]{order:3;}
 .th-gb .well{border-color:#306230;box-shadow:0 0 0 4px #0f380f,0 12px 30px rgba(0,0,0,.6);}
 .th-gb .panel{background:#8bac0f;border-color:#306230;}
 .th-gb .p-h{color:#0f380f;}
-.th-glass .well{border-color:rgba(255,255,255,.35);box-shadow:0 0 0 1px rgba(255,255,255,.1),0 0 40px rgba(160,120,255,.25),0 12px 30px rgba(0,0,0,.6);border-radius:6px;}
-.th-glass .panel{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.2);border-radius:6px;}
+.th-crystal .well{border-color:rgba(255,255,255,.35);box-shadow:0 0 0 1px rgba(255,255,255,.1),0 0 40px rgba(160,120,255,.25),0 12px 30px rgba(0,0,0,.6);border-radius:6px;}
+.th-crystal .panel{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.2);border-radius:6px;}
 /* крупный вид: контраст и большие надписи */
 .big .well{border-color:#fff;border-width:4px;}
 .big .panel{background:#000;border-color:#fff;}
@@ -267,3 +266,77 @@ body.bot-on .bot{display:flex;}
 @media (pointer:coarse){.btn,.seg-btn{min-height:40px;}.hud-btns .btn{min-height:34px;}}
 /* низкий экран: без подписи режима, чтобы панель была в одну строку */
 @media (max-height:520px){.hud-mode{display:none;}.hud{padding:4px 8px;}.hc{padding:3px 8px;}}
+
+/* ════════ МЯГКИЙ ВИД (как шахматы, шашки, «Угадай слово») ════════
+   цвет акцента под стиль фигур: неон бирюзовый, кристаллы сиреневый, карманный оливковый */
+body{--soft:#6fe3f2;--soft-rgb:111,227,242;--soft-d:rgba(var(--soft-rgb),.2);--soft-b:rgba(var(--soft-rgb),.42);
+  --card-bg:linear-gradient(165deg,rgba(12,28,48,.84),rgba(4,10,22,.88));--in-bg:rgba(4,14,28,.72);
+  --r-card:18px;--r-in:12px;--r-pill:999px;}
+body.th-crystal{--soft:#c9a6ff;--soft-rgb:201,166,255;--card-bg:linear-gradient(165deg,rgba(30,20,52,.86),rgba(10,6,22,.9));--in-bg:rgba(18,10,34,.72);}
+body.th-gb{--soft:#b8d45a;--soft-rgb:184,212,90;--card-bg:linear-gradient(165deg,rgba(26,34,14,.88),rgba(10,14,6,.9));--in-bg:rgba(16,22,8,.74);}
+/* фон страницы: пока нет картинок, мягкий градиент со светом по краям */
+body{background:radial-gradient(ellipse at 15% 0%,rgba(var(--soft-rgb),.1),transparent 50%),radial-gradient(ellipse at 90% 100%,rgba(255,45,120,.08),transparent 55%),#050510;background-attachment:fixed;}
+body.art{background:#050510 center/cover no-repeat fixed;}
+body.art.th-neon{background-image:url(../../art/tetris/bg_neon_wide.webp);}
+body.art.th-crystal{background-image:url(../../art/tetris/bg_crystal_wide.webp);}
+body.art.th-gb{background-image:url(../../art/tetris/bg_pocket_wide.webp);}
+@media (max-aspect-ratio:1/1){
+  body.art.th-neon{background-image:url(../../art/tetris/bg_neon_tall.webp);}
+  body.art.th-crystal{background-image:url(../../art/tetris/bg_crystal_tall.webp);}
+  body.art.th-gb{background-image:url(../../art/tetris/bg_pocket_tall.webp);}
+}
+body.art #menu{background:radial-gradient(ellipse at 50% 45%,rgba(5,5,16,.55),rgba(5,5,16,.2) 70%);}
+.m-menu{background:none;}
+/* меню */
+.m-title{color:#eaffff;text-shadow:0 0 14px rgba(var(--soft-rgb),.45),0 0 34px rgba(var(--soft-rgb),.18);}
+.m-brand{text-shadow:0 0 8px rgba(255,45,120,.6);}
+.m-sub{color:rgba(var(--soft-rgb),.6);}
+.m-h{color:var(--soft);text-shadow:0 0 6px rgba(var(--soft-rgb),.3);}
+.m-card{border:1px solid var(--soft-d);border-top:1px solid var(--soft-b);border-radius:var(--r-card);background:var(--card-bg);
+  box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 24px rgba(var(--soft-rgb),.05);}
+.m-card-btn{border:1px solid rgba(var(--soft-rgb),.14);border-left:1px solid rgba(var(--soft-rgb),.14);border-radius:14px;background:var(--in-bg);transition:background .15s,transform .15s;}
+.m-card-btn:hover{background:rgba(var(--soft-rgb),.08);transform:translateX(2px);}
+.m-card-btn.sel{background:linear-gradient(90deg,rgba(var(--soft-rgb),.16),var(--in-bg) 85%);border-color:var(--soft-b);
+  box-shadow:0 0 0 1px rgba(var(--soft-rgb),.35),0 0 16px rgba(var(--soft-rgb),.14);}
+.m-ico{border-radius:10px;border:1px solid rgba(var(--soft-rgb),.3);}
+.m-img{flex-shrink:0;width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(var(--soft-rgb),.25));}
+.opt-lbl{color:rgba(var(--soft-rgb),.6);}
+.seg{gap:5px;}
+.seg-btn{border-radius:var(--r-pill);border-color:rgba(var(--soft-rgb),.18);background:var(--in-bg);padding:8px 11px;}
+.seg-btn:hover{border-color:var(--soft-b);}
+.seg-btn.sel{background:rgba(var(--soft-rgb),.16);border-color:var(--soft);color:#fff;box-shadow:0 0 8px rgba(var(--soft-rgb),.2);}
+.th-card{border-radius:14px;border-color:rgba(var(--soft-rgb),.16);background:var(--in-bg);}
+.th-card.sel{border-color:var(--soft);box-shadow:0 0 0 1px rgba(var(--soft-rgb),.4),0 0 14px rgba(var(--soft-rgb),.18);}
+.th-cv{border-radius:8px;}
+.st-row>*{border-radius:10px;background:var(--in-bg);border-color:rgba(var(--soft-rgb),.1);}
+.st-head>*{background:none;border-color:transparent;color:rgba(var(--soft-rgb),.55);}
+.st-row.cur>*{border-color:var(--soft-b);}
+.key-btn{border-radius:10px;border-color:rgba(var(--soft-rgb),.16);background:var(--in-bg);}
+.rng input{border-radius:var(--r-pill);}
+body .btn{border-radius:var(--r-pill);border-bottom-width:1px;border-color:rgba(var(--soft-rgb),.22);background:var(--in-bg);color:#e8f4fb;}
+body .btn:hover{border-color:var(--soft);background:rgba(var(--soft-rgb),.12);box-shadow:0 0 10px rgba(var(--soft-rgb),.2);}
+.m-play{padding:16px 46px;background:linear-gradient(180deg,rgba(var(--soft-rgb),.32),rgba(var(--soft-rgb),.1));border-color:var(--soft);
+  animation:playGlowSoft 2.6s ease-in-out infinite;}
+@keyframes playGlowSoft{0%,100%{box-shadow:0 0 10px rgba(var(--soft-rgb),.22);}50%{box-shadow:0 0 22px rgba(var(--soft-rgb),.42);}}
+.m-actions{background:linear-gradient(to bottom,rgba(5,5,16,0),rgba(5,5,16,.85) 40%);}
+/* игра: панель сверху таблетками, окна запаса и очереди скруглённые, поле со светом вокруг */
+.hud{background:rgba(3,6,14,.72);border-bottom:1px solid rgba(var(--soft-rgb),.14);}
+.hud-mode{color:rgba(var(--soft-rgb),.75);}
+.hc{flex-direction:row;gap:8px;align-items:baseline;border-radius:var(--r-pill);border-color:rgba(var(--soft-rgb),.16);background:rgba(4,8,18,.72);padding:6px 12px;}
+.panel{border-radius:16px;border-color:rgba(var(--soft-rgb),.18);background:rgba(4,8,18,.66);}
+.well{border-radius:12px;border:2px solid rgba(var(--soft-rgb),.45);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 30px rgba(var(--soft-rgb),.2),0 0 80px rgba(var(--soft-rgb),.08),0 14px 34px rgba(0,0,0,.6);}
+.th-gb .well{border-radius:10px;}
+.th-gb .panel{border-radius:12px;}
+.arc-box{border-radius:22px;}
+.ov-row{border-radius:var(--r-in);border-left-width:1px;}
+.over-img{width:130px;height:130px;object-fit:contain;align-self:center;margin:-8px 0 -4px;}
+.over-img.hidden{display:none;}
+/* BLOCKMIND картинкой: рисованный робот прячется */
+.bot-img{display:none;position:absolute;left:50%;bottom:0;width:170px;height:170px;margin-left:-85px;object-fit:contain;animation:tbFloat 3.5s ease-in-out infinite;}
+body.art .bot-img{display:block;}
+body.art .bot-core,body.art .bot-p{display:none;}
+.tp-b{border-radius:14px;}
+@media (max-width:700px){
+  .hc{flex-direction:column;align-items:center;gap:3px;border-radius:12px;padding:5px 6px;}
+}

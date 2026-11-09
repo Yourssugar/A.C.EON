@@ -7,7 +7,7 @@
 
 <!-- Загрузчик: качает файлы из списка ниже с прогрессом и дописывает к ним ?v=.
      data-v МЕНЯТЬ ПРИ КАЖДОЙ ВЫКЛАДКЕ (и при изменениях в games/shared). -->
-<script src="../shared/boot.js" data-v="4" defer></script>
+<script src="../shared/boot.js" data-v="6" defer></script>
 <script type="application/json" id="boot-manifest">
 {"files":[
   {"src":"../shared/arcade.css","kb":7},
@@ -17,11 +17,9 @@
   {"src":"../shared/sound.js","kb":9},
   {"src":"../shared/arcade.js","kb":5},
   {"src":"../shared/achievements.js","kb":30},
-  {"src":"../shared/three-loader.js","kb":3},
   {"src":"js/lang.js","kb":36},
   {"src":"js/rules.js","kb":13},
   {"src":"js/view2d.js","kb":12},
-  {"src":"js/view3d.js","kb":11},
   {"src":"js/ai.js","kb":6},
   {"src":"js/tetris.js","kb":31}
 ]}
@@ -96,15 +94,11 @@
 
     <section class="m-card">
       <h2 class="m-h" data-i18n="menu.look"></h2>
-      <div class="opt-row"><span class="opt-lbl" data-i18n="opt.view"></span>
-        <div class="seg" id="seg-view">
-          <button class="seg-btn" data-v="2d">2D</button>
-          <button class="seg-btn" data-v="3d">3D</button>
-        </div></div>
       <div class="themes" id="themes">
         <button class="th-card" data-v="neon"><canvas class="th-cv" width="64" height="48"></canvas><span data-i18n="theme.neon"></span></button>
+        <button class="th-card" data-v="crystal"><canvas class="th-cv" width="64" height="48"></canvas><span data-i18n="theme.crystal"></span></button>
         <button class="th-card" data-v="gb"><canvas class="th-cv" width="64" height="48"></canvas><span data-i18n="theme.gb"></span></button>
-        <button class="th-card" data-v="glass"><canvas class="th-cv" width="64" height="48"></canvas><span data-i18n="theme.glass"></span></button>
+        
       </div>
       <div class="opt-row"><span class="opt-lbl" data-i18n="opt.big"></span>
         <div class="seg" id="seg-big">
@@ -159,7 +153,6 @@
     <div class="hud-mode" id="hud-mode"></div>
     <div class="hud-cells" id="hud-cells"></div>
     <div class="hud-btns">
-      <button class="btn" id="btn-view">3D</button>
       <button class="btn" id="btn-pause"><svg class="i-pause" viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="1" width="3" height="8" fill="currentColor"/><rect x="6" y="1" width="3" height="8" fill="currentColor"/></svg><span data-i18n="hud.pause"></span></button>
       <button class="btn" id="btn-menu">&#9664; <span data-i18n="hud.menu"></span></button>
     </div>
@@ -174,7 +167,6 @@
       <div class="meter" id="meter-me"></div>
       <div class="fx" id="fx"></div>
       <div class="count hidden" id="count"></div>
-      <div class="b3-load hidden" id="b3-load"></div>
       <div class="pause-ov hidden" id="pause-ov">
         <div class="po-title" data-i18n="pause.title"></div>
         <button class="btn po-go" id="po-go">&#9654; <span data-i18n="pause.go"></span></button>
@@ -197,6 +189,7 @@
     <aside class="bot" id="bot" aria-hidden="true">
       <div class="bot-stage">
         <span class="bot-p bp1"></span><span class="bot-p bp2"></span><span class="bot-p bp3"></span>
+        <img class="bot-img" id="bot-img" alt="">
         <div class="bot-core">
           <div class="bot-blocks"><span></span><span></span><span></span><span></span></div>
           <div class="bot-head">
@@ -229,6 +222,7 @@
 <!-- конец партии -->
 <div class="arc-modal hidden over-modal" id="over-modal">
   <div class="arc-box over-box">
+    <img class="over-img hidden" id="over-img" alt="">
     <div class="over-title" id="over-title"></div>
     <div class="over-rec hidden" id="over-rec" data-i18n="over.record"></div>
     <div class="over-rows" id="over-rows"></div>

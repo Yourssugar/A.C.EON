@@ -15,17 +15,19 @@ var R=window.TetRules,W=R.W,H=R.H,HID=R.HIDDEN,VIS=H-HID;
 var PAL={
   neon:{I:'#26c6da',O:'#ffee58',T:'#ab47bc',S:'#66bb6a',Z:'#ef5350',J:'#42a5f5',L:'#ffa726',G:'#59647d'},
   gb:{I:'#0f380f',O:'#306230',T:'#0f380f',S:'#306230',Z:'#0f380f',J:'#306230',L:'#0f380f',G:'#4d6b1a'},
-  glass:{I:'#4fe3ff',O:'#ffe96a',T:'#d17bff',S:'#7dffa0',Z:'#ff6f86',J:'#6ea8ff',L:'#ffb35c',G:'#8a93b8'},
+  crystal:{I:'#3fd8ec',O:'#ffe066',T:'#c06ae6',S:'#62d97a',Z:'#f25f6e',J:'#5b8ff5',L:'#ffa640',G:'#6a7090'},
   big:{I:'#00e5ff',O:'#ffe600',T:'#c04dff',S:'#2ee84a',Z:'#ff3030',J:'#3b7bff',L:'#ff8c00',G:'#a0a0a0'}
 };
 var BG={
-  neon:{a:'#0b1124',b:'#070b18',grid:'rgba(0,229,255,.07)'},
+  neon:{a:'rgba(10,16,38,.86)',b:'rgba(6,9,22,.9)',grid:'rgba(0,229,255,.07)'},
   gb:{a:'#9bbc0f',b:'#8bac0f',grid:'rgba(15,56,15,.12)'},
-  glass:{a:'#0d1430',b:'#160a2a',grid:'rgba(255,255,255,.05)'},
+  crystal:{a:'rgba(14,16,40,.86)',b:'rgba(20,10,38,.9)',grid:'rgba(255,255,255,.05)'},
   big:{a:'#000000',b:'#000000',grid:'rgba(255,255,255,.1)'}
 };
 /* узор блоков карманной темы: у каждой фигуры свой, чтобы различать их без цвета */
 var GB_PAT={I:0,O:1,T:2,S:3,Z:4,J:5,L:6,G:7};
+/* картинки блоков от Codex: TetView2D.tiles(theme, {I:url,...}); пока не загрузились, блок рисует код */
+var TILES={};
 
 function pal(theme,big){return big?PAL.big:(PAL[theme]||PAL.neon);}
 function bg(theme,big){return big?BG.big:(BG[theme]||BG.neon);}
@@ -40,6 +42,8 @@ function darken(h,q){var c=hex2rgb(h);return 'rgb('+c.map(function(v){return Mat
 function block(g,x,y,s,type,set,alpha){
   var theme=set.big?'big':set.theme,col=pal(set.theme,set.big)[type]||'#888';
   g.globalAlpha=alpha==null?1:alpha;
+  var im=TILES[theme]&&TILES[theme][type];
+  if(im&&im.complete&&im.naturalWidth){g.drawImage(im,x,y,s,s);g.globalAlpha=1;return;}
   if(theme==='gb'){
     g.fillStyle='#0f380f';g.fillRect(x,y,s,s);
     var inner=Math.max(1,Math.round(s*0.12));
@@ -60,14 +64,21 @@ function block(g,x,y,s,type,set,alpha){
     var b=Math.max(2,Math.round(s*0.09));
     g.fillStyle=col;g.fillRect(x+b,y+b,s-b*2,s-b*2);
     g.fillStyle='rgba(255,255,255,.55)';g.fillRect(x+b,y+b,s-b*2,Math.max(2,Math.round(s*0.1)));
-  }else if(theme==='glass'){
-    var gr=g.createLinearGradient(x,y,x+s,y+s);
-    gr.addColorStop(0,rgba(col,.75));gr.addColorStop(1,rgba(col,.28));
-    g.fillStyle=gr;g.fillRect(x+1,y+1,s-2,s-2);
-    g.strokeStyle=lighten(col,.45);g.lineWidth=Math.max(1,s*0.06);
-    g.strokeRect(x+1.5,y+1.5,s-3,s-3);
-    g.fillStyle='rgba(255,255,255,.35)';
-    g.beginPath();g.moveTo(x+2,y+2);g.lineTo(x+s*0.62,y+2);g.lineTo(x+2,y+s*0.62);g.closePath();g.fill();
+  }else if(theme==='crystal'){
+    /* кристалл: огранка «изумруд», плоская площадка в центре и четыре грани разной яркости */
+    var f=Math.max(2,Math.round(s*0.22));
+    g.fillStyle=lighten(col,.5);
+    g.beginPath();g.moveTo(x,y);g.lineTo(x+s,y);g.lineTo(x+s-f,y+f);g.lineTo(x+f,y+f);g.closePath();g.fill();
+    g.fillStyle=lighten(col,.2);
+    g.beginPath();g.moveTo(x,y);g.lineTo(x+f,y+f);g.lineTo(x+f,y+s-f);g.lineTo(x,y+s);g.closePath();g.fill();
+    g.fillStyle=darken(col,.25);
+    g.beginPath();g.moveTo(x+s,y);g.lineTo(x+s,y+s);g.lineTo(x+s-f,y+s-f);g.lineTo(x+s-f,y+f);g.closePath();g.fill();
+    g.fillStyle=darken(col,.45);
+    g.beginPath();g.moveTo(x,y+s);g.lineTo(x+s,y+s);g.lineTo(x+s-f,y+s-f);g.lineTo(x+f,y+s-f);g.closePath();g.fill();
+    var gc=g.createLinearGradient(x+f,y+f,x+s-f,y+s-f);
+    gc.addColorStop(0,lighten(col,.15));gc.addColorStop(1,darken(col,.1));
+    g.fillStyle=gc;g.fillRect(x+f,y+f,s-f*2,s-f*2);
+    g.fillStyle='rgba(255,255,255,.45)';g.fillRect(x+f+1,y+f+1,Math.max(1,s*0.14),Math.max(1,s*0.06));
   }else{
     /* неон: объёмный блок со скосами */
     var e=Math.max(2,Math.round(s*0.16));
@@ -128,6 +139,7 @@ window.TetView2D=function(canvas){
   function draw(st,now,set){
     var s=cell*dpr,b=bg(set.theme,set.big);
     g.setTransform(1,0,0,1,0,0);
+    g.clearRect(0,0,canvas.width,canvas.height);   /* фон поля полупрозрачный: сквозь него виден фон страницы */
     /* фон: лёгкий градиент и сетка */
     var gr=g.createLinearGradient(0,0,0,canvas.height);
     gr.addColorStop(0,b.a);gr.addColorStop(1,b.b);
@@ -231,6 +243,11 @@ TetView2D.mini=function(cv,types,cell,set,dim,horiz){
   });
 };
 /* образец темы для меню */
+TetView2D.tiles=function(theme,urls,done){
+  TILES[theme]={};var left=0;
+  function one(){if(--left===0&&done)done();}
+  for(var k in urls){var im=new Image();left++;im.onload=one;im.onerror=one;im.src=urls[k];TILES[theme][k]=im;}
+};
 TetView2D.swatch=function(cv,theme){
   var g=cv.getContext('2d'),b=BG[theme],s=12,set={theme:theme,big:false};
   g.fillStyle=b.a;g.fillRect(0,0,cv.width,cv.height);

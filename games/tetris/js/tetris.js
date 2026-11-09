@@ -1,6 +1,6 @@
 /* A.C.EON TETRIS: меню, игровой цикл, клавиатура с повтором и переназначением, жесты, кнопки,
-   пауза, сохранение, статистика, 2D/3D, робот BLOCKMIND, «Невидимка» и дуэль с компьютером.
-   Правила в rules.js, соперник в ai.js, рисование в view2d.js и view3d.js, тексты в lang.js. */
+   пауза, сохранение, статистика, робот BLOCKMIND, «Невидимка» и дуэль с компьютером.
+   Правила в rules.js, соперник в ai.js, рисование в view2d.js, тексты в lang.js. */
 (function(){
 'use strict';
 
@@ -10,6 +10,11 @@ function show(id){$(id).classList.remove('hidden');}
 function hide(id){$(id).classList.add('hidden');}
 
 var MODES=['marathon','sprint','ultra','dig','zen','invis','duel'];
+var THEMES=['neon','crystal','gb'];
+var ART=new URL('../art/tetris/',location.href).href;
+/* картинки Codex (задание claude/codex-tetris-brief.md); false: всё рисует код */
+var ART_READY=true;
+var BM_MOOD={idle:'idle',lock:'idle',single:'happy',double:'happy',triple:'happy',levelup:'happy',tetris:'excited',tspin:'excited',done:'excited',over:'sad'};
 var AI_LEVELS=['easy','normal','hard'];
 var ACTIONS=['left','right','soft','hard','cw','ccw','hold','pause'];
 var DEFAULT_KEYS={left:['ArrowLeft','KeyA'],right:['ArrowRight','KeyD'],soft:['ArrowDown','KeyS'],hard:['Space','KeyW'],
@@ -19,7 +24,7 @@ var REPEAT={slow:{das:220,arr:60},normal:{das:167,arr:33},fast:{das:117,arr:16},
 /* ── сохранения ── */
 Store.define('tetris',{
   version:1,
-  defaults:{settings:{mode:'marathon',level:1,dig:'clear',fade:'slow',ai:'normal',view:'2d',theme:'neon',big:false,next:5,ghost:true,bot:true,
+  defaults:{settings:{mode:'marathon',level:1,dig:'clear',fade:'slow',ai:'normal',theme:'neon',big:false,next:5,ghost:true,bot:true,
     buttons:false,repeat:'normal',keys:null},stats:{},save:null},
   legacy:function(raw){
     var hi=parseInt(raw('aceon_hi_tetris'),10)||0;
@@ -32,8 +37,9 @@ S.level=Math.max(1,Math.min(15,S.level|0||1));
 if(S.dig!=='rise')S.dig='clear';
 if(S.fade!=='fast')S.fade='slow';
 if(AI_LEVELS.indexOf(S.ai)<0)S.ai='normal';
-if(S.view!=='3d')S.view='2d';
-if(['neon','gb','glass'].indexOf(S.theme)<0)S.theme='neon';
+delete S.view;   /* 3D-вид убран: тетрис плоская игра */
+if(S.theme==='glass')S.theme='crystal';
+if(THEMES.indexOf(S.theme)<0)S.theme='neon';
 S.next=Math.max(1,Math.min(5,S.next|0||5));
 if(!REPEAT[S.repeat])S.repeat='normal';
 function keysOf(){
@@ -73,10 +79,10 @@ function buildModes(){
   MODES.forEach(function(m){
     var b=document.createElement('button');
     b.type='button';b.className='m-card-btn'+(S.mode===m?' sel':'');
-    b.innerHTML='<canvas class="m-ico" width="40" height="40" data-m="'+m+'"></canvas><span class="m-txt"><span class="m-name" data-i18n="mode.'+m+'"></span><span class="m-desc" data-i18n="desc.'+m+'"></span></span>';
+    b.innerHTML=(ART_READY?'<img class="m-img" alt="" src="'+ART+'mode_'+m+'.webp">':'<canvas class="m-ico" width="40" height="40" data-m="'+m+'"></canvas>')+'<span class="m-txt"><span class="m-name" data-i18n="mode.'+m+'"></span><span class="m-desc" data-i18n="desc.'+m+'"></span></span>';
     b.addEventListener('click',function(){S.mode=m;save();paintMenu();Sound.sfx('select');});
     list.appendChild(b);
-    modeIcon(b.querySelector('canvas'),m);
+    if(!ART_READY)modeIcon(b.querySelector('canvas'),m);
   });
   I18n.apply(list);
 }
@@ -132,13 +138,11 @@ function paintMenu(){
   $('opt-dig').classList.toggle('hidden',S.mode!=='dig');
   $('opt-invis').classList.toggle('hidden',S.mode!=='invis');
   $('opt-duel').classList.toggle('hidden',S.mode!=='duel');
-  [['fade',S.fade],['ai',S.ai],['dig',S.dig],['view',S.view],['big',S.big?'yes':'no'],['next',String(S.next)],['ghost',S.ghost?'yes':'no'],
+  [['fade',S.fade],['ai',S.ai],['dig',S.dig],['big',S.big?'yes':'no'],['next',String(S.next)],['ghost',S.ghost?'yes':'no'],
    ['bot',S.bot?'yes':'no'],['buttons',S.buttons?'yes':'no'],['repeat',S.repeat]].forEach(function(x){
     var list=document.querySelectorAll('#seg-'+x[0]+' .seg-btn');
     for(var i=0;i<list.length;i++)list[i].classList.toggle('sel',list[i].getAttribute('data-v')===x[1]);
   });
-  var b3=document.querySelector('#seg-view [data-v="3d"]');
-  if(!has3d()){b3.disabled=true;b3.classList.add('off');}
   var th=document.querySelectorAll('#themes .th-card');
   for(var i=0;i<th.length;i++){
     th[i].classList.toggle('sel',th[i].getAttribute('data-v')===S.theme);
@@ -150,7 +154,8 @@ function paintMenu(){
 }
 function applyLook(){
   var b=document.body;
-  ['neon','gb','glass'].forEach(function(x){b.classList.toggle('th-'+x,S.theme===x);});
+  THEMES.forEach(function(x){b.classList.toggle('th-'+x,S.theme===x);});
+  b.classList.toggle('art',ART_READY);
   b.classList.toggle('big',!!S.big);
 }
 
@@ -204,7 +209,7 @@ function showScreen(name){
   if(name==='menu'){persist();paintMenu();hide('over-modal');}
   Sound.music(name==='menu'?'menu':'game');
   window.scrollTo(0,0);
-  if(name==='game'){useView(S.view);layout();requestAnimationFrame(layout);setTimeout(layout,250);}
+  if(name==='game'){layout();requestAnimationFrame(layout);setTimeout(layout,250);}
 }
 
 /* ════════ ПАРТИЯ ════════ */
@@ -349,6 +354,7 @@ function finish(done){
   var title=done?(st.mode==='ultra'?'over.time':'over.done'):'over.lose';
   $('over-title').textContent=t(title);
   $('over-title').className='over-title '+(win?'win':'lose');
+  overImg(win);
   function row(key,v){return '<div class="ov-row"><span>'+t(key)+'</span><b>'+v+'</b></div>';}
   var h='';
   if(st.mode==='sprint'||(st.mode==='dig'&&st.dig==='clear'))h+=row('over.time2',fmtTime(st.time));
@@ -369,6 +375,7 @@ function finishDuel(won,s){
   bot(won?'done':'over');
   $('over-title').textContent=t(won?'over.win':'over.defeat');
   $('over-title').className='over-title '+(won?'win':'lose');
+  overImg(won);
   function row(key,v){return '<div class="ov-row"><span>'+t(key)+'</span><b>'+v+'</b></div>';}
   $('over-rows').innerHTML=row('over.time2',fmtClock(st.time))+row('over.lines',st.lines)+row('over.sent',st.sent)+
     row('over.tetrises',st.tetrises)+row('over.tspins',st.tspins)+row('over.combo',Math.max(0,st.maxCombo));
@@ -511,8 +518,8 @@ function bindPad(){
 }
 
 /* ════════ ЦИКЛ ════════ */
-var v2=null,v3=null,v3ready=false,v3state='none',dirtyMini=true,lastT=0;
-function view(){return S.view==='3d'&&v3ready?v3:v2;}
+var v2=null,dirtyMini=true,lastT=0;
+function view(){return v2;}
 function drain(){
   if(!G)return;
   var ev=G.st.ev;G.st.ev=[];
@@ -631,44 +638,15 @@ function layout(){
   var w=10*cell,h=VIS*cell;
   $('well').style.width=w+'px';$('well').style.height=h+'px';
   if(v2)v2.resize(cell);
-  if(v3)v3.resize(w,h);
   /* робот справа, если есть место */
   var used=w+2*(4.4*mini+24)+40+(dl?10*L.cpu+40:0);
   document.body.classList.toggle('bot-on',!!S.bot&&!narrow&&!side&&vh>=520&&aw-used>=230);
   dirtyMini=true;
 }
 
-/* ════════ 3D ════════ */
-function has3d(){return !!(window.Three3D&&Three3D.supported()&&window.TetView3D);}
-function useView(v){
-  document.body.classList.toggle('view-3d',v==='3d'&&v3ready);
-  paintViewBtn();
-  if(v!=='3d'||!has3d()){if(v3)v3.show(false);return;}
-  if(v3){v3.show(true);return;}
-  if(v3state==='loading'||v3state==='failed')return;
-  v3state='loading';
-  var box=$('b3-load');box.textContent=t('b3.loading',{p:0});show('b3-load');
-  Three3D.load(function(p){box.textContent=t('b3.loading',{p:Math.round(p*100)});}).then(function(THREE){
-    v3=TetView3D(THREE,$('well'));
-    if(!v3)throw new Error('webgl');
-    v3ready=true;v3state='ready';hide('b3-load');
-    if(S.view==='3d'){document.body.classList.add('view-3d');v3.show(true);}else v3.show(false);
-    layout();paintViewBtn();
-  }).catch(function(){
-    v3state='failed';hide('b3-load');S.view='2d';save();
-    document.body.classList.remove('view-3d');paintViewBtn();layout();
-    pop(t('b3.fail'),'');
-  });
-}
-function toggleView(){
-  if(!has3d()||v3state==='failed')return;
-  S.view=S.view==='3d'?'2d':'3d';save();
-  useView(S.view);layout();Sound.sfx('select');
-}
-function paintViewBtn(){
-  var b=$('btn-view');
-  b.textContent=S.view==='3d'?'2D':'3D';
-  b.disabled=!has3d()||v3state==='failed';
+function overImg(win){
+  var im=$('over-img');
+  if(ART_READY){im.src=ART+(win?'result_win':'result_lose')+'.webp';show('over-img');}else hide('over-img');
 }
 
 /* ════════ BLOCKMIND ════════ */
@@ -677,6 +655,7 @@ function bot(m){
   var el=$('bot');if(!el)return;
   if(botTmr){clearTimeout(botTmr);botTmr=null;}
   botMood=m;el.className='bot bm-'+m;
+  if(ART_READY)$('bot-img').src=ART+'bm_'+(BM_MOOD[m]||'idle')+'.webp';
   var list=t('bot.'+m).split('|');
   $('bot-say').textContent=list[Math.floor(Math.random()*list.length)];
   var transient={lock:1,single:1,double:1,triple:1,tetris:1,tspin:1,levelup:1};
@@ -708,11 +687,14 @@ function boot(){
   A.topbar('t.title');
   I18n.apply();I18n.onChange(onLang);
   v2=TetView2D($('cv-field'));
+  if(ART_READY)['neon','crystal'].forEach(function(th){
+    var u={};'IOTSZJLG'.split('').forEach(function(k){u[k]=ART+th+'_'+k+'.webp';});
+    TetView2D.tiles(th,u,function(){if(document.body.classList.contains('screen-menu'))paintMenu();dirtyMini=true;});
+  });
   bindTouch();bindPad();bindKeys();
   bindSeg('dig',function(v){S.dig=v;});
   bindSeg('fade',function(v){S.fade=v;});
   bindSeg('ai',function(v){S.ai=v;});
-  bindSeg('view',function(v){S.view=v;if(v==='3d'&&has3d())Three3D.load().catch(function(){});});
   bindSeg('big',function(v){S.big=v==='yes';});
   bindSeg('next',function(v){S.next=+v;});
   bindSeg('ghost',function(v){S.ghost=v==='yes';});
@@ -728,7 +710,6 @@ function boot(){
   $('btn-continue').addEventListener('click',resume);
   $('btn-menu').addEventListener('click',function(){if(G&&!G.over)G.paused=true;showScreen('menu');});
   $('btn-pause').addEventListener('click',function(){if(G&&G.count<=0)setPause(!G.paused);});
-  $('btn-view').addEventListener('click',toggleView);
   $('po-go').addEventListener('click',function(){setPause(false);});
   $('po-restart').addEventListener('click',newGame);
   $('po-menu').addEventListener('click',function(){showScreen('menu');});
@@ -736,7 +717,6 @@ function boot(){
   $('over-menu').addEventListener('click',function(){showScreen('menu');});
   paintMenu();
   showScreen('menu');
-  if(S.view==='3d'&&has3d())Three3D.load().catch(function(){});
   requestAnimationFrame(frame);
 }
 

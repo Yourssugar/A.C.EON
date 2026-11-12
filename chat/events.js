@@ -89,7 +89,7 @@ const TX={
  cap_fail:{ru:['Сайт решил, что мы все роботы.|Ну, справедливо.'],en:['The website decided we are all robots.|Well, fair.'],de:['Die Website hält uns alle für Roboter.|Na ja, stimmt.'],fr:['Le site a décidé qu\'on était tous des robots.|Bon, c\'est juste.'],es:['La web decidió que todos somos robots.|Bueno, es justo.'],it:['Il sito ha deciso che siamo tutti robot.|Beh, giusto.'],pl:['Strona uznała, że wszyscy jesteśmy robotami.|No, uczciwie.']},
  h_coffee:{ru:'Чашка в руках: {c}   ·   Бодрых: {a} / {n}',en:'Cup in hand: {c}   ·   Awake: {a} / {n}',de:'Tasse in der Hand: {c}   ·   Wach: {a} / {n}',fr:'Tasse en main : {c}   ·   Réveillés : {a} / {n}',es:'Taza en mano: {c}   ·   Despiertos: {a} / {n}',it:'Tazza in mano: {c}   ·   Svegli: {a} / {n}',pl:'Kubek w ręku: {c}   ·   Przytomni: {a} / {n}'},
  h_bug:{ru:'Попаданий: {n} / 3',en:'Hits: {n} / 3',de:'Treffer: {n} / 3',fr:'Touches : {n} / 3',es:'Golpes: {n} / 3',it:'Colpi: {n} / 3',pl:'Trafienia: {n} / 3'},
- h_cat:{ru:'Кот → диван',en:'Cat → sofa',de:'Katze → Sofa',fr:'Chat → canapé',es:'Gato → sofá',it:'Gatto → divano',pl:'Kot → kanapa'},
+ h_cat:{ru:'Кот к дивану',en:'Cat to the sofa',de:'Katze aufs Sofa',fr:'Chat vers le canapé',es:'Gato al sofá',it:'Gatto sul divano',pl:'Kot na kanapa'},
  h_cap:{ru:'Пройдено проверок: {n} / 3',en:'Checks passed: {n} / 3',de:'Bestandene Prüfungen: {n} / 3',fr:'Vérifications réussies : {n} / 3',es:'Pruebas superadas: {n} / 3',it:'Verifiche superate: {n} / 3',pl:'Zaliczone weryfikacje: {n} / 3'},
  yes:{ru:'да',en:'yes',de:'ja',fr:'oui',es:'sí',it:'sì',pl:'tak'},
  no:{ru:'нет',en:'no',de:'nein',fr:'non',es:'no',it:'no',pl:'nie'},
@@ -128,6 +128,7 @@ let state='idle', cur=null, nextAt=0, lastId='', offerUntil=0, pointer={x:-99,y:
 const fast=QS.get('events')==='fast';
 const forced=QS.get('event');
 let forcedNext=null;
+let lastEv=null;   // последнее ЧП: роботы вспоминают его ещё 10 минут
 function now(){ return performance.now(); }
 function schedule(first){
   const t=now();
@@ -210,6 +211,7 @@ function buildUI(){
 #ev-bar .tm{position:absolute;left:0;bottom:-2px;height:3px;background:#ef7d57;transform-origin:left}
 #ev-hud{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:24;display:none;flex-direction:column-reverse;align-items:center;gap:6px;pointer-events:none;width:min(560px,94vw)}
 #ev-hud.on{display:flex}
+#ev-hud.mini .hh{display:none}
 #ev-hud .hh{font-family:'Rubik',sans-serif;font-size:14px;color:#f4f4f4;text-align:center;padding:6px 12px;background:rgba(13,14,23,.86);border:2px solid #1a1c2c;line-height:1.35}
 #ev-hud .hs{font-size:14px;letter-spacing:.06em;color:#ffcd75;padding:4px 12px;background:rgba(13,14,23,.86);border:2px solid #1a1c2c;text-align:center;max-width:100%}
 @media (max-width:520px){#ev-hud .hs{font-size:12px;letter-spacing:.02em;padding:3px 8px}#ev-hud .hh{font-size:13px;padding:5px 8px}}
@@ -241,6 +243,15 @@ function buildUI(){
 #capbox .cf{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 10px;gap:8px;border-top:1px solid #c5cfd8}
 #capbox .cm{font-size:13px;color:#b13e53;min-height:16px}
 #capbox.shake{animation:nope .3s steps(4)}
+/* сцены */
+#ev-scene{position:fixed;left:0;right:0;top:48px;bottom:0;z-index:15;display:none;overflow:hidden;opacity:0;transition:opacity .35s steps(5)}
+#ev-scene.on{display:block}
+#ev-scene.vis{opacity:1}
+#ev-scene .sw{position:absolute}
+#ev-scene canvas{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none;cursor:var(--cur-p,pointer)}
+#ev-scene .so{position:absolute;inset:0;pointer-events:none}
+#ev-scene .so>*{pointer-events:auto}
+#ev-scene .so>.bub{pointer-events:none}
 `;
   document.head.appendChild(css);
   const bar=el('div','px'); bar.id='ev-bar';
@@ -280,7 +291,7 @@ function canStart(){
   return true;
 }
 function offer(id){
-  cur=EVENTS[id]; if(!cur)return;
+  cur=EVENTS[id]; if(!cur){ schedule(false); return; }
   if(cur.ready&&!cur.ready()){ cur=null; schedule(false); return; }
   state='offer'; lastId=id;
   const b=ui.bar;
@@ -301,6 +312,7 @@ function accept(){
   ui.hud.classList.add('on');
   const ft=document.getElementById('foot'); if(ft)ft.classList.add('hide');
   ui.hud.querySelector('.hh').textContent=tx(lastId+'_h');
+  ui.hud.classList.remove('mini'); clearTimeout(ui.hhT); ui.hhT=setTimeout(()=>ui.hud.classList.add('mini'),8000);
   cur.start();
   O.track('office.ev.play.'+lastId);
 }
@@ -313,6 +325,7 @@ function decline(byUser){
   /* пропустили: роботы ворчат */
   const a=crew(1)[0];
   if(a)setTimeout(()=>O.sayChain(a,TX[lastId+'_skip']?tx(lastId+'_skip'):tx('skip_generic'),true),byUser?500:0);
+  lastEv={id:lastId,grade:'skip',t:now()};
   O.track('office.ev.skip.'+lastId);
   schedule(false);
 }
@@ -322,6 +335,7 @@ function finish(grade,detail){
   ui.hud.classList.remove('on');
   const ev=cur;
   const pts=grade==='win'?30:grade==='mid'?15:5;
+  lastEv={id:lastId,grade,t:now()};
   DB.pts+=pts; DB.done[lastId]=(DB.done[lastId]||0)+(grade==='win'?1:0); save(); paintMenu();
   const r=ui.res;
   r.querySelector('.rt').textContent=tx('res_'+grade); r.querySelector('.rt').className='rt '+grade;
@@ -334,6 +348,7 @@ function finish(grade,detail){
 }
 function closeResult(){
   ui.res.classList.remove('on');
+  sceneClose();
   if(cur&&cur.cleanup)cur.cleanup();
   cur=null; state='idle'; fx=[];
   stageLock(false);
@@ -345,7 +360,7 @@ function stageLock(on,cup){
   st.classList.toggle('ev-cup',!!cup);
 }
 
-/* ================= МИНИ-ИГРЫ ================= */
+/* мини-игры; остальные (со сценами) в events2.js */
 const EVENTS={};
 
 /* --- 1. Кофейный кризис: носить кофе роботам с садящейся батарейкой --- */
@@ -610,12 +625,117 @@ EVENTS.cap=(function(){
   };
 })();
 
+/* ---------- сцены: для некоторых ЧП картинка офиса меняется на отдельную сцену 480x270 ----------
+   Масштаб целый. Сцена закрывает экран, но на узком экране не уже 230 родных пикселей:
+   иначе на телефоне видна только середина шириной 130 px. Сверху и снизу тогда поля цвета краёв картинки. */
+const SCN={on:false,s:1,imgs:{},vx:0,vw:480,vy:0,vh:270,bubs:[]};
+let spointer={x:-99,y:-99,in:false}, sfx=[];
+function sceneBuild(){
+  const w=el('div'); w.id='ev-scene';
+  w.innerHTML='<div class="sw"><canvas width="480" height="270"></canvas><div class="so"></div></div>';
+  document.body.appendChild(w);
+  SCN.el=w; SCN.sw=w.querySelector('.sw'); SCN.cv=w.querySelector('canvas'); SCN.ctx=SCN.cv.getContext('2d'); SCN.ov=w.querySelector('.so');
+  SCN.ctx.imageSmoothingEnabled=false;
+  const P=e=>{ const r=SCN.cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*480,y:(e.clientY-r.top)/r.height*270,in:true}; };
+  SCN.cv.addEventListener('pointerdown',e=>{ spointer=P(e); if(state==='play'&&cur&&cur.sclick)cur.sclick(spointer); });
+  SCN.cv.addEventListener('pointermove',e=>{ spointer=P(e); if(state==='play'&&cur&&cur.smove)cur.smove(spointer); });
+  SCN.cv.addEventListener('pointerleave',e=>{ if(e.pointerType==='mouse')spointer.in=false; });
+  addEventListener('resize',()=>{ if(SCN.on)sceneFit(); });
+}
+function sceneFit(){
+  const aw=SCN.el.clientWidth, ah=SCN.el.clientHeight, dpr=devicePixelRatio||1;
+  const kc=Math.ceil(Math.max(aw*dpr/480,ah*dpr/270)-0.02), kf=Math.max(1,Math.floor(aw*dpr/230));
+  const k=Math.max(1,Math.min(kc,kf)), sc=k/dpr;
+  SCN.s=sc;
+  /* по вертикали в центр экрана ставится точка fy сцены (у каждой своя), но без пустых полос */
+  const fy=SCN.fy||135, top=270*sc>ah?Math.max(ah-270*sc,Math.min(0,ah/2-fy*sc)):(ah-270*sc)/2;
+  Object.assign(SCN.sw.style,{width:480*sc+'px',height:270*sc+'px',left:'50%',top:top+'px',marginLeft:-240*sc+'px',marginTop:'0'});
+  SCN.ov.style.setProperty('--s',sc+'px');
+  SCN.ov.style.setProperty('--bf',Math.max(13,Math.min(19,Math.round(sc*3.4)))+'px');
+  SCN.vw=Math.min(480,aw/sc); SCN.vx=240-SCN.vw/2; SCN.vh=Math.min(270,ah/sc); SCN.vy=Math.max(0,-top/sc);
+}
+/* цвет верхнего и нижнего края картинки: им закрашиваются поля */
+function edgeCols(img){
+  const c=document.createElement('canvas'); c.width=480; c.height=270; const x=c.getContext('2d'); x.drawImage(img,0,0);
+  const g=y=>{ const d=x.getImageData(240,y,1,1).data; return 'rgb('+d[0]+','+d[1]+','+d[2]+')'; };
+  return [g(1),g(268)];
+}
+function sceneOpen(name,ready,fy){
+  SCN.fy=fy||135;
+  if(!SCN.el)sceneBuild();
+  const go=img=>{
+    SCN.img=img; SCN.name=name; SCN.on=true; sfx=[];
+    if(!img.__edge)img.__edge=edgeCols(img);
+    SCN.el.style.background='linear-gradient('+img.__edge[0]+' 50%,'+img.__edge[1]+' 50%)';
+    SCN.el.classList.add('on'); sceneFit();
+    requestAnimationFrame(()=>SCN.el.classList.add('vis'));
+    if(ready)ready();
+    requestAnimationFrame(sceneLoop);
+  };
+  const im=SCN.imgs[name];
+  if(im&&im.complete)go(im);
+  else { const i=new Image(); i.onload=()=>go(i); i.onerror=()=>{ if(ready)ready(); }; i.src='img/office/scene_'+name+'.png?v=1'; SCN.imgs[name]=i; }
+}
+function sceneClose(){
+  if(!SCN.on)return;
+  SCN.on=false; SCN.el.classList.remove('vis');
+  setTimeout(()=>{ if(!SCN.on){ SCN.el.classList.remove('on'); SCN.ov.innerHTML=''; SCN.bubs=[]; } },360);
+}
+let sLast=0;
+function sceneLoop(t){
+  if(!SCN.on)return;
+  const dt=Math.min(.05,(t-(sLast||t))/1000); sLast=t;
+  const c=SCN.ctx; c.imageSmoothingEnabled=false;
+  c.drawImage(SCN.img,0,0);
+  if(cur&&cur.sdraw)cur.sdraw(c,now(),dt);
+  for(let i=sfx.length-1;i>=0;i--){ const f=sfx[i]; f.t+=dt; f.vy+=(f.g==null?120:f.g)*dt; f.x+=f.vx*dt; f.y+=f.vy*dt; if(f.t>f.life){ sfx.splice(i,1); continue; }
+    c.globalAlpha=Math.max(0,1-f.t/f.life); c.fillStyle=f.col; c.fillRect(Math.round(f.x),Math.round(f.y),f.sz||1,f.sz||1); }
+  c.globalAlpha=1;
+  const nw=performance.now();
+  SCN.bubs=SCN.bubs.filter(b=>{ if(nw>b.until){ b.el.remove(); return false; } return true; });
+  requestAnimationFrame(sceneLoop);
+}
+function sburst(x,y,col,n,sz,g){ for(let i=0;i<(n||10);i++)sfx.push({x,y,vx:(Math.random()-.5)*80,vy:-Math.random()*70-10,t:0,life:.6+Math.random()*.5,col:col||'#ffcd75',sz:sz||2,g}); }
+/* реплика в сцене: x, y в пикселях сцены, хвост пузыря указывает в эту точку */
+function sceneSay(x,y,text,cls){
+  if(!SCN.on||!text)return;
+  const parts=String(text).split('|');
+  let delay=0;
+  parts.forEach(p=>{
+    setTimeout(()=>{
+      if(!SCN.on)return;
+      SCN.bubs.filter(b=>Math.abs(b.x-x)<40&&Math.abs(b.y-y)<30).forEach(b=>b.until=0);
+      const b=el('div','bub '+(cls||'f-extra'),p);
+      const m=Math.min(70,SCN.vw/3);
+      const cx=Math.max(SCN.vx+m,Math.min(SCN.vx+SCN.vw-m,x));
+      b.style.left=cx*SCN.s+'px'; b.style.top=y*SCN.s+'px'; b.style.pointerEvents='none';
+      SCN.ov.appendChild(b);
+      SCN.bubs.push({el:b,x,y,until:performance.now()+1800+p.length*55});
+    },delay);
+    delay+=1800+p.length*55;
+  });
+}
+/* робот в сцене крупно: ноги в точке (x, y), масштаб целый */
+function sceneBot(c,a,x,y,sc,face,dir,frame){
+  const spr=O.sprite(a.pal,face||'idle',dir||'down',frame||0,false,false,false);
+  c.drawImage(spr,Math.round(x-8*sc),Math.round(y-24*sc),16*sc,24*sc);
+}
+function fontCls(a){ return 'f-'+(a.extra?'extra':a.id); }
+/* цифры 3x5 для табло и часов */
+const DIG={'0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001111',':':'000010000010000','%':'101001010100101','°':'111101111000000','-':'000000111000000','!':'010010010000010'};
+function digits(c,str,x,y,sc,col){
+  c.fillStyle=col; let cx=x;
+  for(const ch of String(str)){ const g=DIG[ch]; if(g){ for(let i=0;i<15;i++)if(g[i]==='1')c.fillRect(cx+(i%3)*sc,y+((i/3)|0)*sc,sc,sc); } cx+=(ch===':'?3:4)*sc; }
+  return cx-x;
+}
+function digitsW(str,sc){ let w=0; for(const ch of String(str))w+=(ch===':'?3:4)*sc; return w-sc; }
+
 /* ---------- связь с движком офиса ---------- */
 let lastTick='';
 O.register({
-  grabs(){ return state==='play'&&cur&&cur!==EVENTS.cap; },
+  grabs(){ return state==='play'&&cur&&cur!==EVENTS.cap&&!cur.scene; },
   move(p){ pointer.x=p.x; pointer.y=p.y; pointer.in=true; return state==='play'; },
-  click(p){ if(state!=='play'||!cur)return false; return cur.click(p); },
+  click(p){ if(state!=='play'||!cur)return false; return cur.click?cur.click(p):true; },
   step(dt,t){
     if(state==='idle'){
       if((DB.on||forcedNext)&&t>nextAt){
@@ -641,7 +761,7 @@ O.register({
     for(let i=fx.length-1;i>=0;i--){ const f=fx[i]; f.t+=dt; f.vy+=120*dt; f.x+=f.vx*dt; f.y+=f.vy*dt; if(f.t>f.life)fx.splice(i,1); }
   },
   draw(ctx){
-    if(cur&&(state==='play'||state==='offer'||state==='result'))cur.draw(ctx);
+    if(cur&&cur.draw&&(state==='play'||state==='offer'||state==='result'))cur.draw(ctx);
     fx.forEach(f=>{ ctx.globalAlpha=Math.max(0,1-f.t/f.life); ctx.fillStyle=f.col; ctx.fillRect(Math.round(f.x),Math.round(f.y),1,1); });
     ctx.globalAlpha=1;
   }
@@ -655,8 +775,12 @@ addEventListener('keydown',e=>{ if(e.key==='Escape'&&state==='result')closeResul
 
 buildUI();
 schedule(true);
-if(forced&&EVENTS[forced]){ forcedNext=forced; nextAt=now()+3000; }
-window.OfficeEvents={start:id=>{ if(state==='idle'&&EVENTS[id]){ offer(id); } },accept:()=>accept(),state:()=>state,db:DB,refresh:paintMenu};
+if(forced){ forcedNext=forced; nextAt=now()+3000; }
+window.OfficeEvents={kit:{O,TX,tx,EVENTS,ui,finish,crew,hold,PAL,pix,prop,burst,follow,viewBox,nearSpot,corridorSpot,wander,inRect,edgeArrow,now,stageLock,
+    setBox:b=>{ box=b; }, pointer:()=>pointer, spointer:()=>spointer, state:()=>state, cur:()=>cur,
+    scene:{open:sceneOpen,close:sceneClose,say:sceneSay,bot:sceneBot,burst:sburst,fontCls,view:()=>SCN,el:()=>SCN.ov}, digits, digitsW},
+  last:()=>lastEv,
+  start:id=>{ if(state==='idle'&&EVENTS[id]){ offer(id); } },accept:()=>accept(),state:()=>state,db:DB,refresh:paintMenu};
 /* смена языка: подписи меню */
 if(window.I18n&&I18n.onChange)I18n.onChange(paintMenu);
 })();

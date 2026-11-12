@@ -226,3 +226,73 @@ pl:{
   'say.cat':['Miau.','Mrrr.'],'say.dog':['Hau.','Hau?']
 }
 };
+
+/* Реплики второго этапа: клики, время суток, занятия, диалоги, память о ЧП.
+   Здесь только русский и английский для старта; полные пулы на 7 языков приходят из phrases.js.
+   Диалог: реплики через || говорят по очереди двое, | внутри реплики делит её на части. */
+Object.assign(window.OFFICE_LANG.ru,{
+  'say.click.walk':['Я иду. Не сбивай.','Потом, я по делу.','Догоняй, если хочешь поговорить.'],
+  'say.click.rest':['У меня перерыв. Законный.','Не видишь, я отдыхаю?','Пять минут. Ещё пять минут.'],
+  'say.click.again':['Да-да, я тебя слышу.','Ты что-то хотел?','Второй раз за минуту. Подозрительно.'],
+  'say.click.sulk':['Я обиделся.','Не разговариваю.','Сначала извинись.'],
+  'say.time.morning':['Утро. Кто выпил весь кофе?','Доброе утро. Наверное.'],
+  'say.time.day':['Середина дня. Самое время для багов.','Обед был? У нас не бывает.'],
+  'say.time.evening':['Вечер. Скоро по домам. У нас нет домов.','Вечером код пишется лучше. Или кажется.'],
+  'say.time.night':['Ты чего не спишь?','Ночью сервер тише. Слышно, как он думает.'],
+  'say.rare':['Иногда я думаю, что я тоже чей-то тестовый стенд.','Однажды я видел баг без ошибки. Красивый.','Если я пропаду, ищите в серверной.'],
+  'say.hover':['Ты на меня смотришь?','Я чувствую курсор.','Это ты двигаешь мышкой?'],
+  'say.pet.cat':['Кис-кис.','Кот, только не на клавиатуру.'],
+  'say.pet.dog':['Хороший пёс.','Кто тут хороший мальчик?'],
+  'say.dialog':['Ты видел кота?||Видел. Он в серверной.||Опять греется о стойки?','Сколько у тебя задач?||Одна.||Везёт.||Она на полгода.','Кофе есть?||Есть.||Правда?||Нет.'],
+  'say.act.coffee':['Двойной. Нет, тройной.','Кофемашина опять смотрит на меня.'],
+  'say.act.window':['Там люди. Живые.','Погода для деплоя.'],
+  'say.act.sofa':['Наконец-то.','Я тут подумаю. Лёжа.'],
+  'say.act.arcade':['Ещё одна попытка.','Рекорд мой. Никому не говорите.'],
+  'say.act.fridge':['Кто подписал йогурт «не трогать, это тест»?','Пусто. Как в ТЗ.'],
+  'say.act.printer':['Он опять печатает сам.','Бумага кончилась. Как всегда.'],
+  'say.act.rack':['Мигает зелёным. Значит, живой.','Тёплый. Это хорошо или плохо?'],
+  'say.act.meet':['Совещание? Опять?','Тут никого. Отличное совещание.'],
+  'say.after.coffee':['Помнишь кофейный кризис? Я до сих пор дрожу.'],
+  'say.after.bug':['Тот баг так и бегает где-то.','Я теперь проверяю под столом.'],
+  'say.after.cat':['Кот опять смотрит на клавиатуру Антона.'],
+  'say.after.cap':['Я всё ещё не уверен, что я не робот.'],
+  'say.after.server':['В серверной до сих пор пахнет жареным.'],
+  'say.after.meeting':['Кажется, я ещё на совещании.'],
+  'say.after.fw':['Я обновился. Кажется, ничего не изменилось.'],
+  'say.after.friday':['А в пятницу кто-то ушёл в 17:59. Я всё видел.'],
+  'say.after.wifi':['Роутер теперь привязан. К коту.'],
+  'say.after.printer':['Я до сих пор нахожу листы под столами.']
+});
+Object.assign(window.OFFICE_LANG.en,{
+  'say.click.walk':['I am walking. Do not throw me off.','Later, I am on an errand.','Catch up if you want to talk.'],
+  'say.click.rest':['I am on a break. A legal one.','Can you not see I am resting?','Five minutes. Five more minutes.'],
+  'say.click.again':['Yes, yes, I hear you.','Did you want something?','Twice in a minute. Suspicious.'],
+  'say.click.sulk':['I am offended.','Not talking.','Apologise first.'],
+  'say.time.morning':['Morning. Who drank all the coffee?','Good morning. Probably.'],
+  'say.time.day':['Midday. Best time for bugs.','Lunch? We do not do lunch.'],
+  'say.time.evening':['Evening. Time to go home. We have no homes.','Code writes better in the evening. Or it seems so.'],
+  'say.time.night':['Why are you not asleep?','The server is quieter at night. You can hear it think.'],
+  'say.rare':['Sometimes I think I am someone else\'s test bench too.','Once I saw a bug with no error. Beautiful.','If I vanish, check the server room.'],
+  'say.hover':['Are you looking at me?','I can feel the cursor.','Is that you moving the mouse?'],
+  'say.pet.cat':['Here, kitty.','Cat, not the keyboard.'],
+  'say.pet.dog':['Good dog.','Who is a good boy?'],
+  'say.dialog':['Have you seen the cat?||Yes. In the server room.||Warming up on the racks again?','How many tasks do you have?||One.||Lucky.||It takes six months.','Is there coffee?||Yes.||Really?||No.'],
+  'say.act.coffee':['Double. No, triple.','The coffee machine is staring at me again.'],
+  'say.act.window':['There are people out there. Alive ones.','Good weather for a deploy.'],
+  'say.act.sofa':['Finally.','I will think here. Lying down.'],
+  'say.act.arcade':['One more try.','That high score is mine. Tell no one.'],
+  'say.act.fridge':['Who labelled the yoghurt "do not touch, it is a test"?','Empty. Like the spec.'],
+  'say.act.printer':['It is printing by itself again.','Out of paper. As always.'],
+  'say.act.rack':['Blinking green. So it is alive.','It is warm. Good or bad?'],
+  'say.act.meet':['A meeting? Again?','Nobody here. Great meeting.'],
+  'say.after.coffee':['Remember the coffee crisis? I am still shaking.'],
+  'say.after.bug':['That bug is still running around somewhere.','I check under the desks now.'],
+  'say.after.cat':['The cat is eyeing Anton\'s keyboard again.'],
+  'say.after.cap':['I am still not sure I am not a robot.'],
+  'say.after.server':['The server room still smells of frying.'],
+  'say.after.meeting':['I think I am still in that meeting.'],
+  'say.after.fw':['I updated. I think nothing changed.'],
+  'say.after.friday':['Someone left at 17:59 on Friday. I saw everything.'],
+  'say.after.wifi':['The router is tied down now. To the cat.'],
+  'say.after.printer':['I still find sheets under the desks.']
+});

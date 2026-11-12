@@ -49,7 +49,28 @@ function T(k,v){
 }
 function L(o){ if(o==null)return ''; if(typeof o==='string')return o; return o[lang()]||o.en||o.ru||''; }
 function pick(a){ return a[Math.random()*a.length|0]; }
-function sayPool(k,v){ let a=T(k); if(!Array.isArray(a))a=[a]; let s=pick(a); if(v)s=s.replace(/\{(\w+)\}/g,(m,n)=>v[n]!==undefined?v[n]:m); return s; }
+/* Пулы фраз: lang.js плюс phrases.js (window.OFFICE_PHRASES[язык][ключ], его пишет Codex).
+   Новые ключи (клики, время суток, занятия, диалоги) без перевода молчат, а не говорят по-английски. */
+const NEWK=/^say\.(click|time|rare|hover|pet|dialog|act|after)/;
+function pool(k){
+  const d=OL[lang()]||OL.en, P=window.OFFICE_PHRASES;
+  let a=d[k]!==undefined?d[k]:(NEWK.test(k)?undefined:OL.en[k]);
+  a=a==null?[]:Array.isArray(a)?a.slice():[a];
+  const e=P&&(P[lang()]||{})[k]; if(Array.isArray(e))a=a.concat(e);
+  return a;
+}
+/* не повторять недавние фразы из того же пула */
+const recent={};
+function pickFresh(arr,key){
+  if(!arr||!arr.length)return null;
+  if(arr.length<2)return arr[0];
+  const r=recent[key]||(recent[key]=[]);
+  let s=pick(arr);
+  for(let i=0;i<6&&r.indexOf(s)>=0;i++)s=pick(arr);
+  r.push(s); if(r.length>Math.min(8,arr.length-1))r.shift();
+  return s;
+}
+function sayPool(k,v){ let s=pickFresh(pool(k),k); if(s==null)return null; if(v)s=String(s).replace(/\{(\w+)\}/g,(m,n)=>v[n]!==undefined?v[n]:m); return s; }
 function setLang(c){
   if(LANGS.indexOf(c)<0||c===lang())return;
   if(hasI18n)I18n.set(c);
@@ -322,24 +343,46 @@ function startAct(a){
     else if(k==='visit'&&t.buddy){
       const o=t.buddy;
       a.dir=o.x<a.x-2?'left':o.x>a.x+2?'right':'down';
-      sayChain(a,idleLine(a));
-      setTimeout(()=>{ if(!o.path.length&&!o.bub)sayChain(o,replyLine(o)); },1900);
+      const D=pool('say.dialog');
+      if(D.length&&Math.random()<.6&&o.act!=='event'){
+        /* диалог: реплики через || по очереди, начинает подошедший */
+        const parts=String(pickFresh(D,'dialog')).split('||'); let tt=0;
+        o.dir=a.x<o.x-2?'left':a.x>o.x+2?'right':o.dir;
+        parts.forEach((p,i)=>{ setTimeout(()=>{ const w=i%2?o:a; if(w.act==='event')return; say(w,p.trim(),true); },tt); tt+=1700+p.length*50; });
+        a.actUntil=Math.max(a.actUntil,performance.now()+tt+800);
+      } else {
+        sayChain(a,idleLine(a));
+        setTimeout(()=>{ if(!o.path.length&&!o.bub)sayChain(o,replyLine(o)); },1900);
+      }
     }
     else if(k==='desk'){ a.typing=busy||Math.random()<.4; if(a.typing)a.face='work'; }
     else if((k==='term'||k==='board')&&busy&&Math.random()<.5) sayChain(a,sayPool('say.duty'));
+    if(!a.bub&&bubs.length<2&&Math.random()<.3){ const l=sayPool('say.act.'+k.replace(/2$/,'')); if(l)sayChain(a,l); }
   });
   a.actUntil=Infinity;
 }
-function lines(a){ const l=a.def.lines||{}; return l[lang()]||l.en||null; }
+function lines(a){
+  const l=a.def.lines||{}, base=l[lang()]||l.en||null, P=window.OFFICE_PHRASES, e=P&&(P[lang()]||{})['agent.'+a.id];
+  if(!e)return base;
+  const m=Object.assign({},base||{}); for(const k in e)if(Array.isArray(e[k]))m[k]=(m[k]||[]).concat(e[k]);
+  return m;
+}
+/* строка из личного пула агента (greet, walk, rest, again, sulk, hover) */
+function own(a,k){ const L=lines(a); return L&&L[k]&&L[k].length?pickFresh(L[k],a.id+'.'+k):null; }
+function timeLine(){ const h=new Date().getHours(); return sayPool('say.time.'+(h>=5&&h<12?'morning':h<18?'day':h<23?'evening':'night')); }
+function afterLine(){
+  const E=window.OfficeEvents, le=E&&E.last&&E.last();
+  return le&&performance.now()-le.t<600000?sayPool('say.after.'+le.id):null;
+}
 /* что говорит сам по себе */
 function idleLine(a){
   const L=lines(a), busy=busyMode(a), r=Math.random();
   if(a.extra) return r<.55?sayPool('say.think'):r<.8?sayPool('say.duty'):sayPool('say.extra');
-  if(busy) return r<.45&&L?pick(L.work):r<.75?sayPool('say.duty'):sayPool('say.think');
-  return r<.45&&L?pick(L.idle):r<.62?sayPool('say.ask'):sayPool('say.think');
+  if(busy) return r<.45&&L?pickFresh(L.work,a.id+'.work'):r<.75?sayPool('say.duty'):sayPool('say.think');
+  return r<.45&&L?pickFresh(L.idle,a.id+'.idle'):r<.62?sayPool('say.ask'):sayPool('say.think');
 }
 function walkLine(a){ return (busyMode(a)?Math.random()<.6:Math.random()<.25)?sayPool('say.duty'):sayPool('say.think'); }
-function replyLine(a){ const L=lines(a); if(a.extra)return sayPool('say.extra'); if(busyMode(a))return sayPool('say.later'); return L?pick(L.click):sayPool('say.ask'); }
+function replyLine(a){ const L=lines(a); if(a.extra)return sayPool('say.extra'); if(busyMode(a))return sayPool('say.later'); return L?pickFresh(L.click,a.id+'.click'):sayPool('say.ask'); }
 
 /* ---------- кошка и пёс ---------- */
 const imgs={};
@@ -523,6 +566,8 @@ function ambient(now){
   if(a.path.length>1){ sayChain(a,walkLine(a)); return; }
   if(a.path.length)return;
   if(!busyMode(a)&&Math.random()<.1&&(h<5||h>=23)){ sayChain(a,sayPool('say.night')); return; }
+  const pet=pets.find(p=>Math.hypot(p.x-a.x,p.y-a.y)<26);
+  if(pet&&Math.random()<.5){ const l=sayPool('say.pet.'+pet.kind); if(l){ a.face='happy'; sayChain(a,l); return; } }
   sayChain(a,idleLine(a));
 }
 function loop(now){
@@ -535,6 +580,7 @@ function loop(now){
   pets.forEach(p=>{ if(!p.held)stepPet(p,dt,now); });
   if(EV)EV.step(dt,now);
   ambient(now);
+  checkHover(now);
   for(let i=bubs.length-1;i>=0;i--){ const b=bubs[i]; if(now>b.until)killBub(b); else posBub(b); }
   draw(now);
   if(tagA)posTag();
@@ -602,19 +648,49 @@ cv.addEventListener('click',e=>{
   if(h.kind){ say(h,sayPool(h.kind==='cat'?'say.cat':'say.dog'),true); return; }
   clickAgent(h);
 });
+const REST=['sofa','dine','arcade','tv','meet','window'];
 function clickAgent(a){
   const now=performance.now();
   a.clicks=a.clicks.filter(t=>now-t<8000); a.clicks.push(now);
   sel=a; showTag(a,5000);
-  const L=lines(a);
-  let s;
-  if(a.clicks.length>=5&&L){ s=pick(L.annoy); if(a.clicks.length===5&&TR)TR.event('office.annoy'); a.face='busy'; }
-  else if(a.extra) s=a.clicks.length>=5?sayPool('say.extra'):(Math.random()<.7?sayPool('say.extra'):sayPool('say.think'));
-  else if(busyMode(a)) s=(Math.random()<.65||!L)?sayPool('say.later'):pick(L.work);
-  else s=pick(L.click);
+  const L=lines(a), n=a.clicks.length, busy=busyMode(a), r=Math.random();
+  let s=null;
+  if(a.sulkUntil>now){ s=own(a,'sulk')||sayPool('say.click.sulk'); a.face='sad'; }
+  else if(n>=5&&L&&L.annoy){
+    s=pickFresh(L.annoy,a.id+'.annoy'); if(n===5&&TR)TR.event('office.annoy'); a.face='busy';
+    /* достали: обиделся и ушёл в другой конец офиса */
+    if(n===6&&!busy&&a.act!=='event'){ a.sulkUntil=now+20000; a.act='sulk'; a.actUntil=Infinity;
+      setTimeout(()=>goTo(a,randomSpot('down','sulk'),()=>{ a.face='sad'; a.actUntil=performance.now()+6000; }),900); }
+  }
+  else if(!a.met){ a.met=true; s=(r<.4&&timeLine())||own(a,'greet'); }
+  if(!s&&n>=3&&n<5&&r<.6)s=own(a,'again')||sayPool('say.click.again');
+  if(!s&&r<.03)s=sayPool('say.rare');
+  if(!s&&r>.75)s=afterLine();
+  if(!s&&a.path.length>1&&r<.5)s=own(a,'walk')||sayPool('say.click.walk');
+  if(!s&&a.sit&&REST.indexOf(a.act)>=0&&r<.5)s=own(a,'rest')||sayPool('say.click.rest');
+  if(!s){
+    if(a.extra) s=n>=5?sayPool('say.extra'):(Math.random()<.7?sayPool('say.extra'):sayPool('say.think'));
+    else if(busy) s=(Math.random()<.65||!L)?sayPool('say.later'):pickFresh(L.work,a.id+'.work');
+    else s=pickFresh(L.click,a.id+'.click');
+  }
   sayChain(a,s,true);
   if(!a.path.length&&!a.sit&&a.dir==='up')a.dir='down';
   if(TR)TR.event('office.click');
+}
+/* наведение мышью: робот замечает, что на него смотрят */
+let hovA=null, hovT=0, hovDone=false;
+cv.addEventListener('pointermove',e=>{
+  if(e.pointerType!=='mouse'||drag)return;
+  const h=hit(toNative(e)), a=h&&h.def?h:null;
+  if(a!==hovA){ hovA=a; hovT=performance.now(); hovDone=false; }
+});
+cv.addEventListener('pointerleave',()=>{ hovA=null; });
+function checkHover(now){
+  const a=hovA; if(!a||hovDone||now-hovT<1300)return;
+  hovDone=true;
+  if(a.path.length||a.act==='event'||busyMode(a))return;
+  a.face='wow'; if(!a.sit)a.dir='down';
+  if(!a.hovAt||now-a.hovAt>25000){ a.hovAt=now; if(Math.random()<.45)sayChain(a,own(a,'hover')||sayPool('say.hover')); }
 }
 function stLabel(st){ return st==='free'?T('free'):st==='check'?T('check'):st==='extra'?T('slot.empty'):T('busy'); }
 function nameOf(def){ return def.slot?(T('slot')+' '+String(def.n).padStart(2,'0')):L(def.name); }

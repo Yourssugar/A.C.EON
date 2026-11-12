@@ -185,6 +185,25 @@ window.OFFICE_AGENTS=[
   }
 }
 ];
+/* личные реплики второго этапа: приветствие, на ходу, на отдыхе, повторный клик, обида, взгляд курсора.
+   Пока русский и английский; остальные языки и больше вариантов приходят из phrases.js (ключ agent.<id>). */
+(function(){
+  var X={
+    anton:{
+      ru:{greet:['А, это ты. Чего надо?','Привет. Коротко.'],walk:['Иду чинить чужой код. Не мешай.'],rest:['Перерыв. Не трогай меня, #@$%!'],again:['Опять ты.','Ну?'],sulk:['Не разговариваю. Иди к Каю.'],hover:['Убери курсор, #@$%!','Чего уставился?']},
+      en:{greet:['Oh, it is you. What do you want?','Hi. Keep it short.'],walk:['Off to fix someone else\'s code. Do not get in the way.'],rest:['Break. Hands off, #@$%!'],again:['You again.','Well?'],sulk:['Not talking. Go bother Kai.'],hover:['Move that cursor, #@$%!','What are you staring at?']}},
+    kai:{
+      ru:{greet:['Ой, привет! Как я рад тебя видеть!','Здравствуй! Чаю? Кофе? Комплимент?'],walk:['Бегу, бегу! Но для тебя остановлюсь!'],rest:['Отдыхаю, но тебе всегда рад!'],again:['Ещё раз привет! Мне приятно!'],sulk:['Мне немного грустно. Но я тебя всё равно люблю.'],hover:['Ты на меня смотришь? Как мило!','Курсор! Привет, курсор!']},
+      en:{greet:['Oh, hello! So glad to see you!','Hi there! Tea? Coffee? A compliment?'],walk:['Running, running! But I will stop for you!'],rest:['Resting, but always happy to see you!'],again:['Hello again! That is lovely!'],sulk:['I am a little sad. But I still love you.'],hover:['You are looking at me? How sweet!','A cursor! Hello, cursor!']}},
+    node:{
+      ru:{greet:['ОБНАРУЖЕН ПОСЕТИТЕЛЬ. ПРИВЕТСТВИЕ.','ЗДРАВСТВУЙ, ЧЕЛОВЕК.'],walk:['ПЕРЕМЕЩЕНИЕ. НЕ ПРЕРЫВАТЬ.'],rest:['РЕЖИМ ОТДЫХА. ЗАПРОСЫ В ОЧЕРЕДЬ.'],again:['ПОВТОРНЫЙ ЗАПРОС. ПРИНЯТО.'],sulk:['ДОСТУП ОГРАНИЧЕН. ПРИЧИНА: ОБИДА.'],hover:['КУРСОР В ЗОНЕ НАБЛЮДЕНИЯ.','ВИЖУ ТЕБЯ.']},
+      en:{greet:['VISITOR DETECTED. GREETING.','HELLO, HUMAN.'],walk:['MOVING. DO NOT INTERRUPT.'],rest:['REST MODE. REQUESTS QUEUED.'],again:['REPEAT REQUEST. ACCEPTED.'],sulk:['ACCESS LIMITED. REASON: OFFENDED.'],hover:['CURSOR IN OBSERVATION ZONE.','I SEE YOU.']}}
+  };
+  window.OFFICE_AGENTS.forEach(function(d){
+    var x=X[d.id]; if(!x||!d.lines)return;
+    for(var l in x){ d.lines[l]=d.lines[l]||{}; for(var k in x[l])d.lines[l][k]=x[l][k]; }
+  });
+})();
 /* остальные места до 13: стажёры без имени и описания, уже ходят по офису */
 (function(){
   var C=[['a7f070','38b764','257179','ffcd75'],['b13e53','5d275d','1a1c2c','ef7d57'],['f4f4f4','ffcd75','ef7d57','b13e53'],

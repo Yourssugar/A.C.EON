@@ -6,7 +6,7 @@
 <title>A.C.EON · AI OFFICE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Mono:wght@500&family=Nunito:wght@600;700&family=Rubik:wght@500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -73,24 +73,33 @@ button:disabled{cursor:var(--cur)}
 .dot.free{background:var(--lime)} .dot.busy{background:var(--org)} .dot.off{background:var(--red)}
 
 /* сцена */
-#stage{position:fixed;left:0;right:0;top:48px;bottom:28px;overflow:auto;display:flex;
-  scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+#stage{position:fixed;left:0;right:0;top:48px;bottom:0;overflow:auto;display:flex;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#stage::-webkit-scrollbar{display:none}
+#stage.drag,#stage.drag #cv{cursor:grabbing}
 #view{position:relative;margin:auto;flex:none}
 #cv{display:block;image-rendering:pixelated;image-rendering:crisp-edges;width:100%;height:100%}
 #cv.hov{cursor:var(--cur-p)}
 #ov{position:absolute;inset:0;pointer-events:none;overflow:visible}
-#foot{position:fixed;left:0;right:0;bottom:0;height:28px;display:flex;align-items:center;justify-content:center;
-  font-size:13px;color:var(--mute);letter-spacing:.05em}
+#foot{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:10;display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--dim);letter-spacing:.05em;padding:5px 12px;background:rgba(13,14,23,.78);border:2px solid var(--ink);
+  pointer-events:none;white-space:nowrap;transition:opacity .6s}
+#foot.hide{opacity:0}
 
 /* реплики */
-.bub{position:absolute;transform:translate(-50%,-100%);max-width:200px;width:max-content;padding:5px 8px 6px;
-  background:var(--txt);color:var(--ink);font-size:var(--bf,13px);line-height:1.2;text-align:center;
+.bub{position:absolute;transform:translate(-50%,-100%);max-width:250px;width:max-content;padding:6px 10px 7px;
+  background:#f8f6ee;color:#14151f;font-size:var(--bf,14px);line-height:1.25;text-align:center;font-family:'Rubik',sans-serif;font-weight:500;
   border:2px solid var(--ink);box-shadow:2px 2px 0 rgba(13,14,23,.45);
   animation:bubIn .16s steps(3) both;white-space:normal}
 .bub::after{content:'';position:absolute;left:50%;bottom:-8px;margin-left:-4px;border:4px solid transparent;
   border-top:4px solid var(--ink)}
 .bub.out{animation:bubOut .2s steps(3) both}
-.bub.robo{font-family:var(--mono);font-size:calc(var(--bf,13px) - 2px);letter-spacing:.02em}
+/* у каждого агента свой шрифт: читаемо и по характеру */
+.bub.f-anton{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:calc(var(--bf,14px) - 1px);border-color:#5a2e1d}
+.bub.f-kai{font-family:'Nunito',sans-serif;font-weight:700;border-color:#7a2340;background:#fff4f6}
+.bub.f-node,.bub.robo{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:calc(var(--bf,14px) - 2px);letter-spacing:.03em;border-color:#29366f;background:#eef4ff}
+.bub.f-extra{font-family:'Rubik',sans-serif;font-weight:500}
+.bub.f-pet{font-family:'Nunito',sans-serif;font-weight:700}
 @keyframes bubIn{from{opacity:0;margin-top:4px}to{opacity:1;margin-top:0}}
 @keyframes bubOut{to{opacity:0;margin-top:-4px}}
 
@@ -114,6 +123,11 @@ button:disabled{cursor:var(--cur)}
 .ai .nm{font-size:15px;letter-spacing:.06em}
 .ai .cl{font-size:11px;color:var(--dim);letter-spacing:.04em}
 .ai .stt{margin-left:auto;font-size:11px;letter-spacing:.05em;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.ai .chat{font-size:12px;letter-spacing:.06em;padding:5px 8px;background:#24603f;border:2px solid var(--ink);box-shadow:inset 0 -2px 0 #153a26,inset 0 2px 0 #38b764;cursor:var(--cur-p);flex:none}
+.ai .chat:hover{background:#2c7a4f}
+.ai .chat.off{background:#2a2f45;box-shadow:inset 0 -2px 0 #121626;color:var(--mute)}
+.ai .chat.nope{animation:nope .3s steps(4)}
+@keyframes nope{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 .ai.slot{opacity:.5}
 .ai.slot .nm{color:var(--mute)}
 #term-open{margin:8px;justify-content:center}
@@ -202,7 +216,7 @@ button:disabled{cursor:var(--cur)}
   <button class="hbtn" id="agents-btn" type="button"><span class="dot free"></span><span class="lbl">AGENTS</span><span class="cnt">0/13</span></button>
 </header>
 
-<main id="stage"><div id="view"><canvas id="cv" width="368" height="208"></canvas><div id="ov"><div id="tag"></div></div></div></main>
+<main id="stage"><div id="view"><canvas id="cv" width="640" height="320"></canvas><div id="ov"><div id="tag"></div></div></div></main>
 <div id="foot"></div>
 
 <aside id="drawer" class="px">
@@ -243,8 +257,9 @@ button:disabled{cursor:var(--cur)}
 <script src="../games/shared/store.js?v=1"></script>
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
-<script src="agents.js?v=1"></script>
-<script src="lang.js?v=1"></script>
-<script src="office.js?v=1"></script>
+<script src="agents.js?v=2"></script>
+<script src="lang.js?v=3"></script>
+<script src="office.js?v=3"></script>
+<script src="events.js?v=3"></script>
 </body>
 </html>

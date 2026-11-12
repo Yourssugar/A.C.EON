@@ -1,12 +1,13 @@
 /* A.C.EON · ОФИС ИИ: симулятор жизни агентов.
-   Сцена рисуется Canvas 2D в родном размере 368x208 и растягивается целым числом без сглаживания.
-   Фон img/office.png собран из CC0 набора Pixel Office (2dPig), роботы рисуются здесь же по шаблонам.
+   Сцена рисуется Canvas 2D в родном размере 640x320 и увеличивается целым числом без сглаживания,
+   так чтобы закрыть экран целиком; что не влезло, листается. Фон img/office.png нарисован Codex
+   по схеме из клеток 16x16 (зал на 16 столов, лаунж, кухня, переговорка, серверная), роботы рисуются кодом.
    Статусы настоящие: config.json агента -> api_url -> /api/state {busy}. Поведение игровое.
    Флаги в адресе: ?status=free,busy,off (по порядку агентов), ?demo (статусы меняются сами), ?night=1, ?night=0 */
 (function(){
 'use strict';
 
-const W=368, H=208;
+const W=640, H=320;
 const QS=new URLSearchParams(location.search);
 const TR=window.Trace||null;
 const AU=window.AceonUniverse||{capMs:15};
@@ -59,57 +60,92 @@ function setLang(c){
 }
 document.documentElement.lang=lang();
 
-/* ---------- раскладка офиса (координаты в пикселях фона) ---------- */
-const TY=80, BY=196;                 // верхний и нижний коридоры (линия ног)
-const VX=[15,125,235,349];           // вертикальные проходы между блоками
-const BLOCKS=[[30,92,0],[140,92,1],[250,92,0],[30,122,1],[140,122,0],[250,122,1],[30,152,0]];
+/* ---------- раскладка офиса (координаты в пикселях фона) ----------
+   Проходы: прямые отрезки по горизонтали (h:1, p = y) или вертикали (h:0, p = x) от a до b.
+   Узлы графа там, где отрезки пересекаются; путь ищется Дейкстрой. Цель привязана к проходу c в точке cx, cy. */
+const CORR=[
+  {id:'T', h:1,p:72, a:12, b:376},    // зал, вдоль верхней стены
+  {id:'M', h:1,p:166,a:30, b:376},    // зал, между рядами столов
+  {id:'B', h:1,p:282,a:30, b:376},    // зал, внизу
+  {id:'V0',h:0,p:30, a:72, b:282},    // зал, слева от столов
+  {id:'V1',h:0,p:152,a:72, b:282},    // между блоками столов
+  {id:'V2',h:0,p:288,a:72, b:282},    // справа от столов
+  {id:'V3',h:0,p:372,a:72, b:300},    // граница зала, выход в лаунж и кухню
+  {id:'L', h:1,p:86, a:372,b:484},    // лаунж, у полки и телевизора
+  {id:'LB',h:1,p:155,a:372,b:508},    // лаунж, внизу
+  {id:'K', h:1,p:207,a:372,b:500},    // кухня, вдоль столешницы
+  {id:'KB',h:1,p:286,a:372,b:500},    // кухня, внизу
+  {id:'KV',h:0,p:500,a:207,b:286},    // кухня справа, к серверной
+  {id:'DV',h:0,p:508,a:100,b:155},    // к двери переговорки
+  {id:'MT',h:1,p:100,a:508,b:528},    // дверь переговорки
+  {id:'MI',h:0,p:528,a:100,b:146},    // переговорка, вдоль стекла
+  {id:'MB',h:1,p:146,a:528,b:628},    // переговорка, под стульями
+  {id:'SD',h:1,p:240,a:500,b:612}     // дверь серверной и проход между стойками
+];
+const CB={}; CORR.forEach(c=>CB[c.id]=c);
+const TY=72, BY=282;
+/* цель на проходе c: стоит в x,y, к проходу подходит в ближайшей точке */
+function onC(c,x,y,face,key,sit){
+  const k=CB[c];
+  return k.h?{x,y,c,cx:Math.max(k.a,Math.min(k.b,x)),cy:k.p,face,key,sit:!!sit}:{x,y,c,cx:k.p,cy:Math.max(k.a,Math.min(k.b,y)),face,key,sit:!!sit};
+}
+function topT(x,y,face,key){ return onC('T',x,y,face,key); }
+function botT(x,y,face,key,sit){ return onC('B',x,y,face,key,sit); }
+/* 16 мест: 4 блока по 4 стола, стулья сверху (сидят лицом вниз) и снизу (спиной к нам) */
 const SEATS=[];
-BLOCKS.forEach((b,bi)=>{
-  const [x,y,m]=b, col=Math.round((x-30)/110);
-  SEATS.push({x:x+(m?18:12), y:y+28, face:'right', lane:col});
-  SEATS.push({x:x+(m?67:61), y:y+28, face:'left',  lane:col+1});
+[[48,82],[192,82],[48,194],[192,194]].forEach(([bx,by],bi)=>{
+  const top=bi<2?'T':'M', bot=bi<2?'M':'B';
+  [16,48].forEach(dx=>SEATS.push({x:bx+dx,y:by+10,face:'down',c:top}));
+  [16,48].forEach(dx=>SEATS.push({x:bx+dx,y:by+58,face:'up',c:bot}));
 });
-function seatTarget(i){ const s=SEATS[i]; return {x:s.x,y:s.y,c:'V'+s.lane,cx:VX[s.lane],cy:s.y,face:s.face,sit:true,key:'seat'+i}; }
-function topT(x,y,face,key){ return {x,y,c:'T',cx:x,cy:TY,face,key}; }
-function botT(x,y,face,key,sit){ return {x,y,c:'B',cx:x,cy:BY,face,key,sit:!!sit}; }
+function seatTarget(i){ const s=SEATS[i%SEATS.length]; return onC(s.c,s.x,s.y,s.face,'seat'+i,true); }
+/* сидят на столе, а не на стуле: где кот ложится на клавиатуру */
+function deskOf(i){ const s=SEATS[i%SEATS.length]; return {x:s.x,y:s.face==='down'?s.y+13:s.y-15}; }
 const POI={
-  coffee:  topT(49,76,'up','coffee'),
-  vending: topT(13,77,'up','vending'),
-  cooler:  topT(31,77,'up','cooler'),
-  fridge:  topT(355,76,'up','fridge'),
-  win0:    topT(46,73,'up','win0'),
-  win1:    topT(125,73,'up','win1'),
-  win2:    topT(245,73,'up','win2'),
-  plant:   topT(98,74,'up','plant'),
-  door:    topT(183,72,'up','door'),
-  board:   topT(276,74,'up','board'),
-  term:    botT(299,183,'up','term'),
-  cooler2: botT(244,182,'up','cooler2')
+  coffee:  onC('K',402,205,'up','coffee'),
+  vending: topT(14,71,'up','vending'),
+  cooler:  topT(343,71,'up','cooler'),
+  printer: topT(296,71,'up','printer'),
+  fridge:  onC('K',494,205,'up','fridge'),
+  sink:    onC('K',450,205,'up','sink'),
+  win0:    topT(48,71,'up','win0'),
+  win1:    topT(112,71,'up','win1'),
+  win2:    topT(256,71,'up','win2'),
+  win3:    topT(320,71,'up','win3'),
+  plant:   onC('V0',30,150,'left','plant'),
+  door:    topT(176,70,'up','door'),
+  board:   topT(366,71,'up','board'),
+  term:    botT(320,280,'up','term'),
+  cooler2: onC('KB',394,284,'down','cooler2'),
+  shelf:   onC('L',408,85,'up','shelf'),
+  tv:      onC('L',464,85,'up','tv'),
+  arcade:  onC('LB',496,154,'up','arcade'),
+  rack:    onC('SD',560,240,'up','rack'),
+  rack2:   onC('SD',596,240,'down','rack2'),
+  meeting: onC('MB',575,146,'up','meeting')
 };
 const SOFA={
-  sofa1:[botT(173,171,'down','s1a',true),botT(189,171,'down','s1b',true)],
-  sofa2:[botT(211,171,'down','s2a',true),botT(227,171,'down','s2b',true)],
-  sofa3:[topT(306,68,'down','s3a'),topT(321,68,'down','s3b')]
+  sofa1:[onC('L',420,114,'down','s1a',true),onC('L',440,114,'down','s1b',true),onC('L',460,114,'down','s1c',true)],
+  bean:[onC('LB',464,146,'down','bean',true)],
+  dine:[onC('K',418,222,'down','d1',true),onC('K',442,222,'down','d2',true),onC('KB',430,270,'up','d3',true),onC('KB',454,270,'up','d4',true)],
+  meet:[onC('MB',543,135,'up','m1',true),onC('MB',575,135,'up','m2',true),onC('MB',607,135,'up','m3',true)]
 };
-SOFA.sofa3.forEach(t=>t.sit=true);
-const CLOCK={x:174,y:26};
-const GLOW_RECTS=[[1,37,25,34],[343,41,25,30]];   // автомат и холодильник светятся ночью
-const TERM_RECT=[284,148,30,32];
+const CLOCK={x:176,y:5};
+const GLOW_RECTS=[[4,12,21,36],[480,160,28,40],[488,72,17,56],[526,166,96,130]];   // ночью светятся автомат, холодильник, аркада, серверная
+const TERM_RECT=[305,240,32,31];
 
-/* граф коридоров: перекрёстки + точки старта и цели */
-function corridorOf(p){ return p.c; }
 function routeCorr(a,b){
+  /* узлы: пересечения проходов + старт и финиш */
   const nodes=[];
-  VX.forEach((x,i)=>{ nodes.push({x,y:TY,cs:['V'+i,'T']}); nodes.push({x,y:BY,cs:['V'+i,'B']}); });
+  CORR.forEach(h=>{ if(!h.h)return; CORR.forEach(v=>{ if(v.h)return;
+    if(v.p>=h.a-.5&&v.p<=h.b+.5&&h.p>=v.a-.5&&h.p<=v.b+.5)nodes.push({x:v.p,y:h.p,cs:[h.id,v.id]}); }); });
   const A={x:a.x,y:a.y,cs:[a.c]}, B={x:b.x,y:b.y,cs:[b.c]};
   nodes.push(A,B);
   const n=nodes.length, adj=nodes.map(()=>[]);
-  const corrs=['T','B','V0','V1','V2','V3'];
-  corrs.forEach(c=>{
+  CORR.forEach(c=>{
     const on=[];
-    nodes.forEach((p,i)=>{ if(p.cs.indexOf(c)>=0)on.push(i); });
-    const horiz=(c==='T'||c==='B');
-    on.sort((i,j)=>horiz?nodes[i].x-nodes[j].x:nodes[i].y-nodes[j].y);
+    nodes.forEach((p,i)=>{ if(p.cs.indexOf(c.id)>=0)on.push(i); });
+    on.sort((i,j)=>c.h?nodes[i].x-nodes[j].x:nodes[i].y-nodes[j].y);
     for(let k=1;k<on.length;k++){
       const i=on[k-1], j=on[k], d=Math.abs(nodes[i].x-nodes[j].x)+Math.abs(nodes[i].y-nodes[j].y);
       adj[i].push([j,d]); adj[j].push([i,d]);
@@ -127,6 +163,11 @@ function routeCorr(a,b){
   const path=[]; let u=t;
   while(u>=0&&u!==s){ path.unshift({x:nodes[u].x,y:nodes[u].y}); u=prev[u]; }
   return path;
+}
+/* случайная точка на любом проходе */
+function randomSpot(face,key){
+  const c=pick(CORR), t=c.a+Math.round(Math.random()*(c.b-c.a));
+  return c.h?onC(c.id,t,c.p,face||'down',(key||'r')+c.id+(t>>2)):onC(c.id,c.p,t,face||'down',(key||'r')+c.id+(t>>2));
 }
 
 /* ---------- пиксельные роботы ---------- */
@@ -232,8 +273,8 @@ function setStatus(a,st){
 }
 
 /* занятия */
-const ACTS_FREE=[['desk',3],['coffee',2],['window',2],['vending',.8],['fridge',.8],['cooler',.8],['sofa',1.2],['watch',1.2],['visit',1.4],['plant',.6],['board',.7],['term',.6],['cooler2',.6],['door',.5],['wander',.8]];
-const ACTS_BUSY=[['desk',4.5],['term',1.2],['board',1.2],['visit',1],['coffee',1],['door',.7],['cooler',.5],['cooler2',.5],['window',.5],['wander',1.2],['watch',.3]];
+const ACTS_FREE=[['desk',3],['coffee',2],['window',1.5],['vending',.6],['fridge',.8],['sink',.4],['cooler',.6],['sofa',1.4],['dine',.9],['arcade',.9],['shelf',.6],['tv',.6],['watch',1],['visit',1.4],['plant',.4],['board',.5],['term',.5],['cooler2',.5],['door',.4],['printer',.4],['rack',.4],['meet',.4],['wander',.8]];
+const ACTS_BUSY=[['desk',4.5],['term',1],['board',1],['rack',1.2],['rack2',.6],['printer',.8],['meet',.8],['visit',1],['coffee',1],['door',.6],['cooler',.4],['cooler2',.4],['window',.4],['wander',1.2],['watch',.3]];
 function chooseAct(a){
   const ACTS=busyMode(a)?ACTS_BUSY:ACTS_FREE;
   let sum=0; ACTS.forEach(x=>sum+=x[1]);
@@ -250,22 +291,20 @@ function chooseAct(a){
 function actTarget(a,k){
   switch(k){
     case 'desk': return seatTarget(a.def.seat);
-    case 'window': return POI[pick(['win0','win1','win2'])];
-    case 'sofa': { const s=pick(['sofa1','sofa2','sofa3']); return SOFA[s].find(t=>!taken(t.key,a))||null; }
-    case 'watch': { const x=60+Math.round(Math.random()*240); return botT(x,200,'down','watch'+(x>>4)); }
-    case 'wander': {
-      if(Math.random()<.5){ const x=10+Math.round(Math.random()*348); return topT(x,TY,pick(['down','left','right']),'w'+(x>>3)); }
-      const i=Math.random()*4|0, y=88+Math.round(Math.random()*104);
-      return {x:VX[i],y,c:'V'+i,cx:VX[i],cy:y,face:pick(['down','left','right']),key:'w'+i+'-'+(y>>3)};
-    }
+    case 'window': return POI[pick(['win0','win1','win2','win3'])];
+    case 'sofa': { const s=pick(['sofa1','sofa1','bean']); return SOFA[s].find(t=>!taken(t.key,a))||null; }
+    case 'dine': return SOFA.dine.find(t=>!taken(t.key,a))||null;
+    case 'meet': return SOFA.meet.find(t=>!taken(t.key,a))||null;
+    case 'watch': { const x=40+Math.round(Math.random()*320); return botT(x,302,'down','watch'+(x>>4)); }
+    case 'wander': return randomSpot(pick(['down','left','right']),'w');
     case 'visit': {
-      const others=agents.filter(o=>o!==a&&!o.path.length&&o.anc);
+      const others=agents.filter(o=>o!==a&&!o.path.length&&o.anc&&CB[o.anc.c]);
       if(!others.length)return null;
-      const o=pick(others), an=o.anc;
-      const horiz=(an.c==='T'||an.c==='B');
+      const o=pick(others), an=o.anc, k=CB[an.c];
       let x=an.x, y=an.y;
-      if(horiz) x+= (an.x>W/2?-14:14); else y+= (an.y>150?-14:14);
-      return {x,y,c:an.c,cx:x,cy:y,face:'down',key:'visit-'+o.id,buddy:o};
+      if(k.h) x+= (an.x>(k.a+k.b)/2?-14:14); else y+= (an.y>(k.a+k.b)/2?-14:14);
+      const t=onC(an.c,x,y,'down','visit-'+o.id); t.buddy=o;
+      return t;
     }
     default: return POI[k]||null;
   }
@@ -275,7 +314,7 @@ function startAct(a){
   a.act=k;
   goTo(a,t,()=>{
     const busy=busyMode(a);
-    const dur={desk:busy?14000:9000,coffee:6000,window:7000,sofa:9000,watch:5000,visit:6000,wander:2500,term:busy?8000:5000,board:busy?7000:5000}[k]||5000;
+    const dur={desk:busy?14000:9000,coffee:6000,window:7000,sofa:10000,dine:9000,meet:busy?12000:7000,arcade:9000,tv:8000,watch:5000,visit:6000,wander:2500,term:busy?8000:5000,board:busy?7000:5000,rack:busy?9000:5000}[k]||5000;
     a.actUntil=performance.now()+dur*(.7+Math.random()*.7);
     a.face=busy?pick(['work','busy','idle']):pick(['idle','idle','happy']);
     if(k==='watch'){ a.face='wow'; if(Math.random()<.75)sayChain(a,sayPool('say.watch')); }
@@ -306,10 +345,10 @@ function replyLine(a){ const L=lines(a); if(a.extra)return sayPool('say.extra');
 const imgs={};
 function loadImg(k,src){ return new Promise(r=>{ const i=new Image(); i.onload=()=>{ imgs[k]=i; r(); }; i.onerror=()=>r(); i.src=src; }); }
 const pets=[
-  {kind:'cat', x:181, y:168, w:16, h:13, path:[], anc:{x:181,y:BY,c:'B'}, flip:false, next:performance.now()+15000, spd:16,
-   spots:[botT(181,168,'down','c1'),botT(262,190,'down','c2'),topT(66,82,'down','c3'),topT(338,82,'down','c4'),botT(130,200,'down','c5')]},
-  {kind:'dog', x:262, y:197, w:24, h:11, path:[], anc:{x:262,y:BY,c:'B'}, flip:false, next:performance.now()+40000, spd:11,
-   spots:[botT(262,197,'down','d1'),botT(80,201,'down','d2'),botT(330,201,'down','d3'),topT(140,84,'down','d4')]}
+  {kind:'cat', x:440, y:113, w:16, h:13, path:[], anc:{x:440,y:86,c:'L'}, flip:false, next:performance.now()+15000, spd:16,
+   spots:[onC('L',440,113,'down','c1'),onC('LB',466,146,'down','c2'),botT(100,300,'down','c3'),onC('KB',444,300,'down','c4'),topT(220,74,'down','c5'),onC('V2',300,166,'down','c6')]},
+  {kind:'dog', x:128, y:299, w:24, h:11, path:[], anc:{x:128,y:BY,c:'B'}, flip:false, next:performance.now()+40000, spd:11,
+   spots:[botT(128,299,'down','d1'),onC('KB',470,302,'down','d2'),botT(330,302,'down','d3'),onC('M',100,170,'down','d4')]}
 ];
 
 /* ---------- реплики ---------- */
@@ -334,7 +373,7 @@ function say(a,text,force){
   if(!force&&bubs.length>=2)return;
   if(a.bub)killBub(a.bub,true);
   const el=document.createElement('div');
-  el.className='bub'+(a.id==='node'?' robo':'');
+  el.className='bub f-'+(a.kind?'pet':a.extra?'extra':a.id)+(a.id==='node'?' robo':'');
   el.textContent=text;
   ov.appendChild(el);
   const b={el,a,until:performance.now()+2200+text.length*55};
@@ -364,7 +403,7 @@ const DIG={0:["###","#.#","#.#","###"],1:["##.",".#.",".#.","###"],2:["##.","..#
   4:["#.#","#.#","###","..#"],5:["###","##.","..#","##."],6:["#..","###","#.#","###"],7:["###","..#",".#.",".#."],
   8:["###","###","#.#","###"],9:["###","#.#","###","..#"]};
 function drawClock(d){
-  ctx.fillStyle='#1a1c2c'; ctx.fillRect(CLOCK.x,CLOCK.y,17,4);
+  ctx.fillStyle='#1a1c2c'; ctx.fillRect(CLOCK.x-1,CLOCK.y-1,19,6);
   ctx.fillStyle='#ef7d57';
   const s=String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');
   const xs=[0,4,10,14];
@@ -380,7 +419,7 @@ function nightK(d){
   return 0;
 }
 function faceNow(a){ return a.blink&&a.face!=='sleep'&&a.face!=='off'&&a.face!=='work'?'blink':a.face; }
-const stars=[[40,37],[52,44],[117,38],[129,46],[238,36],[250,43],[316,39],[331,45],[44,47],[244,47]];
+const stars=[]; [32,96,240,304].forEach((x0,i)=>{ for(let k=0;k<3;k++)stars.push([x0+4+((i*7+k*9)%24),19+((i*5+k*7)%16)]); });
 const zs=[];
 function draw(now){
   const d=new Date();
@@ -417,6 +456,7 @@ function draw(now){
       ctx.drawImage(sp,Math.round(a.x-8),Math.round(a.y-24)); });
   }
   drawClock(d);
+  if(EV)EV.draw(ctx,now);
   // буквы z над спящими
   ctx.fillStyle='#f4f4f4';
   for(let i=zs.length-1;i>=0;i--){
@@ -492,7 +532,8 @@ function loop(now){
   let dt=Math.min(.06,(now-last)/1000); last=now;
   if(reduceMotion)dt*=.8;
   agents.forEach(a=>step(a,dt,now));
-  pets.forEach(p=>stepPet(p,dt,now));
+  pets.forEach(p=>{ if(!p.held)stepPet(p,dt,now); });
+  if(EV)EV.step(dt,now);
   ambient(now);
   for(let i=bubs.length-1;i>=0;i--){ const b=bubs[i]; if(now>b.until)killBub(b); else posBub(b); }
   draw(now);
@@ -501,19 +542,41 @@ function loop(now){
 
 /* ---------- размер сцены ---------- */
 const stage=document.getElementById('stage'), view=document.getElementById('view');
+/* сцена закрывает экран целиком: целый масштаб, достаточный по обеим сторонам; что не влезло, листается */
+let fitted=false;
 function fit(){
   const dpr=window.devicePixelRatio||1;
   const aw=stage.clientWidth, ah=stage.clientHeight;
-  let k=Math.floor(Math.min(aw*dpr/W,ah*dpr/H));
-  const tall=ah/aw>1.1;
-  if(tall){ k=Math.max(k,Math.floor(ah*.66*dpr/H)); }
-  k=Math.max(1,k);
+  if(!aw||!ah)return;
+  const k=Math.max(1,Math.ceil(Math.max(aw*dpr/W,ah*dpr/H)-0.02));
+  const was=fitted, cx=(stage.scrollLeft+aw/2)/(W*cssScale||1), cy=(stage.scrollTop+ah/2)/(H*cssScale||1);
   cssScale=k/dpr;
   view.style.width=(W*cssScale)+'px'; view.style.height=(H*cssScale)+'px';
-  ov.style.setProperty('--bf',Math.max(11,Math.min(16,Math.round(cssScale*3.6)))+'px');
-  if(tall)stage.scrollLeft=(view.offsetWidth-aw)/2;
+  ov.style.setProperty('--bf',Math.max(13,Math.min(19,Math.round(cssScale*3.4)))+'px');
+  /* первый показ: левый верхний угол (стена с часами и зал), дальше при повороте держим ту же середину */
+  if(was){ stage.scrollLeft=cx*W*cssScale-aw/2; stage.scrollTop=cy*H*cssScale-ah/2; } else { stage.scrollLeft=0; stage.scrollTop=0; }
+  fitted=true;
   bubs.forEach(posBub);
 }
+/* показать точку сцены (x, y в пикселях фона) в центре экрана */
+function focusOn(x,y,smooth){
+  const l=x*cssScale-stage.clientWidth/2, t=y*cssScale-stage.clientHeight/2;
+  if(smooth&&stage.scrollTo)stage.scrollTo({left:l,top:t,behavior:'smooth'}); else { stage.scrollLeft=l; stage.scrollTop=t; }
+}
+/* перетаскивание мышью (на телефоне сцена листается пальцем сама) */
+let drag=null, dragged=false;
+stage.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='mouse'||e.button!==0)return;
+  if(EV&&EV.grabs())return;
+  drag={x:e.clientX,y:e.clientY,l:stage.scrollLeft,t:stage.scrollTop}; dragged=false;
+});
+addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(!dragged&&Math.abs(dx)+Math.abs(dy)>6){ dragged=true; stage.classList.add('drag'); }
+  if(dragged){ stage.scrollLeft=drag.l-dx; stage.scrollTop=drag.t-dy; }
+});
+addEventListener('pointerup',()=>{ if(drag){ drag=null; stage.classList.remove('drag'); setTimeout(()=>{ dragged=false; },0); } });
 addEventListener('resize',fit);
 
 /* ---------- клики по сцене ---------- */
@@ -528,9 +591,12 @@ function hit(p){
   if(p.x>=TERM_RECT[0]&&p.x<=TERM_RECT[0]+TERM_RECT[2]&&p.y>=TERM_RECT[1]&&p.y<=TERM_RECT[1]+TERM_RECT[3])return 'term';
   return null;
 }
-cv.addEventListener('mousemove',e=>{ const h=hit(toNative(e)); cv.classList.toggle('hov',!!h); if(h&&h.def&&!isCoarse)showTag(h,1800); });
+cv.addEventListener('mousemove',e=>{ if(EV&&EV.move(toNative(e)))return; const h=hit(toNative(e)); cv.classList.toggle('hov',!!h); if(h&&h.def&&!isCoarse)showTag(h,1800); });
 cv.addEventListener('click',e=>{
-  const h=hit(toNative(e));
+  if(dragged)return;
+  const p=toNative(e);
+  if(EV&&EV.click(p))return;
+  const h=hit(p);
   if(!h){ sel=null; hideTag(); return; }
   if(h==='term'){ openTerm(); return; }
   if(h.kind){ say(h,sayPool(h.kind==='cat'?'say.cat':'say.dog'),true); return; }
@@ -636,6 +702,11 @@ function renderDrawer(){
       const d=document.createElement('span'); d.className='dot '+st; s.appendChild(d);
       const t=document.createElement('span'); t.textContent=stLabel(st); s.appendChild(t);
       b.appendChild(s);
+      /* чат прямо из списка, только когда агент свободен */
+      const c=document.createElement('span'); c.className='chat'+(st==='free'?'':' off'); c.textContent=T('chat');
+      c.title=st==='free'?T('talk'):(st==='busy'?T('talk.busy'):T('talk.off'));
+      c.addEventListener('click',ev=>{ ev.stopPropagation(); if(statusOf(def)==='free')goChat(def); else { c.classList.remove('nope'); void c.offsetWidth; c.classList.add('nope'); } });
+      b.appendChild(c);
     }
     b.addEventListener('click',()=>openCard(def));
     alist.appendChild(b);
@@ -701,17 +772,20 @@ function fillCard(){
 }
 document.getElementById('cx').addEventListener('click',closeCard);
 card.addEventListener('click',e=>{ if(e.target===card)closeCard(); });
-document.getElementById('ctalk').addEventListener('click',()=>{
-  const def=cardDef; if(!def||statusOf(def)!=='free')return;
+function goChat(def){
   try{ sessionStorage.setItem('aceon_access','granted'); }catch(e){}
   if(TR)TR.event('office.talk.'+def.id);
   location.href=def.chat;
+}
+document.getElementById('ctalk').addEventListener('click',()=>{
+  const def=cardDef; if(!def||statusOf(def)!=='free')return;
+  goChat(def);
 });
 document.getElementById('ccall').addEventListener('click',()=>{
   const def=cardDef, a=def&&byId[def.id]; if(!a||a.status!=='free')return;
   closeCard(); drawer.classList.remove('on');
   a.act='called';
-  goTo(a,botT(184,201,'down','called'),()=>{ a.face='happy'; sayChain(a,sayPool('say.ask'),true); a.actUntil=performance.now()+7000; });
+  goTo(a,botT(200,302,'down','called'),()=>{ a.face='happy'; sayChain(a,sayPool('say.ask'),true); a.actUntil=performance.now()+7000; });
   a.actUntil=Infinity;
 });
 document.getElementById('pt').addEventListener('mouseenter',()=>{ if(cardDef&&statusOf(cardDef)==='free')document.getElementById('pt-face').src='img/f-fascinated.png'; });
@@ -835,6 +909,7 @@ function applyTexts(){
   document.getElementById('foot').textContent=isCoarse?T('hint.touch'):T('hint');
   renderDrawer(); updateCount(); refreshCard();
   if(tagA)showTag(tagA,Math.max(0,tagUntil-performance.now()));
+  if(window.OfficeEvents)OfficeEvents.refresh();
 }
 function tickClock(){ const d=new Date(); document.getElementById('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 tickClock(); setInterval(tickClock,10000);
@@ -852,15 +927,26 @@ function visitorLine(){
   if(typeof fav==='string'&&Math.random()<.6&&TR.seen('office.place')<Date.now()-3600e3){ TR.mark('office.place'); say(a,sayPool('say.place',{place:TR.name(fav)}),true); }
 }
 
+/* ---------- мини-игры (events.js) ---------- */
+let EV=null;
+window.OfficeAPI={W,H,agents,pets,byId,imgs,POI,SOFA,SEATS,TY,BY,CORR,onC,randomSpot,deskOf,seatTarget,topT,botT,sprite,cv,ov,
+  goTo,place,say,sayChain,sayPool,busyMode,lines,pick,T,L,lang,focusOn,routeCorr,
+  stage:()=>stage, scale:()=>cssScale, hit:p=>hit(p), track:e=>{ if(TR)TR.event(e); },
+  /* отпустить робота после мини-игры: сам выберет новое занятие */
+  release:a=>{ a.act=null; a.onArrive=null; a.actUntil=performance.now()+300+Math.random()*1500; },
+  register:e=>{ EV=e; }
+};
+
 /* ---------- загрузка ---------- */
 const bootEl=document.getElementById('boot'), bootL=document.getElementById('bootl');
 const BOOT=['<b>A.C.EON // AI OFFICE</b>','','> STAFF REGISTRY..... '+REAL.length+'/'+DEFS.length,'> DESKS.............. '+SEATS.length,'> OBSERVER........... '+obsId,'> OPENING DOOR'];
 BOOT.forEach((l,i)=>setTimeout(()=>{ bootL.innerHTML+=(i?'\n':'')+l; },reduceMotion?0:i*150));
 function hideBoot(){ bootEl.classList.add('gone'); setTimeout(()=>bootEl.remove(),450); }
 
-Promise.all([loadImg('bg','img/office.png'),loadImg('cat','img/cat.png'),loadImg('dog','img/dog.png')]).then(()=>{
+Promise.all([loadImg('bg','img/office.png?v=2'),loadImg('cat','img/cat.png'),loadImg('dog','img/dog.png')]).then(()=>{
   fit(); applyTexts();
   setTimeout(hideBoot,reduceMotion?200:1100);
+  setTimeout(()=>document.getElementById('foot').classList.add('hide'),12000);
   requestAnimationFrame(t=>{ last=t; loop(t); });
   setTimeout(visitorLine,7000+Math.random()*4000);
   ['img/p-anton.png','img/p-kai.png','img/p-node.png','img/f-happy.png','img/f-working.png'].forEach(s=>{ const i=new Image(); i.src=s; });

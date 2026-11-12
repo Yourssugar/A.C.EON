@@ -9,7 +9,8 @@ const O=K.O, tx=K.tx, EV=K.EVENTS;
 function raw(k){ const o=K.TX[k]; return o[O.lang()]||o.en; }
 function ln(k,v){ const s=tx(k,v); return Array.isArray(s)?O.pick(s):s; }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function free(id){ const a=O.byId[id]; return a&&a.placed&&!O.busyMode(a)&&a.act!=='event'?a:null; }
+/* личные ЧП идут и когда агент занят или не на связи: иначе их почти никто не увидит */
+function free(id){ const a=O.byId[id]; return a&&a.placed&&a.act!=='event'?a:null; }
 function nameOf(a){ return a?O.L(a.def.name):''; }
 
 Object.assign(K.TX,{
@@ -205,7 +206,7 @@ EV.anton=(function(){
 
 /* --- 12. Кай рисует, посетитель угадывает --- */
 const KAI_IDS=['cat','coffee','server','robot','sun','house','tree','fish','rocket','heart','bug','pizza','guitar','moon','mushroom','key','bulb','crown','umbrella','rain','apple','clock','bike','planet'];
-const KAI_READY=false;   // true, когда в img/office/kai/ лежит kai_pics.png от Codex
+const KAI_READY=true;   // рисунки Codex в img/office/kai/kai_pics.png
 const kaiSheet=new Image(); if(KAI_READY)kaiSheet.src='img/office/kai/kai_pics.png?v=1';
 const propSheet=new Image(); propSheet.src='img/office/props.png?v=1';
 /* пока нет рисунков Codex: предметы из props.png, кот, пёс и робот */

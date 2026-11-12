@@ -12,24 +12,27 @@ DB.cards=DB.cards||{};
 const S=DB.shop;
 
 /* x, y, w, h: место на карте в родных пикселях (как в задании Codex), картинка встаёт по центру низа */
+/* цена зависит не от вещи, а от того, какая это покупка по счёту: 150, 200, 250 ... весь офис за 6650 */
+const PRICE_BASE=150, PRICE_STEP=50;
+function price(){ return PRICE_BASE+PRICE_STEP*Object.keys(S.owned).length; }
 const ITEMS=[
- {id:'aquarium',price:300,files:['aquarium_1','aquarium_2'],x:300,y:92,w:52,h:48,frame:700,glow:.5},
- {id:'coffee_turbo',price:250,files:['coffee_turbo'],x:382,y:156,w:40,h:38},
- {id:'vacuum',price:220,files:['vacuum_dock','vacuum_1','vacuum_2'],x:348,y:300,w:18,h:14},
- {id:'neon',price:150,vars:[['neon_pink'],['neon_cyan']],x:396,y:10,w:104,h:32,glow:.9},
- {id:'poster',price:60,vars:[['poster_1'],['poster_2'],['poster_3'],['poster_4']],x:198,y:10,w:36,h:32},
- {id:'plant',price:80,vars:[['plant_monstera'],['plant_cactus'],['plant_bonsai']],x:2,y:172,w:22,h:52},
- {id:'treadmill',price:200,files:['treadmill_1','treadmill_2'],x:168,y:290,w:44,h:26},
- {id:'cathouse',price:120,files:['cathouse'],x:40,y:288,w:30,h:28},
- {id:'parrot',price:350,files:['parrot_1','parrot_2'],x:615,y:104,w:24,h:34},
- {id:'easel',price:150,files:['easel'],x:340,y:184,w:24,h:36},
- {id:'duck_desk',price:40,files:['duck_desk'],x:70,y:98,w:10,h:10},
- {id:'ac_arctic',price:220,files:['ac_arctic'],x:596,y:296,w:36,h:22},
- {id:'garland',price:100,files:['garland_1','garland_2'],tile:true,y:0,h:8,frame:600,glow:.9},
- {id:'lava',price:70,files:['lava_1','lava_2'],x:420,y:114,w:8,h:16,frame:900,glow:.8}
+ {id:'aquarium',files:['aquarium_1','aquarium_2'],x:300,y:92,w:52,h:48,frame:700,glow:.5},
+ {id:'coffee_turbo',files:['coffee_turbo'],x:382,y:156,w:40,h:38},
+ {id:'vacuum',files:['vacuum_dock','vacuum_1','vacuum_2'],x:348,y:300,w:18,h:14},
+ {id:'neon',vars:[['neon_pink'],['neon_cyan']],x:396,y:10,w:104,h:32,glow:.9},
+ {id:'poster',vars:[['poster_1'],['poster_2'],['poster_3'],['poster_4']],x:198,y:10,w:36,h:32},
+ {id:'plant',vars:[['plant_monstera'],['plant_cactus'],['plant_bonsai']],x:2,y:172,w:22,h:52},
+ {id:'treadmill',files:['treadmill_1','treadmill_2'],x:168,y:290,w:44,h:26},
+ {id:'cathouse',files:['cathouse'],x:40,y:288,w:30,h:28},
+ {id:'parrot',files:['parrot_1','parrot_2'],x:615,y:104,w:24,h:34},
+ {id:'easel',files:['easel'],x:340,y:184,w:24,h:36},
+ {id:'duck_desk',files:['duck_desk'],x:70,y:98,w:10,h:10},
+ {id:'ac_arctic',files:['ac_arctic'],x:596,y:296,w:36,h:22},
+ {id:'garland',files:['garland_1','garland_2'],tile:true,y:0,h:8,frame:600,glow:.9},
+ {id:'lava',files:['lava_1','lava_2'],x:420,y:114,w:8,h:16,frame:900,glow:.8}
 ];
-/* картинки Codex ещё не пришли: пока false, декор не грузится и магазин пишет, что ждёт товар */
-const DECOR_READY=false, CARDS_READY=false;
+/* false: декор и карточки не грузятся, магазин пишет, что ждёт товар */
+const DECOR_READY=true, CARDS_READY=true;
 const CARDS=['coffee','bug','cat','cap','server','meeting','fw','friday','wifi','printer','light','ducks','anton','kai','node','first','night','shopper','cozy','veteran'];
 const RARE={night:1,cozy:1,veteran:1,anton:1,kai:1,node:1};
 
@@ -37,6 +40,7 @@ Object.assign(K.TX,{
  shop_btn:{ru:'СНАБЖЕНИЕ',en:'SUPPLIES',de:'AUSSTATTUNG',fr:'FOURNITURES',es:'SUMINISTROS',it:'FORNITURE',pl:'ZAOPATRZENIE'},
  album_btn:{ru:'АЛЬБОМ',en:'ALBUM',de:'ALBUM',fr:'ALBUM',es:'ÁLBUM',it:'ALBUM',pl:'ALBUM'},
  shop_title:{ru:'СНАБЖЕНИЕ ОФИСА',en:'OFFICE SUPPLIES',de:'BÜROAUSSTATTUNG',fr:'FOURNITURES DU BUREAU',es:'SUMINISTROS DE OFICINA',it:'FORNITURE D\'UFFICIO',pl:'ZAOPATRZENIE BIURA'},
+ shop_next:{ru:'следующая вещь: {n}',en:'next item: {n}',de:'nächstes Stück: {n}',fr:'prochain objet : {n}',es:'siguiente objeto: {n}',it:'prossimo oggetto: {n}',pl:'następna rzecz: {n}'},
  shop_buy:{ru:'КУПИТЬ',en:'BUY',de:'KAUFEN',fr:'ACHETER',es:'COMPRAR',it:'COMPRA',pl:'KUP'},
  shop_hide:{ru:'УБРАТЬ',en:'REMOVE',de:'WEGRÄUMEN',fr:'RANGER',es:'QUITAR',it:'TOGLI',pl:'SCHOWAJ'},
  shop_show:{ru:'ПОСТАВИТЬ',en:'PLACE',de:'AUFSTELLEN',fr:'INSTALLER',es:'PONER',it:'METTI',pl:'POSTAW'},
@@ -272,7 +276,7 @@ function preview(it){
 function paintShop(){
   const box=win.querySelector('#of-box');
   box.querySelector('.oh b').textContent=tx('shop_title');
-  box.querySelector('.oh span').textContent=tx('points')+': '+DB.pts;
+  box.querySelector('.oh span').textContent=tx('points')+': '+DB.pts+'   ·   '+tx('shop_next',{n:price()});
   const ob=box.querySelector('.ob'); ob.innerHTML='';
   const list=ITEMS.filter(ready);
   if(!list.length){ ob.appendChild(el('div','of-empty',tx('shop_none'))); return; }
@@ -284,9 +288,9 @@ function paintShop(){
     d.appendChild(el('div','ds',tx('ie_'+it.id)));
     const ft=el('div','ft');
     if(!own){
-      ft.appendChild(el('span','pr',it.price+' '));
+      ft.appendChild(el('span','pr',price()+' '));
       const b=el('button','pbtn go',tx('shop_buy')); b.type='button';
-      if(DB.pts<it.price){ b.disabled=true; b.title=tx('shop_poor'); }
+      if(DB.pts<price()){ b.disabled=true; b.title=tx('shop_poor'); }
       b.addEventListener('click',()=>buy(it)); ft.appendChild(b);
     } else {
       ft.appendChild(el('span','pr',''));
@@ -299,8 +303,9 @@ function paintShop(){
   });
 }
 function buy(it){
-  if(S.owned[it.id]||DB.pts<it.price)return;
-  DB.pts-=it.price; S.owned[it.id]=Date.now(); K.save(); K.paintMenu();
+  const cost=price();
+  if(S.owned[it.id]||DB.pts<cost)return;
+  DB.pts-=cost; S.owned[it.id]=Date.now(); K.save(); K.paintMenu();
   applyEffects(); check();
   toast(tx('toast_buy',{x:tx('it_'+it.id)}));
   O.track('office.shop.'+it.id);
@@ -314,6 +319,8 @@ function drawCard(c,id,open){
   c.width=64; c.height=80; const x=c.getContext('2d'); x.imageSmoothingEnabled=false;
   const im=CARDS_READY&&cardImg(id);
   if(open&&im&&ok(im)){ x.drawImage(im,0,0,64,80); return; }
+  /* картинка ещё грузится: пока заглушка, потом перерисуем */
+  if(open&&im&&!im.complete)im.addEventListener('load',()=>drawCard(c,id,open),{once:true});
   x.fillStyle=open?CARD_BG[id]:'#161a2b'; x.fillRect(0,0,64,80);
   if(!open){ x.fillStyle='#333c57'; x.font='bold 28px monospace'; x.textAlign='center'; x.fillText('?',32,50); return; }
   x.fillStyle='rgba(255,255,255,.08)'; for(let i=0;i<80;i+=8)x.fillRect(0,i,64,4);

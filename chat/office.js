@@ -148,7 +148,7 @@ const POI={
 const SOFA={
   sofa1:[onC('L',420,114,'down','s1a',true),onC('L',440,114,'down','s1b',true),onC('L',460,114,'down','s1c',true)],
   bean:[onC('LB',464,146,'down','bean',true)],
-  dine:[onC('K',418,222,'down','d1',true),onC('K',442,222,'down','d2',true),onC('KB',430,270,'up','d3',true),onC('KB',454,270,'up','d4',true)],
+  dine:[423,447,471].map((x,i)=>onC('K',x,222,'down','d'+(i+1),true)).concat([423,447,471].map((x,i)=>onC('KB',x,266,'up','d'+(i+4),true))),
   meet:[onC('MB',543,135,'up','m1',true),onC('MB',575,135,'up','m2',true),onC('MB',607,135,'up','m3',true)]
 };
 const CLOCK={x:176,y:5};

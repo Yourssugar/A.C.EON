@@ -5,7 +5,7 @@
    Координаты в пикселях фона офиса (640x320, img/office.png). Предметы из img/office/props.png (сетка 4x3 по 32).
    На телефоне видна только часть офиса, поэтому во время игры камера держит главное в кадре,
    а роботы бегают в пределах видимой области.
-   Флаги в адресе: ?event=coffee|bug|cat|cap (запустить сразу), ?events=fast (раз в 30 с). */
+   Флаги в адресе: ?event=<id> (запустить сразу), ?events=fast (каждые 8 с). */
 (function(){
 'use strict';
 const O=window.OfficeAPI; if(!O)return;
@@ -128,12 +128,14 @@ let state='idle', cur=null, nextAt=0, lastId='', offerUntil=0, pointer={x:-99,y:
 const fast=QS.get('events')==='fast';
 const forced=QS.get('event');
 let forcedNext=null;
-let lastEv=null;   // последнее ЧП: роботы вспоминают его ещё 10 минут
+let lastEv=null, resTok=0;   // последнее ЧП: роботы вспоминают его ещё 10 минут
 function now(){ return performance.now(); }
-function schedule(first){
+/* следующее ЧП через случайное время от 1 до 300 секунд: при входе на страницу и после каждого ЧП
+   (когда закрыт итог или выбрано «Пусть сами»). Пока идёт ЧП или висит плашка, новое не начинается. */
+function schedule(){
   const t=now();
-  if(fast){ nextAt=t+(first?8000:30000); return; }
-  nextAt=t+(first?60000+Math.random()*30000:180000+Math.random()*180000);
+  if(fast){ nextAt=t+8000; return; }
+  nextAt=t+(1+Math.floor(Math.random()*300))*1000;
 }
 
 /* кто участвует: свободные агенты и стажёры, не занятые и стоящие в офисе */
@@ -343,6 +345,8 @@ function finish(grade,detail){
   r.querySelector('.rp').textContent=tx('pts',{n:pts});
   r.querySelector('button').textContent=tx('ok');
   setTimeout(()=>{ if(state==='result')r.classList.add('on'); },650);
+  /* итог сам закрывается через 12 с, чтобы следующее ЧП не ждало кнопку */
+  const tok=++resTok; setTimeout(()=>{ if(state==='result'&&tok===resTok)closeResult(); },12650);
   if(ev.end)ev.end(grade);
   O.track('office.ev.'+grade+'.'+lastId);
 }
@@ -740,7 +744,7 @@ O.register({
     if(state==='idle'){
       if((DB.on||forcedNext)&&t>nextAt){
         if(canStart()){ const ids=Object.keys(EVENTS).filter(k=>k!==lastId); offer(forcedNext||O.pick(ids)); forcedNext=null; }
-        else nextAt=t+15000;
+        else nextAt=t+5000;
       }
       return;
     }

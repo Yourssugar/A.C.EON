@@ -540,7 +540,8 @@ function step(a,dt,now){
 function stepPet(p,dt,now){
   if(p.path.length){
     const q=p.path[0], dx=q.x-p.x, dy=q.y-p.y, dist=Math.hypot(dx,dy), spd=p.spd*dt;
-    if(Math.abs(dx)>.3)p.flip=dx>0;
+    /* картинка пса смотрит вправо, кошки влево: отражаем по-разному */
+    if(Math.abs(dx)>.3)p.flip=p.kind==='dog'?dx<0:dx>0;
     if(dist<=spd){ p.x=q.x; p.y=q.y; p.path.shift(); } else { p.x+=dx/dist*spd; p.y+=dy/dist*spd; }
     return;
   }

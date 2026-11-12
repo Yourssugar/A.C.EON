@@ -91,6 +91,7 @@ const TX={
  h_bug:{ru:'Попаданий: {n} / 3',en:'Hits: {n} / 3',de:'Treffer: {n} / 3',fr:'Touches : {n} / 3',es:'Golpes: {n} / 3',it:'Colpi: {n} / 3',pl:'Trafienia: {n} / 3'},
  h_cat:{ru:'Кот к дивану',en:'Cat to the sofa',de:'Katze aufs Sofa',fr:'Chat vers le canapé',es:'Gato al sofá',it:'Gatto sul divano',pl:'Kot na kanapa'},
  h_cap:{ru:'Пройдено проверок: {n} / 3',en:'Checks passed: {n} / 3',de:'Bestandene Prüfungen: {n} / 3',fr:'Vérifications réussies : {n} / 3',es:'Pruebas superadas: {n} / 3',it:'Verifiche superate: {n} / 3',pl:'Zaliczone weryfikacje: {n} / 3'},
+ new_card:{ru:'НОВАЯ КАРТОЧКА В АЛЬБОМЕ',en:'NEW CARD IN THE ALBUM',de:'NEUE KARTE IM ALBUM',fr:'NOUVELLE CARTE DANS L\'ALBUM',es:'CARTA NUEVA EN EL ÁLBUM',it:'NUOVA CARTA NELL\'ALBUM',pl:'NOWA KARTA W ALBUMIE'},
  yes:{ru:'да',en:'yes',de:'ja',fr:'oui',es:'sí',it:'sì',pl:'tak'},
  no:{ru:'нет',en:'no',de:'nein',fr:'non',es:'no',it:'no',pl:'nie'},
  skip_generic:{ru:['Ну и ладно. Сами разберёмся.','Человек смотрел и не помог. Записал в лог.'],en:['Fine. We will figure it out.','The human watched and did not help. Logged.'],de:['Na gut. Wir regeln das selbst.','Der Mensch hat zugesehen und nicht geholfen. Protokolliert.'],fr:['Bon. On se débrouillera.','L\'humain a regardé sans aider. Noté dans le journal.'],es:['Vale. Ya nos apañaremos.','El humano miró y no ayudó. Anotado en el log.'],it:['Va bene. Ci arrangiamo.','L\'umano ha guardato e non ha aiutato. Messo a log.'],pl:['Trudno. Sami ogarniemy.','Człowiek patrzył i nie pomógł. Zapisane w logu.']}
@@ -226,6 +227,8 @@ function buildUI(){
 #ev-res .rt.win{color:#a7f070}#ev-res .rt.mid{color:#ffcd75}#ev-res .rt.fail{color:#ef7d57}
 #ev-res .rd{font-family:'Rubik',sans-serif;font-size:14px;color:#94b0c2}
 #ev-res .rp{font-size:15px;color:#ffcd75}
+#ev-res .rc{font-size:13px;color:#73eff7;letter-spacing:.06em}
+#ev-res .rc:empty{display:none}
 #stage.ev-lock{overflow:hidden;touch-action:none}
 #stage.ev-cup #cv{cursor:none}
 #ev-toggle{margin:0 8px 8px;justify-content:center}
@@ -265,7 +268,7 @@ function buildUI(){
   hud.innerHTML='<div class="hh"></div><div class="hs"></div><div class="tb"><i></i></div>';
   document.body.appendChild(hud); ui.hud=hud;
   const res=el('div','px'); res.id='ev-res';
-  res.innerHTML='<div class="rt"></div><div class="rd"></div><div class="rp"></div><button class="pbtn go" type="button"></button>';
+  res.innerHTML='<div class="rt"></div><div class="rd"></div><div class="rp"></div><div class="rc"></div><button class="pbtn go" type="button"></button>';
   document.body.appendChild(res); ui.res=res;
   res.querySelector('button').addEventListener('click',closeResult);
   /* переключатель и очки в меню агентов */
@@ -336,13 +339,20 @@ function finish(grade,detail){
   state='result';
   ui.hud.classList.remove('on');
   const ev=cur;
-  const pts=grade==='win'?30:grade==='mid'?15:5;
+  const pts=grade==='win'?50:grade==='mid'?25:10;
   lastEv={id:lastId,grade,t:now()};
-  DB.pts+=pts; DB.done[lastId]=(DB.done[lastId]||0)+(grade==='win'?1:0); save(); paintMenu();
+  DB.pts+=pts; DB.done[lastId]=(DB.done[lastId]||0)+(grade==='win'?1:0);
+  DB.plays=(DB.plays||0)+1;
+  /* карточка за первую победу в этом ЧП */
+  let card=null;
+  if(grade==='win'&&!(DB.cards||{})[lastId]){ DB.cards=DB.cards||{}; DB.cards[lastId]=Date.now(); card=lastId; }
+  save(); paintMenu();
+  if(window.OfficeShop)OfficeShop.check();
   const r=ui.res;
   r.querySelector('.rt').textContent=tx('res_'+grade); r.querySelector('.rt').className='rt '+grade;
   r.querySelector('.rd').textContent=detail||'';
   r.querySelector('.rp').textContent=tx('pts',{n:pts});
+  r.querySelector('.rc').textContent=card?tx('new_card'):'';
   r.querySelector('button').textContent=tx('ok');
   setTimeout(()=>{ if(state==='result')r.classList.add('on'); },650);
   /* итог сам закрывается через 12 с, чтобы следующее ЧП не ждало кнопку */
@@ -379,7 +389,7 @@ EVENTS.coffee=(function(){
       bots=crew(8); cup=false; brew=0; saved=0;
       box=viewBox(SPOT.coffeeView.x,SPOT.coffeeView.y);
       O.focusOn(SPOT.coffeeView.x,SPOT.coffeeView.y,true);
-      bots.forEach(a=>{ hold(a); a.ev={charge:55+Math.random()*40,drain:2.2+Math.random()*1.8,dead:false,over:0}; pickNext(a); });
+      bots.forEach(a=>{ hold(a); a.ev={charge:55+Math.random()*40,drain:(2.2+Math.random()*1.8)*(window.OfficeShop&&OfficeShop.has('coffee_turbo')?.7:1),dead:false,over:0}; pickNext(a); });
       stageLock(true,false);
     },
     step(dt){
@@ -393,7 +403,7 @@ EVENTS.coffee=(function(){
       });
     },
     click(p){
-      if(inRect(p,SPOT.coffee)){ if(!cup&&brew<=0){ brew=.6; burst(SPOT.coffee.cx,SPOT.coffee.cy-6,'#94b0c2',6); } return true; }
+      if(inRect(p,SPOT.coffee)){ if(!cup&&brew<=0){ brew=window.OfficeShop&&OfficeShop.has('coffee_turbo')?.15:.6; burst(SPOT.coffee.cx,SPOT.coffee.cy-6,'#94b0c2',6); } return true; }
       const h=O.hit(p);
       if(h&&h.ev&&cup){
         const e=h.ev; cup=false; stageLock(true,false);
@@ -507,7 +517,7 @@ EVENTS.cat=(function(){
   let cat=null, desk=null, owner=null, home=false, sayT=0;
   return {
     dur:35,
-    ready(){ return !!O.pets.find(p=>p.kind==='cat'); },
+    ready(){ return !!O.pets.find(p=>p.kind==='cat')&&!(window.OfficeShop&&OfficeShop.has('cathouse')&&Math.random()<.5); },
     tease(){
       cat=O.pets.find(p=>p.kind==='cat'); owner=O.byId.anton||O.agents[0];
       desk=O.deskOf(owner.def.seat);
@@ -781,7 +791,7 @@ buildUI();
 schedule(true);
 if(forced){ forcedNext=forced; nextAt=now()+3000; }
 window.OfficeEvents={kit:{O,TX,tx,EVENTS,ui,finish,crew,hold,PAL,pix,prop,burst,follow,viewBox,nearSpot,corridorSpot,wander,inRect,edgeArrow,now,stageLock,
-    setBox:b=>{ box=b; }, pointer:()=>pointer, spointer:()=>spointer, state:()=>state, cur:()=>cur,
+    setBox:b=>{ box=b; }, save, DB, paintMenu, shop:id=>!!(window.OfficeShop&&OfficeShop.has(id)), pointer:()=>pointer, spointer:()=>spointer, state:()=>state, cur:()=>cur,
     scene:{open:sceneOpen,close:sceneClose,say:sceneSay,bot:sceneBot,burst:sburst,fontCls,view:()=>SCN,el:()=>SCN.ov}, digits, digitsW},
   last:()=>lastEv,
   start:id=>{ if(state==='idle'&&EVENTS[id]){ offer(id); } },accept:()=>accept(),state:()=>state,db:DB,refresh:paintMenu};

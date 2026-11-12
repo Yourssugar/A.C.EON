@@ -130,7 +130,7 @@ EV.server=(function(){
       if(spawnT<=0){ spawnT=Math.max(.55,1.5-el*.035)*(.7+Math.random()*.6); if(hot.length<7)spawn(); }
       hot.forEach(h=>h.age+=dt);
       const heat=hot.reduce((s,h)=>s+(h.age>4?1.6:1),0);
-      temp=Math.max(40,temp+(heat*.62-.8)*dt); peak=Math.max(peak,temp);
+      temp=Math.max(40,temp+(heat*(K.shop('ac_arctic')?.46:.62)-.8)*dt); peak=Math.max(peak,temp);
       if(temp>=100){ temp=100; K.finish('fail',tx('server_res',{n:100})); return; }
       if(Math.random()<dt*.18){ const i=Math.random()*bots.length|0; if(bots[i])S.say(POS[i][0],POS[i][1]-50,ln('server_say'),S.fontCls(bots[i])); }
     },

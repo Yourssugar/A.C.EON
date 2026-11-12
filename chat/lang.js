@@ -261,7 +261,12 @@ Object.assign(window.OFFICE_LANG.ru,{
   'say.after.fw':['Я обновился. Кажется, ничего не изменилось.'],
   'say.after.friday':['А в пятницу кто-то ушёл в 17:59. Я всё видел.'],
   'say.after.wifi':['Роутер теперь привязан. К коту.'],
-  'say.after.printer':['Я до сих пор нахожу листы под столами.']
+  'say.after.printer':['Я до сих пор нахожу листы под столами.'],
+  'say.act.fish':['Рыбки не знают, что такое дедлайн. Завидую.','Вон та, синяя, похожа на NODE.','Буль.'],
+  'say.act.run':['Бегу. Никуда.','Ещё километр, и я заслужил кофе.','Это кардио или зарядка аккумулятора?'],
+  'say.act.paint':['Добавлю немного счастья в правый угол.','Это портрет сервера. Он позировал весь день.'],
+  'say.after.light':['Я до сих пор вижу в темноте только свои глаза.'],
+  'say.after.ducks':['Я нашёл уточку в холодильнике. Она смотрела на меня.']
 });
 Object.assign(window.OFFICE_LANG.en,{
   'say.click.walk':['I am walking. Do not throw me off.','Later, I am on an errand.','Catch up if you want to talk.'],
@@ -294,5 +299,10 @@ Object.assign(window.OFFICE_LANG.en,{
   'say.after.fw':['I updated. I think nothing changed.'],
   'say.after.friday':['Someone left at 17:59 on Friday. I saw everything.'],
   'say.after.wifi':['The router is tied down now. To the cat.'],
-  'say.after.printer':['I still find sheets under the desks.']
+  'say.after.printer':['I still find sheets under the desks.'],
+  'say.act.fish':['Fish do not know what a deadline is. Jealous.','That blue one looks like NODE.','Blub.'],
+  'say.act.run':['Running. Nowhere.','One more kilometre and I have earned a coffee.','Is this cardio or battery charging?'],
+  'say.act.paint':['A little happiness in the right corner.','A portrait of the server. It posed all day.'],
+  'say.after.light':['I can still only see my own eyes in the dark.'],
+  'say.after.ducks':['I found a duck in the fridge. It was staring at me.']
 });

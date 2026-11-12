@@ -296,8 +296,11 @@ function setStatus(a,st){
 /* занятия */
 const ACTS_FREE=[['desk',3],['coffee',2],['window',1.5],['vending',.6],['fridge',.8],['sink',.4],['cooler',.6],['sofa',1.4],['dine',.9],['arcade',.9],['shelf',.6],['tv',.6],['watch',1],['visit',1.4],['plant',.4],['board',.5],['term',.5],['cooler2',.5],['door',.4],['printer',.4],['rack',.4],['meet',.4],['wander',.8]];
 const ACTS_BUSY=[['desk',4.5],['term',1],['board',1],['rack',1.2],['rack2',.6],['printer',.8],['meet',.8],['visit',1],['coffee',1],['door',.6],['cooler',.4],['cooler2',.4],['window',.4],['wander',1.2],['watch',.3]];
+/* занятия, которые добавляет декор: {name, w, who(a), target(a), dur, arrive(a)} */
+const XACTS=[];
 function chooseAct(a){
-  const ACTS=busyMode(a)?ACTS_BUSY:ACTS_FREE;
+  const busy=busyMode(a);
+  const ACTS=(busy?ACTS_BUSY:ACTS_FREE).concat(XACTS.filter(x=>(x.any||!busy)&&(!x.who||x.who(a))).map(x=>[x.name,x.w]));
   let sum=0; ACTS.forEach(x=>sum+=x[1]);
   for(let tries=0;tries<10;tries++){
     let r=Math.random()*sum, k='desk';
@@ -327,16 +330,18 @@ function actTarget(a,k){
       const t=onC(an.c,x,y,'down','visit-'+o.id); t.buddy=o;
       return t;
     }
-    default: return POI[k]||null;
+    default: { const x=XACTS.find(q=>q.name===k); if(x)return x.target(a); return POI[k]||null; }
   }
 }
 function startAct(a){
   const [k,t]=chooseAct(a);
-  a.act=k;
+  a.act=k; a.inplace=false;
   goTo(a,t,()=>{
     const busy=busyMode(a);
     const dur={desk:busy?14000:9000,coffee:6000,window:7000,sofa:10000,dine:9000,meet:busy?12000:7000,arcade:9000,tv:8000,watch:5000,visit:6000,wander:2500,term:busy?8000:5000,board:busy?7000:5000,rack:busy?9000:5000}[k]||5000;
-    a.actUntil=performance.now()+dur*(.7+Math.random()*.7);
+    const xa=XACTS.find(q=>q.name===k);
+    a.actUntil=performance.now()+(xa&&xa.dur?xa.dur:dur)*(.7+Math.random()*.7);
+    if(xa&&xa.arrive){ xa.arrive(a); return; }
     a.face=busy?pick(['work','busy','idle']):pick(['idle','idle','happy']);
     if(k==='watch'){ a.face='wow'; if(Math.random()<.75)sayChain(a,sayPool('say.watch')); }
     else if(k==='coffee'&&Math.random()<.4) sayChain(a,sayPool('say.coffee'));
@@ -464,11 +469,14 @@ function nightK(d){
 function faceNow(a){ return a.blink&&a.face!=='sleep'&&a.face!=='off'&&a.face!=='work'?'blink':a.face; }
 const stars=[]; [32,96,240,304].forEach((x0,i)=>{ for(let k=0;k<3;k++)stars.push([x0+4+((i*7+k*9)%24),19+((i*5+k*7)%16)]); });
 const zs=[];
+/* слои декора (shop.js): under рисуется сразу после фона, glow после ночного затемнения */
+const LAYERS={under:[],glow:[]};
 function draw(now){
   const d=new Date();
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
   if(imgs.bg)ctx.drawImage(imgs.bg,0,0); else { ctx.fillStyle='#41a6f6'; ctx.fillRect(0,0,W,H); }
   const k=nightK(d);
+  LAYERS.under.forEach(f=>f(ctx,now,k));
   // объекты по глубине
   const list=[];
   agents.forEach(a=>list.push(a));
@@ -498,6 +506,7 @@ function draw(now){
       const sp=sprite(a.pal,faceNow(a),a.dir,a.frame,a.sit,a.typing,true);
       ctx.drawImage(sp,Math.round(a.x-8),Math.round(a.y-24)); });
   }
+  LAYERS.glow.forEach(f=>f(ctx,now,k));
   drawClock(d);
   if(EV)EV.draw(ctx,now);
   // буквы z над спящими
@@ -532,7 +541,8 @@ function step(a,dt,now){
     return;
   }
   // на месте
-  if(a.typing){ a.ft+=dt; if(a.ft>.22){ a.ft=0; a.frame=(a.frame+1)%2; } }
+  if(a.inplace){ a.ft+=dt; if(a.ft>.14){ a.ft=0; a.frame=(a.frame+1)%4; } }
+  else if(a.typing){ a.ft+=dt; if(a.ft>.22){ a.ft=0; a.frame=(a.frame+1)%2; } }
   else a.frame=0;
   if(now>a.blinkAt){ a.blink=true; if(now>a.blinkAt+130){ a.blink=false; a.blinkAt=now+2500+Math.random()*4500; } }
   if(now>a.actUntil){ a.typing=false; startAct(a); }
@@ -1011,7 +1021,11 @@ window.OfficeAPI={W,H,agents,pets,byId,imgs,POI,SOFA,SEATS,TY,BY,CORR,onC,random
   stage:()=>stage, scale:()=>cssScale, hit:p=>hit(p), track:e=>{ if(TR)TR.event(e); },
   /* отпустить робота после мини-игры: сам выберет новое занятие */
   release:a=>{ a.act=null; a.onArrive=null; a.actUntil=performance.now()+300+Math.random()*1500; },
-  register:e=>{ EV=e; }
+  register:e=>{ EV=e; },
+  layer:(where,f)=>LAYERS[where].push(f), addAct:x=>{ if(!XACTS.find(q=>q.name===x.name))XACTS.push(x); }, removeAct:n=>{ const i=XACTS.findIndex(q=>q.name===n); if(i>=0)XACTS.splice(i,1); },
+  addPetSpot:(kind,t)=>{ const p=pets.find(q=>q.kind===kind); if(p&&!p.spots.find(q=>q.key===t.key))p.spots.push(t); },
+  removePetSpot:(kind,key)=>{ const p=pets.find(q=>q.kind===kind); if(p)p.spots=p.spots.filter(q=>q.key!==key); },
+  killBub:b=>killBub(b,true), bubs:()=>bubs
 };
 
 /* ---------- загрузка ---------- */

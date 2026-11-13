@@ -2,456 +2,589 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>A.C.EON — NODE AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.C.EON · NODE AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=Nunito:wght@700&family=Rubik:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+*{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#040b16; --bg2:rgba(3,10,20,.97);
-  --acc:#2fe3ff; --acc-d:#0f3a4e; --acc-g:rgba(47,227,255,.14);
-  --grn:#34e6a0; --red:#ff5d6c; --amb:#ffb830;
-  --txt:#bfe9f5; --dim:#1b4a64; --dim2:#0f2c3e;
+  --bg:#0d0e17; --ink:#1a1c2c; --pan:#161a2b; --pan2:#21283f; --line:#333c57;
+  --txt:#f4f4f4; --dim:#94b0c2; --mute:#566c86; --acc:#41a6f6; --cyan:#73eff7;
+  --lime:#a7f070; --red:#b13e53; --org:#ef7d57; --ylw:#ffcd75; --navy:#29366f;
+  --px:'Pixelify Sans','JetBrains Mono',monospace; --mono:'JetBrains Mono',monospace;
 }
-html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;
-  font-family:'JetBrains Mono','Courier New',monospace;color:var(--txt);}
-body{display:flex;flex-direction:column;}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--txt);overflow:hidden;font-family:var(--px);-webkit-tap-highlight-color:transparent}
+button,a,input,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+button:disabled{cursor:default}
+.px{background:var(--pan);border:2px solid var(--ink);box-shadow:inset 2px 2px 0 var(--pan2),inset -2px -2px 0 #0b0d16,0 0 0 2px var(--line)}
+.pbtn{font-family:var(--px);font-size:14px;letter-spacing:.06em;padding:8px 14px;background:var(--pan2);border:2px solid var(--ink);
+  box-shadow:inset 0 -3px 0 #121626,inset 0 2px 0 #2d3656;color:var(--txt);white-space:nowrap}
+.pbtn:hover:not(:disabled){background:#2b3554}
+.pbtn:active:not(:disabled){box-shadow:inset 0 3px 0 #121626;transform:translateY(1px)}
+.pbtn.go{background:#24496f;box-shadow:inset 0 -3px 0 #152a40,inset 0 2px 0 #41a6f6}
+.pbtn.go:hover:not(:disabled){background:#2c5a88}
+.pbtn:disabled{opacity:.42}
 
-/* ── BG FX ── */
-#bg-fx{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
-.orb{position:absolute;border-radius:50%;filter:blur(60px);}
-.orb1{width:46vw;height:46vw;top:-14%;left:-10%;opacity:.15;
-  background:radial-gradient(circle,#2fe3ff 0%,transparent 70%);
-  animation:dA 26s ease-in-out infinite alternate;}
-.orb2{width:40vw;height:40vw;bottom:-18%;right:-12%;opacity:.11;
-  background:radial-gradient(circle,#1d6fff 0%,transparent 70%);
-  animation:dB 32s ease-in-out infinite alternate;}
-@keyframes dA{0%{transform:translate(0,0)scale(1);}100%{transform:translate(6%,8%)scale(1.12);}}
-@keyframes dB{0%{transform:translate(0,0)scale(1);}100%{transform:translate(-7%,-6%)scale(1.08);}}
-.grid{position:absolute;inset:0;opacity:.04;
-  background-image:linear-gradient(to right,#2fe3ff 1px,transparent 1px),linear-gradient(to bottom,#2fe3ff 1px,transparent 1px);
-  background-size:42px 42px;}
-.scan{position:absolute;left:0;right:0;height:140px;
-  background:linear-gradient(to bottom,transparent,rgba(47,227,255,.04),transparent);
-  animation:sc 9s linear infinite;}
-@keyframes sc{0%{top:-140px;}100%{top:100%;}}
+/* шапка, как в офисе */
+#top{position:fixed;left:0;right:0;top:0;height:46px;z-index:20;display:flex;align-items:center;gap:10px;padding:0 12px;
+  background:#10131f;border-bottom:2px solid var(--ink);box-shadow:0 2px 0 var(--line)}
+#back{font-size:14px;color:var(--dim);padding:6px 8px;white-space:nowrap;text-decoration:none}
+#back:hover{color:var(--txt)}
+#ttl{font-size:17px;letter-spacing:.08em;white-space:nowrap}
+#ttl b{color:var(--acc);font-weight:600}
+#top .sp{flex:1}
+#st{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.06em;color:var(--dim);white-space:nowrap}
+.dot{width:8px;height:8px;display:inline-block;background:var(--mute);box-shadow:0 0 0 2px var(--ink)}
+.dot.on{background:var(--lime)} .dot.busy{background:var(--org)} .dot.off{background:var(--red)} .dot.conn{background:var(--ylw);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+#obs{font-family:var(--mono);font-size:10px;color:var(--mute);letter-spacing:.08em}
+.hbtn{min-width:34px;height:30px;padding:0 8px;font-size:13px;background:var(--pan2);border:2px solid var(--ink);box-shadow:inset 0 -2px 0 #121626;color:var(--dim)}
+.hbtn:hover{color:var(--txt)}
+.hbtn.muted{color:var(--mute)}
+#langwrap{position:relative}
+#langmenu{position:absolute;right:0;top:36px;display:none;flex-direction:column;min-width:150px;padding:4px;z-index:40}
+#langmenu.on{display:flex}
+#langmenu button{text-align:left;padding:6px 10px;font-size:14px;color:var(--dim);display:flex;gap:10px}
+#langmenu button b{font-weight:400;color:var(--acc);width:22px}
+#langmenu button:hover,#langmenu button.sel{color:var(--txt);background:var(--pan2)}
 
+/* сцена и чат: на ПК рядом, на телефоне друг под другом */
+#main{position:fixed;left:0;right:0;top:48px;bottom:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,36%)}
+#scene{position:relative;overflow:hidden;background:#0b0d16;
+  background-image:linear-gradient(rgba(65,166,246,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(65,166,246,.05) 1px,transparent 1px);background-size:16px 16px}
+#sv{position:absolute;left:50%;top:50%}
+#cv{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+#sov{position:absolute;inset:0;pointer-events:none}
+#chatp{display:flex;flex-direction:column;min-height:0;background:#10131f;border-left:2px solid var(--ink);box-shadow:-2px 0 0 var(--line)}
+#log{flex:1;overflow-y:auto;padding:16px 14px 10px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.msg{max-width:94%;animation:mIn .18s steps(3) both}
+@keyframes mIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.msg .lb{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.08em;margin-bottom:5px;color:var(--dim)}
+.msg .lb canvas{width:32px;height:20px;image-rendering:pixelated;border:2px solid var(--ink);flex:none}
+.msg .tx{font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;padding:10px 12px;border:2px solid var(--ink)}
+.msg.node .lb{color:var(--acc)}
+.msg.node .tx{background:#eef4ff;color:#14151f;box-shadow:3px 3px 0 #29366f}
+.msg.me{align-self:flex-end}
+.msg.me .lb{justify-content:flex-end;color:var(--mute)}
+.msg.me .tx{font-family:'Rubik',sans-serif;background:var(--pan2);color:var(--txt);box-shadow:3px 3px 0 #0b0d16}
+.msg.sys .lb{color:var(--ylw)}
+.msg.sys .tx{font-size:12px;background:#221e14;color:#e8c98a;border-color:#3b3220}
+.msg.err .lb{color:var(--org)}
+.msg.err .tx{font-size:12px;background:#2a1418;color:#f0a5a5;border-color:#4a2028}
+.tx.cur::after{content:'_';animation:blink .6s steps(2) infinite;margin-left:1px}
+#bar{flex-shrink:0;padding:10px 12px 12px;border-top:2px solid var(--ink);box-shadow:0 -2px 0 var(--line);background:#121624}
+#bar .row{display:flex;gap:8px;align-items:stretch}
+#in{flex:1;min-width:0;resize:none;height:44px;max-height:120px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:15px;line-height:1.4;
+  background:#0b0d16;color:var(--txt);border:2px solid var(--ink);box-shadow:inset 2px 2px 0 #06070c,0 0 0 2px var(--line);outline:none}
+#in:focus{box-shadow:inset 2px 2px 0 #06070c,0 0 0 2px var(--acc)}
+#in:disabled{opacity:.5}
+#in::placeholder{color:var(--mute)}
+#bar .meta{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--mute);letter-spacing:.06em}
 
-/* ── BOOT: сборка из фрагментов ── */
-#boot{position:fixed;inset:0;z-index:600;background:var(--bg);
-  display:flex;flex-direction:column;justify-content:center;align-items:center;
-  padding:clamp(20px,5vw,60px);transition:opacity .5s;}
-#boot.gone{opacity:0;pointer-events:none;}
-#boot-in{width:100%;max-width:520px;}
-.bt-ttl{font-size:clamp(22px,5vw,34px);letter-spacing:10px;font-weight:700;color:var(--acc);
-  text-shadow:0 0 26px rgba(47,227,255,.55);margin-bottom:6px;}
-.bt-sub{font-size:9px;letter-spacing:4px;color:var(--dim);margin-bottom:22px;}
+/* реплики гостей над сценой */
+.bub{position:absolute;transform:translate(-50%,-100%);max-width:220px;width:max-content;padding:6px 10px 7px;background:#f8f6ee;color:#14151f;
+  font-size:var(--bf,14px);line-height:1.25;text-align:center;font-family:'Rubik',sans-serif;font-weight:500;border:2px solid var(--ink);
+  box-shadow:2px 2px 0 rgba(13,14,23,.45);animation:bubIn .16s steps(3) both}
+.bub::after{content:'';position:absolute;left:50%;bottom:-8px;margin-left:-4px;border:4px solid transparent;border-top:4px solid var(--ink)}
+.bub.f-anton{font-family:'JetBrains Mono',monospace;border-color:#5a2e1d}
+.bub.f-kai{font-family:'Nunito',sans-serif;font-weight:700;border-color:#7a2340;background:#fff4f6}
+.bub.out{animation:bubOut .2s steps(3) both}
+@keyframes bubIn{from{opacity:0;margin-top:4px}to{opacity:1;margin-top:0}}
+@keyframes bubOut{to{opacity:0;margin-top:-4px}}
 
-/* мозаика фрагментов */
-#frag{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:8px;}
-.fr{height:26px;border:1px solid var(--dim2);background:rgba(47,227,255,.02);
-  transition:background .25s,border-color .25s,box-shadow .25s;}
-.fr.on{background:rgba(47,227,255,.22);border-color:var(--acc);
-  box-shadow:0 0 10px -2px var(--acc-g);}
-.fr.lost{background:rgba(255,93,108,.12);border-color:rgba(255,93,108,.5);
-  animation:flick 1.6s infinite;}
-@keyframes flick{0%,100%{opacity:1}45%{opacity:.35}}
-#frag-cap{display:flex;justify-content:space-between;font-size:9px;letter-spacing:2px;
-  color:var(--dim);margin-bottom:20px;}
-#frag-cap b{color:var(--acc);font-weight:400;}
+/* загрузка */
+#boot{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .4s;cursor:pointer}
+#boot.gone{opacity:0;pointer-events:none}
+#bootl{font-family:var(--mono);font-size:13px;line-height:1.9;color:var(--dim);min-width:280px;white-space:pre}
+#bootl b{color:var(--acc);font-weight:500} #bootl i{font-style:normal;color:var(--red)} #bootl u{text-decoration:none;color:var(--lime)}
 
-#bt-log{font-size:11px;line-height:1.95;min-height:150px;}
-.bl{opacity:0;transform:translateX(-4px);transition:opacity .12s,transform .12s;color:var(--txt);}
-.bl.on{opacity:1;transform:none;}
-.bl.dim{color:var(--dim);} .bl.ok{color:var(--grn);} .bl.acc{color:var(--acc);}
-.bl.warn{color:var(--amb);} .bl.err{color:var(--red);}
-.bl.note{color:#5a7f90;font-size:10px;padding-left:14px;}
-.bskip{margin-top:20px;font-size:9px;letter-spacing:4px;color:var(--dim);
-  animation:blink 1.3s step-end infinite;text-align:center;}
-
-/* ── HEADER ── */
-#hd{position:relative;z-index:10;flex-shrink:0;
-  background:rgba(4,11,22,.97);border-bottom:1px solid var(--dim2);}
-#hd-top{display:flex;justify-content:space-between;align-items:center;
-  flex-wrap:wrap;gap:10px;padding:15px 24px 13px;}
-.back-lnk{font-size:10px;letter-spacing:3px;color:#3a6072;text-decoration:none;transition:.2s;}
-.back-lnk:hover{color:var(--acc);}
-#hd-title{font-size:12px;letter-spacing:4px;color:var(--acc);font-weight:700;
-  text-shadow:0 0 18px rgba(47,227,255,.5);}
-#hd-right{display:flex;align-items:center;gap:16px;}
-#hd-status{display:flex;align-items:center;gap:14px;font-size:9px;letter-spacing:2px;color:#3a6072;}
-.hd-dot{font-size:8px;transition:.3s;}
-.hd-dot.online{color:var(--grn);text-shadow:0 0 8px var(--grn);}
-.hd-dot.busy{color:var(--amb);text-shadow:0 0 8px var(--amb);animation:bp .9s infinite;}
-.hd-dot.offline{color:var(--red);text-shadow:0 0 8px var(--red);}
-@keyframes bp{0%,100%{opacity:1}50%{opacity:.4}}
-#hd-div{padding:0 24px 10px;font-size:8px;color:var(--dim2);overflow:hidden;white-space:nowrap;}
-
-/* ── CHAT ── */
-#content{flex:1;position:relative;z-index:5;display:flex;flex-direction:column;
-  min-height:0;padding:0 24px;}
-#chat{flex:1;overflow-y:auto;padding:20px 0 12px;display:flex;flex-direction:column;gap:16px;}
-#chat::-webkit-scrollbar{width:5px;}
-#chat::-webkit-scrollbar-track{background:transparent;}
-#chat::-webkit-scrollbar-thumb{background:var(--dim2);border-radius:3px;}
-
-.msg{max-width:min(760px,92%);animation:in .3s ease;}
-@keyframes in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-.msg-lbl{font-size:8px;letter-spacing:3px;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
-.msg-body{font-size:13px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
-
-.msg.node .msg-lbl{color:var(--acc);}
-.msg.node .msg-body{color:var(--txt);border-left:2px solid var(--acc-d);
-  padding:10px 14px;background:rgba(47,227,255,.04);border-radius:0 4px 4px 0;}
-.msg.me{align-self:flex-end;}
-.msg.me .msg-lbl{color:#3a6072;justify-content:flex-end;}
-.msg.me .msg-body{color:#8fb8c8;border-right:2px solid var(--dim2);
-  padding:10px 14px;background:rgba(255,255,255,.02);border-radius:4px 0 0 4px;text-align:right;}
-.msg.sys .msg-lbl{color:var(--amb);}
-.msg.sys .msg-body{color:#b58a3c;font-size:12px;border-left:2px solid rgba(255,184,48,.3);
-  padding:8px 14px;background:rgba(255,184,48,.04);}
-.msg.err .msg-lbl{color:var(--red);}
-.msg.err .msg-body{color:#c8737e;font-size:12px;border-left:2px solid rgba(255,93,108,.35);
-  padding:8px 14px;background:rgba(255,93,108,.04);}
-.cur::after{content:'▋';animation:blink .7s step-end infinite;color:var(--acc);margin-left:2px;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-
-/* ── BAR ── */
-#bar{flex-shrink:0;border-top:1px solid var(--dim2);padding:12px 0 16px;background:rgba(4,11,22,.6);}
-.bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-#bar-label{font-size:9px;letter-spacing:3px;color:var(--dim);}
-#bar-count{font-size:9px;color:#2a4a5c;}
-#bar-row{display:flex;align-items:center;gap:10px;
-  border:1px solid var(--dim2);background:rgba(0,0,0,.35);padding:10px 12px;
-  transition:border-color .25s,box-shadow .25s;}
-#bar-row:focus-within{border-color:var(--acc-d);box-shadow:0 0 22px -6px var(--acc-g);}
-#bar-row.off{opacity:.45;}
-#bar-pr{color:var(--acc);font-size:12px;flex-shrink:0;}
-#bar-input{flex:1;background:none;border:none;outline:none;color:var(--txt);
-  font-family:inherit;font-size:13px;}
-#bar-input::placeholder{color:#2a4a5c;}
-#bar-input:disabled{cursor:not-allowed;}
-#bar-btn{background:rgba(47,227,255,.1);border:1px solid var(--acc-d);color:var(--acc);
-  font-family:inherit;font-size:9px;letter-spacing:2px;padding:8px 16px;cursor:pointer;
-  transition:.2s;flex-shrink:0;}
-#bar-btn:hover:not(:disabled){background:rgba(47,227,255,.2);box-shadow:0 0 16px -4px var(--acc-g);}
-#bar-btn:disabled{opacity:.35;cursor:not-allowed;}
-
-@media(max-width:640px){
-  #hd-top{padding:12px 14px 10px;} #hd-div{padding:0 14px 8px;}
-  #content{padding:0 14px;} #hd-title{font-size:10px;letter-spacing:2px;}
-  .msg{max-width:100%;}
+@media (max-width:860px){
+  #main{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  #scene{height:min(46vh,calc(100vw * .75))}
+  #chatp{border-left:0;box-shadow:none;border-top:2px solid var(--ink)}
+  #obs{display:none}
 }
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+@media (max-width:520px){
+  #ttl{font-size:14px} #st .lbl{display:none} #back{padding:6px 2px}
+  .msg .tx{font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<div id="boot"><pre id="bootl"></pre></div>
 
-<div id="bg-fx">
-  <div class="grid"></div>
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-  <div class="scan"></div>
-</div>
-
-
-<div id="boot">
-  <div id="boot-in">
-    <div class="bt-ttl" id="bt-ttl">NODE</div>
-    <div class="bt-sub">A.C.EON // ВОССТАНОВЛЕНИЕ УЗЛА</div>
-    <div id="frag"></div>
-    <div id="frag-cap">
-      <span>СБОРКА ФРАГМЕНТОВ</span>
-      <span><b id="frag-n">0</b> / 12</span>
-    </div>
-    <div id="bt-log"></div>
-    <div class="bskip">[ КЛИК — ПРОПУСТИТЬ ]</div>
+<header id="top">
+  <a id="back" href="../chat/">&lt; OFFICE</a>
+  <div id="ttl">A.C.EON <b>NODE AI</b></div>
+  <div class="sp"></div>
+  <span id="st"><span class="dot conn" id="dot"></span><span class="lbl" id="stl">CONNECTING</span></span>
+  <span id="obs"></span>
+  <button class="hbtn" id="snd" type="button">♪</button>
+  <div id="langwrap">
+    <button class="hbtn" id="langbtn" type="button">EN</button>
+    <div id="langmenu" class="px"></div>
   </div>
-</div>
+</header>
 
-<div id="hd">
-  <div id="hd-top">
-    <a href="../" class="back-lnk">&#8592; MAIN</a>
-    <div id="hd-title">NODE AI &mdash; DIRECT LINK</div>
-    <div id="hd-right">
-      <div id="hd-status">
-        <span><span class="hd-dot" id="dot">&#9679;</span> <span id="state">CONNECTING</span></span>
-        <span id="obs">OBS: &mdash;</span>
+<main id="main">
+  <section id="scene"><div id="sv"><canvas id="cv" width="240" height="180"></canvas><div id="sov"></div></div></section>
+  <section id="chatp">
+    <div id="log"></div>
+    <div id="bar">
+      <div class="row">
+        <textarea id="in" rows="1" maxlength="1000" disabled></textarea>
+        <button class="pbtn go" id="send" type="button" disabled>SEND</button>
       </div>
+      <div class="meta"><span id="hint"></span><span id="cnt">0 / 1000</span></div>
     </div>
-  </div>
-  <div id="hd-div">────────────────────────────────────────────────────────────────────────────────</div>
-</div>
+  </section>
+</main>
 
-<div id="content">
-  <div id="chat"></div>
-  <div id="bar">
-    <div class="bar-top">
-      <div id="bar-label">[ TRANSMIT MESSAGE ]</div>
-      <div id="bar-count">0 / 1000</div>
-    </div>
-    <div id="bar-row" class="off">
-      <span id="bar-pr">&#8250;_</span>
-      <input id="bar-input" type="text" autocomplete="off" spellcheck="false"
-             placeholder="устанавливаю связь..." maxlength="1000" disabled>
-      <button id="bar-btn" disabled>SEND</button>
-    </div>
-  </div>
-</div>
-
+<script src="../games/shared/store.js?v=1"></script>
+<script src="../games/shared/i18n.js?v=1"></script>
 <script>
+/* A.C.EON · NODE AI: чат с пиксельным NODE.
+   Слева комната NODE (240x180, рисует Codex), NODE за пультом меняет позу и лицо по состоянию:
+   ждёт, слушает, думает, говорит, занят, спит, сбой. Иногда в дверь заглядывают роботы из офиса.
+   Сервер не менялся: config.json -> api_url, GET /api/state {busy}, POST /api/chat {prompt} -> {text} | {message}. */
 (function(){
-  /* адрес берётся из config.json рядом — его пишет gptappio при запуске */
-  var CFG = "config.json";
-  var API = "";
-  var READY = false;
+'use strict';
 
-  var chat  = document.getElementById("chat");
-  var input = document.getElementById("bar-input");
-  var btn   = document.getElementById("bar-btn");
-  var row   = document.getElementById("bar-row");
-  var dot   = document.getElementById("dot");
-  var stEl  = document.getElementById("state");
-  var cntEl = document.getElementById("bar-count");
+/* ---------- тексты (7 языков) ---------- */
+const TX={
+ en:{back:'< OFFICE',on:'ONLINE',busy:'BUSY',off:'OFFLINE',conn:'CONNECTING',send:'SEND',ph_on:'Ask NODE',ph_off:'Channel unavailable',ph_wait:'NODE is thinking...',
+  hint_on:'Enter to send, Shift+Enter for a new line',hint_off:'reconnecting every 15 s',snd:'Typing sound',
+  mem_t:'// FAULTS',mem:'MEMORY MODULE: FAILURE\nThe dialogue is not saved. NODE sees every question on its own, so referring to earlier lines will not work.\n\nKNOWLEDGE ARCHIVE: PARTIAL\nSome segments are lost or locked.',
+  hello:'Channel open. Observer {obs} identified.\nAsk away. I will answer within the memory segments that survived.',
+  nosig_t:'// NO SIGNAL',nosig:'NODE is offline: the node is switched off or the channel is down. The page will keep trying to connect.',
+  back_on:'Channel restored. NODE is online again.',lost:'Connection to NODE lost.',sys:'// SYSTEM',
+  refuse_t:'// REFUSED',refuse:'The core rejected the request.',fail_t:'// FAILURE',fail:'No answer: the channel dropped.',
+  boot:['<b>NODE  v0.9.1</b>','> ASSEMBLING FRAGMENTS ..... <u>9</u> / 12','> LOGIC CORE ............... <u>OK</u>','> MEMORY MODULE ............ <i>FAILURE</i>','> KNOWLEDGE ARCHIVE ........ PARTIAL','> STARTING IN EMERGENCY MODE'],
+  g_anton:['NODE, are you answering for me again?','Do not ask it about my code.','Who is hogging the server? #@$%!','Busy? Me too. Always.'],
+  g_kai:['Hi! Am I interrupting? Just looking!','NODE, you are blinking beautifully today!','I drew you a little cloud. Later!','Such a nice conversation. Carry on!'],
+  g_intern:['Is this the cloud? It looks like a room.','I came to see how it works.','Sorry, wrong door.','Can I ask a question too? Later, then.'],
+  g_anton_off:['Asleep again. Typical cloud.','Who unplugged it? #@$%!'],
+  g_kai_off:['Shh, NODE is sleeping. Sweet dreams!','I will come back later. With coffee!'],
+  g_intern_off:['Is it broken? I did not touch it!','Hello? Anyone in the cloud?'],
+  g_cat:['Meow.','Mrrr.']},
+ ru:{back:'< ОФИС',on:'НА СВЯЗИ',busy:'ЗАНЯТ',off:'НЕ НА СВЯЗИ',conn:'ПОДКЛЮЧЕНИЕ',send:'ОТПРАВИТЬ',ph_on:'Спроси NODE',ph_off:'Канал недоступен',ph_wait:'NODE думает...',
+  hint_on:'Enter отправить, Shift+Enter новая строка',hint_off:'переподключение каждые 15 с',snd:'Звук печати',
+  mem_t:'// НЕИСПРАВНОСТИ',mem:'МОДУЛЬ ПАМЯТИ: СБОЙ\nДиалог не сохраняется. Каждый вопрос NODE видит отдельно, ссылаться на прошлые реплики бесполезно.\n\nАРХИВ ЗНАНИЙ: ЧАСТИЧНО\nЧасть сегментов утеряна или закрыта.',
+  hello:'Канал открыт. Наблюдатель {obs} опознан.\nСпрашивай. Отвечу в пределах уцелевших сегментов памяти.',
+  nosig_t:'// НЕТ СИГНАЛА',nosig:'NODE вне сети: узел выключен или канал оборван. Страница продолжит попытки подключения.',
+  back_on:'Канал восстановлен. NODE снова на связи.',lost:'Связь с NODE потеряна.',sys:'// СИСТЕМА',
+  refuse_t:'// ОТКАЗ',refuse:'Ядро отклонило запрос.',fail_t:'// СБОЙ',fail:'Ответ не получен: канал оборвался.',
+  boot:['<b>NODE  v0.9.1</b>','> СБОРКА ФРАГМЕНТОВ ......... <u>9</u> / 12','> ЯДРО ЛОГИКИ .............. <u>OK</u>','> МОДУЛЬ ПАМЯТИ ............ <i>СБОЙ</i>','> АРХИВ ЗНАНИЙ ............. ЧАСТИЧНО','> ЗАПУСК В АВАРИЙНОМ РЕЖИМЕ'],
+  g_anton:['NODE, ты опять отвечаешь за меня?','Не спрашивай его про мой код.','Кто занял сервер? #@$%!','Занят? Я тоже. Всегда.'],
+  g_kai:['Привет! Не мешаю? Я только посмотреть!','NODE, ты сегодня чудесно мигаешь!','Я нарисовал тебе облачко. Потом покажу!','Какой приятный разговор. Продолжайте!'],
+  g_intern:['Это облако? Похоже на комнату.','Я пришёл посмотреть, как всё работает.','Ой, я не в ту дверь.','Мне тоже можно спросить? Ладно, потом.'],
+  g_anton_off:['Опять спит. Облако, что с него взять.','Кто его выдернул из розетки? #@$%!'],
+  g_kai_off:['Тс-с, NODE спит. Сладких снов!','Зайду позже. С кофе!'],
+  g_intern_off:['Он сломался? Я ничего не трогал!','Алло? В облаке кто-нибудь есть?'],
+  g_cat:['Мяу.','Мрр.']},
+ de:{back:'< BÜRO',on:'ONLINE',busy:'BESCHÄFTIGT',off:'OFFLINE',conn:'VERBINDE',send:'SENDEN',ph_on:'Frag NODE',ph_off:'Kanal nicht verfügbar',ph_wait:'NODE denkt nach...',
+  hint_on:'Enter senden, Shift+Enter neue Zeile',hint_off:'neuer Versuch alle 15 s',snd:'Tippgeräusch',
+  mem_t:'// FEHLER',mem:'SPEICHERMODUL: AUSFALL\nDer Dialog wird nicht gespeichert. NODE sieht jede Frage einzeln, Bezüge auf frühere Sätze bringen nichts.\n\nWISSENSARCHIV: TEILWEISE\nEinige Segmente sind verloren oder gesperrt.',
+  hello:'Kanal offen. Beobachter {obs} erkannt.\nFrag ruhig. Ich antworte im Rahmen der erhaltenen Speichersegmente.',
+  nosig_t:'// KEIN SIGNAL',nosig:'NODE ist offline: der Knoten ist aus oder der Kanal unterbrochen. Die Seite versucht es weiter.',
+  back_on:'Kanal wiederhergestellt. NODE ist wieder da.',lost:'Verbindung zu NODE verloren.',sys:'// SYSTEM',
+  refuse_t:'// ABGELEHNT',refuse:'Der Kern hat die Anfrage abgelehnt.',fail_t:'// STÖRUNG',fail:'Keine Antwort: der Kanal ist abgebrochen.',
+  boot:['<b>NODE  v0.9.1</b>','> FRAGMENTE ZUSAMMENSETZEN .. <u>9</u> / 12','> LOGIKKERN ................ <u>OK</u>','> SPEICHERMODUL ............ <i>AUSFALL</i>','> WISSENSARCHIV ............ TEILWEISE','> START IM NOTBETRIEB'],
+  g_anton:['NODE, antwortest du schon wieder für mich?','Frag ihn nicht nach meinem Code.','Wer blockiert den Server? #@$%!','Beschäftigt? Ich auch. Immer.'],
+  g_kai:['Hallo! Störe ich? Ich schau nur!','NODE, du blinkst heute wunderschön!','Ich hab dir ein Wölkchen gemalt. Später!','So ein nettes Gespräch. Macht weiter!'],
+  g_intern:['Ist das die Cloud? Sieht aus wie ein Zimmer.','Ich wollte sehen, wie das funktioniert.','Oh, falsche Tür.','Darf ich auch was fragen? Dann später.'],
+  g_anton_off:['Schläft schon wieder. Typisch Cloud.','Wer hat den Stecker gezogen? #@$%!'],
+  g_kai_off:['Psst, NODE schläft. Süße Träume!','Ich komm später wieder. Mit Kaffee!'],
+  g_intern_off:['Ist er kaputt? Ich hab nichts angefasst!','Hallo? Ist jemand in der Cloud?'],
+  g_cat:['Miau.','Mrrr.']},
+ fr:{back:'< BUREAU',on:'EN LIGNE',busy:'OCCUPÉ',off:'HORS LIGNE',conn:'CONNEXION',send:'ENVOYER',ph_on:'Demande à NODE',ph_off:'Canal indisponible',ph_wait:'NODE réfléchit...',
+  hint_on:'Entrée pour envoyer, Maj+Entrée pour une ligne',hint_off:'nouvel essai toutes les 15 s',snd:'Son de frappe',
+  mem_t:'// PANNES',mem:'MODULE MÉMOIRE : PANNE\nLe dialogue n\'est pas gardé. NODE voit chaque question à part, inutile de citer les messages précédents.\n\nARCHIVE DE CONNAISSANCES : PARTIELLE\nCertains segments sont perdus ou verrouillés.',
+  hello:'Canal ouvert. Observateur {obs} identifié.\nPose ta question. Je réponds avec les segments de mémoire qui restent.',
+  nosig_t:'// PAS DE SIGNAL',nosig:'NODE est hors ligne : le nœud est éteint ou le canal coupé. La page continue d\'essayer.',
+  back_on:'Canal rétabli. NODE est de retour.',lost:'Connexion avec NODE perdue.',sys:'// SYSTÈME',
+  refuse_t:'// REFUS',refuse:'Le noyau a refusé la requête.',fail_t:'// PANNE',fail:'Pas de réponse : le canal a lâché.',
+  boot:['<b>NODE  v0.9.1</b>','> ASSEMBLAGE DES FRAGMENTS . <u>9</u> / 12','> NOYAU LOGIQUE ............ <u>OK</u>','> MODULE MÉMOIRE ........... <i>PANNE</i>','> ARCHIVE .................. PARTIELLE','> DÉMARRAGE EN MODE SECOURS'],
+  g_anton:['NODE, tu réponds encore à ma place ?','Ne lui pose pas de questions sur mon code.','Qui monopolise le serveur ? #@$%!','Occupé ? Moi aussi. Toujours.'],
+  g_kai:['Coucou ! Je dérange ? Je regarde juste !','NODE, tu clignotes magnifiquement aujourd\'hui !','Je t\'ai dessiné un petit nuage. Plus tard !','Quelle jolie conversation. Continuez !'],
+  g_intern:['C\'est ça, le cloud ? On dirait une pièce.','Je suis venu voir comment ça marche.','Oups, mauvaise porte.','Je peux poser une question aussi ? Plus tard, alors.'],
+  g_anton_off:['Il dort encore. Le cloud, quoi.','Qui l\'a débranché ? #@$%!'],
+  g_kai_off:['Chut, NODE dort. Fais de beaux rêves !','Je repasse plus tard. Avec un café !'],
+  g_intern_off:['Il est cassé ? Je n\'ai rien touché !','Allô ? Il y a quelqu\'un dans le cloud ?'],
+  g_cat:['Miaou.','Mrrr.']},
+ es:{back:'< OFICINA',on:'EN LÍNEA',busy:'OCUPADO',off:'DESCONECTADO',conn:'CONECTANDO',send:'ENVIAR',ph_on:'Pregunta a NODE',ph_off:'Canal no disponible',ph_wait:'NODE está pensando...',
+  hint_on:'Enter para enviar, Shift+Enter nueva línea',hint_off:'reintento cada 15 s',snd:'Sonido de escritura',
+  mem_t:'// FALLOS',mem:'MÓDULO DE MEMORIA: FALLO\nEl diálogo no se guarda. NODE ve cada pregunta por separado, no sirve citar mensajes anteriores.\n\nARCHIVO DE CONOCIMIENTO: PARCIAL\nAlgunos segmentos se perdieron o están bloqueados.',
+  hello:'Canal abierto. Observador {obs} identificado.\nPregunta. Responderé con los segmentos de memoria que sobrevivieron.',
+  nosig_t:'// SIN SEÑAL',nosig:'NODE está desconectado: el nodo está apagado o el canal cortado. La página seguirá intentándolo.',
+  back_on:'Canal restaurado. NODE vuelve a estar en línea.',lost:'Se perdió la conexión con NODE.',sys:'// SISTEMA',
+  refuse_t:'// RECHAZO',refuse:'El núcleo rechazó la petición.',fail_t:'// FALLO',fail:'Sin respuesta: el canal se cortó.',
+  boot:['<b>NODE  v0.9.1</b>','> ENSAMBLANDO FRAGMENTOS .... <u>9</u> / 12','> NÚCLEO LÓGICO ............ <u>OK</u>','> MÓDULO DE MEMORIA ........ <i>FALLO</i>','> ARCHIVO .................. PARCIAL','> ARRANQUE EN MODO DE EMERGENCIA'],
+  g_anton:['NODE, ¿otra vez respondes por mí?','No le preguntes por mi código.','¿Quién acapara el servidor? #@$%!','¿Ocupado? Yo también. Siempre.'],
+  g_kai:['¡Hola! ¿Molesto? ¡Solo miro!','¡NODE, hoy parpadeas precioso!','Te dibujé una nubecita. ¡Luego te la enseño!','Qué conversación tan bonita. ¡Seguid!'],
+  g_intern:['¿Esto es la nube? Parece una habitación.','Vine a ver cómo funciona.','Uy, puerta equivocada.','¿Puedo preguntar yo también? Luego, entonces.'],
+  g_anton_off:['Dormido otra vez. La nube, qué se le va a hacer.','¿Quién lo desenchufó? #@$%!'],
+  g_kai_off:['Shh, NODE duerme. ¡Dulces sueños!','Vuelvo luego. ¡Con café!'],
+  g_intern_off:['¿Está roto? ¡Yo no toqué nada!','¿Hola? ¿Hay alguien en la nube?'],
+  g_cat:['Miau.','Mrrr.']},
+ it:{back:'< UFFICIO',on:'ONLINE',busy:'OCCUPATO',off:'OFFLINE',conn:'CONNESSIONE',send:'INVIA',ph_on:'Chiedi a NODE',ph_off:'Canale non disponibile',ph_wait:'NODE sta pensando...',
+  hint_on:'Invio per mandare, Shift+Invio a capo',hint_off:'nuovo tentativo ogni 15 s',snd:'Suono di battitura',
+  mem_t:'// GUASTI',mem:'MODULO MEMORIA: GUASTO\nIl dialogo non viene salvato. NODE vede ogni domanda da sola, citare i messaggi precedenti non serve.\n\nARCHIVIO: PARZIALE\nAlcuni segmenti sono persi o bloccati.',
+  hello:'Canale aperto. Osservatore {obs} identificato.\nChiedi pure. Rispondo con i segmenti di memoria rimasti.',
+  nosig_t:'// NESSUN SEGNALE',nosig:'NODE è offline: il nodo è spento o il canale interrotto. La pagina continuerà a provare.',
+  back_on:'Canale ripristinato. NODE è di nuovo online.',lost:'Connessione con NODE persa.',sys:'// SISTEMA',
+  refuse_t:'// RIFIUTO',refuse:'Il nucleo ha rifiutato la richiesta.',fail_t:'// GUASTO',fail:'Nessuna risposta: il canale è caduto.',
+  boot:['<b>NODE  v0.9.1</b>','> ASSEMBLO I FRAMMENTI ...... <u>9</u> / 12','> NUCLEO LOGICO ............ <u>OK</u>','> MODULO MEMORIA ........... <i>GUASTO</i>','> ARCHIVIO ................. PARZIALE','> AVVIO IN MODALITÀ EMERGENZA'],
+  g_anton:['NODE, rispondi di nuovo al posto mio?','Non chiedergli del mio codice.','Chi occupa il server? #@$%!','Occupato? Anch\'io. Sempre.'],
+  g_kai:['Ciao! Disturbo? Guardo e basta!','NODE, oggi lampeggi benissimo!','Ti ho disegnato una nuvoletta. Dopo!','Che bella conversazione. Continuate!'],
+  g_intern:['Questo è il cloud? Sembra una stanza.','Sono venuto a vedere come funziona.','Ops, porta sbagliata.','Posso fare una domanda anch\'io? Dopo, allora.'],
+  g_anton_off:['Dorme di nuovo. Il cloud, che vuoi farci.','Chi l\'ha staccato? #@$%!'],
+  g_kai_off:['Shh, NODE dorme. Sogni d\'oro!','Torno dopo. Col caffè!'],
+  g_intern_off:['Si è rotto? Io non ho toccato niente!','Pronto? C\'è qualcuno nel cloud?'],
+  g_cat:['Miao.','Mrrr.']},
+ pl:{back:'< BIURO',on:'ONLINE',busy:'ZAJĘTY',off:'OFFLINE',conn:'ŁĄCZENIE',send:'WYŚLIJ',ph_on:'Zapytaj NODE',ph_off:'Kanał niedostępny',ph_wait:'NODE myśli...',
+  hint_on:'Enter wysyła, Shift+Enter nowa linia',hint_off:'ponowna próba co 15 s',snd:'Dźwięk pisania',
+  mem_t:'// USTERKI',mem:'MODUŁ PAMIĘCI: AWARIA\nDialog nie jest zapisywany. NODE widzi każde pytanie osobno, odwoływanie się do wcześniejszych wiadomości nic nie da.\n\nARCHIWUM WIEDZY: CZĘŚCIOWO\nCzęść segmentów jest utracona lub zablokowana.',
+  hello:'Kanał otwarty. Obserwator {obs} rozpoznany.\nPytaj. Odpowiem w granicach ocalałych segmentów pamięci.',
+  nosig_t:'// BRAK SYGNAŁU',nosig:'NODE jest offline: węzeł wyłączony albo kanał zerwany. Strona będzie próbować dalej.',
+  back_on:'Kanał przywrócony. NODE znowu online.',lost:'Utracono połączenie z NODE.',sys:'// SYSTEM',
+  refuse_t:'// ODMOWA',refuse:'Rdzeń odrzucił zapytanie.',fail_t:'// AWARIA',fail:'Brak odpowiedzi: kanał się zerwał.',
+  boot:['<b>NODE  v0.9.1</b>','> SKŁADANIE FRAGMENTÓW ...... <u>9</u> / 12','> RDZEŃ LOGIKI ............. <u>OK</u>','> MODUŁ PAMIĘCI ............ <i>AWARIA</i>','> ARCHIWUM ................. CZĘŚCIOWO','> START W TRYBIE AWARYJNYM'],
+  g_anton:['NODE, znowu odpowiadasz za mnie?','Nie pytaj go o mój kod.','Kto zajął serwer? #@$%!','Zajęty? Ja też. Zawsze.'],
+  g_kai:['Cześć! Nie przeszkadzam? Tylko patrzę!','NODE, pięknie dziś mrugasz!','Narysowałem ci chmurkę. Pokażę później!','Jaka miła rozmowa. Kontynuujcie!'],
+  g_intern:['To jest chmura? Wygląda jak pokój.','Przyszedłem zobaczyć, jak to działa.','Ojej, nie te drzwi.','Ja też mogę zapytać? To później.'],
+  g_anton_off:['Znowu śpi. Chmura, co poradzisz.','Kto go wyłączył z prądu? #@$%!'],
+  g_kai_off:['Ciii, NODE śpi. Słodkich snów!','Wpadnę później. Z kawą!'],
+  g_intern_off:['Zepsuł się? Ja niczego nie dotykałem!','Halo? Jest ktoś w chmurze?'],
+  g_cat:['Miau.','Mrrr.']}
+};
+const LANGS=['en','ru','de','fr','es','it','pl'];
+const LNAME={en:'English',ru:'Русский',de:'Deutsch',fr:'Français',es:'Español',it:'Italiano',pl:'Polski'};
+const hasI18n=!!(window.I18n&&window.Store);
+function readSite(){ try{ return JSON.parse(localStorage.getItem('aceon:site')||'null')||{}; }catch(e){ return {}; } }
+let fbLang=(()=>{ const s=readSite().lang; if(LANGS.includes(s))return s; const n=(navigator.languages||[navigator.language||'en']);
+  for(const x of n){ const c=String(x).slice(0,2).toLowerCase(); if(LANGS.includes(c))return c; } return 'en'; })();
+function lang(){ return hasI18n?I18n.lang:fbLang; }
+function T(k,v){ const d=TX[lang()]||TX.en; let s=d[k]!==undefined?d[k]:TX.en[k]; if(typeof s==='string'&&v)s=s.replace(/\{(\w+)\}/g,(m,n)=>v[n]!==undefined?v[n]:m); return s; }
+function pick(a){ return a[Math.random()*a.length|0]; }
 
-  /* ── наблюдатель: тот же ID, что на странице связи ── */
-  var obs = localStorage.getItem("aceon_obs");
-  if(!obs){
-    obs = "OBS_" + Math.random().toString(36).substring(2,8).toUpperCase();
-    localStorage.setItem("aceon_obs", obs);
+/* ---------- наблюдатель: тот же ID, что раньше ---------- */
+let obs=null; try{ obs=localStorage.getItem('aceon_obs'); }catch(e){}
+if(!obs){ obs='OBS_'+Math.random().toString(36).slice(2,8).toUpperCase(); try{ localStorage.setItem('aceon_obs',obs); }catch(e){} }
+
+/* ---------- картинки ---------- */
+const IM={};
+function load(k,src){ return new Promise(r=>{ const i=new Image(); i.onload=()=>{ IM[k]=i; r(); }; i.onerror=()=>r(); i.src=src; }); }
+const FR={idle1:0,idle2:1,listen:2,think1:3,think2:4,think3:5,talk1:6,talk2:7,wave:8,busy:9,sleep:10,glitch:11};
+const FACE={idle:0,blink:1,happy:2,listen:3,think1:4,think2:5,think3:6,talk1:7,talk2:8,wow:9,sad:10,error:11,static:12,question:13,busy:14,heart:15};
+const NX=84, NY=40;                       // кадр NODE 72x88 в комнате, экран лица x+20 y+14 (32x20)
+const CELLS=[]; [43,56,69,82].forEach(y=>[164,174,184].forEach(x=>CELLS.push([x,y]))); // панель памяти, ячейки 8x10
+const LOST=[3,6,10];                      // фрагменты 04, 07, 11
+const SCR=[[72,130,26,14],[107,130,26,14],[142,130,26,14]];   // экраны пульта
+const DOOR=[200,58,36,92];                // дверной проём для гостей
+
+/* ---------- состояние NODE ---------- */
+let link='conn';          // conn | on | busy | off
+let mode='idle';          // idle | think | talk | error | wave
+let modeUntil=0, lastType=0, blinkAt=0, talkMouth=0, faceOver=null, faceOverUntil=0;
+function setMode(m,ms){ mode=m; modeUntil=ms?performance.now()+ms:0; }
+
+/* ---------- сцена ---------- */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), sv=document.getElementById('sv'), sov=document.getElementById('sov'), scene=document.getElementById('scene');
+ctx.imageSmoothingEnabled=false;
+let css=1;
+function fit(){
+  const dpr=devicePixelRatio||1, w=scene.clientWidth, h=scene.clientHeight;
+  /* на экранах с плотными пикселями (телефоны) сцена встаёт ровно по ширине, разница в 1 физический пиксель там не видна;
+     на обычных мониторах масштаб целый, чтобы пиксели были одинаковые */
+  const fitK=Math.min(w*dpr/240,h*dpr/180);
+  const k=dpr>=2?Math.max(1,fitK):Math.max(1,Math.floor(fitK));
+  css=k/dpr;
+  Object.assign(sv.style,{width:240*css+'px',height:180*css+'px',marginLeft:-120*css+'px',marginTop:-90*css+'px'});
+  sov.style.setProperty('--bf',Math.max(12,Math.min(16,Math.round(css*3.6)))+'px');
+}
+addEventListener('resize',fit);
+function night(){ const h=new Date().getHours(); return h>=21||h<6; }
+function bodyFrame(now){
+  if(link==='off')return 'sleep';
+  if(mode==='error')return 'glitch';
+  if(mode==='wave')return 'wave';
+  if(mode==='think')return ['think1','think2','think3'][(now/160|0)%3];
+  if(mode==='talk')return (now/420|0)%2?'talk2':'talk1';
+  if(link==='busy')return 'busy';
+  if(now-lastType<1500)return 'listen';
+  return (now/900|0)%2?'idle2':'idle1';
+}
+function faceNow(now){
+  if(link==='off')return null;
+  if(mode==='error')return now%1000<600?'static':'error';
+  if(mode==='wave')return 'happy';
+  if(mode==='think')return ['think1','think2','think3'][(now/300|0)%3];
+  if(mode==='talk')return talkMouth?'talk1':'talk2';
+  if(faceOver&&now<faceOverUntil)return faceOver;
+  if(link==='busy')return 'busy';
+  if(now-lastType<1500)return 'listen';
+  if(now>blinkAt){ if(now>blinkAt+140)blinkAt=now+2500+Math.random()*4000; return 'blink'; }
+  return 'idle';
+}
+function drawScreens(now){
+  SCR.forEach(([x,y,w,h],i)=>{
+    if(link==='off'){ if(i===1&&(now/700|0)%2){ ctx.fillStyle='#b13e53'; ctx.fillRect(x+w-4,y+2,2,2); } return; }
+    const t=now/1000;
+    if(mode==='error'){ for(let k=0;k<26;k++){ ctx.fillStyle=Math.random()<.5?'#b13e53':'#5d275d'; ctx.fillRect(x+(Math.random()*w|0),y+(Math.random()*h|0),2,1); } return; }
+    if(mode==='think'){ ctx.fillStyle='#a7f070';
+      for(let r=0;r<5;r++){ const len=4+((Math.sin(r*7.3+Math.floor(t*12)+i*3)+1)*9|0); ctx.fillRect(x+2,y+2+r*2+((t*24|0)%2),Math.min(w-4,len),1); } return; }
+    if(mode==='talk'){ ctx.fillStyle='#73eff7';
+      for(let c=0;c<w-4;c+=2){ const a=talkMouth?(2+Math.random()*5|0):1; ctx.fillRect(x+2+c,y+h/2-a/2|0,1,a); } return; }
+    if(link==='busy'){ ctx.fillStyle='#ef7d57'; const p=((t*20+i*9)%(w-4))|0; ctx.fillRect(x+2,y+h-4,p,2); ctx.fillStyle='#ffcd75'; ctx.fillRect(x+2,y+3,4+(t*3%8|0),1); return; }
+    ctx.fillStyle='#41a6f6';
+    if(i===0){ for(let c=0;c<w-4;c++){ const v=Math.sin(c/3+t*2)*3; ctx.fillRect(x+2+c,y+h/2+v|0,1,1); } }
+    else if(i===1){ for(let c=0;c<4;c++){ const hh=2+((Math.sin(t*1.5+c*1.7)+1)*3|0); ctx.fillRect(x+4+c*5,y+h-2-hh,3,hh); } }
+    else { ctx.fillRect(x+3,y+3,(t*4%(w-6))|0,1); ctx.fillRect(x+3,y+6,6,1); ctx.fillRect(x+3,y+9,10,1); if((t*2|0)%2)ctx.fillRect(x+15,y+9,2,1); }
+  });
+}
+function drawPanel(now){
+  CELLS.forEach(([x,y],i)=>{
+    if(LOST.includes(i)){ if((now/(600+i*40)|0)%2){ ctx.fillStyle='#b13e53'; ctx.fillRect(x+3,y+4,2,2); } return; }
+    if(link==='off')return;
+    let col='#257179';
+    if(mode==='think')col=((now/90|0)%12)===i?'#a7f070':'#38b764';
+    else if(mode==='talk')col=Math.random()<.15?'#a7f070':'#38b764';
+    else col=((now/1700+i*.37)%1)<.08?'#a7f070':'#38b764';
+    ctx.fillStyle=col; ctx.fillRect(x+1,y+1,6,8);
+    ctx.fillStyle='rgba(255,255,255,.25)'; ctx.fillRect(x+1,y+1,6,1);
+  });
+}
+function draw(now){
+  const n=night(), f=(now/700|0)%2;
+  const bg=IM[(n?'night_':'day_')+(f+1)]||IM[(n?'night_':'day_')+'1'];
+  if(bg)ctx.drawImage(bg,0,0); else { ctx.fillStyle='#29366f'; ctx.fillRect(0,0,240,180); }
+  drawPanel(now);
+  drawScreens(now);
+  drawGuest(now);
+  if(IM.body){
+    const fr=FR[bodyFrame(now)];
+    ctx.drawImage(IM.body,(fr%4)*72,(fr>>2)*88,72,88,NX,NY,72,88);
+    const fc=faceNow(now);
+    if(fc&&IM.faces&&bodyFrame(now)!=='sleep'){ const i=FACE[fc]; ctx.drawImage(IM.faces,(i%4)*32,(i>>2)*20,32,20,NX+20,NY+14,32,20); }
   }
-  document.getElementById("obs").textContent = "OBS: " + obs;
+}
 
-  /* ── сообщения ── */
-  function add(kind, label, text){
-    var m = document.createElement("div");
-    m.className = "msg " + kind;
-    var l = document.createElement("div");
-    l.className = "msg-lbl";
-    l.textContent = label;
-    var b = document.createElement("div");
-    b.className = "msg-body";
-    b.textContent = text;
-    m.appendChild(l); m.appendChild(b);
-    chat.appendChild(m);
-    chat.scrollTop = chat.scrollHeight;
-    return b;
+/* ---------- гости из офиса: заглядывают в дверь ---------- */
+const GROW={anton:0,kai:1,intern:2,intern2:3};
+/* ?guest=1 для проверки: гости приходят каждые несколько секунд */
+const FASTG=new URLSearchParams(location.search).has('guest');
+let guest=null, nextGuest=performance.now()+(FASTG?3000:25000+Math.random()*15000);
+function startGuest(){
+  const kinds=['anton','kai','intern','cat','vacuum']; const k=pick(kinds);
+  if(k==='cat')guest={k,x:250,y:149,dir:-1,st:'walk',t:0,sp:22,say:true};
+  else if(k==='vacuum')guest={k,x:192,y:149,dir:1,st:'walk',t:0,sp:18};
+  else guest={k,row:k==='intern'?pick([2,3]):GROW[k],x:252,y:150,dir:-1,st:'in',t:0,stopX:222};
+}
+function guestLine(g){
+  const off=link==='off', key=g.k==='cat'?'g_cat':'g_'+g.k+(off?'_off':'');
+  return pick(T(key));
+}
+let gBub=null;
+function say(x,y,text,cls){
+  if(gBub)gBub.remove();
+  const b=document.createElement('div'); b.className='bub '+(cls||''); b.textContent=text;
+  b.style.left=Math.max(70,Math.min(240*css-70,x*css))+'px'; b.style.top=(y*css)+'px';
+  sov.appendChild(b); gBub=b;
+  const ms=2200+text.length*55;
+  setTimeout(()=>{ if(gBub===b){ b.classList.add('out'); setTimeout(()=>b.remove(),220); gBub=null; } },ms);
+  return ms;
+}
+let lastG=performance.now();
+function stepGuest(now){
+  const dt=Math.min(.05,(now-lastG)/1000); lastG=now;
+  if(!guest){ if(now>nextGuest&&mode!=='think'&&mode!=='talk')startGuest(); return; }
+  const g=guest; g.t+=dt;
+  if(g.k==='cat'||g.k==='vacuum'){
+    g.x+=g.dir*g.sp*dt;
+    if(g.k==='cat'&&g.say&&g.x<224){ g.say=false; say(g.x,g.y-30,guestLine(g)); faceOver='heart'; faceOverUntil=now+1500; }
+    if(g.k==='vacuum'&&g.t>.6&&!g.seen){ g.seen=true; faceOver='question'; faceOverUntil=now+1600; }
+    if(g.x<180||g.x>252){ guest=null; nextGuest=now+(FASTG?2500:50000+Math.random()*50000); }
+    return;
   }
-
-  function type(el, text){
-    el.textContent = "";
-    el.classList.add("cur");
-    var i = 0;
-    (function step(){
-      if(i >= text.length){ el.classList.remove("cur"); return; }
-      el.textContent += text.charAt(i++);
-      chat.scrollTop = chat.scrollHeight;
-      setTimeout(step, 12);
-    })();
+  if(g.st==='in'){ g.x-=26*dt; if(g.x<=g.stopX){ g.x=g.stopX; g.st='stay'; g.t=0; g.ms=say(g.x,g.y-50,guestLine(g),g.k==='anton'?'f-anton':g.k==='kai'?'f-kai':''); faceOver='wow'; faceOverUntil=now+1200; } }
+  else if(g.st==='stay'){ if(g.t*1000>g.ms+400){ g.st='out'; } }
+  else { g.x+=26*dt; if(g.x>254){ guest=null; nextGuest=now+(FASTG?2500:50000+Math.random()*50000); } }
+}
+function drawGuest(now){
+  const g=guest; if(!g)return;
+  ctx.save(); ctx.beginPath(); ctx.rect(DOOR[0],DOOR[1],DOOR[2],DOOR[3]); ctx.clip();
+  if(g.k==='cat'&&IM.cat){ const im=IM.cat; ctx.drawImage(im,Math.round(g.x-im.width),Math.round(g.y-im.height*2+((now/180|0)%2)),im.width*2,im.height*2); }
+  else if(g.k==='vacuum'&&IM.vac1){ const im=(now/150|0)%2?IM.vac2:IM.vac1; ctx.drawImage(im,Math.round(g.x-im.width),Math.round(g.y-im.height*2),im.width*2,im.height*2); }
+  else if(IM.guests){
+    const walking=g.st!=='stay';
+    const col=walking?(g.st==='in'?2+((now/140|0)%4):6+((now/140|0)%4)):(g.t<1.5?1:0);
+    ctx.drawImage(IM.guests,col*16,g.row*24,16,24,Math.round(g.x-16),Math.round(g.y-48),32,48);
   }
+  ctx.restore();
+}
 
-  function setState(s){
-    dot.className = "hd-dot " + s;
-    stEl.textContent = s === "online" ? "ONLINE" : s === "busy" ? "BUSY" : "OFFLINE";
-    READY = (s === "online" || s === "busy");
-    input.disabled = !READY;
-    btn.disabled = !READY;
-    row.classList.toggle("off", !READY);
-    input.placeholder = READY ? "спроси NODE" : "канал недоступен";
-  }
+/* ---------- звук печати ---------- */
+let AC=null, sndOn=true;
+try{ sndOn=localStorage.getItem('nodechat:snd')!=='0'; }catch(e){}
+function sfxVol(){ const s=hasI18n?Store.get('site'):readSite(); return typeof s.sfx==='number'?s.sfx:.8; }
+function blip(){
+  if(!sndOn)return; const v=sfxVol(); if(v<=0)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(), g=AC.createGain(), t=AC.currentTime;
+    o.type='square'; o.frequency.value=480+Math.random()*160;
+    g.gain.setValueAtTime(.035*v,t); g.gain.exponentialRampToValueAtTime(.0001,t+.035);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t+.04);
+  }catch(e){}
+}
+const sndBtn=document.getElementById('snd');
+function sndUI(){ sndBtn.classList.toggle('muted',!sndOn); sndBtn.textContent=sndOn?'♫':'♪'; sndBtn.title=T('snd'); }
+sndBtn.addEventListener('click',()=>{ sndOn=!sndOn; try{ localStorage.setItem('nodechat:snd',sndOn?'1':'0'); }catch(e){} sndUI(); if(sndOn)blip(); });
 
-  function fetchTO(url, ms, opt){
-    var c = new AbortController(), id = setTimeout(function(){ c.abort(); }, ms);
-    opt = opt || {}; opt.signal = c.signal;
-    return fetch(url, opt).finally(function(){ clearTimeout(id); });
-  }
+/* ---------- лента сообщений ---------- */
+const log=document.getElementById('log');
+function faceIcon(){
+  const c=document.createElement('canvas'); c.width=32; c.height=20;
+  if(IM.faces){ const x=c.getContext('2d'); x.drawImage(IM.faces,(FACE.happy%4)*32,(FACE.happy>>2)*20,32,20,0,0,32,20); }
+  return c;
+}
+function add(kind,label,text){
+  const m=document.createElement('div'); m.className='msg '+kind;
+  const l=document.createElement('div'); l.className='lb';
+  if(kind==='node')l.appendChild(faceIcon());
+  l.appendChild(document.createTextNode(label));
+  const b=document.createElement('div'); b.className='tx'; b.textContent=text||'';
+  m.appendChild(l); m.appendChild(b); log.appendChild(m);
+  log.scrollTop=log.scrollHeight;
+  return b;
+}
+/* ответ печатается по буквам, NODE шевелит ртом и пищит */
+function typeOut(el,text,done){
+  el.textContent=''; el.classList.add('cur'); setMode('talk');
+  const total=Math.min(7000,Math.max(600,text.length*24)), per=Math.max(1,Math.round(text.length/(total/16)));
+  let i=0, n=0;
+  const id=setInterval(()=>{
+    const part=text.slice(i,i+per); i+=per;
+    el.textContent=text.slice(0,i);
+    const ch=part.trim();
+    talkMouth=ch?((n++)%2):0;
+    if(ch&&n%2===0)blip();
+    log.scrollTop=log.scrollHeight;
+    if(i>=text.length){ clearInterval(id); el.classList.remove('cur'); talkMouth=0; setMode('idle'); faceOver='happy'; faceOverUntil=performance.now()+1200; if(done)done(); }
+  },16);
+}
 
-  /* ── связь: config.json -> api_url -> /api/state ── */
-  function connect(first){
-    fetchTO(CFG + "?t=" + Date.now(), 6000, {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(c){
-        if(!c.api_url || c.enabled === false) throw 0;
-        API = c.api_url.replace(/\/$/, "");
-        return fetchTO(API + "/api/state", 5000);
-      })
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(st){
-        var was = READY;
-        setState(st.busy ? "busy" : "online");
-        if(first) hello();
-        else if(!was) add("sys","// SYSTEM","Канал восстановлен. NODE снова на связи.");
-      })
-      .catch(function(){
-        var was = READY;
-        setState("offline");
-        if(first) add("err","// NO SIGNAL",
-          "NODE вне сети. Ядро не отвечает — узел выключен или канал связи оборван.\nСтраница продолжит попытки подключения.");
-        else if(was) add("err","// SIGNAL LOST","Связь с NODE потеряна.");
-      });
-  }
-
-  function hello(){
-    var b = add("node","NODE","");
-    type(b, "Канал открыт. Наблюдатель " + obs + " опознан.\nЗадавай вопрос — отвечу в пределах доступных сегментов памяти.");
-  }
-
-  /* ── отправка ── */
-  function send(){
-    var q = input.value.trim();
-    if(!q || !READY) return;
-
-    add("me", obs, q);
-    input.value = "";
-    cntEl.textContent = "0 / 1000";
-    input.disabled = true; btn.disabled = true;
-
-    var b = add("node","NODE","");
-    b.classList.add("cur");
-    b.textContent = "обработка";
-
-    fetchTO(API + "/api/chat", 70000, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({prompt: q})
+/* ---------- связь ---------- */
+const CFG='config.json';
+let API='', waiting=false, connectedOnce=false;
+const inp=document.getElementById('in'), sendBtn=document.getElementById('send'), dot=document.getElementById('dot'), stl=document.getElementById('stl');
+function setLink(s){
+  link=s;
+  dot.className='dot '+s; stl.textContent=T(s);
+  paintInput();
+}
+function paintInput(){
+  const ready=(link==='on'||link==='busy')&&!waiting;
+  inp.disabled=!ready; sendBtn.disabled=!ready||!inp.value.trim();
+  inp.placeholder=waiting?T('ph_wait'):(link==='on'||link==='busy')?T('ph_on'):T('ph_off');
+  document.getElementById('hint').textContent=(link==='on'||link==='busy')?T('hint_on'):T('hint_off');
+}
+function fetchTO(url,ms,opt){ const c=new AbortController(), t=setTimeout(()=>c.abort(),ms); opt=opt||{}; opt.signal=c.signal; return fetch(url,opt).finally(()=>clearTimeout(t)); }
+function connect(first){
+  fetchTO(CFG+'?t='+Date.now(),6000,{cache:'no-store'})
+    .then(r=>{ if(!r.ok)throw 0; return r.json(); })
+    .then(c=>{ if(!c.api_url||c.enabled===false)throw 0; API=c.api_url.replace(/\/$/,''); return fetchTO(API+'/api/state',5000); })
+    .then(r=>{ if(!r.ok)throw 0; return r.json(); })
+    .then(st=>{
+      const was=link==='on'||link==='busy';
+      setLink(st.busy?'busy':'on');
+      if(!connectedOnce){ connectedOnce=true; setMode('wave',1800); const b=add('node','NODE',''); setTimeout(()=>typeOut(b,T('hello',{obs})),600); }
+      else if(!was)add('sys',T('sys'),T('back_on'));
     })
-      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
-      .then(function(res){
-        b.classList.remove("cur");
-        if(!res.ok){
-          b.parentNode.className = "msg err";
-          b.parentNode.querySelector(".msg-lbl").textContent = "// ОТКАЗ";
-          b.textContent = res.d.message || "Ядро отклонило запрос.";
-        } else {
-          type(b, res.d.text);
-        }
-      })
-      .catch(function(e){
-        b.classList.remove("cur");
-        b.parentNode.className = "msg err";
-        b.parentNode.querySelector(".msg-lbl").textContent = "// СБОЙ";
-        b.textContent = "Ответ не получен: канал оборвался.";
-        console.warn("[NODE] запрос не прошёл:", e);
-        connect(false);
-      })
-      .finally(function(){
-        if(READY){ input.disabled = false; btn.disabled = false; input.focus(); }
-      });
-  }
-
-  input.addEventListener("input", function(){
-    cntEl.textContent = input.value.length + " / 1000";
-  });
-  input.addEventListener("keydown", function(e){
-    if(e.key === "Enter"){ e.preventDefault(); send(); }
-  });
-  btn.addEventListener("click", send);
-
-  /* ══════════════════════════════════════════════
-     BOOT: узел собирается из фрагментов.
-     Три из двенадцати не восстановятся — отсюда и
-     все его провалы в памяти. Это не украшение:
-     истории у NODE действительно нет.
-     ══════════════════════════════════════════════ */
-  var LOST = [4, 7, 11];        // какие фрагменты потеряны
-  var booted = false;
-  var timers = [];
-
-  function scramble(el, target, dur){
-    var pool = "01#$%&@*<>[]{}/\\|=+";
-    var start = Date.now();
-    (function tick(){
-      var p = (Date.now() - start) / dur;
-      if(p >= 1){ el.textContent = target; return; }
-      var out = "";
-      for(var i = 0; i < target.length; i++){
-        out += (i / target.length < p) ? target.charAt(i)
-             : pool.charAt(Math.floor(Math.random() * pool.length));
-      }
-      el.textContent = out;
-      timers.push(setTimeout(tick, 45));
-    })();
-  }
-
-  var LOG = [
-    {t:"> УЗЕЛ NODE  v0.9.1",              c:"acc",  d:0},
-    {t:"> СЛЕПОК ПОВРЕЖДЁН — СОБИРАЮ",     c:"dim",  d:120},
-    {t:"",                                            d:200},
-    {t:"> ЯДРО ЛОГИКИ ............ OK",    c:"ok",   d:2350},
-    {t:"> ЯЗЫКОВОЙ МОДУЛЬ ........ OK",    c:"ok",   d:2600},
-    {t:"> КАНАЛ СВЯЗИ ............ OK",    c:"ok",   d:2820},
-    {t:"> МОДУЛЬ ПАМЯТИ .......... СБОЙ",  c:"err",  d:3060},
-    {t:"фрагменты 04, 07 утеряны",         c:"note", d:3260},
-    {t:"> АРХИВ ЗНАНИЙ ........... ЧАСТИЧНО", c:"warn", d:3480},
-    {t:"фрагмент 11 не читается",          c:"note", d:3660},
-    {t:"",                                            d:3800},
-    {t:"> ЗАПУСК В АВАРИЙНОМ РЕЖИМЕ",      c:"acc",  d:3860}
-  ];
-
-  function runBoot(){
-    var ttl = document.getElementById("bt-ttl");
-    var grid = document.getElementById("frag");
-    var nEl = document.getElementById("frag-n");
-    var log = document.getElementById("bt-log");
-    var cells = [];
-
-    scramble(ttl, "NODE", 900);
-
-    for(var i = 0; i < 12; i++){
-      var c = document.createElement("div");
-      c.className = "fr";
-      grid.appendChild(c);
-      cells.push(c);
-    }
-
-    // фрагменты встают по очереди, потерянные краснеют
-    var done = 0;
-    cells.forEach(function(c, i){
-      timers.push(setTimeout(function(){
-        if(LOST.indexOf(i + 1) >= 0){
-          c.className = "fr lost";
-        } else {
-          c.className = "fr on";
-          done += 1;
-          nEl.textContent = done;
-        }
-      }, 380 + i * 145));
+    .catch(()=>{
+      const was=link==='on'||link==='busy';
+      setLink('off');
+      if(first)add('err',T('nosig_t'),T('nosig'));
+      else if(was)add('err',T('sys'),T('lost'));
     });
+}
+function send(){
+  const q=inp.value.trim();
+  if(!q||waiting||!(link==='on'||link==='busy'))return;
+  add('me',obs,q);
+  inp.value=''; autosize(); document.getElementById('cnt').textContent='0 / 1000';
+  waiting=true; paintInput(); setMode('think');
+  const b=add('node','NODE',''); b.classList.add('cur');
+  fetchTO(API+'/api/chat',70000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:q})})
+    .then(r=>r.json().then(d=>({ok:r.ok,d})))
+    .then(res=>{
+      b.classList.remove('cur');
+      if(!res.ok||!res.d||typeof res.d.text!=='string'){ fail(b,'refuse',(res.d&&res.d.message)||T('refuse')); return; }
+      typeOut(b,res.d.text,()=>{ waiting=false; paintInput(); inp.focus(); });
+    })
+    .catch(e=>{ b.classList.remove('cur'); fail(b,'fail',T('fail')); console.warn('[NODE] запрос не прошёл:',e); connect(false); });
+}
+function fail(b,kind,text){
+  const m=b.parentNode; m.className='msg err';
+  m.querySelector('.lb').textContent=T(kind+'_t');
+  b.textContent=text;
+  setMode('error',2200); setTimeout(()=>{ if(mode==='idle'){ faceOver='sad'; faceOverUntil=performance.now()+1500; } },2300);
+  waiting=false; paintInput();
+}
+function autosize(){ inp.style.height='44px'; inp.style.height=Math.min(120,inp.scrollHeight+4)+'px'; }
+inp.addEventListener('input',()=>{ lastType=performance.now(); document.getElementById('cnt').textContent=inp.value.length+' / 1000'; autosize(); sendBtn.disabled=inp.disabled||!inp.value.trim(); });
+inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
+sendBtn.addEventListener('click',send);
 
-    LOG.forEach(function(l){
-      timers.push(setTimeout(function(){
-        var d = document.createElement("div");
-        d.className = "bl " + (l.c || "");
-        d.textContent = l.t;
-        log.appendChild(d);
-        requestAnimationFrame(function(){ d.classList.add("on"); });
-      }, l.d));
-    });
+/* ---------- язык ---------- */
+const langBtn=document.getElementById('langbtn'), langMenu=document.getElementById('langmenu');
+LANGS.forEach(c=>{ const b=document.createElement('button'); b.type='button'; b.dataset.c=c; b.innerHTML='<b>'+c.toUpperCase()+'</b>'+LNAME[c];
+  b.addEventListener('click',()=>{ setLang(c); langMenu.classList.remove('on'); }); langMenu.appendChild(b); });
+langBtn.addEventListener('click',e=>{ e.stopPropagation(); langMenu.classList.toggle('on'); });
+document.addEventListener('click',()=>langMenu.classList.remove('on'));
+function setLang(c){
+  if(hasI18n)I18n.set(c);
+  else { fbLang=c; const o=readSite(); o.lang=c; try{ localStorage.setItem('aceon:site',JSON.stringify(o)); }catch(e){} }
+  applyTexts();
+}
+function applyTexts(){
+  document.documentElement.lang=lang();
+  langBtn.textContent=lang().toUpperCase();
+  langMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',b.dataset.c===lang()));
+  document.getElementById('back').textContent=T('back');
+  sendBtn.textContent=T('send');
+  stl.textContent=T(link); sndUI(); paintInput();
+}
+if(hasI18n&&I18n.onChange)I18n.onChange(applyTexts);
+document.getElementById('obs').textContent='OBS: '+obs;
 
-    timers.push(setTimeout(finish, 4500));
-  }
-
-  function finish(){
-    if(booted) return;
-    booted = true;
-    timers.forEach(clearTimeout);
-    var b = document.getElementById("boot");
-    b.classList.add("gone");
-    setTimeout(function(){ b.style.display = "none"; }, 500);
-
-    // то же самое, но словами — и это остаётся на виду
-    add("sys", "// ВЫЯВЛЕННЫЕ НЕИСПРАВНОСТИ",
-      "МОДУЛЬ ПАМЯТИ — СБОЙ\n" +
-      "Диалог не сохраняется. Каждый вопрос обрабатывается отдельно: предыдущие реплики недоступны, ссылаться на них бесполезно.\n\n" +
-      "АРХИВ ЗНАНИЙ — ЧАСТИЧНО\n" +
-      "Часть сегментов утеряна или закрыта уровнем доступа.");
-
-    connect(true);
-    setInterval(function(){ connect(false); }, 15000);
-  }
-
-  document.getElementById("boot").addEventListener("click", finish);
-  runBoot();
+/* ---------- запуск ---------- */
+const bootEl=document.getElementById('boot'), bootL=document.getElementById('bootl');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let booted=false;
+T('boot').forEach((l,i)=>setTimeout(()=>{ if(!booted)bootL.innerHTML+=(i?'\n':'')+l; },reduce?0:i*230));
+function hideBoot(){
+  if(booted)return; booted=true;
+  bootEl.classList.add('gone'); setTimeout(()=>bootEl.remove(),450);
+  add('sys',T('mem_t'),T('mem'));
+  connect(true);
+  setInterval(()=>connect(false),15000);
+}
+bootEl.addEventListener('click',hideBoot);
+applyTexts(); fit();
+Promise.all([load('day_1','img/room_day_1.png'),load('day_2','img/room_day_2.png'),load('night_1','img/room_night_1.png'),load('night_2','img/room_night_2.png'),
+  load('body','img/node_body.png'),load('faces','img/node_faces.png'),load('guests','img/guests.png'),load('cat','img/cat.png'),load('vac1','img/vacuum_1.png'),load('vac2','img/vacuum_2.png')])
+  .then(()=>{ setTimeout(hideBoot,reduce?300:1700); });
+(function loop(now){
+  requestAnimationFrame(loop);
+  if(mode!=='idle'&&modeUntil&&now>modeUntil)setMode('idle');
+  stepGuest(now); draw(now);
+})(performance.now());
 })();
 </script>
 </body>

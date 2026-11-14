@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Страница из FORGE</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#0b0d10}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#d7dde3}
+  #view{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff;display:none}
+  .msg{min-height:100%;display:grid;place-items:center;text-align:center;padding:24px}
+  .msg b{display:block;font-size:20px;margin-bottom:8px}
+  .msg p{color:#7c8792;line-height:1.6;max-width:44ch;margin:0 auto 18px}
+  .msg a{color:#4fd6c8}
+  .badge{position:fixed;right:12px;bottom:12px;z-index:5;display:none;align-items:center;gap:8px;background:rgba(11,13,16,.9);
+    border:1px solid #2f3a44;border-radius:20px;padding:7px 8px 7px 12px;font-size:12.5px;backdrop-filter:blur(6px)}
+  .badge span{color:#7c8792;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em}
+  .badge a{color:#06201d;background:#4fd6c8;text-decoration:none;font-weight:700;border-radius:14px;padding:5px 10px}
+  .badge button{background:none;border:0;color:#7c8792;font-size:15px;cursor:pointer;padding:0 4px}
+</style>
+</head>
+<body>
+<!-- страница из ссылки показывается в изолированной рамке: её скрипты не видят этот сайт и его данные -->
+<iframe id="view" title="Страница" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
+<div class="msg" id="msg"><div><b>Открываю страницу...</b></div></div>
+<div class="badge" id="badge"><span>FORGE</span><a id="copy" href="../HTML-CSS-JS/">Сделать свою копию</a><button id="hide" title="Скрыть">&times;</button></div>
+
+<script src="../HTML-CSS-JS/engine.js?v=1"></script>
+<script>
+(function(){
+  var code=location.hash.slice(1), msg=document.getElementById("msg");
+  function fail(){
+    msg.innerHTML='<div><b>Страница не открылась</b><p>Похоже, ссылка обрезана или скопирована не полностью. Попросите отправить её ещё раз или прислать HTML-файл.</p><a href="../HTML-CSS-JS/">Собрать свою страницу в FORGE</a></div>';
+  }
+  if(!/^[jz][\w-]+$/.test(code)){
+    msg.innerHTML='<div><b>Здесь открываются страницы из FORGE</b><p>Соберите свою страницу в конструкторе и нажмите «Поделиться»: получится ссылка, которая ведёт сюда.</p><a href="../HTML-CSS-JS/">Открыть конструктор</a></div>';
+    return;
+  }
+  decodeShare(code).then(function(st){
+    var v=document.getElementById("view");
+    v.srcdoc=buildPage(st,"file");
+    v.style.display="block"; msg.style.display="none";
+    if(st.title) document.title=st.title;
+    document.getElementById("copy").href="../HTML-CSS-JS/#p="+code;
+    var b=document.getElementById("badge"); b.style.display="flex";
+    document.getElementById("hide").onclick=function(){ b.style.display="none"; };
+  }).catch(fail);
+})();
+</script>
+</body>
+</html>

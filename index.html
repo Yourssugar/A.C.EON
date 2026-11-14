@@ -783,11 +783,12 @@
     'uniform sampler2D uFar; uniform sampler2D uNeb; uniform sampler2D uStars; uniform sampler2D uDisk; uniform sampler2D uJet;',
     'uniform vec2 uRes; uniform vec2 uC; uniform float uHR; uniform vec2 uFarK; uniform vec2 uNebK; uniform vec2 uPar;',
     'uniform float uTime; uniform float uRot; uniform float uWarp; uniform float uRed; uniform float uJetI; uniform float uBorn; uniform float uSq;',
+    'uniform vec3 uMP; uniform vec4 uRip[4]; uniform vec2 uScan; uniform float uZoom;',
     'uniform vec3 uIris;',
     'const float PI=3.14159265;',
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
     'vec3 sky(vec2 q){',                       /* q: точка экрана в CSS-пикселях после линзы */
-    '  vec2 u=(q/uRes-0.5);',
+    '  vec2 u=(q/uRes-0.5)/uZoom;',
     '  vec3 c=texture2D(uFar,0.5+u*uFarK+uPar*0.010).rgb;',
     '  c=pow(c,vec3(1.8))*1.5;',                 /* арт светлый: уводим основу в глубокий синий, светлое остаётся */
     '  vec4 n=texture2D(uNeb,0.5+u*uNebK+uPar*0.022);',
@@ -795,6 +796,11 @@
     '  vec2 su=q/vec2(1280.0,720.0)+uPar*0.035;',
     '  vec4 s=texture2D(uStars,fract(su));',
     '  c+=s.rgb*pow(s.a,1.8)*1.5;',             /* мягкие ореолы гасим, точки звёзд остаются резкими */
+    /* ещё два слоя той же плитки: ближе (крупнее, быстрее с мышью) и дальше (мельче, медленнее) */
+    '  vec4 s2=texture2D(uStars,fract(q/vec2(2300.0,1294.0)/uZoom+uPar*0.075+0.37));',
+    '  c+=s2.rgb*pow(s2.a,2.2)*0.9;',
+    '  vec4 s3=texture2D(uStars,fract(q/vec2(760.0,428.0)/uZoom+uPar*0.017+0.61));',
+    '  c+=s3.rgb*pow(s3.a,2.0)*0.55;',
     '  return c;',
     '}',
     'vec3 heatc(vec3 t,float v){',
@@ -822,9 +828,29 @@
     '  float ct=cos(0.10), st=sin(0.10);',
     '  vec2 dl=vec2(d.x*ct-d.y*st, d.x*st+d.y*ct);',      /* в плоскости диска (наклон -0.10) */
     /* линза: источник для точки экрана, как у точечной массы, внутри кольца Эйнштейна зеркально */
-    '  float te=hr*1.35;',
+    '  float te=hr*1.45;',
     '  vec2 src=uC+d*(1.0-te*te/(r*r));',
-    '  vec3 col=sky(src)*smoothstep(0.0,0.35,uBorn);',
+    /* курсор: маленькая гравитационная линза, пространство под ним выпукло тянется */
+    '  if(uMP.z>0.01){ vec2 md=src-uMP.xy; float m=24.0*uMP.z; float d2=dot(md,md); src=uMP.xy+md*(1.0-m*m/(d2+m*m*1.6)); }',
+    /* клик: кольцевая волна гнёт фон и светится */
+    '  float rg=0.0;',
+    '  for(int i=0;i<4;i++){',
+    '    vec4 rp=uRip[i]; float age=uTime-rp.z;',
+    '    if(age>0.0&&age<1.6){',
+    '      vec2 rd=p-rp.xy; float dd=length(rd)+0.001; float rad=age*720.0;',
+    '      float w=exp(-pow((dd-rad)/(12.0+age*16.0),2.0))*(1.0-age/1.6)*rp.w;',
+    '      float e=exp(-pow((dd-rad)/2.2,2.0))*(1.0-age/1.6)*rp.w;',   /* тонкая яркая кромка */
+    '      src-=rd/dd*w*14.0; rg+=w*0.5+e;',
+    '    }',
+    '  }',
+    '  vec3 col;',
+    '  if(uWarp>0.01){',                          /* нырок: звёзды тянутся в линии к центру */
+    '    col=vec3(0.0);',
+    '    for(int i=0;i<6;i++){ col+=sky(uC+(src-uC)*(1.0-float(i)*0.045*uWarp)); }',
+    '    col*=0.1667*(1.0+uWarp*0.6);',
+    '  } else col=sky(src);',
+    '  col*=smoothstep(0.0,0.35,uBorn);',
+    '  col+=vec3(0.35,0.8,1.0)*rg*0.35;',
     /* джеты вдоль оси диска */
     '  float ay=abs(dl.y), w=hr*0.22+ay*0.07;',
     '  if(uJetI>0.01&&abs(dl.x)<w){',
@@ -865,6 +891,8 @@
     /* рождение: вспышка из точки */
     '  float bf=max(0.0,1.0-uBorn*3.2);',
     '  col+=vec3(1.0,0.9,0.8)*bf*bf*exp(-r/(uRes.y*(0.05+0.4*uBorn)))*1.6;',
+    '  if(uScan.y>0.0){ float sb=exp(-pow((p.y-uScan.x)/14.0,2.0)); float tl=exp(-max(0.0,uScan.x-p.y)/90.0)*step(p.y,uScan.x);',
+    '    col+=vec3(0.2,0.85,1.0)*(sb*0.32+tl*0.05)*uScan.y; }',
     '  col*=1.12;',
     '  col=(col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);',   /* ACES: ярко, но белое не выжигается */
     '  float lm=dot(col,vec3(0.2126,0.7152,0.0722)); col=max(mix(vec3(lm),col,1.22),0.0);',
@@ -897,6 +925,8 @@
     '}'
   ].join('\n');
   var FS_GL=FP+'varying vec4 vC;void main(){gl_FragColor=vec4(vC.rgb*vC.a,vC.a);}';
+  /* ближняя пыль у камеры: мягкие диски с чуть светлым краем */
+  var FS_GB=FP+'varying vec4 vC;void main(){float r=length(gl_PointCoord-0.5)*2.0;float k=smoothstep(1.0,0.78,r)*(0.55+0.45*r*r);gl_FragColor=vec4(vC.rgb*vC.a*k,vC.a*k);}';
   var FS_GN=FP+[
     'varying vec4 vC;',
     'void main(){',
@@ -1040,10 +1070,11 @@
       PG.fin  =compileProg(VS_TRI,FS_FINAL,['aP']);
       PG.gl   =compileProg(VS_G,FS_GL,['aP','aC','aS']);
       PG.gn   =compileProg(VS_G,FS_GN,['aP','aC','aS']);
+      PG.gb   =compileProg(VS_G,FS_GB,['aP','aC','aS']);
       BF.tri=gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER,BF.tri);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-      BF.gline=gl.createBuffer(); BF.gnode=gl.createBuffer();
+      BF.gline=gl.createBuffer(); BF.gnode=gl.createBuffer(); BF.gdust=gl.createBuffer();
       buildParticles();
       atlasTex=null; uploadAtlas();
       makeTexs();
@@ -1097,7 +1128,23 @@
     {id:'learn', name:'LEARN', col:[110,250,140], a:150},
     {id:'people',name:'PEOPLE',col:[255,80,175],  a:30}
   ];
-  var GR={nodes:[],edges:[],cr:60,hover:-1,hov:[0,0,0,0,0,0],built:0,ev:[],flashes:[]};
+  var GR={nodes:[],edges:[],cr:60,hover:-1,hov:[0,0,0,0,0,0],built:0,ev:[],flashes:[],pk:[],comets:[],dust:[],ox:0,oy:0};
+  /* камера: мышь плюс медленный дрейф, даже когда мышь стоит */
+  var CAM={x:0,y:0,zoom:1};
+  function camStep(){
+    var t=tGlobal;
+    CAM.x=(mouseX+gyroX*.5)-.5+Math.sin(t*.071)*.09+Math.sin(t*.023)*.05;
+    CAM.y=(mouseY+gyroY*.5)-.5+Math.cos(t*.057)*.07;
+    CAM.zoom=1+Math.sin(t*.031)*.025;
+  }
+  /* клик по пустому месту: кольцо по пространству, ближние узлы графа вспыхивают */
+  var RIP=new Float32Array(16), ripI=0;
+  document.addEventListener('pointerdown',function(e){
+    if(!glOK||warping||portalOpen)return;
+    if(e.target.closest&&e.target.closest('a,button,input,#mdock,#uni-ov,#lang-ov,#hud,#hud-l,#auth'))return;
+    var o=(ripI++%4)*4; RIP[o]=e.clientX; RIP[o+1]=e.clientY; RIP[o+2]=tGlobal; RIP[o+3]=1;
+    if(GR.nodes.length)graphWave(e.clientX,e.clientY,720,340);
+  },{passive:true});
   var gt=0;                        /* время графа: замирает вместе с воронкой (STASIS) */
   function gauss(){ var u=1-Math.random(), v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*v); }
   function newOffset(){ var a=Math.random()*6.2832, r=Math.min(1.25,Math.abs(gauss())*.5); return [Math.cos(a)*r*1.25,Math.sin(a)*r]; }
@@ -1139,21 +1186,23 @@
   function sectPos(ci){
     var s=SECT[ci], a=s.a*Math.PI/180, port=W<H*0.9;
     var rx=W*(port?.30:.355), ry=H*(port?.30:.27);
-    return [W*.5+Math.cos(a)*rx, H*.46+Math.sin(a)*ry*(port?1.15:1)];
+    return [W*.5+Math.cos(a)*rx+(GR.ox||0), H*.46+Math.sin(a)*ry*(port?1.15:1)+(GR.oy||0)];
   }
   /* запрос: импульс из ядра бежит к сектору и зажигает его по нитям */
   function lightFrom(i,delay,spd){
     var N=GR.nodes, depth={}; depth[i]=0; var qq=[i];
     while(qq.length){ var x=qq.shift(); GR.adj[x].forEach(function(y){ if(depth[y]===undefined&&N[y].c===N[i].c){ depth[y]=depth[x]+1; qq.push(y); } }); }
-    for(var k in depth){ var n=N[k]; n.litAt=gt+delay+depth[k]*spd; }
+    for(var k in depth){ var n=N[k]; n.litAt=gt+delay+depth[k]*spd;
+      if(depth[k]>0&&GR.pk.length<420){ var par=GR.adj[k].filter(function(y){return depth[y]===depth[k]-1;})[0];
+        if(par!==undefined)GR.pk.push({a:par,b:+k,t0:gt+delay+depth[par]*spd,dur:spd}); } }
   }
   function graphQuery(ci){
     var s=SECT[ci], h=s.hubs[Math.random()*s.hubs.length|0];
     GR.ev.push({k:'q',t0:gt,dur:1.1,to:h});
   }
   /* волна по всему графу от точки (PULSE, вспышка на краю) */
-  function graphWave(ox,oy,spd){
-    GR.nodes.forEach(function(n){ var d=Math.hypot(n.x-ox,n.y-oy); n.litAt=gt+d/(spd||700); });
+  function graphWave(ox,oy,spd,maxD){
+    GR.nodes.forEach(function(n){ var d=Math.hypot(n.x-ox,n.y-oy); if(maxD&&d>maxD)return; n.litAt=gt+d/(spd||700); });
   }
   /* маска мозга: белое это тело, серое борозды (по ним точки гуще) */
   var BRAIN=null;
@@ -1199,6 +1248,23 @@
       var S=Math.min(W,H)*.66, m=0; N.forEach(function(n){ n.brain=-1; });
       var order=N.map(function(_,i){return i;}).sort(function(){return Math.random()-.5;});
       order.forEach(function(i){ if(m>=BRAIN.length)return; var n=N[i]; if(n.st===3)return; n.brain=m; n.bx=cx+BRAIN[m][0]*S*1.15; n.by=cy+BRAIN[m][1]*S; m++; }); }
+    /* фоновые искры по случайным нитям */
+    if(Math.random()<dt*5&&GR.pk.length<420){ var ee=GR.edges[Math.random()*GR.edges.length|0]; if(Math.random()<.5)ee=[ee[1],ee[0]];
+      GR.pk.push({a:ee[0],b:ee[1],t0:gt,dur:.6+Math.random()*.8,dim:1}); }
+    for(var q=GR.pk.length-1;q>=0;q--){ if(gt>GR.pk[q].t0+GR.pk[q].dur)GR.pk.splice(q,1); }
+    /* кометы: раз в 25-55 с через весь экран */
+    if(GR.nextComet===undefined)GR.nextComet=tGlobal+10+Math.random()*8;
+    if(tGlobal>GR.nextComet&&!VX.warp){ GR.nextComet=tGlobal+25+Math.random()*30;
+      var ang=(Math.random()<.5?0:Math.PI)+(Math.random()-.5)*.9, sp=520+Math.random()*420, sx0=W*.5-Math.cos(ang)*(W*.7), sy0=H*(.15+Math.random()*.7)-Math.sin(ang)*(W*.35);
+      GR.comets.push({x:sx0,y:sy0,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,len:150+Math.random()*140,t:0,warm:Math.random()<.4}); }
+    for(var q=GR.comets.length-1;q>=0;q--){ var cm=GR.comets[q]; cm.t+=dt; cm.x+=cm.vx*dt; cm.y+=cm.vy*dt; if(cm.t>W*1.6/Math.hypot(cm.vx,cm.vy)+.5)GR.comets.splice(q,1); }
+    /* голографический скан раз в 45-90 с */
+    if(GR.nextScan===undefined)GR.nextScan=tGlobal+20+Math.random()*15;
+    if(tGlobal>GR.nextScan){ GR.nextScan=tGlobal+45+Math.random()*45; GR.scanT=0; }
+    if(GR.scanT!==undefined&&GR.scanT>=0){ GR.scanT+=dt; GR.scanY=-40+(H+80)*Math.min(1,GR.scanT/1.5); if(GR.scanT>1.5)GR.scanT=-1; }
+    /* пыль у камеры */
+    if(!GR.dust.length){ for(var q=0;q<(isCoarse?14:30);q++)GR.dust.push({x:Math.random(),y:Math.random(),s:18+Math.random()*58,vx:(Math.random()-.5)*.004,vy:(Math.random()-.5)*.003,a:.025+Math.random()*.06,h:Math.random()}); }
+    GR.dust.forEach(function(d){ d.x=(d.x+d.vx*dt+1)%1; d.y=(d.y+d.vy*dt+1)%1; });
     jetT=Math.max(0,jetT-dt);
     var jTarget=jetT>0?(jetT>3.4?(4.2-jetT)/.8:Math.min(1,jetT/1)):0;
     jetI+=((.06+jTarget*.95)-jetI)*Math.min(1,dt*3);
@@ -1228,12 +1294,15 @@
         if(dd<RR&&dd>1){ var ff=(1-dd/RR)*(10+mSpeed*20)*mAmt; px+=dx/dd*ff-dy/dd*ff*.5; py+=dy/dd*ff+dx/dd*ff*.5; } }
       n.x=px; n.y=py;
       if(n.litAt>=0&&gt>=n.litAt){ n.lit=1; n.litAt=-1; }
+      if(GR.scanT>=0&&Math.abs(n.y-GR.scanY)<26)n.lit=Math.max(n.lit,.75);
       n.lit*=Math.exp(-gdt*1.8);
     }
     /* события-импульсы */
     for(var q=GR.ev.length-1;q>=0;q--){ var ev=GR.ev[q]; if(gt-ev.t0>ev.dur){ lightFrom(ev.to,0,.11); N[ev.to].lit=1; GR.ev.splice(q,1); } }
     for(var q=GR.flashes.length-1;q>=0;q--){ GR.flashes[q].t+=dt; if(GR.flashes[q].t>(GR.flashes[q].big?1.6:.7))GR.flashes.splice(q,1); }
     GR.birth=birth; GR.cx=cx; GR.cy=cy; GR.warpA=warpAmt;
+    /* граф висит на средней глубине: с мышью смещается меньше пыли, но больше фона */
+    GR.ox=-CAM.x*W*.035; GR.oy=-CAM.y*H*.035;
     updLabel();
   }
   /* подпись сектора под курсором: эмблема Codex и название */
@@ -1251,11 +1320,11 @@
     lbl.style.transform=up?'translate(-50%,0)':'translate(-50%,-100%)';
     lbl.classList.add('on');
   }
-  var gLineArr=null, gNodeArr=null;
+  var gLineArr=null, gNodeArr=null, gDustArr=null;
   function graphRender(){
     var N=GR.nodes, E=GR.edges; if(!N.length)return;
     var birth=GR.birth, be=GR.be||0, wa=1-GR.warpA;
-    if(!gLineArr||gLineArr.length<(E.length+GR.ev.length+GR.flashes.length*8)*14){ gLineArr=new Float32Array((E.length+40)*14+400); gNodeArr=new Float32Array((N.length+80)*7); }
+    if(!gLineArr||gLineArr.length<(E.length+700)*14){ gLineArr=new Float32Array((E.length+700)*14); gNodeArr=new Float32Array((N.length+600)*7); gDustArr=new Float32Array(64*7); }
     var L=gLineArr, li=0, P=gNodeArr, pi=0;
     function sectA(c){ var d=(born-.35)*1.5-c*.12; return Math.max(0,Math.min(1,d/.35)); }
     function line(x1,y1,x2,y2,c1,a1,c2,a2){
@@ -1291,9 +1360,25 @@
     }
     for(var q=0;q<GR.flashes.length;q++){ var fl=GR.flashes[q], f=fl.t/(fl.big?1.6:.7);
       P[pi++]=fl.x;P[pi++]=fl.y;P[pi++]=1;P[pi++]=.92;P[pi++]=.8;P[pi++]=(1-f)*(fl.big?1:.9)*wa;P[pi++]=(fl.big?20:8)+f*(fl.big?90:26); }
+    /* искры: светлая голова и короткий хвост по нити */
+    for(var q=0;q<GR.pk.length;q++){ var k=GR.pk[q], f=(gt-k.t0)/k.dur; if(f<0||f>1)continue;
+      var a=N[k.a], b=N[k.b]; if(a.life<.2||b.life<.2)continue;
+      var c=SECT[b.c].col, f0=Math.max(0,f-.3), hx=a.x+(b.x-a.x)*f, hy=a.y+(b.y-a.y)*f, am=(k.dim?.55:1)*wa*Math.sin(f*Math.PI);
+      line(a.x+(b.x-a.x)*f0,a.y+(b.y-a.y)*f0,hx,hy,c,0,c,.8*am);
+      P[pi++]=hx;P[pi++]=hy;P[pi++]=Math.min(1,c[0]/255+.35);P[pi++]=Math.min(1,c[1]/255+.35);P[pi++]=Math.min(1,c[2]/255+.35);P[pi++]=am;P[pi++]=k.dim?4:6.5; }
+    /* кометы */
+    for(var q=0;q<GR.comets.length;q++){ var cm=GR.comets[q], v=Math.hypot(cm.vx,cm.vy), ux=cm.vx/v, uy=cm.vy/v, cc=cm.warm?[255,200,140]:[150,225,255];
+      for(var sg=0;sg<10;sg++){ var t0=sg/10, t1=(sg+1)/10;
+        line(cm.x-ux*cm.len*t0,cm.y-uy*cm.len*t0,cm.x-ux*cm.len*t1,cm.y-uy*cm.len*t1,cc,.9*(1-t0)*(1-t0),cc,.9*(1-t1)*(1-t1)); }
+      P[pi++]=cm.x;P[pi++]=cm.y;P[pi++]=1;P[pi++]=.97;P[pi++]=.92;P[pi++]=1;P[pi++]=10;
+      P[pi++]=cm.x;P[pi++]=cm.y;P[pi++]=cc[0]/255;P[pi++]=cc[1]/255;P[pi++]=cc[2]/255;P[pi++]=.35;P[pi++]=28; }
+    var D=gDustArr, di=0;
+    GR.dust.forEach(function(d){ var x=((d.x-CAM.x*.16)%1+1)%1*(W+160)-80, y=((d.y-CAM.y*.16)%1+1)%1*(H+160)-80;
+      var c=d.h<.5?[.55,.65,1]:[1,.75,.85];
+      D[di++]=x;D[di++]=y;D[di++]=c[0];D[di++]=c[1];D[di++]=c[2];D[di++]=d.a*wa*birth;D[di++]=Math.min(d.s,maxPt/Math.max(1,outW/W)); });
     var dpr=outW/W;
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE);
-    [['gl',BF.gline,L,li,gl.LINES],['gn',BF.gnode,P,pi,gl.POINTS]].forEach(function(r){
+    [['gl',BF.gline,L,li,gl.LINES],['gn',BF.gnode,P,pi,gl.POINTS],['gb',BF.gdust,D,di,gl.POINTS]].forEach(function(r){
       var pg=PG[r[0]], cnt=r[3]/7; if(!cnt)return;
       gl.useProgram(pg.p);
       gl.bindBuffer(gl.ARRAY_BUFFER,r[1]); gl.bufferData(gl.ARRAY_BUFFER,r[2].subarray(0,r[3]),gl.DYNAMIC_DRAW);
@@ -1338,7 +1423,8 @@
     gl.uniform1f(U(pp,'uSimT'),simT);
     gl.uniform1f(U(pp,'uTime'),tGlobal);
     gl.uniform1f(U(pp,'uWorldA'),VX.worldA);
-    var pxp=((mouseX+gyroX*.5)-.5)*26*SIMS, pyp=((mouseY+gyroY*.5)-.5)*18*SIMS;
+    camStep();
+    var pxp=CAM.x*26*SIMS, pyp=CAM.y*18*SIMS;
     gl.uniform2f(U(pp,'uPar'),pxp,pyp);
     gl.uniform4f(U(pp,'uMouse'),mS.x,mS.y,mAmt,mSpeed);
     gl.uniform1f(U(pp,'uPx'),trW/SWs);
@@ -1374,7 +1460,11 @@
     gl.uniform1f(U(fp,'uHR'),HRc);
     gl.uniform2f(U(fp,'uFarK'),fk[0],fk[1]);
     gl.uniform2f(U(fp,'uNebK'),nk[0],nk[1]);
-    gl.uniform2f(U(fp,'uPar'),(mouseX+gyroX*.5)-.5,(mouseY+gyroY*.5)-.5);
+    gl.uniform2f(U(fp,'uPar'),CAM.x,CAM.y);
+    gl.uniform1f(U(fp,'uZoom'),CAM.zoom);
+    gl.uniform3f(U(fp,'uMP'),mS.x/SIMS,mS.y/SIMS,mAmt);
+    gl.uniform4fv(U(fp,'uRip[0]'),RIP);
+    gl.uniform2f(U(fp,'uScan'),GR.scanT>=0?GR.scanY:-999,GR.scanT>=0?Math.sin(Math.min(1,GR.scanT/1.5)*Math.PI):0);
     gl.uniform1f(U(fp,'uTime'),tGlobal);
     gl.uniform1f(U(fp,'uRot'),diskRot);
     gl.uniform1f(U(fp,'uWarp'),warpAmt);

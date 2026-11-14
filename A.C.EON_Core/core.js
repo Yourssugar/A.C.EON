@@ -823,48 +823,58 @@ function pushRing(x,y,R,w,a,c){
 function easeOut(t){ return 1-(1-t)*(1-t); }
 
 /* --- узел как дрейфующее скопление ---
-   Вместо круга с кольцами каждый узел это маленький граф из светящихся точек и нитей. Точки медленно
-   дрейфуют по своим орбитам вокруг центра узла. При наведении (и у сектора в центре уровня) скопление
-   стягивается: внешние точки встают в кольцо, внутренние собираются к центру, нити становятся многоугольником */
+   Каждый узел это облако точек в объёме с нитями к ближайшим соседям. В покое облако большое и рыхлое:
+   медленно поворачивается, точки дрейфуют каждая по-своему. При наведении (и у сектора в центре уровня)
+   облако сминается в неровный комок, как скомканная бумага: меньше, плотнее, бугристое и всё время
+   шевелится и кувыркается, его и тянут в портал */
 function mkCluster(n){
   let sd=n.seed*9301+49297; const rnd=()=>{ sd=(sd*9301+49297)%233280; return sd/233280; };
-  const N=n.off?7:(n.container||n.role==='hub'?24:Math.round(10+(n.def.w||2)*2.5));
+  const N=n.off?12:(n.container||n.role==='hub'?46:Math.round(18+(n.def.w||2)*4));
   const pts=[];
   for(let i=0;i<N;i++){
-    const inner=i<Math.max(2,N*.22|0);
-    pts.push({a0:rnd()*6.2832, r0:inner?.15+rnd()*.3:.55+rnd()*.45, w:(rnd()<.5?-1:1)*(.06+rnd()*.16),
-      f:.3+rnd()*.9, ph:rnd()*6.2832, big:rnd()<.22, inner:inner});
+    let x,y,z,l; do{ x=rnd()*2-1; y=rnd()*2-1; z=rnd()*2-1; l=x*x+y*y+z*z; }while(l>1||l<.02);
+    l=Math.sqrt(l);
+    pts.push({dx:x/l,dy:y/l,dz:z/l, r:.3+.7*Math.cbrt(rnd()), f:.25+rnd()*.7, ph:rnd()*6.2832, ph2:rnd()*6.2832,
+      big:rnd()<.18, lump:.55+rnd()*.45});
   }
-  const ring=pts.filter(p=>!p.inner).sort((a,b)=>a.a0-b.a0), M=ring.length;
-  ring.forEach((p,k)=>{ p.k=k; });
-  const idx=p=>pts.indexOf(p), E=[];
-  for(let k=0;k<M;k++)E.push([idx(ring[k]),idx(ring[(k+1)%M])]);
-  for(let k=0;k<M;k+=3)E.push([idx(ring[k]),idx(ring[(k+Math.max(2,M/3|0))%M])]);
-  pts.forEach((p,i)=>{ if(p.inner){ const k=(Math.round(p.a0/6.2832*M))%M; E.push([i,idx(ring[k])]); E.push([i,idx(ring[(k+(M/2|0))%M])]); } });
-  return {pts:pts,E:E,M:M};
+  /* нити: к трём ближайшим соседям в объёме, без повторов */
+  const E=[], seen={};
+  pts.forEach((p,i)=>{
+    const d=pts.map((q,j)=>[j===i?1e9:(p.dx*p.r-q.dx*q.r)**2+(p.dy*p.r-q.dy*q.r)**2+(p.dz*p.r-q.dz*q.r)**2,j]).sort((a,b)=>a[0]-b[0]);
+    for(let k=0;k<3;k++){ const j=d[k][1], key=Math.min(i,j)+'_'+Math.max(i,j); if(!seen[key]){ seen[key]=1; E.push([i,j]); } }
+  });
+  return {pts:pts,E:E,ax:rnd()*6.2832,dir:rnd()<.5?-1:1};
 }
 function pushCluster(n){
   const sp=easeOut(n.spawnT), scl=n.swScale==null?1:n.swScale, kk=sp*scl;
   if(kk<.02)return;
   if(!n.cl)n.cl=mkCluster(n);
-  const C=n.cl, T=NOW, R=n.radius*1.25*kk;
+  const C=n.cl, T=NOW;
   let h=n.role==='hub'?1:n.hotT; h=h*h*(3-2*h);
-  const gj=(n.glitchUntil>Date.now())?(Math.random()-.5)*7:0, spin=T*.22*(n.seed%2?1:-1);
+  const Rl=n.radius*2.5*kk, Rc=n.radius*1.1*kk*(n.role==='hub'?1.15:1);
+  const gj=(n.glitchUntil>Date.now())?(Math.random()-.5)*7:0;
+  /* поворот облака: в покое медленно, комок кувыркается быстрее */
+  const ay=T*(.12+h*.55)*C.dir+C.ax, ax=.5+Math.sin(T*(.07+h*.4)+C.ax)*.6;
+  const cy=Math.cos(ay), sy=Math.sin(ay), cx=Math.cos(ax), sx=Math.sin(ax);
   const col=hex(n.color), lit=[Math.min(1,col[0]*.6+.4),Math.min(1,col[1]*.6+.4),Math.min(1,col[2]*.6+.4)];
   const P=C.pts.map(p=>{
-    const a=p.a0+p.w*T, rr=R*p.r0*(1+.14*Math.sin(T*p.f+p.ph));
-    const ax=n.x+Math.cos(a)*rr, ay=n.y+Math.sin(a)*rr*.92;
-    let bx, by;
-    if(p.inner){ const ai=p.a0+T*.5; bx=n.x+Math.cos(ai)*R*.18*p.r0; by=n.y+Math.sin(ai)*R*.18*p.r0; }
-    else { const ac=p.k/C.M*6.2832+spin; bx=n.x+Math.cos(ac)*R*.8; by=n.y+Math.sin(ac)*R*.8; }
-    return {x:ax+(bx-ax)*h+gj, y:ay+(by-ay)*h};
+    /* бугры комка: радиус точки зависит от её направления и медленно плывёт во времени */
+    const bump=.62+.38*(.5+.5*Math.sin(p.dx*3.1+p.dy*2.3-p.dz*2.7+T*.9))*p.lump;
+    const rr=(Rl*p.r)*(1-h)+(Rc*bump)*h;
+    let x=p.dx*rr, y=p.dy*rr, z=p.dz*rr;
+    /* в покое каждая точка ещё и дрейфует сама */
+    const dr=Rl*.16*(1-h);
+    x+=Math.sin(T*p.f+p.ph)*dr; y+=Math.cos(T*p.f*.8+p.ph2)*dr; z+=Math.sin(T*p.f*.6+p.ph2)*dr;
+    let X=x*cy+z*sy, Z=-x*sy+z*cy; let Y=y*cx-Z*sx; Z=y*sx+Z*cx;
+    const depth=Math.max(.35,Math.min(1.25,.8+Z/(rr+1)*.35));
+    return {x:n.x+X+gj, y:n.y+Y*.9, d:depth};
   });
-  const off=n.off, la=(off?.1:(n.role==='hub'?.3:.2+h*.26))*kk;
-  C.E.forEach(e=>pushEdge([P[e[0]],P[e[1]]],col,col,.42+h*.2,la));
+  const off=n.off, la=(off?.06:(.13+h*.17))*kk;
+  C.E.forEach(e=>{ const a=P[e[0]], b=P[e[1]]; pushEdge([a,b],col,col,.36+h*.14,la*(a.d+b.d)*.5); });
   C.pts.forEach((p,i)=>{
-    const q=P[i], tw=.75+.25*Math.sin(T*2.1*p.f+p.ph), a=(off?.35:.85)*tw*kk;
-    if(p.big&&!off)pushSp(q.x,q.y,(13+h*5)*SC,1,col,.32*a);
-    pushSp(q.x,q.y,(p.big?3.6:2.4)*SC*(1+h*.25),0,p.big?[1,1,1]:lit,a);
+    const q=P[i], tw=.75+.25*Math.sin(T*2.1*p.f+p.ph), a=(off?.3:.8)*tw*kk*q.d;
+    if(p.big&&!off)pushSp(q.x,q.y,(12+h*4)*SC*q.d,1,col,.28*a);
+    pushSp(q.x,q.y,(p.big?3.4:2.2)*SC*q.d,0,p.big?[1,1,1]:lit,a);
   });
 }
 

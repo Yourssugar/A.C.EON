@@ -316,7 +316,7 @@ function contentFields(box,b){
 }
 function listItemFields(box,b,i){
   var L=BLOCKS[b.type].list, it=b.c.L[i]; if(!it) return;
-  L.fields.forEach(function(f){ box.appendChild(field(f, it[f.id], function(v,full){ remember("l"+b.uid+i+f.id); it[f.id]=v; changed(full!==false); }, b)); });
+  L.fields.forEach(function(f){ box.appendChild(field(f, it[f.id], function(v,full){ remember("l"+b.uid+i+f.id); it[f.id]=v; changed(full!==false); }, b, {i:i})); });
   box.appendChild(el('<p class="note">Весь список пунктов: выберите блок целиком.</p>'));
 }
 function listEditor(box,b){
@@ -334,7 +334,7 @@ function listEditor(box,b){
   b.c.L.forEach(function(it,i){
     var card=el('<div class="li'+(ui.sel&&ui.sel.e==="i"+i?" sel":"")+'"><div class="lh"><b>'+(i+1)+'. '+esc(it.t||it.q||it.tm||it.n||"")+'</b>'+
       '<button data-a="up" title="Выше">'+sv("up")+'</button><button data-a="down" title="Ниже">'+sv("down")+'</button><button data-a="del" title="Удалить">'+sv("x")+'</button></div></div>');
-    L.fields.forEach(function(f){ card.appendChild(field(f, it[f.id], function(v,full){ remember("l"+b.uid+i+f.id); it[f.id]=v; changed(full!==false); }, b)); });
+    L.fields.forEach(function(f){ card.appendChild(field(f, it[f.id], function(v,full){ remember("l"+b.uid+i+f.id); it[f.id]=v; changed(full!==false); }, b, {i:i})); });
     $$(".lh button",card).forEach(function(x){ x.onclick=function(){ var a=x.getAttribute("data-a"); remember();
       if(a==="del"){ b.c.L.splice(i,1); shiftItemStyles(b,i); }
       else { var j=i+(a==="up"?-1:1); if(j<0||j>=b.c.L.length) return; var t=b.c.L[i]; b.c.L[i]=b.c.L[j]; b.c.L[j]=t; var ei=b.e["i"+i], ej=b.e["i"+j]; if(ej) b.e["i"+i]=ej; else delete b.e["i"+i]; if(ei) b.e["i"+j]=ei; else delete b.e["i"+j]; }
@@ -343,7 +343,7 @@ function listEditor(box,b){
   });
   box.appendChild(el('<button class="btn" style="width:100%">'+sv("plus")+esc(L.add)+'</button>',function(n){ n.onclick=function(){ remember(); b.c.L.push(clone(L.item)); changed(true); refreshInsp(); }; }));
 }
-function field(f, v, set, b){
+function field(f, v, set, b, ctx){
   var L='<label>'+esc(f.label)+'</label>';
   if(f.type==="text") return el('<div class="f">'+L+'<input type="text" value="'+esc(v)+'"></div>',function(n){ $("input",n).oninput=function(){ set(this.value); }; });
   if(f.type==="area"||f.type==="code") return el('<div class="f">'+L+'<textarea'+(f.type==="code"?' class="code" spellcheck="false"':'')+'>'+esc(v)+'</textarea></div>',function(n){ $("textarea",n).oninput=function(){ set(this.value); }; });
@@ -361,7 +361,8 @@ function field(f, v, set, b){
       sl.onchange=function(){ a={t:sl.value,v:(sl.value==="block"||sl.value==="toggle")?"":a.v}; set(clone(a)); val(); }; val(); }); }
   if(f.type==="img") return el('<div class="f">'+L+'<div class="ph"><div class="pv" style="'+(v?'background-image:url('+esc(v)+')':'')+'">'+(v?'':sv("img"))+'</div><div class="bt">'+
       '<div class="row">'+(touch?'<button class="btn" data-cam>'+sv("cam")+'Снять</button>':'')+'<button class="btn" data-gal>'+sv("img")+(touch?'Галерея':'Выбрать фото')+'</button></div>'+
-      '<input type="text" placeholder="или ссылка https://..." value="'+(v&&v.indexOf("data:")!==0?esc(v):"")+'">'+(v?'<button class="btn del" data-rm>Убрать фото</button>':'')+'</div></div></div>',function(n){
+      '<input type="text" placeholder="или ссылка https://..." value="'+(v&&v.indexOf("data:")!==0?esc(v):"")+'">'+(v&&v.indexOf("data:image")===0&&b?'<button class="btn" data-gx>'+sv("img")+'Править в графике</button>':'')+(v?'<button class="btn del" data-rm>Убрать фото</button>':'')+'</div></div></div>',function(n){
+    var gx=$("[data-gx]",n); if(gx) gx.onclick=function(){ openInGfx(v, ctx&&ctx.i!=null ? {kind:"item",uid:b.uid,i:ctx.i,key:f.id,max:f.max||1200} : {kind:"field",uid:b.uid,key:f.id,max:f.max||1200}); };
     var c=$("[data-cam]",n); if(c) c.onclick=function(){ pickPhoto(true,f.max||1200,function(u){ set(u); refreshInsp(); }); };
     $("[data-gal]",n).onclick=function(){ pickPhoto(false,f.max||1200,function(u){ set(u); refreshInsp(); }); };
     $("input",n).onchange=function(){ set(this.value.trim()); refreshInsp(); };
@@ -391,6 +392,26 @@ function shrink(file, max){
   if(window.createImageBitmap) return createImageBitmap(file,{imageOrientation:"from-image"}).then(function(bm){ var u=draw(bm,bm.width,bm.height); bm.close&&bm.close(); return u; }).catch(viaImg);
   return viaImg();
   function viaImg(){ return new Promise(function(res){ var u=URL.createObjectURL(file), im=new Image(); im.onload=function(){ res(draw(im,im.naturalWidth,im.naturalHeight)); URL.revokeObjectURL(u); }; im.onerror=function(){ res(null); }; im.src=u; }); }
+}
+
+/* ── фото в графическую мастерскую и обратно (общий сайт, база «forge-gfx») ── */
+function gfxPut(w){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("forge-gfx",1); r.onupgradeneeded=function(){ r.result.createObjectStore("works",{keyPath:"id"}); };
+  r.onsuccess=function(){ var t=r.result.transaction("works","readwrite"); t.objectStore("works").put(w); t.oncomplete=res; t.onerror=function(){ rej(t.error); }; }; r.onerror=function(){ rej(r.error); }; }catch(e){ rej(e); } }); }
+function openInGfx(url, ret){
+  if(!/^data:image/.test(url||"")){ toast("В графике можно править фото, загруженные с устройства"); return; }
+  var im=new Image();
+  im.onload=function(){
+    var k=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight)), w=Math.round(im.naturalWidth*k), h=Math.round(im.naturalHeight*k);
+    ret.pid=st.id; ret.title=st.title;
+    var work={ v:1, id:"w"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:"Фото со страницы «"+st.title+"»", size:"own", w:w, h:h, round:false,
+      bg:{t:"none",c1:"#000000",c2:"#000000",ang:0},
+      layers:[{ id:"Lp1", t:"image", x:w/2, y:h/2, w:w, h:h, rot:0, op:1, blend:"source-over", src:"a1", iw:im.naturalWidth, ih:im.naturalHeight, mask:null, feather:2, zoom:1, fx:50, fy:50, shape:"rect", r:0,
+        f:{preset:"none",br:0,ct:0,sat:0,warm:0,bw:0,sep:0,blur:0} }],
+      assets:{ a1:url }, ret:ret, updated:Date.now(), thumb:"" };
+    st.updated=Date.now();
+    Promise.all([gfxPut(work), dbPut(clone(st))]).then(function(){ location.href="../grafika/#"+work.id; }).catch(function(){ toast("Не получилось открыть графическую мастерскую"); });
+  };
+  im.onerror=function(){ toast("Фото не открылось"); }; im.src=url;
 }
 
 /* ── оформление ── */
@@ -445,6 +466,7 @@ function paneBg(box){
       function pick(cam){ pickPhoto(cam,1600,function(u){ remember(); bg.img=u; changed(true); refreshPane(); }); }
       var c=$("[data-cam]",n); if(c) c.onclick=function(){ pick(true); }; $("[data-gal]",n).onclick=function(){ pick(false); };
       var r=$("[data-rm]",n); if(r) r.onclick=function(){ remember(); bg.img=""; changed(true); refreshPane(); }; }));
+    if(bg.img&&bg.img.indexOf("data:image")===0) box.appendChild(el('<div class="row" style="margin-top:6px"><button class="btn">'+sv("img")+'Править фон в графике</button></div>',function(n){ $("button",n).onclick=function(){ openInGfx(bg.img,{kind:"bg",max:1600}); }; }));
     if(kb) box.appendChild(el('<p class="note" style="margin:6px 0 10px">Сжато до '+kb+' КБ, хранится в этом браузере. Точку, вокруг которой фото обрезается, двигайте пальцем по превью.</p>'));
     box.appendChild(choice("Как разместить",[["cover","растянуть на экран"],["contain","вписать целиком"],["repeat","плиткой"],["auto","как есть"]],bg.fit,function(v){ remember(); bg.fit=v; changed(true); }));
     box.appendChild(toggle("Фон стоит на месте при прокрутке",bg.fixed,function(v){ remember(); bg.fixed=v; changed(true); }));

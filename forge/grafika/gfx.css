@@ -94,3 +94,11 @@
 .acts4 svg{width:18px;height:18px}
 .exp-pv{display:grid;place-items:center;background:repeating-conic-gradient(#20252c 0 25%,#171b21 0 50%) 0 0/18px 18px;border-radius:14px;padding:12px;margin-bottom:12px}
 .exp-pv canvas{max-width:100%;max-height:220px;box-shadow:0 10px 24px -10px #000}
+
+.pri.ret{background:#ff9a4d;color:#2a1405}
+.plist{display:flex;flex-direction:column;gap:6px;max-height:46dvh;overflow:auto;margin:6px 0 10px}
+.plist button{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line2);border-radius:16px;background:var(--panel2);text-align:left;color:var(--text)}
+.plist button:hover,.plist button.on{border-color:var(--run)}
+.plist button b{flex:1;font-size:14px}
+.plist button small{color:var(--dim);font-size:12px}
+@media (max-width:420px){ .pri.ret{padding:9px 9px;font-size:11.5px} }

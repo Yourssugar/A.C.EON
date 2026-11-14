@@ -113,7 +113,27 @@ function textMetrics(L){
   return { lines:lines, ws:ws, w:w, h:lh*lines.length, lh:lh, ls:ls };
 }
 function lineWidth(g,t,ls){ if(!ls) return g.measureText(t).width; var s=0; for(var i=0;i<t.length;i++) s+=g.measureText(t[i]).width+(i<t.length-1?ls:0); return s; }
-function layerSize(L){ if(L.t==="text"){ var m=textMetrics(L), p=fxPad(L); return { w:m.w+p, h:m.h+p }; } return { w:L.w, h:L.h }; }
+function layerSize(L){ if(L.t==="text"){ var p=fxPad(L); if(L.arc){ var ag=arcGeom(L); return { w:ag.w+p, h:ag.h+p }; } var m=textMetrics(L); return { w:m.w+p, h:m.h+p }; } return { w:L.w, h:L.h }; }
+/* текст по дуге: буквы встают по окружности. arc от -100 до 100: плюс = дуга вверх, минус = вниз, 100 = почти полный круг */
+var AGC={};
+function arcGeom(L){
+  ensureFont(L); var key=[L.text,L.font,L.weight,L.size,L.ls,L.arc].join("|"), c0=AGC[L.id]; if(c0&&c0.key===key) return c0.g;
+  MCTX.font=fontStr(L);
+  var t=String(L.text||" ").replace(/\s*\n\s*/g," "), ls=L.ls*L.size/100, ws=[], tot=0, i;
+  for(i=0;i<t.length;i++){ var w=MCTX.measureText(t[i]).width; ws.push(w); tot+=w+(i<t.length-1?ls:0); }
+  var a=Math.max(-100,Math.min(100,L.arc||0)), th=Math.max(.05,Math.abs(a)/100*Math.PI*2*.96), R=Math.max(1,tot/th), up=a>0;
+  var chars=[], pos=-tot/2, mnx=Infinity, mxx=-Infinity, mny=Infinity, mxy=-Infinity, hh=L.size*.6;
+  for(i=0;i<t.length;i++){
+    var ang=(pos+ws[i]/2)/R, x=R*Math.sin(ang), y=up?-R*Math.cos(ang):R*Math.cos(ang), rot=up?ang:-ang, cs=Math.cos(rot), sn=Math.sin(rot), hw=ws[i]/2;
+    [[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]].forEach(function(q){ var px=x+q[0]*cs-q[1]*sn, py=y+q[0]*sn+q[1]*cs; if(px<mnx)mnx=px; if(px>mxx)mxx=px; if(py<mny)mny=py; if(py>mxy)mxy=py; });
+    chars.push({ c:t[i], x:x, y:y, r:rot, k:t.length>1?i/(t.length-1):0 }); pos+=ws[i]+ls;
+  }
+  var cx=(mnx+mxx)/2, cy=(mny+mxy)/2; chars.forEach(function(ch){ ch.x-=cx; ch.y-=cy; });
+  var g={ chars:chars, w:mxx-mnx, h:mxy-mny }; AGC[L.id]={ key:key, g:g }; return g;
+}
+function mixHex(a,b,k){ var A=String(a).match(/^#([0-9a-f]{6})$/i), B=String(b).match(/^#([0-9a-f]{6})$/i); if(!A||!B) return a;
+  var x=parseInt(A[1],16), y=parseInt(B[1],16), r=[16,8,0].map(function(sh){ var u=(x>>sh)&255, v=(y>>sh)&255; return Math.round(u+(v-u)*k); });
+  return "rgb("+r.join(",")+")"; }
 function fxPad(L){ var f=L.fx||{}; if(f.t==="glow") return L.size*f.a/100*.6; if(f.t==="stroke") return L.size*f.a/100*.25; if(f.t==="shadow") return L.size*f.a/100*.16; return 0; }
 
 /* ─────────── контуры фигур ─────────── */
@@ -137,7 +157,7 @@ function drawWork(g, W, opt){
   opt=opt||{}; var s=opt.scale||1; SHADOW_K=s;
   g.save(); g.setTransform(s,0,0,s,opt.ox||0,opt.oy||0);
   if(W.round && opt.clipRound){ g.beginPath(); g.arc(W.w/2,W.h/2,W.w/2,0,Math.PI*2); g.clip(); }
-  if(!opt.transparent){
+  if(!opt.transparent && W.bg.t!=="none"){
     if(W.bg.t==="grad"){ var a=W.bg.ang*Math.PI/180, cx=W.w/2, cy=W.h/2, r=Math.hypot(W.w,W.h)/2, gr=g.createLinearGradient(cx-Math.sin(a)*r,cy+Math.cos(a)*r,cx+Math.sin(a)*r,cy-Math.cos(a)*r);
       gr.addColorStop(0,W.bg.c1); gr.addColorStop(1,W.bg.c2); g.fillStyle=gr; }
     else g.fillStyle=W.bg.c1;
@@ -167,6 +187,7 @@ function coverRect(L,iw,ih){
   return { x:-L.w/2-(w-L.w)*(L.fx/100), y:-L.h/2-(h-L.h)*(L.fy/100), w:w, h:h, k:k };
 }
 function drawText(g,L){
+  if(L.arc) return drawArcText(g,L);
   var m=textMetrics(L), f=L.fx||{t:"none"}, a=(f.a||0)/100;
   g.font=fontStr(L); g.textBaseline="middle"; g.textAlign="left"; g.lineJoin="round";
   var y0=-m.h/2+m.lh/2;
@@ -264,6 +285,17 @@ function rrect(g,x,y,w,h,r,rev){
   r=Math.min(r||0,w/2,h/2);
   if(!rev){ g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
   else { g.moveTo(x+r,y); g.arcTo(x,y,x,y+h,r); g.arcTo(x,y+h,x+w,y+h,r); g.arcTo(x+w,y+h,x+w,y,r); g.arcTo(x+w,y,x,y,r); g.closePath(); }
+}
+
+function drawArcText(g,L){
+  var ag=arcGeom(L), f=L.fx||{t:"none"}, a=(f.a||0)/100;
+  g.font=fontStr(L); g.textBaseline="middle"; g.textAlign="center"; g.lineJoin="round";
+  function each(fn){ ag.chars.forEach(function(ch){ g.save(); g.translate(ch.x,ch.y); g.rotate(ch.r); fn(ch); g.restore(); }); }
+  function col(ch){ return f.t==="grad" ? mixHex(f.c,f.c2||L.color,ch.k) : L.color; }
+  if(f.t==="shadow"){ g.shadowColor=f.c; g.shadowOffsetX=g.shadowOffsetY=L.size*a*.12*SHADOW_K; g.shadowBlur=L.size*a*.04*SHADOW_K; }
+  if(f.t==="glow"){ g.shadowColor=f.c; g.shadowBlur=L.size*a*.6*SHADOW_K; each(function(ch){ g.fillStyle=col(ch); g.fillText(ch.c,0,0); }); }
+  if(f.t==="stroke"){ g.lineWidth=L.size*a*.25; g.strokeStyle=f.c; each(function(ch){ g.strokeText(ch.c,0,0); }); }
+  each(function(ch){ g.fillStyle=col(ch); g.fillText(ch.c,0,0); });
 }
 
 /* ─────────── попадание пальцем ─────────── */

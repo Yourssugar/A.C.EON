@@ -7,7 +7,7 @@
 <title>FORGE · графическая мастерская</title>
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700|inter:400,600,700,800|montserrat:400,600,700,800|rubik:400,500,700|nunito:400,600,800|comfortaa:500,700|oswald:500,700|lora:500,600,700|playfair-display:600,700,800|cormorant-garamond:500,600,700|pt-serif:400,700|jetbrains-mono:400,700&display=swap">
 <link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=2">
-<link rel="stylesheet" href="gfx.css?v=2">
+<link rel="stylesheet" href="gfx.css?v=3">
 </head>
 <body>
 
@@ -36,6 +36,7 @@
     <button class="ib" id="undo" title="Отменить (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
     <button class="ib" id="redo" title="Повторить (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
     <div class="seg zoomseg"><button id="zOut" title="Отдалить">&minus;</button><button id="zFit" class="on" title="Вписать в экран">100%</button><button id="zIn" title="Приблизить">+</button></div>
+    <button class="pri ret" id="retBtn" hidden title="Вернуть картинку в конструктор страниц">На страницу</button>
     <button class="pri" id="saveBtn">Сохранить</button>
   </header>
 
@@ -71,7 +72,7 @@
 
 <script src="../HTML-CSS-JS/engine.js?v=2"></script>
 <script src="lib/qrcode.js"></script>
-<script src="gfx-engine.js?v=2"></script>
-<script src="gfx.js?v=2"></script>
+<script src="gfx-engine.js?v=4"></script>
+<script src="gfx.js?v=4"></script>
 </body>
 </html>

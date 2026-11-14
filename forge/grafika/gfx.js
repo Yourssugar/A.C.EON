@@ -63,6 +63,10 @@ function paint(){
   var G=geom(); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height);
   g.save(); g.scale(dpr,dpr); g.shadowColor="rgba(0,0,0,.55)"; g.shadowBlur=30; g.shadowOffsetY=12; g.fillStyle="#000";
   if(W.round){ g.beginPath(); g.arc(G.l+W.w*G.s/2,G.t+W.h*G.s/2,W.w*G.s/2,0,Math.PI*2); g.fill(); } else g.fillRect(G.l,G.t,W.w*G.s,W.h*G.s); g.restore();
+  if(W.bg.t==="none"){ /* прозрачный фон: шахматка, как в редакторах картинок */
+    g.save(); g.scale(dpr,dpr); g.beginPath(); if(W.round) g.arc(G.l+W.w*G.s/2,G.t+W.h*G.s/2,W.w*G.s/2,0,Math.PI*2); else g.rect(G.l,G.t,W.w*G.s,W.h*G.s); g.clip();
+    g.fillStyle="#d9dde2"; g.fillRect(G.l,G.t,W.w*G.s,W.h*G.s); g.fillStyle="#ffffff"; var q=10;
+    for(var yy=0;yy<W.h*G.s;yy+=q) for(var xx=((yy/q)%2)*q;xx<W.w*G.s;xx+=q*2) g.fillRect(G.l+xx,G.t+yy,q,q); g.restore(); }
   drawWork(g,W,{ scale:G.s*dpr, ox:G.l*dpr, oy:G.t*dpr, clipRound:W.round });
   $("#zFit").textContent=Math.round(view.z*100)+"%";
 }
@@ -277,8 +281,8 @@ function paneCanvas(box){
     $$("input",n).forEach(function(i){ i.onchange=function(){ var w=Math.max(16,Math.min(8000,+$("#cW").value||W.w)), h=Math.max(16,Math.min(8000,+$("#cH").value||W.h)); resizeWork(w,h,"own",false); }; }); }));
   box.appendChild(el('<p class="note">При смене размера всё на холсте подстраивается пропорционально.</p>'));
   box.appendChild(el('<div class="sh">Фон</div>'));
-  box.appendChild(choice("",[["color","цвет"],["grad","градиент"]],W.bg.t,function(v){ remember(); W.bg.t=v; draw(); save(); refreshPane(); }));
-  box.appendChild(colorPick(W.bg.t==="grad"?"Первый цвет":"Цвет",W.bg.c1,function(v,live){ if(!live) remember(); W.bg.c1=v; draw(); save(); }));
+  box.appendChild(choice("",[["color","цвет"],["grad","градиент"],["none","прозрачный"]],W.bg.t,function(v){ remember(); W.bg.t=v; draw(); save(); refreshPane(); }));
+  if(W.bg.t!=="none") box.appendChild(colorPick(W.bg.t==="grad"?"Первый цвет":"Цвет",W.bg.c1,function(v,live){ if(!live) remember(); W.bg.c1=v; draw(); save(); }));
   if(W.bg.t==="grad"){ box.appendChild(colorPick("Второй цвет",W.bg.c2,function(v,live){ if(!live) remember(); W.bg.c2=v; draw(); save(); }));
     box.appendChild(range("Направление",W.bg.ang,0,360,15,"°",function(v){ remember("ang"); W.bg.ang=v; draw(); save(); })); }
   box.appendChild(el('<div class="row" style="margin-top:6px"><button class="btn">'+sv("img")+'Фото на весь холст</button></div>',function(n){ $("button",n).onclick=function(){ pickPhoto(false,function(a){
@@ -376,6 +380,10 @@ function inspText(L){
   fs.appendChild(choice("Выравнивание строк",[["left","слева"],["center","по центру"],["right","справа"]],L.align,function(v){ set(L,"align",v,false); }));
   fs.appendChild(range("Интервал между буквами",L.ls,-10,80,1,"",function(v){ set(L,"ls",v); }));
   fs.appendChild(range("Расстояние между строками",L.lh,.7,2.2,.05,"",function(v){ set(L,"lh",v); }));
+  fs.appendChild(el('<div class="sh" style="margin-top:14px">По дуге</div>'));
+  fs.appendChild(choice("",[["0","прямо"],["40","дуга вверх"],["-40","дуга вниз"],["100","по кругу"]],String(L.arc||0),function(v){ remember(); L.arc=Number(v); draw(); save(); refreshInsp(); }));
+  fs.appendChild(range("Изгиб",L.arc||0,-100,100,1,"",function(v){ set(L,"arc",v); }));
+  if(L.arc) fs.appendChild(el('<p class="note">По дуге текст идёт одной строкой. Для круглого штампа сделайте две надписи: одну дугой вверх, другую дугой вниз.</p>'));
   var cs=sec("Цвет"); cs.setAttribute("data-sec","color"); insp.appendChild(cs);
   cs.appendChild(colorPick("",L.color,function(v,live){ set(L,"color",v,live?undefined:false); draw(); }));
   var fx=sec("Эффекты"); fx.setAttribute("data-sec","fx"); insp.appendChild(fx);
@@ -547,7 +555,9 @@ $("#saveBtn").onclick=exportDlg;
 var EX={ type:"png", k:1, transparent:false, round:true };
 function exportDlg(){
   modal('<h3>Сохранить картинку</h3><div class="exp-pv" id="exPv"></div><div id="exOpts"></div><p class="note" id="exInfo" style="margin:8px 0 12px"></p>'+
-    '<div class="row"><button class="btn go" id="exGo">'+sv("down2")+'Сохранить</button>'+(navigator.canShare?'<button class="btn" id="exSh">'+sv("send")+'Поделиться</button>':'')+'</div><div class="row"><button class="btn" data-close>Закрыть</button></div>');
+    '<div class="row"><button class="btn go" id="exGo">'+sv("down2")+'Сохранить</button>'+(navigator.canShare?'<button class="btn" id="exSh">'+sv("send")+'Поделиться</button>':'')+'</div>'+
+    '<div class="row"><button class="btn" id="exPg">В конструктор страниц</button><button class="btn" data-close>Закрыть</button></div>');
+  $("#exPg").onclick=function(){ closeModal(); sendToPages(); };
   var o=$("#exOpts");
   o.appendChild(choice("Формат",[["png","PNG"],["jpg","JPG"],["webp","WebP"]],EX.type,function(v){ EX.type=v; if(v==="jpg") EX.transparent=false; upd(); }));
   o.appendChild(choice("Размер",[["0.5",(W.w/2|0)+" x "+(W.h/2|0)],["1",W.w+" x "+W.h],["2","x2 для печати"]],String(EX.k),function(v){ EX.k=Number(v); upd(); }));
@@ -569,6 +579,59 @@ function exportDlg(){
 }
 function fname(){ return (W.title||"image").trim().toLowerCase().replace(/[^\wа-яё]+/gi,"-").replace(/^-+|-+$/g,"").slice(0,40)||"image"; }
 function dl(blob,name){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); },3000); }
+
+/* ═══════════ связь с конструктором страниц (общая база страниц «forge», тот же сайт) ═══════════ */
+function pagesDb(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("forge",1); r.onupgradeneeded=function(){ r.result.createObjectStore("pages",{keyPath:"id"}); };
+  r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }catch(e){ rej(e); } }); }
+function pagesAll(){ return pagesDb().then(function(d){ return new Promise(function(res){ var q=d.transaction("pages").objectStore("pages").getAll(); q.onsuccess=function(){ res(q.result||[]); }; q.onerror=function(){ res([]); }; }); }); }
+function pagePut(p){ return pagesDb().then(function(d){ return new Promise(function(res,rej){ var t=d.transaction("pages","readwrite"); t.objectStore("pages").put(p); t.oncomplete=res; t.onerror=function(){ rej(t.error); }; }); }); }
+/* картинка для страницы: поменьше и полегче, как фото в конструкторе */
+function imageFor(max, target){
+  var k=Math.min(1,max/Math.max(W.w,W.h)), c=document.createElement("canvas"); c.width=Math.round(W.w*k); c.height=Math.round(W.h*k);
+  drawWork(c.getContext("2d"),W,{ scale:k, clipRound:W.round });
+  var type=webpOk?"image/webp":(W.round||W.bg.t==="none"?"image/png":"image/jpeg"), q=.9, url=c.toDataURL(type,q);
+  while(type!=="image/png" && url.length*.75>target && q>.45){ q-=.08; url=c.toDataURL(type,q); }
+  return url;
+}
+function sendToPages(){
+  if(ui.brush) endBrush();
+  pagesAll().then(function(list){
+    list.sort(function(a,b){ return (b.updated||0)-(a.updated||0); });
+    var pick=null, where=null;
+    modal('<h3>Отправить в конструктор страниц</h3><p class="note">Выберите страницу. Картинка сожмётся до размера, который нужен странице.</p>'+
+      '<div class="plist" id="pl"><button data-p=""><b>+ Новая страница</b><small>пустая</small></button>'+list.map(function(p){ return '<button data-p="'+esc(p.id)+'"><b>'+esc(p.title||"Страница")+'</b><small>'+(p.blocks||[]).length+' блоков</small></button>'; }).join("")+'</div>'+
+      '<div id="wh"></div><div class="row"><button class="btn" data-close>Отмена</button><button class="btn go" id="pgGo" disabled>Отправить</button></div>');
+    $$("#pl button").forEach(function(b){ b.onclick=function(){ $$("#pl button").forEach(function(x){ x.classList.toggle("on",x===b); });
+      var id=b.getAttribute("data-p"); pick=id?list.filter(function(p){ return p.id===id; })[0]:"new";
+      var hasProf=pick!=="new" && (pick.blocks||[]).some(function(x){ return x.type==="profile"; });
+      var opts=[["block","новым блоком «Фото»"],["bg","фоном страницы"]].concat(hasProf?[["avatar","фото в профиль"]]:[]);
+      where="block"; var w=$("#wh"); w.innerHTML=""; w.appendChild(choice("Куда",opts,where,function(v){ where=v; })); $("#pgGo").disabled=false; }; });
+    $("#pgGo").onclick=function(){
+      var p=pick==="new" ? fromTemplate("blank") : fixPage(JSON.parse(JSON.stringify(pick)));
+      if(pick==="new"){ p.id="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); p.title=W.title; }
+      if(where==="bg"){ p.bg.mode="photo"; p.bg.img=imageFor(1600,330000); p.bg.fit="cover"; }
+      else if(where==="avatar"){ var pr=p.blocks.filter(function(x){ return x.type==="profile"; })[0]; pr.c.img=imageFor(520,90000); }
+      else { var b=newBlock("image",nextUid(p)); b.c.img=imageFor(1400,330000); p.blocks.push(b); }
+      p.updated=Date.now(); save();
+      pagePut(p).then(function(){ closeModal(); toast("Отправлено, открываю страницу"); setTimeout(function(){ location.href="../HTML-CSS-JS/#"+p.id; },500); })
+        .catch(function(){ toast("Не получилось записать страницу"); });
+    };
+  }).catch(function(){ toast("Конструктор страниц недоступен в этом браузере"); });
+}
+/* картинка пришла из конструктора страниц: кнопка «На страницу» возвращает её обратно на то же место */
+$("#retBtn").onclick=function(){
+  var r=W.ret; if(!r) return; if(ui.brush) endBrush();
+  pagesAll().then(function(list){
+    var p=list.filter(function(x){ return x.id===r.pid; })[0]; if(!p){ toast("Эта страница уже удалена"); return; }
+    fixPage(p); var url=imageFor(r.max||1200, r.kind==="bg"?330000:(r.max<=600?90000:330000));
+    if(r.kind==="bg"){ p.bg.mode="photo"; p.bg.img=url; }
+    else { var b=null; p.blocks.forEach(function(x){ if(x.uid===r.uid) b=x; });
+      if(!b){ toast("Блок с этим фото на странице уже удалён"); return; }
+      if(r.kind==="item"){ if(b.c.L&&b.c.L[r.i]) b.c.L[r.i][r.key]=url; } else b.c[r.key]=url; }
+    p.updated=Date.now(); save();
+    return pagePut(p).then(function(){ toast("Готово, возвращаюсь на страницу"); setTimeout(function(){ location.href="../HTML-CSS-JS/#"+p.id; },500); });
+  }).catch(function(){ toast("Не получилось вернуть картинку"); });
+};
 
 /* ═══════════ окна, подсказки, клавиши ═══════════ */
 function modal(h){ $("#mbox").innerHTML=h; $("#modal").classList.add("on"); }
@@ -618,6 +681,7 @@ function ownSize(){ modal('<h3>Свой размер</h3><div class="two"><div c
 function create(w){ w.id=newId(); w.updated=Date.now(); w.thumb=""; dbPut(w).then(function(){ openWork(w); }).catch(function(){ openWork(w); }); }
 function openWork(w){
   W=w; if(!W.assets) W.assets={}; U=[]; Rd=[]; undoBtns(); sel=null; fit(); PROC_reset();
+  $("#retBtn").hidden=!W.ret; if(W.ret) $("#retBtn").title="Вернуть картинку на страницу «"+(W.ret.title||"")+"»";
   $("#home").hidden=true; $("#ed").hidden=false; document.title="FORGE · "+W.title; $("#title").value=W.title;
   try{ history.replaceState(null,"",location.pathname+"#"+W.id); }catch(e){}
   requestAnimationFrame(function(){ resize(); });

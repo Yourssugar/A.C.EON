@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e12">
+<title>FORGE · графическая мастерская</title>
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700|inter:400,600,700,800|montserrat:400,600,700,800|rubik:400,500,700|nunito:400,600,800|comfortaa:500,700|oswald:500,700|lora:500,600,700|playfair-display:600,700,800|cormorant-garamond:500,600,700|pt-serif:400,700|jetbrains-mono:400,700&display=swap">
+<link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=2">
+<link rel="stylesheet" href="gfx.css?v=1">
+</head>
+<body>
+
+<!-- ═══ Мои работы ═══ -->
+<section class="home" id="home" hidden>
+  <div class="hin">
+    <div class="kick"><a href="../">&larr; FORGE</a><span>/</span><span>графика</span><span style="margin-left:auto"></span><a href="../HTML-CSS-JS/">конструктор страниц &rarr;</a></div>
+    <h1>Графическая <b>мастерская</b></h1>
+    <p class="lead">Обложки, превью для YouTube, сторис, открытки и афиши. Всё двигается на холсте пальцем или мышкой и сохраняется картинкой нужного размера. Работы хранятся только в этом браузере.</p>
+    <h2>Мои работы</h2>
+    <div class="my" id="myWorks"></div>
+    <h2>Что делаем?</h2>
+    <div class="sizes" id="sizes"></div>
+    <h2>Шаблоны</h2>
+    <div id="tplWrap"></div>
+    <p class="foot">Перенести работу на другое устройство: в редакторе «Ещё» → «Сохранить проект в файл», на новом устройстве <button class="lnk" id="homeOpen">открыть файл проекта</button>.</p>
+  </div>
+</section>
+
+<!-- ═══ Редактор ═══ -->
+<section class="ed gx" id="ed" hidden>
+  <header class="bar">
+    <button class="ib" id="toHome" title="Мои работы"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input id="title" class="title" maxlength="80" aria-label="Название работы">
+    <span class="sp"></span>
+    <button class="ib" id="undo" title="Отменить (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+    <button class="ib" id="redo" title="Повторить (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+    <div class="seg zoomseg"><button id="zOut" title="Отдалить">&minus;</button><button id="zFit" class="on" title="Вписать в экран">100%</button><button id="zIn" title="Приблизить">+</button></div>
+    <button class="pri" id="saveBtn">Сохранить</button>
+  </header>
+
+  <aside class="left" id="left">
+    <nav class="tabs" id="tabs">
+      <button data-tab="add" class="plus"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Добавить</span></button>
+      <button data-tab="layers"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg><span>Слои</span></button>
+      <button data-tab="canvas"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg><span>Холст</span></button>
+      <button data-tab="tpl"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><span>Шаблоны</span></button>
+      <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+    </nav>
+    <div class="pane" id="pane"></div>
+  </aside>
+
+  <main class="stage gst" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="ov" id="ov"></div>
+    <div class="hint" id="hint">Нажмите на элемент, чтобы двигать его</div>
+    <div class="brushbar" id="brushbar" hidden></div>
+  </main>
+
+  <aside class="right" id="right">
+    <div class="sh-h"><span class="grip"></span><b id="shTitle"></b><button class="ib" id="shClose" title="Свернуть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="insp" id="insp"></div>
+  </aside>
+</section>
+
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fJson" accept=".json,application/json" hidden>
+<input type="file" id="fImg" accept="image/*" hidden>
+<input type="file" id="fCam" accept="image/*" capture="environment" hidden>
+
+<script src="../HTML-CSS-JS/engine.js?v=2"></script>
+<script src="gfx-engine.js?v=1"></script>
+<script src="gfx.js?v=1"></script>
+</body>
+</html>

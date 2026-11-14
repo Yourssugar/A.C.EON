@@ -278,13 +278,15 @@
     #sect-lbl.on { opacity:1; }
     #sect-lbl img { width:40px; height:40px; filter:drop-shadow(0 0 6px var(--sc,#fbe3c4)); }
     #warp-line {
-      position:fixed; left:50%; top:46%; transform:translate(-50%,-50%);
-      z-index:220; font-size:10px; letter-spacing:6px; color:#4DAFFF;
-      text-shadow:0 0 14px rgba(77,175,255,.6);
-      opacity:0; pointer-events:none; transition:opacity .4s; white-space:nowrap;
+      position:fixed; left:50%; top:82%; transform:translate(-50%,-50%);
+      z-index:220; font-size:11px; letter-spacing:7px; color:#e4f2ff;
+      text-shadow:0 0 14px rgba(120,190,255,.7);
+      opacity:0; pointer-events:none; transition:opacity .8s; white-space:nowrap;
     }
-    #warp-line.on { opacity:1; animation:warpPulse .5s ease-in-out infinite; }
-    @keyframes warpPulse { 0%,100%{opacity:.55} 50%{opacity:1} }
+    #warp-line.on { opacity:1; animation:warpPulse 1.6s ease-in-out infinite; }
+    #stage.trvout { opacity:0; transition:opacity .5s ease; animation:none; }
+    body.trvon .lag-ghost, body.trvon #sect-lbl, body.trvon #sigbroken { opacity:0 !important; transition:opacity .4s; }
+    @keyframes warpPulse { 0%,100%{opacity:.6} 50%{opacity:1} }
 
     /* U-1: вечные CSS-анимации выключены, остаются статичные тени */
     body.fx1 #stage { animation:none; }
@@ -853,6 +855,7 @@
     'uniform vec3 uMP; uniform vec4 uRip[4]; uniform vec2 uScan; uniform float uZoom; uniform vec3 uTx;',
     /* эффекты слов: A = холод (VOID), коллапс (NULL), лёд (STASIS), тьма (DARK); B = синусоида (440), отказ, фонарик x,y */
     'uniform vec4 uFxA; uniform vec4 uFxB;',
+    'uniform vec4 uTrv;',   /* переход: смешение с полётом, фаза зума, свет в конце, затемнение */
     'uniform vec3 uIris;',
     'const float PI=3.14159265;',
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
@@ -869,6 +872,25 @@
     '  c+=s2.rgb*pow(s2.a,4.0)*0.5;',
     '  vec4 s3=texture2D(uStars,fract(q/vec2(760.0,428.0)/uZoom+uPar*0.017+0.61));',
     '  c+=s3.rgb*pow(s3.a,2.0)*0.55;',
+    '  return c;',
+    '}',
+    /* полёт при переходе: бесконечный зум сквозь картины неба, следующая растёт из центра и сменяет текущую */
+    /* туннель: стены из туманностей картины (их цветное кольцо), бегут навстречу, картины перетекают одна в другую */
+    'vec3 trav(vec2 p){',
+    '  vec2 d=(p-uC)/uRes.y; float r=length(d)+0.001;',
+    '  float a=atan(d.y,d.x)+uTime*0.12;',
+    '  vec2 dir=vec2(cos(a),sin(a));',
+    '  vec3 ca=vec3(0.0), cb=vec3(0.0);',
+    '  for(int i=0;i<4;i++){',
+    '    float v=0.16/r+uTime*0.9-float(i)*0.012;',
+    '    float rr=0.28+0.2*abs(fract(v*0.5)*2.0-1.0);',
+    '    ca+=texture2D(uSkyA,0.5+dir*rr).rgb; cb+=texture2D(uSkyB,0.5+dir*rr).rgb;',
+    '  }',
+    '  float m=smoothstep(0.0,1.0,uTrv.y);',
+    '  vec3 c=mix(ca,cb,m)*0.25*1.4;',
+    '  c*=smoothstep(0.0,0.26,r);',
+    '  c+=vec3(1.0,0.93,0.82)*exp(-r*13.0)*0.8;',
+    '  c*=smoothstep(1.25,0.5,r)*0.4+0.6;',
     '  return c;',
     '}',
     'vec3 heatc(vec3 t,float v){',
@@ -980,6 +1002,9 @@
     '    float dl0=abs(p.y-y0); col+=vec3(0.55,0.85,1.0)*(exp(-dl0*dl0/2.0)*1.3+exp(-dl0*dl0/90.0)*0.25)*uFxB.x; }',
     /* отказ: кольцо вспыхивает красным */
     '  col+=vec3(1.0,0.12,0.18)*ring*uFxB.y*1.6;',
+    '  if(uTrv.x>0.001)col=mix(col,trav(p),uTrv.x);',
+    '  col*=1.0-uTrv.w*0.4*(1.0-uTrv.x);',
+    '  col=mix(col,vec3(1.0,0.96,0.9)*1.15,uTrv.z*exp(-length(p-uC)/(uRes.y*(0.08+uTrv.z*1.4))));',
     '  col*=1.12;',
     '  col=(col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);',   /* ACES: ярко, но белое не выжигается */
     '  float lm=dot(col,vec3(0.2126,0.7152,0.0722)); col=max(mix(vec3(lm),col,1.22),0.0);',
@@ -1160,6 +1185,7 @@
     im.src='home/u/sky/'+name+'.webp?v=1';
   }
   function skyStep(dt){
+    if(TRV.on)return;
     if(SKY.fading){
       SKY.mix=Math.min(1,SKY.mix+dt/6);
       if(SKY.mix>=1){ var t=SKY.a; SKY.a=SKY.b; SKY.b=t; SKY.imA=SKY.imB; SKY.cur=SKY.next; SKY.mix=0; SKY.fading=false; SKY.at=tGlobal; }
@@ -1380,7 +1406,7 @@
     var gdt=dt*spd; gt+=gdt;
     if(!GR.nodes.length||GR.built!==PRO.id)buildGraph();
     var N=GR.nodes, cx=W*.5, cy=H*.46, R=GR.cr=Math.min(W,H)*(W<H?.12:.135);
-    var warpAmt=VX.warp?Math.min((VX.g-VX.base)/8,1):0;
+    var warpAmt=warpK();
     var coll=Math.max(0,Math.min(1,(VX.g/VX.base-3)/10))*.75;
     var rev=VX.rev?1:0; GR.revA=(GR.revA||0)+(rev-(GR.revA||0))*Math.min(1,dt*2);
     var birth=ss(.7,1,born);
@@ -1598,7 +1624,7 @@
 
   var mS={x:-999,y:-999},mAmt=0;
   function glRender(dt,still){
-    var warpAmt=VX.warp?Math.min((VX.g-VX.base)/8,1):0;
+    var warpAmt=warpK();
     var fa=still?1:1-Math.pow(1-(VX.warp?.09:.26),Math.min(dt,.05)*60);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,TG.trail.fb);
@@ -1669,6 +1695,7 @@
     gl.uniform1f(U(fp,'uTime'),tGlobal);
     gl.uniform1f(U(fp,'uRot'),diskRot);
     gl.uniform1f(U(fp,'uWarp'),warpAmt);
+    gl.uniform4f(U(fp,'uTrv'),TRV.k,TRV.ph,TRV.e,TRV.dim);
     gl.uniform1f(U(fp,'uRed'),VX.red);
     gl.uniform1f(U(fp,'uJetI'),jetI*Math.min(1,born*1.5));
     gl.uniform1f(U(fp,'uBorn'),born);
@@ -1926,7 +1953,8 @@
       requestAnimationFrame(frame);
       return;
     }
-    simT+=dt*VX.g*(VX.rev?-1:1)*(VX.warp?2.6:1);
+    simT+=dt*VX.g*(VX.rev?-1:1)*(VX.warp?(glOK?1.4:2.6):1);
+    trvStep(dt);
     var kf=Math.min(1,dt*10);
     if(mS.x<-900){ mS.x=mPix.x; mS.y=mPix.y; }
     mS.x+=(mPix.x-mS.x)*kf; mS.y+=(mPix.y-mS.y)*kf;
@@ -1944,8 +1972,56 @@
   var warpLine=document.getElementById('warp-line');
   var blackout=document.getElementById('blackout');
   function wT(fn,ms){ warpTimers.push(setTimeout(fn,ms)); }
+  /* переход в раздел (WebGL): экран темнеет, камера ныряет в дыру, дальше полёт сквозь картины неба,
+     они перетекают одна в другую. Не меньше 2.6 с и пока раздел не загрузится, затем свет впереди
+     и раздел проявляется. Без WebGL остаётся прежний переход */
+  var TRV={on:false,t:0,z:0,k:0,ph:0,e:0,dim:0,done:false,opened:false,href:'',q:[]};
+  function warpK(){ return !VX.warp?0:(TRV.on?TRV.z:Math.min((VX.g-VX.base)/8,1)); }
+  function trvPreload(){
+    var gs=['night','dawn','day','dusk','eve'];
+    TRV.q=[0,1,2].map(function(){ var im=new Image(); im.decoding='async';
+      im.src='home/u/sky/'+gs[Math.random()*5|0]+'_'+('0'+(1+Math.random()*10|0)).slice(-2)+'.webp?v=1'; return im; });
+    TRV.qi=0;
+    var first=TRV.q[0];
+    first.onload=function(){ if(TRV.on&&gl&&!TRV.bOk){ TRV.bOk=true; skyUpload(SKY.b,first); } };
+  }
+  function trvSwap(){
+    var t=SKY.a; SKY.a=SKY.b; SKY.b=t;
+    TRV.qi++;
+    var im=TRV.q[TRV.qi%TRV.q.length];
+    if(im&&im.complete&&im.naturalWidth&&gl)skyUpload(SKY.b,im);
+  }
+  function trvStep(dt){
+    if(!TRV.on)return;
+    TRV.t+=dt; var t=TRV.t;
+    TRV.dim=ss(0,.45,t); TRV.z=ss(.15,1.3,t); TRV.k=ss(.8,1.45,t);
+    if(TRV.k>0){ TRV.ph+=dt/2.1; if(TRV.ph>=1){ TRV.ph-=1; trvSwap(); } }
+    if(t>.9&&!TRV.lbl){ TRV.lbl=true; warpLine.classList.add('on'); }
+    if(!TRV.done&&t>=2.6&&portalReadyF){ TRV.done=true; TRV.endT=t; }
+    if(TRV.done){ TRV.e=ss(0,.55,t-TRV.endT); if(t-TRV.endT>=.55&&!TRV.opened){ TRV.opened=true; openPortal(TRV.href); } }
+    if(!TRV.done&&t>7){ TRV.on=false; window.location.href=TRV.href; }
+  }
+  function trvReset(){
+    var was=TRV.on||TRV.opened;
+    TRV.on=false; TRV.t=0; TRV.z=TRV.k=TRV.e=TRV.dim=TRV.ph=0; TRV.done=TRV.opened=TRV.lbl=TRV.bOk=false;
+    document.getElementById('stage').classList.remove('trvout'); document.body.classList.remove('trvon');
+    if(was&&glOK&&SKY.cur){ SKY.grp=skyGroup(); skyLoad(skyPick(SKY.grp),false); }
+  }
   function goVortex(href,label){
-    if(warping||portalOpen||reduceMotion)return; warping=true;
+    if(warping||portalOpen||reduceMotion)return;
+    if(glOK&&gl){
+      warping=true;
+      VX.warp=true; VX.target=2*VX.base;
+      rumble(2.6);
+      TRV.on=true; TRV.t=0; TRV.href=href; SKY.fading=false; SKY.mix=0;
+      trvPreload();
+      document.getElementById('stage').classList.add('trvout'); document.body.classList.add('trvon');
+      ['hud','hud-l','sb','mdock'].forEach(function(id){ document.getElementById(id).classList.add('fadeout'); });
+      spawnPortalFrame(href);
+      warpLine.textContent=label||'ENTERING SIGNAL';
+      return;
+    }
+    warping=true;
     VX.warp=true; VX.target=9*VX.base;
     rumble(2.25);
     spiralLetters();
@@ -2157,6 +2233,7 @@
   /* полный сброс сцены (возврат назад, bfcache) */
   function hardReset(){
     warpTimers.forEach(clearTimeout); warpTimers=[];
+    trvReset();
     warping=false; VX.warp=false; VX.rev=false;
     VX.target=VX.base; VX.g=VX.base; VX.red=0; VX.redT=0; VX.idle=1;
     var stage=document.getElementById('stage');
@@ -2242,7 +2319,7 @@
     var pool=lagPool(), phrase=pool[Math.random()*pool.length|0];
     var hint=hintFor(), keep=[-1,-1];
     if(hint){ phrase=T('hint.'+hint); var hi=phrase.indexOf(hint); keep=[hi,hi+hint.length]; }
-    var el=document.createElement('div');
+    var el=document.createElement('div'); el.className='lag-ghost';
     var vw=window.innerWidth,vh=window.innerHeight,x,y,tries=0;
     var pw=Math.min(vw-40,phrase.length*10.5+40);   /* верхняя полоса занята HUD, её обходим */
     do{x=Math.random()*Math.max(1,vw-pw-20)+20;y=Math.random()*Math.max(1,vh-200)+120;tries++;}

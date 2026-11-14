@@ -2606,6 +2606,15 @@
   }
   function denyText(){ return (TA('auth.deny')[denyIdx]||'').replace('{n}',String(denyN)); }
   pwb.onclick=tryPass;
+  /* повтор слова со страницы INFO: только для слов-кодов, само слово вводится в терминал как обычно */
+  function runHashCode(){
+    var m=location.hash.match(/^#code=([^&]+)/); if(!m)return;
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    var w=''; try{ w=decodeURIComponent(m[1]).toUpperCase(); }catch(e){ return; }
+    var b; try{ b=btoa(w); }catch(e){ return; }
+    if(!CODE_B64[b]||warping||portalOpen)return;
+    pwi.focus(); pwi.value=w; tryPass();
+  }
   pwi.addEventListener('keydown',function(e){ if(e.key==='Enter')tryPass(); });
 
   /* кнопки переходов */
@@ -2907,6 +2916,8 @@
       setTimeout(function(){el.classList.add('on');},300+k*450);
     });
     setTimeout(runScan,1400);
+    /* пришли со страницы INFO повторить найденное слово: #code=СЛОВО */
+    if(/^#code=/.test(location.hash)){ bootBreach=null; setTimeout(runHashCode,2200); }
     /* сообщение при входе приходит, когда вселенная уже на экране */
     if(bootBreach){
       var b=bootBreach; bootBreach=null;

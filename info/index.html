@@ -1,609 +1,863 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>A.C.EON — PUBLIC ARCHIVE</title>
+<title>A.C.EON · INFO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#030404;
-  --cy:#00b8cc; --cy-d:#005a66; --cy-g:rgba(0,184,204,.45);
-  --rd:#cc0022;
-  --gr:#00cc66; --gr-d:#004422; --gr-g:rgba(0,204,102,.5);
-  --txt:#dfe8e8; --txt-d:#8a9999; --txt-dd:#445050; --bdr:#1a2626;
+  --txt:#eef2ff; --dim:#a9b3d6; --dim2:#7480a8;
+  --glass:rgba(10,14,32,.58); --edge:rgba(160,180,255,.14);
+  --acc:#40dcff; --acc2:#ffb35c;
+  --games:#FF8040; --music:#A06EFF; --studio:#FFC83C; --tools:#32DCFF; --learn:#6EFA8C; --people:#FF50AF;
+  --r:22px;
 }
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body{background:var(--bg);color:var(--txt);font-family:'JetBrains Mono',monospace;overflow-x:hidden;}
-body{min-height:100vh;}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{background:#05070f;color:var(--txt);font-family:'Manrope',system-ui,sans-serif;overflow-x:hidden}
+body{min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+::selection{background:rgba(64,220,255,.35)}
 
-/* ══════════════════════════════════════
-   SPLASH
-══════════════════════════════════════ */
-#splash{
-  position:fixed;inset:0;z-index:200;
-  background:var(--bg);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  cursor:pointer;
-  transition:transform 1.15s cubic-bezier(.75,0,.25,1), opacity .5s ease .6s;
-}
-#splash.gone{transform:translateY(-105%);opacity:0;pointer-events:none;}
+/* фон: то же небо, что на главной, по времени суток; медленно дышит */
+#sky{position:fixed;inset:-4%;z-index:0;background:#05070f center/cover no-repeat;opacity:0;transition:opacity 1.6s ease;
+  animation:skyDrift 70s ease-in-out infinite alternate}
+#sky.on{opacity:1}
+@keyframes skyDrift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.08) translate(-1.5%,1%)}}
+#shade{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse 80% 70% at 50% 30%,rgba(5,7,15,.35),rgba(5,7,15,.82) 75%),linear-gradient(180deg,rgba(5,7,15,.15),rgba(5,7,15,.55))}
 
-/* scanlines */
-.sp-scan{position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,184,204,.013) 3px,rgba(0,0,0,0) 4px);}
-/* corner brackets */
-.sp-c{position:absolute;width:30px;height:30px;pointer-events:none;}
-.sp-c.tl{top:22px;left:22px;border-top:1.5px solid var(--cy-d);border-left:1.5px solid var(--cy-d);}
-.sp-c.tr{top:22px;right:22px;border-top:1.5px solid var(--cy-d);border-right:1.5px solid var(--cy-d);}
-.sp-c.bl{bottom:22px;left:22px;border-bottom:1.5px solid var(--cy-d);border-left:1.5px solid var(--cy-d);}
-.sp-c.br{bottom:22px;right:22px;border-bottom:1.5px solid var(--cy-d);border-right:1.5px solid var(--cy-d);}
+.wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:22px 22px 80px}
 
-/* horizontal dashes top/bottom */
-.sp-dash{position:absolute;left:50%;transform:translateX(-50%);
-  font-size:9px;letter-spacing:4px;color:var(--cy-d);white-space:nowrap;}
-.sp-dash.top{top:26px;}
-.sp-dash.bot{bottom:26px;}
+/* верх: назад и навигация пилюлями */
+.top{position:sticky;top:12px;z-index:10;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px;border-radius:999px;background:rgba(8,11,26,.62);border:1px solid var(--edge);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;text-decoration:none;
+  font:600 12px/1 'Manrope',sans-serif;letter-spacing:.06em;color:var(--dim);border:1px solid transparent;
+  transition:color .2s,background .2s,border-color .2s;white-space:nowrap;cursor:pointer;background:none}
+.pill:hover{color:#fff;background:rgba(255,255,255,.06)}
+.pill.back{color:#fff;background:rgba(64,220,255,.12);border-color:rgba(64,220,255,.35)}
+.pill.back:hover{background:rgba(64,220,255,.22)}
+.nav{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
 
-.sp-body{
-  text-align:center;position:relative;z-index:1;
-  max-width:720px;padding:20px 28px;
-  animation:spIn .8s ease both;
-}
-@keyframes spIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+/* герой */
+.hero{text-align:center;padding:70px 10px 40px}
+.kicker{font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.4em;color:var(--acc);text-transform:uppercase}
+.h1{font:700 clamp(44px,8.5vw,96px)/1 'Rajdhani',sans-serif;letter-spacing:.12em;margin-top:18px;color:#fff;
+  text-shadow:-1px 0 rgba(255,60,130,.55),1px 0 rgba(60,220,255,.55),0 0 34px rgba(110,190,255,.35)}
+.h1x{font:600 clamp(16px,2.6vw,26px)/1.2 'Rajdhani',sans-serif;letter-spacing:.32em;margin-top:14px;color:#cfe6ff}
+.h1x b{font-weight:700;color:#fff;text-shadow:0 0 16px rgba(60,220,255,.45)}
+.lead{max-width:640px;margin:26px auto 0;font-size:clamp(15px,1.7vw,18px);line-height:1.75;color:#d7def5}
 
-.sp-eyebrow{
-  font-size:10px;letter-spacing:6px;color:var(--cy-d);
-  margin-bottom:28px;animation:flicker 5s infinite;
-}
-@keyframes flicker{0%,92%,100%{opacity:1;}93%{opacity:.25;}94%{opacity:1;}95%{opacity:.15;}96%{opacity:1;}}
+/* блоки */
+section{margin-top:64px;scroll-margin-top:90px}
+.sh{font:700 clamp(24px,3.4vw,34px)/1.1 'Rajdhani',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#fff;display:flex;align-items:center;gap:14px}
+.sh::before{content:'';width:12px;height:12px;border-radius:50%;background:var(--c,var(--acc));box-shadow:0 0 14px var(--c,var(--acc))}
+.ss{margin-top:10px;color:var(--dim);font-size:15px;line-height:1.7;max-width:720px}
 
-/* Big glitch title (same logic as main page) */
-.sp-title{
-  font-family:'Rajdhani',sans-serif;font-weight:700;
-  font-size:clamp(56px,14vw,130px);
-  letter-spacing:16px;color:#f4f4f4;
-  position:relative;display:inline-block;line-height:1;
-  text-shadow:0 0 50px rgba(0,184,204,.22);
-}
-.sp-title::before,.sp-title::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;}
-.sp-title::before{color:var(--rd);clip-path:inset(0 0 58% 0);animation:gA 5s infinite linear;}
-.sp-title::after{color:var(--cy);clip-path:inset(54% 0 0 0);animation:gB 5s infinite linear;}
-@keyframes gA{0%,88%,100%{transform:translate(0);opacity:0;}89%{transform:translate(-5px,-2px);opacity:.9;}91%{transform:translate(3px,1px);opacity:.9;}93%{opacity:0;}}
-@keyframes gB{0%,88%,100%{transform:translate(0);opacity:0;}89%{transform:translate(5px,2px);opacity:.9;}91%{transform:translate(-3px,-1px);opacity:.9;}93%{opacity:0;}}
+.glass{background:var(--glass);border:1px solid var(--edge);border-radius:var(--r);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 18px 50px -24px rgba(0,0,0,.7)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.card{padding:28px 30px;position:relative;overflow:hidden}
+.card::after{content:'';position:absolute;width:260px;height:260px;right:-90px;top:-110px;border-radius:50%;
+  background:radial-gradient(circle,var(--c,rgba(64,220,255,.5)),transparent 70%);opacity:.22;pointer-events:none}
+.card h3{font:700 24px/1.1 'Rajdhani',sans-serif;letter-spacing:.1em;color:#fff;display:flex;align-items:center;gap:12px}
+.card h3 svg{width:28px;height:28px;flex:none;stroke:var(--c);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px var(--c))}
+.tag{display:inline-block;margin-top:10px;padding:5px 12px;border-radius:999px;font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;
+  color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+.card p{margin-top:14px;font-size:15px;line-height:1.75;color:#dce3f7}
+.card p.dim{color:var(--dim)}
+.btn{display:inline-flex;align-items:center;gap:10px;margin-top:18px;padding:12px 22px;border-radius:999px;text-decoration:none;
+  font:700 13px/1 'Manrope',sans-serif;letter-spacing:.06em;color:#fff;background:color-mix(in srgb,var(--c,#40dcff) 22%,transparent);
+  border:1px solid color-mix(in srgb,var(--c,#40dcff) 55%,transparent);transition:transform .2s,background .2s,box-shadow .2s;cursor:pointer}
+.btn:hover{transform:translateY(-2px);background:color-mix(in srgb,var(--c,#40dcff) 34%,transparent);box-shadow:0 0 24px -6px var(--c,#40dcff)}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-.sp-presents{
-  margin-top:12px;
-  font-size:11px;letter-spacing:8px;color:var(--txt-d);
-}
-.sp-presents span{color:var(--cy);}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{padding:7px 14px;border-radius:999px;font:600 12px/1 'Manrope',sans-serif;color:#fff;
+  background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
 
-.sp-divider{
-  margin:22px auto;width:180px;height:1px;
-  background:linear-gradient(90deg,transparent,var(--cy-d),transparent);
-}
+/* карта сайта: сектор = скруглённая карточка, страницы = пилюли-строки */
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px;margin-top:24px}
+.sec{padding:22px 22px 18px;--c:#40dcff}
+.sec-h{display:flex;align-items:center;gap:14px}
+.orb{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 70%,#fff 10%),color-mix(in srgb,var(--c) 30%,#05070f) 70%);
+  box-shadow:0 0 22px -2px var(--c),inset 0 0 12px rgba(0,0,0,.4)}
+.orb svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sec-n{font:700 20px/1 'Rajdhani',sans-serif;letter-spacing:.14em;color:#fff}
+.sec-d{font-size:13px;color:var(--dim);margin-top:5px}
+.sec-c{margin-left:auto;font:600 11px/1 'JetBrains Mono',monospace;color:var(--c);white-space:nowrap}
+.pages{list-style:none;margin-top:16px;display:grid;gap:8px}
+.pg{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;text-decoration:none;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);transition:background .2s,border-color .2s,transform .2s}
+a.pg:hover{background:color-mix(in srgb,var(--c) 16%,transparent);border-color:color-mix(in srgb,var(--c) 45%,transparent);transform:translateX(3px)}
+.pg.off{opacity:.45}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--c);box-shadow:0 0 8px var(--c)}
+.pg.seen .dot{background:transparent;border:2px solid var(--c);box-shadow:none}
+.pg-t{flex:1;min-width:0}
+.pg-n{font:700 15px/1.2 'Manrope',sans-serif;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pg-s{font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.45}
+.st{font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;padding:4px 8px;border-radius:999px;white-space:nowrap}
+.st.beta{color:#ffd77a;background:rgba(255,200,60,.12)} .st.dev{color:#ffb070;background:rgba(255,128,64,.12)} .st.soon{color:#9aa3c8;background:rgba(255,255,255,.06)}
+.new{font:700 10px/1 'JetBrains Mono',monospace;color:#05070f;background:var(--c);padding:3px 7px;border-radius:999px}
+.ext{width:14px;height:14px;stroke:var(--dim);fill:none;stroke-width:2;flex:none}
 
-.sp-tagline{
-  font-family:'Rajdhani',sans-serif;font-weight:500;
-  font-size:clamp(16px,3.5vw,26px);
-  letter-spacing:5px;color:rgba(223,232,232,.55);
-  line-height:1.6;
-}
-.sp-sub{
-  margin-top:14px;font-size:11px;letter-spacing:2px;
-  color:var(--txt-dd);line-height:2;
-}
+/* найдено: слова-коды круглыми жетонами */
+.codes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;margin-top:24px}
+.code{aspect-ratio:1;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;
+  position:relative;transition:transform .25s}
+.code.lock{background:radial-gradient(circle,rgba(255,255,255,.04),rgba(255,255,255,.015) 70%);border:1px dashed rgba(160,180,255,.22)}
+.code.lock .cw{font:700 26px/1 'Rajdhani',sans-serif;color:#566089;letter-spacing:.2em}
+.code.lock .cd{color:#5c6890}
+.code.got{background:radial-gradient(circle at 40% 35%,color-mix(in srgb,var(--c) 34%,transparent),rgba(8,10,24,.75) 72%);
+  border:1px solid color-mix(in srgb,var(--c) 60%,transparent);box-shadow:0 0 30px -8px var(--c),inset 0 0 22px -8px var(--c)}
+.code.got:hover{transform:scale(1.04)}
+.code.got::before{content:'';position:absolute;inset:-7px;border-radius:50%;border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+  animation:spinRing 18s linear infinite;border-top-color:var(--c)}
+@keyframes spinRing{to{transform:rotate(360deg)}}
+.cw{font:700 24px/1 'Rajdhani',sans-serif;letter-spacing:.16em;color:#fff;text-shadow:0 0 14px var(--c)}
+.cd{font-size:11.5px;line-height:1.4;color:#dce3f7;margin-top:8px;max-width:120px}
+.cgo{margin-top:10px;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:var(--c);text-decoration:none;padding:5px 9px;border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.cgo:hover{background:color-mix(in srgb,var(--c) 20%,transparent)}
+.prog{display:flex;align-items:center;gap:14px;margin-top:18px}
+.bar{flex:1;max-width:340px;height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#40dcff,#a06eff,#ff50af);width:0;transition:width 1.2s ease}
+.prog b{font:600 12px/1 'JetBrains Mono',monospace;color:var(--dim)}
+.empty{margin-top:18px;padding:22px 26px;display:flex;gap:18px;align-items:center}
+.empty svg{width:40px;height:40px;flex:none;stroke:#8f9bd0;fill:none;stroke-width:1.4;opacity:.8}
+.empty p{color:var(--dim);font-size:14.5px;line-height:1.7}
 
-.sp-skip{
-  position:absolute;bottom:30px;
-  font-size:9px;letter-spacing:4px;color:var(--txt-dd);
-  animation:blink 1.4s steps(1) infinite;
-}
-@keyframes blink{50%{opacity:0;}}
+/* кофе */
+.coffee{display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;padding:34px 36px;--c:#ffb35c;margin-top:22px}
+.cup{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 40% 35%,rgba(255,179,92,.35),rgba(255,120,60,.06) 70%);box-shadow:0 0 50px -10px rgba(255,170,80,.6)}
+.cup svg{width:78px;height:78px;stroke:#ffd9a8;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.steam{animation:steam 3s ease-in-out infinite;transform-origin:center}
+.steam:nth-child(2){animation-delay:.6s}.steam:nth-child(3){animation-delay:1.2s}
+@keyframes steam{0%,100%{opacity:.25;transform:translateY(2px)}50%{opacity:.9;transform:translateY(-3px)}}
+.coffee h3{font:700 clamp(22px,3vw,30px)/1.1 'Rajdhani',sans-serif;letter-spacing:.1em;color:#fff}
+.coffee p{margin-top:12px;color:#dce3f7;font-size:15px;line-height:1.75}
+.amts{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;align-items:center}
+.amt{padding:11px 18px;border-radius:999px;font:700 15px/1 'Manrope',sans-serif;color:#fff;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);transition:all .2s}
+.amt small{font-weight:500;color:var(--dim);margin-left:6px;font-size:11px}
+.amt:hover{border-color:rgba(255,179,92,.6)}
+.amt.on{background:rgba(255,179,92,.22);border-color:#ffb35c;box-shadow:0 0 18px -6px #ffb35c}
+.own{display:none;align-items:center;gap:6px;padding:6px 8px 6px 16px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,179,92,.6)}
+.own.on{display:inline-flex}
+.own input{width:70px;background:none;border:0;outline:0;color:#fff;font:700 15px 'Manrope',sans-serif}
+.pay{display:inline-flex;align-items:center;gap:12px;margin-top:22px;padding:15px 28px;border-radius:999px;border:0;cursor:pointer;text-decoration:none;
+  font:800 15px/1 'Manrope',sans-serif;letter-spacing:.03em;color:#0b1a3a;background:linear-gradient(180deg,#ffd46a,#ffb547);
+  box-shadow:0 10px 30px -10px rgba(255,180,70,.8);transition:transform .2s,box-shadow .2s}
+.pay:hover{transform:translateY(-2px);box-shadow:0 16px 36px -10px rgba(255,180,70,.95)}
+.pay.disabled{filter:grayscale(.7);opacity:.6;cursor:default;transform:none}
+.pay b{color:#003087} .pay i{font-style:italic;font-weight:800;color:#009cde}
+.note{margin-top:12px;font-size:12.5px;color:var(--dim2)}
 
-/* progress bar at bottom */
-.sp-bar{
-  position:absolute;bottom:0;left:0;height:1.5px;
-  background:linear-gradient(90deg,transparent,var(--cy-d) 20%,var(--cy) 60%,var(--cy-d) 80%,transparent);
-  width:0%;transition:width linear;
-}
+.small{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.small .card{padding:22px 26px}
+.small h3{font-size:19px}
+.small p{font-size:14px}
+footer{margin-top:70px;text-align:center;font:600 11px/1.8 'JetBrains Mono',monospace;letter-spacing:.24em;color:var(--dim2)}
 
-/* ══════════════════════════════════════
-   BACKGROUND CANVAS + OVERLAY
-══════════════════════════════════════ */
-#bgcv{position:fixed;inset:0;z-index:0;}
-.overlay{position:fixed;inset:0;z-index:1;pointer-events:none;
-  background:
-    repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,255,200,.011) 3px,rgba(0,0,0,0) 4px),
-    radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.72) 100%);
-}
-
-/* ══════════════════════════════════════
-   WRAP / MAIN CONTENT
-══════════════════════════════════════ */
-.wrap{
-  position:relative;z-index:2;
-  max-width:1100px;margin:0 auto;padding:40px 24px 100px;
-  opacity:0;transition:opacity .75s ease;
-}
-.wrap.show{opacity:1;}
-
-.back-link{
-  display:inline-flex;align-items:center;gap:7px;
-  font-size:10px;letter-spacing:3px;color:var(--txt-d);
-  text-decoration:none;margin-bottom:40px;
-  transition:color .15s;
-}
-.back-link:hover{color:var(--cy);}
-
-/* HEADER */
-header{text-align:center;margin-bottom:64px;}
-.eyebrow{font-size:10px;letter-spacing:6px;color:var(--cy-d);margin-bottom:16px;animation:flicker 5s infinite;}
-
-.glitch-title{
-  font-family:'Rajdhani',sans-serif;font-weight:700;
-  font-size:clamp(44px,11vw,100px);
-  letter-spacing:14px;color:#f4f4f4;
-  position:relative;display:inline-block;line-height:1;
-  text-shadow:0 0 40px rgba(0,184,204,.2);
-}
-.glitch-title::before,.glitch-title::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;}
-.glitch-title::before{color:var(--rd);clip-path:inset(0 0 60% 0);animation:gA 6s infinite linear;}
-.glitch-title::after{color:var(--cy);clip-path:inset(55% 0 0 0);animation:gB 6s infinite linear;}
-
-.subtitle{margin-top:18px;font-size:12px;letter-spacing:5px;color:var(--txt-d);}
-.subtitle span{color:var(--cy);}
-.typecur{display:inline-block;width:8px;background:var(--cy);height:13px;
-  vertical-align:-2px;animation:blink 1s steps(1) infinite;margin-left:4px;}
-
-.hr-fade{height:1px;width:55%;margin:32px auto 0;
-  background:linear-gradient(90deg,transparent,var(--bdr) 30%,var(--bdr) 70%,transparent);}
-
-/* SECTION BLOCKS */
-.sec-block{margin-bottom:72px;}
-.sec-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
-
-.sec-title{
-  font-family:'Rajdhani',sans-serif;font-weight:700;
-  font-size:22px;letter-spacing:6px;color:#f4f4f4;
-  margin-bottom:6px;position:relative;display:inline-block;
-}
-.sec-title::after{content:'';position:absolute;left:0;bottom:-8px;width:44px;height:2px;
-  background:linear-gradient(90deg,var(--cy),transparent);}
-.sec-sub{font-size:11px;letter-spacing:1.5px;color:var(--txt-d);margin:16px 0 30px;line-height:2;}
-
-/* INFO CARDS */
-.info-cards{display:grid;gap:20px;}
-.info-card{
-  border:1px solid var(--bdr);background:rgba(8,14,14,.45);
-  padding:24px 28px;position:relative;
-  border-left:2px solid var(--cy-d);
-  opacity:0;transform:translateX(-10px);
-  animation:slideIn .55s ease forwards;
-  transition:border-color .22s,box-shadow .22s,transform .22s;
-}
-@keyframes slideIn{to{opacity:1;transform:translateX(0);}}
-.info-card:hover{
-  border-color:rgba(0,184,204,.28);
-  box-shadow:inset 0 0 32px -18px rgba(0,184,204,.09);
-  transform:translateX(3px);
-}
-.info-card h3{
-  font-family:'Rajdhani',sans-serif;font-weight:700;
-  font-size:15px;letter-spacing:4px;
-  color:#f0f0f0;margin-bottom:12px;
-  display:flex;align-items:center;gap:10px;
-}
-.info-card h3 .num{
-  font-size:10px;color:var(--cy);
-  border:1px solid var(--cy-d);padding:1px 7px;border-radius:2px;letter-spacing:1px;
-  font-family:'JetBrains Mono',monospace;
-}
-.info-card p{font-size:12px;line-height:2;color:var(--txt);letter-spacing:.4px;}
-.info-card p+p{margin-top:10px;}
-.info-card .hl{color:var(--cy);}
-.info-card .hl2{color:var(--gr);}
-.info-card .dim{color:var(--txt-d);}
-
-/* status badge */
-.status-badge{
-  display:inline-flex;align-items:center;gap:8px;
-  margin-top:14px;padding:6px 14px;
-  border:1px solid var(--cy-d);font-size:10px;
-  letter-spacing:3px;color:var(--cy-d);
-}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--cy);
-  box-shadow:0 0 6px var(--cy);animation:sdot 2s ease-in-out infinite;}
-@keyframes sdot{0%,100%{opacity:1;}50%{opacity:.2;}}
-
-/* CODE GRID */
-.sec-count{font-size:11px;letter-spacing:3px;color:var(--txt-d);}
-.sec-count b{color:var(--gr);}
-
-.code-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:13px;}
-.code-card{
-  position:relative;border:1px solid var(--bdr);
-  background:linear-gradient(160deg,#0a1010,#060a0a);
-  padding:18px 14px;min-height:112px;
-  display:flex;flex-direction:column;justify-content:space-between;
-  overflow:hidden;
-  opacity:0;transform:translateY(12px);
-  animation:cardIn .48s ease forwards;
-  transition:border-color .2s;
-}
-@keyframes cardIn{to{opacity:1;transform:translateY(0);}}
-.code-card .idx{font-size:10px;letter-spacing:3px;color:#243535;}
-.code-card .lbl{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;
-  letter-spacing:3px;color:#2e4040;margin-top:auto;}
-.code-card::after{content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.009) 8px 9px);}
-.code-card .lock-ico{position:absolute;top:12px;right:12px;width:12px;height:12px;opacity:.2;}
-.code-card:hover{border-color:#253535;}
-.code-card .glow-line{position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--cy);}
-
-.hint{font-size:9px;letter-spacing:2px;color:var(--txt-dd);margin-top:20px;text-align:center;}
-.hint b{color:var(--cy-d);}
-
-footer{text-align:center;margin-top:64px;font-size:9px;letter-spacing:4px;color:#2a3838;padding-bottom:16px;}
-footer .dot{color:var(--cy-d);}
-
-/* SUPPORT QUIET */
-.support-quiet{
-  border:1px solid var(--bdr);
-  background:rgba(6,10,10,.5);
-  padding:22px 26px;
-  display:flex;align-items:center;justify-content:space-between;
-  gap:24px;flex-wrap:wrap;
-  border-left:2px solid var(--cy-d);
-}
-.support-quiet-left{display:flex;align-items:flex-start;gap:16px;flex:1;min-width:240px;}
-.sq-cup{font-size:26px;line-height:1;flex-shrink:0;margin-top:2px;
-  filter:drop-shadow(0 0 8px var(--cy-g));opacity:.7;}
-.sq-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
-  letter-spacing:4px;color:var(--txt-d);margin-bottom:8px;}
-.sq-text{font-size:11px;letter-spacing:.4px;color:var(--txt-dd);line-height:1.9;max-width:520px;}
-.support-quiet-right{
-  display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;
-}
-.sq-btn{
-  display:inline-block;
-  font-family:'Rajdhani',sans-serif;font-weight:700;
-  font-size:11px;letter-spacing:4px;
-  color:var(--cy-d);
-  border:1px solid var(--cy-d);
-  padding:9px 22px;text-decoration:none;
-  transition:color .2s,border-color .2s,box-shadow .2s;
-}
-.sq-btn:hover{color:var(--cy);border-color:var(--cy);box-shadow:0 0 14px -4px var(--cy-g);}
-.sq-note{font-size:9px;letter-spacing:2px;color:var(--txt-dd);text-align:right;}
-
-@media(max-width:600px){
-  .glitch-title,.sp-title{letter-spacing:7px;}
-  .subtitle{letter-spacing:3px;font-size:11px;}
-  .code-grid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;}
-  .info-card{padding:18px 18px;}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s ease}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){#sky{animation:none}.rv{opacity:1;transform:none;transition:none}.code.got::before,.steam{animation:none}}
+@media(max-width:760px){
+  .grid2,.small{grid-template-columns:1fr}
+  .coffee{grid-template-columns:1fr;text-align:center;padding:28px 22px}
+  .cup{margin:0 auto;width:120px;height:120px}
+  .amts{justify-content:center}
+  .nav{display:none}
+  .hero{padding-top:46px}
+  .card{padding:24px 22px}
+  .codes{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
 <body>
+<div id="sky"></div>
+<div id="shade"></div>
 
-<!-- ══ SPLASH ════════════════════════════════════════════════════ -->
-<div id="splash">
-  <div class="sp-scan"></div>
-  <div class="sp-c tl"></div><div class="sp-c tr"></div>
-  <div class="sp-c bl"></div><div class="sp-c br"></div>
-  <div class="sp-dash top">// NODE: PUBLIC &nbsp;·&nbsp; CONNECTION: ESTABLISHED</div>
-
-  <div class="sp-body">
-    <div class="sp-eyebrow">A.C.EON STUDIO PROJECT PRESENTS</div>
-
-    <div class="sp-title" data-text="A.C.EON">A.C.EON</div>
-
-    <div class="sp-presents">PUBLIC ARCHIVE &nbsp;<span>/</span>&nbsp; ACCESS REGISTRY</div>
-
-    <div class="sp-divider"></div>
-
-    <div class="sp-tagline">
-      Not a channel. Not a brand.<br>
-      A creative signal in progress.
-    </div>
-    <div class="sp-sub">
-      Music &nbsp;·&nbsp; Visuals &nbsp;·&nbsp; Ideas &nbsp;·&nbsp; Built in the space between human and machine.
-    </div>
+<div class="wrap">
+  <div class="top">
+    <a class="pill back" href="../" id="back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-t="back"></span></a>
+    <nav class="nav">
+      <a class="pill" href="#about" data-t="nav.about"></a>
+      <a class="pill" href="#map" data-t="nav.map"></a>
+      <a class="pill" href="#found" data-t="nav.found"></a>
+      <a class="pill" href="#contact" data-t="nav.contact"></a>
+      <a class="pill" href="#coffee" data-t="nav.coffee"></a>
+    </nav>
   </div>
 
-  <div class="sp-dash bot">[ CLICK ANYWHERE TO ENTER ]</div>
-  <div class="sp-skip" id="sp-skip">— or wait —</div>
-  <div class="sp-bar" id="sp-bar"></div>
-</div>
-
-<!-- ══ MAIN ══════════════════════════════════════════════════════ -->
-<canvas id="bgcv"></canvas>
-<div class="overlay"></div>
-
-<div class="wrap" id="main-wrap">
-
-  <a href="../" class="back-link">&#8592; MAIN</a>
-
-  <header>
-    <div class="eyebrow">// A.C.EON STUDIO PROJECT — PUBLIC ARCHIVE</div>
-    <div class="glitch-title" data-text="A.C.EON">A.C.EON</div>
-    <div class="subtitle">PUBLIC ARCHIVE <span>/</span> ACCESS REGISTRY<span class="typecur"></span></div>
-    <div class="hr-fade"></div>
+  <header class="hero rv">
+    <div class="kicker" data-t="kicker"></div>
+    <div class="h1">A.C.EON STUDIO</div>
+    <div class="h1x">&amp; <b>TWENTY WORDS STUDIO</b></div>
+    <p class="lead" data-t="lead"></p>
   </header>
 
-  <!-- INFO CARDS -->
-  <div class="sec-block">
-    <div class="sec-title">ABOUT THE PROJECT</div>
-    <div class="sec-sub">What A.C.EON is, what we believe, and what this site is for.</div>
-
-    <div class="info-cards">
-
-      <div class="info-card" style="animation-delay:.04s">
-        <h3><span class="num">01</span> WHO WE ARE</h3>
-        <p>
-          <span class="hl">A.C.EON Studio</span> is a creative collective — a group of people who write music, produce visuals, build experiences, and constantly explore what becomes possible when human imagination is paired with new tools.
-        </p>
-        <p>
-          We create because we have to. That's the only reason that's ever mattered.
-        </p>
+  <section id="about">
+    <div class="sh rv" data-t="about.h"></div>
+    <div class="grid2">
+      <div class="glass card rv" style="--c:#A06EFF">
+        <h3><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>A.C.EON STUDIO</h3>
+        <span class="tag" data-t="aceon.tag"></span>
+        <p data-t="aceon.p1"></p>
+        <p data-t="aceon.p2"></p>
+        <p data-t="aceon.p3"></p>
+        <p class="dim" data-t="aceon.p4"></p>
+        <a class="btn" style="--c:#A06EFF" target="_blank" rel="noopener" href="https://www.youtube.com/@A.C.EONStudio"><svg viewBox="0 0 24 24"><path d="M10 9l5 3-5 3z"/><rect x="2.5" y="5" width="19" height="14" rx="4"/></svg><span>YouTube</span></a>
       </div>
-
-      <div class="info-card" style="animation-delay:.10s">
-        <h3><span class="num">02</span> ORIGINALITY</h3>
-        <p>
-          Everything here is ours. Original lyrics, original concepts, original sound. We don't imitate, parody, or borrow from others without acknowledgement.
-        </p>
-        <p>
-          If something we've created resembles work we've never encountered — that's coincidence, not imitation. People sometimes independently arrive at similar ideas. It happens. But the intention is always entirely our own.
-        </p>
-      </div>
-
-      <div class="info-card" style="animation-delay:.16s">
-        <h3><span class="num">03</span> THIS SITE</h3>
-        <p>
-          This is a place to rest. To listen. To wander through something built with care and find a moment away from the noise — somewhere to listen to music, think your own thoughts, and feel no urgency to be anywhere else.
-        </p>
-        <p>
-          The main branch of the site is open to everyone via the <span class="hl">Core icon</span> on the home page — the blue symbol. Everything there is freely accessible. Just tap and explore.
-        </p>
-      </div>
-
-      <div class="info-card" style="animation-delay:.22s">
-        <h3><span class="num">04</span> NODE AI &amp; THE ARG</h3>
-        <p>
-          Somewhere across the pages, videos, and signals of this project, codes are hidden. Find one — through curiosity, patience, or careful attention to what others skip past — and you can enter it into the <span class="hl">Node AI terminal</span>.
-        </p>
-        <p>
-          A correct code unlocks a unique <span class="hl2">NFT token</span>: a generated image created for that exact moment of discovery. Made once. Belonging to whoever finds it first. A small reward for the kind of attention that deserves one.
-        </p>
-      </div>
-
-      <div class="info-card" style="animation-delay:.28s">
-        <h3><span class="num">05</span> PROJECT STATUS</h3>
-        <p>
-          A.C.EON is actively in development. Everything you see now — the design, the music, the structure — may change, evolve, or be removed entirely as the project grows.
-        </p>
-        <p class="dim">
-          What exists now is a transmission in progress. The estimated completion of the main body of work is <span style="color:var(--txt)">early 2027</span>.
-        </p>
-        <div class="status-badge">
-          <span class="status-dot"></span>
-          IN DEVELOPMENT — ONGOING
-        </div>
-      </div>
-
-      <div class="info-card" style="animation-delay:.34s">
-        <h3><span class="num">06</span> COPYRIGHT</h3>
-        <p>
-          All materials on this site were created by the <span class="hl">A.C.EON Studio</span> team and are protected by copyright. You're welcome to enjoy everything here for yourself — that's what it's for.
-        </p>
-        <p>
-          Distributing our work without crediting A.C.EON Studio may result in complaints and content removal. <span class="dim">Respect creative work the same way you'd want yours respected.</span>
-        </p>
-      </div>
-
-      <div class="info-card" style="animation-delay:.40s">
-        <h3><span class="num">07</span> YOUR PRIVACY</h3>
-        <p>
-          We minimise data collection wherever possible. There is no registration, no mandatory sign-in, and no tracking — your attention here is your own.
-        </p>
-        <p>
-          If any data is collected through interactive features or the terminal, it is stored on <span class="hl">our own servers</span> and is never shared with or made available to third parties. What happens here stays here.
-        </p>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- SUPPORT — quiet -->
-  <div class="sec-block">
-    <div class="support-quiet">
-      <div class="support-quiet-left">
-        <span class="sq-cup">☕</span>
-        <div>
-          <div class="sq-title">SUPPORT THE PROJECT</div>
-          <div class="sq-text">
-            A.C.EON is built by a small team with real monthly costs —
-            AI tools, software subscriptions, hosting, and a lot of hours.
-            If you enjoy what's here and want to help keep new content coming,
-            any contribution is genuinely appreciated. No pressure, no obligation.
-          </div>
-        </div>
-      </div>
-      <div class="support-quiet-right">
-        <a href="#" class="sq-btn">BUY ME A COFFEE</a>
-        <div class="sq-note">LINK COMING SOON</div>
+      <div class="glass card rv" style="--c:#32DCFF">
+        <h3><svg viewBox="0 0 24 24"><path d="M6 9h12a4 4 0 0 1 3.6 5.7l-.9 1.9a2.5 2.5 0 0 1-4.1.5L14.8 15H9.2l-1.8 2.1a2.5 2.5 0 0 1-4.1-.5l-.9-1.9A4 4 0 0 1 6 9z"/><path d="M8 11v3M6.5 12.5h3M15.5 12h.01M17.5 13.5h.01"/></svg>TWENTY WORDS</h3>
+        <span class="tag" data-t="tws.tag"></span>
+        <p data-t="tws.p1"></p>
+ <p data-t="tws.p2"></p>
+        <p class="dim" data-t="tws.p3"></p>
+        <a class="btn" style="--c:#32DCFF" target="_blank" rel="noopener" href="https://github.com/Yourssugar/twenty-words-launcher/releases/latest/download/Twenty-Words-Launcher-Setup.exe"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg><span data-t="tws.btn"></span></a>
       </div>
     </div>
-  </div>
+    <div class="glass card rv" style="--c:#FFC83C;margin-top:18px">
+      <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 5.5l2.2 6.5L12 18.5 9.8 12z"/></svg><span data-t="site.h"></span></h3>
+      <p data-t="site.p1"></p>
+      <div class="chips" id="chips"></div>
+      <p class="dim" data-t="site.p2"></p>
+    </div>
+    <div class="grid2">
+    <div class="glass card rv" style="--c:#FF50AF">
+      <h3><svg viewBox="0 0 24 24"><path d="M3 6c3-1.5 6-1.5 9 0 3-1.5 6-1.5 9 0v12c-3-1.5-6-1.5-9 0-3-1.5-6-1.5-9 0z"/><path d="M12 6v12"/></svg><span data-t="books.h"></span></h3>
+      <p data-t="books.p"></p>
+      <a class="btn" style="--c:#FF50AF" href="../library/" target="_top"><span data-t="books.btn"></span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="glass card rv" style="--c:#6EFA8C">
+      <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.8 9a3 3 0 0 0-2.8-1.5c-1.7 0-3 .9-3 2.2 0 3 6 1.5 6 4.5 0 1.3-1.3 2.3-3 2.3a3.2 3.2 0 0 1-3-1.7M12 6v1.5M12 16.5V18"/></svg><span data-t="coin.h"></span></h3>
+      <p data-t="coin.p"></p>
+      <a class="btn" style="--c:#6EFA8C" href="../aceon-coin/coin-info.html" target="_top"><span data-t="coin.btn"></span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></a>
+    </div>
+    </div>
+  </section>
 
-  <!-- CODE GRID -->
-  <div class="sec-block">
-    <div class="sec-head">
+  <section id="map">
+    <div class="sh rv" style="--c:#40dcff" data-t="map.h"></div>
+    <p class="ss rv" data-t="map.sub"></p>
+    <div class="map" id="mapgrid"></div>
+  </section>
+
+  <section id="found">
+    <div class="sh rv" style="--c:#ff50af" data-t="found.h"></div>
+    <p class="ss rv" data-t="found.sub"></p>
+    <div class="prog rv"><div class="bar"><i id="fbar"></i></div><b id="fcount"></b></div>
+    <div class="codes" id="codes"></div>
+    <div class="sh rv" style="--c:#a06eff;margin-top:46px;font-size:22px" data-t="secrets.h"></div>
+    <div id="secrets"></div>
+  </section>
+
+  <section id="contact">
+    <div class="sh rv" style="--c:#32DCFF" data-t="contact.h"></div>
+    <div class="glass card rv" style="--c:#32DCFF;margin-top:22px">
+      <p style="margin-top:0" data-t="contact.p"></p>
+      <a class="btn" style="--c:#ff4060" target="_blank" rel="noopener" href="https://www.youtube.com/@A.C.EONStudio/community"><svg viewBox="0 0 24 24"><path d="M10 9l5 3-5 3z"/><rect x="2.5" y="5" width="19" height="14" rx="4"/></svg><span data-t="contact.yt"></span></a>
+      <a class="btn" style="--c:#FF50AF;margin-left:8px" href="../Guestbook/" target="_top"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg><span data-t="contact.gb"></span></a>
+    </div>
+  </section>
+
+  <section id="coffee">
+    <div class="sh rv" style="--c:#ffb35c" data-t="coffee.sh"></div>
+    <div class="glass coffee rv">
+      <div class="cup"><svg viewBox="0 0 64 64">
+        <path class="steam" d="M24 8c-3 4 3 6 0 10"/><path class="steam" d="M32 6c-3 4 3 6 0 10"/><path class="steam" d="M40 8c-3 4 3 6 0 10"/>
+        <path d="M12 24h36v14a14 14 0 0 1-14 14h-8a14 14 0 0 1-14-14z"/><path d="M48 28h4a6 6 0 0 1 0 12h-5"/><path d="M8 58h44"/></svg></div>
       <div>
-        <div class="sec-title">ACCESS CODES</div>
-        <div class="sec-sub">
-          Twenty codes will be distributed across the project over time —<br>
-          some hidden in videos, some buried in the site itself, some given freely.<br>
-          Each one unlocks something. Nothing is placed without reason.
+        <h3 data-t="coffee.h"></h3>
+        <p data-t="coffee.p1"></p>
+        <p data-t="coffee.p2"></p>
+        <div class="amts" id="amts">
+          <button class="amt on" data-v="2">$2<small data-t="coffee.cheap"></small></button>
+          <button class="amt" data-v="5">$5</button>
+          <button class="amt" data-v="10">$10</button>
+          <button class="amt" data-v="own" data-t="coffee.own"></button>
+          <span class="own" id="own">$<input id="ownv" type="number" min="1" step="1" value="3" inputmode="numeric"></span>
         </div>
+        <a class="pay" id="pay" href="#" target="_blank" rel="noopener"><span data-t="coffee.btn"></span> <span><b>Pay</b><i>Pal</i></span></a>
+        <div class="note" id="paynote" data-t="coffee.note"></div>
       </div>
-      <div class="sec-count">UNLOCKED: <b>0</b> / 20</div>
     </div>
-    <div class="code-grid" id="code-grid"></div>
-    <div class="hint">ENTER CODES INTO THE <b>TERMINAL</b> ON THE HOME PAGE TO UNLOCK ARCHIVE SECTIONS</div>
-  </div>
+  </section>
 
-  <footer>
-    A.C.EON STUDIO PROJECT
-    <span class="dot">·</span> PUBLIC ARCHIVE
-    <span class="dot">·</span> STATUS: ONLINE
-  </footer>
+  <section>
+    <div class="small">
+      <div class="glass card rv" style="--c:#a9b3d6"><h3 data-t="rights.h"></h3><p data-t="rights.p"></p></div>
+      <div class="glass card rv" style="--c:#a9b3d6"><h3 data-t="privacy.h"></h3><p data-t="privacy.p"></p></div>
+    </div>
+  </section>
 
+  <footer>A.C.EON STUDIO &amp; TWENTY WORDS STUDIO<br><span data-t="footer"></span></footer>
 </div>
 
+<script src="../shared/trace.js?v=1"></script>
+<script src="../A.C.EON_Core/nodes.js?v=2"></script>
+<script src="../A.C.EON_Core/lang.js?v=1"></script>
 <script>
-/* ── PORTAL MODE (страница открыта внутри воронки главной) ──── */
+(function(){
+'use strict';
+
+/* PayPal: имя страницы paypal.me (то, что после paypal.me/). Пока пусто, кнопка показывает «скоро» */
+var PAYPAL_ME='';
+
 var PORTAL=false;
 try{ PORTAL=(window.self!==window.top); }catch(e){ PORTAL=true; }
+if(PORTAL){ try{ window.parent.postMessage({aceon:'ready'},location.origin); }catch(e){} }
+var TR=window.Trace||null;
 
-/* ── SPLASH ─────────────────────────────────────────────────── */
+/* язык общий для сайта: localStorage aceon:site.lang */
+var LANGS=['ru','en','de','fr','es','it','pl'];
+var lang='en';
+try{ var st=JSON.parse(localStorage.getItem('aceon:site')||'{}'); if(st.lang&&LANGS.indexOf(st.lang)>=0)lang=st.lang; else if(/^ru/i.test(navigator.language))lang='ru'; }catch(e){}
+document.documentElement.lang=lang;
+
+var TX={
+ru:{
+ back:'На главную','nav.about':'О нас','nav.map':'Карта','nav.found':'Найдено','nav.contact':'Связь','nav.coffee':'Кофе',
+ kicker:'инфо / карта сайта',
+ lead:'Здравствуйте. Мы делаем музыку и видео, а наша вторая студия делает игры и программы. Здесь коротко о нас, карта всего сайта и то, что вы уже нашли.',
+ 'about.h':'Кто мы',
+ 'aceon.tag':'музыка / видео',
+ 'aceon.p1':'Студия появилась на стыке 2025 и 2026 года. Тогда она называлась Ai Chaos Engine Studio, отсюда и буквы в названии. С тех пор расшифровка не раз менялась.',
+ 'aceon.p2':'Началось с того, что мы попробовали сделать песню с помощью нейросети, и остановиться уже не смогли. Потом пришли сведение и мастеринг, монтаж, программирование, игровые движки и десятки нейросетей, которые мы связываем между собой.',
+ 'aceon.p3':'У нашей музыки нет жанра. Есть настроение: какое оно в этот день, такая и песня. Релизы выходят на стриминговых площадках, клипы с анимацией и историями выходят только на YouTube.',
+ 'aceon.p4':'Инструменты сейчас меняются каждый месяц, поэтому мы не держимся за что-то одно: пробуем новое, что доступно обычному человеку, и проверяем в деле.',
+ 'tws.tag':'игры / программы',
+ 'tws.p1':'Наша вторая студия, она занимается играми и программами. Отдельное имя нужно, чтобы не путаться: музыка и видео живут под A.C.EON, игры и программы здесь.',
+ 'tws.p2':'Название пришло из одного нашего проекта и сказано с усмешкой. Раньше люди писали длинно и красиво, а сейчас часто хватает двадцати слов, остальное копируют у других. Это небольшая шпилька в адрес тех, кто выдаёт чужое за своё.',
+ 'tws.p3':'Сейчас на сайте браузерные игры и лаунчер для Windows. Параллельно собираются несколько игр для ПК на Unreal Engine, но до первого релиза ещё далеко.',
+ 'tws.btn':'Лаунчер для Windows',
+ 'site.h':'Этот сайт',
+ 'site.p1':'Сайт мы делаем вместе, двумя студиями. Здесь есть:',
+ 'site.p2':'Он постоянно растёт: появляются новые разделы, старые переделываются. Ближайший план простой: делать лучше всё, что уже есть, от музыки до игр. Эта страница нужна, чтобы в сайте не потеряться.',
+ chips:['музыка','видео','игры','книги','инструменты','обучение'],
+ 'books.h':'Книги',
+ 'books.p':'Книги пишут сами авторы, нейросети помогают им редактировать и дорабатывать текст. За книгами стоит целая вселенная: каждая из них связана с остальными и открывает свой кусок большой истории. Раскрываться она будет постепенно.',
+ 'books.btn':'Открыть библиотеку',
+ 'coin.h':'Своя монета',
+ 'coin.p':'В планах есть своя монета, а потом и криптовалюта. Пока сказать о ней почти нечего: выпустить криптовалюту мешает бюрократия, и сроков мы не знаем. Когда появится что-то конкретное, оно будет здесь.',
+ 'coin.btn':'Страница монеты',
+ 'map.h':'Карта сайта',
+ 'map.sub':'Все разделы по секторам, как в ядре сети. Нажмите на строку, чтобы перейти. Заполненный кружок значит, что вы там ещё не были, пустой: уже заходили.',
+ 'map.opened':'{n} из {t}',
+ 'found.h':'Найдено',
+ 'found.sub':'На главной странице есть терминал. Некоторые слова в нём меняют вселенную. Здесь появляются те, что вы уже нашли, и их можно повторить одним нажатием.',
+ 'found.count':'найдено {n} из {t}',
+ 'found.lock':'ещё не найдено',
+ 'found.go':'повторить',
+ codes:{VOID:'Колодец выдыхает: поток идёт обратно',NULL:'Коллапс: всё стягивает в дыру',SIGNAL:'Красное смещение и тревога',STASIS:'Время замирает во льду',PULSE:'Ударная волна из ядра',DARK:'Свет гаснет, остаётся фонарик','440':'Несущая частота'},
+ 'secrets.h':'Тайные места',
+ 'secrets.empty':'На сайте будут спрятаны секретные разделы. Когда вы найдёте такой, он появится здесь, и вернуться в него можно будет одним нажатием.',
+ 'secrets.go':'перейти',
+ 'contact.h':'Связаться с нами',
+ 'contact.p':'Отдельной почты или чата для связи пока нет. Проще всего написать нам на YouTube: в сообществе канала или в комментариях под видео. Мы их читаем.',
+ 'contact.yt':'Канал на YouTube',
+ 'contact.gb':'Гостевая книга',
+ 'coffee.sh':'Поддержать',
+ 'coffee.h':'Купить кофе разработчику',
+ 'coffee.p1':'Всё это стоит денег: сервисы, нейросети, хостинг. Студия пока ничего не зарабатывает. Если вам нравится наше творчество, поддержать проект можно здесь.',
+ 'coffee.p2':'Разработчики пьют дешёвый кофе, так что даже 2 доллара это уже чашка.',
+ 'coffee.cheap':'чашка',
+ 'coffee.own':'своя сумма',
+ 'coffee.btn':'Отправить через',
+ 'coffee.note':'Оплата проходит на сайте PayPal. На нашем сайте вы ничего не вводите, и ваши платёжные данные мы не видим.',
+ 'coffee.soon':'Ссылка на PayPal скоро появится.',
+ 'rights.h':'Авторство',
+ 'rights.p':'Всё на сайте сделано нашими студиями. Нашу музыку можно использовать в своих видео и стримах, если указать авторство. Будем рады ссылке на сайт или на наш YouTube, но это не обязательно.',
+ 'privacy.h':'Приватность',
+ 'privacy.p':'Здесь нет регистрации и обязательного входа. То, что сайт помнит о вас (визиты, найденные слова), хранится только в вашем браузере. Данные интерактивных разделов (гостевая, чат) лежат на наших серверах и никому не передаются.',
+ footer:'сайт растёт вместе с нами'
+},
+en:{
+ back:'Home','nav.about':'About','nav.map':'Map','nav.found':'Found','nav.contact':'Contact','nav.coffee':'Coffee',
+ kicker:'info / site map',
+ lead:'Hello. We make music and video, and our second studio makes games and software. Here you will find a short story about us, a map of the whole site and what you have already found.',
+ 'about.h':'Who we are',
+ 'aceon.tag':'music / video',
+ 'aceon.p1':'The studio appeared at the turn of 2025 and 2026. Back then it was called Ai Chaos Engine Studio, which is where the letters in the name come from. What they stand for has changed more than once since.',
+ 'aceon.p2':'It started when we tried making a song with a neural network and could not stop. Then came mixing and mastering, video editing, programming, game engines and dozens of neural networks that we connect to each other.',
+ 'aceon.p3':'Our music has no genre. It has a mood: whatever the mood is that day, so is the song. Releases come out on streaming platforms, animated and story clips come out only on YouTube.',
+ 'aceon.p4':'Tools change every month now, so we do not stick to one: we try whatever new thing an ordinary person can get and test it in real work.',
+ 'tws.tag':'games / software',
+ 'tws.p1':'Our second studio, it makes games and software. A separate name keeps things clear: music and video live under A.C.EON, games and software live here.',
+ 'tws.p2':'The name came from one of our projects and is said with a grin. People used to write long and beautifully, now twenty words is often enough and the rest is copied from others. It is a small jab at those who pass off someone else\'s work as their own.',
+ 'tws.p3':'Right now the site has browser games and a launcher for Windows. Several PC games on Unreal Engine are slowly coming together, but the first release is still far away.',
+ 'tws.btn':'Launcher for Windows',
+ 'site.h':'This site',
+ 'site.p1':'We build the site together, as two studios. You will find:',
+ 'site.p2':'It keeps growing: new sections appear, old ones get reworked. The nearest plan is simple: make everything that already exists better, from music to games. This page is here so you do not get lost.',
+ chips:['music','video','games','books','tools','learning'],
+ 'books.h':'Books',
+ 'books.p':'The books are written by the authors themselves, neural networks help them edit and polish the text. Behind them stands a whole universe: each book is connected to the others and opens its own piece of a bigger story. It will unfold gradually.',
+ 'books.btn':'Open the library',
+ 'coin.h':'Our own coin',
+ 'coin.p':'We plan to have our own coin and later a cryptocurrency. For now there is almost nothing to say: bureaucracy makes launching a cryptocurrency hard and we do not know the dates. When something concrete appears, it will be here.',
+ 'coin.btn':'Coin page',
+ 'map.h':'Site map',
+ 'map.sub':'Every section by sector, like in the network core. Click a row to go there. A filled dot means you have not been there yet, a hollow one means you have.',
+ 'map.opened':'{n} of {t}',
+ 'found.h':'Found',
+ 'found.sub':'The home page has a terminal. Some words typed there change the universe. The ones you have found show up here, and you can replay them in one click.',
+ 'found.count':'found {n} of {t}',
+ 'found.lock':'not found yet',
+ 'found.go':'replay',
+ codes:{VOID:'The well exhales: the flow runs backwards',NULL:'Collapse: everything falls into the hole',SIGNAL:'Red shift and alarm',STASIS:'Time freezes in ice',PULSE:'A shockwave from the core',DARK:'Lights out, only a torch remains','440':'The carrier frequency'},
+ 'secrets.h':'Hidden places',
+ 'secrets.empty':'Secret sections will be hidden across the site. When you find one, it appears here and you can return to it in one click.',
+ 'secrets.go':'go',
+ 'contact.h':'Contact us',
+ 'contact.p':'There is no separate email or chat yet. The easiest way to reach us is YouTube: the channel community tab or the comments under a video. We read them.',
+ 'contact.yt':'YouTube channel',
+ 'contact.gb':'Guestbook',
+ 'coffee.sh':'Support',
+ 'coffee.h':'Buy the developer a coffee',
+ 'coffee.p1':'All of this costs money: services, neural networks, hosting. The studio earns nothing yet. If you like our work, you can support the project here.',
+ 'coffee.p2':'Developers drink cheap coffee, so even 2 dollars is already a cup.',
+ 'coffee.cheap':'a cup',
+ 'coffee.own':'other',
+ 'coffee.btn':'Send with',
+ 'coffee.note':'Payment happens on the PayPal site. You enter nothing on our site and we never see your payment details.',
+ 'coffee.soon':'The PayPal link is coming soon.',
+ 'rights.h':'Authorship',
+ 'rights.p':'Everything on the site is made by our studios. You can use our music in your videos and streams if you credit the authors. A link to the site or our YouTube would make us happy, but it is not required.',
+ 'privacy.h':'Privacy',
+ 'privacy.p':'There is no sign-up and no required login. What the site remembers about you (visits, found words) stays in your browser only. Data from interactive sections (guestbook, chat) is kept on our own servers and never shared.',
+ footer:'the site grows with us'
+},
+de:{
+ back:'Startseite','nav.about':'Über uns','nav.map':'Karte','nav.found':'Gefunden','nav.contact':'Kontakt','nav.coffee':'Kaffee',
+ kicker:'info / seitenkarte',
+ lead:'Hallo. Wir machen Musik und Videos, unser zweites Studio macht Spiele und Software. Hier finden Sie kurz etwas über uns, eine Karte der ganzen Seite und das, was Sie schon gefunden haben.',
+ 'about.h':'Wer wir sind',
+ 'aceon.tag':'musik / video',
+ 'aceon.p1':'Das Studio entstand um den Jahreswechsel 2025/2026. Damals hieß es Ai Chaos Engine Studio, daher die Buchstaben im Namen. Ihre Bedeutung hat sich seitdem mehrmals geändert.',
+ 'aceon.p2':'Es begann damit, dass wir einen Song mit einem neuronalen Netz ausprobiert haben und nicht mehr aufhören konnten. Dann kamen Mixing und Mastering, Videoschnitt, Programmieren, Spiel-Engines und Dutzende neuronale Netze, die wir miteinander verbinden.',
+ 'aceon.p3':'Unsere Musik hat kein Genre. Sie hat eine Stimmung: wie die Stimmung an dem Tag, so der Song. Veröffentlichungen erscheinen auf Streaming-Plattformen, animierte Clips mit Geschichten nur auf YouTube.',
+ 'aceon.p4':'Werkzeuge ändern sich heute jeden Monat, deshalb halten wir an keinem fest: wir probieren Neues aus, das normalen Menschen zugänglich ist, und testen es in der Praxis.',
+ 'tws.tag':'spiele / software',
+ 'tws.p1':'Unser zweites Studio, es macht Spiele und Software. Der eigene Name sorgt für Klarheit: Musik und Video gehören zu A.C.EON, Spiele und Software hierher.',
+ 'tws.p2':'Der Name stammt aus einem unserer Projekte und ist mit einem Grinsen gemeint. Früher schrieben Menschen lang und schön, heute reichen oft zwanzig Wörter, der Rest wird kopiert. Ein kleiner Seitenhieb auf alle, die fremde Arbeit als eigene ausgeben.',
+ 'tws.p3':'Auf der Seite gibt es derzeit Browserspiele und einen Launcher für Windows. Mehrere PC-Spiele mit der Unreal Engine entstehen nach und nach, bis zur ersten Veröffentlichung dauert es aber noch.',
+ 'tws.btn':'Launcher für Windows',
+ 'site.h':'Diese Seite',
+ 'site.p1':'Wir bauen die Seite gemeinsam, als zwei Studios. Hier gibt es:',
+ 'site.p2':'Sie wächst ständig: neue Bereiche kommen dazu, alte werden überarbeitet. Der nächste Plan ist einfach: alles Bestehende besser machen, von der Musik bis zu den Spielen. Diese Seite hilft, sich nicht zu verirren.',
+ chips:['Musik','Video','Spiele','Bücher','Werkzeuge','Lernen'],
+ 'books.h':'Bücher',
+ 'books.p':'Die Bücher schreiben die Autoren selbst, neuronale Netze helfen beim Redigieren und Überarbeiten. Dahinter steht ein ganzes Universum: jedes Buch hängt mit den anderen zusammen und öffnet ein Stück einer größeren Geschichte. Sie wird sich nach und nach entfalten.',
+ 'books.btn':'Bibliothek öffnen',
+ 'coin.h':'Eigene Münze',
+ 'coin.p':'Wir planen eine eigene Münze und später eine Kryptowährung. Viel lässt sich dazu noch nicht sagen: die Bürokratie macht eine Kryptowährung schwierig, Termine kennen wir nicht. Sobald es Konkretes gibt, steht es hier.',
+ 'coin.btn':'Seite der Münze',
+ 'map.h':'Seitenkarte',
+ 'map.sub':'Alle Bereiche nach Sektoren, wie im Netzwerkkern. Klicken Sie auf eine Zeile, um hinzugehen. Ein voller Punkt heißt, Sie waren noch nicht dort, ein leerer: schon besucht.',
+ 'map.opened':'{n} von {t}',
+ 'found.h':'Gefunden',
+ 'found.sub':'Auf der Startseite gibt es ein Terminal. Manche Wörter darin verändern das Universum. Die gefundenen erscheinen hier und lassen sich mit einem Klick wiederholen.',
+ 'found.count':'gefunden {n} von {t}',
+ 'found.lock':'noch nicht gefunden',
+ 'found.go':'wiederholen',
+ codes:{VOID:'Der Brunnen atmet aus: der Strom läuft rückwärts',NULL:'Kollaps: alles fällt ins Loch',SIGNAL:'Rotverschiebung und Alarm',STASIS:'Die Zeit gefriert',PULSE:'Eine Druckwelle aus dem Kern',DARK:'Licht aus, nur eine Taschenlampe bleibt','440':'Die Trägerfrequenz'},
+ 'secrets.h':'Verborgene Orte',
+ 'secrets.empty':'Auf der Seite werden geheime Bereiche versteckt. Finden Sie einen, erscheint er hier und Sie kommen mit einem Klick zurück.',
+ 'secrets.go':'öffnen',
+ 'contact.h':'Kontakt',
+ 'contact.p':'Eine eigene E-Mail oder einen Chat gibt es noch nicht. Am einfachsten erreichen Sie uns auf YouTube: im Community-Bereich des Kanals oder in den Kommentaren unter einem Video. Wir lesen sie.',
+ 'contact.yt':'YouTube-Kanal',
+ 'contact.gb':'Gästebuch',
+ 'coffee.sh':'Unterstützen',
+ 'coffee.h':'Dem Entwickler einen Kaffee kaufen',
+ 'coffee.p1':'Das alles kostet Geld: Dienste, neuronale Netze, Hosting. Das Studio verdient bisher nichts. Wenn Ihnen unsere Arbeit gefällt, können Sie das Projekt hier unterstützen.',
+ 'coffee.p2':'Entwickler trinken billigen Kaffee, also sind schon 2 Dollar eine Tasse.',
+ 'coffee.cheap':'eine Tasse',
+ 'coffee.own':'anderer Betrag',
+ 'coffee.btn':'Senden mit',
+ 'coffee.note':'Die Zahlung läuft auf der PayPal-Seite. Auf unserer Seite geben Sie nichts ein, und Ihre Zahlungsdaten sehen wir nicht.',
+ 'coffee.soon':'Der PayPal-Link kommt bald.',
+ 'rights.h':'Urheberschaft',
+ 'rights.p':'Alles auf der Seite stammt von unseren Studios. Unsere Musik dürfen Sie in Ihren Videos und Streams verwenden, wenn Sie die Urheber nennen. Über einen Link zur Seite oder zu unserem YouTube freuen wir uns, Pflicht ist er nicht.',
+ 'privacy.h':'Datenschutz',
+ 'privacy.p':'Keine Registrierung, kein Pflicht-Login. Was die Seite über Sie weiß (Besuche, gefundene Wörter), bleibt nur in Ihrem Browser. Daten interaktiver Bereiche (Gästebuch, Chat) liegen auf unseren eigenen Servern und werden nicht weitergegeben.',
+ footer:'die seite wächst mit uns'
+},
+fr:{
+ back:'Accueil','nav.about':'À propos','nav.map':'Carte','nav.found':'Trouvé','nav.contact':'Contact','nav.coffee':'Café',
+ kicker:'info / plan du site',
+ lead:'Bonjour. Nous faisons de la musique et des vidéos, notre deuxième studio fait des jeux et des logiciels. Vous trouverez ici quelques mots sur nous, le plan de tout le site et ce que vous avez déjà trouvé.',
+ 'about.h':'Qui sommes-nous',
+ 'aceon.tag':'musique / vidéo',
+ 'aceon.p1':'Le studio est né entre fin 2025 et début 2026. Il s\'appelait alors Ai Chaos Engine Studio, d\'où les lettres du nom. Leur signification a changé plusieurs fois depuis.',
+ 'aceon.p2':'Tout a commencé quand nous avons essayé de faire une chanson avec un réseau de neurones, et nous n\'avons plus pu nous arrêter. Puis sont venus le mixage et le mastering, le montage, la programmation, les moteurs de jeu et des dizaines de réseaux de neurones que nous relions entre eux.',
+ 'aceon.p3':'Notre musique n\'a pas de genre. Elle a une humeur : l\'humeur du jour fait la chanson. Les sorties paraissent sur les plateformes de streaming, les clips animés et les histoires uniquement sur YouTube.',
+ 'aceon.p4':'Les outils changent chaque mois, alors nous ne nous accrochons à aucun : nous essayons ce qui est nouveau et accessible à tout le monde, et nous le testons pour de vrai.',
+ 'tws.tag':'jeux / logiciels',
+ 'tws.p1':'Notre deuxième studio, il fait des jeux et des logiciels. Un nom à part évite la confusion : la musique et la vidéo vivent sous A.C.EON, les jeux et les logiciels ici.',
+ 'tws.p2':'Le nom vient d\'un de nos projets et se dit avec un sourire en coin. Autrefois on écrivait longuement et joliment, aujourd\'hui vingt mots suffisent souvent et le reste est copié. Une petite pique à ceux qui font passer le travail des autres pour le leur.',
+ 'tws.p3':'Le site propose pour l\'instant des jeux dans le navigateur et un lanceur pour Windows. Plusieurs jeux PC sous Unreal Engine prennent forme petit à petit, mais la première sortie est encore loin.',
+ 'tws.btn':'Lanceur pour Windows',
+ 'site.h':'Ce site',
+ 'site.p1':'Nous construisons le site ensemble, à deux studios. Vous y trouverez :',
+ 'site.p2':'Il grandit sans cesse : de nouvelles sections arrivent, les anciennes sont refaites. Le prochain plan est simple : améliorer tout ce qui existe, de la musique aux jeux. Cette page est là pour ne pas s\'y perdre.',
+ chips:['musique','vidéo','jeux','livres','outils','apprendre'],
+ 'books.h':'Livres',
+ 'books.p':'Les livres sont écrits par leurs auteurs, les réseaux de neurones les aident à relire et à retravailler le texte. Derrière eux se trouve tout un univers : chaque livre est lié aux autres et ouvre un morceau d\'une grande histoire. Elle se dévoilera peu à peu.',
+ 'books.btn':'Ouvrir la bibliothèque',
+ 'coin.h':'Notre propre pièce',
+ 'coin.p':'Nous prévoyons notre propre pièce, puis une cryptomonnaie. Pour l\'instant il n\'y a presque rien à dire : la bureaucratie rend la chose difficile et nous ne connaissons pas les dates. Dès qu\'il y aura du concret, ce sera ici.',
+ 'coin.btn':'Page de la pièce',
+ 'map.h':'Plan du site',
+ 'map.sub':'Toutes les sections par secteur, comme dans le noyau du réseau. Cliquez sur une ligne pour y aller. Un point plein : vous n\'y êtes pas encore allé, un point vide : déjà visité.',
+ 'map.opened':'{n} sur {t}',
+ 'found.h':'Trouvé',
+ 'found.sub':'La page d\'accueil a un terminal. Certains mots y changent l\'univers. Ceux que vous avez trouvés apparaissent ici et se rejouent d\'un clic.',
+ 'found.count':'trouvé {n} sur {t}',
+ 'found.lock':'pas encore trouvé',
+ 'found.go':'rejouer',
+ codes:{VOID:'Le puits expire : le flux repart en arrière',NULL:'Effondrement : tout tombe dans le trou',SIGNAL:'Décalage vers le rouge et alarme',STASIS:'Le temps gèle',PULSE:'Une onde de choc depuis le noyau',DARK:'La lumière s\'éteint, reste une lampe','440':'La fréquence porteuse'},
+ 'secrets.h':'Lieux cachés',
+ 'secrets.empty':'Des sections secrètes seront cachées sur le site. Quand vous en trouvez une, elle apparaît ici et vous pouvez y revenir d\'un clic.',
+ 'secrets.go':'ouvrir',
+ 'contact.h':'Nous contacter',
+ 'contact.p':'Il n\'y a pas encore d\'adresse e-mail ni de chat. Le plus simple est YouTube : l\'onglet communauté de la chaîne ou les commentaires sous une vidéo. Nous les lisons.',
+ 'contact.yt':'Chaîne YouTube',
+ 'contact.gb':'Livre d\'or',
+ 'coffee.sh':'Soutenir',
+ 'coffee.h':'Offrir un café au développeur',
+ 'coffee.p1':'Tout cela coûte de l\'argent : services, réseaux de neurones, hébergement. Le studio ne gagne rien pour l\'instant. Si vous aimez notre travail, vous pouvez soutenir le projet ici.',
+ 'coffee.p2':'Les développeurs boivent du café pas cher, donc 2 dollars, c\'est déjà une tasse.',
+ 'coffee.cheap':'une tasse',
+ 'coffee.own':'autre',
+ 'coffee.btn':'Envoyer avec',
+ 'coffee.note':'Le paiement se fait sur le site de PayPal. Vous ne saisissez rien chez nous et nous ne voyons pas vos données de paiement.',
+ 'coffee.soon':'Le lien PayPal arrive bientôt.',
+ 'rights.h':'Droits d\'auteur',
+ 'rights.p':'Tout ce qui est sur le site vient de nos studios. Vous pouvez utiliser notre musique dans vos vidéos et streams en citant les auteurs. Un lien vers le site ou notre YouTube nous ferait plaisir, sans obligation.',
+ 'privacy.h':'Confidentialité',
+ 'privacy.p':'Pas d\'inscription, pas de connexion obligatoire. Ce que le site retient de vous (visites, mots trouvés) reste uniquement dans votre navigateur. Les données des sections interactives (livre d\'or, chat) sont sur nos propres serveurs et ne sont jamais partagées.',
+ footer:'le site grandit avec nous'
+},
+es:{
+ back:'Inicio','nav.about':'Nosotros','nav.map':'Mapa','nav.found':'Encontrado','nav.contact':'Contacto','nav.coffee':'Café',
+ kicker:'info / mapa del sitio',
+ lead:'Hola. Hacemos música y vídeos, y nuestro segundo estudio hace juegos y programas. Aquí encontrará un poco sobre nosotros, el mapa de todo el sitio y lo que ya ha encontrado.',
+ 'about.h':'Quiénes somos',
+ 'aceon.tag':'música / vídeo',
+ 'aceon.p1':'El estudio nació entre finales de 2025 y principios de 2026. Entonces se llamaba Ai Chaos Engine Studio, de ahí las letras del nombre. Su significado ha cambiado varias veces desde entonces.',
+ 'aceon.p2':'Empezó cuando probamos a hacer una canción con una red neuronal y ya no pudimos parar. Luego llegaron la mezcla y la masterización, el montaje, la programación, los motores de juego y decenas de redes neuronales que conectamos entre sí.',
+ 'aceon.p3':'Nuestra música no tiene género. Tiene un estado de ánimo: como sea ese día, así es la canción. Los lanzamientos salen en plataformas de streaming, los clips animados con historias solo en YouTube.',
+ 'aceon.p4':'Las herramientas cambian cada mes, así que no nos aferramos a ninguna: probamos lo nuevo que está al alcance de cualquiera y lo ponemos a prueba en serio.',
+ 'tws.tag':'juegos / programas',
+ 'tws.p1':'Nuestro segundo estudio, se dedica a juegos y programas. Un nombre aparte evita confusiones: la música y el vídeo viven bajo A.C.EON, los juegos y programas aquí.',
+ 'tws.p2':'El nombre salió de uno de nuestros proyectos y va con media sonrisa. Antes la gente escribía largo y bonito, ahora a menudo bastan veinte palabras y el resto se copia. Es una pequeña pulla a quienes hacen pasar el trabajo ajeno por suyo.',
+ 'tws.p3':'Ahora en el sitio hay juegos de navegador y un lanzador para Windows. Varios juegos para PC en Unreal Engine se van armando poco a poco, pero el primer lanzamiento aún está lejos.',
+ 'tws.btn':'Lanzador para Windows',
+ 'site.h':'Este sitio',
+ 'site.p1':'Hacemos el sitio juntos, como dos estudios. Aquí hay:',
+ 'site.p2':'No para de crecer: aparecen secciones nuevas y las antiguas se rehacen. El plan más cercano es sencillo: mejorar todo lo que ya existe, de la música a los juegos. Esta página sirve para no perderse.',
+ chips:['música','vídeo','juegos','libros','herramientas','aprender'],
+ 'books.h':'Libros',
+ 'books.p':'Los libros los escriben sus autores, las redes neuronales les ayudan a editar y pulir el texto. Detrás hay todo un universo: cada libro está ligado a los demás y abre su parte de una historia grande. Se irá revelando poco a poco.',
+ 'books.btn':'Abrir la biblioteca',
+ 'coin.h':'Nuestra moneda',
+ 'coin.p':'Tenemos en planes una moneda propia y más adelante una criptomoneda. Por ahora no hay casi nada que contar: la burocracia lo complica y no sabemos las fechas. Cuando haya algo concreto, estará aquí.',
+ 'coin.btn':'Página de la moneda',
+ 'map.h':'Mapa del sitio',
+ 'map.sub':'Todas las secciones por sector, como en el núcleo de la red. Pulse una fila para ir. Un punto lleno significa que aún no ha estado allí, uno vacío: ya lo visitó.',
+ 'map.opened':'{n} de {t}',
+ 'found.h':'Encontrado',
+ 'found.sub':'En la página principal hay un terminal. Algunas palabras escritas en él cambian el universo. Las que ya encontró aparecen aquí y se pueden repetir con un clic.',
+ 'found.count':'encontrado {n} de {t}',
+ 'found.lock':'aún no encontrado',
+ 'found.go':'repetir',
+ codes:{VOID:'El pozo exhala: el flujo va al revés',NULL:'Colapso: todo cae en el agujero',SIGNAL:'Corrimiento al rojo y alarma',STASIS:'El tiempo se congela',PULSE:'Una onda de choque desde el núcleo',DARK:'Se apaga la luz, queda una linterna','440':'La frecuencia portadora'},
+ 'secrets.h':'Lugares ocultos',
+ 'secrets.empty':'En el sitio habrá secciones secretas escondidas. Cuando encuentre una, aparecerá aquí y podrá volver a ella con un clic.',
+ 'secrets.go':'ir',
+ 'contact.h':'Contactar',
+ 'contact.p':'Todavía no hay correo ni chat propio. Lo más fácil es escribirnos en YouTube: en la comunidad del canal o en los comentarios de un vídeo. Los leemos.',
+ 'contact.yt':'Canal de YouTube',
+ 'contact.gb':'Libro de visitas',
+ 'coffee.sh':'Apoyar',
+ 'coffee.h':'Invite un café al desarrollador',
+ 'coffee.p1':'Todo esto cuesta dinero: servicios, redes neuronales, alojamiento. El estudio aún no gana nada. Si le gusta nuestro trabajo, puede apoyar el proyecto aquí.',
+ 'coffee.p2':'Los desarrolladores beben café barato, así que 2 dólares ya son una taza.',
+ 'coffee.cheap':'una taza',
+ 'coffee.own':'otra',
+ 'coffee.btn':'Enviar con',
+ 'coffee.note':'El pago se hace en la web de PayPal. En nuestro sitio no introduce nada y no vemos sus datos de pago.',
+ 'coffee.soon':'El enlace de PayPal llegará pronto.',
+ 'rights.h':'Autoría',
+ 'rights.p':'Todo en el sitio es obra de nuestros estudios. Puede usar nuestra música en sus vídeos y directos si indica la autoría. Nos alegrará un enlace al sitio o a nuestro YouTube, pero no es obligatorio.',
+ 'privacy.h':'Privacidad',
+ 'privacy.p':'Sin registro ni inicio de sesión obligatorio. Lo que el sitio recuerda de usted (visitas, palabras encontradas) queda solo en su navegador. Los datos de las secciones interactivas (libro de visitas, chat) están en nuestros servidores y no se comparten.',
+ footer:'el sitio crece con nosotros'
+},
+it:{
+ back:'Home','nav.about':'Chi siamo','nav.map':'Mappa','nav.found':'Trovato','nav.contact':'Contatti','nav.coffee':'Caffè',
+ kicker:'info / mappa del sito',
+ lead:'Salve. Facciamo musica e video, il nostro secondo studio fa giochi e software. Qui trova qualcosa su di noi, la mappa di tutto il sito e ciò che ha già trovato.',
+ 'about.h':'Chi siamo',
+ 'aceon.tag':'musica / video',
+ 'aceon.p1':'Lo studio è nato tra la fine del 2025 e l\'inizio del 2026. Allora si chiamava Ai Chaos Engine Studio, da qui le lettere del nome. Il loro significato è cambiato più volte da allora.',
+ 'aceon.p2':'Tutto è iniziato quando abbiamo provato a fare una canzone con una rete neurale e non siamo più riusciti a fermarci. Poi sono arrivati mixaggio e mastering, montaggio, programmazione, motori di gioco e decine di reti neurali che colleghiamo tra loro.',
+ 'aceon.p3':'La nostra musica non ha un genere. Ha un umore: com\'è quel giorno, così è la canzone. Le uscite sono sulle piattaforme di streaming, i clip animati con storie solo su YouTube.',
+ 'aceon.p4':'Gli strumenti cambiano ogni mese, quindi non ci attacchiamo a nessuno: proviamo il nuovo alla portata di chiunque e lo mettiamo alla prova sul serio.',
+ 'tws.tag':'giochi / software',
+ 'tws.p1':'Il nostro secondo studio, si occupa di giochi e software. Un nome a parte evita confusione: musica e video stanno sotto A.C.EON, giochi e software qui.',
+ 'tws.p2':'Il nome viene da un nostro progetto ed è detto con un mezzo sorriso. Una volta si scriveva a lungo e con cura, oggi spesso bastano venti parole e il resto si copia. È una piccola frecciata a chi spaccia il lavoro altrui per proprio.',
+ 'tws.p3':'Ora sul sito ci sono giochi nel browser e un launcher per Windows. Alcuni giochi per PC in Unreal Engine stanno prendendo forma piano piano, ma la prima uscita è ancora lontana.',
+ 'tws.btn':'Launcher per Windows',
+ 'site.h':'Questo sito',
+ 'site.p1':'Il sito lo facciamo insieme, come due studi. Qui trova:',
+ 'site.p2':'Cresce di continuo: arrivano nuove sezioni, le vecchie vengono rifatte. Il piano più vicino è semplice: migliorare tutto ciò che c\'è già, dalla musica ai giochi. Questa pagina serve a non perdersi.',
+ chips:['musica','video','giochi','libri','strumenti','imparare'],
+ 'books.h':'Libri',
+ 'books.p':'I libri li scrivono gli autori stessi, le reti neurali li aiutano a correggere e rifinire il testo. Dietro c\'è un intero universo: ogni libro è legato agli altri e apre un pezzo di una storia più grande. Si svelerà poco a poco.',
+ 'books.btn':'Apri la biblioteca',
+ 'coin.h':'La nostra moneta',
+ 'coin.p':'Nei piani c\'è una nostra moneta e più avanti una criptovaluta. Per ora c\'è poco da dire: la burocrazia complica le cose e non conosciamo i tempi. Quando ci sarà qualcosa di concreto, sarà qui.',
+ 'coin.btn':'Pagina della moneta',
+ 'map.h':'Mappa del sito',
+ 'map.sub':'Tutte le sezioni per settore, come nel nucleo della rete. Clicchi su una riga per andarci. Un punto pieno significa che non c\'è ancora stato, vuoto: già visitata.',
+ 'map.opened':'{n} di {t}',
+ 'found.h':'Trovato',
+ 'found.sub':'Nella home c\'è un terminale. Alcune parole scritte lì cambiano l\'universo. Quelle che ha già trovato compaiono qui e si possono ripetere con un clic.',
+ 'found.count':'trovate {n} di {t}',
+ 'found.lock':'non ancora trovata',
+ 'found.go':'ripeti',
+ codes:{VOID:'Il pozzo espira: il flusso torna indietro',NULL:'Collasso: tutto cade nel buco',SIGNAL:'Spostamento verso il rosso e allarme',STASIS:'Il tempo si congela',PULSE:'Un\'onda d\'urto dal nucleo',DARK:'La luce si spegne, resta una torcia','440':'La frequenza portante'},
+ 'secrets.h':'Luoghi nascosti',
+ 'secrets.empty':'Nel sito verranno nascoste sezioni segrete. Quando ne trova una, compare qui e può tornarci con un clic.',
+ 'secrets.go':'vai',
+ 'contact.h':'Contattarci',
+ 'contact.p':'Non c\'è ancora un\'email o una chat. Il modo più semplice è YouTube: la community del canale o i commenti sotto un video. Li leggiamo.',
+ 'contact.yt':'Canale YouTube',
+ 'contact.gb':'Guestbook',
+ 'coffee.sh':'Supporto',
+ 'coffee.h':'Offra un caffè allo sviluppatore',
+ 'coffee.p1':'Tutto questo costa: servizi, reti neurali, hosting. Lo studio per ora non guadagna nulla. Se il nostro lavoro le piace, può sostenere il progetto qui.',
+ 'coffee.p2':'Gli sviluppatori bevono caffè economico, quindi anche 2 dollari sono già una tazza.',
+ 'coffee.cheap':'una tazza',
+ 'coffee.own':'altro',
+ 'coffee.btn':'Invia con',
+ 'coffee.note':'Il pagamento avviene sul sito di PayPal. Sul nostro sito non inserisce nulla e non vediamo i suoi dati di pagamento.',
+ 'coffee.soon':'Il link PayPal arriverà presto.',
+ 'rights.h':'Paternità',
+ 'rights.p':'Tutto sul sito è opera dei nostri studi. Può usare la nostra musica nei suoi video e stream indicando gli autori. Un link al sito o al nostro YouTube ci farebbe piacere, ma non è obbligatorio.',
+ 'privacy.h':'Privacy',
+ 'privacy.p':'Nessuna registrazione né accesso obbligatorio. Ciò che il sito ricorda di lei (visite, parole trovate) resta solo nel suo browser. I dati delle sezioni interattive (guestbook, chat) stanno sui nostri server e non vengono condivisi.',
+ footer:'il sito cresce con noi'
+},
+pl:{
+ back:'Strona główna','nav.about':'O nas','nav.map':'Mapa','nav.found':'Znalezione','nav.contact':'Kontakt','nav.coffee':'Kawa',
+ kicker:'info / mapa strony',
+ lead:'Dzień dobry. Tworzymy muzykę i wideo, a nasze drugie studio robi gry i programy. Tu znajdą Państwo krótko o nas, mapę całej strony i to, co już udało się znaleźć.',
+ 'about.h':'Kim jesteśmy',
+ 'aceon.tag':'muzyka / wideo',
+ 'aceon.p1':'Studio powstało na przełomie 2025 i 2026 roku. Nazywało się wtedy Ai Chaos Engine Studio, stąd litery w nazwie. Ich znaczenie od tamtej pory zmieniało się kilka razy.',
+ 'aceon.p2':'Zaczęło się od tego, że spróbowaliśmy zrobić piosenkę z pomocą sieci neuronowej i nie mogliśmy już przestać. Potem przyszły miks i mastering, montaż, programowanie, silniki gier i dziesiątki sieci neuronowych, które łączymy ze sobą.',
+ 'aceon.p3':'Nasza muzyka nie ma gatunku. Ma nastrój: jaki jest tego dnia, taka piosenka. Wydania trafiają na platformy streamingowe, klipy z animacją i historiami wychodzą tylko na YouTube.',
+ 'aceon.p4':'Narzędzia zmieniają się teraz co miesiąc, więc nie trzymamy się jednego: próbujemy nowego, co jest dostępne dla zwykłego człowieka, i sprawdzamy to w praktyce.',
+ 'tws.tag':'gry / programy',
+ 'tws.p1':'Nasze drugie studio, zajmuje się grami i programami. Osobna nazwa pozwala się nie mylić: muzyka i wideo są pod A.C.EON, gry i programy tutaj.',
+ 'tws.p2':'Nazwa wzięła się z jednego naszego projektu i jest powiedziana z przekąsem. Kiedyś ludzie pisali długo i pięknie, a dziś często wystarcza dwadzieścia słów, resztę się kopiuje. To mała szpila w stronę tych, którzy cudzą pracę podają za swoją.',
+ 'tws.p3':'Na stronie są teraz gry w przeglądarce i launcher dla Windows. Kilka gier na PC na Unreal Engine powstaje powoli, ale do pierwszego wydania jeszcze daleko.',
+ 'tws.btn':'Launcher dla Windows',
+ 'site.h':'Ta strona',
+ 'site.p1':'Stronę robimy razem, jako dwa studia. Jest tu:',
+ 'site.p2':'Ciągle rośnie: pojawiają się nowe działy, stare są przerabiane. Najbliższy plan jest prosty: ulepszać wszystko, co już jest, od muzyki po gry. Ta strona jest po to, żeby się nie zgubić.',
+ chips:['muzyka','wideo','gry','książki','narzędzia','nauka'],
+ 'books.h':'Książki',
+ 'books.p':'Książki piszą sami autorzy, sieci neuronowe pomagają im redagować i dopracowywać tekst. Za nimi stoi cały wszechświat: każda książka łączy się z pozostałymi i otwiera swój kawałek większej historii. Będzie się odkrywać stopniowo.',
+ 'books.btn':'Otwórz bibliotekę',
+ 'coin.h':'Własna moneta',
+ 'coin.p':'W planach jest własna moneta, a potem kryptowaluta. Na razie niewiele można o niej powiedzieć: biurokracja utrudnia wydanie kryptowaluty i nie znamy terminów. Gdy pojawi się coś konkretnego, będzie tutaj.',
+ 'coin.btn':'Strona monety',
+ 'map.h':'Mapa strony',
+ 'map.sub':'Wszystkie działy według sektorów, jak w rdzeniu sieci. Proszę kliknąć wiersz, żeby przejść. Pełna kropka oznacza, że jeszcze Państwo tam nie byli, pusta: już odwiedzone.',
+ 'map.opened':'{n} z {t}',
+ 'found.h':'Znalezione',
+ 'found.sub':'Na stronie głównej jest terminal. Niektóre słowa wpisane w nim zmieniają wszechświat. Te już znalezione pojawiają się tutaj i można je powtórzyć jednym kliknięciem.',
+ 'found.count':'znaleziono {n} z {t}',
+ 'found.lock':'jeszcze nie znalezione',
+ 'found.go':'powtórz',
+ codes:{VOID:'Studnia wydycha: strumień płynie wstecz',NULL:'Kolaps: wszystko wpada do dziury',SIGNAL:'Przesunięcie ku czerwieni i alarm',STASIS:'Czas zamarza',PULSE:'Fala uderzeniowa z rdzenia',DARK:'Gaśnie światło, zostaje latarka','440':'Częstotliwość nośna'},
+ 'secrets.h':'Ukryte miejsca',
+ 'secrets.empty':'Na stronie zostaną ukryte tajne działy. Gdy Państwo znajdą taki, pojawi się tutaj i będzie można do niego wrócić jednym kliknięciem.',
+ 'secrets.go':'przejdź',
+ 'contact.h':'Kontakt z nami',
+ 'contact.p':'Osobnej poczty ani czatu jeszcze nie ma. Najprościej napisać do nas na YouTube: w społeczności kanału albo w komentarzach pod filmem. Czytamy je.',
+ 'contact.yt':'Kanał na YouTube',
+ 'contact.gb':'Księga gości',
+ 'coffee.sh':'Wsparcie',
+ 'coffee.h':'Postaw kawę programiście',
+ 'coffee.p1':'To wszystko kosztuje: usługi, sieci neuronowe, hosting. Studio na razie nic nie zarabia. Jeśli podoba się Państwu nasza twórczość, projekt można wesprzeć tutaj.',
+ 'coffee.p2':'Programiści piją tanią kawę, więc nawet 2 dolary to już filiżanka.',
+ 'coffee.cheap':'filiżanka',
+ 'coffee.own':'inna kwota',
+ 'coffee.btn':'Wyślij przez',
+ 'coffee.note':'Płatność odbywa się na stronie PayPal. U nas niczego Państwo nie wpisują i nie widzimy danych płatniczych.',
+ 'coffee.soon':'Link do PayPal pojawi się wkrótce.',
+ 'rights.h':'Autorstwo',
+ 'rights.p':'Wszystko na stronie stworzyły nasze studia. Naszej muzyki można używać we własnych filmach i streamach, jeśli poda się autorów. Ucieszy nas link do strony albo do naszego YouTube, ale nie jest wymagany.',
+ 'privacy.h':'Prywatność',
+ 'privacy.p':'Nie ma rejestracji ani obowiązkowego logowania. To, co strona o Państwu pamięta (wizyty, znalezione słowa), zostaje tylko w przeglądarce. Dane działów interaktywnych (księga gości, czat) są na naszych serwerach i nie są nikomu udostępniane.',
+ footer:'strona rośnie razem z nami'
+}
+};
+function T(k,v){ var s=(TX[lang]&&TX[lang][k]!=null)?TX[lang][k]:TX.en[k]; if(typeof s==='string'&&v)for(var x in v)s=s.split('{'+x+'}').join(v[x]); return s; }
+function CL(k){ var L=window.CORE_LANG||{}; return (L[lang]&&L[lang][k])||(L.en&&L.en[k])||''; }
+function L(o){ if(o==null)return ''; if(typeof o==='string')return o; return o[lang]||o.en||o.ru||''; }
+document.querySelectorAll('[data-t]').forEach(function(el){ el.textContent=T(el.getAttribute('data-t')); });
+
+/* фон: картина неба по времени суток, как на главной */
 (function(){
-  var splash = document.getElementById('splash');
-  var wrap   = document.getElementById('main-wrap');
-
-  if(PORTAL){
-    /* пользователь уже пережил варп — второй splash не нужен */
-    splash.remove();
-    wrap.classList.add('show');
-    try{ window.parent.postMessage({aceon:'ready'},location.origin); }catch(e){}
-    return;
-  }
-
-  var bar    = document.getElementById('sp-bar');
-  var skip   = document.getElementById('sp-skip');
-  var DELAY  = 4000;
-
-  // progress bar
-  bar.style.transition = 'width ' + DELAY + 'ms linear';
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){ bar.style.width = '100%'; });
-  });
-
-  // countdown hint
-  var secs = Math.round(DELAY / 1000);
-  var civ = setInterval(function(){
-    secs--;
-    if(secs > 0) skip.textContent = '— or wait ' + secs + 's —';
-    else clearInterval(civ);
-  }, 1000);
-
-  function dismiss(){
-    clearInterval(civ);
-    splash.classList.add('gone');
-    wrap.classList.add('show');
-    setTimeout(function(){ splash.remove(); }, 1400);
-  }
-
-  var timer = setTimeout(dismiss, DELAY);
-  splash.addEventListener('click', function(){ clearTimeout(timer); dismiss(); });
+  var h=new Date().getHours(), g=h<5?'night':h<10?'dawn':h<17?'day':h<21?'dusk':'eve';
+  var src='../home/u/sky/'+g+'_'+('0'+(1+Math.random()*10|0)).slice(-2)+'.webp?v=1', im=new Image();
+  im.onload=function(){ var s=document.getElementById('sky'); s.style.backgroundImage='url("'+src+'")'; s.classList.add('on'); };
+  im.src=src;
 })();
 
-/* ── PORTAL: возврат без перезагрузки ────────────────────────── */
+/* чипы «что здесь есть» в цветах секторов */
 (function(){
-  if(!PORTAL)return;
-  function requestClose(){
-    try{ window.parent.postMessage({aceon:'close'},location.origin); }catch(e){}
-  }
-  document.querySelectorAll('.back-link').forEach(function(a){
-    a.addEventListener('click',function(e){ e.preventDefault(); requestClose(); });
-  });
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape')requestClose();
-  });
+  var cols=['#A06EFF','#FF8040','#FF50AF','#FFC83C','#32DCFF','#6EFA8C'];
+  var box=document.getElementById('chips');
+  (T('chips')||[]).forEach(function(w,i){ var c=document.createElement('span'); c.className='chip'; c.style.setProperty('--c',cols[i%cols.length]); c.textContent=w; box.appendChild(c); });
 })();
 
-/* ── CODE GRID ───────────────────────────────────────────────── */
+/* карта сайта из A.C.EON_Core/nodes.js: те же секторы, страницы, статусы и NEW, что в ядре */
+var ICONS={
+  games:'<path d="M6 9h12a4 4 0 0 1 3.6 5.7l-.9 1.9a2.5 2.5 0 0 1-4.1.5L14.8 15H9.2l-1.8 2.1a2.5 2.5 0 0 1-4.1-.5l-.9-1.9A4 4 0 0 1 6 9z"/><path d="M8 11v3M6.5 12.5h3M15.5 12h.01M17.5 13.5h.01"/>',
+  music:'<path d="M3 12h2l2-5 3 10 3-13 3 11 2-3h3"/>',
+  studio:'<circle cx="12" cy="12" r="8.5"/><path d="M12 5.5l2.2 6.5L12 18.5 9.8 12z"/>',
+  tools:'<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 10l3 2-3 2M12 15h5"/>',
+  learn:'<path d="M3 6c3-1.5 6-1.5 9 0 3-1.5 6-1.5 9 0v12c-3-1.5-6-1.5-9 0-3-1.5-6-1.5-9 0z"/><path d="M12 6v12"/>',
+  people:'<circle cx="9" cy="9" r="3"/><circle cx="16.5" cy="10" r="2.4"/><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5M14 15.2c.8-.7 1.6-1 2.5-1 2 0 3.5 1.5 4 4"/>'
+};
+var CORE_BASE='../A.C.EON_Core/';
+function absUrl(u){ try{ return new URL(u,location.origin+location.pathname.replace(/info\/?[^/]*$/,'A.C.EON_Core/')).href; }catch(e){ return u; } }
+function visit(p){
+  if(!TR)return null;
+  if(p.external){ var n=(TR.data().ev['ext.'+p.id]||0); return {n:n}; }
+  try{ var id=TR.idFromUrl(absUrl(p.url)); return id?(TR.data().sec[id]||{n:0}):null; }catch(e){ return null; }
+}
+function isNew(p){ if(!p.added||p.status==='soon')return false; var t=Date.parse(p.added); var v=visit(p); return t&&Date.now()-t<21*864e5&&!(v&&v.n>0); }
 (function(){
-  var grid = document.getElementById('code-grid');
-  for(var i = 0; i < 20; i++){
-    var card = document.createElement('div');
-    card.className = 'code-card';
-    card.style.animationDelay = (i * 0.035) + 's';
-
-    var idx = document.createElement('div');
-    idx.className = 'idx';
-    idx.textContent = 'CODE ' + String(i+1).padStart(2,'0');
-    card.appendChild(idx);
-
-    var lbl = document.createElement('div');
-    lbl.className = 'lbl';
-    lbl.textContent = '???';
-    card.appendChild(lbl);
-
-    var lock = document.createElement('div');
-    lock.className = 'lock-ico';
-    lock.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
-    card.appendChild(lock);
-
-    card.appendChild(Object.assign(document.createElement('div'), {className:'glow-line'}));
-    grid.appendChild(card);
-  }
-})();
-
-/* ── BACKGROUND PARTICLES ────────────────────────────────────── */
-(function(){
-  var cv = document.getElementById('bgcv');
-  var ctx = cv.getContext('2d');
-  var W, H, pts = [];
-  function resize(){
-    W = cv.width = innerWidth; H = cv.height = innerHeight;
-    pts = [];
-    var n = Math.min(65, Math.floor(W * H / 22000));
-    for(var i=0;i<n;i++) pts.push({
-      x:Math.random()*W, y:Math.random()*H,
-      vx:(Math.random()-.5)*.17, vy:(Math.random()-.5)*.17,
-      r:Math.random()*1.5+.4
+  var grid=document.getElementById('mapgrid');
+  var S=window.CORE_SECTORS||[], P=window.CORE_NODES||[];
+  S.forEach(function(s){
+    var pages=P.filter(function(p){ return p.sector===s.id; });
+    var live=pages.filter(function(p){ return p.status!=='soon'; });
+    var opened=live.filter(function(p){ var v=visit(p); return v&&v.n>0; }).length;
+    var box=document.createElement('div'); box.className='glass sec rv'; box.style.setProperty('--c',s.color);
+    box.innerHTML='<div class="sec-h"><div class="orb"><svg viewBox="0 0 24 24">'+(ICONS[s.icon]||'')+'</svg></div><div><div class="sec-n"></div><div class="sec-d"></div></div><div class="sec-c"></div></div><ul class="pages"></ul>';
+    box.querySelector('.sec-n').textContent=CL('s.'+s.id);
+    box.querySelector('.sec-d').textContent=CL('sd.'+s.id);
+    box.querySelector('.sec-c').textContent=TR?T('map.opened',{n:opened,t:live.length}):String(live.length);
+    var ul=box.querySelector('.pages');
+    pages.forEach(function(p){
+      var off=p.status==='soon'||!p.url, v=visit(p), seen=v&&v.n>0;
+      var el=document.createElement(off?'div':'a'); el.className='pg'+(off?' off':'')+(seen?' seen':'');
+      if(!off){ el.href=p.external?p.url:absUrl(p.url); el.target=p.external?'_blank':'_top'; if(p.external)el.rel='noopener';
+        if(p.external&&TR)el.addEventListener('click',function(){ try{ TR.event('ext.'+p.id); }catch(e){} }); }
+      var nm=L(p.name)||CL('soon')||'...';
+      el.innerHTML='<span class="dot"></span><span class="pg-t"><span class="pg-n"></span><span class="pg-s"></span></span>';
+      var n=el.querySelector('.pg-n'); n.textContent=nm;
+      if(isNew(p)){ var b=document.createElement('span'); b.className='new'; b.textContent='NEW'; n.appendChild(b); }
+      if(p.status!=='live'){ var stt=document.createElement('span'); stt.className='st '+p.status; stt.textContent=CL('st.'+p.status).toLowerCase(); n.appendChild(stt); }
+      el.querySelector('.pg-s').textContent=L(p.desc)||L(p.tag)||'';
+      if(p.external)el.insertAdjacentHTML('beforeend','<svg class="ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>');
+      var li=document.createElement('li'); li.appendChild(el); ul.appendChild(li);
     });
-  }
-  window.addEventListener('resize', resize); resize();
-  (function step(){
-    ctx.fillStyle = 'rgba(3,4,4,1)'; ctx.fillRect(0,0,W,H);
-    pts.forEach(function(p){
-      p.x+=p.vx; p.y+=p.vy;
-      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
-      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
-    });
-    for(var i=0;i<pts.length;i++) for(var j=i+1;j<pts.length;j++){
-      var a=pts[i],b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<128){
-        ctx.strokeStyle='rgba(0,184,204,'+(0.08*(1-d/128))+')';
-        ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-      }
+    grid.appendChild(box);
+  });
+})();
+
+/* найдено: слова-коды из памяти сайта (Trace.code на главной). Повтор: главная с #code=СЛОВО */
+var CODES=[['VOID','#6fd8ff'],['NULL','#ffffff'],['SIGNAL','#ff4d6a'],['STASIS','#bff4ff'],['PULSE','#ffc24a'],['DARK','#9aa3c8'],['440','#8fd0ff']];
+(function(){
+  var got=TR?TR.data().codes||{}:{}, n=0, box=document.getElementById('codes'), desc=T('codes')||{};
+  CODES.forEach(function(c){
+    var have=!!got[c[0]]; if(have)n++;
+    var el=document.createElement('div'); el.className='code rv '+(have?'got':'lock'); el.style.setProperty('--c',c[1]);
+    if(have){
+      el.innerHTML='<div class="cw"></div><div class="cd"></div><a class="cgo" target="_top"></a>';
+      el.querySelector('.cw').textContent=c[0]; el.querySelector('.cd').textContent=desc[c[0]]||'';
+      var a=el.querySelector('.cgo'); a.textContent='▸ '+T('found.go'); a.href='../#code='+encodeURIComponent(c[0]);
+    } else {
+      el.innerHTML='<div class="cw">? ? ?</div><div class="cd"></div>'; el.querySelector('.cd').textContent=T('found.lock');
     }
-    pts.forEach(function(p){
-      ctx.fillStyle='rgba(0,200,148,.5)';
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
-    });
-    requestAnimationFrame(step);
-  })();
+    box.appendChild(el);
+  });
+  document.getElementById('fcount').textContent=T('found.count',{n:n,t:CODES.length});
+  setTimeout(function(){ document.getElementById('fbar').style.width=(n/CODES.length*100)+'%'; },500);
 })();
 
-/* ── TYPING EFFECT ───────────────────────────────────────────── */
+/* тайные места: когда на сайте появятся секретные разделы, добавить сюда запись
+   {id, name:{ru,en,...}, url, color, found:function(D){ return ...по памяти Trace... }} */
+var SECRETS=[];
 (function(){
-  var words = ['ACCESS REGISTRY','20 CODES TOTAL','SOMETHING HIDDEN','EXPLORE CAREFULLY'];
-  var el = document.querySelector('.subtitle span');
-  var wi=0, ci=0, del=false;
-  function tick(){
-    var w=words[wi];
-    if(!del){ el.textContent=w.slice(0,++ci); if(ci===w.length){del=true;setTimeout(tick,1500);return;} }
-    else{ el.textContent=w.slice(0,--ci); if(ci===0){del=false;wi=(wi+1)%words.length;} }
-    setTimeout(tick, del?38:68);
+  var D=TR?TR.data():null, box=document.getElementById('secrets');
+  var found=SECRETS.filter(function(s){ try{ return D&&s.found(D); }catch(e){ return false; } });
+  if(!found.length){
+    box.innerHTML='<div class="glass empty rv"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M11 8v3l2 2"/></svg><p></p></div>';
+    box.querySelector('p').textContent=T('secrets.empty'); return;
   }
-  tick();
+  var ul=document.createElement('div'); ul.className='map';
+  found.forEach(function(s){
+    var a=document.createElement('a'); a.className='glass sec pg rv'; a.style.setProperty('--c',s.color||'#a06eff'); a.href=s.url; a.target='_top';
+    a.innerHTML='<span class="dot"></span><span class="pg-t"><span class="pg-n"></span></span><span class="cgo"></span>';
+    a.querySelector('.pg-n').textContent=L(s.name); a.querySelector('.cgo').textContent='▸ '+T('secrets.go'); ul.appendChild(a);
+  });
+  box.appendChild(ul);
+})();
+
+/* кофе: сумма по умолчанию 2 доллара */
+(function(){
+  var amt=2, pay=document.getElementById('pay'), own=document.getElementById('own'), ownv=document.getElementById('ownv'), note=document.getElementById('paynote');
+  function upd(){
+    var v=amt==='own'?Math.max(1,Math.round(+ownv.value||0)):amt;
+    if(PAYPAL_ME){ pay.href='https://www.paypal.com/paypalme/'+encodeURIComponent(PAYPAL_ME)+'/'+v+'USD'; pay.classList.remove('disabled'); }
+    else { pay.removeAttribute('href'); pay.classList.add('disabled'); note.textContent=T('coffee.soon'); }
+  }
+  document.querySelectorAll('.amt').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.amt').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on'); amt=b.dataset.v==='own'?'own':+b.dataset.v;
+      own.classList.toggle('on',amt==='own'); if(amt==='own')ownv.focus(); upd();
+    });
+  });
+  ownv.addEventListener('input',upd);
+  upd();
+})();
+
+/* появление блоков при прокрутке */
+(function(){
+  var els=document.querySelectorAll('.rv');
+  if(!('IntersectionObserver' in window)){ els.forEach(function(e){ e.classList.add('in'); }); return; }
+  var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); },{rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e,i){ e.style.transitionDelay=(Math.min(i%6,5)*.06)+'s'; io.observe(e); });
+})();
+
+/* портал: «на главную» закрывает портал без перезагрузки */
+(function(){
+  var back=document.getElementById('back');
+  if(PORTAL){
+    back.addEventListener('click',function(e){ e.preventDefault(); try{ window.parent.postMessage({aceon:'close'},location.origin); }catch(x){} });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ try{ window.parent.postMessage({aceon:'close'},location.origin); }catch(x){} } });
+  }
+})();
 })();
 </script>
 </body>

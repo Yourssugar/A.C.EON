@@ -675,8 +675,8 @@ function editRuntime(R){
    ".fx-h{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#fff;border:2px solid #4fd6c8;pointer-events:auto;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.4)}"+
    ".fx-h.s{width:10px;height:22px;margin:-11px 0 0 -5px;border-radius:4px}"+
    ".fx-mv{position:absolute;inset:-3px;pointer-events:auto;touch-action:none;cursor:move}"+
-   ".fx-tb{position:absolute;z-index:9999;display:flex;gap:2px;background:#0c0f13;border:1px solid #313b46;border-radius:14px;padding:4px;box-shadow:0 12px 30px -8px rgba(0,0,0,.7);font:600 13px system-ui,sans-serif;color:#c9d2da;white-space:nowrap}"+
-   ".fx-tb button{all:unset;cursor:pointer;height:34px;min-width:34px;padding:0 7px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:10px;box-sizing:border-box}"+
+   ".fx-tb{position:absolute;z-index:9999;display:flex;gap:2px;background:#0c0f13;border:1px solid #313b46;border-radius:999px;padding:4px 6px;box-shadow:0 12px 30px -8px rgba(0,0,0,.7);font:600 13px system-ui,sans-serif;color:#c9d2da;white-space:nowrap}"+
+   ".fx-tb button{all:unset;cursor:pointer;height:34px;min-width:34px;padding:0 7px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:999px;box-sizing:border-box}"+
    ".fx-tb button:hover{background:#232a33}.fx-tb i{width:1px;height:20px;background:#313b46;align-self:center;margin:0 2px}"+
    ".fx-tb .sw{width:20px;height:20px;border-radius:50%;box-shadow:0 0 0 2px #0c0f13,0 0 0 3px #59606a}"+
    ".fx-tb svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}"+

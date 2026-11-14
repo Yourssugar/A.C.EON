@@ -16,12 +16,12 @@
    Порядок записей = порядок узлов по кругу и в списке слева. */
 
 window.CORE_SECTORS = [
-  {id:'games',  color:'#4DAFFF', icon:'games'},
-  {id:'music',  color:'#B98CFF', icon:'music'},
-  {id:'studio', color:'#FFD060', icon:'studio'},
-  {id:'tools',  color:'#3DFFB4', icon:'tools'},
-  {id:'learn',  color:'#FF9F43', icon:'learn'},
-  {id:'people', color:'#9EC3D6', icon:'people'}
+  {id:'games',  color:'#FF8040', icon:'games'},
+  {id:'music',  color:'#A06EFF', icon:'music'},
+  {id:'studio', color:'#FFC83C', icon:'studio'},
+  {id:'tools',  color:'#32DCFF', icon:'tools'},
+  {id:'learn',  color:'#6EFA8C', icon:'learn'},
+  {id:'people', color:'#FF50AF', icon:'people'}
 ];
 
 window.CORE_NODES = [

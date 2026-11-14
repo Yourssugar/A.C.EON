@@ -32,8 +32,8 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;
 #c.grab{cursor:grabbing}
 
 .scanlines{position:fixed;inset:0;z-index:998;pointer-events:none;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px)}
-.crt{position:fixed;inset:0;z-index:997;pointer-events:none;animation:crtflick 7s steps(60) infinite}
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.035) 2px,rgba(0,0,0,0.035) 4px)}
+.crt{position:fixed;inset:0;z-index:997;pointer-events:none}
 .crt::before{content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse 130% 120% at 50% 50%,transparent 55%,rgba(2,5,9,.28) 88%,rgba(2,5,9,.55) 100%)}
 .crt::after{content:'';position:absolute;inset:0;opacity:.35;
@@ -44,7 +44,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;
 html.ufx1 .crt, html.ufx1 .scanlines{display:none}
 
 /* загрузка */
-#loader{position:fixed;inset:0;z-index:500;background:var(--bg);
+#loader{position:fixed;inset:0;z-index:500;background:radial-gradient(ellipse at 50% 50%,rgba(2,4,12,.35),rgba(2,4,12,.8));
   display:flex;align-items:flex-start;justify-content:center;
   padding:52px 32px 32px;overflow:hidden;transition:opacity .55s}
 #loader.fade{opacity:0;pointer-events:none}
@@ -275,9 +275,9 @@ body.nogl #nogl-note{display:block}
 <script src="../games/shared/store.js?v=1"></script>
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
-<script src="nodes.js?v=1"></script>
+<script src="nodes.js?v=2"></script>
 <script src="lang.js?v=1"></script>
-<script src="core.js?v=1"></script>
+<script src="core.js?v=2"></script>
 <script src="/A.C.EON/aceon-coin/coin-widget.js" defer></script>
 </body>
 </html>

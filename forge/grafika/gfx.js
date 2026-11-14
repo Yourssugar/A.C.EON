@@ -8,7 +8,7 @@ var SV={ up:"M12 19V5M5 12l7-7 7 7", down:"M12 5v14M5 12l7 7 7-7", dup:"M8 8h12v
   eye:"M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM9 12a3 3 0 106 0 3 3 0 00-6 0", lock:"M6 11h12v9H6zM9 11V8a3 3 0 016 0", unlock:"M6 11h12v9H6zM9 11V8a3 3 0 015.8-1",
   more:"M5 12h.01M12 12h.01M19 12h.01", fx:"M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18",
   img:"M4 5h16v14H4zM4 15l5-5 4 4 3-3 4 4", cam:ICONS.camera, plus:"M12 5v14M5 12h14", x:"M6 6l12 12M18 6L6 18", wand:"M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.7 1.3 1.3.7-1.3.7L19 15l-.7-1.3L17 13l1.3-.7z",
-  text:"M5 6h14M12 6v13", down2:ICONS.down, send:ICONS.send, brush:ICONS.brush };
+  text:"M5 6h14M12 6v13", qr:"M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2zM6.5 6.5h1v1h-1zM16.5 6.5h1v1h-1zM6.5 16.5h1v1h-1z", down2:ICONS.down, send:ICONS.send, brush:ICONS.brush };
 function sv(n){ return '<svg viewBox="0 0 24 24"><path d="'+(SV[n]||ICONS[n]||"")+'"/></svg>'; }
 function el(html, fn){ var d=document.createElement("div"); d.innerHTML=html.trim(); var n=d.firstElementChild; if(fn) fn(n); return n; }
 function sec(title){ var s=document.createElement("div"); s.className="sec"; s.innerHTML='<div class="sh">'+esc(title)+'</div>'; return s; }
@@ -83,7 +83,7 @@ function overlay(){
   ov.appendChild(box);
   if(!L.locked && !ui.brush){
     var hs=[["nw",0,0],["ne",1,0],["sw",0,1],["se",1,1]];
-    if(L.t!=="text"){ hs.push(["e",1,.5,"s"],["w",0,.5,"s"]); if(L.kind!=="line") hs.push(["n",.5,0,"v"],["s",.5,1,"v"]); }
+    if(L.t!=="text"&&L.t!=="qr"){ hs.push(["e",1,.5,"s"],["w",0,.5,"s"]); if(L.kind!=="line") hs.push(["n",.5,0,"v"],["s",.5,1,"v"]); }
     hs.forEach(function(x){ var d=document.createElement("div"); d.className="hd"+(x[3]?" "+x[3]:""); d.setAttribute("data-h",x[0]); d.style.left=(x[1]*100)+"%"; d.style.top=(x[2]*100)+"%"; box.appendChild(d); });
     var rl=document.createElement("div"); rl.className="rot-line"; rl.style.top="-34px"; rl.style.height="32px"; box.appendChild(rl);
     var rh=document.createElement("div"); rh.className="hd rot"; rh.setAttribute("data-h","rot"); rh.style.left="50%"; rh.style.top="-36px"; box.appendChild(rh);
@@ -91,11 +91,12 @@ function overlay(){
   if(sizeLbl){ var z=document.createElement("div"); z.className="szl"; z.textContent=sizeLbl; z.style.left=c.x+"px"; z.style.top=(c.y+bboxH(L,G)/2+16)+"px"; ov.appendChild(z); }
   if(drag||ui.brush) return;
   var tb=document.createElement("div"); tb.className="gtb";
-  var col=L.t==="text"?L.color:L.t==="shape"?(L.fill||L.stroke||"#888"):L.t==="icon"?L.color:"";
+  var col=L.t==="text"?L.color:L.t==="shape"?(L.fill||L.stroke||"#888"):L.t==="icon"?L.color:L.t==="qr"?L.fg:"";
   var h="";
   if(col) h+='<button data-t="color" title="Цвет"><span class="sw" style="background:'+esc(col)+'"></span></button>';
   if(L.t==="text") h+='<button data-t="font" title="Шрифт" style="font-family:'+esc(fontStack(L.font))+'">Aa</button><button data-t="fx" title="Эффекты">'+sv("fx")+'</button>';
   if(L.t==="image") h+='<button data-t="filters" title="Фильтры">'+sv("img")+'</button><button data-t="cut" title="Убрать фон">'+sv("wand")+'</button>';
+  if(L.t==="qr") h+='<button data-t="qr" title="Что внутри кода">'+sv("qr")+'</button>';
   h+='<i></i><button data-t="up" title="Слой выше">'+sv("up")+'</button><button data-t="dup" title="Копия">'+sv("dup")+'</button><button data-t="del" title="Удалить">'+sv("del")+'</button><i></i><button data-t="more" title="Все настройки">'+sv("more")+'</button>';
   tb.innerHTML=h; ov.appendChild(tb);
   var bh=bboxH(L,G), tw=tb.offsetWidth, th=tb.offsetHeight, top=c.y-bh/2-th-(L.locked?14:52);
@@ -185,7 +186,7 @@ function tool(t){
   if(t==="up"){ var i=W.layers.indexOf(L); if(i<W.layers.length-1){ remember(); W.layers.splice(i,1); W.layers.splice(i+1,0,L); save(); draw(); refresh(); toast("Слой выше"); } else toast("Это уже верхний слой"); }
   else if(t==="dup"){ remember(); var c=JSON.parse(JSON.stringify(L)); c.id=gid(); c.x+=W.w*.03; c.y+=W.w*.03; W.layers.splice(W.layers.indexOf(L)+1,0,c); sel=c.id; save(); draw(); refresh(); }
   else if(t==="del"){ remember(); W.layers.splice(W.layers.indexOf(L),1); sel=null; save(); draw(); refresh(); toast("Удалено. Вернуть: стрелка отмены"); if(!wide.matches&&ui.sheet==="insp") closeSheet(); }
-  else openInsp({ color:"color", font:"font", fx:"fx", filters:"filters", cut:"cut", text:"text", more:null }[t]);
+  else openInsp({ color:"color", font:"font", fx:"fx", filters:"filters", cut:"cut", text:"text", qr:"qr", more:null }[t]);
 }
 
 /* ═══════════ панели ═══════════ */
@@ -200,8 +201,14 @@ function openInsp(secId){
   refreshInsp();
   if(secId){ var s=insp.querySelector('[data-sec="'+secId+'"]'); if(s) insp.scrollTop=s.offsetTop-insp.offsetTop-8; } else insp.scrollTop=0;
   if(secId==="text"){ var ta=insp.querySelector("textarea"); if(ta){ ta.focus(); ta.select(); } }
+  if(!wide.matches) setTimeout(focusSel,260);
 }
-function closeSheet(){ if(wide.matches) return; ui.sheet=false; ui.tab=null; right.classList.remove("open","full","peek"); $$("#tabs button").forEach(function(b){ b.classList.remove("on"); }); }
+function closeSheet(){ if(wide.matches) return; ui.sheet=false; ui.tab=null; right.classList.remove("open","full","peek"); $$("#tabs button").forEach(function(b){ b.classList.remove("on"); });
+  if(view.z===1&&view.py){ view.py=0; draw(); } }
+/* на телефоне шторка закрывает низ холста: сдвигаем холст так, чтобы выбранный элемент был виден над ней */
+function focusSel(){ var L=curL(); if(!L||wide.matches||!right.classList.contains("open")) return;
+  var sh=right.getBoundingClientRect(), st=stage.getBoundingClientRect(), visH=sh.top-st.top; if(visH<120) return;
+  var c=toScreen(L.x,L.y); if(c.y>40&&c.y<visH-40) return; view.py+=visH/2-c.y; draw(); }
 $("#shClose").onclick=closeSheet;
 $$("#tabs button").forEach(function(b){ b.onclick=function(){ var t=b.getAttribute("data-tab"); if(!wide.matches&&ui.sheet==="tab"&&ui.tab===t) closeSheet(); else openTab(t); }; });
 (function(){ var h=$(".sh-h"), y0=0, h0=0, on=false;
@@ -225,6 +232,9 @@ function paneAdd(box){
   box.appendChild(el('<div class="row">'+(touch?'<button class="btn" data-c>'+sv("cam")+'Снять</button>':'')+'<button class="btn" data-g>'+sv("img")+(touch?'Галерея':'Выбрать фото')+'</button></div>',function(n){
     var c=$("[data-c]",n); if(c) c.onclick=function(){ pickPhoto(true,addPhoto); }; $("[data-g]",n).onclick=function(){ pickPhoto(false,addPhoto); }; }));
   if(!touch) box.appendChild(el('<p class="note" style="margin-top:6px">Фото можно просто перетащить в окно.</p>'));
+  box.appendChild(el('<div class="sh">QR-код</div>'));
+  box.appendChild(el('<div class="chips">'+QR_KINDS.map(function(k){ return '<button data-k="'+k[0]+'">'+esc(k[1])+'</button>'; }).join("")+'</div>',function(n){
+    $$("button",n).forEach(function(b){ b.onclick=function(){ var L=qrLayer(W,b.getAttribute("data-k")); remember(); W.layers.push(L); sel=L.id; save(); draw(); if(wide.matches) refresh(); openInsp("qr"); }; }); }));
   box.appendChild(el('<div class="sh">Фигуры</div>'));
   box.appendChild(el('<div class="shapes">'+SHAPES.map(function(s){ return '<button data-s="'+s[0]+'" title="'+esc(s[1])+'">'+shapeIcon(s[0])+'</button>'; }).join("")+'</div>',function(n){
     $$("button",n).forEach(function(b){ b.onclick=function(){ addLayer(shapeLayer(W,b.getAttribute("data-s"))); }; }); }));
@@ -238,12 +248,12 @@ function shapeIcon(k){ var p={ rect:"M3 5h18v14H3z", round:"M8 7h8a5 5 0 010 10H
 function addPhoto(a){ var L=imageLayer(W,a.id,a.w,a.h); addLayer(L); }
 
 /* ── слои ── */
-function layerName(L){ if(L.t==="text") return String(L.text).split("\n")[0].slice(0,30)||"Текст"; if(L.t==="image") return "Фото"; if(L.t==="icon") return "Иконка: "+(ICON_NAMES[L.name]||L.name);
+function layerName(L){ if(L.t==="qr") return "QR: "+(QR_KINDS.filter(function(k){ return k[0]===L.kind; })[0]||["","код"])[1].toLowerCase(); if(L.t==="text") return String(L.text).split("\n")[0].slice(0,30)||"Текст"; if(L.t==="image") return "Фото"; if(L.t==="icon") return "Иконка: "+(ICON_NAMES[L.name]||L.name);
   return (SHAPES.filter(function(s){ return s[0]===L.kind; })[0]||["","фигура"])[1].replace(/^./,function(c){ return c.toUpperCase(); }); }
 function paneLayers(box){
   if(!W.layers.length){ box.innerHTML='<p class="note">На холсте пока пусто. Нажмите «Добавить».</p>'; return; }
   W.layers.slice().reverse().forEach(function(L){
-    var th=L.t==="text"?'<span style="font-family:'+esc(fontStack(L.font))+'">Аа</span>':L.t==="image"?'':L.t==="icon"?icon(L.name,""):shapeIcon(L.kind);
+    var th=L.t==="qr"?sv("qr"):L.t==="text"?'<span style="font-family:'+esc(fontStack(L.font))+'">Аа</span>':L.t==="image"?'':L.t==="icon"?icon(L.name,""):shapeIcon(L.kind);
     var r=el('<div class="lrow'+(L.id===sel?" on":"")+(L.hidden?" off":"")+'"><span class="lt"'+(L.t==="image"&&W.assets[L.src]?' style="background-image:url('+W.assets[L.src]+')"':'')+'>'+th+'</span>'+
       '<button class="nm">'+esc(layerName(L))+'</button><button class="sb" data-a="up" title="Выше">'+sv("up")+'</button><button class="sb" data-a="down" title="Ниже">'+sv("down")+'</button>'+
       '<button class="sb" data-a="hide" title="Скрыть или показать">'+sv("eye")+'</button><button class="sb'+(L.locked?" act":"")+'" data-a="lock" title="Замок: нельзя случайно сдвинуть">'+sv(L.locked?"lock":"unlock")+'</button></div>');
@@ -341,7 +351,7 @@ function refreshInsp(){
     $$("button",n).forEach(function(b){ b.onclick=function(){ var a=b.getAttribute("data-a"), i=W.layers.indexOf(L);
       if(a==="down"){ if(i>0){ remember(); W.layers.splice(i,1); W.layers.splice(i-1,0,L); save(); draw(); refresh(); } }
       else if(a==="lock"){ remember(); L.locked=!L.locked; save(); draw(); refresh(); } else tool(a); }; }); }));
-  if(L.t==="text") inspText(L); else if(L.t==="image") inspImage(L); else if(L.t==="shape") inspShape(L); else inspIcon(L);
+  if(L.t==="text") inspText(L); else if(L.t==="image") inspImage(L); else if(L.t==="shape") inspShape(L); else if(L.t==="qr") inspQR(L); else inspIcon(L);
   var c=sec("Общее"); c.setAttribute("data-sec","common"); insp.appendChild(c);
   c.appendChild(range("Прозрачность",Math.round((L.op==null?1:L.op)*100),0,100,5,"%",function(v){ set(L,"op",v/100); }));
   c.appendChild(range("Поворот",Math.round(L.rot||0),-180,180,1,"°",function(v){ set(L,"rot",v); }));
@@ -388,6 +398,30 @@ function inspShape(L){
     st.appendChild(range("Толщина",L.sw||0,0,Math.round(Math.min(W.w,W.h)*.05),1,"px",function(v){ remember("sw"+L.id); L.sw=v; if(v&&!L.stroke) L.stroke="#ffffff"; draw(); save(); }));
     st.appendChild(colorPick("Цвет обводки",L.stroke||"#ffffff",function(v,live){ set(L,"stroke",v,live?undefined:false); }));
     if(L.kind==="rect") st.appendChild(range("Скругление углов",L.r||0,0,Math.round(Math.min(L.w,L.h)/2),1,"px",function(v){ set(L,"r",v); })); }
+}
+function inspQR(L){
+  var s=sec("Что внутри кода"); s.setAttribute("data-sec","qr"); insp.appendChild(s);
+  s.appendChild(choice("",QR_KINDS,L.kind,function(v){ remember(); L.kind=v; draw(); save(); refreshInsp(); }));
+  function inp(label,key,ph,type){ return el('<div class="f"><label>'+esc(label)+'</label><input type="'+(type||"text")+'" placeholder="'+esc(ph||"")+'"></div>',function(n){ var i=$("input",n); i.value=L.d[key]||""; i.oninput=function(){ remember("qd"+L.id+key); L.d[key]=i.value; draw(); save(); upd(); }; }); }
+  if(L.kind==="url") s.appendChild(inp("Адрес","url","https://..."));
+  if(L.kind==="wifi"){ s.appendChild(inp("Название сети","ssid","как сеть видна в телефоне")); s.appendChild(choice("Защита",[["WPA","пароль (WPA/WPA2)"],["WEP","WEP"],["nopass","без пароля"]],L.d.enc,function(v){ remember(); L.d.enc=v; draw(); save(); refreshInsp(); }));
+    if(L.d.enc!=="nopass") s.appendChild(inp("Пароль","pass","")); s.appendChild(toggle("Сеть скрыта",!!L.d.hid,function(v){ remember(); L.d.hid=v; draw(); save(); })); }
+  if(L.kind==="contact"){ s.appendChild(inp("Имя","name","Имя Фамилия")); s.appendChild(inp("Телефон","phone","+48...","tel")); s.appendChild(inp("Почта","email","","email")); s.appendChild(inp("Где работаете","org","")); s.appendChild(inp("Сайт","site","https://...")); }
+  if(L.kind==="phone") s.appendChild(inp("Номер телефона","phone","+48...","tel"));
+  if(L.kind==="text") s.appendChild(el('<div class="f"><label>Текст</label><textarea rows="3"></textarea></div>',function(n){ var t=$("textarea",n); t.value=L.d.text||""; t.oninput=function(){ remember("qdt"+L.id); L.d.text=t.value; draw(); save(); upd(); }; }));
+  var note=el('<div class="note" style="margin:4px 0 6px"></div>'); s.appendChild(note);
+  function upd(){ var w=qrCheck(L), q=qrMatrix(L); note.innerHTML=(q&&!q.err?'Размер кода: '+q.n+'x'+q.n+' клеток. ':'')+(w.length?'<span style="color:var(--ember)">'+w.map(esc).join(" ")+'</span>':'Перед печатью проверьте код камерой телефона.'); }
+  upd();
+  var v=sec("Вид"); v.setAttribute("data-sec","color"); insp.appendChild(v);
+  v.appendChild(choice("Точки",[["square","квадраты"],["round","скруглённые"],["dots","круглые"]],L.style,function(x){ set(L,"style",x,false); }));
+  v.appendChild(choice("Углы",[["square","квадрат"],["round","скруглённые"],["circle","круг"]],L.eye,function(x){ set(L,"eye",x,false); }));
+  v.appendChild(colorPick("Цвет кода",L.fg,function(x,live){ set(L,"fg",x,live?undefined:false); upd(); }));
+  v.appendChild(toggle("Подложка под кодом",!!L.bg,function(x){ remember(); L.bg=x?"#ffffff":""; draw(); save(); refreshInsp(); }));
+  if(L.bg) v.appendChild(colorPick("Цвет подложки",L.bg,function(x,live){ set(L,"bg",x,live?undefined:false); upd(); }));
+  v.appendChild(range("Поля вокруг",L.margin==null?2:L.margin,0,4,1,"",function(x){ set(L,"margin",x); }));
+  v.appendChild(el('<div class="f"><label>Значок в центре</label><div class="icg"><button data-i="" class="'+(!L.logo?"on":"")+'">нет</button>'+["play","music","heart","star","coffee","phone","send","mail","globe","camera","gift","home","bag","user"].map(function(k){ return '<button data-i="'+k+'" class="'+(L.logo===k?"on":"")+'">'+icon(k,"")+'</button>'; }).join("")+'</div></div>',function(n){
+    $$("button",n).forEach(function(b){ b.onclick=function(){ set(L,"logo",b.getAttribute("data-i"),false); refreshInsp(); }; }); }));
+  v.appendChild(el('<p class="note">Со значком код строится с самым сильным запасом прочности, поэтому всё равно читается.</p>'));
 }
 function inspIcon(L){
   var s=sec("Иконка"); s.setAttribute("data-sec","color"); insp.appendChild(s);

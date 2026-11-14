@@ -151,6 +151,7 @@ function drawLayer(g,W,L){
   if(L.t==="text") drawText(g,L);
   else if(L.t==="shape"){ if(L.kind==="line"){ g.fillStyle=fillOf(g,L,L.w,L.h); shapePath(g,"round",L.w,L.h,0); g.fill(); }
     else { shapePath(g,L.kind,L.w,L.h,L.r); g.fillStyle=fillOf(g,L,L.w,L.h); if(L.fill||L.fill2) g.fill(); if(L.stroke&&L.sw){ g.lineWidth=L.sw; g.strokeStyle=L.stroke; g.stroke(); } } }
+  else if(L.t==="qr") drawQR(g,L);
   else if(L.t==="icon"){ var d=ICONS[L.name]; if(d){ var k=L.w/24; g.scale(k,L.h/24); g.translate(-12,-12); g.lineWidth=L.sw; g.lineCap="round"; g.lineJoin="round"; g.strokeStyle=L.color; g.stroke(new Path2D(d)); } }
   else if(L.t==="image"){
     var cv=processed(W,L);
@@ -180,6 +181,91 @@ function drawText(g,L){
   g.fillStyle=fill; each(function(t,x,y){ put(t,x,y); });
 }
 
+
+/* ─────────── QR-код ─────────── */
+/* генератор: qrcode-generator (Kazuhiko Arase, MIT), файл lib/qrcode.js. Текст кодируется в UTF-8, кириллица работает */
+var QR_KINDS=[["url","Ссылка"],["wifi","Wi-Fi"],["contact","Контакт"],["phone","Телефон"],["text","Текст"]];
+function qrLayer(W, kind){
+  var k=Math.round(Math.min(W.w,W.h)*.4);
+  return { id:gid(), t:"qr", x:W.w/2, y:W.h/2, w:k, h:k, rot:0, op:1, blend:"source-over", kind:kind||"url",
+    d:{ url:"https://", ssid:"", pass:"", enc:"WPA", hid:false, name:"", phone:"", email:"", org:"", site:"", text:"" },
+    fg:"#111317", bg:"#ffffff", style:"square", eye:"square", logo:"", margin:2 };
+}
+function qrEsc(s){ return String(s||"").replace(/([\\;,:"])/g,"\\$1"); }
+function qrData(L){
+  var d=L.d||{};
+  if(L.kind==="url"){ var u=String(d.url||"").trim(); if(u && !/^[a-z][a-z0-9+.-]*:/i.test(u)) u="https://"+u; return u; }
+  if(L.kind==="wifi") return "WIFI:T:"+(d.enc==="nopass"?"nopass":d.enc||"WPA")+";S:"+qrEsc(d.ssid)+";"+(d.enc==="nopass"?"":"P:"+qrEsc(d.pass)+";")+(d.hid?"H:true;":"")+";";
+  if(L.kind==="contact"){ var n=String(d.name||"").trim();
+    return "BEGIN:VCARD\nVERSION:3.0\nN:"+n+";;;;\nFN:"+n+"\n"+(d.phone?"TEL;TYPE=CELL:"+String(d.phone).replace(/[^\d+]/g,"")+"\n":"")+(d.email?"EMAIL:"+d.email+"\n":"")+(d.org?"ORG:"+d.org+"\n":"")+(d.site?"URL:"+d.site+"\n":"")+"END:VCARD"; }
+  if(L.kind==="phone") return "tel:"+String(d.phone||"").replace(/[^\d+]/g,"");
+  return String(d.text||"");
+}
+var QRC={};
+function qrMatrix(L){
+  var data=qrData(L), ecc=L.logo?"H":"M", key=ecc+"|"+data;
+  if(QRC[key]) return QRC[key];
+  var r=null;
+  try{ if(typeof qrcode==="undefined") return null; qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];
+    var q=qrcode(0,ecc); q.addData(data||" ","Byte"); q.make(); var n=q.getModuleCount(), m=[];
+    for(var y=0;y<n;y++){ var row=[]; for(var x=0;x<n;x++) row.push(q.isDark(y,x)); m.push(row); }
+    r={ n:n, m:m, ver:(n-17)/4, len:data.length };
+  }catch(e){ r={ err:true }; }
+  QRC[key]=r; return r;
+}
+function lum(c){ var m=String(c||"").match(/^#([0-9a-f]{6})$/i); if(!m) return null; var n=parseInt(m[1],16);
+  return [n>>16,(n>>8)&255,n&255].map(function(v){ v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }).reduce(function(a,v,i){ return a+v*[.2126,.7152,.0722][i]; },0); }
+function qrCheck(L){
+  var q=qrMatrix(L), out=[];
+  if(!q||q.err) return ["Слишком много текста для QR-кода, сократите."];
+  if(!qrData(L).trim()||qrData(L)==="https://") out.push("Впишите, что должен открыть код.");
+  if(L.bg){ var a=lum(L.fg), b=lum(L.bg); if(a!=null&&b!=null){ if(a>b) out.push("Светлый код на тёмном фоне читают не все телефоны. Надёжнее тёмный код на светлом."); else if((b+.05)/(a+.05)<3) out.push("Код и фон слишком похожи по яркости, телефон может не прочитать."); } }
+  else out.push("Без фона код прочитается, только если под ним светлая однотонная подложка.");
+  if(q.ver>12) out.push("Код получился плотным (много данных). Делайте его крупнее при печати.");
+  return out;
+}
+function drawQR(g,L){
+  var q=qrMatrix(L), S=L.w, x0=-S/2, y0=-S/2;
+  if(!q||q.err){ g.fillStyle="rgba(255,80,100,.25)"; g.fillRect(x0,y0,S,S); return; }
+  var M=Math.max(0,L.margin==null?2:L.margin), N=q.n+M*2, c=S/N, fg=L.fg||"#000";
+  if(L.bg){ g.fillStyle=L.bg; if(g.roundRect){ g.beginPath(); g.roundRect(x0,y0,S,S,c*.8); g.fill(); } else g.fillRect(x0,y0,S,S); }
+  function finder(r,col){ return (r<7&&col<7)||(r<7&&col>=q.n-7)||(r>=q.n-7&&col<7); }
+  /* выравнивающие квадратики рисуем целиком, как углы: так код надёжнее читается в любом стиле точек */
+  var ap=alignPos(q.ver), al=[];
+  ap.forEach(function(ay){ ap.forEach(function(ax){ if(finder(ay,ax)||finder(ay+2,ax+2)||finder(ay-2,ax-2)||finder(ay-2,ax+2)||finder(ay+2,ax-2)) return; al.push([ax,ay]); }); });
+  function inAlign(r,col){ for(var i=0;i<al.length;i++) if(Math.abs(r-al[i][1])<=2&&Math.abs(col-al[i][0])<=2) return true; return false; }
+  var lg=L.logo?Math.ceil(q.n*.24/2)*2+1:0, l0=(q.n-lg)/2;
+  g.fillStyle=fg; g.beginPath();
+  for(var r=0;r<q.n;r++) for(var col=0;col<q.n;col++){
+    if(!q.m[r][col]||finder(r,col)||inAlign(r,col)) continue;
+    if(lg && r>=l0-.5 && r<l0+lg-.5 && col>=l0-.5 && col<l0+lg-.5) continue;
+    var px=x0+(col+M)*c, py=y0+(r+M)*c;
+    if(L.style==="dots"){ g.moveTo(px+c*.97,py+c/2); g.arc(px+c/2,py+c/2,c*.47,0,Math.PI*2); }
+    else if(L.style==="round"){ if(g.roundRect) g.roundRect(px+c*.04,py+c*.04,c*.92,c*.92,c*.32); else g.rect(px,py,c,c); }
+    else g.rect(px-.01*c,py-.01*c,c*1.02,c*1.02);
+  }
+  g.fill();
+  [[0,0],[q.n-7,0],[0,q.n-7]].forEach(function(p){
+    var ex=x0+(p[0]+M)*c, ey=y0+(p[1]+M)*c;
+    g.fillStyle=fg; g.beginPath();
+    if(L.eye==="circle"){ g.arc(ex+3.5*c,ey+3.5*c,3.5*c,0,Math.PI*2); g.arc(ex+3.5*c,ey+3.5*c,2.5*c,0,Math.PI*2,true); g.fill("evenodd"); g.beginPath(); g.arc(ex+3.5*c,ey+3.5*c,1.5*c,0,Math.PI*2); g.fill(); }
+    else { var rr=L.eye==="round"?c*1.6:0, ri=L.eye==="round"?c*.8:0;
+      rrect(g,ex,ey,7*c,7*c,rr); rrect(g,ex+c,ey+c,5*c,5*c,Math.max(0,rr-c*.6),true); g.fill("evenodd"); g.beginPath(); rrect(g,ex+2*c,ey+2*c,3*c,3*c,ri); g.fill(); }
+  });
+  al.forEach(function(p){ var ex=x0+(p[0]-2+M)*c, ey=y0+(p[1]-2+M)*c, rr=L.eye==="square"?0:c*1.2;
+    g.fillStyle=fg; g.beginPath(); rrect(g,ex,ey,5*c,5*c,rr); rrect(g,ex+c,ey+c,3*c,3*c,Math.max(0,rr-c*.5),true); g.fill("evenodd");
+    g.beginPath(); if(L.eye==="square") g.rect(ex+2*c,ey+2*c,c,c); else g.arc(ex+2.5*c,ey+2.5*c,c*.55,0,Math.PI*2); g.fill(); });
+  if(lg){ var ps=lg*c, px0=-ps/2, py0=-ps/2; g.fillStyle=L.bg||"#ffffff"; g.beginPath(); rrect(g,px0,py0,ps,ps,c*1.2); g.fill();
+    var d=ICONS[L.logo]; if(d){ g.save(); var k=ps*.7/24; g.translate(-12*k,-12*k); g.scale(k,k); g.lineWidth=2; g.lineCap="round"; g.lineJoin="round"; g.strokeStyle=fg; g.stroke(new Path2D(d)); g.restore(); } }
+}
+function alignPos(ver){ if(ver<2) return []; var n=Math.floor(ver/7)+2, size=ver*4+17, step=ver===32?26:Math.ceil((ver*4+4)/(n*2-2))*2, res=[6];
+  for(var i=0,pos=size-7;i<n-1;i++,pos-=step) res.splice(1,0,pos); return res; }
+function rrect(g,x,y,w,h,r,rev){
+  r=Math.min(r||0,w/2,h/2);
+  if(!rev){ g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+  else { g.moveTo(x+r,y); g.arcTo(x,y,x,y+h,r); g.arcTo(x,y+h,x+w,y+h,r); g.arcTo(x+w,y+h,x+w,y,r); g.arcTo(x+w,y,x,y,r); g.closePath(); }
+}
+
 /* ─────────── попадание пальцем ─────────── */
 function toLocal(L,px,py){ var a=-(L.rot||0)*Math.PI/180, dx=px-L.x, dy=py-L.y; return { x:dx*Math.cos(a)-dy*Math.sin(a), y:dx*Math.sin(a)+dy*Math.cos(a) }; }
 function hitLayer(W,px,py,pad){
@@ -191,6 +277,7 @@ function hitLayer(W,px,py,pad){
 /* ─────────── шаблоны ─────────── */
 function T_text(W,o){ var L=textLayer(W,o.k||"s"); for(var k in o) if(k!=="k") L[k]=o[k]; if(o.fx) L.fx=Object.assign({t:"none",c:"#000",c2:"#fff",a:50},o.fx); return L; }
 function T_shape(W,kind,o){ var L=shapeLayer(W,kind); for(var k in o) L[k]=o[k]; return L; }
+function T_qr(W,kind,o){ var L=qrLayer(W,kind); for(var k in o) if(k!=="d") L[k]=o[k]; if(o.d) for(var j in o.d) L.d[j]=o.d[j]; return L; }
 function T_icon(W,name,o){ var L=iconLayer(W,name); for(var k in o) L[k]=o[k]; return L; }
 var GTEMPLATES = [
   { id:"yt_loud", group:"yt", name:"Превью: громкое", size:"yt", make:function(W){ W.bg={t:"grad",c1:"#0d0f1a",c2:"#28104a",ang:120};
@@ -242,14 +329,20 @@ var GTEMPLATES = [
   { id:"wifi", group:"biz", name:"Табличка для кафе", size:"a4", make:function(W){ W.bg={t:"color",c1:"#132219",c2:"#132219",ang:0};
     W.layers=[ T_text(W,{text:"Добро пожаловать",font:"cormorant",weight:700,size:230,y:700,color:"#f1ead6"}),
       T_shape(W,"line",{y:900,w:900,h:6,fill:"#d9b36c"}),
-      T_icon(W,"coffee",{y:1500,w:700,h:700,color:"#d9b36c",sw:1.2}),
-      T_text(W,{text:"Wi-Fi: Zerno_Guest\nпароль: kofe2026",font:"montserrat",weight:600,size:110,y:2450,color:"#f1ead6",lh:1.4}),
+      T_icon(W,"coffee",{y:1300,w:500,h:500,color:"#d9b36c",sw:1.2}),
+      T_qr(W,"wifi",{y:2250,w:1000,h:1000,fg:"#132219",bg:"#f1ead6",style:"round",eye:"round",logo:"coffee",d:{ssid:"Zerno_Guest",pass:"kofe2026",enc:"WPA"}}),
+      T_text(W,{text:"Wi-Fi: наведите камеру на код",font:"montserrat",weight:600,size:90,y:2900,color:"#f1ead6"}),
       T_text(W,{text:"Каждый день 8:00-20:00",font:"montserrat",weight:600,size:90,y:3100,color:"#9fc58b"}) ]; } },
   { id:"bcard", group:"biz", name:"Визитка", size:"bcard", make:function(W){ W.bg={t:"color",c1:"#ffffff",c2:"#ffffff",ang:0};
     W.layers=[ T_shape(W,"rect",{x:60,y:295,w:120,h:591,fill:"#3b82f6"}),
       T_text(W,{text:"Иван Петров",font:"inter",weight:800,size:70,x:560,y:200,color:"#111317"}),
       T_text(W,{text:"фотограф",font:"inter",weight:600,size:40,x:560,y:270,color:"#6b7280"}),
-      T_text(W,{text:"+48 600 000 000\nivan@mail.com",font:"inter",weight:600,size:36,x:560,y:420,color:"#111317",lh:1.5}) ]; } }
+      T_text(W,{text:"+48 600 000 000\nivan@mail.com",font:"inter",weight:600,size:36,x:560,y:420,color:"#111317",lh:1.5}),
+      T_qr(W,"contact",{x:900,y:295,w:240,h:240,margin:1,d:{name:"Иван Петров",phone:"+48 600 000 000",email:"ivan@mail.com",org:"фотограф"}}) ]; } },
+  { id:"qr_follow", group:"biz", name:"QR на канал", size:"square", make:function(W){ W.bg={t:"grad",c1:"#1a1030",c2:"#46203f",ang:160};
+    W.layers=[ T_text(W,{text:"Подпишитесь",font:"unbounded",weight:700,size:86,y:170}),
+      T_qr(W,"url",{y:560,w:560,h:560,fg:"#1a1030",bg:"#ffffff",style:"dots",eye:"round",logo:"play",d:{url:"https://youtube.com/"}}),
+      T_text(W,{text:"наведите камеру телефона",font:"manrope",weight:600,size:42,y:940,color:"rgba(255,255,255,.75)"}) ]; } }
 ];
 var GTPL_GROUPS=[["yt","YouTube"],["music","Музыка"],["fest","Праздник"],["biz","Дело"]];
 function fromGTemplate(id){

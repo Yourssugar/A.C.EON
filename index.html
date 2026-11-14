@@ -714,7 +714,12 @@
   var trW=0,trH=0,blW=0,blH=0,outW=0,outH=0;
   var qScale=1;
   var HRc=30;                      /* радиус тени дыры в CSS-пикселях */
-  var born=0, bornT=.05, bornRate=.32;  /* рождение вселенной: 0..1, цель двигают строки загрузки */
+  /* рождение вселенной 0..1 по реальному времени: плавный наплыв за BORN_MS, без рывков от строк загрузки.
+     Кривая smoothstep: точка и взрыв в первые 1.5 с, дальше всё проступает одно за другим и мягко дотягивается */
+  /* часы рождения идут по кадрам (шаг не больше 50 мс): на медленном устройстве сборка просто идёт медленнее, без скачков */
+  var born=0, bornClk=0, bornDur=6.5;
+  function bornAt(){ return ss(0,1,bornClk/bornDur); }
+  function reborn(sec){ bornClk=0; bornDur=sec; born=0; }
   /* эффекты слов терминала: у каждого время окончания, значения плавно идут к 1 и обратно */
   var FX={cold:0,coll:0,ice:0,dark:0,sine:0,rej:0,alarm:0,end:{}};
   function fxOn(k,sec){ FX.end[k]=tGlobal+sec; }
@@ -891,7 +896,7 @@
     'void main(){',
     '  vec2 p=vec2(vUV.x,1.0-vUV.y)*uRes;',
     /* сборка при загрузке: точка, взрыв, тень дыры, фон, диск (дальше частицы и граф в JS) */
-    '  float hb=smoothstep(0.1,0.32,uBorn), sk=smoothstep(0.24,0.55,uBorn), dk=smoothstep(0.34,0.62,uBorn);',
+    '  float hb=smoothstep(0.08,0.36,uBorn), sk=smoothstep(0.18,0.62,uBorn), dk=smoothstep(0.3,0.66,uBorn);',
     '  float hr=uHR*(1.0+uWarp*7.0)*max(hb,0.001)*(1.0+uTx.x*0.06)*(1.0+uFxA.y*0.75);',
     '  vec2 d=p-uC; float r=length(d)+0.0001;',
     '  float ct=cos(0.10), st=sin(0.10);',
@@ -961,10 +966,10 @@
     '  vec3 tr=texture2D(uTex,lu).rgb*(1.0-sh);',
     '  col+=tr+texture2D(uBloom,lu).rgb*(1.0+uWarp*1.2);',
     /* рождение: вспышка из точки */
-    '  float pt=1.0-smoothstep(0.1,0.18,uBorn);',                  /* сингулярность: дрожащая точка */
+    '  float pt=1.0-smoothstep(0.1,0.2,uBorn);',                  /* сингулярность: дрожащая точка */
     '  col+=vec3(1.0,0.96,0.9)*exp(-r*r/(9.0+uBorn*400.0))*pt*(1.3+0.4*sin(uTime*23.0));',
-    '  float bg=exp(-pow((uBorn-0.16)/0.06,2.0));',                  /* большой взрыв */
-    '  col+=vec3(1.0,0.9,0.78)*bg*(exp(-r/(uRes.y*0.12))*2.2+exp(-pow((r-uRes.y*(uBorn-0.08)*3.0)/18.0,2.0))*0.9);',
+    '  float bg=exp(-pow((uBorn-0.16)/0.075,2.0));',                  /* большой взрыв */
+    '  col+=vec3(1.0,0.9,0.78)*bg*(exp(-r/(uRes.y*0.12))*1.6+exp(-pow((r-uRes.y*(uBorn-0.08)*3.0)/18.0,2.0))*0.9);',
     /* передача: луч от дыры вниз к карточке */
     '  if(uTx.x>0.01){ float bw=2.0+uTx.x*3.0; float ib=exp(-pow((p.x-uC.x)/bw,2.0))*step(uC.y+hr,p.y)*step(p.y,uTx.y);',
     '    col+=vec3(0.55,0.9,1.0)*ib*uTx.x*(0.7+0.3*sin(p.y*0.08-uTime*14.0)); }',
@@ -1378,7 +1383,7 @@
     var warpAmt=VX.warp?Math.min((VX.g-VX.base)/8,1):0;
     var coll=Math.max(0,Math.min(1,(VX.g/VX.base-3)/10))*.75;
     var rev=VX.rev?1:0; GR.revA=(GR.revA||0)+(rev-(GR.revA||0))*Math.min(1,dt*2);
-    var birth=ss(.85,1,born);
+    var birth=ss(.7,1,born);
     /* наведение: какое скопление под курсором */
     var hv=-1;
     if(mAct&&!isCoarse&&!VX.warp){ var bd=R*1.5;
@@ -1481,7 +1486,7 @@
     var birth=GR.birth, be=GR.be||0, wa=(1-GR.warpA)*(1-TX.k*.55)*(1-FX.dark*.8);
     if(!gLineArr||gLineArr.length<(E.length+700)*14){ gLineArr=new Float32Array((E.length+700)*14); gNodeArr=new Float32Array((N.length+600)*7); gDustArr=new Float32Array(64*7); }
     var L=gLineArr, li=0, P=gNodeArr, pi=0;
-    function sectA(c){ return ss(.6+c*.05,.68+c*.05,born); }
+    function sectA(c){ return ss(.52+c*.06,.72+c*.06,born); }
     function line(x1,y1,x2,y2,c1,a1,c2,a2){
       L[li++]=x1;L[li++]=y1;L[li++]=c1[0]/255;L[li++]=c1[1]/255;L[li++]=c1[2]/255;L[li++]=a1;L[li++]=0;
       L[li++]=x2;L[li++]=y2;L[li++]=c2[0]/255;L[li++]=c2[1]/255;L[li++]=c2[2]/255;L[li++]=a2;L[li++]=0;
@@ -1630,7 +1635,7 @@
     gl.uniform1f(U(pp,'uRed'),VX.red>.5?1:0);
     gl.uniform1f(U(pp,'uWords'),PRO.words?1:0);
     gl.uniform1f(U(pp,'uMaxPt'),maxPt);
-    gl.uniform1f(U(pp,'uBorn'),Math.max(.02,ss(.4,.72,born)));
+    gl.uniform1f(U(pp,'uBorn'),Math.max(.02,ss(.34,.78,born)));
     gl.drawArrays(gl.POINTS,0,n);
     gl.disable(gl.BLEND);
 
@@ -1908,7 +1913,7 @@
     var gTarget=VX.target*VX.idle*(1-TX.k*.65);
     VX.g+=(gTarget-VX.g)*(1-Math.pow(1-(VX.warp?.045:.02),dt*60));
     VX.worldA+=dt*.06*VX.g;
-    born=Math.min(1,born+Math.max(0,Math.min(bornT-born,dt*bornRate)));
+    bornClk+=dt; born=bornAt();
     fxStep(dt);
     TX.k+=((TX.on?1:0)-TX.k)*Math.min(1,dt*3);
     diskRot+=dt*.012*VX.g*(VX.rev?-1:1)*(VX.warp?3:1);
@@ -2383,9 +2388,8 @@
         /* узлы гаснут один за другим, потом вселенная рождается заново: новый граф, новые галактики, новое небо */
         GR.nodes.forEach(function(n){ if(n.st===0||n.st===4){ n.st=1; n.ft=-Math.random()*1.1; } });
         setTimeout(function(){
-          born=0; bornT=1; bornRate=.5; GR.nodes=[]; GR.gals=null; GR.pk=[];
+          reborn(4.8); GR.nodes=[]; GR.gals=null; GR.pk=[];
           if(SKY.cur)skyLoad(skyPick(SKY.grp),false);
-          setTimeout(function(){ bornRate=.32; },4000);
         },1500);
       } else {
         var wipe=document.createElement('div');
@@ -2753,16 +2757,15 @@
   ]);
   var BREACH_AT=2;
   function typeBoot(i){
-    /* каждая строка загрузки достраивает вселенную: точка, взрыв, дыра, фон, диск, вещество, граф */
-    bornT=Math.max(bornT,Math.min(1,.08+.92*i/bootLines.length));   /* первая строка: точка, вторая: взрыв */
     if(i>=bootLines.length){
-      bornT=1;
-      setTimeout(function(){
+      /* интерфейс выходит, когда вселенная почти собралась, а не по последней строке */
+      (function waitBorn(){
+        if(born<.93&&!reduceMotion&&!document.hidden){ setTimeout(waitBorn,120); return; }
         document.body.classList.remove('booting');
         boot.classList.add('gone');
         if(!savedLang())showLangSel(true);
         else afterLang();
-      },350);
+      })();
       return;
     }
     var d=document.createElement('div');
@@ -2891,7 +2894,7 @@
     simT=40; born=1;
     if(glOK){ graphStep(.016); for(var rs=0;rs<6;rs++)glRender(.016,rs===0); }
     else renderStatic(0);
-    boot.classList.add('gone'); document.body.classList.remove('booting'); bornT=1;
+    boot.classList.add('gone'); document.body.classList.remove('booting');
     if(!savedLang())showLangSel(true);
     else if(savedU===null)showUniverseSel(true);
     document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});

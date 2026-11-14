@@ -187,10 +187,10 @@ edgeF:FP+[
 
 nodeV:VH+[
  'attribute vec2 aQ;attribute vec4 aN0,aN1,aN2,aN3,aN4;',
- 'varying vec2 vL;varying vec4 vA,vB,vC;varying vec3 vCol;',
- 'void main(){vL=aQ*aN0.z;vA=aN1;vB=aN2;vC=aN3;vCol=aN4.rgb;gl_Position=clip(aN0.xy+vL,uZ);}'].join('\n'),
+ 'varying vec2 vL;varying vec4 vA,vB,vC;varying vec3 vCol;varying float vMode;',
+ 'void main(){vL=aQ*aN0.z;vA=aN1;vB=aN2;vC=aN3;vCol=aN4.rgb;vMode=aN4.a;gl_Position=clip(aN0.xy+vL,uZ);}'].join('\n'),
 nodeF:FP+OVER+[
- 'uniform float uT,uPx;varying vec2 vL;varying vec4 vA,vB,vC;varying vec3 vCol;',
+ 'uniform float uT,uPx;varying vec2 vL;varying vec4 vA,vB,vC;varying vec3 vCol;varying float vMode;',
  'const float TAU=6.2831853;',
  'float ring(float d,float R,float w){return clamp((w*.5-abs(d-R))/uPx+.5,0.,1.);}',
  'float arcm(float a,float a0,float len){return step(mod(a-a0,TAU),len);}',
@@ -206,6 +206,24 @@ nodeF:FP+OVER+[
  ' over(col,glw*((off>.5?.22:.7)+hot*.5+(kind>2.5?.4:0.)));',
  ' if(sp<1.&&sp>0.)over(col,ring(d,rr*(2.5-sp*1.6),2.)*(1.-sp)*.47);',
  ' if(rip>0.)over(col,ring(d,r+(1.-rip)*42.,1.5)*rip*.55);',
+ /* узел-скопление: сами точки и нити рисует pushCluster, здесь только мягкая тень под подписью,
+    свечение, маяк, прицел при наведении и глитч */
+ ' if(vMode<.5){',
+ '  over(vec3(.012,.016,.04),smoothstep(r*1.35,r*.15,d)*(off>.5?.35:.5));',
+ '  over(col,exp(-d*d/(r*r*1.6))*(.10+hot*.16)*(off>.5?.4:1.));',
+ '  if(hot>.03&&kind<2.5){',
+ '   float b=r*1.55+(1.-hot)*12., Lb=b*.38; vec2 q=abs(vL);',
+ '   float h1=clamp((.65-abs(q.y-b))/uPx+.5,0.,1.)*step(b-Lb,q.x)*step(q.x,b+.65);',
+ '   float v1=clamp((.65-abs(q.x-b))/uPx+.5,0.,1.)*step(b-Lb,q.y)*step(q.y,b+.65);',
+ '   over(col,max(h1,v1)*hot*.7);',
+ '  }',
+ '  if(beacon>.5&&off<.5&&sp>.9){',
+ '   vec2 bp=vec2(0.,-(r+22.)); float ph=fract(T*.7);',
+ '   over(col,dotc(vL-bp,2.3)*(.45+.35*sin(T*3.)));',
+ '   over(col,ring(length(vL-bp),2.5+ph*9.,1.)*(1.-ph)*.5);',
+ '  }',
+ '  gl_FragColor=P; return;',
+ ' }',
  ' float rb=r*(1.+.025*sin(T*1.3+seed));',
  ' float gt2=clamp(length(vL+vec2(rb*.25))/(rb*1.25),0.,1.);',
  ' float a0=off>.5?.17:mix(.37,.59,hot), a1=off>.5?.016:.04;',
@@ -785,7 +803,7 @@ function pushNode(n){
     nodeData[o+6]=r; nodeData[o+7]=n.radius; nodeData[o+8]=kind; nodeData[o+9]=n.off?1:0;
     nodeData[o+10]=n.hotT; nodeData[o+11]=n.spawnT; nodeData[o+12]=n.ripple; nodeData[o+13]=glitch?(Math.random()-.5)*7:0;
     nodeData[o+14]=n.seed%1000; nodeData[o+15]=sats; nodeData[o+16]=beacon; nodeData[o+17]=n.seed%2?1:-1;
-    nodeData[o+18]=c[0]; nodeData[o+19]=c[1]; nodeData[o+20]=c[2]; nodeData[o+21]=1;
+    nodeData[o+18]=c[0]; nodeData[o+19]=c[1]; nodeData[o+20]=c[2]; nodeData[o+21]=n.role==='core'?1:0;
     nN++;
   }
 }
@@ -803,6 +821,52 @@ function pushRing(x,y,R,w,a,c){
   }
 }
 function easeOut(t){ return 1-(1-t)*(1-t); }
+
+/* --- узел как дрейфующее скопление ---
+   Вместо круга с кольцами каждый узел это маленький граф из светящихся точек и нитей. Точки медленно
+   дрейфуют по своим орбитам вокруг центра узла. При наведении (и у сектора в центре уровня) скопление
+   стягивается: внешние точки встают в кольцо, внутренние собираются к центру, нити становятся многоугольником */
+function mkCluster(n){
+  let sd=n.seed*9301+49297; const rnd=()=>{ sd=(sd*9301+49297)%233280; return sd/233280; };
+  const N=n.off?7:(n.container||n.role==='hub'?24:Math.round(10+(n.def.w||2)*2.5));
+  const pts=[];
+  for(let i=0;i<N;i++){
+    const inner=i<Math.max(2,N*.22|0);
+    pts.push({a0:rnd()*6.2832, r0:inner?.15+rnd()*.3:.55+rnd()*.45, w:(rnd()<.5?-1:1)*(.06+rnd()*.16),
+      f:.3+rnd()*.9, ph:rnd()*6.2832, big:rnd()<.22, inner:inner});
+  }
+  const ring=pts.filter(p=>!p.inner).sort((a,b)=>a.a0-b.a0), M=ring.length;
+  ring.forEach((p,k)=>{ p.k=k; });
+  const idx=p=>pts.indexOf(p), E=[];
+  for(let k=0;k<M;k++)E.push([idx(ring[k]),idx(ring[(k+1)%M])]);
+  for(let k=0;k<M;k+=3)E.push([idx(ring[k]),idx(ring[(k+Math.max(2,M/3|0))%M])]);
+  pts.forEach((p,i)=>{ if(p.inner){ const k=(Math.round(p.a0/6.2832*M))%M; E.push([i,idx(ring[k])]); E.push([i,idx(ring[(k+(M/2|0))%M])]); } });
+  return {pts:pts,E:E,M:M};
+}
+function pushCluster(n){
+  const sp=easeOut(n.spawnT), scl=n.swScale==null?1:n.swScale, kk=sp*scl;
+  if(kk<.02)return;
+  if(!n.cl)n.cl=mkCluster(n);
+  const C=n.cl, T=NOW, R=n.radius*1.25*kk;
+  let h=n.role==='hub'?1:n.hotT; h=h*h*(3-2*h);
+  const gj=(n.glitchUntil>Date.now())?(Math.random()-.5)*7:0, spin=T*.22*(n.seed%2?1:-1);
+  const col=hex(n.color), lit=[Math.min(1,col[0]*.6+.4),Math.min(1,col[1]*.6+.4),Math.min(1,col[2]*.6+.4)];
+  const P=C.pts.map(p=>{
+    const a=p.a0+p.w*T, rr=R*p.r0*(1+.14*Math.sin(T*p.f+p.ph));
+    const ax=n.x+Math.cos(a)*rr, ay=n.y+Math.sin(a)*rr*.92;
+    let bx, by;
+    if(p.inner){ const ai=p.a0+T*.5; bx=n.x+Math.cos(ai)*R*.18*p.r0; by=n.y+Math.sin(ai)*R*.18*p.r0; }
+    else { const ac=p.k/C.M*6.2832+spin; bx=n.x+Math.cos(ac)*R*.8; by=n.y+Math.sin(ac)*R*.8; }
+    return {x:ax+(bx-ax)*h+gj, y:ay+(by-ay)*h};
+  });
+  const off=n.off, la=(off?.1:(n.role==='hub'?.3:.2+h*.26))*kk;
+  C.E.forEach(e=>pushEdge([P[e[0]],P[e[1]]],col,col,.42+h*.2,la));
+  C.pts.forEach((p,i)=>{
+    const q=P[i], tw=.75+.25*Math.sin(T*2.1*p.f+p.ph), a=(off?.35:.85)*tw*kk;
+    if(p.big&&!off)pushSp(q.x,q.y,(13+h*5)*SC,1,col,.32*a);
+    pushSp(q.x,q.y,(p.big?3.6:2.4)*SC*(1+h*.25),0,p.big?[1,1,1]:lit,a);
+  });
+}
 
 function buildEdges(){
   eN=0;
@@ -977,6 +1041,19 @@ function render(k){
     gl.uniform2f(U(pg,'uRes'),W,H); gl.uniform1f(U(pg,'uZ'),cam.z); gl.uniform1f(U(pg,'uPx'),px); gl.uniform1f(U(pg,'uT'),NOW);
     gl.drawArrays(gl.TRIANGLES,0,nN);
   }
+  /* скопления поверх подложек: нити сразу, точки уходят в общий проход искр ниже */
+  eN=0;
+  nodes.forEach(n=>{ if(!n.hidden&&n.role!=='core')pushCluster(n); });
+  if(eN){
+    gl.blendFunc(gl.ONE,gl.ONE);
+    pg=PG.edge; gl.useProgram(pg.p);
+    gl.bindBuffer(gl.ARRAY_BUFFER,BUF.edge); gl.bufferData(gl.ARRAY_BUFFER,edgeData.subarray(0,eN*9),gl.DYNAMIC_DRAW);
+    attribs(BUF.edge,[2,3,4]);
+    gl.uniform2f(U(pg,'uRes'),W,H); gl.uniform1f(U(pg,'uZ'),cam.z); gl.uniform1f(U(pg,'uPx'),px);
+    gl.uniform1f(U(pg,'uDashOff'),NOW); gl.uniform1f(U(pg,'uDashed'),0);
+    gl.drawArrays(gl.TRIANGLES,0,eN);
+    gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+  }
   fN=0;
   for(let i=novas.length-1;i>=0;i--){
     const nv=novas[i]; nv.t+=.024*k;
@@ -992,7 +1069,9 @@ function render(k){
     gl.drawArrays(gl.TRIANGLES,0,fN);
   }
   if(sN>sA){
-    pg=PG.sp; gl.useProgram(pg.p); attribs(BUF.sp,[2,2,4]);
+    pg=PG.sp; gl.useProgram(pg.p);
+    gl.bindBuffer(gl.ARRAY_BUFFER,BUF.sp); gl.bufferData(gl.ARRAY_BUFFER,spData.subarray(0,sN*8),gl.DYNAMIC_DRAW);   /* точки скоплений добавились после первой загрузки */
+    attribs(BUF.sp,[2,2,4]);
     gl.uniform2f(U(pg,'uRes'),W,H); gl.uniform1f(U(pg,'uZ'),cam.z); gl.uniform1f(U(pg,'uDpr'),DPR);
     gl.drawArrays(gl.POINTS,sA,sN-sA);
   }

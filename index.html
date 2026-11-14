@@ -77,8 +77,9 @@
 
     #boot {
       position:fixed; inset:0; z-index:120;
-      background:radial-gradient(ellipse at 50% 46%, rgba(14,16,36,.25), rgba(14,16,36,.72) 70%);
-      padding:26px; color:#2fe08a; font-size:11px; text-shadow:0 0 10px rgba(47,224,138,.35); line-height:2; letter-spacing:2px;
+      background:none; pointer-events:none;
+      padding:22px 26px; color:#2fe08a; font-size:10px; line-height:2; letter-spacing:2px;
+      text-shadow:0 0 10px rgba(47,224,138,.4), 0 1px 3px rgba(0,0,0,.9);
       transition:opacity .8s ease;
     }
     #boot.gone { opacity:0; pointer-events:none; }
@@ -224,25 +225,28 @@
 
     #routes { margin-top:34px; display:flex; gap:22px; pointer-events:auto; flex-wrap:wrap; justify-content:center; }
     /* кнопки: стеклянные капсулы Codex (home/u/btn_*.webp), края по 160px картинки не тянутся */
+    /* кнопки: стеклянные капсулы Codex (home/u/btn_*.webp) на ::before, каждая своего цвета через --hf:
+       INFO зелёная, CORE синяя, как было в старом дизайне. Края картинки по 160px не тянутся */
     .rbtn {
-      position:relative;
+      position:relative; isolation:isolate;
       font-family:'JetBrains Mono',monospace; font-weight:400;
       font-size:10px; letter-spacing:5px;
       height:46px; line-height:46px; padding:0 40px 0 48px; text-decoration:none; white-space:nowrap;
       cursor:var(--cur-p); display:inline-block;
-      border:0; border-image:url(home/u/btn_normal.webp?v=1) 0 160 fill / 0 46px stretch;
-      filter:saturate(1.5) contrast(1.12);
       transition:transform .2s, filter .22s;
     }
-    .rbtn:hover { border-image-source:url(home/u/btn_hover.webp?v=1); }
-    .rbtn:active { border-image-source:url(home/u/btn_press.webp?v=1); transform:translateY(0) !important; }
+    .rbtn::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+      border-image:url(home/u/btn_normal.webp?v=1) 0 160 fill / 0 46px stretch; filter:var(--hf); transition:filter .22s; }
+    .rbtn:hover::before { border-image-source:url(home/u/btn_hover.webp?v=1); }
+    .rbtn:active::before { border-image-source:url(home/u/btn_press.webp?v=1); }
+    .rbtn:active { transform:translateY(0) !important; }
     /* мягкое дыхание внутри капсулы: анимируется только opacity */
     .rbtn::after { content:''; position:absolute; inset:10px 6px; border-radius:20px; pointer-events:none; opacity:.25; will-change:opacity; }
-    #btn-info { color:#f0fff4; text-shadow:0 0 6px rgba(80,255,150,.9), 0 0 16px rgba(80,255,150,.5); }
-    #btn-info::after { box-shadow:inset 0 0 14px rgba(155,216,168,.35); animation:btnPulse 2.1s ease-in-out infinite; }
+    #btn-info { --hf:hue-rotate(-62deg) saturate(2.1) contrast(1.12); color:#d6ffe3; text-shadow:0 0 6px rgba(40,255,120,.95), 0 0 18px rgba(40,255,120,.55); }
+    #btn-info::after { box-shadow:inset 0 0 16px rgba(40,255,120,.5), 0 0 18px rgba(40,255,120,.25); animation:btnPulse 2.1s ease-in-out infinite; }
     #btn-info:hover { transform:translateY(-2px); color:#fff; }
-    #btn-core { color:#f0feff; text-shadow:0 0 6px rgba(60,220,255,.9), 0 0 16px rgba(60,220,255,.5); }
-    #btn-core::after { box-shadow:inset 0 0 14px rgba(169,155,224,.35); animation:btnPulse 2.7s ease-in-out infinite; }
+    #btn-core { --hf:hue-rotate(28deg) saturate(2) contrast(1.15); color:#d9eeff; text-shadow:0 0 6px rgba(60,150,255,.95), 0 0 18px rgba(60,150,255,.55); }
+    #btn-core::after { box-shadow:inset 0 0 16px rgba(60,150,255,.5), 0 0 18px rgba(60,150,255,.25); animation:btnPulse 2.7s ease-in-out infinite; }
     #btn-core:hover { transform:translateY(-2px); color:#fff; }
     @keyframes btnPulse { 0%,100%{opacity:.25} 50%{opacity:1} }
     .rbtn.shake { animation:bshake .35s linear; }
@@ -250,8 +254,8 @@
       0%,100%{transform:translateX(0)} 20%{transform:translateX(-3px) skewX(-1deg)}
       40%{transform:translateX(3px) skewX(1deg)} 60%{transform:translateX(-2px)} 80%{transform:translateX(2px)}
     }
-    .rbtn.flicker-red { color:#ff6b80 !important; filter:hue-rotate(150deg) saturate(1.8); }
-    .rbtn.flicker-dim { color:#6a8ab0 !important; filter:brightness(.55) saturate(1.5); }
+    .rbtn.flicker-red { color:#ff6b80 !important; --hf:hue-rotate(160deg) saturate(2.2); }
+    .rbtn.flicker-dim { color:#6a8ab0 !important; filter:brightness(.55); }
     #core-hover {
       position:absolute; left:50%; top:calc(100% + 10px); transform:translateX(-50%);
       font-size:8px; letter-spacing:3px; color:#2a7fc0; white-space:nowrap;
@@ -344,6 +348,37 @@
     .lg-i.sel b{ color:#00b8cc; }
     .lg-i.cur::after{ content:'\25c2'; margin-left:auto; color:#0e7a8a; }
 
+    /* входящая передача: сообщение узла посетителю */
+    #tx{
+      position:fixed; left:50%; z-index:121; width:min(560px,90vw); pointer-events:none;
+      transform:translate(-50%,0) scale(.2,.02); opacity:0; transform-origin:50% 0;
+      padding:12px 18px 12px; border:1px solid var(--tc); border-radius:4px;
+      background:linear-gradient(180deg,rgba(6,10,26,.86),rgba(4,6,18,.78));
+      box-shadow:0 0 26px color-mix(in srgb,var(--tc) 35%,transparent), inset 0 0 22px color-mix(in srgb,var(--tc) 12%,transparent);
+      transition:transform .45s cubic-bezier(.2,.8,.2,1), opacity .25s, top .45s cubic-bezier(.6,0,.9,.4);
+    }
+    #tx.open{ transform:translate(-50%,0) scale(1,1); opacity:1; }
+    #tx.fold{ transform:translate(-50%,0) scale(1,.02); transition:transform .28s ease-in; }
+    #tx.gone{ transform:translate(-50%,-50%) scale(0,.02); opacity:.2; }
+    #tx::before{ content:''; position:absolute; inset:0; pointer-events:none; border-radius:4px;
+      background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px); }
+    .tx-h{ display:flex; justify-content:space-between; font-size:9px; letter-spacing:3px; color:var(--tc); }
+    .tx-l{ display:flex; align-items:center; gap:8px; text-shadow:0 0 8px var(--tc); }
+    .tx-dot{ width:7px; height:7px; border-radius:50%; background:var(--tc); box-shadow:0 0 8px var(--tc); animation:txb .7s steps(2) infinite; }
+    @keyframes txb{ 50%{ opacity:.15; } }
+    .tx-r{ color:#8193c8; }
+    .tx-w{ display:block; width:100%; height:24px; margin:6px 0 4px; opacity:.75; }
+    .tx-b{ font-size:clamp(15px,2vw,21px); letter-spacing:3px; line-height:1.6; color:#fff; text-align:center; min-height:1.6em;
+      text-shadow:0 0 12px color-mix(in srgb,var(--tc) 60%,transparent), 1px 0 rgba(255,60,130,.45), -1px 0 rgba(60,220,255,.45); padding:4px 0 8px; }
+    .tx-f{ display:flex; justify-content:space-between; align-items:center; font-size:9px; letter-spacing:3px; color:#8193c8;
+      border-top:1px solid color-mix(in srgb,var(--tc) 30%,transparent); padding-top:8px; }
+    .tx-src{ display:flex; align-items:center; gap:8px; }
+    .tx-src img{ width:22px; height:22px; filter:drop-shadow(0 0 4px currentColor); }
+    .tx-f .sigbars i{ background:var(--tc); }
+    body.tx-on #stage, body.tx-on #hud, body.tx-on #hud-l, body.tx-on #sb{ opacity:.18; transition:opacity .5s; }
+    #stage, #hud, #hud-l, #sb{ transition:opacity .6s; }
+    /* сборка вселенной при загрузке: интерфейс появляется после */
+    body.booting #hud, body.booting #hud-l, body.booting #sb, body.booting #mdock{ opacity:0; }
     /* прорыв сигнала: фраза сквозь сломанную загрузку */
     #breach{
       position:fixed; left:50%; top:46%; transform:translate(-50%,-50%); z-index:121;
@@ -353,7 +388,7 @@
       text-shadow:0 0 14px rgba(0,204,102,.35), 1px 0 rgba(221,0,37,.55), -1px 0 rgba(0,136,187,.55);
     }
     #breach.on{ opacity:1; }
-    #breach-bg{ position:fixed; inset:0; z-index:119; background:rgba(0,0,0,.72); opacity:0; pointer-events:none; transition:opacity .3s; }
+    #breach-bg{ position:fixed; inset:0; z-index:119; background:radial-gradient(ellipse at 50% 50%, rgba(2,3,12,.2), rgba(2,3,12,.7) 75%); opacity:0; pointer-events:none; transition:opacity .5s; }
     #breach-bg.on{ opacity:1; }
     #boot.br-glitch > div{ animation:bootJit .14s steps(2) infinite; }
     #boot.br-dim > div{ opacity:.12; transition:opacity .25s; }
@@ -415,14 +450,15 @@
       /* телефон: логотип ниже HUD, кнопки в ряд, чтобы канал и кнопки не налезали на дыру */
       #logo-wrap { margin-top:124px; }
       #routes { gap:10px; margin-top:26px; flex-wrap:nowrap; }
-      .rbtn { height:42px; line-height:42px; padding:0 22px 0 34px; letter-spacing:3px; border-image-width:0 42px; }
+      .rbtn { height:42px; line-height:42px; padding:0 22px 0 34px; letter-spacing:3px; }
+      .rbtn::before { border-image-width:0 42px; }
       #resume { margin-top:12px; }
       #core-hover { display:none; }
       #tws { margin:16px 0 86px; }
     }
   </style>
 </head>
-<body>
+<body class="booting">
 
 <canvas id="src"></canvas>
 <canvas id="gl"></canvas>
@@ -666,7 +702,9 @@
   var trW=0,trH=0,blW=0,blH=0,outW=0,outH=0;
   var qScale=1;
   var HRc=30;                      /* радиус тени дыры в CSS-пикселях */
-  var born=0;                      /* рождение вселенной при загрузке: 0..1 */
+  var born=0, bornT=.05;           /* рождение вселенной: 0..1, цель двигают строки загрузки */
+  function ss(a,b,x){ x=Math.max(0,Math.min(1,(x-a)/(b-a))); return x*x*(3-2*x); }
+  var TX={on:false,k:0,slow:1,beamY:-1,sector:-1};
   var jetI=.06, jetT=0;            /* яркость джетов, таймер выброса */
   var IMG={};                      /* картинки Codex: home/u/ */
 
@@ -783,7 +821,7 @@
     'uniform sampler2D uSkyA; uniform sampler2D uSkyB; uniform sampler2D uStars; uniform sampler2D uDisk; uniform sampler2D uJet;',
     'uniform vec2 uRes; uniform vec2 uC; uniform float uHR; uniform vec2 uSkyK; uniform float uSkyMix; uniform vec2 uPar;',
     'uniform float uTime; uniform float uRot; uniform float uWarp; uniform float uRed; uniform float uJetI; uniform float uBorn; uniform float uSq;',
-    'uniform vec3 uMP; uniform vec4 uRip[4]; uniform vec2 uScan; uniform float uZoom;',
+    'uniform vec3 uMP; uniform vec4 uRip[4]; uniform vec2 uScan; uniform float uZoom; uniform vec3 uTx;',
     'uniform vec3 uIris;',
     'const float PI=3.14159265;',
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
@@ -822,7 +860,9 @@
     '}',
     'void main(){',
     '  vec2 p=vec2(vUV.x,1.0-vUV.y)*uRes;',
-    '  float hr=uHR*(1.0+uWarp*7.0)*max(uBorn,0.001);',
+    /* сборка при загрузке: точка, взрыв, тень дыры, фон, диск (дальше частицы и граф в JS) */
+    '  float hb=smoothstep(0.1,0.32,uBorn), sk=smoothstep(0.24,0.55,uBorn), dk=smoothstep(0.34,0.62,uBorn);',
+    '  float hr=uHR*(1.0+uWarp*7.0)*max(hb,0.001)*(1.0+uTx.x*0.06);',
     '  vec2 d=p-uC; float r=length(d)+0.0001;',
     '  float ct=cos(0.10), st=sin(0.10);',
     '  vec2 dl=vec2(d.x*ct-d.y*st, d.x*st+d.y*ct);',      /* в плоскости диска (наклон -0.10) */
@@ -848,7 +888,7 @@
     '    for(int i=0;i<6;i++){ col+=sky(uC+(src-uC)*(1.0-float(i)*0.045*uWarp)); }',
     '    col*=0.1667*(1.0+uWarp*0.6);',
     '  } else col=sky(src);',
-    '  col*=smoothstep(0.0,0.35,uBorn);',
+    '  col*=sk;',
     '  col+=vec3(0.35,0.8,1.0)*rg*0.35;',
     /* джеты вдоль оси диска */
     '  float ay=abs(dl.y), w=hr*0.22+ay*0.07;',
@@ -858,7 +898,7 @@
     '    col+=j.rgb*ja;',
     '  }',
     /* дальняя половина диска (за дырой) */
-    '  vec4 db=dl.y<0.0?disk(dl,hr,0.0):vec4(0.0);',
+    '  vec4 db=dl.y<0.0?disk(dl,hr,0.0)*dk*(1.0+uTx.x*0.7):vec4(0.0);',
     '  col=col*(1.0-db.a*0.85)+db.rgb;',
     /* свет дальней части диска, обогнувший дыру: дуга сверху и тонкая снизу */
     '  if(r>hr){',
@@ -869,7 +909,7 @@
     '      float ang=pow(abs(sin(th)),0.45);',
     '      float bb=band;',
     '      vec4 t=texture2D(uDisk,vec2(-th/(2.0*PI)+uRot*1.3,0.04+bb*0.7));',
-    '      float a=clamp(t.a*top*ang*pow(max(0.0,1.0-bb),1.1)*smoothstep(0.0,0.05,band)*1.2,0.0,1.0);',
+    '      float a=clamp(t.a*top*ang*pow(max(0.0,1.0-bb),1.1)*smoothstep(0.0,0.05,band)*1.2,0.0,1.0)*dk;',
     '      col=mix(col,heatc(t.rgb,bb*0.6)*1.25,a);',
     '    }',
     '  }',
@@ -877,9 +917,9 @@
     '  float sh=smoothstep(hr+1.2,hr-1.2,r);',
     '  col=mix(col,vec3(0.012,0.008,0.03),sh);',
     '  float ring=exp(-pow((r-hr*1.03)/(hr*0.014+0.5),2.0));',
-    '  col+=vec3(1.4,1.2,0.95)*ring*1.5+vec3(1.0,0.55,0.3)*exp(-pow((r-hr*1.03)/(hr*0.08),2.0))*0.25;',
+    '  col+=(vec3(1.4,1.2,0.95)*ring*1.5+vec3(1.0,0.55,0.3)*exp(-pow((r-hr*1.03)/(hr*0.08),2.0))*0.25)*hb*(1.0+uTx.x*1.2);',
     /* ближняя половина диска поверх тени */
-    '  vec4 df=dl.y>=0.0?disk(dl,hr,1.0):vec4(0.0);',
+    '  vec4 df=dl.y>=0.0?disk(dl,hr,1.0)*dk*(1.0+uTx.x*0.7):vec4(0.0);',
     '  col=col*(1.0-df.a*0.9)+df.rgb;',
     /* вещество: шлейф частиц, слегка через линзу, со свечением */
     '  vec2 uv=vUV;',
@@ -888,8 +928,13 @@
     '  vec3 tr=texture2D(uTex,lu).rgb*(1.0-sh);',
     '  col+=tr+texture2D(uBloom,lu).rgb*(1.0+uWarp*1.2);',
     /* рождение: вспышка из точки */
-    '  float bf=max(0.0,1.0-uBorn*3.2);',
-    '  col+=vec3(1.0,0.9,0.8)*bf*bf*exp(-r/(uRes.y*(0.05+0.4*uBorn)))*1.6;',
+    '  float pt=1.0-smoothstep(0.1,0.18,uBorn);',                  /* сингулярность: дрожащая точка */
+    '  col+=vec3(1.0,0.96,0.9)*exp(-r*r/(9.0+uBorn*400.0))*pt*(1.3+0.4*sin(uTime*23.0));',
+    '  float bg=exp(-pow((uBorn-0.16)/0.06,2.0));',                  /* большой взрыв */
+    '  col+=vec3(1.0,0.9,0.78)*bg*(exp(-r/(uRes.y*0.12))*2.2+exp(-pow((r-uRes.y*(uBorn-0.08)*3.0)/18.0,2.0))*0.9);',
+    /* передача: луч от дыры вниз к карточке */
+    '  if(uTx.x>0.01){ float bw=2.0+uTx.x*3.0; float ib=exp(-pow((p.x-uC.x)/bw,2.0))*step(uC.y+hr,p.y)*step(p.y,uTx.y);',
+    '    col+=vec3(0.55,0.9,1.0)*ib*uTx.x*(0.7+0.3*sin(p.y*0.08-uTime*14.0)); }',
     '  if(uScan.y>0.0){ float sb=exp(-pow((p.y-uScan.x)/14.0,2.0)); float tl=exp(-max(0.0,uScan.x-p.y)/90.0)*step(p.y,uScan.x);',
     '    col+=vec3(0.2,0.85,1.0)*(sb*0.32+tl*0.05)*uScan.y; }',
     '  col*=1.12;',
@@ -1288,12 +1333,13 @@
     var warpAmt=VX.warp?Math.min((VX.g-VX.base)/8,1):0;
     var coll=Math.max(0,Math.min(1,(VX.g/VX.base-3)/10))*.75;
     var rev=VX.rev?1:0; GR.revA=(GR.revA||0)+(rev-(GR.revA||0))*Math.min(1,dt*2);
-    var birth=Math.max(0,Math.min(1,(born-.35)/.65));
+    var birth=ss(.85,1,born);
     /* наведение: какое скопление под курсором */
     var hv=-1;
     if(mAct&&!isCoarse&&!VX.warp){ var bd=R*1.5;
       for(var c=0;c<6;c++){ var sp=sectPos(c), d=Math.hypot(mPix.x/SIMS-sp[0],mPix.y/SIMS-sp[1]); if(d<bd){ bd=d; hv=c; } } }
     GR.hover=hv;
+    if(TX.on&&TX.sector>=0)hv=TX.sector;
     for(var c=0;c<6;c++)GR.hov[c]+=((c===hv?1:0)-GR.hov[c])*Math.min(1,dt*6);
     /* события */
     if(gt>GR.nextQ){ GR.nextQ=gt+6+Math.random()*4; graphQuery(Math.random()*6|0); }
@@ -1384,10 +1430,10 @@
   var gLineArr=null, gNodeArr=null, gDustArr=null;
   function graphRender(){
     var N=GR.nodes, E=GR.edges; if(!N.length)return;
-    var birth=GR.birth, be=GR.be||0, wa=1-GR.warpA;
+    var birth=GR.birth, be=GR.be||0, wa=(1-GR.warpA)*(1-TX.k*.55);
     if(!gLineArr||gLineArr.length<(E.length+700)*14){ gLineArr=new Float32Array((E.length+700)*14); gNodeArr=new Float32Array((N.length+600)*7); gDustArr=new Float32Array(64*7); }
     var L=gLineArr, li=0, P=gNodeArr, pi=0;
-    function sectA(c){ var d=(born-.35)*1.5-c*.12; return Math.max(0,Math.min(1,d/.35)); }
+    function sectA(c){ return ss(.6+c*.05,.68+c*.05,born); }
     function line(x1,y1,x2,y2,c1,a1,c2,a2){
       L[li++]=x1;L[li++]=y1;L[li++]=c1[0]/255;L[li++]=c1[1]/255;L[li++]=c1[2]/255;L[li++]=a1;L[li++]=0;
       L[li++]=x2;L[li++]=y2;L[li++]=c2[0]/255;L[li++]=c2[1]/255;L[li++]=c2[2]/255;L[li++]=a2;L[li++]=0;
@@ -1534,7 +1580,7 @@
     gl.uniform1f(U(pp,'uRed'),VX.red>.5?1:0);
     gl.uniform1f(U(pp,'uWords'),PRO.words?1:0);
     gl.uniform1f(U(pp,'uMaxPt'),maxPt);
-    gl.uniform1f(U(pp,'uBorn'),Math.max(.02,born));
+    gl.uniform1f(U(pp,'uBorn'),Math.max(.02,ss(.4,.72,born)));
     gl.drawArrays(gl.POINTS,0,n);
     gl.disable(gl.BLEND);
 
@@ -1573,6 +1619,7 @@
     gl.uniform1f(U(fp,'uBorn'),born);
     gl.uniform1f(U(fp,'uSq'),.22);
     gl.uniform3f(U(fp,'uIris'),irisActive?irisR:-1,W,H);
+    gl.uniform3f(U(fp,'uTx'),TX.k,TX.beamY,0);
     gl.drawArrays(gl.TRIANGLES,0,3);
     graphRender();
   }
@@ -1804,10 +1851,11 @@
       }
     }
 
-    var gTarget=VX.target*VX.idle;
+    var gTarget=VX.target*VX.idle*(1-TX.k*.65);
     VX.g+=(gTarget-VX.g)*(1-Math.pow(1-(VX.warp?.045:.02),dt*60));
     VX.worldA+=dt*.06*VX.g;
-    born=Math.min(1,born+dt/3.2);
+    born=Math.min(1,born+Math.max(0,Math.min(bornT-born,dt*.32)));
+    TX.k+=((TX.on?1:0)-TX.k)*Math.min(1,dt*3);
     diskRot+=dt*.012*VX.g*(VX.rev?-1:1)*(VX.warp?3:1);
     if(VX.redT>0){ VX.redT-=dt; VX.red=Math.min(VX.red+dt*3,1); }
     else VX.red=Math.max(VX.red-dt*1.5,0);
@@ -1952,7 +2000,7 @@
     ptrack=null;
     if(back&&!reduceMotion)setTimeout(function(){
       TR.mark(back.seenKey);
-      showBreach(T('w.'+back.id,back.vars),{backdrop:true});
+      showBreach(T('w.'+back.id,back.vars),{backdrop:true,id:back.id,sec:back.vars&&back.vars.sec});
     },1500);
     if(ducked){ ducked=false; duckMainBGM(false); }
     hardReset();
@@ -2511,33 +2559,88 @@
   function scramble(text,k){
     return text.split('').map(function(c){ return c!==' '&&Math.random()<k?gch[Math.random()*gch.length|0]:c; }).join('');
   }
+  /* сообщение узла как событие «входящая передача»: сцена замедляется и гаснет, диск вспыхивает,
+     от дыры к карточке идёт луч, текст печатается с помехами, потом карточка схлопывается и уходит в дыру.
+     Если в сообщении есть раздел, загорается его сектор графа */
+  var TX_KIND={night:'#b07bff',night_always:'#b07bff',codes:'#ff4d6a',keys:'#ff4d6a',reality:'#ff4d6a',
+    music_love:'#ff5fd0',music_off:'#ff5fd0',tongue:'#40dcff',greet:'#40dcff'};
+  function secSector(name){
+    var n=String(name||'').toUpperCase(); if(!n)return -1;
+    if(/MUSIC/.test(n))return 1;
+    if(/COURSE|БИБЛИОТ|ASTRO|A\.S\.T/.test(n))return 4;
+    if(/OFFICE|GUEST/.test(n))return 5;
+    if(/FORGE|CIPHER|LODA|COIN/.test(n))return 3;
+    if(/LIGURIA|IDOLLS|CORE|INFO|^A\.C\.EON$/.test(n))return 2;
+    return 0;
+  }
+  function txChirp(){
+    var ac=audioCtx; if(!ac||ac.state!=='running')return;
+    try{
+      var t0=ac.currentTime, g=ac.createGain(); g.connect(ac.destination);
+      g.gain.setValueAtTime(.0001,t0); g.gain.exponentialRampToValueAtTime(.05,t0+.02); g.gain.exponentialRampToValueAtTime(.0001,t0+.35);
+      [1320,880].forEach(function(f,k){ var o=ac.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(f,t0+k*.09); o.connect(g); o.start(t0+k*.09); o.stop(t0+k*.09+.12); });
+    }catch(e){}
+  }
   function showBreach(text,opt,done){
     opt=opt||{};
-    if(opt.backdrop)breachBg.classList.add('on');
-    breachEl.textContent=''; breachEl.classList.add('on');
-    tearBurst();
+    var col=TX_KIND[opt.id]||'#3ee08f', sc=opt.sec?secSector(opt.sec):-1;
+    var hrPx=Math.max(18,Math.min(W,H)*(W<H?.075:.068));
+    var tx=document.createElement('div'); tx.id='tx'; tx.style.setProperty('--tc',col);
+    var now=new Date(), hm=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+    tx.innerHTML='<div class="tx-h"><span class="tx-l"><i class="tx-dot"></i>INCOMING TRANSMISSION</span><span class="tx-r">NODE // '+hm+'</span></div>'
+      +'<canvas class="tx-w" width="240" height="28"></canvas><div class="tx-b"></div>'
+      +'<div class="tx-f"><span class="tx-src"></span><span class="sigbars"><i></i><i></i><i></i><i></i></span></div>';
+    var top=H*.46+hrPx*1.9;
+    tx.style.top=top+'px';
+    document.body.appendChild(tx);
+    var body=tx.querySelector('.tx-b'), src=tx.querySelector('.tx-src');
+    if(sc>=0){ src.innerHTML='<img src="home/u/i_'+SECT[sc].id+'.webp?v=1" alt="">SECTOR // '+SECT[sc].name; src.style.color='rgb('+SECT[sc].col.join(',')+')'; }
+    else src.textContent='SOURCE // MEMORY';
+    if(opt.backdrop||true)breachBg.classList.add('on');
+    document.body.classList.add('tx-on');
+    TX.on=true; TX.sector=sc; TX.beamY=top;
+    if(glOK&&GR.nodes.length){
+      GR.flashes.push({x:W*.5,y:H*.46,t:0,big:1});
+      if(sc>=0){ var s0=SECT[sc]; GR.ev.push({k:'q',t0:gt,dur:.9,to:s0.hubs[0]}); }
+    }
+    tearBurst(); txChirp();
+    /* волна сигнала */
+    var wc=tx.querySelector('.tx-w').getContext('2d'), alive=true, wt=0;
+    (function wave(){
+      if(!alive)return; wt+=.06;
+      wc.clearRect(0,0,240,28); wc.strokeStyle=col; wc.lineWidth=1.5; wc.globalAlpha=.9; wc.beginPath();
+      for(var x=0;x<=240;x+=3){ var a=Math.sin(x*.09+wt*6)*Math.sin(x*.021+wt)*9+Math.sin(x*.4+wt*11)*(Math.random()*2); wc.lineTo(x,14+a); }
+      wc.stroke(); requestAnimationFrame(wave);
+    })();
+    requestAnimationFrame(function(){ tx.classList.add('open'); });
     var i=0;
-    var typer=setInterval(function(){
-      i=Math.min(text.length,i+1);
-      breachEl.textContent=scramble(text.slice(0,i),.35)+(i<text.length?'_':'');
-      if(i>=text.length){
-        clearInterval(typer);
-        breachEl.textContent=text;
-        var jit=setInterval(function(){ breachEl.textContent=Math.random()<.18?scramble(text,.08):text; },140);
-        setTimeout(function(){
-          clearInterval(jit);
-          var n=0, out=setInterval(function(){
-            breachEl.textContent=scramble(text,.3+n*.15);
-            if(++n>=5){
-              clearInterval(out);
-              breachEl.classList.remove('on'); breachBg.classList.remove('on');
-              tearBurst();
-              setTimeout(function(){ breachEl.textContent=''; if(done)done(); },260);
-            }
-          },60);
-        },1900+text.length*35);
-      }
-    },42);
+    setTimeout(function(){
+      var typer=setInterval(function(){
+        i=Math.min(text.length,i+1);
+        body.textContent=scramble(text.slice(0,i),.35)+(i<text.length?'_':'');
+        if(i>=text.length){
+          clearInterval(typer);
+          body.textContent=text;
+          var jit=setInterval(function(){ body.textContent=Math.random()<.16?scramble(text,.07):text; },150);
+          setTimeout(function(){
+            clearInterval(jit); body.textContent=text;
+            /* схлопывание в линию и уход в дыру */
+            tx.classList.add('fold');
+            setTimeout(function(){
+              tx.style.top=(H*.46)+'px'; tx.classList.add('gone');
+              setTimeout(function(){
+                alive=false; tx.remove();
+                TX.on=false; TX.sector=-1;
+                breachBg.classList.remove('on'); document.body.classList.remove('tx-on');
+                if(glOK&&GR.nodes.length){ GR.flashes.push({x:W*.5,y:H*.46,t:0,big:1}); graphWave(W*.5,H*.46,800); }
+                flash(.04); tearBurst();
+                if(done)done();
+              },520);
+            },300);
+          },2300+text.length*42);
+        }
+      },40);
+    },650);
   }
 
   /* что сказать при загрузке: ?breach=<id> показывает конкретное сообщение (для проверки текстов) */
@@ -2568,29 +2671,12 @@
   ]);
   var BREACH_AT=2;
   function typeBoot(i){
-    if(bootBreach&&i===BREACH_AT){
-      var b=bootBreach; bootBreach=null;
-      if(TR&&b.id!=='greet')TR.mark('w.'+b.id);
-      var err=document.createElement('div');
-      err.className='br-err';
-      err.textContent='> ERR 0x'+(Math.random()*0xffff|0).toString(16).toUpperCase().padStart(4,'0')+': STREAM INTEGRITY LOST';
-      boot.appendChild(err);
-      boot.classList.add('br-glitch');
-      tearBurst();
-      setTimeout(function(){
-        boot.classList.remove('br-glitch'); boot.classList.add('br-dim');
-        showBreach(breachText(b),{},function(){
-          boot.classList.remove('br-dim');
-          var ok=document.createElement('div');
-          ok.textContent='> RESYNC: OK';
-          boot.appendChild(ok);
-          setTimeout(function(){ typeBoot(i); },260);
-        });
-      },520);
-      return;
-    }
+    /* каждая строка загрузки достраивает вселенную: точка, взрыв, дыра, фон, диск, вещество, граф */
+    bornT=Math.max(bornT,Math.min(1,.08+.92*i/bootLines.length));   /* первая строка: точка, вторая: взрыв */
     if(i>=bootLines.length){
+      bornT=1;
       setTimeout(function(){
+        document.body.classList.remove('booting');
         boot.classList.add('gone');
         if(!savedLang())showLangSel(true);
         else afterLang();
@@ -2658,6 +2744,15 @@
       setTimeout(function(){el.classList.add('on');},300+k*450);
     });
     setTimeout(runScan,1400);
+    /* сообщение при входе приходит, когда вселенная уже на экране */
+    if(bootBreach){
+      var b=bootBreach; bootBreach=null;
+      setTimeout(function(){
+        if(warping||portalOpen)return;
+        if(TR&&b.id!=='greet')TR.mark('w.'+b.id);
+        showBreach(breachText(b),{id:b.id,sec:b.vars&&b.vars.sec});
+      },2800);
+    }
   }
   function fillUniPanel(u){
     var P=getUni(u);
@@ -2714,7 +2809,7 @@
     simT=40; born=1;
     if(glOK){ graphStep(.016); for(var rs=0;rs<6;rs++)glRender(.016,rs===0); }
     else renderStatic(0);
-    boot.classList.add('gone');
+    boot.classList.add('gone'); document.body.classList.remove('booting'); bornT=1;
     if(!savedLang())showLangSel(true);
     else if(savedU===null)showUniverseSel(true);
     document.querySelectorAll('.st-in').forEach(function(el){el.classList.add('on');});

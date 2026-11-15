@@ -1049,5 +1049,7 @@ function start(){
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start); else start();
 
 window.FLANGS=FLANGS; window.FLANG=LANG; window.TR=TR; window.TRL=TRL;
-window.FORGE_I18N={names:NAMES, set:setLang, picker:picker, trs:trs, dict:D};
+/* смена языка без перезагрузки: для главной кузни, где тексты шаблонов строятся заново */
+function useLang(c){ if(FLANGS.indexOf(c)<0) return; LANG=c; window.FLANG=c; }
+window.FORGE_I18N={names:NAMES, set:setLang, use:useLang, picker:picker, trs:trs, dict:D};
 })();

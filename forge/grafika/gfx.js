@@ -692,5 +692,7 @@ function openWork(w){
 $("#toHome").onclick=function(){ if(ui.brush) endBrush(); save(); setTimeout(showHome,520); };
 
 (function boot(){ var h=location.hash.slice(1);
+  /* #tpl=<id>: «Сделать такую же» с главной кузни */
+  if(/^tpl=/.test(h)){ var tid=decodeURIComponent(h.slice(4)); if(GTEMPLATES.some(function(t){ return t.id===tid; })){ try{ history.replaceState(null,"",location.pathname); }catch(e){} create(fromGTemplate(tid)); return; } }
   if(h) dbGet(h).then(function(w){ if(w) openWork(w); else showHome(); }); else showHome(); })();
 })();

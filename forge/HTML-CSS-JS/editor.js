@@ -652,6 +652,8 @@ $("#toHome").onclick=showHome;
       .catch(function(e){ showHome(); toast(e&&e.message==="old"?"Ссылка от старой версии конструктора, открыть её здесь не получится":"Ссылка повреждена"); });
     return;
   }
+  /* #tpl=<id>: «Сделать такую же» с главной кузни */
+  if(/^tpl=/.test(h)){ var tid=decodeURIComponent(h.slice(4)); if(TEMPLATES.some(function(t){ return t.id===tid; })){ try{ history.replaceState(null,"",location.pathname); }catch(e){} createFrom(tid); return; } }
   if(h){ dbAll().then(function(list){ var p=list.filter(function(x){ return x.id===h; })[0]; if(p) openPage(fixPage(p)); else showHome(); }); return; }
   showHome();
 })();

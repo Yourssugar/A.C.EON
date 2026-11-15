@@ -1,0 +1,76 @@
+/* FORGE фоны: то, чего нет в общем editor.css */
+.fst{align-items:center;justify-content:center;gap:12px;padding:12px 10px}
+.fst .ctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;flex:none}
+.fwrap{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+.frame{position:relative;container-type:inline-size;border-radius:16px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.07)}
+.bgv,.bgv svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.bgv.tile{background-repeat:repeat}
+.fhd{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:3px solid #fff;cursor:grab;touch-action:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.55),inset 0 0 0 3px rgba(0,0,0,.2);z-index:3}
+.fhd i{position:absolute;inset:4px;border-radius:50%;pointer-events:none}
+.fhd:active{cursor:grabbing}
+.fhd::after{content:"";position:absolute;inset:-12px}
+.sample{position:absolute;left:8%;top:50%;transform:translateY(-50%);max-width:56%;pointer-events:none;z-index:2}
+.sample h2{font-family:Unbounded,var(--ui);font-size:5.2cqw;line-height:1.05;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.25)}
+.sample p{margin-top:1.4cqw;color:rgba(255,255,255,.88);font-size:1.9cqw;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.sample span{display:inline-block;margin-top:2.2cqw;padding:1.2cqw 2.4cqw;border-radius:999px;background:#fff;color:#151515;font-weight:800;font-size:1.8cqw}
+.frame.ph .sample{left:9%;right:9%;max-width:none;top:38%}
+.frame.ph .sample h2{font-size:9cqw}.frame.ph .sample p{font-size:3.6cqw;margin-top:3cqw}.frame.ph .sample span{font-size:3.4cqw;margin-top:4cqw;padding:2.4cqw 5cqw}
+.frame.light .sample h2,.frame.light .sample p{color:#14161a;text-shadow:none}
+.frame.light .sample span{background:#14161a;color:#fff}
+.fhint{flex:none;font-size:12.5px;color:var(--muted);text-align:center;max-width:560px;line-height:1.45}
+
+/* виды и шаблоны */
+.kinds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kinds.big{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.kind{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel2);text-align:left;display:block;width:100%}
+.kind:hover{border-color:var(--line2)}
+.kind.on{border-color:var(--run);box-shadow:0 0 0 1px var(--run)}
+.kind .th{position:relative;height:76px;overflow:hidden}
+.kinds.big .kind .th{height:110px}
+.kind .th svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.kind b{display:block;font-size:12.5px;padding:7px 9px 8px}
+.kinds.big .kind b{font-size:13.5px;padding:9px 12px 11px}
+
+/* мои фоны */
+.fbs{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.fb{flex:none;width:176px}
+.fb .th{position:relative;display:block;width:100%;height:110px;border-radius:16px;overflow:hidden;border:1px solid var(--line2);background:#111}
+.fb .th svg{position:absolute;inset:0;width:100%;height:100%}
+.fb .th.new{display:grid;place-items:center;border-style:dashed;background:transparent;color:var(--run)}
+.fb .th.new svg{position:static;width:30px;height:30px}
+.fb b{display:block;font-size:13.5px;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb small{color:var(--dim);font-size:12px}
+.fb .acts{display:flex;gap:4px;margin-top:4px}
+.fb .acts button{font-size:12px;color:var(--muted);padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
+
+/* цвета фона: подпись под кружком */
+.fsw{display:flex;gap:10px;flex-wrap:wrap}
+.fsw label{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;color:var(--dim);cursor:pointer}
+.fsw label span{width:36px;height:36px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);position:relative;overflow:hidden}
+.fsw label input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.pals{display:flex;gap:6px;flex-wrap:wrap}
+.pals button{display:flex;align-items:center;gap:6px;padding:5px 10px 5px 6px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;font-weight:700;color:var(--muted);background:var(--panel2)}
+.pals button i{display:flex;border-radius:999px;overflow:hidden}
+.pals button i u{width:9px;height:16px}
+.pals button.on{border-color:var(--run);color:var(--run)}
+pre.css{font-family:var(--mono);font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all;color:#b9c3cc;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;max-height:240px;overflow:auto}
+.sizes2{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.plist{display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto;margin:10px 0}
+.plist button{display:flex;justify-content:space-between;gap:10px;padding:11px 14px;border:1px solid var(--line2);border-radius:14px;text-align:left;background:var(--panel2)}
+.plist button.on{border-color:var(--run)}
+.plist small{color:var(--dim)}
+
+.mob{display:flex}
+@media (min-width:960px){
+  .tabs .mob{display:none!important}
+  .fst{padding:16px 18px 18px}
+}
+@media (max-width:959px){
+  .fst{justify-content:flex-start;padding-top:10px;gap:8px}
+  .fwrap{align-items:flex-start}
+  .fhint{font-size:12px;padding:0 6px}
+}
+/* общий editor.css красит любые svg как иконки (обводка, без заливки): фоны рисуем без этого */
+.bgv svg,.kind .th svg,.fb .th:not(.new) svg{fill:#000;stroke:none;stroke-width:1}

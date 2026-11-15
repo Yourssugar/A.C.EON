@@ -37,7 +37,7 @@ function texts(){
   document.title=T('title');
   const map={tKick:'kick',tSub:'sub',tTag:'tagline',tStart:'start',tNow:'now',same:'same',tMenu:'menuT',tCont:'cont',
     tPages:'pages',tPagesD:'pagesD',tGfx:'gfx',tGfxD:'gfxD',tGames:'games',tGamesD:'gamesD',tMusic:'music',tMusicD:'musicD',
-    tLearn:'learn',tLearnD:'learnD',tO1:'open',tO2:'open',tS1:'soon',tS2:'soon',still:'still'};
+    tLearn:'learn',tLearnD:'learnD',tO1:'open',tO2:'open',tO3:'open',tFony:'fony',tFonyD:'fonyD',tS1:'soon',tS2:'soon',still:'still'};
   for(const id in map){ const e=$(id); if(e) e.textContent=T(map[id]); }
   $('mClose').title=T('close'); $('loading').textContent=T('loading');
   const lg=$('langs'); lg.innerHTML=''; lg.title=T('lang');
@@ -338,14 +338,15 @@ function deps(){
   const lk=document.createElement('link'); lk.rel='stylesheet';
   lk.href='https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700|inter:400,600,700,800|montserrat:400,600,700,800|rubik:400,500,700|nunito:400,600,800|comfortaa:500,700|oswald:500,700|lora:500,600,700|playfair-display:600,700,800|cormorant-garamond:500,600,700|pt-serif:400,700|jetbrains-mono:400,700&display=swap';
   document.head.appendChild(lk);
-  depsP=loadScript('i18n-forge.js?v=2').then(()=>loadScript('HTML-CSS-JS/engine.js?v=3')).then(()=>loadScript('grafika/lib/qrcode.js'))
-    .then(()=>loadScript('grafika/gfx-engine.js?v=5')).then(()=>{ if(window.FORGE_I18N) FORGE_I18N.use(lang()); });
+  depsP=loadScript('i18n-forge.js?v=3').then(()=>loadScript('HTML-CSS-JS/engine.js?v=3')).then(()=>loadScript('grafika/lib/qrcode.js'))
+    .then(()=>loadScript('grafika/gfx-engine.js?v=5')).then(()=>loadScript('fony/fony-engine.js?v=1')).then(()=>{ if(window.FORGE_I18N) FORGE_I18N.use(lang()); });
   return depsP;
 }
 function pool(){
   const a=[];
   (window.TEMPLATES||[]).forEach(t=>{ if(t.blocks&&t.blocks.length) a.push({k:'page',id:t.id,name:t.name}); });
   (window.GTEMPLATES||[]).forEach(t=>a.push({k:'gfx',id:t.id,name:t.name}));
+  if(window.FONY) FONY.TPLS.forEach(t=>a.push({k:'fony',id:t.id,name:t.name}));
   return a;
 }
 function pick(){
@@ -359,6 +360,8 @@ function fillProj(p){
     if(p.k==='page'){
       const st=fromTemplate(p.id); const fr=document.createElement('iframe'); fr.setAttribute('sandbox',''); fr.setAttribute('aria-hidden','true'); fr.tabIndex=-1;
       fr.style.width=OW+'px'; fr.style.height=OH+'px'; fr.srcdoc=buildPage(st,'file').replace(/<script>[\s\S]*?<\/script>/g,''); proj.appendChild(fr);
+    }else if(p.k==='fony'){
+      const b=FONY.fromTpl(p.id); b.anim=true; proj.innerHTML=FONY.svg(b,OW,OH,{anim:true,id:'pj'}); proj.firstElementChild.style.display='block';
     }else{
       const w=fromGTemplate(p.id), c=document.createElement('canvas'), s=Math.min(OW/w.w,OH/w.h), dpr=1.5;
       c.width=Math.round(w.w*s*dpr); c.height=Math.round(w.h*s*dpr); c.style.width=Math.round(w.w*s)+'px'; c.style.height=Math.round(w.h*s)+'px'; c.style.marginTop=Math.round((OH-w.h*s)/2)+'px';
@@ -389,8 +392,8 @@ function placeProj(t){
 function fillCap(){
   if(!cur) return;
   const nm=window.TR?TR(cur.name):cur.name;
-  $('capName').innerHTML=''; $('capName').append(nm); const i=document.createElement('i'); i.textContent=T(cur.k==='page'?'kpage':'kgfx'); $('capName').appendChild(i);
-  $('same').href=(cur.k==='page'?'HTML-CSS-JS/':'grafika/')+'#tpl='+encodeURIComponent(cur.id);
+  $('capName').innerHTML=''; $('capName').append(nm); const i=document.createElement('i'); i.textContent=T(cur.k==='page'?'kpage':cur.k==='fony'?'kfony':'kgfx'); $('capName').appendChild(i);
+  $('same').href=(cur.k==='page'?'HTML-CSS-JS/':cur.k==='fony'?'fony/':'grafika/')+'#tpl='+encodeURIComponent(cur.id);
 }
 function capOn(t){ $('cap').classList.toggle('on',!!cur&&(RM||(t>=22.8&&t<28.6))); }
 

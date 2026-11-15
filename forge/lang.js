@@ -1,6 +1,7 @@
 /* FORGE: тексты главной страницы кузни на 7 языках. */
 window.FORGE_LANG={
 ru:{
+  fony:'Фоны', fonyD:'Аврора, волны, топография, конфетти. Картинкой, SVG или кодом CSS, в том числе плиткой для сайта.', kfony:'шаблон фона',
   title:'FORGE · кузня A.C.EON', back:'< A.C.EON', lang:'Язык',
   kick:'A.C.EON // FORGE', sub:'кузня',
   tagline:'Мастерская для своих проектов: страницы, обложки, открытки, QR-коды. Всё делается прямо в браузере и хранится только у вас.',
@@ -16,6 +17,7 @@ ru:{
   still:'Анимация выключена: в системе включено «меньше движения».'
 },
 en:{
+  fony:'Backgrounds', fonyD:'Aurora, waves, topography, confetti. As a picture, SVG or CSS code, including seamless tiles for a website.', kfony:'background template',
   title:'FORGE · A.C.EON workshop', back:'< A.C.EON', lang:'Language',
   kick:'A.C.EON // FORGE', sub:'workshop',
   tagline:'A workshop for your own projects: pages, covers, cards, QR codes. Everything is made right in the browser and stays only with you.',
@@ -31,6 +33,7 @@ en:{
   still:'Animation is off: your system has «reduce motion» turned on.'
 },
 de:{
+  fony:'Hintergründe', fonyD:'Aurora, Wellen, Topografie, Konfetti. Als Bild, SVG oder CSS-Code, auch als nahtlose Kachel für die Website.', kfony:'Hintergrundvorlage',
   title:'FORGE · Werkstatt A.C.EON', back:'< A.C.EON', lang:'Sprache',
   kick:'A.C.EON // FORGE', sub:'Werkstatt',
   tagline:'Eine Werkstatt für eigene Projekte: Seiten, Cover, Karten, QR-Codes. Alles entsteht direkt im Browser und bleibt nur bei Ihnen.',
@@ -46,6 +49,7 @@ de:{
   still:'Animation aus: Im System ist «Bewegung reduzieren» eingeschaltet.'
 },
 fr:{
+  fony:'Fonds', fonyD:'Aurore, vagues, topographie, confettis. En image, SVG ou code CSS, y compris en motif pour un site.', kfony:'modèle de fond',
   title:'FORGE · atelier A.C.EON', back:'< A.C.EON', lang:'Langue',
   kick:'A.C.EON // FORGE', sub:'atelier',
   tagline:'Un atelier pour vos propres projets : pages, pochettes, cartes, codes QR. Tout se fait dans le navigateur et reste chez vous.',
@@ -61,6 +65,7 @@ fr:{
   still:'Animation désactivée : «réduire les animations» est activé sur votre système.'
 },
 es:{
+  fony:'Fondos', fonyD:'Aurora, olas, topografía, confeti. Como imagen, SVG o código CSS, también en mosaico para una web.', kfony:'plantilla de fondo',
   title:'FORGE · taller A.C.EON', back:'< A.C.EON', lang:'Idioma',
   kick:'A.C.EON // FORGE', sub:'taller',
   tagline:'Un taller para tus propios proyectos: páginas, portadas, tarjetas, códigos QR. Todo se hace en el navegador y se queda solo contigo.',
@@ -76,6 +81,7 @@ es:{
   still:'Animación desactivada: tu sistema tiene activado «reducir movimiento».'
 },
 it:{
+  fony:'Sfondi', fonyD:'Aurora, onde, topografia, coriandoli. Come immagine, SVG o codice CSS, anche a piastrelle per un sito.', kfony:'modello di sfondo',
   title:'FORGE · laboratorio A.C.EON', back:'< A.C.EON', lang:'Lingua',
   kick:'A.C.EON // FORGE', sub:'laboratorio',
   tagline:'Un laboratorio per i tuoi progetti: pagine, copertine, cartoline, codici QR. Tutto si fa nel browser e resta solo a te.',
@@ -91,6 +97,7 @@ it:{
   still:'Animazione disattivata: nel sistema è attivo «riduci movimento».'
 },
 pl:{
+  fony:'Tła', fonyD:'Zorza, fale, topografia, konfetti. Jako obraz, SVG albo kod CSS, także kafelkiem na stronę.', kfony:'szablon tła',
   title:'FORGE · warsztat A.C.EON', back:'< A.C.EON', lang:'Język',
   kick:'A.C.EON // FORGE', sub:'kuźnia',
   tagline:'Warsztat na własne projekty: strony, okładki, kartki, kody QR. Wszystko powstaje w przeglądarce i zostaje tylko u Ciebie.',

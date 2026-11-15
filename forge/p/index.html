@@ -26,7 +26,8 @@
 <iframe id="view" title="Страница" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads"></iframe>
 <div class="msg" id="msg"><div><b>Открываю страницу...</b></div></div>
 <div class="badge" id="badge"><span>FORGE</span><a id="copy" href="../HTML-CSS-JS/">Сделать свою копию</a><button id="hide" title="Скрыть">&times;</button></div>
-<script src="../HTML-CSS-JS/engine.js?v=2"></script>
+<script src="../i18n-forge.js?v=1"></script>
+<script src="../HTML-CSS-JS/engine.js?v=3"></script>
 <script>
 (function(){
   var code=location.hash.slice(1), msg=document.getElementById("msg");
@@ -34,7 +35,7 @@
   if(!/^[JZjz][\w-]+$/.test(code)){ say("Здесь открываются страницы из FORGE","Соберите страницу в конструкторе и нажмите «Поделиться»: получится ссылка, которая ведёт сюда."); return; }
   decodeShare(code).then(function(st){
     var v=document.getElementById("view"); v.srcdoc=buildPage(st,"file"); v.style.display="block"; msg.style.display="none";
-    if(st.title) document.title=st.title;
+    if(st.title){ document.title=st.title; document.querySelector("title").setAttribute("data-nt",""); }
     document.getElementById("copy").href="../HTML-CSS-JS/#p="+code;
     var b=document.getElementById("badge"); b.style.display="flex"; document.getElementById("hide").onclick=function(){ b.style.display="none"; };
   }).catch(function(e){

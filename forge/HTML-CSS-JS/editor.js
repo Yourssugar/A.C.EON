@@ -137,7 +137,7 @@ function paneAdd(box){
   var q=addQ.toLowerCase();
   Object.keys(BLOCKS).forEach(function(t){ var B=BLOCKS[t];
     if(addCat!=="all" && B.group!==addCat) return;
-    if(q && (B.name+" "+B.desc).toLowerCase().indexOf(q)<0) return;
+    if(q && (B.name+" "+B.desc+" "+TR(B.name)+" "+TR(B.desc)).toLowerCase().indexOf(q)<0) return;
     var b=document.createElement("button"); b.className="tile"; b.innerHTML=icon(B.glyph,"")+'<b>'+esc(B.name)+'</b><small>'+esc(B.desc)+'</small>';
     b.onclick=function(){ addBlock(t); }; tl.appendChild(b); });
   var s=$(".srch",box); s.oninput=function(){ addQ=s.value; var p=s.selectionStart; refreshPane(); var n=$(".srch",tabBox()); n.focus(); n.setSelectionRange(p,p); };
@@ -341,7 +341,7 @@ function listEditor(box,b){
       changed(true); refreshInsp(); }; });
     box.appendChild(card);
   });
-  box.appendChild(el('<button class="btn" style="width:100%">'+sv("plus")+esc(L.add)+'</button>',function(n){ n.onclick=function(){ remember(); b.c.L.push(clone(L.item)); changed(true); refreshInsp(); }; }));
+  box.appendChild(el('<button class="btn" style="width:100%">'+sv("plus")+esc(L.add)+'</button>',function(n){ n.onclick=function(){ remember(); b.c.L.push(trDeep(L.item)); changed(true); refreshInsp(); }; }));
 }
 function field(f, v, set, b, ctx){
   var L='<label>'+esc(f.label)+'</label>';
@@ -403,7 +403,7 @@ function openInGfx(url, ret){
   im.onload=function(){
     var k=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight)), w=Math.round(im.naturalWidth*k), h=Math.round(im.naturalHeight*k);
     ret.pid=st.id; ret.title=st.title;
-    var work={ v:1, id:"w"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:"Фото со страницы «"+st.title+"»", size:"own", w:w, h:h, round:false,
+    var work={ v:1, id:"w"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:TR("Фото со страницы «{0}»",st.title), size:"own", w:w, h:h, round:false,
       bg:{t:"none",c1:"#000000",c2:"#000000",ang:0},
       layers:[{ id:"Lp1", t:"image", x:w/2, y:h/2, w:w, h:h, rot:0, op:1, blend:"source-over", src:"a1", iw:im.naturalWidth, ih:im.naturalHeight, mask:null, feather:2, zoom:1, fx:50, fy:50, shape:"rect", r:0,
         f:{preset:"none",br:0,ct:0,sat:0,warm:0,bw:0,sep:0,blur:0} }],
@@ -483,8 +483,8 @@ function paneCode(box){
     '<div class="row" style="margin-top:10px"><button class="btn" data-a="copy">Скопировать</button><button class="btn" data-a="html">Скачать HTML</button><button class="btn" data-a="zip">Скачать папкой</button></div></div>',function(n){
     $$("button",n).forEach(function(x){ x.onclick=function(){ ({copy:copyCode,html:dlHtml,zip:dlZip})[x.getAttribute("data-a")](); }; }); }));
   var pre=document.createElement("pre"); pre.className="code"; box.appendChild(pre);
-  var doc=buildPage(st,"code").replace(/url\(data:image[^)]{60,}\)/g,function(m){ return "url(data:image... фото "+Math.round(m.length*.75/1024)+" КБ)"; })
-    .replace(/(src|href)="data:image[^"]{60,}"/g,function(m,a){ return a+'="data:image... фото"'; });
+  var doc=buildPage(st,"code").replace(/url\(data:image[^)]{60,}\)/g,function(m){ return "url("+TR("data:image... фото {0} КБ",Math.round(m.length*.75/1024))+")"; })
+    .replace(/(src|href)="data:image[^"]{60,}"/g,function(m,a){ return a+'="'+TR("data:image... фото")+'"'; });
   var s=esc(doc).replace(/(\/\*[\s\S]*?\*\/|&lt;!--[\s\S]*?--&gt;)/g,'<span class="cm">$1</span>');
   s=s.replace(new RegExp(MB+"(.*?)"+MM,"g"),function(m,uid){ return '<span data-u="'+uid+'">'; }).replace(new RegExp(ME,"g"),"</span>");
   pre.innerHTML=s;
@@ -492,7 +492,7 @@ function paneCode(box){
     var bt=blk(ui.sel.b); if(bt) $$('[data-u="t-'+bt.type+'"]',pre).forEach(function(x){ x.classList.add("hot"); });
     if(hot) setTimeout(function(){ box.scrollTop=hot.offsetTop-box.offsetTop-40; },30); }
 }
-function fileName(){ return (st.title||"page").trim().toLowerCase().replace(/[^\wа-яё]+/gi,"-").replace(/^-+|-+$/g,"").slice(0,40)||"page"; }
+function fileName(){ return (st.title||"page").trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"").slice(0,40)||"page"; }
 function dl(blob,name){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); },2000); }
 function dlHtml(){ dl(new Blob([buildPage(st,"file")],{type:"text/html"}), fileName()+".html"); toast("Файл скачан: всё в одном HTML"); }
 function dlZip(){ dl(buildFolder(st), fileName()+".zip"); toast("Скачан архив: index.html, css, js и фото"); }
@@ -505,6 +505,7 @@ function copyText(t,msg){
 /* ── ещё ── */
 function paneMore(box){
   box.innerHTML='<div class="f"><label>Название страницы (видно на вкладке браузера)</label><input type="text" id="mT" maxlength="80"></div>'+
+    '<div class="f"><label>Язык страницы</label><select id="mL" data-nt></select><p class="note" style="margin-top:6px">Подписи, которые страница пишет сама: дни и часы отсчёта, поля формы, даты событий. Ваши тексты не меняются.</p></div>'+
     '<div class="sh">Скачать</div>'+
     '<button class="btn w" data-a="html">Одним файлом <small>.html</small></button>'+
     '<button class="btn w" data-a="zip">Папкой: HTML, CSS, JS и фото <small>.zip</small></button>'+
@@ -520,12 +521,15 @@ function paneMore(box){
     '<button class="btn w" data-a="copy">Сделать копию страницы</button>'+
     '<button class="btn w del" data-a="del">Удалить страницу</button>'+
     '<p class="note" style="margin-top:8px">Страница сохраняется в этом браузере сама после каждого изменения. Файл проекта нужен, чтобы перенести её на другое устройство.</p>';
+  var ml=$("#mL",box), LN=(window.FORGE_I18N&&FORGE_I18N.names)||{ru:"Русский"};
+  (window.FLANGS||["ru"]).forEach(function(c){ var o=document.createElement("option"); o.value=c; o.textContent=LN[c]||c; if(c===(st.lang||"ru")) o.selected=true; ml.appendChild(o); });
+  ml.onchange=function(){ remember(); st.lang=ml.value; changed(true); };
   var t=$("#mT",box); t.value=st.title; t.oninput=function(){ remember("title"); st.title=t.value; $("#title").value=t.value; save(); };
   $$("[data-a]",box).forEach(function(x){ x.onclick=function(){ var a=x.getAttribute("data-a");
     if(a==="html") dlHtml(); else if(a==="zip") dlZip(); else if(a==="host") $("#hostT").hidden=!$("#hostT").hidden;
     else if(a==="save"){ dl(new Blob([JSON.stringify(st)],{type:"application/json"}), fileName()+".forge.json"); toast("Проект сохранён в файл"); }
     else if(a==="open") openJson();
-    else if(a==="copy"){ var c=clone(st); c.id=newId(); c.title=st.title+" (копия)"; dbPut(c).then(function(){ openPage(c); toast("Открыта копия"); }); }
+    else if(a==="copy"){ var c=clone(st); c.id=newId(); c.title=TR("{0} (копия)",st.title); dbPut(c).then(function(){ openPage(c); toast("Открыта копия"); }); }
     else if(a==="del") ask("Удалить страницу «"+st.title+"»? Вернуть её не получится.","Удалить").then(function(y){ if(!y) return; dbDel(st.id).then(function(){ st=null; showHome(); }); });
   }; });
 }
@@ -600,17 +604,17 @@ function thumb(box, page, w){
   box.appendChild(f);
 }
 function showHome(){
-  $("#ed").hidden=true; $("#home").hidden=false; document.title="FORGE · мои страницы";
+  $("#ed").hidden=true; $("#home").hidden=false; document.title=TR("FORGE · мои страницы");
   if(location.hash) try{ history.replaceState(null,"",location.pathname); }catch(e){}
   dbAll().then(function(list){
     list.sort(function(a,b){ return (b.updated||0)-(a.updated||0); });
     var my=$("#myPages"); my.innerHTML="";
     my.appendChild(el('<div class="pg"><button class="th new">'+sv("plus")+'</button><b>Новая</b><small>с чистого листа</small></div>',function(n){ $("button",n).onclick=function(){ createFrom("blank"); }; }));
     list.forEach(function(p){
-      var d=new Date(p.updated||Date.now()), when=d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"});
+      var d=new Date(p.updated||Date.now()), when=d.toLocaleDateString(window.FLANG||"ru",{day:"numeric",month:"short"});
       var n=el('<div class="pg"><button class="th"></button><b>'+esc(p.title)+'</b><small>'+when+'</small><div class="acts"><button data-a="copy">копия</button><button data-a="del">удалить</button></div></div>');
       $(".th",n).onclick=function(){ openPage(fixPage(p)); };
-      $$(".acts button",n).forEach(function(x){ x.onclick=function(){ if(x.getAttribute("data-a")==="copy"){ var c=clone(p); c.id=newId(); c.title=p.title+" (копия)"; c.updated=Date.now(); dbPut(c).then(showHome); }
+      $$(".acts button",n).forEach(function(x){ x.onclick=function(){ if(x.getAttribute("data-a")==="copy"){ var c=clone(p); c.id=newId(); c.title=TR("{0} (копия)",p.title); c.updated=Date.now(); dbPut(c).then(showHome); }
         else ask("Удалить страницу «"+p.title+"»?","Удалить").then(function(y){ if(y) dbDel(p.id).then(showHome); }); }; });
       my.appendChild(n); requestAnimationFrame(function(){ try{ thumb($(".th",n), fixPage(clone(p)), 138); }catch(e){} });
     });
@@ -644,7 +648,7 @@ $("#toHome").onclick=showHome;
 (function boot(){
   var h=location.hash.slice(1);
   if(/^p=/.test(h)){
-    decodeShare(h.slice(2)).then(function(p){ p.id=newId(); p.updated=Date.now(); p.title=p.title||"Страница по ссылке"; return dbPut(p).then(function(){ openPage(p); toast("Это ваша копия страницы, меняйте как хотите"); }); })
+    decodeShare(h.slice(2)).then(function(p){ p.id=newId(); p.updated=Date.now(); p.title=p.title||TR("Страница по ссылке"); return dbPut(p).then(function(){ openPage(p); toast("Это ваша копия страницы, меняйте как хотите"); }); })
       .catch(function(e){ showHome(); toast(e&&e.message==="old"?"Ссылка от старой версии конструктора, открыть её здесь не получится":"Ссылка повреждена"); });
     return;
   }

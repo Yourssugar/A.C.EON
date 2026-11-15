@@ -32,15 +32,15 @@ var _gid=0;
 function gid(){ return "L"+Date.now().toString(36)+(++_gid); }
 function newWork(sizeId, w, h){
   var s=GSIZES.filter(function(x){ return x.id===sizeId; })[0]||{ id:"own", name:"Свой размер", w:w||1080, h:h||1080 };
-  return { v:1, title:s.name, size:s.id, w:s.w, h:s.h, round:!!s.round, bg:{ t:"color", c1:"#15121f", c2:"#3a1d3a", ang:160 }, layers:[], assets:{} };
+  return { v:1, title:TR(s.name), size:s.id, w:s.w, h:s.h, round:!!s.round, bg:{ t:"color", c1:"#15121f", c2:"#3a1d3a", ang:160 }, layers:[], assets:{} };
 }
 function textLayer(W, kind){
   var k=Math.min(W.w,W.h);
-  var base={ id:gid(), t:"text", x:W.w/2, y:W.h/2, rot:0, op:1, blend:"source-over", text:"Текст", font:"manrope", weight:700, size:Math.round(k*.06),
+  var base={ id:gid(), t:"text", x:W.w/2, y:W.h/2, rot:0, op:1, blend:"source-over", text:TR("Текст"), font:"manrope", weight:700, size:Math.round(k*.06),
     color:"#ffffff", align:"center", ls:0, lh:1.15, fx:{ t:"none", c:"#ff8a4c", c2:"#ff5fa2", a:50 } };
-  if(kind==="h"){ base.text="ЗАГОЛОВОК"; base.font="unbounded"; base.weight=700; base.size=Math.round(k*.12); base.ls=2; }
-  if(kind==="s"){ base.text="Подзаголовок"; base.size=Math.round(k*.055); base.weight=800; }
-  if(kind==="p"){ base.text="Обычный текст\nв две строки"; base.size=Math.round(k*.04); base.weight=400; base.lh=1.35; }
+  if(kind==="h"){ base.text=TR("ЗАГОЛОВОК"); base.font="unbounded"; base.weight=700; base.size=Math.round(k*.12); base.ls=2; }
+  if(kind==="s"){ base.text=TR("Подзаголовок"); base.size=Math.round(k*.055); base.weight=800; }
+  if(kind==="p"){ base.text=TR("Обычный текст\nв две строки"); base.size=Math.round(k*.04); base.weight=400; base.lh=1.35; }
   return base;
 }
 function imageLayer(W, asset, iw, ih){
@@ -238,12 +238,12 @@ function lum(c){ var m=String(c||"").match(/^#([0-9a-f]{6})$/i); if(!m) return n
   return [n>>16,(n>>8)&255,n&255].map(function(v){ v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }).reduce(function(a,v,i){ return a+v*[.2126,.7152,.0722][i]; },0); }
 function qrCheck(L){
   var q=qrMatrix(L), out=[];
-  if(!q||q.err) return ["Слишком много текста для QR-кода, сократите."];
+  if(!q||q.err) return [TR("Слишком много текста для QR-кода, сократите.")];
   if(!qrData(L).trim()||qrData(L)==="https://") out.push("Впишите, что должен открыть код.");
   if(L.bg){ var a=lum(L.fg), b=lum(L.bg); if(a!=null&&b!=null){ if(a>b) out.push("Светлый код на тёмном фоне читают не все телефоны. Надёжнее тёмный код на светлом."); else if((b+.05)/(a+.05)<3) out.push("Код и фон слишком похожи по яркости, телефон может не прочитать."); } }
   else out.push("Без фона код прочитается, только если под ним светлая однотонная подложка.");
   if(q.ver>12) out.push("Код получился плотным (много данных). Делайте его крупнее при печати.");
-  return out;
+  return out.map(function(x){ return TR(x); });
 }
 function drawQR(g,L){
   var q=qrMatrix(L), S=L.w, x0=-S/2, y0=-S/2;
@@ -307,9 +307,9 @@ function hitLayer(W,px,py,pad){
 }
 
 /* ─────────── шаблоны ─────────── */
-function T_text(W,o){ var L=textLayer(W,o.k||"s"); for(var k in o) if(k!=="k") L[k]=o[k]; if(o.fx) L.fx=Object.assign({t:"none",c:"#000",c2:"#fff",a:50},o.fx); return L; }
+function T_text(W,o){ var L=textLayer(W,o.k||"s"); for(var k in o) if(k!=="k") L[k]=k==="text"?TR(o[k]):o[k]; if(o.fx) L.fx=Object.assign({t:"none",c:"#000",c2:"#fff",a:50},o.fx); return L; }
 function T_shape(W,kind,o){ var L=shapeLayer(W,kind); for(var k in o) L[k]=o[k]; return L; }
-function T_qr(W,kind,o){ var L=qrLayer(W,kind); for(var k in o) if(k!=="d") L[k]=o[k]; if(o.d) for(var j in o.d) L.d[j]=o.d[j]; return L; }
+function T_qr(W,kind,o){ var L=qrLayer(W,kind); for(var k in o) if(k!=="d") L[k]=o[k]; if(o.d) for(var j in o.d) L.d[j]=TR(o.d[j]); return L; }
 function T_icon(W,name,o){ var L=iconLayer(W,name); for(var k in o) L[k]=o[k]; return L; }
 var GTEMPLATES = [
   { id:"yt_loud", group:"yt", name:"Превью: громкое", size:"yt", make:function(W){ W.bg={t:"grad",c1:"#0d0f1a",c2:"#28104a",ang:120};
@@ -378,6 +378,6 @@ var GTEMPLATES = [
 ];
 var GTPL_GROUPS=[["yt","YouTube"],["music","Музыка"],["fest","Праздник"],["biz","Дело"]];
 function fromGTemplate(id){
-  var t=GTEMPLATES.filter(function(x){ return x.id===id; })[0]; var W=newWork(t.size); W.title=t.name; t.make(W);
+  var t=GTEMPLATES.filter(function(x){ return x.id===id; })[0]; var W=newWork(t.size); W.title=TR(t.name); t.make(W);
   W.layers.forEach(function(L){ if(L.t==="text"&&L.x===undefined) L.x=W.w/2; }); return W;
 }

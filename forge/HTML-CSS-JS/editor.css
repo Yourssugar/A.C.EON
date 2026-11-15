@@ -263,3 +263,11 @@ pre.code .hot{background:rgba(79,214,200,.09);box-shadow:-3px 0 0 var(--run);dis
 @media (max-width:400px){ .seg button{padding:6px 7px;font-size:12px} .pri{padding:9px 9px} .bar{gap:2px} .ib{width:34px} }
 @media (max-width:959px){ .bar .title{display:none} }
 @media (max-width:959px){ .bar #undo{margin-left:auto} }
+
+/* выбор языка в строке навигации */
+.langsel{font:inherit;font-size:11px;letter-spacing:.08em;color:var(--muted);background:transparent;border:1px solid color-mix(in srgb,var(--muted) 35%,transparent);border-radius:999px;padding:3px 8px;cursor:pointer;max-width:150px}
+.langsel:hover,.langsel:focus{color:var(--run);border-color:var(--run);outline:none}
+.langsel option{color:#111;background:#fff}
+.kick{flex-wrap:wrap;row-gap:10px;align-items:center}
+.kick a,.kick>span{white-space:nowrap}
+@media (max-width:560px){ .kick [data-langpick]{order:9;flex-basis:100%} }

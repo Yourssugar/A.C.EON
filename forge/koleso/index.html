@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e12">
+<title>FORGE · колесо и жребий</title>
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
+<link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
+<link rel="stylesheet" href="koleso.css?v=1">
+</head>
+<body>
+
+<!-- ═══ Мои наборы ═══ -->
+<section class="home" id="home" hidden>
+  <div class="hin">
+    <div class="kick"><a href="../">&larr; FORGE</a><span>/</span><span>жребий</span><span style="margin-left:auto"></span><span data-langpick></span><a href="../fony/">фоны &rarr;</a></div>
+    <h1>Колесо и <b>жребий</b></h1>
+    <p class="lead">Колесо фортуны, бинго с карточками для печати, деление на команды, тайный Санта, кубики и монетка. Для праздника, урока или чтобы решить, кто моет посуду. Всё работает в браузере, наборы хранятся только у вас.</p>
+    <h2>Мои наборы</h2>
+    <div class="ksets" id="mySets"></div>
+    <h2>Что делаем?</h2>
+    <div class="kks" id="kindsHome"></div>
+    <h2>Шаблоны</h2>
+    <div class="ktpls" id="tplHome"></div>
+  </div>
+</section>
+
+<!-- ═══ Набор ═══ -->
+<section class="ed kz" id="ed" hidden>
+  <header class="bar">
+    <button class="ib" id="toHome" title="Мои наборы"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input id="title" class="title" maxlength="80" aria-label="Название набора">
+    <span class="sp"></span>
+    <button class="ib" id="soundBtn" title="Звук"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11"/><path class="x" d="M16 9l5 6M21 9l-5 6"/></svg></button>
+    <button class="ib" id="fullBtn" title="На весь экран"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button class="pri" id="shareBtn">Поделиться</button>
+  </header>
+
+  <aside class="left" id="left">
+    <nav class="tabs" id="tabs">
+      <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Список</span></button>
+      <button data-tab="tpl"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><span>Шаблоны</span></button>
+      <button data-tab="set" class="mob"><svg viewBox="0 0 24 24"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg><span>Настройки</span></button>
+      <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+    </nav>
+    <div class="pane" id="pane"></div>
+  </aside>
+
+  <main class="stage kst" id="stage">
+    <div class="kview" id="view"></div>
+    <canvas class="kfx" id="fx"></canvas>
+    <button class="ib fclose" id="fullClose" title="Выйти из показа"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </main>
+
+  <aside class="right" id="right">
+    <div class="sh-h"><span class="grip"></span><b id="shTitle"></b><button class="ib" id="shClose" title="Свернуть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="insp" id="insp"></div>
+  </aside>
+</section>
+
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+<div id="printArea" data-nt></div>
+
+<script src="../i18n-forge.js?v=4"></script>
+<script src="../HTML-CSS-JS/engine.js?v=3"></script>
+<script src="koleso.js?v=1"></script>
+</body>
+</html>

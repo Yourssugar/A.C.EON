@@ -86,6 +86,7 @@
   #cont b{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #cont span{color:var(--muted);font-size:13px}
   .tools{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .tools>:last-child:nth-child(odd){grid-column:1/-1}
   .tool{position:relative;display:flex;flex-direction:column;gap:6px;text-decoration:none;border:1px solid var(--line);border-radius:18px;padding:16px 16px 16px 104px;min-height:112px;
     background:rgba(255,255,255,.025);transition:border-color .2s,background .2s,transform .2s;overflow:hidden}
   .tool img{position:absolute;left:10px;top:50%;width:84px;transform:translateY(-50%);filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
@@ -154,6 +155,7 @@
       <a class="tool" href="grafika/"><img src="film/s/piece-ingot-hot.webp" alt=""><em id="tO2">открыть</em><b id="tGfx">Графика</b><p id="tGfxD"></p></a>
       <a class="tool" href="fony/"><img src="film/s/piece-ingot-hot.webp" alt="" style="filter:hue-rotate(-25deg) saturate(1.2) drop-shadow(0 4px 10px rgba(0,0,0,.5))"><em id="tO3">открыть</em><b id="tFony">Фоны</b><p id="tFonyD"></p></a>
       <a class="tool" href="koleso/"><img src="film/s/piece-ingot-white.webp" alt="" style="filter:hue-rotate(160deg) saturate(.9) drop-shadow(0 4px 10px rgba(0,0,0,.5))"><em id="tO4">открыть</em><b id="tKoleso">Колесо и жребий</b><p id="tKolesoD"></p></a>
+      <a class="tool" href="zvuk/"><img src="film/s/piece-ingot-hot.webp" alt="" style="filter:hue-rotate(140deg) saturate(1.1) drop-shadow(0 4px 10px rgba(0,0,0,.5))"><em id="tO5">открыть</em><b id="tZvuk">Звук</b><p id="tZvukD"></p></a>
       <div class="tool off"><img src="film/s/piece-ingot-cold.webp" alt=""><em id="tS1">скоро</em><b id="tGames">Игры</b><p id="tGamesD"></p></div>
       <div class="tool off"><img src="film/s/piece-ingot-cold.webp" alt=""><em id="tS2">скоро</em><b id="tMusic">Музыка</b><p id="tMusicD"></p></div>
     </div>
@@ -164,7 +166,7 @@
 <script src="../games/shared/store.js?v=1"></script>
 <script src="../games/shared/i18n.js?v=1"></script>
 <script src="../shared/trace.js?v=1"></script>
-<script src="lang.js?v=4"></script>
-<script src="forge.js?v=4"></script>
+<script src="lang.js?v=5"></script>
+<script src="forge.js?v=5"></script>
 </body>
 </html>

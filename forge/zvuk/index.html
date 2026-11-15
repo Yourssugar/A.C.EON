@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e12">
+<title>FORGE · звуковая мастерская</title>
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
+<link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
+<link rel="stylesheet" href="zvuk.css?v=1">
+</head>
+<body>
+
+<!-- ═══ Мои звуки ═══ -->
+<section class="home" id="home" hidden>
+  <div class="hin">
+    <div class="kick"><a href="../">&larr; FORGE</a><span>/</span><span>звук</span><span style="margin-left:auto"></span><span data-langpick></span><a href="../koleso/">жребий &rarr;</a></div>
+    <h1>Звуковая <b>мастерская</b></h1>
+    <p class="lead">Обрезать песню, сделать рингтон, записать голос, убрать паузы, склеить несколько кусков, добавить эхо. Звук обрабатывается прямо на этом устройстве и никуда не отправляется, работы хранятся только в этом браузере.</p>
+    <h2>Мои звуки</h2>
+    <div class="zmy" id="myZ"></div>
+    <h2>Что делаем?</h2>
+    <div class="zstart" id="starts"></div>
+    <p class="foot">Подходят MP3, WAV, OGG, M4A, FLAC и звук из видео (что умеет ваш браузер). Файл можно просто перетащить в окно.</p>
+  </div>
+</section>
+
+<!-- ═══ Редактор ═══ -->
+<section class="ed zv" id="ed" hidden>
+  <header class="bar">
+    <button class="ib" id="toHome" title="Мои звуки"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input id="title" class="title" maxlength="80" aria-label="Название">
+    <span class="sp"></span>
+    <button class="ib" id="undo" title="Отменить (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+    <button class="ib" id="redo" title="Повторить (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+    <button class="pri" id="saveBtn">Сохранить</button>
+  </header>
+
+  <aside class="left" id="left">
+    <nav class="tabs" id="tabs">
+      <button data-tab="edit"><svg viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M6 12h12"/></svg><span>Правка</span></button>
+      <button data-tab="snd"><svg viewBox="0 0 24 24"><path d="M3 12h4M17 12h4M7 8v8M11 5v14M13 7v10M17 9v6"/></svg><span>Звук</span></button>
+      <button data-tab="save" class="mob"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Сохранить</span></button>
+      <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+    </nav>
+    <div class="pane" id="pane"></div>
+  </aside>
+
+  <main class="stage zst" id="stage">
+    <div class="ztime"><b id="tNow">0:00.0</b><span id="tAll">/ 0:00.0</span><span class="zsel" id="tSel"></span></div>
+    <div class="wave" id="wave">
+      <canvas id="wc"></canvas>
+      <div class="zbusy" id="busy" hidden><i></i><span>Обновляю звук...</span></div>
+      <div class="zempty" id="empty" hidden></div>
+    </div>
+    <input type="range" class="zscroll" id="scroll" min="0" max="1000" value="0" hidden aria-label="Прокрутка">
+    <div class="clips" id="clips"></div>
+    <div class="ztr">
+      <button class="s" id="loopBtn" title="Повторять выделенное"><svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 01-3 3H3"/></svg></button>
+      <button class="s" id="backBtn" title="В начало"><svg viewBox="0 0 24 24"><path d="M11 7l-5 5 5 5M18 7l-5 5 5 5"/></svg></button>
+      <button class="p" id="playBtn" title="Играть (пробел)"><svg viewBox="0 0 24 24" class="pl"><path d="M8 5l12 7-12 7z"/></svg><svg viewBox="0 0 24 24" class="pa"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+      <button class="s" id="fwdBtn" title="В конец выделения"><svg viewBox="0 0 24 24"><path d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg></button>
+      <button class="s rec" id="recBtn" title="Записать с микрофона"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg></button>
+      <span class="zoom"><span>масштаб</span><input type="range" id="zoom" min="0" max="100" value="0"></span>
+    </div>
+  </main>
+
+  <aside class="right" id="right">
+    <div class="sh-h"><span class="grip"></span><b id="shTitle"></b><button class="ib" id="shClose" title="Свернуть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="insp" id="insp"></div>
+  </aside>
+</section>
+
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+<div class="zdrop" id="drop"><b>Отпустите файл, он добавится в конец</b></div>
+<input type="file" id="fIn" accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.webm" multiple hidden>
+
+<script src="../i18n-forge.js?v=5"></script>
+<script src="../HTML-CSS-JS/engine.js?v=3"></script>
+<script src="zvuk.js?v=1"></script>
+</body>
+</html>

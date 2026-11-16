@@ -1,0 +1,125 @@
+/* FORGE битмейкер: то, чего нет в общем editor.css */
+.mob{display:flex}
+@media (min-width:960px){ .tabs .mob{display:none!important} }
+.bst{padding:10px 10px 0}
+@media (min-width:960px){ .bst{padding:16px 20px 0} }
+
+/* полоса над сеткой */
+.btr{flex:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:10px}
+.bplay{width:50px;height:50px;border-radius:50%;background:var(--run);display:grid;place-items:center;box-shadow:0 8px 24px rgba(79,214,200,.28);flex:none}
+.bplay svg{width:22px;height:22px;fill:#06231f;stroke:none}
+.bplay .pa{display:none}.bplay.on .pa{display:block}.bplay.on .pl{display:none}
+.bplay.on{background:#ff9a4d;box-shadow:0 8px 24px rgba(255,154,77,.3)}
+.tempo{display:flex;align-items:center;gap:2px;border:1px solid var(--line2);border-radius:999px;padding:3px;background:var(--panel2)}
+.tempo button{width:30px;height:30px;border-radius:50%;font-size:18px;color:var(--muted)}
+.tempo button:hover{background:var(--line);color:var(--text)}
+.tempo b{font-family:var(--mono);font-size:17px;min-width:34px;text-align:center}
+.tempo small{font-family:var(--mono);font-size:10px;color:var(--dim);margin-right:2px}
+.brush,.pages{display:flex;gap:3px;border:1px solid var(--line2);border-radius:999px;padding:3px;background:var(--panel2)}
+.brush button,.pages button{padding:6px 11px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.brush button.on,.pages button.on{background:var(--line2);color:var(--text)}
+.pages button{min-width:32px}
+@media (max-width:600px){ .brush button{padding:6px 8px;font-size:12px} .bplay{width:44px;height:44px} }
+
+/* сетка */
+.bgrid{flex:1;min-height:0;overflow:auto;padding-bottom:16px;touch-action:pan-y;-webkit-overflow-scrolling:touch;user-select:none;-webkit-user-select:none;overscroll-behavior:contain}
+.gr{display:flex;align-items:stretch;gap:6px;margin-bottom:5px}
+.gr .tn{flex:none;width:78px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:4px 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);text-align:left;min-width:0;border-left:3px solid var(--c)}
+.gr .tn b{font-size:12px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gr .tn small{font-size:10px;color:var(--dim);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gr.sel .tn{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--panel2))}
+.gr.off .tn,.gr.off .cs{opacity:.4}
+.gr .ms{display:none;flex-direction:column;gap:3px}
+.gr .ms button{width:26px;flex:1;border-radius:7px;border:1px solid var(--line);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--dim);background:var(--panel2)}
+.gr .ms button.on{color:#06231f;background:var(--ember);border-color:var(--ember)}
+.gr .ms button[data-s].on{background:var(--run);border-color:var(--run)}
+.cs{flex:1;min-width:0;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:3px}
+.cs>:nth-child(4n+1):not(:first-child){margin-left:4px}
+.gr.hd{margin-bottom:4px}
+.gr.hd .tn{height:18px;border:0;background:none;padding:0}
+.gr.hd i{font-style:normal;font-family:var(--mono);font-size:10px;color:var(--dim);padding-left:2px}
+.c{position:relative;height:42px;border-radius:7px;background:#151b23;border:1px solid #1d252f;padding:0;display:grid;place-items:center;transition:transform .06s}
+.c.b{background:#1a212b}
+.c em{font-style:normal;font-size:9.5px;font-weight:800;color:#0a0d11;font-family:var(--mono);pointer-events:none}
+.c.v1{background:color-mix(in srgb,var(--c) 42%,#151b23);border-color:transparent}
+.c.v2{background:var(--c);border-color:transparent}
+.c.v3{background:var(--c);border-color:#fff;box-shadow:0 0 12px -2px var(--c)}
+.c.v4{background:linear-gradient(90deg,var(--c) 0 44%,transparent 44% 56%,var(--c) 56%);border-color:transparent}
+.c.now{outline:2px solid rgba(255,255,255,.55);outline-offset:-1px}
+.c.now.v1,.c.now.v2,.c.now.v3,.c.now.v4{transform:scale(1.08);filter:brightness(1.25)}
+.gempty{color:var(--muted);font-size:14px;line-height:1.6;padding:30px 10px;text-align:center}
+@media (min-width:960px){
+  .gr .tn{width:132px;padding:5px 10px}
+  .gr .tn b{font-size:13px}
+  .gr .ms{display:flex}
+  .gr.hd .ms{display:flex;width:26px}
+  .c{height:46px}
+  .c:hover{filter:brightness(1.2)}
+}
+@media (max-width:420px){ .gr .tn{width:66px;padding:4px 6px} .cs{gap:2px} .cs>:nth-child(4n+1):not(:first-child){margin-left:3px} .c{border-radius:5px} .c em{font-size:8px} }
+
+/* телефон: пока открыта шторка, сетка остаётся видна над ней */
+@media (max-width:959px){
+  .bm .stage{transition:padding-bottom .22s ease}
+  .bm.so .stage{padding-bottom:calc(55dvh + 4px)}
+  .bm.so.pk .stage{padding-bottom:calc(34dvh + 4px)}
+}
+
+/* панели */
+.btpl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btpl button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);text-align:left}
+.btpl button:hover{border-color:var(--run)}
+.btpl canvas{width:100%;height:34px;margin-bottom:4px}
+.btpl b{font-size:12.5px}
+.btpl small{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.badd{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.badd button{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);text-align:left;font-size:13px;font-weight:700}
+.badd button:hover{border-color:var(--c)}
+.badd i{width:10px;height:10px;border-radius:3px;background:var(--c);flex:none}
+.btn svg+span{white-space:nowrap}
+.f select{appearance:auto}
+
+/* пианоролл */
+.roll{margin:2px 0 12px;border:1px solid var(--line);border-radius:12px;padding:6px;background:var(--panel2)}
+.rr{display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.rr span{flex:none;width:30px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.rr.root span{color:var(--text)}
+.rr div{flex:1;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:2px}
+.rr button{height:20px;border-radius:4px;background:#161c24;padding:0}
+.rr button.b{background:#1c2430}
+.rr.root button{background:#1d2633}
+.rr button.on{background:var(--c);box-shadow:0 0 8px -2px var(--c)}
+
+/* экран битов */
+.bmy{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.bc{flex:none;width:200px}
+.bc .th{position:relative;display:block;width:100%;height:96px;border-radius:16px;border:1px solid var(--line2);background:rgba(21,25,32,.72);overflow:hidden}
+.bc .th:hover{border-color:var(--run)}
+.bc .th canvas{position:absolute;inset:10px;width:calc(100% - 20px);height:calc(100% - 20px)}
+.bc b{display:block;font-size:13.5px;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc small{color:var(--dim);font-size:12px}
+.bc .acts{display:flex;gap:4px;margin-top:4px}
+.bc .acts button{font-size:12px;color:var(--muted);padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
+.btiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.bt{display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:12px;border:1px solid var(--line);border-radius:20px;background:rgba(21,25,32,.72);text-align:left}
+.bt:hover{border-color:var(--run)}
+.bt .cv{height:78px;border-radius:12px;background:#0b0e12;position:relative;display:grid;place-items:center;color:var(--run);margin-bottom:4px}
+.bt .cv canvas{position:absolute;inset:8px;width:calc(100% - 16px);height:calc(100% - 16px)}
+.bt .cv svg{width:30px;height:30px}
+.bt.new{border-style:dashed}
+.bt b{font-size:15px;display:flex;align-items:baseline;gap:8px}
+.bt b em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--dim);font-weight:600;margin-left:auto}
+.bt small{color:var(--muted);font-size:12.5px;line-height:1.45}
+
+/* запись и сборка */
+.recbox{text-align:center}
+.recbox .rt{font-family:var(--mono);font-size:40px;margin:10px 0}
+.recbox .lv{height:10px;border-radius:5px;background:var(--panel2);overflow:hidden;margin:6px 0 16px}
+.recbox .lv i{display:block;height:100%;width:0;background:linear-gradient(90deg,#22c55e,#eab308,#ef4444);transition:width .06s}
+.recdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5d73;margin-right:6px;animation:bbl 1s infinite}
+@keyframes bbl{50%{opacity:.2}}
+.prog{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin:12px 0}
+.prog i{display:block;height:100%;width:0;background:var(--run)}
+.modal .row .btn svg{width:16px;height:16px}
+.modal .box{position:relative}
+.modal .mx{position:absolute;top:10px;right:10px}

@@ -3,6 +3,7 @@ window.FORGE_LANG={
 ru:{
   koleso:'Колесо и жребий', kolesoD:'Колесо фортуны, бинго с карточками для печати, команды, тайный Санта, кубики.',
   zvuk:'Звук', zvukD:'Обрезать песню, сделать рингтон, записать голос, убрать паузы.',
+  bit:'Биты', bitD:'Барабаны, бас и мелодия по клеткам, свои звуки с микрофона, луп файлом.',
   fony:'Фоны', fonyD:'Аврора, волны, топография, конфетти. Картинкой, SVG или кодом CSS, в том числе плиткой для сайта.', kfony:'шаблон фона',
   title:'FORGE · кузня A.C.EON', back:'< A.C.EON', lang:'Язык',
   kick:'A.C.EON // FORGE', sub:'кузня',
@@ -21,6 +22,7 @@ ru:{
 en:{
   koleso:'Wheel & draw', kolesoD:'Wheel of fortune, bingo with printable cards, teams, Secret Santa, dice.',
   zvuk:'Sound', zvukD:'Trim a song, make a ringtone, record your voice, remove pauses.',
+  bit:'Beats', bitD:'Drums, bass and melody on a grid, your own sounds from the mic, the loop as a file.',
   fony:'Backgrounds', fonyD:'Aurora, waves, topography, confetti. As a picture, SVG or CSS code, including seamless tiles for a website.', kfony:'background template',
   title:'FORGE · A.C.EON workshop', back:'< A.C.EON', lang:'Language',
   kick:'A.C.EON // FORGE', sub:'workshop',
@@ -39,6 +41,7 @@ en:{
 de:{
   koleso:'Glücksrad & Los', kolesoD:'Glücksrad, Bingo mit Karten zum Drucken, Teams, Wichteln, Würfel.',
   zvuk:'Ton', zvukD:'Song kürzen, Klingelton machen, Stimme aufnehmen, Pausen entfernen.',
+  bit:'Beats', bitD:'Drums, Bass und Melodie im Raster, eigene Klänge vom Mikrofon, der Loop als Datei.',
   fony:'Hintergründe', fonyD:'Aurora, Wellen, Topografie, Konfetti. Als Bild, SVG oder CSS-Code, auch als nahtlose Kachel für die Website.', kfony:'Hintergrundvorlage',
   title:'FORGE · Werkstatt A.C.EON', back:'< A.C.EON', lang:'Sprache',
   kick:'A.C.EON // FORGE', sub:'Werkstatt',
@@ -57,6 +60,7 @@ de:{
 fr:{
   koleso:'Roue et tirage', kolesoD:'Roue de la fortune, bingo avec cartes à imprimer, équipes, Père Noël secret, dés.',
   zvuk:'Son', zvukD:'Couper une chanson, créer une sonnerie, enregistrer votre voix, enlever les pauses.',
+  bit:'Beats', bitD:'Batterie, basse et mélodie sur une grille, vos sons au micro, la boucle en fichier.',
   fony:'Fonds', fonyD:'Aurore, vagues, topographie, confettis. En image, SVG ou code CSS, y compris en motif pour un site.', kfony:'modèle de fond',
   title:'FORGE · atelier A.C.EON', back:'< A.C.EON', lang:'Langue',
   kick:'A.C.EON // FORGE', sub:'atelier',
@@ -75,6 +79,7 @@ fr:{
 es:{
   koleso:'Ruleta y sorteo', kolesoD:'Ruleta de la fortuna, bingo con cartones para imprimir, equipos, amigo invisible, dados.',
   zvuk:'Sonido', zvukD:'Recortar una canción, hacer un tono, grabar tu voz, quitar pausas.',
+  bit:'Beats', bitD:'Batería, bajo y melodía en cuadrícula, tus sonidos con el micro, el loop como archivo.',
   fony:'Fondos', fonyD:'Aurora, olas, topografía, confeti. Como imagen, SVG o código CSS, también en mosaico para una web.', kfony:'plantilla de fondo',
   title:'FORGE · taller A.C.EON', back:'< A.C.EON', lang:'Idioma',
   kick:'A.C.EON // FORGE', sub:'taller',
@@ -93,6 +98,7 @@ es:{
 it:{
   koleso:'Ruota e sorteggio', kolesoD:'Ruota della fortuna, tombola con cartelle da stampare, squadre, Babbo Natale segreto, dadi.',
   zvuk:'Audio', zvukD:'Tagliare una canzone, creare una suoneria, registrare la voce, togliere le pause.',
+  bit:'Beat', bitD:'Batteria, basso e melodia su griglia, i tuoi suoni dal microfono, il loop come file.',
   fony:'Sfondi', fonyD:'Aurora, onde, topografia, coriandoli. Come immagine, SVG o codice CSS, anche a piastrelle per un sito.', kfony:'modello di sfondo',
   title:'FORGE · laboratorio A.C.EON', back:'< A.C.EON', lang:'Lingua',
   kick:'A.C.EON // FORGE', sub:'laboratorio',
@@ -111,6 +117,7 @@ it:{
 pl:{
   koleso:'Koło i losowanie', kolesoD:'Koło fortuny, bingo z kartami do druku, drużyny, tajny Mikołaj, kostki.',
   zvuk:'Dźwięk', zvukD:'Przyciąć piosenkę, zrobić dzwonek, nagrać głos, usunąć pauzy.',
+  bit:'Bity', bitD:'Perkusja, bas i melodia w kratkach, własne dźwięki z mikrofonu, pętla jako plik.',
   fony:'Tła', fonyD:'Zorza, fale, topografia, konfetti. Jako obraz, SVG albo kod CSS, także kafelkiem na stronę.', kfony:'szablon tła',
   title:'FORGE · warsztat A.C.EON', back:'< A.C.EON', lang:'Język',
   kick:'A.C.EON // FORGE', sub:'kuźnia',

@@ -328,7 +328,10 @@ function m4r(chs,prog){ return new Promise(function(res,rej){ var a=new (window.
   var rec=new MediaRecorder(d.stream,{mimeType:M4R}), parts=[], t0=0, iv=0; rec.ondataavailable=function(e){ if(e.data.size) parts.push(e.data); };
   rec.onstop=function(){ clearInterval(iv); a.close(); res(new Blob(parts,{type:"audio/mp4"})); };
   rec.start(); s.start(); t0=a.currentTime; s.onended=function(){ setTimeout(function(){ rec.stop(); },150); }; iv=setInterval(function(){ prog((a.currentTime-t0)/b.duration); },200); }); }
-function fname(){ return (P.title||"zvuk").trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"").slice(0,40)||"zvuk"; }
+/* имя файла латиницей: некоторые браузеры не принимают кириллицу в имени скачиваемого файла и называют его «download» */
+function latin(s){ var m={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"h",ц:"ts",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya",і:"i",ї:"yi",є:"ye",ł:"l",ß:"ss"};
+  return String(s||"").toLowerCase().split("").map(function(c){ return m[c]!=null?m[c]:c; }).join("").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40); }
+function fname(){ return latin(P.title)||"zvuk"; }
 function dl(blob,name){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },3000); }
 function estSize(){ var sc=scope(), L=sc[1]-sc[0], ch=P.mono?1:2; if(P.fmt==="wav") return L*SR*ch*2; if(P.fmt==="m4r") return L*16000; return L*(P.fmt==="mp3128"?128:192)*125; }
 function kb(b){ return b>1048576?(b/1048576).toFixed(1)+" "+TR("МБ"):Math.round(b/1024)+" "+TR("КБ"); }

@@ -338,7 +338,7 @@ function deps(){
   const lk=document.createElement('link'); lk.rel='stylesheet';
   lk.href='https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700|inter:400,600,700,800|montserrat:400,600,700,800|rubik:400,500,700|nunito:400,600,800|comfortaa:500,700|oswald:500,700|lora:500,600,700|playfair-display:600,700,800|cormorant-garamond:500,600,700|pt-serif:400,700|jetbrains-mono:400,700&display=swap';
   document.head.appendChild(lk);
-  depsP=loadScript('i18n-forge.js?v=10').then(()=>loadScript('HTML-CSS-JS/engine.js?v=3')).then(()=>loadScript('grafika/lib/qrcode.js'))
+  depsP=loadScript('i18n-forge.js?v=11').then(()=>loadScript('HTML-CSS-JS/engine.js?v=3')).then(()=>loadScript('grafika/lib/qrcode.js'))
     .then(()=>loadScript('grafika/gfx-engine.js?v=5')).then(()=>loadScript('fony/fony-engine.js?v=1')).then(()=>{ if(window.FORGE_I18N) FORGE_I18N.use(lang()); });
   return depsP;
 }

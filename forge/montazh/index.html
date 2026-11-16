@@ -7,7 +7,7 @@
 <title>FORGE · монтаж роликов</title>
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
 <link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
-<link rel="stylesheet" href="montazh.css?v=1">
+<link rel="stylesheet" href="montazh.css?v=2">
 </head>
 <body>
 
@@ -40,6 +40,7 @@
     <nav class="tabs" id="tabs">
       <button data-tab="vid"><svg viewBox="0 0 24 24"><path d="M3 6h13v12H3zM16 10l5-3v10l-5-3"/></svg><span>Ролик</span></button>
       <button data-tab="clip" class="mob"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4"/></svg><span>Клип</span></button>
+      <button data-tab="col"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/></svg><span>Цвет</span></button>
       <button data-tab="mus"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>Музыка</span></button>
       <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
     </nav>
@@ -49,8 +50,9 @@
   <main class="stage mst2" id="stage">
     <div class="cvbox"><div class="cvw" id="cvw"><canvas id="cv" width="540" height="960"></canvas>
       <div class="vempty" id="empty" hidden><b>Добавьте фото и видео</b><span>или перетащите файлы в окно</span><div class="row"><button class="btn go" id="emptyAdd">Выбрать файлы</button><button class="btn" id="emptyDemo">Пример из фонов</button></div></div>
+      <div class="tsel" id="tsel" hidden><i class="tsh"></i></div><i class="gd gx" id="gx" hidden></i><i class="gd gy" id="gy" hidden></i>
     </div></div>
-    <div class="vtr"><button class="vplay" id="playBtn" title="Играть (пробел)"><svg viewBox="0 0 24 24" class="pl"><path d="M8 5l12 7-12 7z"/></svg><svg viewBox="0 0 24 24" class="pa"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button><b id="tNow">0:00.0</b><span id="tAll">/ 0:00.0</span></div>
+    <div class="vtr"><div class="vl"><button class="vb" id="addMus" title="Добавить музыку"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg>+</button></div><button class="vplay" id="playBtn" title="Играть (пробел)"><svg viewBox="0 0 24 24" class="pl"><path d="M8 5l12 7-12 7z"/></svg><svg viewBox="0 0 24 24" class="pa"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button><b id="tNow">0:00.0</b><span id="tAll">/ 0:00.0</span><div class="vr"><button class="vb" id="zmM" title="Лента мельче">&minus;</button><button class="vb" id="zmP" title="Лента крупнее">+</button></div></div>
     <div class="tl" id="tl"></div>
   </main>
 
@@ -65,9 +67,9 @@
 <div class="vdrop" id="drop"><b>Отпустите файлы, они добавятся в конец</b></div>
 <input type="file" id="fIn" hidden>
 
-<script src="../i18n-forge.js?v=10"></script>
+<script src="../i18n-forge.js?v=11"></script>
 <script src="../HTML-CSS-JS/engine.js?v=3"></script>
 <script src="../fony/fony-engine.js?v=1"></script>
-<script src="montazh.js?v=1"></script>
+<script src="montazh.js?v=2"></script>
 </body>
 </html>

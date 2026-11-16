@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e12">
+<title>FORGE · открытка с музыкой</title>
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700|lobster:400|caveat:600,700|playfair-display:400,700&display=swap">
+<link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
+<link rel="stylesheet" href="otkrytka.css?v=1">
+</head>
+<body>
+
+<!-- ═══ Открытка по ссылке ═══ -->
+<div class="oview" id="view" data-nt hidden></div>
+
+<!-- ═══ Мои открытки ═══ -->
+<section class="home" id="home" hidden>
+  <div class="hin">
+    <div class="kick"><a href="../">&larr; FORGE</a><span>/</span><span>открытка</span><span style="margin-left:auto"></span><span data-langpick></span><a href="../bit/">биты &rarr;</a></div>
+    <h1>Открытка <b>с музыкой</b></h1>
+    <p class="lead">Получатель видит закрытый конверт, подарок или занавес, нажимает, и открытка открывается под музыку. Отправить можно ссылкой или одним файлом. На сервер ничего не уходит, открытки хранятся в этом браузере.</p>
+    <h2>Мои открытки</h2>
+    <div class="omy" id="myO"></div>
+    <h2>Для какого повода?</h2>
+    <div class="otiles" id="occO"></div>
+    <p class="foot">Мелодии в открытках старые и свободные от авторских прав. Свою музыку, голос и фото можно положить в открытку-файл.</p>
+  </div>
+</section>
+
+<!-- ═══ Редактор ═══ -->
+<section class="ed ok" id="ed" hidden>
+  <header class="bar">
+    <button class="ib" id="toHome" title="Мои открытки"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input id="title" class="title" maxlength="80" aria-label="Название">
+    <span class="sp"></span>
+    <button class="ib" id="undo" title="Отменить (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+    <button class="ib" id="redo" title="Повторить (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+    <button class="btn dsk" id="linkBtn">Ссылка</button>
+    <button class="pri" id="saveBtn">Отправить</button>
+  </header>
+
+  <aside class="left" id="left">
+    <nav class="tabs" id="tabs">
+      <button data-tab="occ"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.2 0 3.6 1.3 5.3 3.3 1.7-2 3.1-3.3 5.3-3.3 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg><span>Повод</span></button>
+      <button data-tab="look"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM4 7l8 6 8-6"/></svg><span>Вид</span></button>
+      <button data-tab="text"><svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M9 19h6"/></svg><span>Текст</span></button>
+      <button data-tab="mus"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>Музыка</span></button>
+      <button data-tab="send" class="mob"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg><span>Отправить</span></button>
+      <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+    </nav>
+    <div class="pane" id="pane"></div>
+  </aside>
+
+  <main class="stage ost" id="stage">
+    <div class="ofr"><div class="opv" id="cpv" data-nt></div></div>
+    <div class="obar"><button class="btn" id="openBtn">Открыть открытку</button></div>
+  </main>
+
+  <aside class="right" id="right">
+    <div class="sh-h"><span class="grip"></span><b id="shTitle"></b><button class="ib" id="shClose" title="Свернуть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="insp" id="insp"></div>
+  </aside>
+</section>
+
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fIn" hidden>
+
+<script src="../i18n-forge.js?v=7"></script>
+<script src="../HTML-CSS-JS/engine.js?v=3"></script>
+<script src="../fony/fony-engine.js?v=1"></script>
+<script src="view.js?v=1"></script>
+<script src="otkrytka.js?v=1"></script>
+</body>
+</html>

@@ -17,7 +17,7 @@ function range(label,v,min,max,step,fmt,fn,done){ return el('<div class="f"><div
 function toggle(label,v,fn){ return el('<label class="tg"><span>'+esc(label)+'</span><input type="checkbox"'+(v?" checked":"")+'></label>',function(n){ $("input",n).onchange=function(){ fn(this.checked); }; }); }
 var SV={ add:"M12 5v14M5 12h14", mic:"M12 3a3 3 0 00-3 3v5a3 3 0 006 0V6a3 3 0 00-3-3zM5 11a7 7 0 0014 0M12 18v3", file:"M14 3H6v18h12V7zM14 3v4h4",
   l:"M15 5l-7 7 7 7", r:"M9 5l7 7-7 7", x:"M6 6l12 12M18 6L6 18", play:"M8 5l12 7-12 7z", dup:"M8 8h12v12H8zM4 16V4h12", clr:"M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
-  zv:"M3 12h4M17 12h4M7 8v8M11 5v14M13 7v10M17 9v6", tap:"M12 3v4M5.6 5.6l2.8 2.8M3 12h4M18.4 5.6l-2.8 2.8M21 12h-4M9 21l3-9 3 9" };
+  zv:"M3 12h4M17 12h4M7 8v8M11 5v14M13 7v10M17 9v6", card:"M4 7h16v12H4zM4 7l8 6 8-6", tap:"M12 3v4M5.6 5.6l2.8 2.8M3 12h4M18.4 5.6l-2.8 2.8M21 12h-4M9 21l3-9 3 9" };
 function sv(n){ return '<svg viewBox="0 0 24 24"><path d="'+SV[n]+'"/></svg>'; }
 
 /* ═══════════ хранение ═══════════ */
@@ -298,17 +298,18 @@ function kb(b){ return b>1048576?(b/1048576).toFixed(1)+" "+TR("МБ"):Math.roun
 function mmss(s){ var m=Math.floor(s/60); return m+":"+String(Math.round(s-m*60)).padStart(2,"0"); }
 function exportBox(){
   if(!P.tr.length){ toast(TR("Сначала добавьте дорожку")); return; } stop(); P.ex=P.ex||{n:4,fmt:"wav",seam:true};
-  modal('<button class="ib mx" data-close title="'+esc(TR("Закрыть"))+'">'+sv("x")+'</button><h3>Сохранить бит</h3><div id="exO"></div><p class="note" id="exI" style="margin-top:4px"></p><div class="row"><button class="btn" id="exZ">'+sv("zv")+'<span>В звуковую мастерскую</span></button><button class="btn go" id="exD">Скачать</button></div>');
+  modal('<button class="ib mx" data-close title="'+esc(TR("Закрыть"))+'">'+sv("x")+'</button><h3>Сохранить бит</h3><div id="exO"></div><p class="note" id="exI" style="margin-top:4px"></p><div class="row"><button class="btn" id="exZ">'+sv("zv")+'<span>В звуковую мастерскую</span></button><button class="btn" id="exC">'+sv("card")+'<span>В открытку</span></button></div><div class="row"><button class="btn go" id="exD">Скачать</button></div>');
   var box=$("#exO"), upd=function(){ var L=P.len*stepDur()*P.ex.n; $("#exI").textContent=TR("Длина {0}, файл около {1}",mmss(L),kb(P.ex.fmt==="wav"?L*SR*4:L*24000)); };
   box.appendChild(choice(TR("Сколько раз повторить"),[[1,"1"],[2,"2"],[4,"4"],[8,"8"],[16,"16"]],P.ex.n,function(v){ P.ex.n=+v; upd(); save(); }));
   box.appendChild(choice(TR("Формат"),[["wav","WAV"],["mp3","MP3 192"]],P.ex.fmt,function(v){ P.ex.fmt=v; upd(); save(); }));
   box.appendChild(toggle(TR("Бесшовный луп"),P.ex.seam,function(v){ P.ex.seam=v; save(); }));
   box.appendChild(el('<p class="note">'+esc(TR("Бесшовный: хвосты звуков в конце переносятся в начало, и файл можно крутить по кругу без щелчка. Выключите, если нужен конец с затуханием."))+'</p>'));
-  upd(); $("#exD").onclick=function(){ doExport(false); }; $("#exZ").onclick=function(){ doExport(true); }; }
+  upd(); $("#exD").onclick=function(){ doExport(false); }; $("#exZ").onclick=function(){ doExport(true); }; $("#exC").onclick=function(){ doExport("card"); }; }
 function doExport(toZ){
   var ex=P.ex; modal('<h3>'+esc(TR("Собираю звук"))+'</h3><div class="prog"><i id="pg"></i></div><p class="note">'+esc(TR("Пара секунд..."))+'</p>');
   var prog=function(p){ var g=$("#pg"); if(g) g.style.width=Math.round(p*100)+"%"; };
   setTimeout(function(){ render(ex.n,ex.seam).then(function(chs){ prog(.3);
+    if(toZ==="card") return mp3(chs,function(p){ prog(.3+p*.7); }).then(sendCard);
     if(toZ) return sendZvuk(wav(chs),chs[0].length/SR);
     return (ex.fmt==="wav"?Promise.resolve(wav(chs)):mp3(chs,function(p){ prog(.3+p*.7); })).then(function(b){ closeModal(); dl(b,fname()+"-"+P.bpm+"bpm."+(ex.fmt==="wav"?"wav":"mp3")); toast(TR("Файл сохранён: {0}",kb(b.size))); }); })
     .catch(function(){ closeModal(); toast(TR("Не получилось сохранить файл")); }); },60); }
@@ -318,6 +319,12 @@ function sendZvuk(blob,dur){ var zdb=function(){ return new Promise(function(res
   var aid="a"+newId(""), id="z"+newId(""), pr={ v:1, id:id, title:P.title||TR("Бит"), clips:[{ id:"c"+newId(""), aid:aid, name:P.title||TR("Бит"), dur:dur, segs:[[0,dur]] }], gain:0, speed:1, fx:"none", mono:false, fadeIn:0, fadeOut:0, scope:"all", sel:null, ring:0, fmt:"mp3192", updated:Date.now() };
   return tx("blobs","readwrite",function(s){ s.put(blob,aid); },zdb).then(function(){ return tx("projects","readwrite",function(s){ s.put(pr); },zdb); })
     .then(function(){ save(); closeModal(); location.href="../zvuk/#"+id; }); }
+/* отдать луп в открытку: MP3 и черновик открытки кладём в её базу, остальное открытка допишет сама */
+function sendCard(blob){ var cdb=function(){ return new Promise(function(res,rej){ var r=indexedDB.open("forge-otkrytka",1);
+    r.onupgradeneeded=function(){ r.result.createObjectStore("cards",{keyPath:"id"}); r.result.createObjectStore("blobs"); }; r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }); };
+  var aid="a"+newId(""), id="o"+newId(""), c={ v:1, id:id, title:P.title||TR("Бит"), fromBit:true, mus:{ k:"audio", aid:aid, name:P.title||TR("Бит"), loop:true }, updated:Date.now() };
+  return tx("blobs","readwrite",function(s){ s.put(blob,aid); },cdb).then(function(){ return tx("cards","readwrite",function(s){ s.put(c); },cdb); })
+    .then(function(){ save(); closeModal(); location.href="../otkrytka/#"+id; }); }
 $("#saveBtn").onclick=exportBox;
 
 /* ссылка: бит целиком в адресе (без своих звуков, их в ссылку не положить) */

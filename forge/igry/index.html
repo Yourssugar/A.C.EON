@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e12">
+<title>FORGE · игры по шаблонам</title>
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
+<link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
+<link rel="stylesheet" href="igry.css?v=1">
+</head>
+<body>
+
+<!-- ═══ Игра по ссылке ═══ -->
+<div class="gview" id="view" data-nt hidden></div>
+
+<!-- ═══ Мои игры ═══ -->
+<section class="home" id="home" hidden>
+  <div class="hin">
+    <div class="kick"><a href="../">&larr; FORGE</a><span>/</span><span>игры</span><span style="margin-left:auto"></span><span data-langpick></span><a href="../otkrytka/">открытка &rarr;</a></div>
+    <h1>Игры <b>по шаблонам</b></h1>
+    <p class="lead">Своя викторина, мемо, квест или пазл за несколько минут. Впишите вопросы, пары или сцены, и игру можно отправить ссылкой или файлом. Всё хранится в этом браузере, на сервер ничего не уходит.</p>
+    <h2>Мои игры</h2>
+    <div class="gmy" id="myG"></div>
+    <h2>Новая игра</h2>
+    <div class="gtiles" id="tplG"></div>
+    <p class="foot">Игры открываются на телефоне и компьютере. Лучший результат каждый игрок видит у себя.</p>
+  </div>
+</section>
+
+<!-- ═══ Редактор ═══ -->
+<section class="ed gg" id="ed" hidden>
+  <header class="bar">
+    <button class="ib" id="toHome" title="Мои игры"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input id="title" class="title" maxlength="60" aria-label="Название">
+    <span class="sp"></span>
+    <button class="ib" id="undo" title="Отменить (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+    <button class="ib" id="redo" title="Повторить (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+    <button class="btn dsk" id="linkBtn">Ссылка</button>
+    <button class="pri" id="saveBtn">Отправить</button>
+  </header>
+
+  <aside class="left" id="left">
+    <nav class="tabs" id="tabs">
+      <button data-tab="game"><svg viewBox="0 0 24 24"><path d="M6 9h4M8 7v4M15 10h.01M18 8h.01M7 4h10a5 5 0 015 5v5a4 4 0 01-7 2.6L13.5 15h-3L9 16.6A4 4 0 012 14V9a5 5 0 015-5z"/></svg><span>Игра</span></button>
+      <button data-tab="look"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4"/></svg><span>Вид</span></button>
+      <button data-tab="send" class="mob"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg><span>Отправить</span></button>
+      <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+    </nav>
+    <div class="pane" id="pane"></div>
+  </aside>
+
+  <main class="stage gst" id="stage">
+    <div class="gfr"><div class="gpv" id="gpv" data-nt></div></div>
+    <div class="gbar"><button class="btn" id="restartBtn"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 4v5h-5M20 12a8 8 0 01-14 5.3M4 20v-5h5"/></svg><span>С начала</span></button></div>
+  </main>
+
+  <aside class="right" id="right">
+    <div class="sh-h"><span class="grip"></span><b id="shTitle"></b><button class="ib" id="shClose" title="Свернуть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="insp" id="insp"></div>
+  </aside>
+</section>
+
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fIn" hidden>
+
+<script src="../i18n-forge.js?v=9"></script>
+<script src="../HTML-CSS-JS/engine.js?v=3"></script>
+<script src="../fony/fony-engine.js?v=1"></script>
+<script src="play.js?v=1"></script>
+<script src="igry.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+/* FORGE игры: то, чего нет в общем editor.css (сама игра рисуется стилями из play.js) */
+.mob{display:flex}
+@media (min-width:960px){ .tabs .mob{display:none!important} }
+.gview{position:fixed;inset:0;z-index:50;background:#111}
+
+/* превью */
+.gst{align-items:center;justify-content:center;padding:12px 12px 10px;gap:10px}
+.gfr{flex:1;min-height:0;width:100%;display:flex;justify-content:center}
+.gpv{width:100%;height:100%;border-radius:18px;overflow:hidden;background:#111}
+.gbar{flex:none;display:flex;gap:8px;justify-content:center}
+@media (min-width:960px){
+  .gst{padding:20px 20px 16px}
+  .gfr{position:relative;container-type:size}
+  .gpv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:min(100cqh - 20px,740px);width:calc(min(100cqh - 20px,740px)*.4865);max-width:100%;border-radius:34px;box-shadow:0 0 0 9px #05070a,0 0 0 10px #2a313b,0 30px 80px -20px #000}
+}
+@media (max-width:959px){
+  .gg .stage{transition:padding-bottom .22s ease}
+  .gg.so .stage{padding-bottom:calc(55dvh + 6px)}
+  .gg.so.pk .stage{padding-bottom:calc(34dvh + 6px)}
+  .gg.so .gbar{display:none}
+}
+
+/* редакторы */
+.ib2{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--muted);flex:none}
+.ib2:hover{background:var(--line);color:var(--text)}
+.ib2 svg{width:15px;height:15px}
+.li.gq{cursor:pointer}
+.li.gq .lh{margin-bottom:0}
+.li.gq.sel{cursor:default;border-color:var(--run)}
+.li.gq.sel .lh{margin-bottom:10px}
+.li.gq.end:not(.sel){border-color:rgba(255,154,77,.45)}
+.li .qch{display:block;margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--run);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ans{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ans input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:9px 12px;font-size:15px}
+.ans input:focus{outline:none;border-color:var(--run)}
+.ans span{font-size:14px;font-weight:700}
+.rad{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line2)}
+.rad.on{border-color:#3ddc97;background:#3ddc97;box-shadow:inset 0 0 0 4px var(--panel2)}
+.imgrow{display:flex;align-items:center;gap:8px;margin-top:8px}
+.imgrow img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line2)}
+.imgrow .btn{padding:8px 12px;font-size:12.5px}
+.add{display:flex;align-items:center;justify-content:center;width:100%;padding:11px;border:1px dashed var(--line2);border-radius:14px;color:var(--run);font-weight:700;font-size:13.5px;margin-top:4px}
+.add.sm{padding:8px;font-size:12.5px}
+.add:hover{border-color:var(--run)}
+.mrow{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.mrow em{font-style:normal;color:var(--dim)}
+.mcell{flex:1;min-width:0;display:flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:4px}
+.mcell input{flex:1;min-width:0;background:none;border:0;padding:6px 4px;font-size:14px}
+.mcell input:focus{outline:none}
+.mface{flex:none;width:34px;height:34px;border-radius:9px;background:#fff center/cover;display:grid;place-items:center;color:#555;font-size:12px;font-weight:800}
+.mface svg{width:24px;height:24px;stroke:none}
+.icg2{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:12px}
+.icg2 button{aspect-ratio:1;border-radius:10px;background:#fff;display:grid;place-items:center}
+.icg2 button:hover{box-shadow:0 0 0 3px var(--run)}
+.icg2 svg{width:70%;height:70%;stroke:none}
+.scn{display:flex;gap:6px;margin-bottom:4px}
+.scn button{width:34px;height:34px;border-radius:9px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.scn button.on{box-shadow:0 0 0 2px var(--panel2),0 0 0 4px var(--run)}
+.olab{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin:6px 0 6px}
+.qc{border:1px solid var(--line);border-radius:12px;padding:6px;margin-bottom:6px;background:var(--panel)}
+.qc .r1,.qc .r2{display:flex;gap:5px;align-items:center}
+.qc .r2{margin-top:5px}
+.qc input,.qc select{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:7px 9px;font-size:13.5px;color:var(--text)}
+.qc select{display:block;width:100%;margin-top:5px}
+.qc .r2 input{font-size:12.5px}
+.sws2{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:8px}
+.sws2 button{height:34px;border-radius:10px}
+.sws2 button.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--run)}
+.obg{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.obg button{aspect-ratio:3/5;border-radius:8px;background:#222 center/cover;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.obg.sq button{aspect-ratio:1}
+.obg button:hover{box-shadow:0 0 0 2px var(--run)}
+.mus{flex:1;font-size:13.5px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;align-self:center}
+.btn.w span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* экран игр */
+.gmy{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px}
+.gc{flex:none;width:132px}
+.gc .th{display:block;width:100%;height:230px;border-radius:16px;border:1px solid var(--line2);overflow:hidden;padding:0;background:#111}
+.gc .th:hover{border-color:var(--run)}
+.gc .mv{width:100%;height:100%;pointer-events:none}
+.gc b{display:block;font-size:13.5px;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc small{color:var(--dim);font-size:12px}
+.gc .acts{display:flex;gap:4px;margin-top:4px}
+.gc .acts button{font-size:12px;color:var(--muted);padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
+.gtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.gt{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--line);border-radius:20px;background:rgba(21,25,32,.72);text-align:left}
+.gt:hover{border-color:var(--run)}
+.gt .mv{height:260px;border-radius:13px;overflow:hidden;pointer-events:none}
+.mv>div{pointer-events:none}
+.gt b{font-size:15px;padding:2px 4px 0}
+.gt small{color:var(--muted);font-size:12.5px;line-height:1.45;padding:0 4px 4px}
+@media (max-width:560px){ .gtiles{grid-template-columns:1fr 1fr;gap:8px} .gt .mv{height:220px} }

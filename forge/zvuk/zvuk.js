@@ -22,7 +22,7 @@ function sec(s){ return (Math.round(s*10)/10).toFixed(1)+" "+TR("с"); }
 var SV={ keep:"M6 4v16M18 4v16M6 12h12", cut:"M6 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12", fade:"M3 20L12 4l9 16",
   sil:"M4 12h3l3-7 4 14 3-7h3", vol:"M4 9h4l5-4v14l-5-4H4zM16 9a4 4 0 010 6", spd:"M12 12l4-3M5 19a9 9 0 1114 0", fx:"M3 12h4M17 12h4M7 8v8M11 5v14M13 7v10M17 9v6",
   mic:"M12 3a3 3 0 00-3 3v5a3 3 0 006 0V6a3 3 0 00-3-3zM5 11a7 7 0 0014 0M12 18v3", add:"M12 5v14M5 12h14", file:"M14 3H6v18h12V7zM14 3v4h4", ring:"M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0",
-  l:"M15 5l-7 7 7 7", r:"M9 5l7 7-7 7", x:"M6 6l12 12M18 6L6 18" };
+  l:"M15 5l-7 7 7 7", r:"M9 5l7 7-7 7", x:"M6 6l12 12M18 6L6 18", play:"M7 4l13 8-13 8z" };
 function sv(n){ return '<svg viewBox="0 0 24 24"><path d="'+SV[n]+'"/></svg>'; }
 
 /* ═══════════ хранение ═══════════ */
@@ -131,6 +131,9 @@ function draw(){
   var steps=[.5,1,2,5,10,15,30,60,120,300], st=steps.filter(function(s){ return s/V.len*W>70; })[0]||600;
   g.font="10px ui-monospace,Menlo,monospace"; g.fillStyle="#59636e";
   for(var t=Math.ceil(V.t0/st)*st;t<V.t0+V.len;t+=st){ var x=xOf(t); g.fillRect(x,RH-7,1,6); g.fillText(tm(t,st<1?1:0),x+4,14); }
+  /* варианты лучшего куска: цветные полоски с номерами на шкале */
+  if(bestValid()) BEST.c.forEach(function(c,i){ var x1=xOf(c.a), x2=xOf(c.b), col=["#ff9a4d","#ff5fa2","#a78bfa"][i]; g.fillStyle=col; g.globalAlpha=.85; g.fillRect(x1,RH-4,x2-x1,3); g.globalAlpha=1;
+    g.beginPath(); g.arc(x1+7,RH-11,6.5,0,Math.PI*2); g.fill(); g.fillStyle="#0d1116"; g.font="bold 9px ui-monospace,Menlo,monospace"; g.fillText(String(i+1),x1+4.5,RH-8); g.font="10px ui-monospace,Menlo,monospace"; });
   /* волна */
   var mid=(H+RH)/2, amp=(H-RH)/2-8, spp=V.len*SR/W, a=MIX.getChannelData(0), b=MIX.numberOfChannels>1?MIX.getChannelData(1):a;
   for(var px=0;px<W;px++){ var t0=V.t0+px/W*V.len, s0=Math.floor(t0*SR), s1=Math.max(s0+1,Math.floor((t0+V.len/W)*SR)), lo=0, hi=0;
@@ -241,7 +244,7 @@ function delClip(i){ remember(); P.clips.splice(i,1); selClip=-1; P.sel=null; P.
 function pickFile(){ var f=$("#fIn"); f.value=""; f.onchange=function(){ addFiles([].slice.call(f.files)); }; f.click(); }
 function addFiles(files){ if(!files.length) return;
   var go=function(){ var chain2=Promise.resolve(); files.forEach(function(file){ chain2=chain2.then(function(){ return addBlob(file,file.name.replace(/\.[^.]+$/,"")); }); }); return chain2.then(function(){
-    if(ringNext){ ringNext=false; return doRender().then(function(){ if(MIX){ ringAt(30); if(!wide.matches) openInsp(); } }).then(function(){ save(); refresh(); }); }
+    if(ringNext){ ringNext=false; return doRender().then(function(){ if(MIX){ ringAt(30); if(!wide.matches) setTimeout(openInsp,50); } }).then(function(){ save(); refresh(); }); }
     render(); save(); refresh(); }); };
   if(!P){ var p=newProject(files[0].name.replace(/\.[^.]+$/,"")); create(p).then(go); } else go(); }
 function addBlob(blob,name){
@@ -290,15 +293,75 @@ function doSilence(){ if(!MIX) return; var a=MIX.getChannelData(0), b=MIX.number
   remember(); var cutT=0; for(var k=rm.length-1;k>=0;k--){ cutRange(rm[k][0],rm[k][1]); cutT+=rm[k][1]-rm[k][0]; }
   P.sel=null; P.scope="all"; cur=0; render(); save(); refresh(); toast(TR("Убрано пауз: {0}, это {1}",rm.length,sec(cutT))); }
 function normalize(){ if(!PK||PK.peak<=0) return; remember(); P.gain=Math.max(-30,Math.min(30,Math.round((P.gain+(-1-peakDb()))*10)/10)); render(); save(); toast(TR("Громкость выровнена: пик -1 дБ")); setTimeout(refresh,400); }
-/* рингтон: выделение заданной длины на самом громком месте (обычно это припев) */
-function ringAt(len){ if(!MIX) return; remember(); P.ring=len; P.scope="sel";
-  var Tt=T(); if(Tt<=len){ P.sel=[0,Tt]; } else if(P.sel&&P.sel[0]+len<=Tt){ P.sel=[P.sel[0],P.sel[0]+len]; }
-  else { var best=0, bt=0, step=1, n=Math.floor(Tt); var e=[]; for(var s=0;s<n;s++){ var a0=Math.floor(s*SR/BK), a1=Math.floor((s+1)*SR/BK), m=0; for(var k=a0;k<Math.min(PK.mx.length,a1);k++){ m+=PK.mx[k]-PK.mn[k]; } e.push(m); }
-    var sums=[]; for(var t=0;t+len<=Tt;t+=step){ var sum=0; for(var q=Math.floor(t);q<Math.min(e.length,Math.floor(t+len));q++) sum+=e[q]; sums.push([t,sum]); if(sum>best) best=sum; }
-    /* из почти равных окон берём то, где громко уже в первые секунды: рингтон начнётся с припева, а не с тишины перед ним */
-    var hd=-1; sums.forEach(function(w){ if(w[1]<best*.98) return; var h=0; for(var q=Math.floor(w[0]);q<Math.min(e.length,Math.floor(w[0])+4);q++) h+=e[q]; if(h>hd){ hd=h; bt=w[0]; } });
-    P.sel=[bt,bt+len]; }
-  if(!P.fadeIn) P.fadeIn=1; if(!P.fadeOut) P.fadeOut=2; fixSel(); cur=P.sel[0]; V.len=viewLen(); V.t0=Math.max(0,P.sel[0]-V.len*.1); draw(); timeUi(); save(); refresh(); }
+/* ═══════════ лучший кусок ═══════════
+   Без нейросети, классическим анализом музыки. Трек режется на кадры по 0.1 с, для каждого считаются:
+   «отпечаток» нот (хрома: сила каждой из 12 нот), громкость, плотность ударов (рост спектра между кадрами) и яркость.
+   Потом кадры собираются в блоки по 0.5 с и каждый кусок в 4 секунды сравнивается со всеми остальными:
+   то, что в песне повторяется почти один в один 2-3 раза, обычно и есть припев. Итоговая оценка окна:
+   повторяемость 45 %, громкость 30 %, плотность 15 %, яркость 10 %. Начало подтягивается к ближайшему сильному удару.
+   Алгоритм может ошибаться, поэтому выдаёт три варианта на выбор. */
+var FEAT=null, BEST=null;
+function fftR(re,im){ var n=re.length, i, j=0, t;
+  for(i=1;i<n;i++){ var bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit; if(i<j){ t=re[i]; re[i]=re[j]; re[j]=t; t=im[i]; im[i]=im[j]; im[j]=t; } }
+  for(var len=2;len<=n;len<<=1){ var h=len>>1, ang=-2*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang);
+    for(i=0;i<n;i+=len){ var cr=1, ci=0; for(var k=0;k<h;k++){ var a=i+k, b=a+h, xr=re[b]*cr-im[b]*ci, xi=re[b]*ci+im[b]*cr; re[b]=re[a]-xr; im[b]=im[a]-xi; re[a]+=xr; im[a]+=xi; t=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=t; } } } }
+/* признаки по кадрам 0.1 с; считается кусками, чтобы страница не замирала */
+function features(){ if(FEAT&&FEAT.n===rendN) return Promise.resolve(FEAT);
+  var my=rendN, sr=MIX.sampleRate, A=MIX.getChannelData(0), B=MIX.numberOfChannels>1?MIX.getChannelData(1):A, Tt=T(), fs=sr/2, N=2048, hop=Math.round(fs*.1);
+  var n=Math.floor(Math.min(A.length,Tt*sr)/2), x=new Float32Array(n); for(var i=0;i<n;i++) x[i]=(A[2*i]+A[2*i+1]+B[2*i]+B[2*i+1])*.25;
+  var F=Math.max(0,Math.floor((n-N)/hop)+1), win=new Float32Array(N), pc=new Int8Array(N/2), fr=new Float32Array(N/2);
+  for(i=0;i<N;i++) win[i]=.5-.5*Math.cos(2*Math.PI*i/(N-1));
+  for(i=1;i<N/2;i++){ var f=i*fs/N; fr[i]=f; pc[i]=f<55||f>5000?-1:((Math.round(12*Math.log2(f/440))+69)%12+12)%12; }
+  var chroma=new Float32Array(F*12), en=new Float32Array(F), flux=new Float32Array(F), cen=new Float32Array(F), prev=new Float32Array(N/2), re=new Float32Array(N), im=new Float32Array(N), fi=0;
+  return new Promise(function(res,rej){ (function step(){ if(my!==rendN){ rej("stale"); return; } var end=Math.min(F,fi+120);
+    for(;fi<end;fi++){ var o=fi*hop, e=0; for(var k=0;k<N;k++){ var v=x[o+k]; e+=v*v; re[k]=v*win[k]; im[k]=0; } en[fi]=Math.sqrt(e/N); fftR(re,im);
+      var fl=0, cs=0, ms=0; for(k=1;k<N/2;k++){ var m=Math.sqrt(re[k]*re[k]+im[k]*im[k]), lm=Math.log(1+m*10); if(pc[k]>=0) chroma[fi*12+pc[k]]+=m; var dd=lm-prev[k]; if(dd>0) fl+=dd; prev[k]=lm; cs+=fr[k]*m; ms+=m; }
+      flux[fi]=fl; cen[fi]=ms>0?cs/ms:0; }
+    if(fi<F) setTimeout(step,0); else { FEAT={ n:my, F:F, dt:hop/fs, chroma:chroma, en:en, flux:flux, cen:cen }; res(FEAT); } })(); }); }
+function rank(a){ var idx=[].map.call(a,function(v,i){ return i; }).sort(function(p,q){ return a[p]-a[q]; }), out=new Float32Array(a.length); idx.forEach(function(i,k){ out[i]=a.length>1?k/(a.length-1):1; }); return out; }
+function bestPieces(len){ return features().then(function(Fe){
+  var per=5, nb=Math.floor(Fe.F/per), dt=Fe.dt*per, L=Math.round(len/dt), Tt=T();
+  if(nb<L+4) return [{ a:0, b:Math.min(len,Tt), why:"весь трек" }];
+  var c=new Float32Array(nb*12), e=new Float32Array(nb), fl=new Float32Array(nb), ce=new Float32Array(nb), mean=new Float32Array(12), i, j, k;
+  for(i=0;i<nb;i++){ for(var f=i*per;f<(i+1)*per;f++){ for(k=0;k<12;k++) c[i*12+k]+=Fe.chroma[f*12+k]; e[i]+=Fe.en[f]; fl[i]+=Fe.flux[f]; ce[i]+=Fe.cen[f]; } }
+  /* хрому сравниваем без «общего фона тональности»: вычитаем среднее по треку, иначе в песне одной тональности всё похоже на всё */
+  for(i=0;i<nb;i++){ var s0=0; for(k=0;k<12;k++) s0+=c[i*12+k]; for(k=0;k<12;k++){ c[i*12+k]=s0>0?c[i*12+k]/s0:0; mean[k]+=c[i*12+k]/nb; } }
+  for(i=0;i<nb;i++){ var nr=0; for(k=0;k<12;k++){ c[i*12+k]-=mean[k]; nr+=c[i*12+k]*c[i*12+k]; } nr=Math.sqrt(nr)||1; for(k=0;k<12;k++) c[i*12+k]/=nr; }
+  var S=new Float32Array(nb*nb); for(i=0;i<nb;i++) for(j=i;j<nb;j++){ var d=0; for(k=0;k<12;k++) d+=c[i*12+k]*c[j*12+k]; S[i*nb+j]=S[j*nb+i]=d; }
+  /* повтор кусков по 4 с: среднее по диагонали; тихие блоки не считаются повтором */
+  var K=8, gap=16, rep=new Float32Array(nb), er=rank(e);
+  for(i=0;i+K<=nb;i++){ var m1=-1, j1=-99, m2=-1;
+    for(j=0;j+K<=nb;j++){ if(Math.abs(i-j)<gap) continue; var sm=0; for(k=0;k<K;k++) sm+=S[(i+k)*nb+j+k]; sm/=K; if(sm>m1){ m1=sm; j1=j; } }
+    for(j=0;j+K<=nb;j++){ if(Math.abs(i-j)<gap||Math.abs(j-j1)<gap) continue; var sm2=0; for(k=0;k<K;k++) sm2+=S[(i+k)*nb+j+k]; sm2/=K; if(sm2>m2) m2=sm2; }
+    rep[i]=(.6*m1+.4*Math.max(0,m2))*Math.min(1,er[i]*2.5); }
+  for(i=nb-K+1;i<nb;i++) rep[i]=rep[nb-K];
+  var rr=rank(rep), fr2=rank(fl), cr=rank(ce), sc=[];
+  for(var st=0;st+L<=nb;st++){ var a=0,b=0,f2=0,g=0; for(k=st;k<st+L;k++){ a+=rr[k]; b+=er[k]; f2+=fr2[k]; g+=cr[k]; } sc.push({ s:st, v:(.45*a+.3*b+.15*f2+.1*g)/L, r:a/L, e:b/L }); }
+  sc.sort(function(p,q){ return q.v-p.v; });
+  var pick=[]; sc.forEach(function(w){ if(pick.length>=3) return; if(pick.every(function(q){ return Math.abs(q.s-w.s)>=Math.max(L*.6,20); })) pick.push(w); });
+  /* граница части песни: где «отпечаток» нот и громкость за 2 с до и 2 с после отличаются сильнее всего */
+  function nov(i){ if(i<4||i+4>nb) return 0; var d=0, eb=0, ea=0; for(var k=0;k<12;k++){ var p=0, q=0; for(var u=1;u<=4;u++){ p+=c[(i-u)*12+k]; q+=c[(i+u-1)*12+k]; } d+=(p-q)*(p-q); }
+    for(var u=1;u<=4;u++){ eb+=e[i-u]; ea+=e[i+u-1]; } return Math.sqrt(d)/4+Math.max(0,(ea-eb)/(eb+ea+1e-9)); }
+  return pick.map(function(w){ var bs=w.s, bn=-1;
+    for(var i2=Math.max(0,w.s-5);i2<=Math.min(nb-L,w.s+5);i2++){ var v0=nov(i2)*(1-Math.abs(i2-w.s)*.06); if(v0>bn){ bn=v0; bs=i2; } }
+    var t=bs*dt, best=t, bv=-1;
+    /* начало на сильном ударе: самый резкий всплеск рядом с границей */
+    for(var f=Math.max(0,Math.round((t-.4)/Fe.dt));f<Math.min(Fe.F,Math.round((t+.4)/Fe.dt));f++){ var tt=f*Fe.dt, v=Fe.flux[f]*(1-Math.abs(tt-t)*.8); if(v>bv){ bv=v; best=tt; } }
+    var a=Math.max(0,Math.min(Tt-len,best-.03));
+    return { a:a, b:a+len, why:w.r>.62?"похоже на припев":(w.e>.7?"самое громкое":"самое насыщенное") }; }); }); }
+function findBest(len,pickI){ if(!MIX) return Promise.resolve();
+  var bz=$("#busy span"), old=bz.textContent; $("#busy").hidden=false; bz.textContent=TR("Слушаю трек, ищу лучший кусок...");
+  return bestPieces(len).then(function(list){ $("#busy").hidden=true; bz.textContent=old; BEST={ n:rendN, len:len, c:list }; useBest(pickI||0,true); })
+    .catch(function(e){ $("#busy").hidden=true; bz.textContent=old; if(e!=="stale") toast(TR("Не получилось разобрать трек")); }); }
+function useBest(i,quiet){ var c=BEST&&BEST.c[i]; if(!c) return; remember(); P.ring=BEST.len; P.scope="sel"; P.sel=[c.a,c.b]; if(!P.fadeIn) P.fadeIn=1; if(!P.fadeOut) P.fadeOut=2;
+  fixSel(); cur=P.sel[0]; V.len=viewLen(); if(P.sel[0]<V.t0||P.sel[1]>V.t0+V.len) V.t0=Math.max(0,P.sel[0]-V.len*.1); draw(); timeUi(); save(); refresh();
+  if(!quiet||play.on){ $("#loopBtn").classList.add("on"); stopPlay(); startPlay(P.sel[0]); } }
+function bestValid(){ return BEST&&BEST.n===rendN; }
+/* рингтон нужной длины: если кусок уже выделен, меняем только длину, иначе ищем лучший */
+function ringAt(len){ if(!MIX) return; var Tt=T();
+  if(Tt<=len){ remember(); P.ring=len; P.scope="sel"; P.sel=[0,Tt]; fixSel(); draw(); timeUi(); save(); refresh(); return; }
+  if(P.sel&&P.sel[0]+len<=Tt){ remember(); P.ring=len; P.scope="sel"; P.sel=[P.sel[0],P.sel[0]+len]; if(!P.fadeIn) P.fadeIn=1; if(!P.fadeOut) P.fadeOut=2; fixSel(); draw(); timeUi(); save(); refresh(); return; }
+  findBest(len); }
 
 /* ═══════════ сохранение файла ═══════════ */
 /* iPhone понимает рингтон только в AAC. Просто audio/mp4 в некоторых браузерах даёт opus внутри, такой файл телефон не возьмёт, поэтому спрашиваем кодек явно */
@@ -389,7 +452,7 @@ function paneEdit(box){
   box.appendChild(tool("cut","Вырезать кусок","убрать выделенное из середины",doCut));
   box.appendChild(tool("fade","Плавное начало и конец","тяните розовые точки на волне",function(){ remember(); if(!P.fadeIn) P.fadeIn=1; if(!P.fadeOut) P.fadeOut=2; fixSel(); draw(); save(); refreshInsp(); if(!wide.matches) openInsp(); }));
   box.appendChild(tool("sil","Убрать тишину","паузы в начале, конце и между фразами",doSilence));
-  box.appendChild(tool("ring","Рингтон","30 секунд с самого громкого места",function(){ ringAt(30); if(!wide.matches) openInsp(); }));
+  box.appendChild(tool("ring","Лучший кусок","ищет припев: три варианта на выбор",function(){ findBest(P.ring||30); if(!wide.matches) openInsp(); }));
   box.appendChild(sh("Куски"));
   if(selClip>=0&&P.clips[selClip]){ var c=P.clips[selClip];
     box.appendChild(el('<div class="li"><div class="lh"><b data-nt></b><button data-a="l" title="'+esc(TR("Раньше"))+'">'+sv("l")+'</button><button data-a="r" title="'+esc(TR("Позже"))+'">'+sv("r")+'</button><button data-a="x" title="'+esc(TR("Удалить кусок"))+'">'+sv("x")+'</button></div></div>',function(n){
@@ -421,7 +484,12 @@ function refreshInsp(){
   if(wide.matches) $("#shTitle").textContent=TR("Сохранить");
   insp.appendChild(choice(TR("Что сохраняем"),[["all",TR("весь трек")],["sel",TR("выделенное"),!P.sel]],P.sel?P.scope:"all",function(v){ remember(); P.scope=v; fixSel(); draw(); save(); refreshInsp(); }));
   insp.appendChild(choice(TR("Рингтон"),[["15","15 "+TR("с")],["30","30 "+TR("с")],["40","40 "+TR("с")],["0",TR("своя длина")]],String(P.ring||0),function(v){ if(+v) ringAt(+v); else { P.ring=0; save(); } }));
-  if(P.ring) insp.appendChild(el('<p class="note" style="margin:-4px 0 12px">Двигайте выделение по волне: оно играет по кругу. Длина держится, пока сами не потянете край.</p>'));
+  if(bestValid()){ insp.appendChild(el('<label class="olab2">'+esc(TR("Лучший кусок"))+'</label>'));
+    BEST.c.forEach(function(c,i){ var on=P.sel&&Math.abs(P.sel[0]-c.a)<.05&&Math.abs(P.sel[1]-c.b)<.05;
+      insp.appendChild(el('<button class="zbest'+(on?" on":"")+'"><i style="background:'+["#ff9a4d","#ff5fa2","#a78bfa"][i]+'">'+(i+1)+'</i><span>'+tm(c.a,0)+' - '+tm(c.b,0)+'<small>'+esc(TR(c.why))+'</small></span><b>'+sv("play")+'</b></button>',function(n){ n.onclick=function(){ useBest(i); }; })); });
+    insp.appendChild(el('<p class="note" style="margin:2px 0 12px">Нажмите вариант, он заиграет по кругу. Выделение можно сдвинуть по волне, длина сохранится.</p>')); }
+  else if(MIX&&T()>40) insp.appendChild(el('<button class="btn w">'+sv("ring")+'<span>'+esc(TR("Найти лучший кусок"))+'</span><small>'+esc(TR("3 варианта"))+'</small></button>',function(n){ n.onclick=function(){ findBest(P.ring||30); }; }));
+  if(P.ring&&!bestValid()) insp.appendChild(el('<p class="note" style="margin:-4px 0 12px">Двигайте выделение по волне: оно играет по кругу. Длина держится, пока сами не потянете край.</p>'));
   var sc=scope(), half=Math.max(.5,(sc[1]-sc[0])/2);
   insp.appendChild(range(TR("Плавное начало"),Math.round(Math.min(P.fadeIn,half)*10)/10,0,Math.min(10,Math.floor(half*10)/10),.1,function(v){ return sec(v); },function(v){ P.fadeIn=v; draw(); },function(){ remember(); save(); if(play.on) restartPlay(); }));
   insp.appendChild(range(TR("Плавный конец"),Math.round(Math.min(P.fadeOut,half)*10)/10,0,Math.min(10,Math.floor(half*10)/10),.1,function(v){ return sec(v); },function(v){ P.fadeOut=v; draw(); },function(){ remember(); save(); if(play.on) restartPlay(); }));
@@ -471,7 +539,7 @@ function showHome(){
         (p.th||[]).forEach(function(v,i,a){ var x=i/a.length*w; g.fillRect(x,h/2-v*h/2,Math.max(1,w/a.length-1.5),Math.max(1,v*h)); }); }); }); });
   var st=$("#starts"); st.innerHTML="";
   [["file","Открыть файл","Обрезать песню, убрать лишнее, сделать громче, склеить с другими.",function(){ pickFile(); }],
-   ["ring","Рингтон из песни","Сразу выберет 30 секунд с самого громкого места, края будут плавными.",function(){ ringNext=true; pickFile(); }],
+   ["ring","Рингтон из песни","Найдёт припев и предложит три куска по 30 секунд, края будут плавными.",function(){ ringNext=true; pickFile(); }],
    ["mic","Записать голос","Поздравление, заметка, кусок для подкаста. Паузы потом можно убрать одной кнопкой.",function(){ record(); },"red"]].forEach(function(s){
     st.appendChild(el('<button class="zs'+(s[4]?" "+s[4]:"")+'">'+sv(s[0])+'<b>'+esc(s[1])+'</b><small>'+esc(s[2])+'</small></button>',function(n){ n.onclick=s[3]; })); });
 }

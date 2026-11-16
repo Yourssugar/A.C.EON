@@ -7,7 +7,7 @@
 <title>FORGE · звуковая мастерская</title>
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
 <link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
-<link rel="stylesheet" href="zvuk.css?v=2">
+<link rel="stylesheet" href="zvuk.css?v=3">
 </head>
 <body>
 
@@ -40,6 +40,7 @@
     <nav class="tabs" id="tabs">
       <button data-tab="edit"><svg viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M6 12h12"/></svg><span>Правка</span></button>
       <button data-tab="snd"><svg viewBox="0 0 24 24"><path d="M3 12h4M17 12h4M7 8v8M11 5v14M13 7v10M17 9v6"/></svg><span>Звук</span></button>
+      <button data-tab="mast"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 18V9M10 18V5M14 18v-7M18 18V8"/></svg><span>Мастеринг</span></button>
       <button data-tab="save" class="mob"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Сохранить</span></button>
       <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
     </nav>
@@ -76,8 +77,9 @@
 <div class="zdrop" id="drop"><b>Отпустите файл, он добавится в конец</b></div>
 <input type="file" id="fIn" accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.webm" multiple hidden>
 
-<script src="../i18n-forge.js?v=11"></script>
+<script src="../i18n-forge.js?v=12"></script>
 <script src="../HTML-CSS-JS/engine.js?v=3"></script>
-<script src="zvuk.js?v=3"></script>
+<script src="dsp.js?v=1"></script>
+<script src="zvuk.js?v=4"></script>
 </body>
 </html>

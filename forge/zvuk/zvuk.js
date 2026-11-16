@@ -2,8 +2,10 @@
    Проект = куски (clips) по очереди. Кусок ссылается на исходный файл (хранится как есть в IndexedDB «forge-zvuk», blobs)
    и список отрезков segs [[начало, конец], ...] в секундах исходника: обрезка и вырезание меняют только этот список,
    поэтому отмена дешёвая (снимок JSON), а исходник не портится.
-   Громкость, скорость и эффект общие для проекта. После каждой правки весь проект пересобирается в OfflineAudioContext
-   в один буфер MIX: по нему рисуется волна и играет превью, то есть видно и слышно ровно то, что сохранится.
+   У отрезка может быть третий элемент с правками этого места: { g: громкость в дБ, mute, rev: задом наперёд, fx: эффект }.
+   Громкость, скорость, эффект и эквалайзер общие для проекта. После каждой правки весь проект пересобирается в OfflineAudioContext
+   в буфер PRE, затем (в dsp.js, в отдельном потоке) замеряется громкость и, если включён мастеринг, считается MIX.
+   По MIX рисуется волна и играет превью, то есть видно и слышно ровно то, что сохранится.
    Плавное начало и конец считаются на границах того, что сохраняем (весь трек или выделенное) и накладываются при игре и сохранении. */
 (function(){
 "use strict";
@@ -15,7 +17,7 @@ function sh(t){ return el('<div class="sh">'+esc(t)+'</div>'); }
 function choice(label, opts, cur, fn){ return el('<div class="f">'+(label?'<label>'+esc(label)+'</label>':'')+'<div class="chips">'+opts.map(function(o){ return '<button data-v="'+o[0]+'" class="'+(String(o[0])===String(cur)?"on":"")+'"'+(o[2]?' disabled style="opacity:.4"':'')+'>'+esc(o[1])+'</button>'; }).join("")+'</div></div>',function(n){
   $$("button",n).forEach(function(x){ x.onclick=function(){ if(x.disabled) return; $$("button",n).forEach(function(y){ y.classList.toggle("on",y===x); }); fn(x.getAttribute("data-v")); }; }); }); }
 function range(label,v,min,max,step,fmt,fn,done){ return el('<div class="f"><div class="lab"><span>'+esc(label)+'</span><output>'+fmt(v)+'</output></div><input type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+v+'"></div>',function(n){
-  var o=$("output",n), i=$("input",n); i.oninput=function(){ o.textContent=fmt(Number(i.value)); fn(Number(i.value)); }; i.onchange=function(){ if(done) done(Number(i.value)); }; }); }
+  var o=$("output",n), i=$("input",n), first=true; i.oninput=function(){ if(first){ first=false; remember(); } o.textContent=fmt(Number(i.value)); fn(Number(i.value)); }; i.onchange=function(){ first=true; if(done) done(Number(i.value)); }; }); }
 function toggle(label,v,fn){ return el('<label class="tg"><span>'+esc(label)+'</span><input type="checkbox"'+(v?" checked":"")+'></label>',function(n){ $("input",n).onchange=function(){ fn(this.checked); }; }); }
 function tm(s,dec){ s=Math.max(0,s||0); var m=Math.floor(s/60), r=s-m*60, t=dec===0?String(Math.floor(r)).padStart(2,"0"):r.toFixed(1).padStart(4,"0"); return m+":"+t; }
 function sec(s){ return (Math.round(s*10)/10).toFixed(1)+" "+TR("с"); }
@@ -51,56 +53,105 @@ function decode(aid){ if(BUF[aid]) return BUF[aid]; BUF[aid]=bGet(aid).then(func
 
 /* ═══════════ проект и отрезки ═══════════ */
 var P=null;
-function newProject(title){ return { v:1, id:newId(), title:title||TR("Новый звук"), clips:[], gain:0, speed:1, fx:"none", mono:false, fadeIn:0, fadeOut:0, scope:"all", sel:null, ring:0, fmt:"mp3192", updated:Date.now() }; }
+function newProject(title){ return { v:1, id:newId(), title:title||TR("Новый звук"), clips:[], gain:0, speed:1, fx:"none", fxAmt:100, eq:[0,0,0,0,0], xf:0, master:{ on:false, preset:"clean", amt:100, target:null }, mono:false, fadeIn:0, fadeOut:0, scope:"all", sel:null, ring:0, fmt:"mp3192", updated:Date.now() }; }
 function segLen(c){ return c.segs.reduce(function(a,s){ return a+(s[1]-s[0]); },0); }
 function clipLen(c){ return segLen(c)/P.speed; }
 function total(){ return P?P.clips.reduce(function(a,c){ return a+clipLen(c); },0):0; }
 function clipStart(i){ var t=0; for(var k=0;k<i;k++) t+=clipLen(P.clips[k]); return t; }
+/* отрезок с правками: [начало, конец, {правки}]. У развёрнутого отрезка звук идёт от конца к началу */
+function sp(s){ return s[2]||{}; }
+function mk(a,b,o){ return o&&Object.keys(o).length?[a,b,JSON.parse(JSON.stringify(o))]:[a,b]; }
+/* часть отрезка s от u до v секунд в порядке звучания */
+function part(s,u,v){ return sp(s).rev?mk(s[1]-v,s[1]-u,s[2]):mk(s[0]+u,s[0]+v,s[2]); }
 /* убрать из отрезков кусок [x,y) в «сплошном» времени исходника */
 function removeSeq(segs,x,y){ var out=[], pos=0;
   segs.forEach(function(s){ var L=s[1]-s[0], a=pos, b=pos+L;
     if(b<=x||a>=y) out.push(s.slice());
-    else { if(x>a) out.push([s[0],s[0]+(x-a)]); if(y<b) out.push([s[0]+(y-a),s[1]]); }
+    else { if(x>a) out.push(part(s,0,x-a)); if(y<b) out.push(part(s,y-a,L)); }
     pos=b; });
   return out.filter(function(s){ return s[1]-s[0]>0.0005; }); }
+/* разрезать отрезки в точке x «сплошного» времени: дальше правку можно дать только одной стороне */
+function splitSeq(segs,x){ var out=[], pos=0; segs.forEach(function(s){ var L=s[1]-s[0]; if(x>pos+.0005&&x<pos+L-.0005){ out.push(part(s,0,x-pos)); out.push(part(s,x-pos,L)); } else out.push(s); pos+=L; }); return out; }
+/* соседние отрезки, которые в исходнике идут подряд и правлены одинаково, склеиваем обратно */
+function mergeSegs(segs){ var out=[]; segs.forEach(function(s){ var p=out[out.length-1], o=sp(s); if(!Object.keys(o).length&&s.length>2) s=[s[0],s[1]];
+    if(p&&JSON.stringify(sp(p))===JSON.stringify(o)&&Math.abs(o.rev?p[0]-s[1]:p[1]-s[0])<.0005){ if(o.rev) p[0]=s[0]; else p[1]=s[1]; } else out.push(s); }); return out; }
+/* правка на выделенном: режем отрезки по краям выделения и даём fn поменять правки тех, что внутри */
+function applyRange(a,b,fn){ var t=0; P.clips.forEach(function(c){ var L=clipLen(c), la=Math.max(0,a-t)*P.speed, lb=Math.min(L,b-t)*P.speed; t+=L; if(lb-la<.001) return;
+    var segs=splitSeq(splitSeq(c.segs,la),lb), pos=0; segs.forEach(function(s){ var sl=s[1]-s[0]; if(pos>=la-.0006&&pos+sl<=lb+.0006){ var o=JSON.parse(JSON.stringify(sp(s))); fn(o); s[2]=o; s.length=3; } pos+=sl; });
+    c.segs=mergeSegs(segs); }); }
+/* правки первого отрезка внутри [a,b): по ним панель показывает, что сейчас стоит на выделенном */
+function rangeProps(a,b){ var t=0, out=null; P.clips.forEach(function(c){ var pos=t; c.segs.forEach(function(s){ var sl=(s[1]-s[0])/P.speed; if(!out&&pos+sl>a+.01&&pos<b-.01) out=sp(s); pos+=sl; }); t=pos; }); return out||{}; }
 function cutRange(a,b){ var t=0; P.clips.forEach(function(c){ var L=clipLen(c), la=Math.max(0,a-t), lb=Math.min(L,b-t); if(lb>la) c.segs=removeSeq(c.segs,la*P.speed,lb*P.speed); t+=L; });
   P.clips=P.clips.filter(function(c){ return c.segs.length; }); }
 function keepRange(a,b){ var T=total(); cutRange(b,T+1); cutRange(0,a); }
 
 /* ═══════════ сборка проекта в один буфер ═══════════ */
-var MIX=null, PK=null, rendT=0, rendN=0;
+var MIX=null, PRE=null, STAT=null, PK=null, rendT=0, rendN=0, AB=null;
 var FX={ none:"без эффекта", echo:"эхо", bass:"больше баса", phone:"телефон", radio:"рация", hall:"зал" };
-function chain(ctx,input,out){
-  var fx=P.fx;
-  if(fx==="bass"){ var f=ctx.createBiquadFilter(); f.type="lowshelf"; f.frequency.value=160; f.gain.value=9; input.connect(f); f.connect(out); return; }
-  if(fx==="phone"||fx==="radio"){ var hp=ctx.createBiquadFilter(), lp=ctx.createBiquadFilter(), ws=ctx.createWaveShaper(), k=fx==="radio"?18:5, cv=new Float32Array(1024);
-    for(var i=0;i<1024;i++){ var x=i/512-1; cv[i]=(1+k)*x/(1+k*Math.abs(x)); } ws.curve=cv;
-    hp.type="highpass"; hp.frequency.value=fx==="radio"?550:380; lp.type="lowpass"; lp.frequency.value=fx==="radio"?2600:3300;
-    var g=ctx.createGain(); g.gain.value=fx==="radio"?.55:.8; input.connect(hp); hp.connect(lp); lp.connect(ws); ws.connect(g); g.connect(out); return; }
+function chain(ctx,input,out,fx,amt){
+  var k=amt==null?1:amt, wetG=ctx.createGain(), dry=ctx.createGain(); if(fx==="none"||!fx||k<=0){ input.connect(out); return; }
   if(fx==="echo"||fx==="hall"){ var d=ctx.createDelay(2), fb=ctx.createGain(), wet=ctx.createGain(), lp2=ctx.createBiquadFilter();
-    d.delayTime.value=fx==="echo"?.32:.09; fb.gain.value=fx==="echo"?.38:.62; wet.gain.value=fx==="echo"?.45:.35; lp2.type="lowpass"; lp2.frequency.value=fx==="echo"?5000:3200;
+    d.delayTime.value=fx==="echo"?.32:.09; fb.gain.value=fx==="echo"?.38:.62; wet.gain.value=(fx==="echo"?.45:.35)*k; lp2.type="lowpass"; lp2.frequency.value=fx==="echo"?5000:3200;
     input.connect(out); input.connect(d); d.connect(lp2); lp2.connect(fb); fb.connect(d); lp2.connect(wet); wet.connect(out); return; }
-  input.connect(out);
+  if(fx==="bass"){ var f=ctx.createBiquadFilter(); f.type="lowshelf"; f.frequency.value=160; f.gain.value=9*k; input.connect(f); f.connect(out); return; }
+  dry.gain.value=1-k; wetG.gain.value=k; input.connect(dry); dry.connect(out); wetG.connect(out);
+  var hp=ctx.createBiquadFilter(), lp=ctx.createBiquadFilter(), ws=ctx.createWaveShaper(), kk=fx==="radio"?18:5, cv=new Float32Array(1024);
+  for(var i=0;i<1024;i++){ var x=i/512-1; cv[i]=(1+kk)*x/(1+kk*Math.abs(x)); } ws.curve=cv;
+  hp.type="highpass"; hp.frequency.value=fx==="radio"?550:380; lp.type="lowpass"; lp.frequency.value=fx==="radio"?2600:3300;
+  var g=ctx.createGain(); g.gain.value=fx==="radio"?.55:.8; input.connect(hp); hp.connect(lp); lp.connect(ws); ws.connect(g); g.connect(wetG);
 }
+/* эквалайзер на 5 полос: полка низа, три колокола, полка верха */
+var EQF=[["lowshelf",80,"бас"],["peaking",250,"низ"],["peaking",1000,"середина"],["peaking",4000,"голос"],["highshelf",10000,"верх"]];
+function eqChain(ctx,input,out){ var n=input, any=false; (P.eq||[]).forEach(function(g,i){ if(!g) return; any=true; var f=ctx.createBiquadFilter(); f.type=EQF[i][0]; f.frequency.value=EQF[i][1]; f.Q.value=.9; f.gain.value=g; n.connect(f); n=f; }); n.connect(out); }
+/* мастеринг: пресеты. Цифры эквалайзера в дБ при силе 100%, порог компрессора считается от трека, приведённого к -18 LUFS */
+var MAST={ clean:{ n:"Громко и чисто", d:"ровно и плотно, тон почти не меняется", hp:30, eq:[["ls",90,1],["pk",300,-1,.8],["pk",3500,1,.8],["hs",10000,1.5]], comp:[-16,2,.02,.2], width:1.05, sat:.1, target:-14 },
+  warm:{ n:"Тёплый", d:"больше низа и тела, мягкий верх", hp:30, eq:[["ls",120,2.5],["pk",250,.5,.8],["pk",3000,-1,.8],["hs",9000,-1.5]], comp:[-16,2,.03,.25], width:1, sat:.25, target:-14 },
+  bright:{ n:"Яркий", d:"воздух и чёткость, меньше гула", hp:35, eq:[["ls",100,-.5],["pk",400,-1.5,.8],["pk",4500,2,.8],["hs",11000,3]], comp:[-16,2,.02,.2], width:1.1, sat:.05, target:-14 },
+  bass:{ n:"Больше баса", d:"плотный низ для наушников и колонок", hp:28, eq:[["ls",80,4.5],["pk",55,1.5,1],["pk",300,-1.5,.8],["hs",9000,1]], comp:[-16,2.5,.03,.25], width:1, sat:.15, target:-14 },
+  voice:{ n:"Голос и подкаст", d:"срез гула, разборчивость, ровная громкость", hp:85, eq:[["ls",150,1],["pk",250,-2.5,.9],["pk",3200,3,.8],["hs",9000,1.5]], comp:[-20,3.5,.008,.15], width:1, sat:.05, target:-16 },
+  phone:{ n:"Телефон и рингтон", d:"без низа, который динамик не играет, громко", hp:160, eq:[["pk",400,-1,.8],["pk",2500,4,.7],["hs",7000,2]], comp:[-20,4,.01,.15], width:.85, sat:.2, target:-9 },
+  club:{ n:"Клуб", d:"удар, ширина и максимум громкости", hp:28, eq:[["ls",70,3],["pk",200,-1,.8],["pk",5000,1.5,.8],["hs",12000,2.5]], comp:[-17,3,.015,.18], width:1.15, sat:.3, target:-9 },
+  tape:{ n:"Старая плёнка", d:"приглушённый верх, тёплое насыщение", hp:60, eq:[["ls",150,2],["pk",1000,1.5,.7],["hs",7000,-8]], comp:[-18,3,.02,.25], width:.9, sat:.6, target:-14 } };
+var LOUD=[[-16,"-16","подкаст, речь"],[-14,"-14","YouTube, Spotify"],[-11,"-11","громко"],[-9,"-9","очень громко"]];
+function mastParams(){ var M=P.master; if(!M||!M.on) return null; var S=MAST[M.preset]||MAST.clean; return { hp:S.hp, eq:S.eq, comp:S.comp, width:S.width, sat:S.sat, target:M.target==null?S.target:M.target, ceil:-1, amt:(M.amt==null?100:M.amt)/100 }; }
+/* обработка в отдельном потоке; если поток не завёлся, считаем прямо на странице */
+var WK=null, wkN=0, wkCb={};
+function dsp(L,R,m){ return new Promise(function(res){ var id=++wkN;
+  if(WK===null){ try{ WK=new Worker("dsp.js?v=1"); WK.onmessage=function(e){ var f=wkCb[e.data.id]; delete wkCb[e.data.id]; if(f) f(e.data); }; WK.onerror=function(){ WK=false; Object.keys(wkCb).forEach(function(k){ var f=wkCb[k]; delete wkCb[k]; f(null); }); }; }catch(e){ WK=false; } }
+  function local(){ setTimeout(function(){ res({ L:L, R:R, st:window.ZDSP.master(L,R,SR,m) }); },20); }
+  if(!WK){ local(); return; }
+  var l2=L, r2=R; wkCb[id]=function(d){ if(d) res(d); else { L=new Float32Array(PRE.getChannelData(0)); R=new Float32Array(PRE.getChannelData(PRE.numberOfChannels>1?1:0)); local(); } };
+  WK.postMessage({ id:id, L:l2, R:r2, sr:SR, m:m },[l2.buffer,r2.buffer]); }); }
+function mkBuf(L,R){ var b; try{ b=new AudioBuffer({ length:L.length, numberOfChannels:2, sampleRate:SR }); }catch(e){ b=ac().createBuffer(2,L.length,SR); } b.copyToChannel(L,0); b.copyToChannel(R,1); return b; }
+function revBuf(ctx,b,s0,s1){ var a=Math.max(0,Math.floor(s0*b.sampleRate)), n=Math.max(1,Math.min(b.length,Math.ceil(s1*b.sampleRate))-a), o=ctx.createBuffer(b.numberOfChannels,n,b.sampleRate);
+  for(var c=0;c<b.numberOfChannels;c++){ var x=b.getChannelData(c), y=o.getChannelData(c); for(var i=0;i<n;i++) y[i]=x[a+n-1-i]; } return o; }
 function render(){ clearTimeout(rendT); rendT=setTimeout(doRender,120); }
+function hasTail(){ if(P.fx==="echo"||P.fx==="hall") return true; return P.clips.some(function(c){ return c.segs.some(function(s){ var f=sp(s).fx; return f==="echo"||f==="hall"; }); }); }
 function doRender(){
   var my=++rendN;
-  if(!P||!P.clips.length){ MIX=null; PK=null; draw(); clipsUi(); timeUi(); return Promise.resolve(); }
+  if(!P||!P.clips.length){ MIX=null; PRE=null; STAT=null; PK=null; draw(); clipsUi(); timeUi(); return Promise.resolve(); }
   $("#busy").hidden=false;
   return Promise.all(P.clips.map(function(c){ return decode(c.aid); })).then(function(bufs){
     if(my!==rendN) return;
-    var T=total(), tail=(P.fx==="echo"||P.fx==="hall")?1.5:0, n=Math.max(1,Math.ceil((T+tail)*SR));
-    var ctx=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(2,n,SR), g=ctx.createGain(); g.gain.value=Math.pow(10,P.gain/20);
-    chain(ctx,g,ctx.destination);
-    var when=0;
+    var T=total(), tail=hasTail()?1.5:0, n=Math.max(1,Math.ceil((T+tail)*SR));
+    var ctx=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(2,n,SR), g=ctx.createGain(), mid=ctx.createGain(); g.gain.value=Math.pow(10,P.gain/20);
+    chain(ctx,g,mid,P.fx,(P.fxAmt==null?100:P.fxAmt)/100); eqChain(ctx,mid,ctx.destination);
+    var when=0, R=.005, xf=P.xf||0;
     P.clips.forEach(function(c,i){ var b=bufs[i];
-      c.segs.forEach(function(s){ var L=(s[1]-s[0])/P.speed, src=ctx.createBufferSource(), sg=ctx.createGain(), r=Math.min(.004,L/3);
-        src.buffer=b; src.playbackRate.value=P.speed; src.connect(sg); sg.connect(g);
-        /* короткие подъёмы на стыках, чтобы не щёлкало */
-        sg.gain.setValueAtTime(0,when); sg.gain.linearRampToValueAtTime(1,when+r); sg.gain.setValueAtTime(1,when+L-r); sg.gain.linearRampToValueAtTime(0,when+L);
-        src.start(when,s[0],s[1]-s[0]); when+=L; }); });
+      c.segs.forEach(function(s,j){ var o=sp(s), L=(s[1]-s[0])/P.speed, pv=c.segs[j-1], nx=c.segs[j+1], vol=o.mute?0:Math.pow(10,(o.g||0)/20);
+        /* сосед в исходнике идёт подряд: стык делаем внахлёст на 5 мс, его не слышно. Настоящий разрез: короткий спад и подъём, чтобы не щёлкало */
+        var joinA=pv&&!o.rev&&!sp(pv).rev&&Math.abs(pv[1]-s[0])<.0005&&s[0]>=R*P.speed, joinB=nx&&!o.rev&&!sp(nx).rev&&Math.abs(nx[0]-s[1])<.0005;
+        var rin=j===0&&i>0&&xf>0?Math.min(xf,L/2):Math.min(R,L/3), rout=j===c.segs.length-1&&i<P.clips.length-1&&xf>0?Math.min(xf,L/2):Math.min(R,L/3), pre=joinA?Math.min(R,L/3,(pv[1]-pv[0])/P.speed/3):0, post=joinB?Math.min(R,L/3,(nx[1]-nx[0])/P.speed/3):0;
+        if(vol>0){ var src=ctx.createBufferSource(), sg=ctx.createGain(), t0=when-pre, dst=g; src.playbackRate.value=P.speed; src.connect(sg);
+          if(o.fx&&o.fx!=="none"){ dst=ctx.createGain(); chain(ctx,dst,g,o.fx,1); } sg.connect(dst);
+          sg.gain.setValueAtTime(0,Math.max(0,t0)); sg.gain.linearRampToValueAtTime(vol,Math.max(0,t0)+(joinA?pre:rin));
+          sg.gain.setValueAtTime(vol,when+L-(joinB?post:rout)); sg.gain.linearRampToValueAtTime(0,when+L);
+          if(o.rev){ src.buffer=revBuf(ctx,b,s[0],s[1]); src.start(when,0,s[1]-s[0]); } else { src.buffer=b; src.start(Math.max(0,t0),s[0]-pre*P.speed,s[1]-s[0]+pre*P.speed); } }
+        when+=L; }); });
     return new Promise(function(res,rej){ ctx.oncomplete=function(e){ res(e.renderedBuffer); }; var pr=ctx.startRendering(); if(pr&&pr.then) pr.then(res,rej); }); })
-  .then(function(buf){ if(!buf||my!==rendN) return; MIX=buf; peaks(); $("#busy").hidden=true; fixSel(); draw(); timeUi(); clipsUi(); if(ui.tab==="snd") refreshPane(); thumbSave(); })
+  .then(function(buf){ if(!buf||my!==rendN) return; PRE=buf; var m=mastParams();
+    return dsp(new Float32Array(buf.getChannelData(0)),new Float32Array(buf.getChannelData(buf.numberOfChannels>1?1:0)),m).then(function(d){ if(my!==rendN) return;
+      STAT=d.st; MIX=m?mkBuf(d.L,d.R):buf; if(!m){ AB=null; } peaks(); $("#busy").hidden=true; fixSel(); draw(); timeUi(); clipsUi(); if(ui.tab==="snd"||ui.tab==="mast") refreshPane(); thumbSave(); if(play.on) restartPlay(); }); })
   .catch(function(e){ $("#busy").hidden=true; toast(e&&e.message==="nofile"?TR("Исходный файл пропал из браузера"):TR("Этот файл браузер прочитать не смог")); });
 }
 /* пики для быстрой волны: мин и макс по корзинкам по 256 отсчётов */
@@ -188,7 +239,7 @@ wave.addEventListener("pointerup",function(e){ if(!drag) return; var k=drag.k, m
     else if(k==="new"&&P.sel){ remember(); P.sel=null; if(P.scope==="sel") P.scope="all"; }
     seek(t); }
   else if(play.on) restartPlay();
-  fixSel(); draw(); timeUi(); save(); if(!wide.matches&&ui.sheet==="insp"||wide.matches) refreshInsp(); });
+  fixSel(); draw(); timeUi(); save(); if(!wide.matches&&ui.sheet==="insp"||wide.matches) refreshInsp(); if(ui.tab==="edit") refreshPane(); });
 wave.addEventListener("wheel",function(e){ if(!MIX) return; e.preventDefault(); var z=$("#zoom");
   if(e.ctrlKey||Math.abs(e.deltaY)>Math.abs(e.deltaX)&&!e.shiftKey){ var r=wc.getBoundingClientRect(), t=tOf(e.clientX-r.left), x=e.clientX-r.left; z.value=Math.max(0,Math.min(100,+z.value-(e.deltaY>0?5:-5))); V.len=viewLen(); V.t0=t-x/wc.clientWidth*V.len; }
   else V.t0+=(e.deltaX||e.deltaY)/wc.clientWidth*V.len;
@@ -204,7 +255,7 @@ function seek(t){ cur=t; if(play.on) restartPlay(); draw(); timeUi(); }
 function startPlay(from){
   if(!MIX) return; var a=ac(), sc=scope(), loop=$("#loopBtn").classList.contains("on")&&P.sel, to=loop?P.sel[1]:T();
   if(loop&&(from<P.sel[0]||from>=P.sel[1]-.02)) from=P.sel[0]; if(!loop&&from>=T()-.02) from=0;
-  var src=a.createBufferSource(), g=a.createGain(), now=a.currentTime+.03; src.buffer=MIX; src.connect(g); g.connect(a.destination);
+  var src=a.createBufferSource(), g=a.createGain(), now=a.currentTime+.03; var ab=abGain(), og=a.createGain(); src.buffer=AB==="pre"&&PRE?PRE:MIX; og.gain.value=ab; src.connect(g); g.connect(og); og.connect(a.destination);
   /* плавные края при игре: те же, что попадут в файл */
   var at=function(t){ return now+(t-from); };
   g.gain.setValueAtTime(fadeK(from,sc),now);
@@ -214,6 +265,8 @@ function startPlay(from){
   play={ on:true, src:src, from:from, to:to, t0:now, loop:loop };
   src.onended=function(){ if(play.src!==src) return; if(play.loop&&$("#loopBtn").classList.contains("on")&&P.sel){ startPlay(P.sel[0]); } else { cur=play.on?play.to:cur; if(cur>=T()-.05) cur=P.sel?P.sel[0]:0; play.on=false; playUi(); draw(); timeUi(); } };
   playUi(); tick(); }
+/* сравнение: обе версии играют на одной громкости на слух. Тихую версию поднимаем, пока её пики не упрутся в потолок, остальное снимаем с громкой */
+function abGain(){ if(!AB||!STAT||!PRE||STAT.inL<-70) return 1; var d=STAT.outL-STAT.inL, up=Math.max(0,Math.min(d,-.3-STAT.inPk)); if(d<=0) return AB==="pre"?Math.pow(10,d/20):1; return Math.pow(10,(AB==="pre"?up:up-d)/20); }
 function stopPlay(){ if(play.on){ cur=posNow(); var s=play.src; play.on=false; play.src=null; try{ s.stop(); }catch(e){} } playUi(); draw(); timeUi(); }
 function restartPlay(){ var t=posNow(); stopPlay(); startPlay(t); }
 function playUi(){ $("#playBtn").classList.toggle("on",!!play.on); }
@@ -292,6 +345,8 @@ function doSilence(){ if(!MIX) return; var a=MIX.getChannelData(0), b=MIX.number
   if(!rm.length){ toast(TR("Длинных пауз не нашлось")); return; }
   remember(); var cutT=0; for(var k=rm.length-1;k>=0;k--){ cutRange(rm[k][0],rm[k][1]); cutT+=rm[k][1]-rm[k][0]; }
   P.sel=null; P.scope="all"; cur=0; render(); save(); refresh(); toast(TR("Убрано пауз: {0}, это {1}",rm.length,sec(cutT))); }
+function selOp(fn,msg){ if(!needSel()) return; remember(); applyRange(P.sel[0],P.sel[1],fn); render(); save(); refresh(); if(msg) toast(msg); }
+function selClear(){ selOp(function(o){ delete o.g; delete o.mute; delete o.rev; delete o.fx; },TR("Правки куска сброшены")); }
 function normalize(){ if(!PK||PK.peak<=0) return; remember(); P.gain=Math.max(-30,Math.min(30,Math.round((P.gain+(-1-peakDb()))*10)/10)); render(); save(); toast(TR("Громкость выровнена: пик -1 дБ")); setTimeout(refresh,400); }
 /* ═══════════ лучший кусок ═══════════
    Без нейросети, классическим анализом музыки. Трек режется на кадры по 0.1 с, для каждого считаются:
@@ -363,6 +418,28 @@ function ringAt(len){ if(!MIX) return; var Tt=T();
   if(P.sel&&P.sel[0]+len<=Tt){ remember(); P.ring=len; P.scope="sel"; P.sel=[P.sel[0],P.sel[0]+len]; if(!P.fadeIn) P.fadeIn=1; if(!P.fadeOut) P.fadeOut=2; fixSel(); draw(); timeUi(); save(); refresh(); return; }
   findBest(len); }
 
+/* ═══════════ темп (BPM) ═══════════ */
+/* Огибающая ударов: рост спектра между кадрами по 12 мс. Темп: самое сильное повторение огибающей в пределах 60-200 ударов в минуту,
+   с небольшим предпочтением середине (около 120), чтобы не путать с половиной и удвоением. */
+function bpmDetect(){ if(!MIX) return Promise.resolve(0); var A=MIX.getChannelData(0), B=MIX.numberOfChannels>1?MIX.getChannelData(1):A, Tt=Math.min(T(),150), fs=SR/4, n=Math.floor(Math.min(A.length,Tt*SR)/4), x=new Float32Array(n), i;
+  for(i=0;i<n;i++){ var q=i*4; x[i]=(A[q]+A[q+1]+A[q+2]+A[q+3]+B[q]+B[q+1]+B[q+2]+B[q+3])*.125; }
+  var N=512, hop=128, F=Math.max(0,Math.floor((n-N)/hop)+1), win=new Float32Array(N), prev=new Float32Array(N/2), re=new Float32Array(N), im=new Float32Array(N), on=new Float32Array(F), fi=0, fps=fs/hop; for(i=0;i<N;i++) win[i]=.5-.5*Math.cos(2*Math.PI*i/(N-1));
+  if(F<fps*4) return Promise.resolve(0);
+  return new Promise(function(res){ (function step(){ var end=Math.min(F,fi+600);
+    for(;fi<end;fi++){ var o=fi*hop, k; for(k=0;k<N;k++){ re[k]=x[o+k]*win[k]; im[k]=0; } fftR(re,im); var fl=0; for(k=1;k<N/2;k++){ var m=Math.log(1+Math.sqrt(re[k]*re[k]+im[k]*im[k])*20), d=m-prev[k]; if(d>0) fl+=d; prev[k]=m; } on[fi]=fl; }
+    if(fi<F){ setTimeout(step,0); return; }
+    var mean=0; for(i=0;i<F;i++) mean+=on[i]; mean/=F; for(i=0;i<F;i++) on[i]=Math.max(0,on[i]-mean);
+    var lo=Math.floor(fps*60/200), hi=Math.min(F-2,Math.ceil(fps*60/60)), ac=new Float32Array(hi+2), best=0, bl=0, lag;
+    for(lag=lo-1;lag<=hi+1;lag++){ var s2=0; for(i=0;i+lag<F;i++) s2+=on[i]*on[i+lag]; ac[lag]=s2/(F-lag); }
+    for(lag=lo;lag<=hi;lag++){ var bpm=fps*60/lag, w=Math.exp(-.5*Math.pow(Math.log2(bpm/120)/.9,2)), v=ac[lag]*w; if(2*lag<=hi) v+=.5*ac[2*lag]*w; if(v>best){ best=v; bl=lag; } }
+    if(!bl||ac[bl]<=0){ res(0); return; }
+    /* точнее: тот же пик ищем на 2, 4 и 8 периодах, там шаг по времени мельче относительно периода */
+    function acAt(l){ var s3=0; for(var q=0;q+l<F;q++) s3+=on[q]*on[q+l]; return s3/(F-l); }
+    function top(c){ var b2=c, bv=-1, v3; for(var l=Math.max(2,c-2);l<=c+2;l++){ v3=acAt(l); if(v3>bv){ bv=v3; b2=l; } } var y0=acAt(b2-1), y2=acAt(b2+1), dd=y0-2*bv+y2; return bv>0?b2+(dd<0?Math.max(-.5,Math.min(.5,.5*(y0-y2)/dd)):0):0; }
+    var per=top(bl)||bl; [2,4,8].forEach(function(m){ var c=Math.round(per*m); if(c+3<F*.6){ var t2=top(c); if(t2) per=t2/m; } });
+    res(Math.round(fps*60/per*2)/2); })(); }); }
+function bpmGo(){ if(!MIX) return; toast(TR("Слушаю ритм...")); bpmDetect().then(function(v){ P.bpm=v||0; P.bpmN=rendN; save(); refresh(); if(!v) toast(TR("Ровного ритма не нашлось")); }); }
+
 /* ═══════════ сохранение файла ═══════════ */
 /* iPhone понимает рингтон только в AAC. Просто audio/mp4 в некоторых браузерах даёт opus внутри, такой файл телефон не возьмёт, поэтому спрашиваем кодек явно */
 var M4R=(function(){ if(!window.MediaRecorder||!MediaRecorder.isTypeSupported) return ""; var l=['audio/mp4;codecs=mp4a.40.2','audio/mp4;codecs="mp4a.40.2"','audio/mp4;codecs=aac'];
@@ -375,10 +452,10 @@ function slice(){ var sc=scope(), a=Math.floor(sc[0]*SR), b=Math.min(MIX.length,
     var l=L[a+i]*k, r=R[a+i]*k; if(ch===1) out[0][i]=(l+r)/2; else { out[0][i]=l; out[1][i]=r; } }
   if(sc[1]<T()-.01||P.fadeOut>0){ var cut=Math.min(n,endS+1); out=out.map(function(x){ return x.subarray(0,cut); }); }
   return out; }
-function wav(chs){ var n=chs[0].length, ch=chs.length, buf=new ArrayBuffer(44+n*ch*2), v=new DataView(buf), p=0;
+function wav(chs,bits){ var B=bits===24?3:2, n=chs[0].length, ch=chs.length, buf=new ArrayBuffer(44+n*ch*B), v=new DataView(buf), p=0;
   function s(t){ for(var i=0;i<t.length;i++) v.setUint8(p++,t.charCodeAt(i)); } function u32(x){ v.setUint32(p,x,true); p+=4; } function u16(x){ v.setUint16(p,x,true); p+=2; }
-  s("RIFF"); u32(36+n*ch*2); s("WAVE"); s("fmt "); u32(16); u16(1); u16(ch); u32(SR); u32(SR*ch*2); u16(ch*2); u16(16); s("data"); u32(n*ch*2);
-  for(var i=0;i<n;i++) for(var c=0;c<ch;c++){ var x=Math.max(-1,Math.min(1,chs[c][i])); v.setInt16(p,x<0?x*32768:x*32767,true); p+=2; }
+  s("RIFF"); u32(36+n*ch*B); s("WAVE"); s("fmt "); u32(16); u16(1); u16(ch); u32(SR); u32(SR*ch*B); u16(ch*B); u16(B*8); s("data"); u32(n*ch*B);
+  for(var i=0;i<n;i++) for(var c=0;c<ch;c++){ var x=Math.max(-1,Math.min(1,chs[c][i])); if(B===2){ v.setInt16(p,x<0?x*32768:x*32767,true); p+=2; } else { var q=Math.round(x<0?x*8388608:x*8388607); v.setUint8(p++,q&255); v.setUint8(p++,(q>>8)&255); v.setUint8(p++,(q>>16)&255); } }
   return new Blob([buf],{type:"audio/wav"}); }
 var lameP=null; function lame(){ if(lameP) return lameP; lameP=new Promise(function(res,rej){ var s=document.createElement("script"); s.src="lib/lame.min.js"; s.onload=res; s.onerror=function(){ lameP=null; rej(); }; document.head.appendChild(s); }); return lameP; }
 function mp3(chs,kbps,prog){ return lame().then(function(){ return new Promise(function(res){
@@ -396,21 +473,39 @@ function latin(s){ var m={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"e",ж:"z
   return String(s||"").toLowerCase().split("").map(function(c){ return m[c]!=null?m[c]:c; }).join("").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40); }
 function fname(){ return latin(P.title)||"zvuk"; }
 function dl(blob,name){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },3000); }
-function estSize(){ var sc=scope(), L=sc[1]-sc[0], ch=P.mono?1:2; if(P.fmt==="wav") return L*SR*ch*2; if(P.fmt==="m4r") return L*16000; return L*(P.fmt==="mp3128"?128:192)*125; }
+function estSize(){ var sc=scope(), L=sc[1]-sc[0], ch=P.mono?1:2; if(P.fmt==="wav") return L*SR*ch*2; if(P.fmt==="wav24") return L*SR*ch*3; if(P.fmt==="m4r") return L*16000; return L*mp3k(P.fmt)*125; }
+function mp3k(f){ return f==="mp3128"?128:f==="mp3320"?320:192; }
 function kb(b){ return b>1048576?(b/1048576).toFixed(1)+" "+TR("МБ"):Math.round(b/1024)+" "+TR("КБ"); }
 function exportFile(){
   if(!MIX){ toast(TR("Сначала добавьте звук")); return; } stopPlay();
   modal('<h3>Сохраняю файл</h3><div class="prog"><i id="pg"></i></div><p class="note" id="pgT"></p>');
   var chs=slice(), f=P.fmt, prog=function(p){ var g=$("#pg"); if(g) g.style.width=Math.round(Math.min(1,p)*100)+"%"; };
   $("#pgT").textContent=f==="m4r"?TR("Для iPhone файл собирается в реальном времени, это займёт {0}.",sec(chs[0].length/SR)):TR("Пара секунд...");
-  var job=f==="wav"?Promise.resolve(wav(chs)):f==="m4r"?m4r(chs,prog):mp3(chs,f==="mp3128"?128:192,prog);
-  setTimeout(function(){ job.then(function(blob){ closeModal(); var ext=f==="wav"?"wav":f==="m4r"?"m4r":"mp3"; dl(blob,fname()+(P.scope==="sel"?"-"+Math.round(chs[0].length/SR)+"s":"")+"."+ext); toast(TR("Файл сохранён: {0}",kb(blob.size))); })
+  var job=f==="wav"||f==="wav24"?Promise.resolve(wav(chs,f==="wav24"?24:16)):f==="m4r"?m4r(chs,prog):mp3(chs,mp3k(f),prog);
+  setTimeout(function(){ job.then(function(blob){ closeModal(); var ext=f==="wav"||f==="wav24"?"wav":f==="m4r"?"m4r":"mp3"; dl(blob,fname()+(P.scope==="sel"?"-"+Math.round(chs[0].length/SR)+"s":"")+"."+ext); toast(TR("Файл сохранён: {0}",kb(blob.size))); })
     .catch(function(){ closeModal(); toast(TR("Не получилось сохранить файл")); }); },50); }
+/* в монтаж: MP3 выделенного или всего трека ложится в базу мастерской монтажа дорожкой нового или уже начатого ролика */
+function mzDb(){ return new Promise(function(res,rej){ var r=indexedDB.open("forge-montazh",1); r.onupgradeneeded=function(){ r.result.createObjectStore("projects",{keyPath:"id"}); r.result.createObjectStore("blobs"); }; r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }); }
+function mzTx(d,st,mode,fn){ return new Promise(function(res,rej){ var t=d.transaction(st,mode), out=fn.apply(null,st.map(function(n){ return t.objectStore(n); })); t.oncomplete=function(){ res(out&&out.result); }; t.onerror=t.onabort=function(){ rej(t.error); }; }); }
+function toMontage(){ if(!MIX){ toast(TR("Сначала добавьте звук")); return; } stopPlay();
+  mzDb().then(function(d){ return mzTx(d,["projects"],"readonly",function(s){ return s.getAll(); }).then(function(list){ list=(list||[]).sort(function(a,b){ return (b.updated||0)-(a.updated||0); }).slice(0,6);
+    modal('<button class="ib mx" data-close>'+sv("x")+'</button><h3>'+esc(TR("В монтаж"))+'</h3><p class="note" style="margin-bottom:10px">'+esc(TR("Звук ляжет музыкальной дорожкой в ролик. Уходит то же, что сохранилось бы в файл."))+'</p><div id="mzL"></div>');
+    var box=$("#mzL"), go=function(p){ box.innerHTML='<div class="prog"><i id="pg"></i></div>'; var chs=slice(), dur=chs[0].length/SR;
+      mp3(chs,192,function(q){ var g=$("#pg"); if(g) g.style.width=Math.round(Math.min(1,q)*100)+"%"; }).then(function(blob){ var aid=newId("a"), n=Math.max(200,Math.min(2400,Math.ceil(dur*5))), pk=new Array(n), per=chs[0].length/n;
+        for(var i=0;i<n;i++){ var m=0, e=Math.min(chs[0].length,Math.floor((i+1)*per)); for(var j=Math.floor(i*per);j<e;j+=8){ var v=Math.abs(chs[0][j]); if(v>m) m=v; } pk[i]=Math.min(255,Math.round(Math.sqrt(m)*255)); }
+        if(!p) p={ v:2, id:newId("m"), title:P.title||TR("Новый ролик"), fmt:"9x16", style:"smooth", fit:"cover", filter:"warm", adj:{}, tr:"fade", trd:.8, anim:"fade", clips:[], tracks:[], mfade:true, vvol:1, q:720 };
+        p.tracks=p.tracks||[]; var end=0; p.tracks.forEach(function(k){ end=Math.max(end,k.at+(k.len||0)); });
+        p.tracks.push({ id:newId("t"), aid:aid, name:(P.title||"").slice(0,60), at:Math.round(end*100)/100, in:0, len:dur, dur:dur, vol:.8, fi:0, fo:0 }); p.updated=Date.now();
+        return mzTx(d,["projects","blobs"],"readwrite",function(ps,bs){ bs.put(blob,aid); bs.put(pk,aid+":pk"); ps.put(p); }).then(function(){ location.href="../montazh/#"+p.id; }); })
+      .catch(function(){ closeModal(); toast(TR("Не получилось передать звук в монтаж")); }); };
+    box.appendChild(el('<button class="btn go w" style="justify-content:center">'+esc(TR("В новый ролик"))+'</button>',function(b){ b.onclick=function(){ go(null); }; }));
+    list.forEach(function(p){ box.appendChild(el('<button class="btn w"><span data-nt></span><small>'+(p.clips||[]).length+' '+esc(TR("клипов"))+'</small></button>',function(b){ $("span",b).textContent=p.title||""; b.onclick=function(){ go(p); }; })); }); }); })
+  .catch(function(){ toast(TR("Не получилось передать звук в монтаж")); }); }
 $("#saveBtn").onclick=function(){ if(wide.matches) exportFile(); else openTab("save"); };
 
 /* ═══════════ отмена ═══════════ */
 var U=[], Rd=[];
-function snap(){ return JSON.stringify({ clips:P.clips, gain:P.gain, speed:P.speed, fx:P.fx, mono:P.mono, fadeIn:P.fadeIn, fadeOut:P.fadeOut, scope:P.scope, sel:P.sel, ring:P.ring }); }
+function snap(){ return JSON.stringify({ clips:P.clips, gain:P.gain, speed:P.speed, fx:P.fx, fxAmt:P.fxAmt, eq:P.eq, xf:P.xf, master:P.master, mono:P.mono, fadeIn:P.fadeIn, fadeOut:P.fadeOut, scope:P.scope, sel:P.sel, ring:P.ring }); }
 function remember(){ U.push(snap()); if(U.length>80) U.shift(); Rd=[]; undoBtns(); }
 function undoBtns(){ $("#undo").disabled=!U.length; $("#redo").disabled=!Rd.length; }
 function restoreS(s){ var o=JSON.parse(s); for(var k in o) P[k]=o[k]; undoBtns(); selClip=-1; render(); save(); refresh(); }
@@ -422,7 +517,7 @@ function thumbSave(){ if(!PK) return; var n=60, th=[], per=Math.max(1,Math.floor
 
 /* ═══════════ панели ═══════════ */
 var pane=$("#pane"), insp=$("#insp"), right=$("#right"), ui={ tab:null, sheet:false };
-var TTL={ edit:"Правка", snd:"Звук", save:"Сохранить", more:"Ещё" };
+var TTL={ edit:"Правка", snd:"Звук", mast:"Мастеринг", save:"Сохранить", more:"Ещё" };
 function tabBox(){ return wide.matches?pane:insp; }
 function openTab(t){ if(t==="save"){ openInsp(); return; }
   ui.tab=t; $$("#tabs button").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")===t); });
@@ -444,7 +539,7 @@ new MutationObserver(function(){ var e=$("#ed"); e.classList.toggle("so",right.c
 wide.addEventListener("change",function(){ right.classList.remove("open"); ui.sheet=false; if(wide.matches) openTab(ui.tab||"edit"); refreshInsp(); draw(); });
 function refresh(){ refreshPane(); refreshInsp(); }
 function refreshPane(){ if(!ui.tab||!P) return; if(!wide.matches&&ui.sheet!=="tab") return; var box=tabBox(), sc=box.scrollTop; box.innerHTML="";
-  ({ edit:paneEdit, snd:paneSnd, more:paneMore })[ui.tab](box); box.scrollTop=sc; }
+  ({ edit:paneEdit, snd:paneSnd, mast:paneMast, more:paneMore })[ui.tab](box); box.scrollTop=sc; }
 function tool(icon,name,sub,fn,cls){ return el('<button class="ztool'+(cls?" "+cls:"")+'"><span class="ic">'+sv(icon)+'</span><span>'+esc(name)+'<small>'+esc(sub)+'</small></span></button>',function(n){ n.onclick=fn; }); }
 function paneEdit(box){
   box.appendChild(sh("Правка"));
@@ -453,6 +548,14 @@ function paneEdit(box){
   box.appendChild(tool("fade","Плавное начало и конец","тяните розовые точки на волне",function(){ remember(); if(!P.fadeIn) P.fadeIn=1; if(!P.fadeOut) P.fadeOut=2; fixSel(); draw(); save(); refreshInsp(); if(!wide.matches) openInsp(); }));
   box.appendChild(tool("sil","Убрать тишину","паузы в начале, конце и между фразами",doSilence));
   box.appendChild(tool("ring","Лучший кусок","ищет припев: три варианта на выбор",function(){ findBest(P.ring||30); if(!wide.matches) openInsp(); }));
+  box.appendChild(sh("Выделенный кусок"));
+  if(P.sel){ var o=rangeProps(P.sel[0],P.sel[1]);
+    box.appendChild(range(TR("Громкость куска"),o.mute?-24:(o.g||0),-24,12,.5,function(v){ return (v>0?"+":"")+v+" "+TR("дБ"); },function(){},function(v){ if(!P.sel) return; applyRange(P.sel[0],P.sel[1],function(q){ delete q.mute; if(v) q.g=v; else delete q.g; }); render(); save(); refresh(); }));
+    box.appendChild(el('<div class="row zrow"><button class="btn'+(o.mute?" on":"")+'">'+esc(TR("Заглушить"))+'</button><button class="btn'+(o.rev?" on":"")+'">'+esc(TR("Задом наперёд"))+'</button></div>',function(r){ var b=$$("button",r);
+      b[0].onclick=function(){ selOp(function(q){ if(o.mute) delete q.mute; else q.mute=1; }); }; b[1].onclick=function(){ selOp(function(q){ if(o.rev) delete q.rev; else q.rev=1; }); }; }));
+    box.appendChild(choice(TR("Эффект только здесь"),Object.keys(FX).map(function(k){ return [k,TR(FX[k])]; }),o.fx||"none",function(v){ selOp(function(q){ if(v==="none") delete q.fx; else q.fx=v; }); }));
+    if(o.g||o.mute||o.rev||o.fx) box.appendChild(el('<button class="btn w">'+esc(TR("Сбросить правки куска"))+'</button>',function(n){ n.onclick=selClear; })); }
+  else box.appendChild(el('<p class="note" style="margin-bottom:8px">'+esc(TR("Выделите место на волне, и его можно будет сделать тише или громче, заглушить, развернуть задом наперёд или дать эффект только ему."))+'</p>'));
   box.appendChild(sh("Куски"));
   if(selClip>=0&&P.clips[selClip]){ var c=P.clips[selClip];
     box.appendChild(el('<div class="li"><div class="lh"><b data-nt></b><button data-a="l" title="'+esc(TR("Раньше"))+'">'+sv("l")+'</button><button data-a="r" title="'+esc(TR("Позже"))+'">'+sv("r")+'</button><button data-a="x" title="'+esc(TR("Удалить кусок"))+'">'+sv("x")+'</button></div></div>',function(n){
@@ -460,21 +563,47 @@ function paneEdit(box){
   else box.appendChild(el('<p class="note" style="margin-bottom:8px">Нажмите на кусок под волной, чтобы выделить его, поменять местами или убрать.</p>'));
   box.appendChild(tool("mic","Записать с микрофона","новый кусок в конец",record,"red"));
   box.appendChild(tool("add","Ещё файл","склеить треки по очереди",pickFile));
+  if(P.clips.length>1) box.appendChild(range(TR("Плавные стыки между кусками"),P.xf||0,0,3,.1,function(v){ return sec(v); },function(v){ P.xf=v; },function(){ render(); save(); }));
 }
 function paneSnd(box){
   box.appendChild(sh("Громкость"));
   var pk=peakDb();
-  box.appendChild(range(TR("Громкость"),P.gain,-20,20,.5,function(v){ return (v>0?"+":"")+v+" "+TR("дБ"); },function(v){ P.gain=v; },function(){ remember(); render(); save(); }));
+  box.appendChild(range(TR("Громкость"),P.gain,-20,20,.5,function(v){ return (v>0?"+":"")+v+" "+TR("дБ"); },function(v){ P.gain=v; },function(){ render(); save(); }));
   box.appendChild(el('<div><div class="meter"><i style="left:'+Math.max(0,Math.min(100,(pk+30)/30*100))+'%"></i></div><div class="mnote'+(pk>-.1?" bad":"")+'">'+esc(pk>-.1?TR("пик {0} дБ: громче нельзя, звук будет хрипеть",pk.toFixed(1)):TR("пик {0} дБ",pk>-90?pk.toFixed(1):"-"))+'</div></div>'));
   box.appendChild(el('<button class="btn w">Выровнять громкость<small>до -1 дБ</small></button>',function(n){ n.onclick=normalize; }));
   box.appendChild(sh("Скорость"));
   box.appendChild(choice("",[["0.5","0.5x"],["0.75","0.75x"],["1","1x"],["1.25","1.25x"],["1.5","1.5x"],["2","2x"]],String(P.speed),function(v){ remember(); var k=P.speed/ +v; P.speed=+v; if(P.sel) P.sel=[P.sel[0]*k,P.sel[1]*k]; cur*=k; render(); save(); }));
   box.appendChild(el('<p class="note" style="margin:-4px 0 10px">Быстрее звучит выше, медленнее ниже, как на пластинке.</p>'));
   box.appendChild(sh("Эффект"));
-  box.appendChild(choice("",Object.keys(FX).map(function(k){ return [k,TR(FX[k])]; }),P.fx,function(v){ remember(); P.fx=v; render(); save(); }));
+  box.appendChild(choice("",Object.keys(FX).map(function(k){ return [k,TR(FX[k])]; }),P.fx,function(v){ remember(); P.fx=v; render(); save(); refreshPane(); }));
+  if(P.fx!=="none") box.appendChild(range(TR("Сила эффекта"),P.fxAmt==null?100:P.fxAmt,10,100,5,function(v){ return v+"%"; },function(v){ P.fxAmt=v; },function(){ render(); save(); }));
+  box.appendChild(sh("Эквалайзер"));
+  P.eq=P.eq||[0,0,0,0,0];
+  EQF.forEach(function(b,i){ box.appendChild(range((b[1]>=1000?b[1]/1000+" "+TR("кГц"):b[1]+" "+TR("Гц"))+" · "+TR(b[2]),P.eq[i]||0,-12,12,.5,function(v){ return (v>0?"+":"")+v+" "+TR("дБ"); },function(v){ P.eq[i]=v; },function(){ render(); save(); })); });
+  if(P.eq.some(function(v){ return v; })) box.appendChild(el('<button class="btn w">'+esc(TR("Сбросить эквалайзер"))+'</button>',function(n){ n.onclick=function(){ remember(); P.eq=[0,0,0,0,0]; render(); save(); refreshPane(); }; }));
+}
+/* мастеринг: пресет, сила, громкость файла, цифры до и после, честное сравнение */
+function lu(v){ return v>-70?v.toFixed(1)+" LUFS":"-"; }
+function paneMast(box){ var M=P.master=P.master||{ on:false, preset:"clean", amt:100, target:null }, S=MAST[M.preset]||MAST.clean, tg=M.target==null?S.target:M.target;
+  function set(fn){ remember(); fn(); if(!M.on) AB=null; render(); save(); refreshPane(); }
+  box.appendChild(sh("Мастеринг"));
+  box.appendChild(toggle(TR("Обработать трек"),!!M.on,function(v){ set(function(){ M.on=v; }); }));
+  box.appendChild(el('<div class="zmp'+(M.on?"":" off")+'"></div>',function(g){ Object.keys(MAST).forEach(function(k){ var q=MAST[k]; g.appendChild(el('<button class="'+(M.preset===k?"on":"")+'"><b>'+esc(TR(q.n))+'</b><small>'+esc(TR(q.d))+'</small></button>',function(b){ b.onclick=function(){ set(function(){ M.on=true; M.preset=k; M.target=null; }); }; })); }); }));
+  if(M.on){
+    box.appendChild(range(TR("Сила обработки"),M.amt==null?100:M.amt,0,150,5,function(v){ return v+"%"; },function(v){ M.amt=v; },function(){ render(); save(); }));
+    box.appendChild(el('<div class="f"><label>'+esc(TR("Громкость файла"))+'</label><div class="zld"></div></div>',function(f){ var g=$(".zld",f); LOUD.forEach(function(l){ g.appendChild(el('<button class="'+(tg===l[0]?"on":"")+'"><b>'+l[1]+'</b><small>'+esc(TR(l[2]))+'</small></button>',function(b){ b.onclick=function(){ set(function(){ M.target=l[0]; }); }; })); }); })); }
+  if(STAT&&MIX){ var miss=M.on&&STAT.outL<tg-.7;
+    box.appendChild(el('<div class="zlu"><div><small>'+esc(TR(M.on?"было":"сейчас"))+'</small><b>'+lu(STAT.inL)+'</b><span>'+esc(TR("пик {0} дБ",STAT.inPk>-90?STAT.inPk.toFixed(1):"-"))+'</span></div>'+(M.on?'<div class="on"><small>'+esc(TR("стало"))+'</small><b>'+lu(STAT.outL)+'</b><span>'+esc(TR("пик {0} дБ",STAT.outPk.toFixed(1)))+'</span></div>':'')+'</div>'));
+    if(miss) box.appendChild(el('<p class="note" style="margin:-2px 0 10px">'+esc(TR("До выбранной громкости трек не дотянулся: дальше пришлось бы ломать звук. Так бывает с очень неровными записями."))+'</p>')); }
+  if(M.on&&MIX){
+    box.appendChild(el('<div class="f"><label>'+esc(TR("Сравнить"))+'</label><div class="chips"><button data-v="">'+esc(TR("как в файле"))+'</button><button data-v="post">'+esc(TR("после"))+'</button><button data-v="pre">'+esc(TR("до"))+'</button></div></div>',function(f){ $$("button",f).forEach(function(b){ var v=b.getAttribute("data-v")||null; b.classList.toggle("on",AB===v);
+      b.onclick=function(){ AB=v; $$("button",f).forEach(function(y){ y.classList.toggle("on",y===b); }); if(play.on) restartPlay(); else startPlay(cur); }; }); }));
+    box.appendChild(el('<p class="note" style="margin:-4px 0 10px">'+esc(TR("«До» и «после» играют на одинаковой громкости, иначе громкий вариант всегда кажется лучше. В файл пойдёт полная громкость."))+'</p>')); }
+  box.appendChild(el('<p class="note">'+esc(TR("Мастеринг делает готовый трек ровнее, плотнее и нужной громкости. Плохую запись или сведение он не исправит. LUFS это громкость на слух: площадки сами приглушают всё, что громче -14."))+'</p>'));
 }
 function paneMore(box){
   box.appendChild(el('<div class="f"><label>Название</label><input type="text" maxlength="80"></div>',function(n){ var i=$("input",n); i.value=P.title||""; i.oninput=function(){ P.title=i.value; $("#title").value=i.value; save(); }; }));
+  box.appendChild(el('<button class="btn w">'+esc(TR("Узнать темп"))+'<small>'+(P.bpm&&P.bpmN===rendN?"≈ "+P.bpm+" BPM":"BPM")+'</small></button>',function(n){ n.onclick=bpmGo; }));
   box.appendChild(el('<button class="btn w">Сделать копию</button>',function(n){ n.onclick=function(){ var c=JSON.parse(JSON.stringify(P)); c.id=newId(); c.title=TR("{0} (копия)",P.title||""); c.updated=Date.now(); pPut(c).then(function(){ openP(c); toast(TR("Открыта копия")); }); }; }));
   box.appendChild(el('<button class="btn w del">Удалить звук</button>',function(n){ n.onclick=function(){ ask(TR("Удалить «{0}»? Вернуть не получится.",P.title||""),TR("Удалить")).then(function(y){ if(y){ var p=P; stopPlay(); pDel(p).then(function(){ P=null; showHome(); }); } }); }; }));
   box.appendChild(el('<p class="note" style="margin-top:8px">Звук и все правки сохраняются в этом браузере сами. Исходный файл не меняется: любую правку можно отменить.</p>'));
@@ -491,14 +620,15 @@ function refreshInsp(){
   else if(MIX&&T()>40) insp.appendChild(el('<button class="btn w">'+sv("ring")+'<span>'+esc(TR("Найти лучший кусок"))+'</span><small>'+esc(TR("3 варианта"))+'</small></button>',function(n){ n.onclick=function(){ findBest(P.ring||30); }; }));
   if(P.ring&&!bestValid()) insp.appendChild(el('<p class="note" style="margin:-4px 0 12px">Двигайте выделение по волне: оно играет по кругу. Длина держится, пока сами не потянете край.</p>'));
   var sc=scope(), half=Math.max(.5,(sc[1]-sc[0])/2);
-  insp.appendChild(range(TR("Плавное начало"),Math.round(Math.min(P.fadeIn,half)*10)/10,0,Math.min(10,Math.floor(half*10)/10),.1,function(v){ return sec(v); },function(v){ P.fadeIn=v; draw(); },function(){ remember(); save(); if(play.on) restartPlay(); }));
-  insp.appendChild(range(TR("Плавный конец"),Math.round(Math.min(P.fadeOut,half)*10)/10,0,Math.min(10,Math.floor(half*10)/10),.1,function(v){ return sec(v); },function(v){ P.fadeOut=v; draw(); },function(){ remember(); save(); if(play.on) restartPlay(); }));
+  insp.appendChild(range(TR("Плавное начало"),Math.round(Math.min(P.fadeIn,half)*10)/10,0,Math.min(10,Math.floor(half*10)/10),.1,function(v){ return sec(v); },function(v){ P.fadeIn=v; draw(); },function(){ save(); if(play.on) restartPlay(); }));
+  insp.appendChild(range(TR("Плавный конец"),Math.round(Math.min(P.fadeOut,half)*10)/10,0,Math.min(10,Math.floor(half*10)/10),.1,function(v){ return sec(v); },function(v){ P.fadeOut=v; draw(); },function(){ save(); if(play.on) restartPlay(); }));
   insp.appendChild(toggle(TR("Моно (файл меньше)"),!!P.mono,function(v){ P.mono=v; save(); refreshInsp(); }));
   insp.appendChild(sh("Формат"));
-  insp.appendChild(choice("",[["mp3192","MP3 192"],["mp3128","MP3 128"],["wav","WAV"],["m4r",TR("для iPhone"),!M4R]],P.fmt,function(v){ P.fmt=v; save(); refreshInsp(); }));
+  insp.appendChild(choice("",[["mp3320","MP3 320"],["mp3192","MP3 192"],["mp3128","MP3 128"],["wav","WAV"],["wav24",TR("WAV 24 бит")],["m4r",TR("для iPhone"),!M4R]],P.fmt,function(v){ P.fmt=v; save(); refreshInsp(); }));
   if(!M4R) insp.appendChild(el('<p class="note" style="margin:-4px 0 10px">Рингтон для iPhone (m4r) этот браузер собрать не умеет. Обычно это получается в Safari на iPhone или Mac.</p>'));
   var L=sc[1]-sc[0];
   insp.appendChild(el('<button class="btn go w" style="justify-content:center">'+esc(P.ring?TR("Скачать рингтон"):TR("Скачать файл"))+'<small style="margin-left:8px;color:#06231f">'+tm(L)+' · ~'+kb(estSize())+'</small></button>',function(n){ n.onclick=exportFile; n.disabled=!MIX; }));
+  insp.appendChild(el('<button class="btn w" style="margin-top:8px">'+sv("add")+'<span>'+esc(TR("В монтаж"))+'</span><small>'+esc(TR("музыкой в ролик"))+'</small></button>',function(n){ n.onclick=toMontage; n.disabled=!MIX; }));
   insp.appendChild(el('<p class="note">Звук обрабатывается на этом устройстве, файл никуда не отправляется.</p>'));
   insp.scrollTop=sc0;
 }
@@ -506,7 +636,7 @@ function refreshInsp(){
 /* ═══════════ окна, клавиши ═══════════ */
 function modal(h){ $("#mbox").innerHTML=h; $("#modal").classList.add("on"); }
 function closeModal(){ $("#modal").classList.remove("on"); }
-$("#modal").addEventListener("click",function(e){ if(e.target.hasAttribute("data-close")) closeModal(); });
+$("#modal").addEventListener("click",function(e){ if(e.target.closest("[data-close]")) closeModal(); });
 function ask(text,ok){ return new Promise(function(res){ modal('<h3>'+esc(text)+'</h3><div class="row"><button class="btn" data-n>Отмена</button><button class="btn go" data-y>'+esc(ok)+'</button></div>');
   $("#mbox [data-n]").onclick=function(){ closeModal(); res(false); }; $("#mbox [data-y]").onclick=function(){ closeModal(); res(true); }; }); }
 var tT=0; function toast(t){ var e=$("#toast"); e.textContent=t; e.classList.add("on"); clearTimeout(tT); tT=setTimeout(function(){ e.classList.remove("on"); },2800); }
@@ -518,7 +648,7 @@ addEventListener("keydown",function(e){
   if((e.ctrlKey||e.metaKey)&&k==="y"){ e.preventDefault(); $("#redo").click(); return; }
   if(k===" "){ e.preventDefault(); $("#playBtn").click(); return; }
   if(k==="delete"||k==="backspace"){ if(P&&P.sel){ e.preventDefault(); doCut(); } return; }
-  if(k==="escape"&&P&&P.sel){ P.sel=null; if(P.scope==="sel") P.scope="all"; draw(); timeUi(); refreshInsp(); }
+  if(k==="escape"&&P&&P.sel){ P.sel=null; if(P.scope==="sel") P.scope="all"; draw(); timeUi(); refresh(); }
 });
 $("#title").addEventListener("input",function(){ if(P){ P.title=this.value; save(); } });
 
@@ -546,7 +676,7 @@ function showHome(){
 var ringNext=false;
 function create(p){ return pPut(p).catch(function(){}).then(function(){ openP(p); }); }
 function openP(p){
-  stopPlay(); P=p; P.clips=P.clips||[]; U=[]; Rd=[]; undoBtns(); selClip=-1; cur=0; V={ t0:0, len:0 }; MIX=null; PK=null; $("#zoom").value=0;
+  stopPlay(); P=p; P.clips=P.clips||[]; P.eq=P.eq||[0,0,0,0,0]; if(P.fxAmt==null) P.fxAmt=100; P.xf=P.xf||0; P.master=P.master||{ on:false, preset:"clean", amt:100, target:null }; AB=null; PRE=null; STAT=null; U=[]; Rd=[]; undoBtns(); selClip=-1; cur=0; V={ t0:0, len:0 }; MIX=null; PK=null; $("#zoom").value=0;
   $("#home").hidden=true; $("#ed").hidden=false; document.title="FORGE · "+(P.title||""); $("#title").value=P.title||"";
   $("#empty").innerHTML='<div>'+esc(TR("Добавьте звук: откройте файл, перетащите его сюда или запишите голос."))+'<div class="row"><button class="btn go" data-a="f">'+esc(TR("Открыть файл"))+'</button><button class="btn" data-a="m">'+esc(TR("Записать"))+'</button></div></div>';
   $("#empty [data-a=f]").onclick=pickFile; $("#empty [data-a=m]").onclick=record;

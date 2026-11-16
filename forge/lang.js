@@ -2,7 +2,7 @@
 window.FORGE_LANG={
 ru:{
   koleso:'Колесо и жребий', kolesoD:'Колесо фортуны, бинго с карточками для печати, команды, тайный Санта, кубики.',
-  zvuk:'Звук', zvukD:'Обрезать песню, сделать рингтон, записать голос, убрать паузы.',
+  zvuk:'Звук', zvukD:'Обрезать песню, сделать рингтон, записать голос, мастеринг с пресетами.',
   bit:'Биты', bitD:'Барабаны, бас и мелодия по клеткам, свои звуки с микрофона, луп файлом.',
   otk:'Открытки', otkD:'Открытка с музыкой: конверт, подарок или занавес, отправить ссылкой или файлом.',
   mont:'Монтаж', montD:'Короткий ролик из фото и видео: переходы, надписи, музыка, видео файлом.',
@@ -23,7 +23,7 @@ ru:{
 },
 en:{
   koleso:'Wheel & draw', kolesoD:'Wheel of fortune, bingo with printable cards, teams, Secret Santa, dice.',
-  zvuk:'Sound', zvukD:'Trim a song, make a ringtone, record your voice, remove pauses.',
+  zvuk:'Sound', zvukD:'Trim a song, make a ringtone, record your voice, mastering with presets.',
   bit:'Beats', bitD:'Drums, bass and melody on a grid, your own sounds from the mic, the loop as a file.',
   otk:'Cards', otkD:'A card with music: envelope, gift or curtain, sent as a link or a file.',
   mont:'Video', montD:'A short video from photos and clips: transitions, captions, music, downloaded as a file.',
@@ -44,7 +44,7 @@ en:{
 },
 de:{
   koleso:'Glücksrad & Los', kolesoD:'Glücksrad, Bingo mit Karten zum Drucken, Teams, Wichteln, Würfel.',
-  zvuk:'Ton', zvukD:'Song kürzen, Klingelton machen, Stimme aufnehmen, Pausen entfernen.',
+  zvuk:'Ton', zvukD:'Lied kürzen, Klingelton erstellen, Stimme aufnehmen, Mastering mit Presets.',
   bit:'Beats', bitD:'Drums, Bass und Melodie im Raster, eigene Klänge vom Mikrofon, der Loop als Datei.',
   otk:'Karten', otkD:'Eine Karte mit Musik: Umschlag, Geschenk oder Vorhang, per Link oder Datei.',
   mont:'Videoschnitt', montD:'Kurzvideo aus Fotos und Clips: Übergänge, Texte, Musik, als Datei.',
@@ -65,7 +65,7 @@ de:{
 },
 fr:{
   koleso:'Roue et tirage', kolesoD:'Roue de la fortune, bingo avec cartes à imprimer, équipes, Père Noël secret, dés.',
-  zvuk:'Son', zvukD:'Couper une chanson, créer une sonnerie, enregistrer votre voix, enlever les pauses.',
+  zvuk:'Son', zvukD:'Couper une chanson, créer une sonnerie, enregistrer sa voix, mastering avec préréglages.',
   bit:'Beats', bitD:'Batterie, basse et mélodie sur une grille, vos sons au micro, la boucle en fichier.',
   otk:'Cartes', otkD:'Une carte musicale : enveloppe, cadeau ou rideau, envoyée par lien ou en fichier.',
   mont:'Montage', montD:'Une courte vidéo à partir de photos et de clips : transitions, textes, musique, en fichier.',
@@ -86,7 +86,7 @@ fr:{
 },
 es:{
   koleso:'Ruleta y sorteo', kolesoD:'Ruleta de la fortuna, bingo con cartones para imprimir, equipos, amigo invisible, dados.',
-  zvuk:'Sonido', zvukD:'Recortar una canción, hacer un tono, grabar tu voz, quitar pausas.',
+  zvuk:'Sonido', zvukD:'Recortar una canción, hacer un tono, grabar la voz, masterización con preajustes.',
   bit:'Beats', bitD:'Batería, bajo y melodía en cuadrícula, tus sonidos con el micro, el loop como archivo.',
   otk:'Tarjetas', otkD:'Una tarjeta con música: sobre, regalo o telón, enviada por enlace o archivo.',
   mont:'Montaje', montD:'Un vídeo corto con fotos y clips: transiciones, textos, música, como archivo.',
@@ -107,7 +107,7 @@ es:{
 },
 it:{
   koleso:'Ruota e sorteggio', kolesoD:'Ruota della fortuna, tombola con cartelle da stampare, squadre, Babbo Natale segreto, dadi.',
-  zvuk:'Audio', zvukD:'Tagliare una canzone, creare una suoneria, registrare la voce, togliere le pause.',
+  zvuk:'Audio', zvukD:'Tagliare una canzone, creare una suoneria, registrare la voce, mastering con preset.',
   bit:'Beat', bitD:'Batteria, basso e melodia su griglia, i tuoi suoni dal microfono, il loop come file.',
   otk:'Biglietti', otkD:'Un biglietto con musica: busta, regalo o sipario, da mandare con un link o un file.',
   mont:'Montaggio', montD:'Un video breve da foto e clip: transizioni, scritte, musica, come file.',
@@ -128,7 +128,7 @@ it:{
 },
 pl:{
   koleso:'Koło i losowanie', kolesoD:'Koło fortuny, bingo z kartami do druku, drużyny, tajny Mikołaj, kostki.',
-  zvuk:'Dźwięk', zvukD:'Przyciąć piosenkę, zrobić dzwonek, nagrać głos, usunąć pauzy.',
+  zvuk:'Dźwięk', zvukD:'Przytnij piosenkę, zrób dzwonek, nagraj głos, mastering z presetami.',
   bit:'Bity', bitD:'Perkusja, bas i melodia w kratkach, własne dźwięki z mikrofonu, pętla jako plik.',
   otk:'Kartki', otkD:'Kartka z muzyką: koperta, prezent albo kurtyna, wysłana linkiem lub plikiem.',
   mont:'Montaż', montD:'Krótki film ze zdjęć i nagrań: przejścia, napisy, muzyka, jako plik.',

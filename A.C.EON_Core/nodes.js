@@ -81,14 +81,14 @@ window.CORE_NODES = [
   {id:'nodeai', sector:'tools', name:{ru:'ОФИС ИИ', en:'AI OFFICE', de:'KI-BÜRO', fr:'BUREAU IA', es:'OFICINA IA', it:'UFFICIO IA', pl:'BIURO AI'}, url:'../chat/', status:'live', w:2.3,
    tag:{ru:'агенты студии', en:'studio agents', de:'Studio-Agenten', fr:'agents du studio', es:'agentes del estudio', it:'agenti dello studio', pl:'agenci studia'},
    desc:{ru:'ИИ-агенты студии за работой: наблюдай и поговори со свободным.', en:'The studio AI agents at work: watch them and talk to a free one.', de:'Die KI-Agenten des Studios bei der Arbeit: zuschauen und mit einem freien sprechen.', fr:'Les agents IA du studio au travail : observe-les et parle à celui qui est libre.', es:'Los agentes de IA del estudio trabajando: obsérvalos y habla con uno libre.', it:'Gli agenti IA dello studio al lavoro: osservali e parla con uno libero.', pl:'Agenci AI studia przy pracy: obserwuj ich i porozmawiaj z wolnym.'}},
+  {id:'forge', sector:'tools', name:'FORGE', url:'../forge/', status:'live', w:2.4, added:'2026-11-16',
+   tag:{ru:'мастерские в браузере', en:'browser workshops', de:'Werkstätten im Browser', fr:'ateliers dans le navigateur', es:'talleres en el navegador', it:'laboratori nel browser', pl:'pracownie w przeglądarce'},
+   desc:{ru:'Страницы, графика, фоны, жребий, звук и биты: делай прямо в браузере, всё хранится у тебя.', en:'Pages, graphics, backgrounds, draws, sound and beats: make them right in the browser, everything stays with you.', de:'Seiten, Grafik, Hintergründe, Losziehen, Ton und Beats: direkt im Browser gemacht, alles bleibt bei dir.', fr:'Pages, graphisme, fonds, tirages, son et beats : tout se fait dans le navigateur et reste chez toi.', es:'Páginas, gráficos, fondos, sorteos, sonido y beats: hazlos en el navegador, todo se queda contigo.', it:'Pagine, grafica, sfondi, sorteggi, audio e beat: tutto nel browser, tutto resta a te.', pl:'Strony, grafika, tła, losowania, dźwięk i bity: rób je w przeglądarce, wszystko zostaje u ciebie.'}},
 
   /* обучение */
   {id:'ai_course', sector:'learn', name:{ru:'КУРС AI', en:'AI COURSE', de:'KI-KURS', fr:'COURS IA', es:'CURSO IA', it:'CORSO IA', pl:'KURS AI'}, url:'../AI course/', status:'live', w:2.3,
    tag:{ru:'работа с ИИ', en:'working with AI', de:'Arbeit mit KI', fr:'travailler avec l\'IA', es:'trabajar con IA', it:'lavorare con l\'IA', pl:'praca z AI'},
    desc:{ru:'Как работать с ИИ: курс по шагам.', en:'How to work with AI: a step-by-step course.', de:'Wie man mit KI arbeitet: ein Kurs Schritt für Schritt.', fr:'Travailler avec l\'IA : un cours pas à pas.', es:'Cómo trabajar con IA: un curso paso a paso.', it:'Come lavorare con l\'IA: un corso passo passo.', pl:'Jak pracować z AI: kurs krok po kroku.'}},
-  {id:'forge', sector:'learn', name:'FORGE', url:'../forge/', status:'live', w:2.2,
-   tag:{ru:'работа с кодом', en:'working with code', de:'Arbeit mit Code', fr:'travailler le code', es:'trabajar con código', it:'lavorare col codice', pl:'praca z kodem'},
-   desc:{ru:'Как писать код вместе с ИИ.', en:'How to write code together with AI.', de:'Wie man gemeinsam mit KI Code schreibt.', fr:'Écrire du code avec l\'IA.', es:'Cómo escribir código junto a la IA.', it:'Come scrivere codice insieme all\'IA.', pl:'Jak pisać kod razem z AI.'}},
 
   /* люди */
   {id:'guestbook', sector:'people', name:{ru:'ГОСТЕВАЯ', en:'GUESTBOOK', de:'GÄSTEBUCH', fr:'LIVRE D\'OR', es:'LIBRO DE VISITAS', it:'GUESTBOOK', pl:'KSIĘGA GOŚCI'}, url:'../Guestbook/', status:'live', w:2.4,

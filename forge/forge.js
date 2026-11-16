@@ -37,7 +37,7 @@ function texts(){
   document.title=T('title');
   const map={tKick:'kick',tSub:'sub',tTag:'tagline',tStart:'start',tNow:'now',same:'same',tMenu:'menuT',tCont:'cont',
     tPages:'pages',tPagesD:'pagesD',tGfx:'gfx',tGfxD:'gfxD',tGames:'games',tGamesD:'gamesD',
-    tLearn:'learn',tLearnD:'learnD',tO1:'open',tO2:'open',tO3:'open',tFony:'fony',tFonyD:'fonyD',tO4:'open',tKoleso:'koleso',tKolesoD:'kolesoD',tO5:'open',tZvuk:'zvuk',tZvukD:'zvukD',tO6:'open',tBit:'bit',tBitD:'bitD',tO7:'open',tOtk:'otk',tOtkD:'otkD',tO8:'open',still:'still'};
+    tLearn:'learn',tLearnD:'learnD',tO1:'open',tO2:'open',tO3:'open',tFony:'fony',tFonyD:'fonyD',tO4:'open',tKoleso:'koleso',tKolesoD:'kolesoD',tO5:'open',tZvuk:'zvuk',tZvukD:'zvukD',tO6:'open',tBit:'bit',tBitD:'bitD',tO7:'open',tOtk:'otk',tOtkD:'otkD',tO8:'open',tO9:'open',tMont:'mont',tMontD:'montD',still:'still'};
   for(const id in map){ const e=$(id); if(e) e.textContent=T(map[id]); }
   $('mClose').title=T('close'); $('loading').textContent=T('loading');
   const lg=$('langs'); lg.innerHTML=''; lg.title=T('lang');
@@ -338,7 +338,7 @@ function deps(){
   const lk=document.createElement('link'); lk.rel='stylesheet';
   lk.href='https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700|inter:400,600,700,800|montserrat:400,600,700,800|rubik:400,500,700|nunito:400,600,800|comfortaa:500,700|oswald:500,700|lora:500,600,700|playfair-display:600,700,800|cormorant-garamond:500,600,700|pt-serif:400,700|jetbrains-mono:400,700&display=swap';
   document.head.appendChild(lk);
-  depsP=loadScript('i18n-forge.js?v=9').then(()=>loadScript('HTML-CSS-JS/engine.js?v=3')).then(()=>loadScript('grafika/lib/qrcode.js'))
+  depsP=loadScript('i18n-forge.js?v=10').then(()=>loadScript('HTML-CSS-JS/engine.js?v=3')).then(()=>loadScript('grafika/lib/qrcode.js'))
     .then(()=>loadScript('grafika/gfx-engine.js?v=5')).then(()=>loadScript('fony/fony-engine.js?v=1')).then(()=>{ if(window.FORGE_I18N) FORGE_I18N.use(lang()); });
   return depsP;
 }

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e12">
+<title>FORGE · монтаж роликов</title>
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
+<link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
+<link rel="stylesheet" href="montazh.css?v=1">
+</head>
+<body>
+
+<!-- ═══ Мои ролики ═══ -->
+<section class="home" id="home" hidden>
+  <div class="hin">
+    <div class="kick"><a href="../">&larr; FORGE</a><span>/</span><span>монтаж</span><span style="margin-left:auto"></span><span data-langpick></span><a href="../igry/">игры &rarr;</a></div>
+    <h1>Монтаж <b>роликов</b></h1>
+    <p class="lead">Короткий ролик из фото и видео: переходы, надписи, музыка, вертикальный формат для сторис. Всё собирается в этом браузере, файлы никуда не загружаются. Готовое видео скачивается файлом.</p>
+    <h2>Мои ролики</h2>
+    <div class="vmy" id="myV"></div>
+    <h2>Новый ролик</h2>
+    <div class="vfs" id="fmtV"></div>
+    <p class="foot">Видео записывается в реальном времени: ролик на минуту собирается минуту. Формат MP4 там, где браузер умеет, иначе WebM.</p>
+  </div>
+</section>
+
+<!-- ═══ Редактор ═══ -->
+<section class="ed mz" id="ed" hidden>
+  <header class="bar">
+    <button class="ib" id="toHome" title="Мои ролики"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input id="title" class="title" maxlength="80" aria-label="Название">
+    <span class="sp"></span>
+    <button class="ib" id="undo" title="Отменить (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+    <button class="ib" id="redo" title="Повторить (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+    <button class="pri" id="saveBtn">Собрать видео</button>
+  </header>
+
+  <aside class="left" id="left">
+    <nav class="tabs" id="tabs">
+      <button data-tab="vid"><svg viewBox="0 0 24 24"><path d="M3 6h13v12H3zM16 10l5-3v10l-5-3"/></svg><span>Ролик</span></button>
+      <button data-tab="clip" class="mob"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4"/></svg><span>Клип</span></button>
+      <button data-tab="mus"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>Музыка</span></button>
+      <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+    </nav>
+    <div class="pane" id="pane"></div>
+  </aside>
+
+  <main class="stage mst2" id="stage">
+    <div class="cvbox"><div class="cvw" id="cvw"><canvas id="cv" width="540" height="960"></canvas>
+      <div class="vempty" id="empty" hidden><b>Добавьте фото и видео</b><span>или перетащите файлы в окно</span><div class="row"><button class="btn go" id="emptyAdd">Выбрать файлы</button><button class="btn" id="emptyDemo">Пример из фонов</button></div></div>
+    </div></div>
+    <div class="vtr"><button class="vplay" id="playBtn" title="Играть (пробел)"><svg viewBox="0 0 24 24" class="pl"><path d="M8 5l12 7-12 7z"/></svg><svg viewBox="0 0 24 24" class="pa"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button><b id="tNow">0:00.0</b><span id="tAll">/ 0:00.0</span></div>
+    <div class="tl" id="tl"></div>
+  </main>
+
+  <aside class="right" id="right">
+    <div class="sh-h"><span class="grip"></span><b id="shTitle"></b><button class="ib" id="shClose" title="Свернуть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="insp" id="insp"></div>
+  </aside>
+</section>
+
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+<div class="vdrop" id="drop"><b>Отпустите файлы, они добавятся в конец</b></div>
+<input type="file" id="fIn" hidden>
+
+<script src="../i18n-forge.js?v=10"></script>
+<script src="../HTML-CSS-JS/engine.js?v=3"></script>
+<script src="../fony/fony-engine.js?v=1"></script>
+<script src="montazh.js?v=1"></script>
+</body>
+</html>

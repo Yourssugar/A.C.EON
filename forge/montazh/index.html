@@ -7,7 +7,7 @@
 <title>FORGE · монтаж роликов</title>
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
 <link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
-<link rel="stylesheet" href="montazh.css?v=2">
+<link rel="stylesheet" href="montazh.css?v=4">
 </head>
 <body>
 
@@ -50,9 +50,10 @@
   <main class="stage mst2" id="stage">
     <div class="cvbox"><div class="cvw" id="cvw"><canvas id="cv" width="540" height="960"></canvas>
       <div class="vempty" id="empty" hidden><b>Добавьте фото и видео</b><span>или перетащите файлы в окно</span><div class="row"><button class="btn go" id="emptyAdd">Выбрать файлы</button><button class="btn" id="emptyDemo">Пример из фонов</button></div></div>
+      <button class="vmute" id="vmute" hidden></button>
       <div class="tsel" id="tsel" hidden><i class="tsh"></i></div><i class="gd gx" id="gx" hidden></i><i class="gd gy" id="gy" hidden></i>
     </div></div>
-    <div class="vtr"><div class="vl"><button class="vb" id="addMus" title="Добавить музыку"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg>+</button></div><button class="vplay" id="playBtn" title="Играть (пробел)"><svg viewBox="0 0 24 24" class="pl"><path d="M8 5l12 7-12 7z"/></svg><svg viewBox="0 0 24 24" class="pa"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button><b id="tNow">0:00.0</b><span id="tAll">/ 0:00.0</span><div class="vr"><button class="vb" id="zmM" title="Лента мельче">&minus;</button><button class="vb" id="zmP" title="Лента крупнее">+</button></div></div>
+    <div class="vtr"><div class="vl"><button class="vb cut" id="cutBtn" title="Разрезать клип по курсору (S)"><svg viewBox="0 0 24 24"><path d="M6 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg><span>Разрезать</span></button></div><button class="vplay" id="playBtn" title="Играть (пробел)"><svg viewBox="0 0 24 24" class="pl"><path d="M8 5l12 7-12 7z"/></svg><svg viewBox="0 0 24 24" class="pa"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button><b id="tNow">0:00.0</b><span id="tAll">/ 0:00.0</span><div class="vr"><button class="vb" id="zmM" title="Лента мельче">&minus;</button><button class="vb" id="zmP" title="Лента крупнее">+</button></div></div>
     <div class="tl" id="tl"></div>
   </main>
 
@@ -67,9 +68,9 @@
 <div class="vdrop" id="drop"><b>Отпустите файлы, они добавятся в конец</b></div>
 <input type="file" id="fIn" hidden>
 
-<script src="../i18n-forge.js?v=14"></script>
+<script src="../i18n-forge.js?v=16"></script>
 <script src="../HTML-CSS-JS/engine.js?v=3"></script>
 <script src="../fony/fony-engine.js?v=1"></script>
-<script src="montazh.js?v=2"></script>
+<script src="montazh.js?v=4"></script>
 </body>
 </html>

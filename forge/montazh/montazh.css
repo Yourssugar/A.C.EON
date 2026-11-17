@@ -125,3 +125,30 @@
 .vf b{font-size:15px}.vf small{color:var(--muted);font-size:12.5px}
 .vdrop{position:fixed;inset:0;z-index:80;display:none;place-items:center;background:rgba(6,8,10,.75);border:3px dashed var(--run);color:var(--run);font-size:18px}
 .vdrop.on{display:grid}
+/* разрез и звук видео */
+.vb.cut{gap:6px;padding:0 11px;font-size:12.5px}
+.vb.cut svg{width:16px;height:16px}
+@media (max-width:959px){ .vb.cut span{display:none} }
+.vmute{position:absolute;right:10px;top:10px;z-index:4;width:38px;height:38px;border-radius:50%;background:rgba(8,10,14,.62);color:#fff;display:grid;place-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.vmute svg{width:19px;height:19px}
+.vmute.off{background:rgba(255,93,115,.85)}
+.vmute[hidden]{display:none}
+.tc .snd{position:absolute;right:13px;bottom:4px;width:22px;height:20px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;z-index:2}
+.tc .snd svg{width:13px;height:13px}
+.tc .snd.off{background:#ff5d73}
+.tc.cont{border-left:2px dashed #ffd166}
+.tm.tmp{width:auto;padding:0 8px;font-size:13px;gap:2px}
+.cutr .btn{font-size:12.5px;padding:9px 8px}
+.cutr .btn svg{width:15px;height:15px}
+.cutr .btn:disabled{opacity:.4}
+/* стыки: ромбик между клипами открывает переход этого стыка */
+.jn{position:absolute;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;display:grid;place-items:center;z-index:3;padding:0}
+.jn i{width:12px;height:12px;transform:rotate(45deg);border-radius:2px;border:1.5px solid rgba(255,255,255,.75);background:rgba(12,14,18,.85);box-shadow:0 0 0 1px rgba(0,0,0,.4);transition:transform .12s}
+.jn:hover i{transform:rotate(45deg) scale(1.25)}
+.jn.on i{background:var(--ember);border-color:#fff}
+.jn.sel i{box-shadow:0 0 0 2px #0c0e12,0 0 0 4px #fff;transform:rotate(45deg) scale(1.2)}
+.jhead{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.jhead span{flex:1;text-align:center;font-weight:700;font-size:13.5px}
+.jhead .btn{padding:8px 12px}.jhead .btn:disabled{opacity:.35}
+.trall{display:flex;gap:6px}.trall select{flex:1;min-width:0}.trall .btn{flex:none;padding:8px 14px}
+@media (max-width:959px){ .jn{width:30px;height:30px;margin:-15px 0 0 -15px} }

@@ -19,7 +19,8 @@ function range(label,v,min,max,step,fmt,fn,done){ return el('<div class="f"><div
 function toggle(label,v,fn){ return el('<label class="tg"><span>'+esc(label)+'</span><input type="checkbox"'+(v?" checked":"")+'></label>',function(n){ $("input",n).onchange=function(){ fn(this.checked); }; }); }
 function pick1(label,opts,cur,fn){ return el('<div class="f"><label>'+esc(label)+'</label><select>'+opts.map(function(o){ return '<option value="'+o[0]+'"'+(String(o[0])===String(cur)?" selected":"")+'>'+esc(o[1])+'</option>'; }).join("")+'</select></div>',function(n){ $("select",n).onchange=function(){ fn(this.value); }; }); }
 var SV={ img:"M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4", vid:"M3 6h13v12H3zM16 10l5-3v10l-5-3", add:"M12 5v14M5 12h14", x:"M6 6l12 12M18 6L6 18", l:"M15 5l-7 7 7 7", r:"M9 5l7 7-7 7", dup:"M8 8h12v12H8zM4 16V4h12",
-  file:"M14 3H6v18h12V7zM14 3v4h4", mus:"M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z", txt:"M5 6h14M12 6v13M9 19h6", wand:"M15 4l5 5L9 20l-5-5zM13 6l5 5", key:"M12 4l8 8-8 8-8-8z" };
+  file:"M14 3H6v18h12V7zM14 3v4h4", mus:"M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z", txt:"M5 6h14M12 6v13M9 19h6", wand:"M15 4l5 5L9 20l-5-5zM13 6l5 5", key:"M12 4l8 8-8 8-8-8z", cut:"M6 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12",
+  snd:"M4 9h4l5-4v14l-5-4H4zM16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11", mute:"M4 9h4l5-4v14l-5-4H4zM16 9l5 6M21 9l-5 6" };
 function sv(n){ return '<svg viewBox="0 0 24 24"><path d="'+SV[n]+'"/></svg>'; }
 function tm(s){ s=Math.max(0,s||0); var m=Math.floor(s/60), r=s-m*60; return m+":"+r.toFixed(1).padStart(4,"0"); }
 function tms(s){ s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
@@ -72,18 +73,21 @@ var TRS={ none:"без перехода", fade:"растворение", black:"
   wipe:"шторка", wipedown:"шторка вниз", iris:"круг", clock:"часы", blinds:"жалюзи", split:"створки", glitch:"глитч" };
 var KBS={ none:"стоит", in:"приближение", out:"отдаление", left:"влево", right:"вправо", kf:"по точкам" };
 var TSTY={ title:"заголовок", sub:"субтитр", label:"плашка" }, TPOS={ top:"сверху", mid:"по центру", bot:"снизу" }, TANI={ fade:"проявление", pop:"выскок", up:"снизу вверх", type:"печатная машинка" };
-function newProject(fmt,style){ var S=STYLES[style||"smooth"]; return { v:2, id:newId(), title:TR("Новый ролик"), fmt:fmt||"9x16", style:style||"smooth", fit:"cover", filter:S.filter, adj:{}, tr:S.tr, trd:S.trd, anim:S.anim, clips:[], tracks:[], mfade:true, vvol:1, q:720, updated:Date.now() }; }
+function newProject(fmt,style){ var S=STYLES[style||"smooth"]; return { v:3, id:newId(), title:TR("Новый ролик"), fmt:fmt||"9x16", style:style||"smooth", fit:"cover", filter:S.filter, adj:{}, tr:"none", trd:S.trd, anim:S.anim, clips:[], tracks:[], mfade:true, vvol:1, q:720, updated:Date.now() }; }
 /* ролики первой версии: одна музыка превращается в дорожку, длину узнаем, когда файл откроется */
 function migrate(p){ p.clips=p.clips||[]; p.tracks=p.tracks||[]; p.adj=p.adj||{};
   if(p.music){ p.tracks.push({ id:newId("t"), aid:p.music.aid, name:p.music.name||"", at:0, in:p.music.start||0, len:0, dur:0, vol:p.music.vol==null?.8:p.music.vol, fi:0, fo:0 }); p.mfade=p.music.fade!==false; delete p.music; }
-  if(p.mfade==null) p.mfade=true; if(!LOOKS[p.filter]) p.filter="none"; if(!TRS[p.tr]) p.tr="fade"; p.v=2; return p; }
+  if(p.mfade==null) p.mfade=true; if(!LOOKS[p.filter]) p.filter="none";
+  /* раньше был один переход на все стыки: переносим его на каждый стык, чтобы старый ролик выглядел как прежде */
+  if((p.v||1)<3){ var g=TRS[p.tr]?p.tr:"fade"; p.clips.forEach(function(c,i){ if(i<p.clips.length-1&&!c.tr&&g!=="none") c.tr=g; }); }
+  p.tr="none"; p.v=3; return p; }
 
 /* ═══════════ проект и время ═══════════ */
 var P=null;
 function clen(c){ return c.type==="vid"?Math.max(.2,(c.out||0)-(c.in||0)):(c.dur||3); }
 /* начала клипов с учётом переходов: следующий клип начинается раньше на длину перехода */
-function TL(){ var s=[], d=[], t=0, cl=P?P.clips:[]; for(var i=0;i<cl.length;i++){ s.push(t); var tr=cl[i].tr||P.tr, dd=0;
-    if(i<cl.length-1&&tr!=="none") dd=Math.min(P.trd||.6,clen(cl[i])/2,clen(cl[i+1])/2); d.push(dd); t+=clen(cl[i])-dd; }
+function TL(){ var s=[], d=[], t=0, cl=P?P.clips:[]; for(var i=0;i<cl.length;i++){ s.push(t); var tr=cl[i].tr||"none", dd=0;
+    if(i<cl.length-1&&tr!=="none") dd=Math.min(cl[i].trd||P.trd||.6,clen(cl[i])/2,clen(cl[i+1])/2); d.push(dd); t+=clen(cl[i])-dd; }
   var total=cl.length?s[cl.length-1]+clen(cl[cl.length-1]):0; return { s:s, d:d, total:total }; }
 function clipAt(t){ var L=TL(), k=0; for(var i=0;i<P.clips.length;i++) if(t>=L.s[i]-1e-6) k=i; return k; }
 function musEnd(){ var e=0; (P.tracks||[]).forEach(function(k){ e=Math.max(e,k.at+(k.len||0)); }); return e; }
@@ -143,7 +147,7 @@ function draw(t){ var W=CV.width, H=CV.height; reset(CX); CX.fillStyle="#000"; C
   if(act.length===1) renderClip(CX,act[0],t-L.s[act[0]],act[0]===ed);
   else { var a=act[0], b=act[1], d=L.d[a]||.001, p=clamp((t-L.s[b])/d,0,1);
     if(OA.width!==W||OA.height!==H){ OA.width=OB.width=W; OA.height=OB.height=H; }
-    renderClip(XA,a,t-L.s[a],false); renderClip(XB,b,t-L.s[b],b===ed); reset(CX); trans(P.clips[a].tr||P.tr,p,t,W,H); reset(CX); }
+    renderClip(XA,a,t-L.s[a],false); renderClip(XB,b,t-L.s[b],b===ed); reset(CX); trans(P.clips[a].tr||"none",p,t,W,H); reset(CX); }
   tselUi(); }
 function renderClip(X,i,lt,ed){ var c=P.clips[i], W=X.canvas.width, H=X.canvas.height; reset(X); X.fillStyle="#000"; X.fillRect(0,0,W,H); if(!c) return;
   var id=c.look||P.filter; drawMedia(X,c,lt,id); grade(X,id,lt); reset(X); drawText(X,c,lt,ed); reset(X); }
@@ -199,8 +203,8 @@ function trans(tr,p,t,W,H){ var X=CX, e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2, tri=1
 function wrap(X,text,maxW){ var out=[]; String(text).split("\n").forEach(function(par){ var words=par.split(/\s+/), line="";
   words.forEach(function(w){ var tt=line?line+" "+w:w; if(X.measureText(tt).width>maxW&&line){ out.push(line); line=w; } else line=tt; }); out.push(line); }); return out; }
 function drawText(X,c,lt,ed){ var T=c.text; if(!T||!String(T.t||"").trim()) return; var W=X.canvas.width, H=X.canvas.height, M=Math.min(W,H), L=clen(c), st=T.style||"title", anim=T.anim||P.anim||"fade";
-  var inK=ed?1:clamp((lt-.15)/.55,0,1), outK=ed?1:clamp((L-lt)/.35,0,1), a=Math.min(inK,outK); if(a<=0) return;
-  var str=String(T.t); if(anim==="type"&&!ed){ var n=Math.floor(clamp((lt-.1)/Math.max(.6,str.length*.045),0,1)*str.length); str=str.slice(0,n); a=outK; if(!str) return; }
+  var inK=ed||T.noIn?1:clamp((lt-.15)/.55,0,1), outK=ed||T.noOut?1:clamp((L-lt)/.35,0,1), a=Math.min(inK,outK); if(a<=0) return;
+  var str=String(T.t); if(anim==="type"&&!ed&&!T.noIn){ var n=Math.floor(clamp((lt-.1)/Math.max(.6,str.length*.045),0,1)*str.length); str=str.slice(0,n); a=outK; if(!str) return; }
   var fs=(st==="title"?M*.085:st==="sub"?M*.05:M*.042)*(T.size||1);
   X.font=(st==="title"?"700 ":"800 ")+Math.round(fs)+"px "+(st==="title"?"Unbounded,Manrope,sans-serif":"Manrope,sans-serif");
   var txt=st==="label"?str.toUpperCase():str, lines=wrap(X,txt,W*.84), lh=fs*1.22, bh=lines.length*lh, mw=0; lines.forEach(function(ln){ mw=Math.max(mw,X.measureText(ln).width); });
@@ -221,7 +225,7 @@ function isLight(hex){ var n=parseInt(String(hex).slice(1),16); return ((n>>16)*
 /* ═══════════ надпись и кадр мышкой ═══════════ */
 var tsel=$("#tsel"), cvw=$("#cvw"), gx=$("#gx"), gy=$("#gy");
 function tselUi(){ if(!TB||PL.on){ tsel.hidden=true; return; } tsel.hidden=false; tsel.style.left=(TB.x*100)+"%"; tsel.style.top=(TB.y*100)+"%"; tsel.style.width=(TB.w*100)+"%"; tsel.style.height=(TB.h*100)+"%"; }
-function pick(i){ if(selC!==i||selM){ selC=i; selM=null; timeline(); refreshInsp(); } }
+function pick(i){ if(selC!==i||selM||selJ!=null){ selC=i; selM=null; selJ=null; timeline(); refreshInsp(); } }
 function grab(e,mv,up){ var x0=e.clientX, y0=e.clientY, moved=false;
   function m(ev){ if(!moved){ if(Math.hypot(ev.clientX-x0,ev.clientY-y0)<3) return; moved=true; remember(); } mv(ev.clientX-x0,ev.clientY-y0,ev); }
   function u(){ removeEventListener("pointermove",m); removeEventListener("pointerup",u); removeEventListener("pointercancel",u); up(moved); }
@@ -255,7 +259,7 @@ function loop(){ if(!PL.on) return; var L=TL(), t=AC.currentTime-PL.t0; if(t<0) 
   cur=t; sync(t,true); draw(t); timeUi(); PL.raf=requestAnimationFrame(loop); }
 /* видео и музыка идут сами, мы только запускаем их вовремя и подправляем, если ушли больше чем на 0.3 с */
 function sync(t,playing){ var L=TL(); P.clips.forEach(function(c,i){ if(c.type!=="vid") return; var m=media(c), v=m.el; if(!v) return; var s=L.s[i], e=s+clen(c), on=t>=s-.02&&t<e, target=(c.in||0)+(t-s);
-  if(m.g) m.g.gain.value=c.vol==null?1:c.vol;
+  if(m.g) m.g.gain.value=c.mute?0:(c.vol==null?1:c.vol);
   if(on&&playing){ if(v.paused){ try{ v.currentTime=Math.max(c.in||0,target); }catch(x){} v.play().catch(function(){}); } else if(Math.abs(v.currentTime-target)>.3){ try{ v.currentTime=target; }catch(x){} } }
   else if(on){ if(Math.abs(v.currentTime-target)>.04){ try{ v.currentTime=Math.max(0,target); }catch(x){} } }
   else { if(!v.paused) v.pause(); if(playing&&t<s&&s-t<1.2&&Math.abs(v.currentTime-(c.in||0))>.1){ try{ v.currentTime=c.in||0; }catch(x){} } } });
@@ -266,12 +270,14 @@ function sync(t,playing){ var L=TL(); P.clips.forEach(function(c,i){ if(c.type!=
 function seek(t){ var L=TL(); cur=clamp(t,0,L.total); if(PL.on){ stopPlay(); play(cur); } else { sync(cur,false); draw(cur); timeUi(); } }
 function playUi(){ $("#playBtn").classList.toggle("on",PL.on); }
 $("#playBtn").onclick=function(){ if(PL.on) stopPlay(); else play(cur); };
-function timeUi(){ var L=TL(); $("#tNow").textContent=tm(cur); $("#tAll").textContent="/ "+tm(L.total); var ph=$("#ph"); if(ph) ph.style.transform="translateX("+(cur*PPS)+"px)";
+function timeUi(){ var L=TL(); muteUi(); $("#tNow").textContent=tm(cur); $("#tAll").textContent="/ "+tm(L.total); var ph=$("#ph"); if(ph) ph.style.transform="translateX("+(cur*PPS)+"px)";
   if(PL.on){ var x=cur*PPS; if(x<tlEl.scrollLeft+10||x>tlEl.scrollLeft+tlEl.clientWidth-50) tlEl.scrollLeft=Math.max(0,x-50); } }
 
 /* ═══════════ лента: линейка, клипы, музыка ═══════════ */
 /* Лента в настоящем масштабе времени: PPS пикселей на секунду, поэтому песни видны по длине рядом с клипами. */
-var PPS=40, selC=0, selM=null, tlEl=$("#tl"), JUST=0;
+var PPS=40, selC=0, selM=null, selJ=null, tlEl=$("#tl"), JUST=0;
+/* стык: переход между клипом i и следующим настраивается отдельно */
+function selectJ(i){ selJ=i; selM=null; timeline(); if(wide.matches) refreshInsp(); else openInsp(); }
 function trackOf(id){ for(var i=0;i<P.tracks.length;i++) if(P.tracks[i].id===id) return P.tracks[i]; return null; }
 /* песни, которые пересекаются по времени, расходятся по строкам */
 function rowsOf(){ var tr=P.tracks.slice().sort(function(a,b){ return a.at-b.at; }), ends=[], row={}; tr.forEach(function(k){ var r=0; while(r<ends.length&&ends[r]>k.at+.01) r++; ends[r]=k.at+(k.len||0); row[k.id]=r; }); return { row:row, n:Math.max(1,ends.length) }; }
@@ -289,14 +295,17 @@ function timeline(){ var sl=tlEl.scrollLeft; tlEl.innerHTML=""; if(!P) return; v
   tin.appendChild(rl);
   /* клипы */
   var row=el('<div class="trow"></div>');
-  P.clips.forEach(function(c,i){ var s=L.s[i], e=i<P.clips.length-1?L.s[i+1]:s+clen(c), w=Math.max(8,(e-s)*PPS-2), on=i===selC&&!selM;
+  P.clips.forEach(function(c,i){ var s=L.s[i], e=i<P.clips.length-1?L.s[i+1]:s+clen(c), w=Math.max(8,(e-s)*PPS-2), on=i===selC&&!selM&&selJ==null;
     var t=el('<div class="tc'+(on?" on":"")+'" style="left:'+(s*PPS).toFixed(1)+'px;width:'+w.toFixed(1)+'px"><i class="tb"></i>'+(w>30?'<span class="ty">'+sv(c.type==="vid"?"vid":"img")+'</span>':'')+(w>64?'<small>'+clen(c).toFixed(1)+' '+esc(TR("с"))+'</small>':'')+(c.text&&c.text.t&&w>56?'<em>'+sv("txt")+'</em>':'')+'</div>');
+    if(c.type==="vid"&&w>44) t.appendChild(el('<button class="snd'+(c.mute?" off":"")+'" title="'+esc(TR(c.mute?"Включить звук этого видео":"Выключить звук этого видео"))+'">'+sv(c.mute?"mute":"snd")+'</button>',function(bt){ bt.onclick=function(ev){ ev.stopPropagation(); toggleMute(c); }; }));
+    if(i>0&&P.clips[i-1].aid===c.aid&&c.type==="vid"&&Math.abs((P.clips[i-1].out||0)-(c.in||0))<.02) t.classList.add("cont");
     thumb(c).then(function(u){ if(u) $(".tb",t).style.backgroundImage="url('"+u+"')"; });
     if(c.kb==="kf") (c.keys||[]).forEach(function(k){ if(k.t*PPS<w+2) t.appendChild(el('<i class="kd" style="left:'+(k.t*PPS).toFixed(1)+'px"></i>')); });
     t.onclick=function(ev){ if(Date.now()-JUST<350) return; var tt=(ev.clientX-tin.getBoundingClientRect().left)/PPS, lt=clamp(tt-s,0,clen(c)-.02);
       if(c.kb==="kf") (c.keys||[]).forEach(function(k){ if(Math.abs(k.t-lt)*PPS<7) lt=Math.min(k.t,clen(c)-.02); });
-      if(selC!==i||selM){ selC=i; selM=null; timeline(); refreshInsp(); } seek(s+lt); };
-    if(i<P.clips.length-1&&(c.tr||P.tr)!=="none") t.classList.add("trn");
+      if(selC!==i||selM||selJ!=null){ selC=i; selM=null; selJ=null; timeline(); refreshInsp(); } seek(s+lt); };
+    if(i<P.clips.length-1){ var tr0=c.tr&&c.tr!=="none"; row.appendChild(el('<button class="jn'+(tr0?" on":"")+(selJ===i?" sel":"")+'" style="left:'+((L.s[i+1]+(L.d[i]||0)/2)*PPS).toFixed(1)+'px" title="'+esc(tr0?TR("Переход: {0}",TR(TRS[c.tr])):TR("Поставить переход"))+'"><i></i></button>',function(jb){
+      jb.onclick=function(ev){ ev.stopPropagation(); selectJ(i); }; })); }
     if(on) t.appendChild(el('<i class="hd" title="'+esc(TR("Потяните, чтобы изменить длину"))+'"></i>',function(h){ h.onpointerdown=function(ev){ trimClip(ev,c); }; }));
     row.appendChild(t); });
   row.appendChild(el('<button class="tc add" style="left:'+(L.total*PPS+(P.clips.length?6:0)).toFixed(1)+'px" title="'+esc(TR("Добавить фото или видео"))+'">'+sv("add")+'</button>',function(b){ b.onclick=pickMedia; }));
@@ -309,10 +318,11 @@ function timeline(){ var sl=tlEl.scrollLeft; tlEl.innerHTML=""; if(!P) return; v
     b.onclick=function(){ if(Date.now()-JUST<350) return; if(selM!==k.id) selectM(k.id); };
     mz.appendChild(b); });
   if(!P.tracks.length) mz.appendChild(el('<button class="tm">'+sv("mus")+'<span>'+esc(TR("Добавить музыку"))+'</span></button>',function(b){ b.onclick=pickMusic; }));
+  else mz.appendChild(el('<button class="tm tmp" style="left:'+(mEnd*PPS+6).toFixed(1)+'px" title="'+esc(TR("Добавить музыку"))+'">'+sv("mus")+'+</button>',function(b){ b.onclick=pickMusic; }));
   if(L.total>0&&mEnd>L.total+.05) mz.appendChild(el('<i class="mdim" style="left:'+(L.total*PPS).toFixed(1)+'px"></i>'));
   tin.appendChild(mz); tin.appendChild(el('<i class="ph" id="ph"></i>')); tlEl.appendChild(tin); tlEl.scrollLeft=sl;
   $("#empty").hidden=!!P.clips.length; timeUi(); }
-function selectM(id){ selM=id; timeline(); if(wide.matches) refreshInsp(); else { openInsp(); right.classList.add("peek"); } }
+function selectM(id){ selM=id; selJ=null; timeline(); if(wide.matches) refreshInsp(); else { openInsp(); right.classList.add("peek"); } }
 /* правый край выбранного клипа: фото меняет длину, видео конец куска */
 function trimClip(e,c){ e.stopPropagation(); e.preventDefault(); var d0=c.type==="vid"?c.out:(c.dur||3);
   grab(e,function(dx){ var v=Math.round((d0+dx/PPS)*10)/10; if(c.type==="vid") c.out=clamp(v,(c.in||0)+.3,c.len||d0); else c.dur=clamp(v,.5,60); fixKeys(c); timeline(); redraw(); },function(moved){ if(moved){ JUST=Date.now(); changed(true); } }); }
@@ -383,7 +393,44 @@ function addMusic(files){ files=files.filter(function(f){ return /^audio\//.test
       if(r.pk){ PK[aid]=r.pk; bPut(aid+":pk",r.pk).catch(function(){}); } if(!n) remember(); var L=TL(), end=musEnd(), at=!P.tracks.length?0:end<L.total-.5?end:(cur>.05&&cur<L.total-.5?cur:end);
       var k={ id:newId("t"), aid:aid, name:f.name.replace(/\.[^.]+$/,"").slice(0,60), at:Math.round(at*100)/100, in:0, len:r.dur, dur:r.dur, vol:.8, fi:0, fo:0 }; P.tracks.push(k); selM=k.id; n++; }); }); });
   chain.then(function(){ if(!n) return; changed(true); toast(TR("Добавлено: {0}",n)); if(wide.matches&&ui.tab!=="mus") openTab("mus"); }); }
-$("#addMus").onclick=pickMusic;
+/* ═══════════ разрезать клип и звук видео ═══════════
+   Файл не режется: у видео меняются только метки «начало» и «конец» в исходнике (in и out), у фото длина.
+   Разрез по курсору делает из одного клипа два, дальше любой кусок можно удалить, переставить или обрезать. */
+function cutInfo(){ if(!P||!P.clips.length) return null; var L=TL(), i=clipAt(cur), c=P.clips[i], lt=cur-L.s[i];
+  /* курсор на нахлёсте перехода: режем следующий клип, он уже идёт */
+  if(i>0&&lt<(L.d[i-1]||0)) return { i:i, c:c, lt:lt, bad:true };
+  return { i:i, c:c, lt:lt, bad:lt<.1||lt>clen(c)-.1 }; }
+function motionKeysAt(c,a,b){ var out=[{ t:0, z:0, x:0, y:0 }], m0=motion(c,a); out[0]={ t:0, z:m0.z, x:m0.x||0, y:m0.y||0 };
+  (c.keys||[]).forEach(function(k){ if(k.t>a+.01&&k.t<b-.01) out.push({ t:Math.round((k.t-a)*100)/100, z:k.z, x:k.x||0, y:k.y||0 }); });
+  var m1=motion(c,b); out.push({ t:Math.round((b-a)*100)/100, z:m1.z, x:m1.x||0, y:m1.y||0 }); return out; }
+function splitClip(){ var ci=cutInfo(); if(!ci){ toast(TR("Сначала добавьте фото или видео")); return; } if(PL.on) stopPlay();
+  if(ci.bad){ toast(TR("Поставьте курсор внутрь клипа, не у самого края")); return; }
+  remember(); var c=ci.c, lt=Math.round(ci.lt*100)/100, L0=clen(c), a=JSON.parse(JSON.stringify(c)), b=JSON.parse(JSON.stringify(c)); b.id=newId("c");
+  if(c.type==="vid"){ a.out=Math.round(((c.in||0)+lt)*100)/100; b.in=a.out; } else { a.dur=lt; b.dur=Math.round((L0-lt)*100)/100; }
+  /* движение кадра продолжается во втором куске с того же места */
+  if(c.kb==="in"||c.kb==="out"||c.kb==="kf"){ a.kb=b.kb="kf"; a.keys=motionKeysAt(c,0,lt); b.keys=motionKeysAt(c,lt,L0); delete a.mvk; delete b.mvk; }
+  /* между кусками нет перехода, надпись тянется через разрез без повторного появления */
+  a.tr="none"; if(a.text&&a.text.t){ a.text.noOut=true; b.text.noIn=true; }
+  P.clips.splice(ci.i,1,a,b); selC=ci.i+1; selM=null; changed(true); toast(TR("Разрезано на {0}. Лишний кусок выберите и удалите",tm(cur)));
+}
+/* убрать часть клипа до курсора или после: тот же разрез, только ненужный кусок сразу пропадает */
+function trimAt(side){ var ci=cutInfo(); if(!ci) return; if(ci.bad){ toast(TR("Поставьте курсор внутрь клипа, не у самого края")); return; } if(PL.on) stopPlay();
+  remember(); var c=ci.c, lt=Math.round(ci.lt*100)/100, L0=clen(c), start=TL().s[ci.i];
+  if(c.kb==="in"||c.kb==="out"||c.kb==="kf"){ c.keys=side==="l"?motionKeysAt(c,lt,L0):motionKeysAt(c,0,lt); c.kb="kf"; delete c.mvk; }
+  if(c.type==="vid"){ if(side==="l") c.in=Math.round(((c.in||0)+lt)*100)/100; else c.out=Math.round(((c.in||0)+lt)*100)/100; } else c.dur=side==="l"?Math.round((L0-lt)*100)/100:lt;
+  if(c.text){ if(side==="l") delete c.text.noIn; else delete c.text.noOut; }
+  changed(true); seek(side==="l"?start:start+clen(c)-.05); toast(TR(side==="l"?"Начало клипа убрано":"Конец клипа убран")); }
+function delClip(i){ if(i<0||i>=P.clips.length) return; remember(); var c=P.clips[i], pv=P.clips[i-1], nx=P.clips[i+1];
+  /* соседи бывшего разреза: надпись у них снова появляется и исчезает как обычно */
+  if(pv&&pv.text) delete pv.text.noOut; if(nx&&nx.text) delete nx.text.noIn;
+  P.clips.splice(i,1); selC=Math.max(0,Math.min(i,P.clips.length-1)); changed(true); }
+function toggleMute(c){ remember(); c.mute=!c.mute; save(); timeline(); refreshInsp(); muteUi(); toast(TR(c.mute?"Звук этого видео выключен":"Звук этого видео включён")); }
+/* кнопка звука прямо на видео: видна, когда под курсором видео */
+var muteK="";
+function muteUi(){ var b=$("#vmute"), c=P&&P.clips.length?P.clips[clipAt(cur)]:null, k=c&&c.type==="vid"?c.id+(c.mute?"1":"0"):""; if(k===muteK) return; muteK=k; if(!k){ b.hidden=true; return; } b.hidden=false; b.classList.toggle("off",!!c.mute); b.innerHTML=sv(c.mute?"mute":"snd"); b.title=TR(c.mute?"Включить звук этого видео":"Выключить звук этого видео"); }
+$("#vmute").onclick=function(e){ e.stopPropagation(); var c=P.clips[clipAt(cur)]; if(c&&c.type==="vid") toggleMute(c); };
+$("#vmute").addEventListener("pointerdown",function(e){ e.stopPropagation(); });
+$("#cutBtn").onclick=splitClip;
 var dropN=0;
 addEventListener("dragenter",function(e){ if($("#ed").hidden) return; if(e.dataTransfer&&[].indexOf.call(e.dataTransfer.types||[],"Files")>=0){ dropN++; $("#drop").classList.add("on"); } });
 addEventListener("dragleave",function(){ if(--dropN<=0){ dropN=0; $("#drop").classList.remove("on"); } });
@@ -397,7 +444,7 @@ function demo(){ if(!F){ toast(TR("Нет мастерской фонов")); re
       cv.toBlob(function(bl){ var aid=newId("i"); bPut(aid,bl).then(function(){ P.clips.push({ id:newId("c"), type:"img", aid:aid, name:"demo"+i, dur:(STYLES[P.style]||STYLES.smooth).dur, kb:kbFor(i), w:dm[0], h:dm[1],
         text:{ t:TR(txt[i]), style:i===0?"title":i===3?"title":"label", pos:i===0?"mid":i===3?"mid":"bot", anim:P.anim, color:"#ffffff" } }); res(); }); },"image/jpeg",.9); };
     im.onerror=function(){ res(); }; im.src=u; }); }); });
-  chain.then(function(){ selC=0; selM=null; fitPps(); changed(true); seek(0); }); }
+  chain.then(function(){ var n0=P.clips.length-4; if(n0>0&&!P.clips[n0-1].tr) P.clips[n0-1].tr="fade"; if(P.clips[n0]) P.clips[n0].tr="fade"; if(P.clips[n0+2]) P.clips[n0+2].tr="black"; selC=0; selM=null; selJ=null; fitPps(); changed(true); seek(0); }); }
 
 /* ═══════════ сборка видео ═══════════ */
 function mimes(){ var L=[["mp4",'video/mp4;codecs="avc1.42E01E,mp4a.40.2"'],["mp4","video/mp4;codecs=avc1,mp4a.40.2"],["mp4","video/mp4;codecs=avc1"],["webm","video/webm;codecs=vp9,opus"],["webm","video/webm;codecs=vp8,opus"],["webm","video/webm"]];
@@ -448,7 +495,7 @@ function openTab(t){ if(t==="clip"){ openInsp(); return; }
   ui.tab=t; $$("#tabs button").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")===t); });
   if(!wide.matches){ ui.sheet="tab"; right.classList.add("open"); right.classList.remove("full","peek"); $("#shTitle").textContent=TR(TTL[t]); }
   refreshPane(); tabBox().scrollTop=0; }
-function openInsp(){ if(!wide.matches){ ui.sheet="insp"; right.classList.add("open"); right.classList.remove("full","peek"); $$("#tabs button").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")==="clip"&&!selM); }); ui.tab=null; }
+function openInsp(){ if(!wide.matches){ ui.sheet="insp"; right.classList.add("open"); right.classList.remove("full","peek"); $$("#tabs button").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")==="clip"&&!selM&&selJ==null); }); ui.tab=null; }
   refreshInsp(); insp.scrollTop=0; }
 function closeSheet(){ if(wide.matches) return; ui.sheet=false; ui.tab=null; right.classList.remove("open","full","peek"); $$("#tabs button").forEach(function(b){ b.classList.remove("on"); }); }
 $("#shClose").onclick=closeSheet;
@@ -465,26 +512,45 @@ function refresh(){ refreshPane(); refreshInsp(); }
 function refreshPane(){ if(!ui.tab||!P) return; if(!wide.matches&&ui.sheet!=="tab") return; var box=tabBox(), sc=box.scrollTop; box.innerHTML="";
   ({ vid:paneVid, col:paneCol, mus:paneMus, more:paneMore })[ui.tab](box); box.scrollTop=sc; }
 function trChoice(label,cur,fn){ return choice(label,Object.keys(TRS).map(function(k){ return [k,TR(TRS[k])]; }),cur,fn); }
+function trSelect(label,cur,fn,inherit){ return pick1(label,(inherit?[["",TR("как у всех: {0}",TR(TRS[P.tr]))]]:[]).concat(Object.keys(TRS).map(function(k){ return [k,TR(TRS[k])]; })),cur,fn); }
 function paneVid(box){
   box.appendChild(sh("Стиль"));
-  box.appendChild(el('<div class="mst"></div>',function(g){ Object.keys(STYLES).forEach(function(k){ var S=STYLES[k]; g.appendChild(el('<button class="'+(P.style===k?"on":"")+'"><b>'+esc(TR(S.n))+'</b><small>'+esc(TR(TRS[S.tr]))+', '+esc(TR(LOOKS[S.filter][0]))+'</small></button>',function(b){ b.onclick=function(){ applyStyle(k); }; })); }); }));
-  box.appendChild(note(TR("Стиль сразу ставит переходы, фильтр, движение фото и появление текста у всех клипов.")));
+  box.appendChild(el('<div class="mst"></div>',function(g){ Object.keys(STYLES).forEach(function(k){ var S=STYLES[k]; g.appendChild(el('<button class="'+(P.style===k?"on":"")+'"><b>'+esc(TR(S.n))+'</b><small>'+esc(TR(LOOKS[S.filter][0]))+', '+esc(TR(TANI[S.anim]))+'</small></button>',function(b){ b.onclick=function(){ applyStyle(k); }; })); }); }));
+  box.appendChild(note(TR("Стиль сразу ставит фильтр, движение фото и появление текста у всех клипов. Переходы он не трогает: они ставятся на каждый стык отдельно.")));
   box.appendChild(sh("Формат"));
   box.appendChild(choice("",Object.keys(FMT).map(function(k){ return [k,TR(FMT[k].n)]; }),P.fmt,function(v){ remember(); P.fmt=v; setCanvas(); changed(); }));
   box.appendChild(choice(TR("Если кадр не той формы"),[["cover",TR("заполнить и обрезать")],["blur",TR("целиком на размытом фоне")]],P.fit,function(v){ remember(); P.fit=v; changed(); }));
   box.appendChild(sh("Переходы"));
-  box.appendChild(trChoice(TR("Для всех клипов"),P.tr,function(v){ remember(); P.tr=v; P.clips.forEach(function(c){ delete c.tr; }); changed(true); previewCut(); }));
-  box.appendChild(range(TR("Длина перехода"),P.trd,.2,1.5,.1,sec,function(v){ P.trd=v; timeline(); redraw(); }));
-  box.appendChild(sh("Клипы"));
-  box.appendChild(el('<div class="row"><button class="btn">'+sv("add")+'<span>'+esc(TR("Фото и видео"))+'</span></button></div>',function(r){ $("button",r).onclick=pickMedia; }));
+  var n=trCount();
+  box.appendChild(note(n.all?TR("Переходов в ролике: {0} из {1} стыков.",n.all,Math.max(0,P.clips.length-1))+(n.kinds>2?" "+TR("Разных уже {0}: ролик смотрится цельнее, когда их один-два.",n.kinds):""):TR("Сейчас между клипами простые склейки, без переходов.")));
+  box.appendChild(note(TR("Переход ставится на конкретный стык: нажмите на ромбик между клипами в ленте. Где-то он нужен, а где-то лучше простая склейка.")));
+  if(P.clips.length>1){ var allTr=(STYLES[P.style]||STYLES.smooth).tr; if(allTr==="none") allTr="fade";
+    box.appendChild(el('<div class="f"><label>'+esc(TR("Один переход на все стыки"))+'</label><div class="trall"><select></select><button class="btn">'+esc(TR("Поставить"))+'</button></div></div>',function(f){ var se=$("select",f);
+      se.innerHTML=Object.keys(TRS).filter(function(k){ return k!=="none"; }).map(function(k){ return '<option value="'+k+'"'+(k===allTr?" selected":"")+'>'+esc(TR(TRS[k]))+'</option>'; }).join("");
+      $("button",f).onclick=function(){ remember(); P.clips.forEach(function(c,i){ if(i<P.clips.length-1) c.tr=se.value; }); changed(true); toast(TR("Переход «{0}» стоит на всех стыках",TR(TRS[se.value]))); previewCut(); }; }));
+    if(n.all) box.appendChild(el('<button class="btn w">'+esc(TR("Убрать все переходы"))+'</button>',function(b){ b.onclick=function(){ remember(); P.clips.forEach(function(c){ delete c.tr; delete c.trd; }); changed(true); toast(TR("Все переходы убраны")); }; })); }
+  box.appendChild(range(TR("Длина перехода по умолчанию"),P.trd,.2,1.5,.1,sec,function(v){ P.trd=v; timeline(); redraw(); }));
+  if(P.clips.some(function(c){ return c.type==="img"; })) box.appendChild(sh("Клипы"));
   if(P.clips.some(function(c){ return c.type==="img"; })) box.appendChild(range(TR("Длина каждого фото"),avgPhoto(),1,10,.5,sec,function(v){ P.clips.forEach(function(c){ if(c.type==="img"){ c.dur=v; fixKeys(c); } }); timeline(); redraw(); }));
 }
+function trCount(){ var all=0, kinds={}; P.clips.forEach(function(c,i){ if(i<P.clips.length-1&&c.tr&&c.tr!=="none"){ all++; kinds[c.tr]=1; } }); return { all:all, kinds:Object.keys(kinds).length }; }
+/* настройки стыка: какой переход, сколько длится, посмотреть */
+function inspJn(i){ var c=P.clips[i], pv=i>0?P.clips[i-1]:null, cur0=c.tr||"none";
+  $("#shTitle").textContent=TR("Стык клипов {0} и {1}",i+1,i+2);
+  insp.appendChild(el('<div class="jhead"><button class="btn" data-a="p">'+sv("l")+'</button><span>'+esc(TR("Стык {0} из {1}",i+1,P.clips.length-1))+'</span><button class="btn" data-a="n">'+sv("r")+'</button></div>',function(r){
+    var b=$$("button",r); b[0].disabled=i<=0; b[1].disabled=i>=P.clips.length-2; b[0].onclick=function(){ selectJ(i-1); }; b[1].onclick=function(){ selectJ(i+1); }; }));
+  insp.appendChild(trChoice(TR("Переход"),cur0,function(v){ remember(); if(v==="none"){ delete c.tr; delete c.trd; } else c.tr=v; changed(true); if(v!=="none") previewCut(i); }));
+  if(cur0!=="none"){ insp.appendChild(range(TR("Длина этого перехода"),c.trd||P.trd||.6,.2,1.5,.1,sec,function(v){ c.trd=v; timeline(); redraw(); }));
+    insp.appendChild(el('<div class="row" style="margin-bottom:10px"><button class="btn go">'+esc(TR("Посмотреть стык"))+'</button></div>',function(r){ $("button",r).onclick=function(){ previewCut(i); }; })); }
+  if(pv&&pv.tr&&pv.tr!=="none"&&pv.tr!==cur0) insp.appendChild(el('<button class="btn w">'+esc(TR("Как на прошлом стыке: {0}",TR(TRS[pv.tr])))+'</button>',function(b){ b.onclick=function(){ remember(); c.tr=pv.tr; if(pv.trd) c.trd=pv.trd; changed(true); previewCut(i); }; }));
+  var n=trCount();
+  insp.appendChild(note(TR("Переход хорошо ставить там, где меняется место, время или настроение. Между похожими кусками одной сцены простая склейка смотрится чище.")+(n.kinds>2?" "+TR("Разных переходов в ролике уже {0}: ролик смотрится цельнее, когда их один-два.",n.kinds):""))); }
 /* после выбора перехода сразу проигрываем ближайший стык, чтобы было видно, что выбрано */
 function previewCut(i){ if(P.clips.length<2) return; var L=TL(); if(i==null) i=Math.min(clipAt(cur),P.clips.length-2); if(i<0||i>P.clips.length-2) return; var t0=Math.max(0,L.s[i+1]-.7), t1=L.s[i+1]+(L.d[i]||0)+.6; stopPlay(); play(t0);
   (function w(){ if(!PL.on) return; if(cur>=t1){ stopPlay(); return; } setTimeout(w,60); })(); }
 function avgPhoto(){ var ph=P.clips.filter(function(c){ return c.type==="img"; }); return ph.length?Math.round(ph.reduce(function(a,c){ return a+(c.dur||3); },0)/ph.length*2)/2:3; }
-function applyStyle(k){ var S=STYLES[k]; remember(); P.style=k; P.tr=S.tr; P.trd=S.trd; P.filter=S.filter; P.anim=S.anim;
-  P.clips.forEach(function(c,i){ delete c.tr; delete c.look; if(c.type==="img"&&c.kb!=="kf") c.kb=kbFor(i); if(c.text) delete c.text.anim; }); changed(true); toast(TR("Стиль: {0}",TR(S.n))); }
+function applyStyle(k){ var S=STYLES[k]; remember(); P.style=k; P.trd=S.trd; P.filter=S.filter; P.anim=S.anim;
+  P.clips.forEach(function(c,i){ delete c.look; if(c.type==="img"&&c.kb!=="kf") c.kb=kbFor(i); if(c.text) delete c.text.anim; }); changed(true); toast(TR("Стиль: {0}",TR(S.n))); }
 /* цвет: готовые виды с живой миниатюрой текущего кадра и ручная подстройка */
 function frameSrc(){ if(!P.clips.length) return null; var m=media(P.clips[clipAt(cur)]); return m.ok?m.el:null; }
 function lookThumb(cv,id,src){ var X=cv.getContext("2d"), W=cv.width, H=cv.height; reset(X);
@@ -503,7 +569,6 @@ function paneCol(box){ var A=P.adj=P.adj||{};
   box.appendChild(note(TR("Отдельному клипу можно дать свой цвет: выберите клип и откройте его настройки.")));
 }
 function paneMus(box){
-  box.appendChild(sh("Музыка"));
   var L=TL();
   P.tracks.slice().sort(function(a,b){ return a.at-b.at; }).forEach(function(k){ box.appendChild(el('<button class="mrow2'+(selM===k.id?" on":"")+'"><span class="ic">'+sv("mus")+'</span><b data-nt></b><small>'+tms(k.at)+' · '+tms(k.len||0)+'</small></button>',function(r){ $("b",r).textContent=k.name; r.onclick=function(){ selectM(k.id); refreshPane(); }; })); });
   box.appendChild(el('<button class="btn w">'+sv("file")+'<span>'+esc(TR("Добавить песни"))+'</span><small>MP3, WAV</small></button>',function(b){ b.onclick=pickMusic; }));
@@ -514,11 +579,10 @@ function paneMus(box){
   if(P.clips.some(function(c){ return c.type==="vid"; })){ box.appendChild(sh("Звук из видео")); box.appendChild(range(TR("Громкость звука из видео"),Math.round((P.vvol==null?1:P.vvol)*100),0,100,1,pct,function(v){ P.vvol=v/100; if(MASTER) MASTER.gain.value=P.vvol; })); }
 }
 function paneMore(box){
-  box.appendChild(el('<div class="f"><label>'+esc(TR("Название"))+'</label><input type="text" maxlength="80"></div>',function(n){ var i=$("input",n); i.value=P.title||""; i.oninput=function(){ P.title=i.value; $("#title").value=i.value; save(); }; }));
   box.appendChild(el('<button class="btn w">'+sv("wand")+'<span>'+esc(TR("Пример из фонов"))+'</span><small>'+esc(TR("4 кадра с подписями"))+'</small></button>',function(n){ n.onclick=demo; }));
   box.appendChild(el('<button class="btn w">'+esc(TR("Сделать копию"))+'</button>',function(n){ n.onclick=function(){ var c=JSON.parse(JSON.stringify(P)); c.id=newId(); c.title=TR("{0} (копия)",P.title||""); c.updated=Date.now(); pPut(c).then(function(){ openP(c); toast(TR("Открыта копия")); }); }; }));
   box.appendChild(el('<button class="btn w del">'+esc(TR("Удалить ролик"))+'</button>',function(n){ n.onclick=function(){ ask(TR("Удалить «{0}»? Вернуть не получится.",P.title||""),TR("Удалить")).then(function(y){ if(y){ var p=P; stopPlay(); pDel(p).then(function(){ P=null; showHome(); }); } }); }; }));
-  box.appendChild(el('<p class="note" style="margin-top:8px">'+esc(TR("Ролик и исходные файлы хранятся в этом браузере. Пробел: играть и стоп. Стрелки: шаг по времени. Ctrl+Z: отменить. Ctrl и колесо над лентой: масштаб."))+'</p>'));
+  box.appendChild(el('<p class="note" style="margin-top:8px">'+esc(TR("Ролик и исходные файлы хранятся в этом браузере. Пробел: играть и стоп. Стрелки: шаг по времени. S: разрезать клип по курсору. M: звук видео. Delete: удалить клип. Ctrl+Z: отменить. Ctrl и колесо над лентой: масштаб."))+'</p>'));
 }
 /* настройки выбранной песни */
 function inspMus(k){ var L=TL();
@@ -558,6 +622,7 @@ function motionUi(c){
 /* настройки выбранного клипа */
 function refreshInsp(){
   if(!P) return; if(!wide.matches&&ui.sheet!=="insp") return; var sc0=insp.scrollTop; insp.innerHTML=""; var k=selM&&trackOf(selM); if(k){ inspMus(k); insp.scrollTop=sc0; return; }
+  if(selJ!=null&&selJ<P.clips.length-1){ inspJn(selJ); insp.scrollTop=sc0; return; } selJ=null;
   var c=P.clips[selC];
   $("#shTitle").textContent=c?TR("Клип {0}",selC+1):TR("Клип");
   if(!c){ insp.appendChild(el('<p class="note">'+esc(TR("Добавьте фото и видео: кнопка «+» в ленте внизу или перетащите файлы в окно."))+'</p>')); return; }
@@ -565,14 +630,19 @@ function refreshInsp(){
     [["l","Раньше",function(){ if(selC>0){ remember(); var t=P.clips[selC]; P.clips[selC]=P.clips[selC-1]; P.clips[selC-1]=t; selC--; changed(true); } }],
      ["r","Позже",function(){ if(selC<P.clips.length-1){ remember(); var t=P.clips[selC]; P.clips[selC]=P.clips[selC+1]; P.clips[selC+1]=t; selC++; changed(true); } }],
      ["dup","Копия клипа",function(){ remember(); var q=JSON.parse(JSON.stringify(c)); q.id=newId("c"); P.clips.splice(selC+1,0,q); selC++; changed(true); }],
-     ["x","Удалить клип",function(){ remember(); P.clips.splice(selC,1); selC=Math.max(0,Math.min(selC,P.clips.length-1)); changed(true); }]].forEach(function(o){
+     ["x","Удалить клип",function(){ delClip(selC); }]].forEach(function(o){
       r.appendChild(el('<button class="btn" title="'+esc(TR(o[1]))+'">'+sv(o[0])+'</button>',function(b){ b.onclick=o[2]; })); }); }));
   if(c.type==="img") insp.appendChild(range(TR("Длительность"),c.dur||3,.5,15,.5,sec,function(v){ c.dur=v; fixKeys(c); timeline(); redraw(); },function(){ refreshInsp(); }));
   else { var len=c.len||c.out||10;
     insp.appendChild(range(TR("Начало"),Math.round((c.in||0)*10)/10,0,Math.max(.1,Math.floor(len*10)/10),.1,tm,function(v){ c.in=Math.min(v,(c.out||len)-.3); fixKeys(c); timeline(); seek(TL().s[selC]); }));
     insp.appendChild(range(TR("Конец"),Math.round((c.out||len)*10)/10,.3,Math.floor(len*10)/10,.1,tm,function(v){ c.out=Math.max(v,(c.in||0)+.3); fixKeys(c); timeline(); seek(TL().s[selC]+Math.max(0,clen(c)-1)); }));
     insp.appendChild(el('<p class="note" style="margin:-4px 0 10px">'+esc(TR("Кусок: {0}",sec(clen(c))))+'</p>'));
-    insp.appendChild(range(TR("Звук этого видео"),Math.round((c.vol==null?1:c.vol)*100),0,100,1,pct,function(v){ c.vol=v/100; })); }
+    insp.appendChild(toggle(TR("Звук этого видео"),!c.mute,function(v){ if(!!c.mute===!v) return; toggleMute(c); }));
+    if(!c.mute) insp.appendChild(range(TR("Громкость"),Math.round((c.vol==null?1:c.vol)*100),0,100,1,pct,function(v){ c.vol=v/100; })); }
+  insp.appendChild(sh("Разрезать"));
+  insp.appendChild(el('<div class="row cutr"><button class="btn" data-a="s">'+sv("cut")+'<span>'+esc(TR("По курсору"))+'</span></button><button class="btn" data-a="l">'+esc(TR("Убрать до курсора"))+'</button><button class="btn" data-a="r">'+esc(TR("Убрать после"))+'</button></div>',function(r){
+    $$("button",r).forEach(function(b){ b.onclick=function(){ var a=b.getAttribute("data-a"); if(a==="s") splitClip(); else trimAt(a); }; }); }));
+  insp.appendChild(note(TR("Разрез проходит по курсору, это белая линия в ленте. Ножницы под плеером и клавиша S тоже режут. Файл не меняется: у куска просто сдвигаются начало и конец.")));
   insp.appendChild(sh("Текст на клипе"));
   c.text=c.text||{ t:"", style:"title", pos:"bot", color:"#ffffff" }; var T=c.text;
   insp.appendChild(el('<div class="f"><textarea rows="2" maxlength="140" placeholder="'+esc(TR("Надпись поверх кадра"))+'"></textarea></div>',function(f){ var i=$("textarea",f), first=true; i.value=T.t||"";
@@ -585,7 +655,7 @@ function refreshInsp(){
   insp.appendChild(el('<div class="sws"></div>',function(w){ ["#ffffff","#ffd166","#4fd6c8","#ff5fa2","#ff9a4d","#111111"].forEach(function(col){ w.appendChild(el('<button class="'+((T.color||"#ffffff")===col?"on":"")+'" style="background:'+col+'"></button>',function(b){ b.onclick=function(){ remember(); T.color=col; changed(); refreshInsp(); }; })); }); }));
   insp.appendChild(sh("Кадр"));
   motionUi(c);
-  if(selC<P.clips.length-1) insp.appendChild(trChoice(TR("Переход к следующему"),c.tr||P.tr,function(v){ remember(); c.tr=v; changed(); previewCut(selC); }));
+  if(selC<P.clips.length-1) insp.appendChild(trSelect(TR("Переход к следующему"),c.tr||"none",function(v){ remember(); if(v==="none"){ delete c.tr; delete c.trd; } else c.tr=v; changed(); if(v!=="none") previewCut(selC); }));
   insp.appendChild(pick1(TR("Цвет этого клипа"),[["",TR("как у всего ролика")]].concat(Object.keys(LOOKS).map(function(id){ return [id,TR(LOOKS[id][0])]; })),c.look||"",function(v){ remember(); if(v) c.look=v; else delete c.look; changed(); }));
   insp.scrollTop=sc0;
 }
@@ -601,7 +671,11 @@ addEventListener("keydown",function(e){ if($("#ed").hidden||$("#modal").classLis
   if((e.ctrlKey||e.metaKey)&&k==="z"){ e.preventDefault(); $(e.shiftKey?"#redo":"#undo").click(); } else if((e.ctrlKey||e.metaKey)&&k==="y"){ e.preventDefault(); $("#redo").click(); }
   else if(k===" "){ e.preventDefault(); $("#playBtn").click(); }
   else if(k==="arrowleft"||k==="arrowright"){ e.preventDefault(); if(PL.on) stopPlay(); seek(Math.round((cur+(k==="arrowleft"?-1:1)*(e.shiftKey?1:.1))*20)/20); if(P.clips.length){ var i=clipAt(cur); if(!selM&&i!==selC){ selC=i; timeline(); } refreshInsp(); } }
-  else if((k==="delete"||k==="backspace")&&selM&&trackOf(selM)){ e.preventDefault(); remember(); P.tracks=P.tracks.filter(function(o){ return o.id!==selM; }); selM=null; changed(true); } });
+  else if((k==="delete"||k==="backspace")&&selM&&trackOf(selM)){ e.preventDefault(); remember(); P.tracks=P.tracks.filter(function(o){ return o.id!==selM; }); selM=null; changed(true); }
+  else if((k==="delete"||k==="backspace")&&selJ!=null&&P.clips[selJ]){ e.preventDefault(); remember(); delete P.clips[selJ].tr; delete P.clips[selJ].trd; changed(true); }
+  else if((k==="delete"||k==="backspace")&&!selM&&P.clips[selC]){ e.preventDefault(); delClip(selC); }
+  else if(k==="s"&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); splitClip(); }
+  else if(k==="m"&&!e.ctrlKey&&!e.metaKey){ var mc=P.clips[clipAt(cur)]; if(mc&&mc.type==="vid") toggleMute(mc); } });
 $("#title").addEventListener("input",function(){ if(P){ P.title=this.value; save(); } });
 $("#emptyAdd").onclick=pickMedia; $("#emptyDemo").onclick=function(){ demo(); };
 

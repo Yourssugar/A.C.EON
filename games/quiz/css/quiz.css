@@ -342,8 +342,7 @@ html.nogl .gfall{display:flex}
 
 /* ── карточки: общие детали ── */
 .card.alt .frm{filter:saturate(1.35) brightness(1.12)}
-.card .art-ico{background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--gc) 35%,#0b1230),#060a1f 75%)}
-.card .art-ico i{position:absolute;inset:16% 12%;background-repeat:no-repeat;background-size:800% 100%;filter:drop-shadow(0 0 12px var(--gc))}
+.card .art-none{background:#000}
 .card.back .cb{position:absolute;inset:0;border-radius:6%;background:url(../img/card-back.webp) center/cover;box-shadow:0 0 0 1px rgba(120,200,255,.25)}
 
 /* ── экран игры ── */

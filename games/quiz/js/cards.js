@@ -1,6 +1,6 @@
 /* KOTAE!: карточки коллекции.
    Картинка уровня img/cards/<жанр-подтема>-lNN.webp (если GPT её нарисовал, см. QCat.art),
-   иначе значок подтемы. Рамка: 1-2 бронза, 3-4 серебро, 5-6 золото, 7-8 платина, 9-10 легенда;
+   иначе пустой чёрный фон. Рамка: 1-2 бронза, 3-4 серебро, 5-6 золото, 7-8 платина, 9-10 легенда;
    чётный уровень пары светлее (класс alt). Номер и название кладёт код.
    QCard.html(key, level, {stars, title, back, w}) */
 (function(){
@@ -12,8 +12,7 @@ function pad(n){return (n<10?'0':'')+n;}
 
 function art(key,level){
   if(QCat.art(key,level))return '<div class="art" style="background-image:url('+img('cards/'+key+'-l'+pad(level))+')"></div>';
-  var p=key.split('-'),g=QCat.genre(p[0]),i=g?g.subs.indexOf(p[1]):0;
-  return '<div class="art art-ico" style="--gc:'+(g?g.col:'#2ef2e0')+'"><i style="background-image:url('+img('subs-'+p[0])+');background-position:'+(i/7*100).toFixed(3)+'% 0"></i></div>';
+  return '<div class="art art-none"></div>';
 }
 function title(key,level){
   var d=window.QEngine&&QEngine.cached?QEngine.cached(key):null;

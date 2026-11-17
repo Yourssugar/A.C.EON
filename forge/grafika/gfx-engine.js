@@ -1,7 +1,9 @@
 /* FORGE: графическая мастерская, движок.
-   Работа = холст нужного размера + слои (текст, фото, фигура, иконка). Рисуется на canvas,
+   Работа = холст нужного размера + слои (текст, фото, фигура, иконка, QR-код, рисунок от руки). Рисуется на canvas,
    поэтому то, что видно на экране, точь-в-точь совпадает со скачанным файлом.
-   Координаты слоёв в пикселях готовой картинки, x и y = центр слоя. */
+   Координаты слоёв в пикселях готовой картинки, x и y = центр слоя.
+   Фон W.bg: { t: color | grad | fony | none, c1, c2, c3 (третий цвет, может быть пустым), gt: lin | rad, ang, fb (фон из мастерской фонов) }.
+   Группа: у слоёв одной группы одинаковое поле g. Заливка текста L.tf: { t: grad, c1, c2, c3, ang } или { t: img, src, z, px, py }. */
 
 var GSIZES = [
   { id:"cover",  name:"Обложка трека",  w:3000, h:3000, note:"Spotify, Яндекс Музыка" },
@@ -16,16 +18,34 @@ var GSIZES = [
   { id:"banner", name:"Баннер YouTube", w:2560, h:1440 }
 ];
 var BLENDS = [["source-over","обычное"],["multiply","умножение"],["screen","экран"],["overlay","перекрытие"],["soft-light","мягкий свет"],["color-dodge","осветление"]];
-var SHAPES = [["rect","прямоугольник"],["round","плашка"],["circle","круг"],["tri","треугольник"],["star","звезда"],["heart","сердце"],["line","линия"]];
+var SHAPES = [["rect","прямоугольник"],["round","плашка"],["circle","круг"],["tri","треугольник"],["star","звезда"],["heart","сердце"],["line","линия"],
+  ["larrow","линия со стрелкой"],["arrow","стрелка"],["arrow2","стрелка в обе стороны"],["bubble","облачко речи"],["bubbleo","овальное облачко"],["cloud","облако"],
+  ["diamond","ромб"],["hex","шестиугольник"],["burst","вспышка"],["bolt","молния"],["cross","плюс"]];
+function isLine(k){ return k==="line"||k==="larrow"; }
 var FILTER_PRESETS = {
-  none:   { name:"оригинал", br:0, ct:0, sat:0, warm:0, bw:0, sep:0 },
-  warm:   { name:"тёплый",   br:3, ct:8, sat:25, warm:22, bw:0, sep:0 },
-  cold:   { name:"холодный", br:0, ct:6, sat:5, warm:-28, bw:0, sep:0 },
-  bw:     { name:"ч/б",      br:0, ct:18, sat:0, warm:0, bw:100, sep:0 },
-  vintage:{ name:"винтаж",   br:5, ct:-8, sat:-15, warm:10, bw:0, sep:45 },
-  vivid:  { name:"сочный",   br:2, ct:14, sat:45, warm:0, bw:0, sep:0 },
-  fade:   { name:"пастель",  br:10, ct:-20, sat:-20, warm:4, bw:0, sep:0 }
+  none:   { name:"оригинал" },
+  warm:   { name:"тёплый",   br:3, ct:8, sat:25, warm:22 },
+  cold:   { name:"холодный", ct:6, sat:5, warm:-28 },
+  vivid:  { name:"сочный",   br:2, ct:14, sat:45 },
+  golden: { name:"золотой час", br:4, sat:15, tc:"#ffb000", ta:24 },
+  sunset: { name:"закат",    ct:5, sat:25, tc:"#ff4a2a", ta:26 },
+  cinema: { name:"кино",     br:-4, ct:15, sat:-8, tc:"#0e6a78", ta:24, vig:35 },
+  drama:  { name:"драма",    br:-5, ct:30, sat:-15, vig:45 },
+  fade:   { name:"пастель",  br:10, ct:-20, sat:-20, warm:4 },
+  matte:  { name:"выцветший", br:6, ct:-12, sat:-40, tc:"#222a32", ta:100, tm:"lighten" },
+  polaroid:{ name:"полароид", br:6, ct:-5, sat:20, sep:12, tc:"#1c1622", ta:100, tm:"lighten", vig:20 },
+  film:   { name:"плёнка",   ct:6, sat:-5, tc:"#ff9a3c", ta:10, vig:30, gr:22 },
+  vintage:{ name:"винтаж",   br:5, ct:-8, sat:-15, warm:10, sep:45 },
+  sepia:  { name:"сепия",    ct:5, sep:85 },
+  bw:     { name:"ч/б",      ct:18, bw:100 },
+  noir:   { name:"нуар",     br:-8, ct:40, bw:100, vig:60, gr:14 },
+  forest: { name:"лес",      ct:5, sat:15, tc:"#1f8a3c", ta:20 },
+  frost:  { name:"мороз",    br:6, ct:5, sat:-20, tc:"#9fd0ff", ta:28 },
+  rose:   { name:"розовый",  sat:10, tc:"#ff5fa2", ta:22 },
+  neon:   { name:"неон",     ct:15, sat:70, tc:"#b400ff", ta:18 }
 };
+var F_KEYS=["br","ct","sat","warm","bw","sep","tc","ta","tm","vig","gr"];
+function applyPreset(f,id){ var p=FILTER_PRESETS[id]||FILTER_PRESETS.none; F_KEYS.forEach(function(k){ f[k]=p[k]!=null?p[k]:(k==="tc"||k==="tm"?"":0); }); f.preset=id; }
 
 /* ─────────── создание слоёв ─────────── */
 var _gid=0;
@@ -52,9 +72,14 @@ function shapeLayer(W, kind){
   var k=Math.min(W.w,W.h)*.3;
   var L={ id:gid(), t:"shape", kind:kind, x:W.w/2, y:W.h/2, w:k, h:k, rot:0, op:1, blend:"source-over", fill:"#ff8a4c", fill2:"", ang:90, stroke:"", sw:0, r:0 };
   if(kind==="round"){ L.w=k*2; L.h=k*.5; L.r=L.h/2; }
-  if(kind==="line"){ L.w=k*2; L.h=Math.max(4,k*.04); }
+  if(isLine(kind)){ L.w=k*2; L.h=Math.max(4,k*.04); }
+  if(kind==="arrow"||kind==="arrow2"){ L.w=k*1.7; L.h=k*.8; }
+  if(kind==="bubble"||kind==="bubbleo"||kind==="cloud"){ L.w=k*1.7; L.h=k*1.1; L.fill="#ffffff"; }
+  if(kind==="bolt"){ L.w=k*.7; L.h=k*1.15; L.fill="#ffd166"; }
   return L;
 }
+/* рисунок от руки: штрихи в своих координатах от центра слоя; bw и bh размер рисунка в момент рисования, w и h нынешний */
+function drawLayerNew(W){ return { id:gid(), t:"draw", x:W.w/2, y:W.h/2, w:W.w, h:W.h, bw:W.w, bh:W.h, rot:0, op:1, blend:"source-over", strokes:[] }; }
 function iconLayer(W, name){ var k=Math.min(W.w,W.h)*.18; return { id:gid(), t:"icon", name:name, x:W.w/2, y:W.h/2, w:k, h:k, rot:0, op:1, blend:"source-over", color:"#ffffff", sw:1.8 }; }
 
 /* ─────────── картинки и шрифты ─────────── */
@@ -76,21 +101,40 @@ function ensureFont(L){
 /* фильтры: встроенные в canvas, где они работают, иначе считаем пиксели сами */
 var NATIVE_FILTER=(function(){ try{ var c=document.createElement("canvas"); c.width=c.height=2; var g=c.getContext("2d"); if(!("filter" in g)) return false;
   g.filter="grayscale(1)"; g.fillStyle="#f00"; g.fillRect(0,0,2,2); var d=g.getImageData(0,0,1,1).data; return Math.abs(d[0]-d[1])<20; }catch(e){ return false; } })();
-function filterKey(L){ var f=L.f; return [L.src,L.mask,L.feather,f.br,f.ct,f.sat,f.warm,f.bw,f.sep,f.blur].join("|"); }
+function filterKey(L){ var f=L.f; return [L.src,L.mask,L.fg,L.feather,f.br,f.ct,f.sat,f.warm,f.bw,f.sep,f.blur,f.tc,f.ta,f.tm,f.vig,f.gr].join("|"); }
+var GNOISE=null;
+function gnoise(){ if(GNOISE) return GNOISE; GNOISE=document.createElement("canvas"); GNOISE.width=GNOISE.height=192; var x=GNOISE.getContext("2d"), d=x.createImageData(192,192); for(var i=0;i<d.data.length;i+=4){ var v=Math.random()*255|0; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255; } x.putImageData(d,0,0); return GNOISE; }
+/* фото с фильтром на холст g размером w x h: цвет, тепло, оттенок, виньетка, зерно */
+function filterDraw(g,im,w,h,f){
+  var br=f.br||0, ct=f.ct||0, sat=f.sat||0, bw=f.bw||0, sep=f.sep||0, plain=!br&&!ct&&!sat&&!f.warm&&!bw&&!sep&&!f.blur;
+  if(plain||!NATIVE_FILTER){ g.drawImage(im,0,0,w,h); if(!plain) pixelFilter(g,w,h,f); }
+  else { g.filter="brightness("+(100+br)+"%) contrast("+(100+ct)+"%) saturate("+(100+sat)+"%) grayscale("+bw+"%) sepia("+sep+"%)"+(f.blur?" blur("+f.blur*w/(im.naturalWidth||im.width||w)+"px)":""); g.drawImage(im,0,0,w,h); g.filter="none"; if(f.warm) warmth(g,w,h,f.warm); }
+  if(f.tc&&f.ta){ g.globalCompositeOperation=f.tm||"soft-light"; g.globalAlpha=f.ta/100; g.fillStyle=f.tc; g.fillRect(0,0,w,h); g.globalAlpha=1; g.globalCompositeOperation="source-over"; }
+  if(f.vig){ var gr=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.75); gr.addColorStop(0,"rgba(0,0,0,0)"); gr.addColorStop(1,"rgba(10,6,0,"+(f.vig/100)+")"); g.fillStyle=gr; g.fillRect(0,0,w,h); }
+  if(f.gr){ var k=Math.max(1,Math.round(Math.max(w,h)/900)); g.save(); g.globalCompositeOperation="overlay"; g.globalAlpha=f.gr/100; g.scale(k,k); g.fillStyle=g.createPattern(gnoise(),"repeat"); g.fillRect(0,0,w/k+1,h/k+1); g.restore(); }
+}
 function processed(W, L){
   var im=assetImg(W,L.src); if(!im) return null;
   var mk=L.mask?assetImg(W,L.mask):null; if(L.mask&&!mk) return null;
+  var fg=L.mask&&L.fg?assetImg(W,L.fg):null; if(L.mask&&L.fg&&!fg) return null;
   var key=filterKey(L), c=PROC[L.id]; if(c&&c.key===key) return c.cv;
-  var cv=document.createElement("canvas"); cv.width=im.naturalWidth; cv.height=im.naturalHeight; var g=cv.getContext("2d"), f=L.f;
-  var plain=!f.br&&!f.ct&&!f.sat&&!f.warm&&!f.bw&&!f.sep&&!f.blur;
-  if(plain||!NATIVE_FILTER){ g.drawImage(im,0,0); if(!plain) pixelFilter(g,cv.width,cv.height,f); }
-  else { g.filter="brightness("+(100+f.br)+"%) contrast("+(100+f.ct)+"%) saturate("+(100+f.sat)+"%) grayscale("+f.bw+"%) sepia("+f.sep+"%)"+(f.blur?" blur("+f.blur+"px)":""); g.drawImage(im,0,0); g.filter="none"; if(f.warm) warmth(g,cv.width,cv.height,f.warm); }
+  var cv=document.createElement("canvas"); cv.width=im.naturalWidth; cv.height=im.naturalHeight; var g=cv.getContext("2d"), src=im;
+  /* у вырезанного фото край перекрашен в цвет предмета (см. «убрать фон»): так не остаётся ореола от старого фона */
+  if(fg){ src=document.createElement("canvas"); src.width=cv.width; src.height=cv.height; var sx=src.getContext("2d"); sx.drawImage(im,0,0); sx.imageSmoothingQuality="high"; sx.drawImage(fg,0,0,cv.width,cv.height); }
+  filterDraw(g,src,cv.width,cv.height,L.f);
   if(mk){ g.globalCompositeOperation="destination-in"; if(L.feather&&NATIVE_FILTER) g.filter="blur("+L.feather+"px)"; g.drawImage(mk,0,0,cv.width,cv.height); g.filter="none"; g.globalCompositeOperation="source-over"; }
   PROC[L.id]={ key:key, cv:cv }; return cv;
 }
+/* обводка вырезанного фото «как у стикера»: силуэт раздвигается на p пикселей фото и заливается цветом, фото ложится сверху */
+var OUTC={};
+function outlined(L,cv,p,col){ var key=filterKey(L)+"|"+p.toFixed(1)+col, c=OUTC[L.id]; if(c&&c.key===key&&c.src===cv) return c;
+  var P=Math.ceil(p)+2, o=document.createElement("canvas"); o.width=cv.width+P*2; o.height=cv.height+P*2; var g=o.getContext("2d"), n=Math.max(16,Math.min(48,Math.round(p*1.2)));
+  for(var i=0;i<n;i++){ var a=i/n*Math.PI*2; g.drawImage(cv,P+Math.cos(a)*p,P+Math.sin(a)*p); } if(p>6) for(i=0;i<n;i++){ a=i/n*Math.PI*2; g.drawImage(cv,P+Math.cos(a)*p*.5,P+Math.sin(a)*p*.5); }
+  g.globalCompositeOperation="source-in"; g.fillStyle=col; g.fillRect(0,0,o.width,o.height); g.globalCompositeOperation="source-over"; g.drawImage(cv,P,P);
+  c=OUTC[L.id]={ key:key, src:cv, cv:o, p:P }; return c; }
 function warmth(g,w,h,a){ g.globalCompositeOperation="soft-light"; g.fillStyle=a>0?"rgba(255,140,40,"+(a/100)+")":"rgba(40,120,255,"+(-a/100)+")"; g.fillRect(0,0,w,h); g.globalCompositeOperation="source-over"; }
 function pixelFilter(g,w,h,f){
-  var id=g.getImageData(0,0,w,h), d=id.data, br=f.br*2.55, ct=(100+f.ct)/100, sat=(100+f.sat)/100, bw=f.bw/100, sp=f.sep/100, wm=f.warm/100;
+  var id=g.getImageData(0,0,w,h), d=id.data, br=(f.br||0)*2.55, ct=(100+(f.ct||0))/100, sat=(100+(f.sat||0))/100, bw=(f.bw||0)/100, sp=(f.sep||0)/100, wm=(f.warm||0)/100;
   for(var i=0;i<d.length;i+=4){
     var r=d[i],gg=d[i+1],b=d[i+2];
     r=(r-128)*ct+128+br; gg=(gg-128)*ct+128+br; b=(b-128)*ct+128+br;
@@ -113,7 +157,8 @@ function textMetrics(L){
   return { lines:lines, ws:ws, w:w, h:lh*lines.length, lh:lh, ls:ls };
 }
 function lineWidth(g,t,ls){ if(!ls) return g.measureText(t).width; var s=0; for(var i=0;i<t.length;i++) s+=g.measureText(t[i]).width+(i<t.length-1?ls:0); return s; }
-function layerSize(L){ if(L.t==="text"){ var p=fxPad(L); if(L.arc){ var ag=arcGeom(L); return { w:ag.w+p, h:ag.h+p }; } var m=textMetrics(L); return { w:m.w+p, h:m.h+p }; } return { w:L.w, h:L.h }; }
+function platePad(L){ return L.plate&&L.plate.on&&!L.arc?L.size*(L.plate.p==null?35:L.plate.p)/100:0; }
+function layerSize(L){ if(L.t==="text"){ var p=fxPad(L); if(L.arc){ var ag=arcGeom(L); return { w:ag.w+p, h:ag.h+p }; } var m=textMetrics(L), pp=platePad(L); return { w:m.w+Math.max(p,pp*2), h:m.h+Math.max(p,pp*1.3) }; } return { w:L.w, h:L.h }; }
 /* текст по дуге: буквы встают по окружности. arc от -100 до 100: плюс = дуга вверх, минус = вниз, 100 = почти полный круг */
 var AGC={};
 function arcGeom(L){
@@ -142,6 +187,16 @@ function shapePath(g,kind,w,h,r){
   if(kind==="circle"){ g.ellipse(0,0,w/2,h/2,0,0,Math.PI*2); }
   else if(kind==="tri"){ g.moveTo(0,y); g.lineTo(-x,-y); g.lineTo(x,-y); g.closePath(); }
   else if(kind==="star"){ for(var i=0;i<10;i++){ var a=-Math.PI/2+i*Math.PI/5, rr=i%2?.42:1; g.lineTo(Math.cos(a)*w/2*rr, Math.sin(a)*h/2*rr+h*.05); } g.closePath(); }
+  else if(kind==="diamond"){ g.moveTo(0,y); g.lineTo(-x,0); g.lineTo(0,-y); g.lineTo(x,0); g.closePath(); }
+  else if(kind==="hex"){ for(var j=0;j<6;j++){ var ah=j*Math.PI/3; g.lineTo(Math.cos(ah)*w/2,Math.sin(ah)*h/2); } g.closePath(); }
+  else if(kind==="burst"){ for(var q=0;q<28;q++){ var ab=-Math.PI/2+q*Math.PI/14, rb=q%2?.84:1; g.lineTo(Math.cos(ab)*w/2*rb,Math.sin(ab)*h/2*rb); } g.closePath(); }
+  else if(kind==="arrow"||kind==="arrow2"){ var hw=kind==="arrow2"?Math.min(w*.28,h*.75):Math.min(w*.45,h*.9), t=h*.22; g.moveTo(-x,0); g.lineTo(-x-hw,y); g.lineTo(-x-hw,-t); if(kind==="arrow2"){ g.lineTo(x+hw,-t); g.lineTo(x+hw,y); g.lineTo(x,0); g.lineTo(x+hw,-y); g.lineTo(x+hw,t); } else { g.lineTo(x,-t); g.lineTo(x,t); } g.lineTo(-x-hw,t); g.lineTo(-x-hw,-y); g.closePath(); }
+  else if(kind==="larrow"){ var hl=Math.min(w*.5,h*3.4), hh=h*2.1, r2=h/2; g.moveTo(x+r2,y); g.lineTo(-x-hl,y); g.lineTo(-x-hl,-hh); g.lineTo(-x,0); g.lineTo(-x-hl,hh); g.lineTo(-x-hl,-y); g.lineTo(x+r2,-y); g.arc(x+r2,0,r2,Math.PI/2,Math.PI*1.5); g.closePath(); }
+  else if(kind==="bubble"){ var bh=h*.8, br=Math.min(w,bh)*.22; g.moveTo(x+br,y); g.arcTo(-x,y,-x,y+bh,br); g.arcTo(-x,y+bh,x,y+bh,br); g.lineTo(x+w*.36,y+bh); g.lineTo(x+w*.16,-y); g.lineTo(x+w*.2,y+bh); g.arcTo(x,y+bh,x,y,br); g.arcTo(x,y,-x,y,br); g.closePath(); }
+  else if(kind==="bubbleo"){ g.ellipse(0,-h*.08,w/2,h*.42,0,Math.PI*.76,Math.PI*2.6); g.lineTo(-w*.3,h/2); g.closePath(); }
+  else if(kind==="cloud"){ g.moveTo(-.3*w,.35*h); g.bezierCurveTo(-.55*w,.35*h,-.58*w,.02*h,-.36*w,-.02*h); g.bezierCurveTo(-.4*w,-.32*h,-.1*w,-.5*h,.02*w,-.24*h); g.bezierCurveTo(.12*w,-.56*h,.48*w,-.4*h,.38*w,-.06*h); g.bezierCurveTo(.6*w,-.02*h,.56*w,.35*h,.32*w,.35*h); g.closePath(); }
+  else if(kind==="bolt"){ [[.12,-.5],[-.38,.08],[-.04,.08],[-.14,.5],[.38,-.12],[.04,-.12]].forEach(function(pt){ g.lineTo(pt[0]*w,pt[1]*h); }); g.closePath(); }
+  else if(kind==="cross"){ var cw=w*.17, chh=h*.17; [[-cw,y],[cw,y],[cw,-chh],[-x,-chh],[-x,chh],[cw,chh],[cw,-y],[-cw,-y],[-cw,chh],[x,chh],[x,-chh],[-cw,-chh]].forEach(function(pt){ g.lineTo(pt[0],pt[1]); }); g.closePath(); }
   else if(kind==="heart"){ g.moveTo(0,h*.42); g.bezierCurveTo(-w*.6,h*.02,-w*.5,-h*.52,0,-h*.18); g.bezierCurveTo(w*.5,-h*.52,w*.6,h*.02,0,h*.42); g.closePath(); }
   else { var rad=Math.max(0,Math.min(kind==="round"?Math.min(w,h)/2:(r||0),Math.min(w,h)/2)); if(g.roundRect) g.roundRect(x,y,w,h,rad); else { g.moveTo(x+rad,y); g.arcTo(-x,y,-x,-y,rad); g.arcTo(-x,-y,x,-y,rad); g.arcTo(x,-y,x,y,rad); g.arcTo(x,y,-x,y,rad); g.closePath(); } }
 }
@@ -154,33 +209,79 @@ function fillOf(g,L,w,h){
 /* тени и свечение в canvas не масштабируются вместе с холстом: умножаем на масштаб сами */
 var SHADOW_K=1;
 function drawWork(g, W, opt){
-  opt=opt||{}; var s=opt.scale||1; SHADOW_K=s;
+  opt=opt||{}; var s=opt.scale||1; SHADOW_K=s; TFW=W;
   g.save(); g.setTransform(s,0,0,s,opt.ox||0,opt.oy||0);
   if(W.round && opt.clipRound){ g.beginPath(); g.arc(W.w/2,W.h/2,W.w/2,0,Math.PI*2); g.clip(); }
-  if(!opt.transparent && W.bg.t!=="none"){
-    if(W.bg.t==="grad"){ var a=W.bg.ang*Math.PI/180, cx=W.w/2, cy=W.h/2, r=Math.hypot(W.w,W.h)/2, gr=g.createLinearGradient(cx-Math.sin(a)*r,cy+Math.cos(a)*r,cx+Math.sin(a)*r,cy-Math.cos(a)*r);
-      gr.addColorStop(0,W.bg.c1); gr.addColorStop(1,W.bg.c2); g.fillStyle=gr; }
-    else g.fillStyle=W.bg.c1;
-    g.fillRect(0,0,W.w,W.h);
-  }
+  if(!opt.transparent && W.bg.t!=="none") bgPaint(g,W);
   W.layers.forEach(function(L){ if(!L.hidden && L.id!==opt.skip) drawLayer(g,W,L); });
   g.restore();
 }
+/* фон холста */
+function bgPaint(g,W){ var B=W.bg;
+  if(B.t==="fony"){ var fc=fonyRaster(W); if(fc){ g.drawImage(fc,0,0,W.w,W.h); return; } g.fillStyle=B.fb&&B.fb.pal?B.fb.pal[0]:(B.c1||"#111317"); g.fillRect(0,0,W.w,W.h); return; }
+  if(B.t==="grad"){ var gr;
+    if(B.gt==="rad"){ var r0=Math.hypot(W.w,W.h)/2; gr=g.createRadialGradient(W.w/2,W.h/2,0,W.w/2,W.h/2,r0); }
+    else { var a=(B.ang||0)*Math.PI/180, cx=W.w/2, cy=W.h/2, r=Math.abs(W.w/2*Math.sin(a))+Math.abs(W.h/2*Math.cos(a)); gr=g.createLinearGradient(cx-Math.sin(a)*r,cy+Math.cos(a)*r,cx+Math.sin(a)*r,cy-Math.cos(a)*r); }
+    gr.addColorStop(0,B.c1); if(B.c3){ gr.addColorStop(.5,B.c2); gr.addColorStop(1,B.c3); } else gr.addColorStop(1,B.c2); g.fillStyle=gr; }
+  else g.fillStyle=B.c1;
+  g.fillRect(0,0,W.w,W.h); }
+/* фон из мастерской фонов: SVG рисуется в картинку один раз на размер холста (не больше 4096 px), дальше берётся готовая */
+var FBG={}, FBGK=[];
+function fonyRaster(W){ var B=W.bg; if(!window.FONY||!B.fb) return null; var k=Math.min(1,4096/Math.max(W.w,W.h)), w=Math.max(1,Math.round(W.w*k)), h=Math.max(1,Math.round(W.h*k)), key=JSON.stringify(B.fb)+"|"+w+"x"+h, c=FBG[key];
+  if(c) return c.ok?c.cv:null;
+  c=FBG[key]={ ok:false }; FBGK.push(key); while(FBGK.length>8) delete FBG[FBGK.shift()];
+  var b=JSON.parse(JSON.stringify(B.fb)); b.fmt="wide"; b.anim=false; var im=new Image();
+  im.onload=function(){ var cv=document.createElement("canvas"); cv.width=w; cv.height=h; cv.getContext("2d").drawImage(im,0,0,w,h); c.cv=cv; c.ok=true; if(onAsset) onAsset(); };
+  im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(FONY.svg(b,w,h,{ id:"g"+FBGK.length+"_" }));
+  return null; }
+function hexA(c,a){ var m=String(c||"").match(/^#([0-9a-f]{6})$/i); if(!m) return c; var n=parseInt(m[1],16); return "rgba("+(n>>16)+","+((n>>8)&255)+","+(n&255)+","+a+")"; }
+function hasErase(L){ return L.t==="draw"&&L.strokes.some(function(S){ return S.k==="erase"; }); }
+/* слой без поворота на отдельном холсте: нужен для тени (тень должна быть одна на весь слой) и для ластика в рисунке */
+var LCV={};
+function layerCanvas(W,L,s){
+  var sz=layerSize(L), pad=4+(L.t==="shape"?(L.sw||0)+(isLine(L.kind)?L.h*2.4:0):0)+(L.t==="text"?L.size*.5:0)+(L.out&&L.out.on?L.out.w||0:0), w=sz.w+pad*2, h=sz.h+pad*2, k=Math.min(s,4096/Math.max(w,h));
+  var ready=(L.t!=="image"||!!processed(W,L))&&(!(L.tf&&L.tf.t==="img")||!!assetImg(W,L.tf.src)), key=(L.t==="draw"?[L.w,L.h,L.strokes.length,L.strokes.length?L.strokes[L.strokes.length-1].p.length:0,L.strokes.length?L.strokes[0].c:""].join("|"):JSON.stringify(L,function(q,v){ return q==="x"||q==="y"||q==="rot"||q==="op"||q==="sh"||q==="blend"||q==="locked"||q==="hidden"?undefined:v; }))+"|"+k.toFixed(4)+ready, c=LCV[L.id];
+  if(c&&c.key===key) return c;
+  var cv=document.createElement("canvas"); cv.width=Math.max(1,Math.ceil(w*k)); cv.height=Math.max(1,Math.ceil(h*k)); var x=cv.getContext("2d"), sk=SHADOW_K; x.setTransform(k,0,0,k,cv.width/2,cv.height/2); SHADOW_K=k; drawBody(x,W,L); SHADOW_K=sk;
+  c=LCV[L.id]={ key:key, cv:cv, w:cv.width/k, h:cv.height/k }; return c;
+}
 function drawLayer(g,W,L){
   g.save(); g.translate(L.x,L.y); g.rotate((L.rot||0)*Math.PI/180); g.globalAlpha=L.op==null?1:L.op; g.globalCompositeOperation=L.blend||"source-over";
-  if(L.t==="text") drawText(g,L);
-  else if(L.t==="shape"){ if(L.kind==="line"){ g.fillStyle=fillOf(g,L,L.w,L.h); shapePath(g,"round",L.w,L.h,0); g.fill(); }
-    else { shapePath(g,L.kind,L.w,L.h,L.r); g.fillStyle=fillOf(g,L,L.w,L.h); if(L.fill||L.fill2) g.fill(); if(L.stroke&&L.sw){ g.lineWidth=L.sw; g.strokeStyle=L.stroke; g.stroke(); } } }
-  else if(L.t==="qr") drawQR(g,L);
-  else if(L.t==="icon"){ var d=ICONS[L.name]; if(d){ var k=L.w/24; g.scale(k,L.h/24); g.translate(-12,-12); g.lineWidth=L.sw; g.lineCap="round"; g.lineJoin="round"; g.strokeStyle=L.color; g.stroke(new Path2D(d)); } }
-  else if(L.t==="image"){
-    var cv=processed(W,L);
-    shapePath(g,L.shape,L.w,L.h,L.r); g.clip();
-    if(cv){ var r=coverRect(L,cv.width,cv.height); g.drawImage(cv,r.x,r.y,r.w,r.h); }
-    else { g.fillStyle="rgba(127,127,127,.25)"; g.fillRect(-L.w/2,-L.h/2,L.w,L.h); }
-  }
+  var sh=L.sh&&L.sh.on?L.sh:null;
+  if(sh||hasErase(L)){ var o=layerCanvas(W,L,SHADOW_K);
+    if(sh){ g.shadowColor=hexA(sh.c||"#000000",(sh.a==null?50:sh.a)/100); g.shadowBlur=(sh.b==null?20:sh.b)*SHADOW_K; g.shadowOffsetX=(sh.x||0)*SHADOW_K; g.shadowOffsetY=(sh.y==null?10:sh.y)*SHADOW_K; }
+    g.drawImage(o.cv,-o.w/2,-o.h/2,o.w,o.h); }
+  else drawBody(g,W,L);
   g.restore();
 }
+function drawBody(g,W,L){
+  if(L.flipX||L.flipY) g.scale(L.flipX?-1:1,L.flipY?-1:1);
+  if(L.t==="text") drawText(g,L);
+  else if(L.t==="shape"){ if(isLine(L.kind)){ g.fillStyle=fillOf(g,L,L.w,L.h); shapePath(g,L.kind==="line"?"round":L.kind,L.w,L.h,0); g.fill(); }
+    else { shapePath(g,L.kind,L.w,L.h,L.r); g.fillStyle=fillOf(g,L,L.w,L.h); if(L.fill||L.fill2) g.fill(); if(L.stroke&&L.sw){ g.lineWidth=L.sw; g.lineJoin="round"; g.strokeStyle=L.stroke; g.stroke(); } } }
+  else if(L.t==="qr") drawQR(g,L);
+  else if(L.t==="icon"){ var d=ICONS[L.name]; if(d){ var k=L.w/24; g.scale(k,L.h/24); g.translate(-12,-12); g.lineWidth=L.sw; g.lineCap="round"; g.lineJoin="round"; g.strokeStyle=L.color; g.stroke(new Path2D(d)); } }
+  else if(L.t==="draw") drawStrokes(g,L);
+  else if(L.t==="image"){
+    var cv=processed(W,L), ow=L.out&&L.out.on?(L.out.w||0):0, oc=L.out&&L.out.c||"#ffffff";
+    g.save();
+    if(cv&&ow&&L.mask){ var r0=coverRect(L,cv.width,cv.height), oc2=outlined(L,cv,ow/r0.k,oc); shapePath(g,L.shape,L.w+ow*2,L.h+ow*2,L.r?L.r+ow:0); g.clip(); g.drawImage(oc2.cv,r0.x-oc2.p*r0.k,r0.y-oc2.p*r0.k,oc2.cv.width*r0.k,oc2.cv.height*r0.k); }
+    else { shapePath(g,L.shape,L.w,L.h,L.r); g.clip();
+      if(cv){ var r=coverRect(L,cv.width,cv.height); g.drawImage(cv,r.x,r.y,r.w,r.h); }
+      else { g.fillStyle="rgba(127,127,127,.25)"; g.fillRect(-L.w/2,-L.h/2,L.w,L.h); } }
+    g.restore();
+    /* у невырезанного фото обводка идёт рамкой по форме кадра */
+    if(ow&&!L.mask){ shapePath(g,L.shape,L.w,L.h,L.r); g.lineWidth=ow; g.lineJoin="round"; g.strokeStyle=oc; g.stroke(); }
+  }
+}
+/* штрихи рисунка: линия идёт через середины отрезков, поэтому получается плавной */
+function drawStrokes(g,L){ var a0=g.globalAlpha, c0=g.globalCompositeOperation; g.save(); g.scale(L.w/L.bw,L.h/L.bh); g.lineJoin="round"; g.lineCap="round";
+  L.strokes.forEach(function(S){ var p=S.p, n=p.length>>1; if(!n) return; g.globalCompositeOperation=S.k==="erase"?"destination-out":c0; g.globalAlpha=S.k==="erase"?1:a0*(S.k==="mark"?.45:1);
+    if(n===1){ g.fillStyle=S.c; g.beginPath(); g.arc(p[0],p[1],S.s/2,0,Math.PI*2); g.fill(); return; }
+    g.strokeStyle=S.c; g.lineWidth=S.s; g.beginPath(); g.moveTo(p[0],p[1]);
+    for(var i=1;i<n-1;i++) g.quadraticCurveTo(p[i*2],p[i*2+1],(p[i*2]+p[i*2+2])/2,(p[i*2+1]+p[i*2+3])/2);
+    g.lineTo(p[n*2-2],p[n*2-1]); g.stroke(); });
+  g.restore(); }
 /* фото заполняет рамку целиком, лишнее обрезается; zoom и fx/fy сдвигают кадр */
 function coverRect(L,iw,ih){
   var k=Math.max(L.w/iw,L.h/ih)*(L.zoom||1), w=iw*k, h=ih*k;
@@ -190,12 +291,13 @@ function drawText(g,L){
   if(L.arc) return drawArcText(g,L);
   var m=textMetrics(L), f=L.fx||{t:"none"}, a=(f.a||0)/100;
   g.font=fontStr(L); g.textBaseline="middle"; g.textAlign="left"; g.lineJoin="round";
-  var y0=-m.h/2+m.lh/2;
+  var y0=-m.h/2+m.lh/2, pl=L.plate;
+  if(pl&&pl.on){ var pp=platePad(L), pw=m.w+pp*2, ph=m.h+pp*1.3; g.save(); g.fillStyle=hexA(pl.c||"#000000",(pl.a==null?100:pl.a)/100); g.beginPath(); rrect(g,-pw/2,-ph/2,pw,ph,Math.min(pw,ph)/2*(pl.r==null?30:pl.r)/100); g.fill(); g.restore(); }
   function each(fn){ m.lines.forEach(function(t,i){ var w=m.ws[i], x=L.align==="left"?-m.w/2:L.align==="right"?m.w/2-w:-w/2; fn(t,x,y0+i*m.lh); }); }
   function put(t,x,y,stroke){ if(!m.ls){ stroke?g.strokeText(t,x,y):g.fillText(t,x,y); return; }
     for(var i=0;i<t.length;i++){ stroke?g.strokeText(t[i],x,y):g.fillText(t[i],x,y); x+=g.measureText(t[i]).width+m.ls; } }
-  var fill=L.color;
-  if(f.t==="grad"){ var gr=g.createLinearGradient(-m.w/2,0,m.w/2,0); gr.addColorStop(0,f.c); gr.addColorStop(1,f.c2||L.color); fill=gr; }
+  var fill=textFill(g,L,m.w,m.h);
+  if(f.t==="grad"&&!(L.tf&&L.tf.t)){ var gr=g.createLinearGradient(-m.w/2,0,m.w/2,0); gr.addColorStop(0,f.c); gr.addColorStop(1,f.c2||L.color); fill=gr; }
   if(f.t==="shadow"){ g.shadowColor=f.c; g.shadowOffsetX=g.shadowOffsetY=L.size*a*.12*SHADOW_K; g.shadowBlur=L.size*a*.04*SHADOW_K; }
   if(f.t==="glow"){ g.shadowColor=f.c; g.shadowBlur=L.size*a*.6*SHADOW_K; g.fillStyle=fill; each(function(t,x,y){ put(t,x,y); }); }
   if(f.t==="stroke"){ g.lineWidth=L.size*a*.25; g.strokeStyle=f.c; each(function(t,x,y){ put(t,x,y,true); }); }
@@ -287,11 +389,23 @@ function rrect(g,x,y,w,h,r,rev){
   else { g.moveTo(x+r,y); g.arcTo(x,y,x,y+h,r); g.arcTo(x,y+h,x+w,y+h,r); g.arcTo(x+w,y+h,x+w,y,r); g.arcTo(x+w,y,x,y,r); g.closePath(); }
 }
 
+/* заливка текста: цвет, градиент под углом через всю надпись или фото внутри букв (фото накрывает надпись целиком, z приближает, px и py сдвигают) */
+function textFill(g,L,bw,bh){ var T=L.tf;
+  if(T&&T.t==="grad"){ var a=(T.ang==null?90:T.ang)*Math.PI/180, r=Math.abs(bw/2*Math.sin(a))+Math.abs(bh/2*Math.cos(a)), gr=g.createLinearGradient(-Math.sin(a)*r,Math.cos(a)*r,Math.sin(a)*r,-Math.cos(a)*r);
+    gr.addColorStop(0,T.c1||L.color); if(T.c3){ gr.addColorStop(.5,T.c2||L.color); gr.addColorStop(1,T.c3); } else gr.addColorStop(1,T.c2||L.color); return gr; }
+  if(T&&T.t==="img"){ var M=tfMatrix(L,bw,bh); if(M){ var p=g.createPattern(M.im,"no-repeat"); if(p&&p.setTransform){ p.setTransform(M.m); return p; } } }
+  return L.color; }
+function tfMatrix(L,bw,bh){ var T=L.tf, im=T&&T.src&&TFW?assetImg(TFW,T.src):null; if(!im||!window.DOMMatrix) return null; var iw=im.naturalWidth||im.width, ih=im.naturalHeight||im.height, k=Math.max(bw/iw,bh/ih)*(T.z||1);
+  var x=-bw/2-(iw*k-bw)*((T.px==null?50:T.px)/100), y=-bh/2-(ih*k-bh)*((T.py==null?50:T.py)/100); return { im:im, m:new DOMMatrix([k,0,0,k,x,y]) }; }
+var TFW=null;
+function arcCol(L,f,k){ var T=L.tf; if(T&&T.t==="grad"){ if(T.c3) return k<.5?mixHex(T.c1,T.c2,k*2):mixHex(T.c2,T.c3,(k-.5)*2); return mixHex(T.c1,T.c2,k); } return f.t==="grad"?mixHex(f.c,f.c2||L.color,k):L.color; }
 function drawArcText(g,L){
   var ag=arcGeom(L), f=L.fx||{t:"none"}, a=(f.a||0)/100;
   g.font=fontStr(L); g.textBaseline="middle"; g.textAlign="center"; g.lineJoin="round";
   function each(fn){ ag.chars.forEach(function(ch){ g.save(); g.translate(ch.x,ch.y); g.rotate(ch.r); fn(ch); g.restore(); }); }
-  function col(ch){ return f.t==="grad" ? mixHex(f.c,f.c2||L.color,ch.k) : L.color; }
+  var M=L.tf&&L.tf.t==="img"?tfMatrix(L,ag.w,ag.h):null, pat=M?g.createPattern(M.im,"no-repeat"):null;
+  /* у каждой буквы своё положение, поэтому узор фото пересчитывается под букву: так фото лежит ровно под всей надписью */
+  function col(ch){ if(pat&&pat.setTransform){ pat.setTransform(new DOMMatrix().rotateSelf(-ch.r*180/Math.PI).translateSelf(-ch.x,-ch.y).multiplySelf(M.m)); return pat; } return arcCol(L,f,ch.k); }
   if(f.t==="shadow"){ g.shadowColor=f.c; g.shadowOffsetX=g.shadowOffsetY=L.size*a*.12*SHADOW_K; g.shadowBlur=L.size*a*.04*SHADOW_K; }
   if(f.t==="glow"){ g.shadowColor=f.c; g.shadowBlur=L.size*a*.6*SHADOW_K; each(function(ch){ g.fillStyle=col(ch); g.fillText(ch.c,0,0); }); }
   if(f.t==="stroke"){ g.lineWidth=L.size*a*.25; g.strokeStyle=f.c; each(function(ch){ g.strokeText(ch.c,0,0); }); }
@@ -307,6 +421,10 @@ function hitLayer(W,px,py,pad){
 }
 
 /* ─────────── шаблоны ─────────── */
+/* старые работы: эффект «градиент» у текста стал заливкой, у которой есть угол и третий цвет */
+function fixWork(W){ if(!W.bg) W.bg={ t:"color", c1:"#15121f", c2:"#3a1d3a", ang:160 }; W.layers.forEach(function(L){ if(L.t==="text"&&L.fx&&L.fx.t==="grad"){ L.tf={ t:"grad", c1:L.fx.c, c2:L.fx.c2||L.color, c3:"", ang:90 }; L.fx.t="none"; } }); return W; }
+/* рамка слоя в осях холста (с учётом поворота) */
+function aabb(L){ var s=layerSize(L), a=(L.rot||0)*Math.PI/180, c=Math.abs(Math.cos(a)), sn=Math.abs(Math.sin(a)), w=s.w*c+s.h*sn, h=s.w*sn+s.h*c; return { x0:L.x-w/2, y0:L.y-h/2, x1:L.x+w/2, y1:L.y+h/2, w:w, h:h }; }
 function T_text(W,o){ var L=textLayer(W,o.k||"s"); for(var k in o) if(k!=="k") L[k]=k==="text"?TR(o[k]):o[k]; if(o.fx) L.fx=Object.assign({t:"none",c:"#000",c2:"#fff",a:50},o.fx); return L; }
 function T_shape(W,kind,o){ var L=shapeLayer(W,kind); for(var k in o) L[k]=o[k]; return L; }
 function T_qr(W,kind,o){ var L=qrLayer(W,kind); for(var k in o) if(k!=="d") L[k]=o[k]; if(o.d) for(var j in o.d) L.d[j]=TR(o.d[j]); return L; }

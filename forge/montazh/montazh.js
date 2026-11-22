@@ -10,8 +10,11 @@ var $=function(s,r){ return (r||document).querySelector(s); };
 var $$=function(s,r){ return [].slice.call((r||document).querySelectorAll(s)); };
 var wide=matchMedia("(min-width:960px)");
 function el(html, fn){ var d=document.createElement("div"); d.innerHTML=html.trim(); var n=d.firstElementChild; if(fn) fn(n); return n; }
-function sh(t){ return el('<div class="sh">'+esc(TR(t))+'</div>'); }
-function note(t){ return el('<p class="note" style="margin:-2px 0 10px">'+esc(t)+'</p>'); }
+/* заголовок раздела: пояснение не висит текстом, а живёт в подсказке за кружком «?» */
+function qi(t){ return '<button type="button" class="qi" data-tip="'+esc(t)+'" aria-label="'+esc(t)+'">?</button>'; }
+function sh(t,tip,extra){ return el('<div class="sh"><span>'+esc(TR(t))+'</span>'+(extra||"")+(tip?qi(tip):"")+'</div>'); }
+function badge(txt,tip){ return '<em class="bdg"'+(tip?' data-tip="'+esc(tip)+'"':'')+'>'+esc(txt)+'</em>'; }
+function warn(short,full){ return el('<div class="wb" data-tip="'+esc(full)+'">'+sv("warn")+'<span>'+esc(short)+'</span></div>'); }
 function choice(label, opts, cur, fn){ return el('<div class="f">'+(label?'<label>'+esc(label)+'</label>':'')+'<div class="chips">'+opts.map(function(o){ return '<button data-v="'+o[0]+'" class="'+(String(o[0])===String(cur)?"on":"")+'">'+esc(o[1])+'</button>'; }).join("")+'</div></div>',function(n){
   $$("button",n).forEach(function(x){ x.onclick=function(){ $$("button",n).forEach(function(y){ y.classList.toggle("on",y===x); }); fn(x.getAttribute("data-v")); }; }); }); }
 function range(label,v,min,max,step,fmt,fn,done){ return el('<div class="f"><div class="lab"><span>'+esc(label)+'</span><output>'+fmt(v)+'</output></div><input type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+v+'"></div>',function(n){
@@ -20,7 +23,8 @@ function toggle(label,v,fn){ return el('<label class="tg"><span>'+esc(label)+'</
 function pick1(label,opts,cur,fn){ return el('<div class="f"><label>'+esc(label)+'</label><select>'+opts.map(function(o){ return '<option value="'+o[0]+'"'+(String(o[0])===String(cur)?" selected":"")+'>'+esc(o[1])+'</option>'; }).join("")+'</select></div>',function(n){ $("select",n).onchange=function(){ fn(this.value); }; }); }
 var SV={ img:"M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4", vid:"M3 6h13v12H3zM16 10l5-3v10l-5-3", add:"M12 5v14M5 12h14", x:"M6 6l12 12M18 6L6 18", l:"M15 5l-7 7 7 7", r:"M9 5l7 7-7 7", dup:"M8 8h12v12H8zM4 16V4h12",
   file:"M14 3H6v18h12V7zM14 3v4h4", mus:"M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z", txt:"M5 6h14M12 6v13M9 19h6", wand:"M15 4l5 5L9 20l-5-5zM13 6l5 5", key:"M12 4l8 8-8 8-8-8z", cut:"M6 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12",
-  snd:"M4 9h4l5-4v14l-5-4H4zM16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11", mute:"M4 9h4l5-4v14l-5-4H4zM16 9l5 6M21 9l-5 6" };
+  snd:"M4 9h4l5-4v14l-5-4H4zM16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11", mute:"M4 9h4l5-4v14l-5-4H4zM16 9l5 6M21 9l-5 6",
+  warn:"M12 4l9 16H3zM12 10v4M12 17h.01", kbd:"M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M8 14h8", pal:"M12 3a9 9 0 100 18c1 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.9.7-1.6 1.6-1.6H16a5 5 0 005-5C21 6.4 17 3 12 3zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01M17 11.5h.01" };
 function sv(n){ return '<svg viewBox="0 0 24 24"><path d="'+SV[n]+'"/></svg>'; }
 function tm(s){ s=Math.max(0,s||0); var m=Math.floor(s/60), r=s-m*60; return m+":"+r.toFixed(1).padStart(4,"0"); }
 function tms(s){ s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
@@ -28,6 +32,45 @@ function clamp(x,a,b){ return x<a?a:x>b?b:x; }
 function rnd(n){ var x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); }
 function sec(v){ return v.toFixed(1)+" "+TR("с"); }
 function pct(v){ return v+"%"; }
+
+/* ═══════════ оформление: тема и акцент, хранится только в этом браузере ═══════════ */
+var THEMES={ dark:["Тёмная","#0c0e12","#151920","#dfe5ea"], light:["Светлая","#eef1f5","#ffffff","#161b22"], night:["Полночь","#0a0f1e","#121a31","#e1e7f7"],
+  black:["Чёрная","#000000","#0a0a0a","#f0f0f0"], warm:["Тёплая","#14100c","#1f1914","#efe6da"] };
+var ACC={ teal:["Бирюза","#4fd6c8","#0e9f91"], amber:["Янтарь","#ffb44d","#c46d00"], violet:["Фиалка","#a78bfa","#6d4fd8"], rose:["Роза","#ff6fae","#d6337a"], sky:["Небо","#5aa9ff","#1f6fd6"], lime:["Лайм","#9ee35a","#4b8f12"] };
+var TH=(function(){ try{ var o=JSON.parse(localStorage.getItem("forge:mz-theme")||"{}"); return { t:THEMES[o.t]?o.t:"dark", a:ACC[o.a]?o.a:"teal" }; }catch(e){ return { t:"dark", a:"teal" }; } })();
+function accOf(k){ return ACC[k][TH.t==="light"?2:1]; }
+function applyTheme(){ var r=document.documentElement, lt=TH.t==="light"; r.setAttribute("data-mth",TH.t); r.style.setProperty("--run",accOf(TH.a)); r.style.setProperty("--on-run",lt?"#ffffff":"#0b0f14");
+  var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute("content",THEMES[TH.t][1]); }
+applyTheme();
+function setTheme(k,v){ TH[k]=v; try{ localStorage.setItem("forge:mz-theme",JSON.stringify(TH)); }catch(e){} applyTheme(); themeRefresh(); }
+function themeUi(box){
+  box.appendChild(el('<div class="thg"></div>',function(g){ Object.keys(THEMES).forEach(function(k){ var T=THEMES[k];
+    g.appendChild(el('<button class="thc'+(TH.t===k?" on":"")+'"><i style="background:'+T[1]+'"><u style="background:'+T[2]+'"></u><u style="background:'+T[3]+'"></u><u style="background:'+accOf(TH.a)+'"></u></i><span>'+esc(TR(T[0]))+'</span></button>',function(b){ b.onclick=function(){ setTheme("t",k); }; })); }); }));
+  box.appendChild(el('<div class="f"><label>'+esc(TR("Акцент"))+'</label><div class="acc"></div></div>',function(f){ var g=$(".acc",f);
+    Object.keys(ACC).forEach(function(k){ g.appendChild(el('<button class="'+(TH.a===k?"on":"")+'" data-tip="'+esc(TR(ACC[k][0]))+'" aria-label="'+esc(TR(ACC[k][0]))+'" style="--a:'+accOf(k)+'"></button>',function(b){ b.onclick=function(){ setTheme("a",k); }; })); }); }));
+}
+function themeRefresh(){ var b=$("#thBox"); if(b){ b.innerHTML=""; themeUi(b); } if(typeof refreshPane==="function"&&P) refreshPane(); }
+function themeModal(){ modal('<button class="ib mx" data-close>'+sv("x")+'</button><h3>'+esc(TR("Оформление"))+'</h3><div id="thBox"></div>'); themeUi($("#thBox")); }
+function keysModal(){ var K=[["Пробел","Играть и стоп"],["← →","Шаг по времени"],["Shift + ← →","Шаг на секунду"],["S","Разрезать клип по курсору"],["M","Звук видео под курсором"],["Delete","Удалить выбранное"],["Ctrl + Z","Отменить"],["Ctrl + Y","Повторить"],["Ctrl + колесо","Масштаб ленты"]];
+  modal('<button class="ib mx" data-close>'+sv("x")+'</button><h3>'+esc(TR("Горячие клавиши"))+'</h3><div class="keys">'+K.map(function(k){ return '<div><kbd>'+esc(TR(k[0]))+'</kbd><span>'+esc(TR(k[1]))+'</span></div>'; }).join("")+'</div>'); }
+
+/* ═══════════ всплывающие подсказки ═══════════
+   Мышь: наведение на всё, где есть data-tip или title (title превращается в data-tip, чтобы не было двойной системной подсказки).
+   Палец: нажатие на кружок «?» показывает подсказку, нажатие в любом другом месте прячет. */
+var tipEl=document.createElement("div"); tipEl.className="tip"; tipEl.setAttribute("role","tooltip"); document.body.appendChild(tipEl);
+var tipFor=null, tipT=0, tipLast=0, tipTouch=0, HOVER=matchMedia("(hover:hover)");
+function tipText(n){ var t=n.getAttribute("title"); if(t){ n.setAttribute("data-tip",t); n.removeAttribute("title"); if(!n.getAttribute("aria-label")) n.setAttribute("aria-label",t); } return n.getAttribute("data-tip"); }
+function showTip(n){ var t=tipText(n); if(!t||!n.isConnected) return; tipFor=n; tipEl.textContent=t; tipEl.classList.add("on");
+  var r=n.getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight, M=8, x, y, side=n.closest("#tabs")&&wide.matches?"r":"t";
+  if(side==="r"){ x=r.right+12; y=r.top+r.height/2-h/2; } else { x=r.left+r.width/2-w/2; y=r.top-h-8; if(y<M) y=r.bottom+8; }
+  tipEl.style.transform="translate("+Math.round(clamp(x,M,innerWidth-w-M))+"px,"+Math.round(clamp(y,M,innerHeight-h-M))+"px)"; }
+function hideTip(){ clearTimeout(tipT); if(tipFor) tipLast=Date.now(); tipFor=null; tipEl.classList.remove("on"); }
+document.addEventListener("pointerover",function(e){ if(e.pointerType==="touch"||!HOVER.matches||Date.now()-tipTouch<900) return; var n=e.target.closest&&e.target.closest("[data-tip],[title]"); if(n===tipFor) return; clearTimeout(tipT); if(tipFor) hideTip(); if(!n) return;
+  tipT=setTimeout(function(){ showTip(n); },Date.now()-tipLast<600?40:380); });
+document.addEventListener("pointerout",function(e){ if(e.pointerType==="touch"||!tipFor&&!tipT) return; var to=e.relatedTarget; if(tipFor&&to&&tipFor.contains(to)) return; if(!tipFor){ clearTimeout(tipT); return; } hideTip(); });
+document.addEventListener("pointerdown",function(e){ if(e.pointerType!=="mouse") tipTouch=Date.now(); var q=e.target.closest&&e.target.closest(".qi"); if(q&&q===tipFor) return; hideTip(); },true);
+document.addEventListener("click",function(e){ var q=e.target.closest&&e.target.closest(".qi"); if(!q) return; e.preventDefault(); e.stopPropagation(); if(tipFor===q&&e.pointerType!=="mouse") hideTip(); else { clearTimeout(tipT); showTip(q); } });
+addEventListener("scroll",hideTip,true); addEventListener("wheel",hideTip,{passive:true}); addEventListener("keydown",hideTip);
 var F=window.FONY;
 
 /* ═══════════ хранение ═══════════ */
@@ -119,9 +162,11 @@ var MEDIA={}, THUMB={};
 function media(c){ var m=MEDIA[c.id]; if(m&&m.aid===c.aid) return m;
   m=MEDIA[c.id]={ aid:c.aid, el:null, ok:false };
   blobUrl(c.aid).then(function(u){ if(!u) return; if(c.type==="vid"){ var v=document.createElement("video"); v.playsInline=true; v.preload="auto"; v.muted=false; v.src=u;
-      v.addEventListener("loadeddata",function(){ m.ok=true; if(!PL.on) draw(cur); }); v.addEventListener("seeked",function(){ if(!PL.on) draw(cur); }); m.el=v; if(AC) hookAudio(m); try{ v.currentTime=c.in||0; }catch(e){} }
-    else { var im=new Image(); im.onload=function(){ m.ok=true; if(!PL.on) draw(cur); }; im.src=u; m.el=im; } });
+      v.addEventListener("loadeddata",function(){ m.ok=true; if(!PL.on) draw(cur); thumbsSoon(); }); v.addEventListener("seeked",function(){ if(!PL.on) draw(cur); }); m.el=v; if(AC) hookAudio(m); try{ v.currentTime=c.in||0; }catch(e){} }
+    else { var im=new Image(); im.onload=function(){ m.ok=true; if(!PL.on) draw(cur); thumbsSoon(); }; im.src=u; m.el=im; } });
   return m; }
+/* миниатюры стилей и цвета рисуются по текущему кадру: когда файл догрузился, перерисовываем их один раз */
+var thT=0; function thumbsSoon(){ clearTimeout(thT); thT=setTimeout(function(){ if(P&&!PL.on&&(ui.tab==="vid"||ui.tab==="col")&&!(document.activeElement&&/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))) refreshPane(); },200); }
 function hookAudio(m){ if(m.node||!m.el||m.el.tagName!=="VIDEO") return; try{ m.node=AC.createMediaElementSource(m.el); m.g=AC.createGain(); m.node.connect(m.g); m.g.connect(MASTER); }catch(e){} }
 function waitOk(m){ return new Promise(function(res){ var n=0; (function w(){ if(m.ok||n++>100) res(); else setTimeout(w,100); })(); }); }
 function allReady(){ return Promise.all(P.clips.map(function(c){ return waitOk(media(c)); }).concat(P.tracks.map(function(k){ return waitOk(audioOf(k)); }))); }
@@ -492,14 +537,14 @@ var pane=$("#pane"), insp=$("#insp"), right=$("#right"), ui={ tab:null, sheet:fa
 var TTL={ vid:"Ролик", col:"Цвет", mus:"Музыка", more:"Ещё" };
 function tabBox(){ return wide.matches?pane:insp; }
 function openTab(t){ if(t==="clip"){ openInsp(); return; }
-  ui.tab=t; $$("#tabs button").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")===t); });
+  ui.tab=t; $$("#tabs [data-tab]").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")===t); });
   if(!wide.matches){ ui.sheet="tab"; right.classList.add("open"); right.classList.remove("full","peek"); $("#shTitle").textContent=TR(TTL[t]); }
   refreshPane(); tabBox().scrollTop=0; }
-function openInsp(){ if(!wide.matches){ ui.sheet="insp"; right.classList.add("open"); right.classList.remove("full","peek"); $$("#tabs button").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")==="clip"&&!selM&&selJ==null); }); ui.tab=null; }
+function openInsp(){ if(!wide.matches){ ui.sheet="insp"; right.classList.add("open"); right.classList.remove("full","peek"); $$("#tabs [data-tab]").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")==="clip"&&!selM&&selJ==null); }); ui.tab=null; }
   refreshInsp(); insp.scrollTop=0; }
-function closeSheet(){ if(wide.matches) return; ui.sheet=false; ui.tab=null; right.classList.remove("open","full","peek"); $$("#tabs button").forEach(function(b){ b.classList.remove("on"); }); }
+function closeSheet(){ if(wide.matches) return; ui.sheet=false; ui.tab=null; right.classList.remove("open","full","peek"); $$("#tabs [data-tab]").forEach(function(b){ b.classList.remove("on"); }); }
 $("#shClose").onclick=closeSheet;
-$$("#tabs button").forEach(function(b){ b.onclick=function(){ var t=b.getAttribute("data-tab"); if(!wide.matches&&((ui.sheet==="tab"&&ui.tab===t)||(t==="clip"&&ui.sheet==="insp"&&!selM))) closeSheet(); else { if(t==="clip"&&selM){ selM=null; timeline(); } openTab(t); } }; });
+$$("#tabs [data-tab]").forEach(function(b){ b.onclick=function(){ var t=b.getAttribute("data-tab"); if(!wide.matches&&((ui.sheet==="tab"&&ui.tab===t)||(t==="clip"&&ui.sheet==="insp"&&!selM))) closeSheet(); else { if(t==="clip"&&selM){ selM=null; timeline(); } openTab(t); } }; });
 (function(){ var h=$(".sh-h"), y0=0, h0=0, on=false;
   h.addEventListener("pointerdown",function(e){ if(wide.matches||e.target.closest("button")) return; on=true; y0=e.clientY; h0=right.getBoundingClientRect().height; right.style.transition="none"; try{ h.setPointerCapture(e.pointerId); }catch(x){} });
   h.addEventListener("pointermove",function(e){ if(on) right.style.height=Math.max(80,h0-(e.clientY-y0))+"px"; });
@@ -509,29 +554,33 @@ $$("#tabs button").forEach(function(b){ b.onclick=function(){ var t=b.getAttribu
 new MutationObserver(function(){ var e=$("#ed"); e.classList.toggle("so",right.classList.contains("open")&&!right.classList.contains("full")); e.classList.toggle("pk",right.classList.contains("peek")); }).observe(right,{attributes:true,attributeFilter:["class"]});
 wide.addEventListener("change",function(){ right.classList.remove("open"); ui.sheet=false; if(wide.matches) openTab(ui.tab||"vid"); refreshInsp(); });
 function refresh(){ refreshPane(); refreshInsp(); }
-function refreshPane(){ if(!ui.tab||!P) return; if(!wide.matches&&ui.sheet!=="tab") return; var box=tabBox(), sc=box.scrollTop; box.innerHTML="";
+function refreshPane(){ if(!ui.tab||!P) return; if(!wide.matches&&ui.sheet!=="tab") return; var box=tabBox(), sc=box.scrollTop; box.innerHTML=""; secOf(ui.tab);
+  if(wide.matches) box.appendChild(el('<div class="pt"><i></i><b>'+esc(TR(TTL[ui.tab]))+'</b></div>'));
   ({ vid:paneVid, col:paneCol, mus:paneMus, more:paneMore })[ui.tab](box); box.scrollTop=sc; }
+/* цвет раздела: у каждой вкладки и у настроек клипа, стыка, песни свой оттенок кнопок */
+function secOf(s){ (wide.matches&&s!=="clip"&&s!=="jn"&&s!=="mus1"?pane:right).setAttribute("data-sec",s); }
 function trChoice(label,cur,fn){ return choice(label,Object.keys(TRS).map(function(k){ return [k,TR(TRS[k])]; }),cur,fn); }
 function trSelect(label,cur,fn,inherit){ return pick1(label,(inherit?[["",TR("как у всех: {0}",TR(TRS[P.tr]))]]:[]).concat(Object.keys(TRS).map(function(k){ return [k,TR(TRS[k])]; })),cur,fn); }
 function paneVid(box){
-  box.appendChild(sh("Стиль"));
-  box.appendChild(el('<div class="mst"></div>',function(g){ Object.keys(STYLES).forEach(function(k){ var S=STYLES[k]; g.appendChild(el('<button class="'+(P.style===k?"on":"")+'"><b>'+esc(TR(S.n))+'</b><small>'+esc(TR(LOOKS[S.filter][0]))+', '+esc(TR(TANI[S.anim]))+'</small></button>',function(b){ b.onclick=function(){ applyStyle(k); }; })); }); }));
-  box.appendChild(note(TR("Стиль сразу ставит фильтр, движение фото и появление текста у всех клипов. Переходы он не трогает: они ставятся на каждый стык отдельно.")));
+  box.appendChild(sh("Стиль",TR("Стиль сразу ставит фильтр, движение фото и появление текста у всех клипов. Переходы он не трогает: они ставятся на каждый стык отдельно.")));
+  box.appendChild(el('<div class="mst"></div>',function(g){ var src=frameSrc(); Object.keys(STYLES).forEach(function(k){ var S=STYLES[k];
+    g.appendChild(el('<button class="'+(P.style===k?"on":"")+'" data-tip="'+esc(TR("Цвет: {0}. Текст: {1}.",TR(LOOKS[S.filter][0]),TR(TANI[S.anim])))+'"><canvas width="132" height="64"></canvas><b>'+esc(TR(S.n))+'</b></button>',function(b){ lookThumb($("canvas",b),S.filter,src); b.onclick=function(){ applyStyle(k); }; })); }); }));
   box.appendChild(sh("Формат"));
-  box.appendChild(choice("",Object.keys(FMT).map(function(k){ return [k,TR(FMT[k].n)]; }),P.fmt,function(v){ remember(); P.fmt=v; setCanvas(); changed(); }));
-  box.appendChild(choice(TR("Если кадр не той формы"),[["cover",TR("заполнить и обрезать")],["blur",TR("целиком на размытом фоне")]],P.fit,function(v){ remember(); P.fit=v; changed(); }));
-  box.appendChild(sh("Переходы"));
-  var n=trCount();
-  box.appendChild(note(n.all?TR("Переходов в ролике: {0} из {1} стыков.",n.all,Math.max(0,P.clips.length-1))+(n.kinds>2?" "+TR("Разных уже {0}: ролик смотрится цельнее, когда их один-два.",n.kinds):""):TR("Сейчас между клипами простые склейки, без переходов.")));
-  box.appendChild(note(TR("Переход ставится на конкретный стык: нажмите на ромбик между клипами в ленте. Где-то он нужен, а где-то лучше простая склейка.")));
+  box.appendChild(el('<div class="fmts"></div>',function(g){ Object.keys(FMT).forEach(function(k){ g.appendChild(el('<button class="'+(P.fmt===k?"on":"")+'" data-tip="'+esc(TR(FMT[k].n)+": "+TR(FMT[k].d))+'"><i class="f'+k+'"></i><span>'+k.replace("x",":")+'</span></button>',function(b){ b.onclick=function(){ if(P.fmt===k) return; remember(); P.fmt=k; setCanvas(); changed(true); }; })); }); }));
+  box.appendChild(el('<div class="f"><label>'+esc(TR("Если кадр не той формы"))+'</label><div class="fmts fit"></div></div>',function(f){ var g=$(".fmts",f);
+    [["cover","Заполнить","заполнить и обрезать"],["blur","Размытый фон","целиком на размытом фоне"]].forEach(function(o){ g.appendChild(el('<button class="'+(P.fit===o[0]?"on":"")+'" data-tip="'+esc(TR(o[2]))+'"><i class="'+o[0]+'"><u></u></i><span>'+esc(TR(o[1]))+'</span></button>',function(b){ b.onclick=function(){ if(P.fit===o[0]) return; remember(); P.fit=o[0]; changed(true); }; })); }); }));
+  var n=trCount(), J=Math.max(0,P.clips.length-1);
+  box.appendChild(sh("Переходы",TR("Переход ставится на конкретный стык: нажмите на ромбик между клипами в ленте. Где-то он нужен, а где-то лучше простая склейка.")+"\n\n"+TR("Переход хорошо ставить там, где меняется место, время или настроение. Между похожими кусками одной сцены простая склейка смотрится чище."),
+    J?badge(n.all+" / "+J,n.all?TR("Переходов в ролике: {0} из {1} стыков.",n.all,J):TR("Сейчас между клипами простые склейки, без переходов.")):""));
+  if(n.kinds>2) box.appendChild(warn(TR("Много разных переходов"),TR("Разных переходов в ролике уже {0}: ролик смотрится цельнее, когда их один-два.",n.kinds)));
   if(P.clips.length>1){ var allTr=(STYLES[P.style]||STYLES.smooth).tr; if(allTr==="none") allTr="fade";
-    box.appendChild(el('<div class="f"><label>'+esc(TR("Один переход на все стыки"))+'</label><div class="trall"><select></select><button class="btn">'+esc(TR("Поставить"))+'</button></div></div>',function(f){ var se=$("select",f);
+    box.appendChild(el('<div class="f"><label>'+esc(TR("Один переход на все стыки"))+'</label><div class="trall"><select></select><button class="btn go">'+esc(TR("Поставить"))+'</button></div></div>',function(f){ var se=$("select",f);
       se.innerHTML=Object.keys(TRS).filter(function(k){ return k!=="none"; }).map(function(k){ return '<option value="'+k+'"'+(k===allTr?" selected":"")+'>'+esc(TR(TRS[k]))+'</option>'; }).join("");
       $("button",f).onclick=function(){ remember(); P.clips.forEach(function(c,i){ if(i<P.clips.length-1) c.tr=se.value; }); changed(true); toast(TR("Переход «{0}» стоит на всех стыках",TR(TRS[se.value]))); previewCut(); }; }));
-    if(n.all) box.appendChild(el('<button class="btn w">'+esc(TR("Убрать все переходы"))+'</button>',function(b){ b.onclick=function(){ remember(); P.clips.forEach(function(c){ delete c.tr; delete c.trd; }); changed(true); toast(TR("Все переходы убраны")); }; })); }
+    if(n.all) box.appendChild(el('<button class="btn w del">'+sv("x")+'<span>'+esc(TR("Убрать все переходы"))+'</span></button>',function(b){ b.onclick=function(){ remember(); P.clips.forEach(function(c){ delete c.tr; delete c.trd; }); changed(true); toast(TR("Все переходы убраны")); }; })); }
   box.appendChild(range(TR("Длина перехода по умолчанию"),P.trd,.2,1.5,.1,sec,function(v){ P.trd=v; timeline(); redraw(); }));
-  if(P.clips.some(function(c){ return c.type==="img"; })) box.appendChild(sh("Клипы"));
-  if(P.clips.some(function(c){ return c.type==="img"; })) box.appendChild(range(TR("Длина каждого фото"),avgPhoto(),1,10,.5,sec,function(v){ P.clips.forEach(function(c){ if(c.type==="img"){ c.dur=v; fixKeys(c); } }); timeline(); redraw(); }));
+  if(P.clips.some(function(c){ return c.type==="img"; })){ box.appendChild(sh("Клипы"));
+    box.appendChild(range(TR("Длина каждого фото"),avgPhoto(),1,10,.5,sec,function(v){ P.clips.forEach(function(c){ if(c.type==="img"){ c.dur=v; fixKeys(c); } }); timeline(); redraw(); })); }
 }
 function trCount(){ var all=0, kinds={}; P.clips.forEach(function(c,i){ if(i<P.clips.length-1&&c.tr&&c.tr!=="none"){ all++; kinds[c.tr]=1; } }); return { all:all, kinds:Object.keys(kinds).length }; }
 /* настройки стыка: какой переход, сколько длится, посмотреть */
@@ -539,12 +588,13 @@ function inspJn(i){ var c=P.clips[i], pv=i>0?P.clips[i-1]:null, cur0=c.tr||"none
   $("#shTitle").textContent=TR("Стык клипов {0} и {1}",i+1,i+2);
   insp.appendChild(el('<div class="jhead"><button class="btn" data-a="p">'+sv("l")+'</button><span>'+esc(TR("Стык {0} из {1}",i+1,P.clips.length-1))+'</span><button class="btn" data-a="n">'+sv("r")+'</button></div>',function(r){
     var b=$$("button",r); b[0].disabled=i<=0; b[1].disabled=i>=P.clips.length-2; b[0].onclick=function(){ selectJ(i-1); }; b[1].onclick=function(){ selectJ(i+1); }; }));
-  insp.appendChild(trChoice(TR("Переход"),cur0,function(v){ remember(); if(v==="none"){ delete c.tr; delete c.trd; } else c.tr=v; changed(true); if(v!=="none") previewCut(i); }));
+  insp.appendChild(sh("Переход",TR("Переход хорошо ставить там, где меняется место, время или настроение. Между похожими кусками одной сцены простая склейка смотрится чище.")));
+  var n=trCount(); if(n.kinds>2) insp.appendChild(warn(TR("Много разных переходов"),TR("Разных переходов в ролике уже {0}: ролик смотрится цельнее, когда их один-два.",n.kinds)));
+  insp.appendChild(trChoice("",cur0,function(v){ remember(); if(v==="none"){ delete c.tr; delete c.trd; } else c.tr=v; changed(true); if(v!=="none") previewCut(i); }));
   if(cur0!=="none"){ insp.appendChild(range(TR("Длина этого перехода"),c.trd||P.trd||.6,.2,1.5,.1,sec,function(v){ c.trd=v; timeline(); redraw(); }));
     insp.appendChild(el('<div class="row" style="margin-bottom:10px"><button class="btn go">'+esc(TR("Посмотреть стык"))+'</button></div>',function(r){ $("button",r).onclick=function(){ previewCut(i); }; })); }
   if(pv&&pv.tr&&pv.tr!=="none"&&pv.tr!==cur0) insp.appendChild(el('<button class="btn w">'+esc(TR("Как на прошлом стыке: {0}",TR(TRS[pv.tr])))+'</button>',function(b){ b.onclick=function(){ remember(); c.tr=pv.tr; if(pv.trd) c.trd=pv.trd; changed(true); previewCut(i); }; }));
-  var n=trCount();
-  insp.appendChild(note(TR("Переход хорошо ставить там, где меняется место, время или настроение. Между похожими кусками одной сцены простая склейка смотрится чище.")+(n.kinds>2?" "+TR("Разных переходов в ролике уже {0}: ролик смотрится цельнее, когда их один-два.",n.kinds):""))); }
+}
 /* после выбора перехода сразу проигрываем ближайший стык, чтобы было видно, что выбрано */
 function previewCut(i){ if(P.clips.length<2) return; var L=TL(); if(i==null) i=Math.min(clipAt(cur),P.clips.length-2); if(i<0||i>P.clips.length-2) return; var t0=Math.max(0,L.s[i+1]-.7), t1=L.s[i+1]+(L.d[i]||0)+.6; stopPlay(); play(t0);
   (function w(){ if(!PL.on) return; if(cur>=t1){ stopPlay(); return; } setTimeout(w,60); })(); }
@@ -559,30 +609,31 @@ function lookThumb(cv,id,src){ var X=cv.getContext("2d"), W=cv.width, H=cv.heigh
   grade(X,id,0,.45); }
 function lookGrid(curId,fn){ var src=frameSrc(); return el('<div class="lks"></div>',function(g){ Object.keys(LOOKS).forEach(function(id){ g.appendChild(el('<button class="'+(curId===id?"on":"")+'"><canvas width="96" height="96"></canvas><span>'+esc(TR(LOOKS[id][0]))+'</span></button>',function(b){ lookThumb($("canvas",b),id,src); b.onclick=function(){ fn(id); }; })); }); }); }
 function paneCol(box){ var A=P.adj=P.adj||{};
-  box.appendChild(sh("Цвет всего ролика"));
+  box.appendChild(sh("Цвет всего ролика",TR("Отдельному клипу можно дать свой цвет: выберите клип и откройте его настройки.")));
   box.appendChild(lookGrid(P.filter,function(id){ remember(); P.filter=id; changed(); refreshPane(); }));
-  if(!HASF) box.appendChild(note(TR("В этом браузере цвет получается приближённо: точные фильтры есть в Chrome, Edge и Firefox.")));
+  if(!HASF) box.appendChild(warn(TR("Цвет приближённый"),TR("В этом браузере цвет получается приближённо: точные фильтры есть в Chrome, Edge и Firefox.")));
   box.appendChild(sh("Подстройка"));
   [["br","Яркость"],["ct","Контраст"],["sa","Насыщенность"],["tp","Тепло"]].forEach(function(o){ box.appendChild(range(TR(o[1]),Math.round((A[o[0]]||0)*100),-100,100,5,function(v){ return (v>0?"+":"")+v; },function(v){ A[o[0]]=v/100; redraw(); },function(){ refreshPane(); })); });
   [["vg","Виньетка"],["gr","Зерно"]].forEach(function(o){ box.appendChild(range(TR(o[1]),Math.round((A[o[0]]||0)*100),0,o[0]==="gr"?50:90,5,pct,function(v){ A[o[0]]=v/100; redraw(); },function(){ refreshPane(); })); });
   box.appendChild(el('<button class="btn w">'+esc(TR("Сбросить подстройку"))+'</button>',function(b){ b.onclick=function(){ remember(); P.adj={}; changed(); refreshPane(); }; }));
-  box.appendChild(note(TR("Отдельному клипу можно дать свой цвет: выберите клип и откройте его настройки.")));
 }
 function paneMus(box){
   var L=TL();
+  box.appendChild(sh("Песни",P.tracks.length?TR("Песни лежат на ленте под клипами: двигайте их мышкой, края обрезают начало и конец. Настройки песни открываются по нажатию на неё."):TR("Можно добавить несколько песен сразу, в том числе целые WAV до 150 МБ. Кусок песни удобно выбрать прямо на ленте, а бит сделать в битмейкере."),P.tracks.length?badge(String(P.tracks.length)):""));
   P.tracks.slice().sort(function(a,b){ return a.at-b.at; }).forEach(function(k){ box.appendChild(el('<button class="mrow2'+(selM===k.id?" on":"")+'"><span class="ic">'+sv("mus")+'</span><b data-nt></b><small>'+tms(k.at)+' · '+tms(k.len||0)+'</small></button>',function(r){ $("b",r).textContent=k.name; r.onclick=function(){ selectM(k.id); refreshPane(); }; })); });
-  box.appendChild(el('<button class="btn w">'+sv("file")+'<span>'+esc(TR("Добавить песни"))+'</span><small>MP3, WAV</small></button>',function(b){ b.onclick=pickMusic; }));
-  if(P.tracks.length){ box.appendChild(note(TR("Песни лежат на ленте под клипами: двигайте их мышкой, края обрезают начало и конец. Настройки песни открываются по нажатию на неё.")));
-    if(musEnd()>L.total+.05&&L.total>0) box.appendChild(note(TR("Музыка длиннее ролика: всё, что правее последнего клипа, в видео не попадёт.")));
+  box.appendChild(el('<button class="btn w go" data-tip="MP3, WAV">'+sv("add")+'<span>'+esc(TR("Добавить песни"))+'</span></button>',function(b){ b.onclick=pickMusic; }));
+  if(P.tracks.length){ if(musEnd()>L.total+.05&&L.total>0) box.appendChild(warn(TR("Музыка длиннее ролика"),TR("Музыка длиннее ролика: всё, что правее последнего клипа, в видео не попадёт.")));
     box.appendChild(toggle(TR("Плавно убрать музыку в конце"),P.mfade!==false,function(v){ remember(); P.mfade=v; save(); })); }
-  else box.appendChild(note(TR("Можно добавить несколько песен сразу, в том числе целые WAV до 150 МБ. Кусок песни удобно выбрать прямо на ленте, а бит сделать в битмейкере.")));
   if(P.clips.some(function(c){ return c.type==="vid"; })){ box.appendChild(sh("Звук из видео")); box.appendChild(range(TR("Громкость звука из видео"),Math.round((P.vvol==null?1:P.vvol)*100),0,100,1,pct,function(v){ P.vvol=v/100; if(MASTER) MASTER.gain.value=P.vvol; })); }
 }
 function paneMore(box){
-  box.appendChild(el('<button class="btn w">'+sv("wand")+'<span>'+esc(TR("Пример из фонов"))+'</span><small>'+esc(TR("4 кадра с подписями"))+'</small></button>',function(n){ n.onclick=demo; }));
-  box.appendChild(el('<button class="btn w">'+esc(TR("Сделать копию"))+'</button>',function(n){ n.onclick=function(){ var c=JSON.parse(JSON.stringify(P)); c.id=newId(); c.title=TR("{0} (копия)",P.title||""); c.updated=Date.now(); pPut(c).then(function(){ openP(c); toast(TR("Открыта копия")); }); }; }));
-  box.appendChild(el('<button class="btn w del">'+esc(TR("Удалить ролик"))+'</button>',function(n){ n.onclick=function(){ ask(TR("Удалить «{0}»? Вернуть не получится.",P.title||""),TR("Удалить")).then(function(y){ if(y){ var p=P; stopPlay(); pDel(p).then(function(){ P=null; showHome(); }); } }); }; }));
-  box.appendChild(el('<p class="note" style="margin-top:8px">'+esc(TR("Ролик и исходные файлы хранятся в этом браузере. Пробел: играть и стоп. Стрелки: шаг по времени. S: разрезать клип по курсору. M: звук видео. Delete: удалить клип. Ctrl+Z: отменить. Ctrl и колесо над лентой: масштаб."))+'</p>'));
+  box.appendChild(sh("Ролик",TR("Ролик и исходные файлы хранятся в этом браузере.")));
+  box.appendChild(el('<button class="btn w" data-tip="'+esc(TR("4 кадра с подписями"))+'">'+sv("wand")+'<span>'+esc(TR("Пример из фонов"))+'</span></button>',function(n){ n.onclick=demo; }));
+  box.appendChild(el('<button class="btn w">'+sv("dup")+'<span>'+esc(TR("Сделать копию"))+'</span></button>',function(n){ n.onclick=function(){ var c=JSON.parse(JSON.stringify(P)); c.id=newId(); c.title=TR("{0} (копия)",P.title||""); c.updated=Date.now(); pPut(c).then(function(){ openP(c); toast(TR("Открыта копия")); }); }; }));
+  box.appendChild(el('<button class="btn w del">'+sv("x")+'<span>'+esc(TR("Удалить ролик"))+'</span></button>',function(n){ n.onclick=function(){ ask(TR("Удалить «{0}»? Вернуть не получится.",P.title||""),TR("Удалить")).then(function(y){ if(y){ var p=P; stopPlay(); pDel(p).then(function(){ P=null; showHome(); }); } }); }; }));
+  box.appendChild(sh("Оформление",TR("Тема и акцент запоминаются в этом браузере и действуют во всех роликах.")));
+  themeUi(box);
+  if(wide.matches) box.appendChild(el('<button class="btn w">'+sv("kbd")+'<span>'+esc(TR("Горячие клавиши"))+'</span></button>',function(n){ n.onclick=keysModal; }));
 }
 /* настройки выбранной песни */
 function inspMus(k){ var L=TL();
@@ -594,9 +645,10 @@ function inspMus(k){ var L=TL();
   insp.appendChild(range(TR("Сколько играть"),Math.round((k.len||0)*10)/10,.5,Math.max(.6,Math.floor(((k.dur||1)-(k.in||0))*10)/10),.1,tm,function(v){ k.len=v; timeline(); }));
   insp.appendChild(el('<div class="row" style="margin-bottom:12px"><button class="btn">'+esc(TR("На курсор"))+'</button><button class="btn">'+esc(TR("До конца ролика"))+'</button></div>',function(r){ var b=$$("button",r);
     b[0].onclick=function(){ remember(); k.at=Math.round(cur*100)/100; changed(true); }; b[1].onclick=function(){ if(L.total-k.at<.5){ toast(TR("Песня стоит правее конца ролика")); return; } remember(); k.len=clamp(L.total-k.at,.5,Math.max(.5,k.dur-(k.in||0))); changed(true); }; }));
+  insp.appendChild(sh("Края песни",TR("Две песни можно свести внахлёст: поставьте вторую чуть раньше конца первой и дайте первой плавный конец, а второй плавное начало.")));
   insp.appendChild(range(TR("Плавное начало"),k.fi||0,0,6,.5,sec,function(v){ k.fi=v; }));
   insp.appendChild(range(TR("Плавный конец"),k.fo||0,0,6,.5,sec,function(v){ k.fo=v; }));
-  insp.appendChild(note(TR("Две песни можно свести внахлёст: поставьте вторую чуть раньше конца первой и дайте первой плавный конец, а второй плавное начало.")));
+
 }
 /* движение кадра: готовые ходы и свои точки */
 function ltOf(c){ var i=P.clips.indexOf(c), L=TL(), s=L.s[i]; if(cur<s-.001||cur>s+clen(c)+.001){ cur=s; sync(cur,false); timeUi(); } return clamp(cur-s,0,clen(c)); }
@@ -606,8 +658,7 @@ function motionUi(c){
   insp.appendChild(choice(TR("Готовое движение"),[["in",TR("приблизить")],["inout",TR("приблизить и вернуть")],["out",TR("отдалить")],["pan",TR("проезд")]],c.mvk||"",function(v){ remember(); c.mvk=v; if(c.mvd==null) c.mvd=2; c.mvz=c.mvz||1.3; genKeys(c); changed(); refreshInsp(); }));
   if(c.mvk){ insp.appendChild(choice(TR("За сколько"),[[1,"1 "+TR("с")],[2,"2 "+TR("с")],[3,"3 "+TR("с")],[5,"5 "+TR("с")],[0,TR("весь клип")]],c.mvd||0,function(v){ remember(); c.mvd=+v; genKeys(c); changed(); refreshInsp(); }));
     insp.appendChild(range(TR("Сила"),Math.round((c.mvz||1.3)*100),105,300,5,pct,function(v){ c.mvz=v/100; genKeys(c); draw(cur); },function(){ timeline(); refreshInsp(); })); }
-  insp.appendChild(sh("Точки движения"));
-  insp.appendChild(note(TR("Точка запоминает, как стоит кадр в этот момент. Между точками кадр едет плавно. Встаньте на нужное время в ленте и подвиньте кадр мышкой, колесо приближает: точка поставится сама.")));
+  insp.appendChild(sh("Точки движения",TR("Точка запоминает, как стоит кадр в этот момент. Между точками кадр едет плавно. Встаньте на нужное время в ленте и подвиньте кадр мышкой, колесо приближает: точка поставится сама.")));
   var lt=ltOf(c), K=keyAt(c,lt,false), m=motion(c,lt);
   function edit(fn){ return function(v){ var k=keyAt(c,ltOf(c),true); delete c.mvk; fn(k,v); draw(cur); }; }
   function done(){ timeline(); refreshInsp(); }
@@ -621,8 +672,8 @@ function motionUi(c){
 }
 /* настройки выбранного клипа */
 function refreshInsp(){
-  if(!P) return; if(!wide.matches&&ui.sheet!=="insp") return; var sc0=insp.scrollTop; insp.innerHTML=""; var k=selM&&trackOf(selM); if(k){ inspMus(k); insp.scrollTop=sc0; return; }
-  if(selJ!=null&&selJ<P.clips.length-1){ inspJn(selJ); insp.scrollTop=sc0; return; } selJ=null;
+  if(!P) return; if(!wide.matches&&ui.sheet!=="insp") return; var sc0=insp.scrollTop; insp.innerHTML=""; var k=selM&&trackOf(selM); if(k){ secOf("mus1"); inspMus(k); insp.scrollTop=sc0; return; }
+  if(selJ!=null&&selJ<P.clips.length-1){ secOf("jn"); inspJn(selJ); insp.scrollTop=sc0; return; } selJ=null; secOf("clip");
   var c=P.clips[selC];
   $("#shTitle").textContent=c?TR("Клип {0}",selC+1):TR("Клип");
   if(!c){ insp.appendChild(el('<p class="note">'+esc(TR("Добавьте фото и видео: кнопка «+» в ленте внизу или перетащите файлы в окно."))+'</p>')); return; }
@@ -631,25 +682,25 @@ function refreshInsp(){
      ["r","Позже",function(){ if(selC<P.clips.length-1){ remember(); var t=P.clips[selC]; P.clips[selC]=P.clips[selC+1]; P.clips[selC+1]=t; selC++; changed(true); } }],
      ["dup","Копия клипа",function(){ remember(); var q=JSON.parse(JSON.stringify(c)); q.id=newId("c"); P.clips.splice(selC+1,0,q); selC++; changed(true); }],
      ["x","Удалить клип",function(){ delClip(selC); }]].forEach(function(o){
-      r.appendChild(el('<button class="btn" title="'+esc(TR(o[1]))+'">'+sv(o[0])+'</button>',function(b){ b.onclick=o[2]; })); }); }));
+      r.appendChild(el('<button class="btn'+(o[0]==="x"?" del":"")+'" title="'+esc(TR(o[1]))+'">'+sv(o[0])+'</button>',function(b){ b.onclick=o[2]; })); }); }));
   if(c.type==="img") insp.appendChild(range(TR("Длительность"),c.dur||3,.5,15,.5,sec,function(v){ c.dur=v; fixKeys(c); timeline(); redraw(); },function(){ refreshInsp(); }));
   else { var len=c.len||c.out||10;
     insp.appendChild(range(TR("Начало"),Math.round((c.in||0)*10)/10,0,Math.max(.1,Math.floor(len*10)/10),.1,tm,function(v){ c.in=Math.min(v,(c.out||len)-.3); fixKeys(c); timeline(); seek(TL().s[selC]); }));
     insp.appendChild(range(TR("Конец"),Math.round((c.out||len)*10)/10,.3,Math.floor(len*10)/10,.1,tm,function(v){ c.out=Math.max(v,(c.in||0)+.3); fixKeys(c); timeline(); seek(TL().s[selC]+Math.max(0,clen(c)-1)); }));
-    insp.appendChild(el('<p class="note" style="margin:-4px 0 10px">'+esc(TR("Кусок: {0}",sec(clen(c))))+'</p>'));
+    insp.appendChild(el('<div class="stat">'+badge(TR("Кусок: {0}",sec(clen(c))))+'</div>'));
     insp.appendChild(toggle(TR("Звук этого видео"),!c.mute,function(v){ if(!!c.mute===!v) return; toggleMute(c); }));
     if(!c.mute) insp.appendChild(range(TR("Громкость"),Math.round((c.vol==null?1:c.vol)*100),0,100,1,pct,function(v){ c.vol=v/100; })); }
-  insp.appendChild(sh("Разрезать"));
+  insp.appendChild(sh("Разрезать",TR("Разрез проходит по курсору, это белая линия в ленте. Ножницы под плеером и клавиша S тоже режут. Файл не меняется: у куска просто сдвигаются начало и конец.")));
   insp.appendChild(el('<div class="row cutr"><button class="btn" data-a="s">'+sv("cut")+'<span>'+esc(TR("По курсору"))+'</span></button><button class="btn" data-a="l">'+esc(TR("Убрать до курсора"))+'</button><button class="btn" data-a="r">'+esc(TR("Убрать после"))+'</button></div>',function(r){
     $$("button",r).forEach(function(b){ b.onclick=function(){ var a=b.getAttribute("data-a"); if(a==="s") splitClip(); else trimAt(a); }; }); }));
-  insp.appendChild(note(TR("Разрез проходит по курсору, это белая линия в ленте. Ножницы под плеером и клавиша S тоже режут. Файл не меняется: у куска просто сдвигаются начало и конец.")));
-  insp.appendChild(sh("Текст на клипе"));
+
+  insp.appendChild(sh("Текст на клипе",TR("Надпись можно двигать прямо по кадру мышкой или пальцем, уголок рамки меняет размер.")));
   c.text=c.text||{ t:"", style:"title", pos:"bot", color:"#ffffff" }; var T=c.text;
   insp.appendChild(el('<div class="f"><textarea rows="2" maxlength="140" placeholder="'+esc(TR("Надпись поверх кадра"))+'"></textarea></div>',function(f){ var i=$("textarea",f), first=true; i.value=T.t||"";
     i.oninput=function(){ if(first){ first=false; remember(); } T.t=i.value; save(); redraw(); }; i.onblur=function(){ first=true; timeline(); }; }));
   insp.appendChild(choice(TR("Вид"),Object.keys(TSTY).map(function(q){ return [q,TR(TSTY[q])]; }),T.style||"title",function(v){ remember(); T.style=v; changed(); }));
   insp.appendChild(choice(TR("Где"),Object.keys(TPOS).map(function(q){ return [q,TR(TPOS[q])]; }).concat(T.x!=null?[["own",TR("своё место")]]:[]),T.x!=null?"own":(T.pos||"bot"),function(v){ if(v==="own") return; remember(); T.pos=v; delete T.x; delete T.y; changed(); refreshInsp(); }));
-  insp.appendChild(note(TR("Надпись можно двигать прямо по кадру мышкой или пальцем, уголок рамки меняет размер.")));
+
   insp.appendChild(range(TR("Размер"),Math.round((T.size||1)*100),40,300,5,pct,function(v){ T.size=v/100; redraw(); }));
   insp.appendChild(choice(TR("Появление"),Object.keys(TANI).map(function(q){ return [q,TR(TANI[q])]; }),T.anim||P.anim,function(v){ remember(); T.anim=v; changed(); }));
   insp.appendChild(el('<div class="sws"></div>',function(w){ ["#ffffff","#ffd166","#4fd6c8","#ff5fa2","#ff9a4d","#111111"].forEach(function(col){ w.appendChild(el('<button class="'+((T.color||"#ffffff")===col?"on":"")+'" style="background:'+col+'"></button>',function(b){ b.onclick=function(){ remember(); T.color=col; changed(); refreshInsp(); }; })); }); }));
@@ -677,6 +728,7 @@ addEventListener("keydown",function(e){ if($("#ed").hidden||$("#modal").classLis
   else if(k==="s"&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); splitClip(); }
   else if(k==="m"&&!e.ctrlKey&&!e.metaKey){ var mc=P.clips[clipAt(cur)]; if(mc&&mc.type==="vid") toggleMute(mc); } });
 $("#title").addEventListener("input",function(){ if(P){ P.title=this.value; save(); } });
+$("#thBtn").onclick=themeModal; $("#keysBtn").onclick=keysModal;
 $("#emptyAdd").onclick=pickMedia; $("#emptyDemo").onclick=function(){ demo(); };
 
 /* ═══════════ мои ролики ═══════════ */

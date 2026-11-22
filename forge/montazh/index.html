@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0c0e12">
+<script>/* тема монтажа до первой отрисовки, чтобы светлая не мигала тёмной */try{var mt=JSON.parse(localStorage.getItem("forge:mz-theme")||"{}");if(mt.t)document.documentElement.setAttribute("data-mth",mt.t);}catch(e){}</script>
 <title>FORGE · монтаж роликов</title>
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=manrope:400,600,700,800|unbounded:500,700&display=swap">
 <link rel="stylesheet" href="../HTML-CSS-JS/editor.css?v=3">
-<link rel="stylesheet" href="montazh.css?v=4">
+<link rel="stylesheet" href="montazh.css?v=5">
 </head>
 <body>
 
@@ -31,6 +32,7 @@
     <button class="ib" id="toHome" title="Мои ролики"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     <input id="title" class="title" maxlength="80" aria-label="Название">
     <span class="sp"></span>
+    <button class="ib" id="thBtn" title="Оформление"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18c1 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.9.7-1.6 1.6-1.6H16a5 5 0 005-5C21 6.4 17 3 12 3zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01M17 11.5h.01"/></svg></button>
     <button class="ib" id="undo" title="Отменить (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
     <button class="ib" id="redo" title="Повторить (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
     <button class="pri" id="saveBtn">Собрать видео</button>
@@ -38,11 +40,13 @@
 
   <aside class="left" id="left">
     <nav class="tabs" id="tabs">
-      <button data-tab="vid"><svg viewBox="0 0 24 24"><path d="M3 6h13v12H3zM16 10l5-3v10l-5-3"/></svg><span>Ролик</span></button>
-      <button data-tab="clip" class="mob"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4"/></svg><span>Клип</span></button>
-      <button data-tab="col"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/></svg><span>Цвет</span></button>
-      <button data-tab="mus"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>Музыка</span></button>
-      <button data-tab="more"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+      <button data-tab="vid" title="Ролик: стиль, формат, переходы"><svg viewBox="0 0 24 24"><path d="M3 6h13v12H3zM16 10l5-3v10l-5-3"/></svg><span>Ролик</span></button>
+      <button data-tab="clip" class="mob" title="Клип: настройки выбранного"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4"/></svg><span>Клип</span></button>
+      <button data-tab="col" title="Цвет: фильтры и подстройка"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/></svg><span>Цвет</span></button>
+      <button data-tab="mus" title="Музыка: песни и звук из видео"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span>Музыка</span></button>
+      <button data-tab="more" title="Ещё: пример, копия, оформление"><svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>Ещё</span></button>
+      <i class="rsp"></i>
+      <button class="rb" id="keysBtn" title="Горячие клавиши"><svg viewBox="0 0 24 24"><path d="M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M8 14h8"/></svg></button>
     </nav>
     <div class="pane" id="pane"></div>
   </aside>
@@ -68,9 +72,9 @@
 <div class="vdrop" id="drop"><b>Отпустите файлы, они добавятся в конец</b></div>
 <input type="file" id="fIn" hidden>
 
-<script src="../i18n-forge.js?v=16"></script>
+<script src="../i18n-forge.js?v=17"></script>
 <script src="../HTML-CSS-JS/engine.js?v=3"></script>
 <script src="../fony/fony-engine.js?v=1"></script>
-<script src="montazh.js?v=4"></script>
+<script src="montazh.js?v=5"></script>
 </body>
 </html>

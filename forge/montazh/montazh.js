@@ -24,7 +24,8 @@ function pick1(label,opts,cur,fn){ return el('<div class="f"><label>'+esc(label)
 var SV={ img:"M4 5h16v14H4zM4 15l4-4 5 5 3-3 4 4", vid:"M3 6h13v12H3zM16 10l5-3v10l-5-3", add:"M12 5v14M5 12h14", x:"M6 6l12 12M18 6L6 18", l:"M15 5l-7 7 7 7", r:"M9 5l7 7-7 7", dup:"M8 8h12v12H8zM4 16V4h12",
   file:"M14 3H6v18h12V7zM14 3v4h4", mus:"M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z", txt:"M5 6h14M12 6v13M9 19h6", wand:"M15 4l5 5L9 20l-5-5zM13 6l5 5", key:"M12 4l8 8-8 8-8-8z", cut:"M6 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12",
   snd:"M4 9h4l5-4v14l-5-4H4zM16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11", mute:"M4 9h4l5-4v14l-5-4H4zM16 9l5 6M21 9l-5 6",
-  warn:"M12 4l9 16H3zM12 10v4M12 17h.01", cc:"M3 6h18v12H3zM7 11h3M7 14h6M14 11h3M15 14h2", kbd:"M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M8 14h8", pal:"M12 3a9 9 0 100 18c1 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.9.7-1.6 1.6-1.6H16a5 5 0 005-5C21 6.4 17 3 12 3zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01M17 11.5h.01" };
+  warn:"M12 4l9 16H3zM12 10v4M12 17h.01", rl:"M3 4v6h6M3.5 10A9 9 0 1112 21", rr:"M21 4v6h-6M20.5 10A9 9 0 1012 21", fh:"M12 3v18M8 7l-5 5 5 5zM16 7l5 5-5 5z", fv:"M3 12h18M7 8l5-5 5 5zM7 16l5 5 5-5z",
+  mic:"M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3zM5 11a7 7 0 0014 0M12 18v3", frz:"M4 5h16v14H4zM10 9v6M14 9v6", nr:"M3 12h3l2-5 3 10 3-8 2 3h5", cc:"M3 6h18v12H3zM7 11h3M7 14h6M14 11h3M15 14h2", kbd:"M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M8 14h8", pal:"M12 3a9 9 0 100 18c1 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.9.7-1.6 1.6-1.6H16a5 5 0 005-5C21 6.4 17 3 12 3zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01M17 11.5h.01" };
 function sv(n){ return '<svg viewBox="0 0 24 24"><path d="'+SV[n]+'"/></svg>'; }
 function tm(s){ s=Math.max(0,s||0); var m=Math.floor(s/60), r=s-m*60; return m+":"+r.toFixed(1).padStart(4,"0"); }
 function tms(s){ s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
@@ -51,7 +52,7 @@ function themeUi(box){
 }
 function themeRefresh(){ var b=$("#thBox"); if(b){ b.innerHTML=""; themeUi(b); } if(typeof refreshPane==="function"&&P) refreshPane(); }
 function themeModal(){ modal('<button class="ib mx" data-close>'+sv("x")+'</button><h3>'+esc(TR("Оформление"))+'</h3><div id="thBox"></div>'); themeUi($("#thBox")); }
-function keysModal(){ var K=[["Пробел","Играть и стоп"],["← →","Шаг по времени"],["Shift + ← →","Шаг на секунду"],["S","Разрезать клип по курсору"],["T","Добавить текст на курсор"],["M","Звук видео под курсором"],["Delete","Удалить выбранное"],["Ctrl + Z","Отменить"],["Ctrl + Y","Повторить"],["Ctrl + колесо","Масштаб ленты"]];
+function keysModal(){ var K=[["Пробел","Играть и стоп"],["← →","Шаг по времени"],["Shift + ← →","Шаг на секунду"],["S","Разрезать клип по курсору"],["F","Стоп-кадр на курсоре"],["R","Записать голос и остановить запись"],["T","Добавить текст на курсор"],["M","Звук видео под курсором"],["Delete","Удалить выбранное"],["Ctrl + Z","Отменить"],["Ctrl + Y","Повторить"],["Ctrl + колесо","Масштаб ленты"]];
   modal('<button class="ib mx" data-close>'+sv("x")+'</button><h3>'+esc(TR("Горячие клавиши"))+'</h3><div class="keys">'+K.map(function(k){ return '<div><kbd>'+esc(TR(k[0]))+'</kbd><span>'+esc(TR(k[1]))+'</span></div>'; }).join("")+'</div>'); }
 
 /* ═══════════ всплывающие подсказки ═══════════
@@ -135,7 +136,9 @@ function migrate(p){ p.clips=p.clips||[]; p.tracks=p.tracks||[]; p.adj=p.adj||{}
 
 /* ═══════════ проект и время ═══════════ */
 var P=null;
-function clen(c){ return c.type==="vid"?Math.max(.2,(c.out||0)-(c.in||0)):(c.dur||3); }
+function clen(c){ return c.type==="vid"?Math.max(.2,((c.out||0)-(c.in||0))/(c.sp||1)):(c.dur||3); }
+/* время в исходном видео для момента lt внутри клипа: со скоростью c.sp кусок исходника проходит быстрее или медленнее */
+function srcT(c,lt){ return (c.in||0)+lt*(c.sp||1); }
 /* начала клипов с учётом переходов: следующий клип начинается раньше на длину перехода */
 function TL(){ return TLp(P); }
 function TLp(p){ var s=[], d=[], t=0, cl=p?p.clips:[]; for(var i=0;i<cl.length;i++){ s.push(t); var tr=cl[i].tr||"none", dd=0;
@@ -221,13 +224,21 @@ function fbFilter(X,s){ var W=X.canvas.width, H=X.canvas.height; s.replace(/([a-
   else if(n==="contrast"&&v>1){ X.globalCompositeOperation="overlay"; X.globalAlpha=clamp((v-1)*1.3,0,1); X.drawImage(X.canvas,0,0); }
   X.restore(); }); }
 var EXF=null; /* во время быстрой сборки: кадры видео из декодера по id клипа */
+/* размер кадра после обрезки и поворота: на 90 и 270 градусов ширина и высота меняются местами */
+function cropOf(c){ var k=c.crop||{}; return { l:k.l||0, r:k.r||0, t:k.t||0, b:k.b||0 }; }
+function dispWH(c,w,h){ var k=cropOf(c), cw=w*Math.max(.05,1-k.l-k.r), ch=h*Math.max(.05,1-k.t-k.b); return (c.rot||0)%180?[ch,cw]:[cw,ch]; }
+/* рисуем исходник с обрезкой, поворотом и отражением в прямоугольник dw x dh с центром cx, cy */
+function drawSrc(X,e,c,w,h,cx,cy,dw,dh){ var k=cropOf(c), sx=w*k.l, sy=h*k.t, sw=w*Math.max(.05,1-k.l-k.r), sh=h*Math.max(.05,1-k.t-k.b), rot=c.rot||0;
+  if(!rot&&!c.fh&&!c.fv&&!sx&&!sy&&sw===w&&sh===h){ X.drawImage(e,cx-dw/2,cy-dh/2,dw,dh); return; }
+  X.save(); X.translate(cx,cy); if(rot) X.rotate(rot*Math.PI/180); if(c.fh||c.fv) X.scale(c.fh?-1:1,c.fv?-1:1);
+  var ow=rot%180?dh:dw, oh=rot%180?dw:dh; X.drawImage(e,sx,sy,sw,sh,-ow/2,-oh/2,ow,oh); X.restore(); }
 function drawMedia(X,c,lt,id){ var W=X.canvas.width, H=X.canvas.height, m=media(c), e=EXF&&c.type==="vid"?EXF[c.id]:m.el; if(!e||(!EXF||c.type!=="vid")&&!m.ok){ X.fillStyle="#15181d"; X.fillRect(0,0,W,H); return; }
-  var w=e.videoWidth||e.naturalWidth||e.width||W, h=e.videoHeight||e.naturalHeight||e.height||H, mo=motion(c,lt), flt=fstr(id), s, sx, sy;
+  var w0=e.videoWidth||e.naturalWidth||e.width||W, h0=e.videoHeight||e.naturalHeight||e.height||H, wh=dispWH(c,w0,h0), w=wh[0], h=wh[1], mo=motion(c,lt), flt=fstr(id), s, sx, sy;
   if(P.fit==="blur"&&Math.abs(w/h-W/H)>.05){ var s0=Math.max(W/w,H/h)*1.1; if(HASF) X.filter="blur("+Math.round(W/28)+"px) brightness(.6) "+flt; else X.globalAlpha=.5;
-    X.drawImage(e,(W-w*s0)/2,(H-h*s0)/2,w*s0,h*s0); X.globalAlpha=1; s=Math.min(W/w,H/h)*mo.z; }
+    drawSrc(X,e,c,w0,h0,W/2,H/2,w*s0,h*s0); X.globalAlpha=1; s=Math.min(W/w,H/h)*mo.z; }
   else s=Math.max(W/w,H/h)*mo.z;
   sx=(mo.x||0)*Math.abs(w*s-W)/2+(mo.ox||0)*W; sy=(mo.y||0)*Math.abs(h*s-H)/2;
-  if(HASF) X.filter=flt||"none"; X.drawImage(e,(W-w*s)/2+sx,(H-h*s)/2+sy,w*s,h*s); if(HASF) X.filter="none"; else if(flt) fbFilter(X,flt); }
+  if(HASF) X.filter=flt||"none"; drawSrc(X,e,c,w0,h0,W/2+sx,H/2+sy,w*s,h*s); if(HASF) X.filter="none"; else if(flt) fbFilter(X,flt); }
 var NOISE=null;
 function noise(){ if(NOISE) return NOISE; NOISE=document.createElement("canvas"); NOISE.width=NOISE.height=192; var x=NOISE.getContext("2d"), d=x.createImageData(192,192); for(var i=0;i<d.data.length;i+=4){ var v=Math.random()*255|0; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255; } x.putImageData(d,0,0); return NOISE; }
 function grade(X,id,lt,gk){ var W=X.canvas.width, H=X.canvas.height, k=LOOKS[id]||LOOKS.none, A=P.adj||{}; X.save(); if(HASF) X.filter="none";
@@ -310,23 +321,36 @@ cvw.addEventListener("wheel",function(e){ if(!P||PL.on||!P.clips.length) return;
 /* ═══════════ проигрывание ═══════════ */
 var AC=null, MASTER=null, MUS=null, RD=null, PL={ on:false, t0:0, raf:0, exp:null }, cur=0;
 function ensureAC(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); MASTER=AC.createGain(); MASTER.connect(AC.destination); MUS=AC.createGain(); MUS.connect(AC.destination);
-    Object.keys(MEDIA).forEach(function(k){ hookAudio(MEDIA[k]); }); Object.keys(AUD).forEach(function(k){ hookMus(AUD[k]); }); }
+    Object.keys(MEDIA).forEach(function(k){ hookAudio(MEDIA[k]); }); Object.keys(AUD).forEach(function(k){ hookMus(AUD[k]); }); Object.keys(NRA).forEach(function(k){ hookNr(NRA[k]); }); }
   if(AC.state==="suspended") AC.resume(); }
 function play(from){ if(!P||!P.clips.length) return; ensureAC(); var L=TL(); if(from>=L.total-.05) from=0; tsel.classList.remove("on");
-  PL.on=true; PL.t0=AC.currentTime+.05-from; MASTER.gain.value=P.vvol==null?1:P.vvol; playUi(); loop(); }
+  PL.on=true; PL.t0=AC.currentTime+.05-from; MASTER.gain.value=(P.vvol==null?1:P.vvol)*(REC?.35:1); playUi(); loop(); }
 function stopPlay(){ PL.on=false; cancelAnimationFrame(PL.raf); if(P){ P.clips.forEach(function(c){ var m=MEDIA[c.id]; if(m&&m.el&&m.el.tagName==="VIDEO"&&!m.el.paused) m.el.pause(); });
-    P.tracks.forEach(function(k){ var a=AUD[k.id]; if(a&&a.el&&!a.el.paused) a.el.pause(); if(a&&a.g) a.g.gain.value=0; }); } playUi(); }
+    P.tracks.forEach(function(k){ var a=AUD[k.id]; if(a&&a.el&&!a.el.paused) a.el.pause(); if(a&&a.g) a.g.gain.value=0; }); }
+  Object.keys(NRA).forEach(function(id){ var a=NRA[id]; if(a.el&&!a.el.paused) a.el.pause(); }); playUi(); }
 function loop(){ if(!PL.on) return; var L=TL(), t=AC.currentTime-PL.t0; if(t<0) t=0;
   if(t>=L.total){ cur=L.total; draw(L.total-.001); stopPlay(); if(PL.exp) PL.exp(); else { cur=0; sync(0,false); draw(0); } timeUi(); return; }
   cur=t; sync(t,true); draw(t); timeUi(); PL.raf=requestAnimationFrame(loop); }
 /* видео и музыка идут сами, мы только запускаем их вовремя и подправляем, если ушли больше чем на 0.3 с */
-function sync(t,playing){ var L=TL(); P.clips.forEach(function(c,i){ if(c.type!=="vid") return; var m=media(c), v=m.el; if(!v) return; var s=L.s[i], e=s+clen(c), on=t>=s-.02&&t<e, target=(c.in||0)+(t-s);
-  if(m.g) m.g.gain.value=c.mute?0:(c.vol==null?1:c.vol);
-  if(on&&playing){ if(v.paused){ try{ v.currentTime=Math.max(c.in||0,target); }catch(x){} v.play().catch(function(){}); } else if(Math.abs(v.currentTime-target)>.3){ try{ v.currentTime=target; }catch(x){} } }
+/* очищенный звук видео: свой <audio>, идёт вместе с видео, а звук самого видео в это время выключен */
+var NRA={};
+function nrAudio(c){ var key=c.nr.key, a=NRA[c.id]; if(a&&a.key===key) return a; if(a&&a.el) a.el.pause(); a=NRA[c.id]={ key:key, el:null, g:null };
+  blobUrl(key).then(function(u){ if(!u||NRA[c.id]!==a) return; var e=new Audio(); e.preload="auto"; e.src=u; a.el=e; if(AC) hookNr(a); }); return a; }
+function hookNr(a){ if(a.node||!a.el) return; try{ a.node=AC.createMediaElementSource(a.el); a.g=AC.createGain(); a.g.gain.value=0; a.node.connect(a.g); a.g.connect(MASTER); }catch(e){} }
+function syncNr(c,on,playing,target,r,t){ var a=nrAudio(c), e=a.el; if(!e) return; if(AC&&!a.g) hookNr(a);
+  if(a.g) a.g.gain.value=c.mute?0:(c.vol==null?1:c.vol)*duckAt(t,true)*(REC?.35:1);
+  if(e.playbackRate!==r){ try{ e.playbackRate=r; e.preservesPitch=true; }catch(x){} }
+  if(on&&playing){ if(e.paused){ try{ e.currentTime=Math.max(0,target); }catch(x){} e.play().catch(function(){}); } else if(Math.abs(e.currentTime-target)>.25*Math.max(1,r)){ try{ e.currentTime=target; }catch(x){} } }
+  else if(!e.paused) e.pause(); }
+function sync(t,playing){ var L=TL(); P.clips.forEach(function(c,i){ if(c.type!=="vid") return; var m=media(c), v=m.el; if(!v) return; var s=L.s[i], e=s+clen(c), on=t>=s-.02&&t<e, target=srcT(c,t-s), r=c.sp||1, nrOn=nrOk(c);
+  if(m.g) m.g.gain.value=c.mute||nrOn?0:(c.vol==null?1:c.vol)*duckAt(t,true);
+  if(v.playbackRate!==r){ try{ v.playbackRate=r; v.preservesPitch=true; }catch(x){} }
+  if(on&&playing){ if(v.paused){ try{ v.currentTime=Math.max(c.in||0,target); }catch(x){} v.play().catch(function(){}); } else if(Math.abs(v.currentTime-target)>.3*Math.max(1,r)){ try{ v.currentTime=target; }catch(x){} } }
   else if(on){ if(Math.abs(v.currentTime-target)>.04){ try{ v.currentTime=Math.max(0,target); }catch(x){} } }
-  else { if(!v.paused) v.pause(); if(playing&&t<s&&s-t<1.2&&Math.abs(v.currentTime-(c.in||0))>.1){ try{ v.currentTime=c.in||0; }catch(x){} } } });
+  else { if(!v.paused) v.pause(); if(playing&&t<s&&s-t<1.2&&Math.abs(v.currentTime-(c.in||0))>.1){ try{ v.currentTime=c.in||0; }catch(x){} } }
+  if(nrOn) syncNr(c,on,playing,target-c.nr.a,r,t); else if(NRA[c.id]&&NRA[c.id].el&&!NRA[c.id].el.paused) NRA[c.id].el.pause(); });
   P.tracks.forEach(function(k){ var a=audioOf(k), e=a.el; if(!e||!k.len) return; var s=k.at, end=s+k.len, on=playing&&t>=s-.02&&t<Math.min(end,L.total), target=(k.in||0)+(t-s);
-    if(a.g){ var v=0; if(on){ v=k.vol==null?.8:k.vol; if(k.fi>0) v*=clamp((t-s)/k.fi,0,1); if(k.fo>0) v*=clamp((end-t)/k.fo,0,1); if(P.mfade&&L.total>2.5) v*=clamp((L.total-t)/2,0,1); } a.g.gain.setTargetAtTime(v,AC.currentTime,.015); }
+    if(a.g){ var v=0; if(on){ v=k.vol==null?(k.vo?1:.8):k.vol; if(k.fi>0) v*=clamp((t-s)/k.fi,0,1); if(k.fo>0) v*=clamp((end-t)/k.fo,0,1); if(!k.vo){ if(P.mfade!==false&&L.total>2.5) v*=clamp((L.total-t)/2,0,1); v*=duckAt(t); } if(REC&&!k.rec) v*=.35; } a.g.gain.setTargetAtTime(v,AC.currentTime,.015); }
     if(on){ if(e.paused){ try{ e.currentTime=Math.max(0,target); }catch(x){} e.play().catch(function(){}); } else if(Math.abs(e.currentTime-target)>.25){ try{ e.currentTime=target; }catch(x){} } }
     else { if(!e.paused) e.pause(); if(playing&&t<s&&s-t<1.5&&Math.abs(e.currentTime-(k.in||0))>.05){ try{ e.currentTime=k.in||0; }catch(x){} } } }); }
 function seek(t){ var L=TL(); cur=clamp(t,0,L.total); if(PL.on){ stopPlay(); play(cur); } else { sync(cur,false); draw(cur); timeUi(); } }
@@ -358,7 +382,7 @@ function timeline(){ var sl=tlEl.scrollLeft; tlEl.innerHTML=""; if(!P) return; v
   /* клипы */
   var row=el('<div class="trow"></div>');
   P.clips.forEach(function(c,i){ var s=L.s[i], e=i<P.clips.length-1?L.s[i+1]:s+clen(c), w=Math.max(8,(e-s)*PPS-2), on=i===selC&&!selM&&selJ==null;
-    var t=el('<div class="tc'+(on?" on":"")+'" style="left:'+(s*PPS).toFixed(1)+'px;width:'+w.toFixed(1)+'px"><i class="tb"></i>'+(w>30?'<span class="ty">'+sv(c.type==="vid"?"vid":"img")+'</span>':'')+(w>64?'<small>'+clen(c).toFixed(1)+' '+esc(TR("с"))+'</small>':'')+'</div>');
+    var t=el('<div class="tc'+(on?" on":"")+'" style="left:'+(s*PPS).toFixed(1)+'px;width:'+w.toFixed(1)+'px"><i class="tb"></i>'+(w>30?'<span class="ty">'+sv(c.type==="vid"?"vid":"img")+'</span>':'')+(w>64?'<small>'+clen(c).toFixed(1)+' '+esc(TR("с"))+((c.sp||1)!==1&&w>96?' · '+String(c.sp).replace(".",window.FLANG==="en"?".":",")+'×':'')+'</small>':'')+'</div>');
     if(c.type==="vid"&&w>44) t.appendChild(el('<button class="snd'+(c.mute?" off":"")+'" title="'+esc(TR(c.mute?"Включить звук этого видео":"Выключить звук этого видео"))+'">'+sv(c.mute?"mute":"snd")+'</button>',function(bt){ bt.onclick=function(ev){ ev.stopPropagation(); toggleMute(c); }; }));
     if(i>0&&P.clips[i-1].aid===c.aid&&c.type==="vid"&&Math.abs((P.clips[i-1].out||0)-(c.in||0))<.02) t.classList.add("cont");
     thumb(c).then(function(u){ if(u) $(".tb",t).style.backgroundImage="url('"+u+"')"; });
@@ -377,7 +401,7 @@ function timeline(){ var sl=tlEl.scrollLeft; tlEl.innerHTML=""; if(!P) return; v
   P.texts.forEach(function(T){ var b=el('<div class="xb'+(selM===T.id?" on":"")+(T.sub?" sub":"")+'" style="left:'+(T.at*PPS).toFixed(1)+'px;top:'+(XR.row[T.id]*26)+'px;width:'+Math.max(8,T.len*PPS-1).toFixed(1)+'px"><i class="ml"></i><span data-nt></span><i class="mr"></i></div>');
     $("span",b).textContent=String(T.t||"").replace(/\s+/g," ");
     b.onpointerdown=function(ev){ if(ev.pointerType!=="mouse"&&selM!==T.id) return; ev.preventDefault(); dragText(ev,T,ev.target.classList.contains("ml")?"l":ev.target.classList.contains("mr")?"r":"m"); };
-    b.onclick=function(){ if(Date.now()-JUST<350) return; if(selM!==T.id) selectM(T.id); };
+    b.onclick=function(){ if(Date.now()-JUST<350) return; if(selM!==T.id||!wide.matches&&ui.sheet!=="insp") selectM(T.id); };
     xz.appendChild(b); });
   if(!P.texts.length) xz.appendChild(el('<button class="tm tx">'+sv("txt")+'<span>'+esc(TR("Добавить текст"))+'</span></button>',function(b){ b.onclick=addText; }));
   else xz.appendChild(el('<button class="tm tmp tx" style="left:'+(xEnd*PPS+6).toFixed(1)+'px" title="'+esc(TR("Добавить текст на курсор (T)"))+'">'+sv("txt")+'+</button>',function(b){ b.onclick=addText; }));
@@ -385,10 +409,10 @@ function timeline(){ var sl=tlEl.scrollLeft; tlEl.innerHTML=""; if(!P) return; v
   tin.appendChild(xz);
   /* музыка */
   var mz=el('<div class="tmz" style="height:'+(R.n*30)+'px"></div>');
-  P.tracks.forEach(function(k){ audioOf(k); var b=el('<div class="mb'+(selM===k.id?" on":"")+'" style="left:'+(k.at*PPS).toFixed(1)+'px;top:'+(R.row[k.id]*30)+'px;width:'+Math.max(10,(k.len||0)*PPS-1).toFixed(1)+'px"><i class="ml"></i><span data-nt></span><i class="mr"></i></div>');
-    $("span",b).textContent=k.name; pkUrl(k.aid).then(function(u){ if(u&&k.dur){ b.style.backgroundImage="url('"+u+"')"; b.style.backgroundSize=(k.dur*PPS).toFixed(1)+"px 100%"; b.style.backgroundPosition=(-(k.in||0)*PPS).toFixed(1)+"px 0"; } });
+  P.tracks.forEach(function(k){ audioOf(k); var b=el('<div class="mb'+(k.vo?" vo":"")+(selM===k.id?" on":"")+'" style="left:'+(k.at*PPS).toFixed(1)+'px;top:'+(R.row[k.id]*30)+'px;width:'+Math.max(10,(k.len||0)*PPS-1).toFixed(1)+'px"><i class="ml"></i><span data-nt></span><i class="mr"></i></div>');
+    $("span",b).textContent=k.name; pkUrl(k.aid,k.vo).then(function(u){ if(u&&k.dur){ b.style.backgroundImage="url('"+u+"')"; b.style.backgroundSize=(k.dur*PPS).toFixed(1)+"px 100%"; b.style.backgroundPosition=(-(k.in||0)*PPS).toFixed(1)+"px 0"; } });
     b.onpointerdown=function(ev){ if(ev.pointerType!=="mouse"&&selM!==k.id) return; ev.preventDefault(); dragTrack(ev,k,ev.target.classList.contains("ml")?"l":ev.target.classList.contains("mr")?"r":"m"); };
-    b.onclick=function(){ if(Date.now()-JUST<350) return; if(selM!==k.id) selectM(k.id); };
+    b.onclick=function(){ if(Date.now()-JUST<350) return; if(selM!==k.id||!wide.matches&&ui.sheet!=="insp") selectM(k.id); };
     mz.appendChild(b); });
   if(!P.tracks.length) mz.appendChild(el('<button class="tm">'+sv("mus")+'<span>'+esc(TR("Добавить музыку"))+'</span></button>',function(b){ b.onclick=pickMusic; }));
   else mz.appendChild(el('<button class="tm tmp" style="left:'+(mEnd*PPS+6).toFixed(1)+'px" title="'+esc(TR("Добавить музыку"))+'">'+sv("mus")+'+</button>',function(b){ b.onclick=pickMusic; }));
@@ -412,7 +436,7 @@ function addText(){ if(!P) return; if(PL.on) stopPlay(); var L=TL(), at=L.total>
 function selectM(id){ selM=id; selJ=null; timeline(); if(wide.matches) refreshInsp(); else { openInsp(); right.classList.add("peek"); } }
 /* правый край выбранного клипа: фото меняет длину, видео конец куска */
 function trimClip(e,c){ e.stopPropagation(); e.preventDefault(); var d0=c.type==="vid"?c.out:(c.dur||3);
-  grab(e,function(dx){ var v=Math.round((d0+dx/PPS)*10)/10; if(c.type==="vid") c.out=clamp(v,(c.in||0)+.3,c.len||d0); else c.dur=clamp(v,.5,60); fixKeys(c); timeline(); redraw(); },function(moved){ if(moved){ JUST=Date.now(); changed(true); } }); }
+  grab(e,function(dx){ var v=Math.round((d0+dx/PPS*(c.type==="vid"?c.sp||1:1))*10)/10; if(c.type==="vid") c.out=clamp(v,(c.in||0)+.3,c.len||d0); else c.dur=clamp(v,.5,60); fixKeys(c); timeline(); redraw(); },function(moved){ if(moved){ JUST=Date.now(); changed(true); } }); }
 /* песня: середина двигает, левый край срезает начало, правый конец; края липнут к стыкам клипов, курсору и другим песням */
 function dragTrack(e,k,mode){ var a0=k.at, i0=k.in||0, l0=k.len, L=TL(), sn=[0,L.total,cur].concat(L.s); P.tracks.forEach(function(o){ if(o!==k){ sn.push(o.at); sn.push(o.at+o.len); } });
   function snap(v){ var best=v, bd=7/PPS; sn.forEach(function(s){ var d=Math.abs(s-v); if(d<bd){ bd=d; best=s; } }); return best; }
@@ -432,8 +456,8 @@ tlEl.addEventListener("wheel",function(e){ if(e.ctrlKey||e.metaKey){ e.preventDe
 /* ═══════════ волна песни ═══════════ */
 /* Пики считаем один раз при добавлении и кладём рядом с файлом. WAV читаем кусками прямо из файла, остальное раскодирует браузер. */
 var PK={}, PKU={};
-function pkUrl(aid){ if(PKU[aid]!==undefined) return Promise.resolve(PKU[aid]);
-  return (PK[aid]?Promise.resolve(PK[aid]):bGet(aid+":pk")).then(function(pk){ if(!pk||!pk.length){ PKU[aid]=""; return ""; } var n=pk.length, cv=document.createElement("canvas"); cv.width=n; cv.height=40; var x=cv.getContext("2d"); x.fillStyle="rgba(207,194,255,.5)";
+function pkUrl(aid,vo){ if(PKU[aid]!==undefined) return Promise.resolve(PKU[aid]);
+  return (PK[aid]?Promise.resolve(PK[aid]):bGet(aid+":pk")).then(function(pk){ if(!pk||!pk.length){ PKU[aid]=""; return ""; } if(!PK[aid]){ PK[aid]=pk; DK.key=""; } var n=pk.length, cv=document.createElement("canvas"); cv.width=n; cv.height=40; var x=cv.getContext("2d"); x.fillStyle=vo?"rgba(180,255,214,.55)":"rgba(207,194,255,.5)";
     for(var i=0;i<n;i++){ var h=Math.max(1,pk[i]/255*38); x.fillRect(i,20-h/2,1,h); } PKU[aid]=cv.toDataURL(); return PKU[aid]; }).catch(function(){ return ""; }); }
 function peaksOf(data,n){ var out=new Array(n), bl=data.length/n, st=Math.max(1,Math.floor(bl/300)); for(var i=0;i<n;i++){ var a=Math.floor(i*bl), b=Math.min(data.length,Math.floor((i+1)*bl)), m=0; for(var j=a;j<b;j+=st){ var v=data[j]<0?-data[j]:data[j]; if(v>m) m=v; } out[i]=Math.min(255,Math.round(Math.sqrt(m)*255)); } return out; }
 function pkCount(dur){ return clamp(Math.ceil(dur*5),200,2400); }
@@ -490,21 +514,36 @@ function cutInfo(){ if(!P||!P.clips.length) return null; var L=TL(), i=clipAt(cu
 function motionKeysAt(c,a,b){ var out=[{ t:0, z:0, x:0, y:0 }], m0=motion(c,a); out[0]={ t:0, z:m0.z, x:m0.x||0, y:m0.y||0 };
   (c.keys||[]).forEach(function(k){ if(k.t>a+.01&&k.t<b-.01) out.push({ t:Math.round((k.t-a)*100)/100, z:k.z, x:k.x||0, y:k.y||0 }); });
   var m1=motion(c,b); out.push({ t:Math.round((b-a)*100)/100, z:m1.z, x:m1.x||0, y:m1.y||0 }); return out; }
-function splitClip(){ var ci=cutInfo(); if(!ci){ toast(TR("Сначала добавьте фото или видео")); return; } if(PL.on) stopPlay();
-  if(ci.bad){ toast(TR("Поставьте курсор внутрь клипа, не у самого края")); return; }
-  remember(); var c=ci.c, lt=Math.round(ci.lt*100)/100, L0=clen(c), a=JSON.parse(JSON.stringify(c)), b=JSON.parse(JSON.stringify(c)); b.id=newId("c");
-  if(c.type==="vid"){ a.out=Math.round(((c.in||0)+lt)*100)/100; b.in=a.out; } else { a.dur=lt; b.dur=Math.round((L0-lt)*100)/100; }
+/* разрез клипа на два куска по месту lt внутри него (без запоминания для отмены) */
+function splitParts(c,lt){ var L0=clen(c), a=JSON.parse(JSON.stringify(c)), b=JSON.parse(JSON.stringify(c)); b.id=newId("c");
+  if(c.type==="vid"){ a.out=Math.round(srcT(c,lt)*100)/100; b.in=a.out; } else { a.dur=lt; b.dur=Math.round((L0-lt)*100)/100; }
   /* движение кадра продолжается во втором куске с того же места */
   if(c.kb==="in"||c.kb==="out"||c.kb==="kf"){ a.kb=b.kb="kf"; a.keys=motionKeysAt(c,0,lt); b.keys=motionKeysAt(c,lt,L0); delete a.mvk; delete b.mvk; }
   /* между кусками нет перехода; надписи на своей дорожке разрез не трогает */
-  a.tr="none";
-  P.clips.splice(ci.i,1,a,b); selC=ci.i+1; selM=null; changed(true); toast(TR("Разрезано на {0}. Лишний кусок выберите и удалите",tm(cur)));
+  a.tr="none"; return [a,b]; }
+function splitClip(){ var ci=cutInfo(); if(!ci){ toast(TR("Сначала добавьте фото или видео")); return; } if(PL.on) stopPlay();
+  if(ci.bad){ toast(TR("Поставьте курсор внутрь клипа, не у самого края")); return; }
+  remember(); var ab=splitParts(ci.c,Math.round(ci.lt*100)/100);
+  P.clips.splice(ci.i,1,ab[0],ab[1]); selC=ci.i+1; selM=null; changed(true); toast(TR("Разрезано на {0}. Лишний кусок выберите и удалите",tm(cur)));
 }
+/* стоп-кадр: кадр видео под курсором становится фото на 2 секунды, видео расступается */
+function freezeFrame(){ var ci=cutInfo(); if(!ci){ toast(TR("Сначала добавьте фото или видео")); return; } var c=ci.c; if(c.type!=="vid"){ toast(TR("Стоп-кадр делается из видео: поставьте курсор на видео")); return; }
+  if(PL.on) stopPlay(); var lt=Math.round(clamp(ci.lt,0,clen(c)-.05)*100)/100, at=srcT(c,lt), m=media(c), v=m.el; if(!v||!m.ok){ toast(TR("Видео ещё загружается")); return; }
+  new Promise(function(res){ if(Math.abs(v.currentTime-at)<.02) return res(); var done=false; v.addEventListener("seeked",function f(){ v.removeEventListener("seeked",f); if(!done){ done=true; res(); } }); try{ v.currentTime=at; }catch(e){ res(); } setTimeout(function(){ if(!done){ done=true; res(); } },3000); })
+  .then(function(){ var w=v.videoWidth, h=v.videoHeight, k=Math.min(1,2160/Math.max(w,h)), cv=document.createElement("canvas"); cv.width=Math.round(w*k); cv.height=Math.round(h*k); cv.getContext("2d").drawImage(v,0,0,cv.width,cv.height);
+    return new Promise(function(res){ cv.toBlob(function(b){ res({ b:b, w:cv.width, h:cv.height }); },"image/jpeg",.92); }); })
+  .then(function(r){ if(!r.b) throw 0; var aid=newId("i"); return bPut(aid,r.b).then(function(){ return { aid:aid, w:r.w, h:r.h }; }); })
+  .then(function(r){ remember(); var f={ id:newId("c"), type:"img", aid:r.aid, name:TR("Стоп-кадр"), dur:2, kb:"none", w:r.w, h:r.h, tr:"none" };
+    ["crop","rot","fh","fv","look"].forEach(function(q){ if(c[q]!=null) f[q]=JSON.parse(JSON.stringify(c[q])); });
+    var i=ci.i; if(lt<.1){ P.clips.splice(i,0,f); selC=i; } else if(lt>clen(c)-.1){ c.tr="none"; P.clips.splice(i+1,0,f); selC=i+1; }
+    else { var ab=splitParts(c,lt); P.clips.splice(i,1,ab[0],f,ab[1]); selC=i+1; }
+    selM=null; changed(true); seek(TL().s[selC]+.05); toast(TR("Стоп-кадр на 2 секунды: длину можно поменять в настройках клипа")); })
+  .catch(function(){ toast(TR("Не получилось взять кадр из этого видео")); }); }
 /* убрать часть клипа до курсора или после: тот же разрез, только ненужный кусок сразу пропадает */
 function trimAt(side){ var ci=cutInfo(); if(!ci) return; if(ci.bad){ toast(TR("Поставьте курсор внутрь клипа, не у самого края")); return; } if(PL.on) stopPlay();
   remember(); var c=ci.c, lt=Math.round(ci.lt*100)/100, L0=clen(c), start=TL().s[ci.i];
   if(c.kb==="in"||c.kb==="out"||c.kb==="kf"){ c.keys=side==="l"?motionKeysAt(c,lt,L0):motionKeysAt(c,0,lt); c.kb="kf"; delete c.mvk; }
-  if(c.type==="vid"){ if(side==="l") c.in=Math.round(((c.in||0)+lt)*100)/100; else c.out=Math.round(((c.in||0)+lt)*100)/100; } else c.dur=side==="l"?Math.round((L0-lt)*100)/100:lt;
+  if(c.type==="vid"){ if(side==="l") c.in=Math.round(srcT(c,lt)*100)/100; else c.out=Math.round(srcT(c,lt)*100)/100; } else c.dur=side==="l"?Math.round((L0-lt)*100)/100:lt;
   changed(true); seek(side==="l"?start:start+clen(c)-.05); toast(TR(side==="l"?"Начало клипа убрано":"Конец клипа убран")); }
 function delClip(i){ if(i<0||i>=P.clips.length) return; remember();
   P.clips.splice(i,1); selC=Math.max(0,Math.min(i,P.clips.length-1)); changed(true); }
@@ -514,7 +553,37 @@ var muteK="";
 function muteUi(){ var b=$("#vmute"), c=P&&P.clips.length?P.clips[clipAt(cur)]:null, k=c&&c.type==="vid"?c.id+(c.mute?"1":"0"):""; if(k===muteK) return; muteK=k; if(!k){ b.hidden=true; return; } b.hidden=false; b.classList.toggle("off",!!c.mute); b.innerHTML=sv(c.mute?"mute":"snd"); b.title=TR(c.mute?"Включить звук этого видео":"Выключить звук этого видео"); }
 $("#vmute").onclick=function(e){ e.stopPropagation(); var c=P.clips[clipAt(cur)]; if(c&&c.type==="vid") toggleMute(c); };
 $("#vmute").addEventListener("pointerdown",function(e){ e.stopPropagation(); });
-$("#cutBtn").onclick=splitClip; $("#txtBtn").onclick=addText;
+$("#cutBtn").onclick=splitClip; $("#txtBtn").onclick=addText; $("#recBtn").onclick=function(){ if(REC) stopRec(); else recVoice(); }; $("#recStop").onclick=function(){ stopRec(); };
+/* ═══════════ озвучка: запись голоса с микрофона поверх ролика ═══════════
+   Запись идёт с курсора, ролик в это время играет тише (в наушниках лучше: в запись не попадёт звук из колонок).
+   Готовая запись сразу перекладывается в WAV: по нему браузер точно перематывает, а webm из записи без меток длины. */
+var REC=null;
+function recVoice(){ if(!P||!P.clips.length){ toast(TR("Сначала добавьте фото или видео")); return; }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){ toast(TR("Этот браузер не умеет записывать звук")); return; }
+  if(PL.on) stopPlay(); var L=TL(); if(cur>=L.total-.3) seek(0);
+  navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } }).then(function(stream){
+    ensureAC(); var start=cur, chunks=[], rec; try{ rec=new MediaRecorder(stream); }catch(e){ stream.getTracks().forEach(function(t){ t.stop(); }); toast(TR("Этот браузер не умеет записывать звук")); return; }
+    var an=AC.createAnalyser(); an.fftSize=1024; var srcN=AC.createMediaStreamSource(stream); srcN.connect(an); var buf=new Uint8Array(an.fftSize);
+    REC={ rec:rec, stream:stream, start:start, an:an, src:srcN, iv:0, cnt:0, t0:0 }; $("#recBtn").classList.add("on");
+    rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+    rec.onstop=function(){ var R=REC; REC=null; clearInterval(R.iv); try{ R.src.disconnect(); }catch(e){} stream.getTracks().forEach(function(t){ t.stop(); }); $("#recBar").hidden=true; $("#recBtn").classList.remove("on");
+      if(PL.on) stopPlay(); MASTER.gain.value=P.vvol==null?1:P.vvol; var dur=(performance.now()-R.t0)/1000; if(R.cancel||dur<.4||!chunks.length){ if(!R.cancel) toast(TR("Запись слишком короткая")); return; }
+      toast(TR("Сохраняю запись...")); var blob=new Blob(chunks,{ type:rec.mimeType||"audio/webm" });
+      decodeBlob(blob).then(function(b){ var mono=new Float32Array(b.length), nc=b.numberOfChannels; for(var c=0;c<nc;c++){ var x=b.getChannelData(c); for(var i=0;i<b.length;i++) mono[i]+=x[i]/nc; }
+        var aid=newId("a"), wav=wavBlob([mono],b.sampleRate), pk=peaksOf(mono,pkCount(b.duration)); PK[aid]=pk;
+        return bPut(aid,wav).then(function(){ bPut(aid+":pk",pk).catch(function(){}); return { aid:aid, dur:b.duration }; }); })
+      .then(function(r){ var lat=clamp((AC.outputLatency||0)+(AC.baseLatency||0),0,.25), n=P.tracks.filter(function(k){ return k.vo; }).length+1; remember();
+        var k={ id:newId("t"), aid:r.aid, name:TR("Голос {0}",n), at:Math.round(R.start*100)/100, in:Math.round(lat*100)/100, len:Math.max(.3,Math.round((r.dur-lat)*100)/100), dur:r.dur, vol:1, fi:0, fo:0, vo:1 };
+        P.tracks.push(k); selM=k.id; changed(true); toast(TR("Голос записан: {0}",tm(k.len))); if(wide.matches&&ui.tab!=="mus") openTab("mus"); })
+      .catch(function(){ toast(TR("Не получилось сохранить запись")); }); };
+    /* отсчёт 3-2-1, потом запись и ролик с курсора */
+    var cn=$("#recCnt"), k=3; cn.hidden=false; cn.textContent=k;
+    REC.cnt=setInterval(function(){ if(!REC){ return; } k--; if(k>0){ cn.textContent=k; return; } clearInterval(REC.cnt); cn.hidden=true; rec.start(250); },1000);
+    rec.onstart=function(){ if(!REC) return; REC.t0=performance.now(); $("#recBar").hidden=false; play(REC.start);
+      REC.iv=setInterval(function(){ if(!REC) return; $("#recT").textContent=tm((performance.now()-REC.t0)/1000); an.getByteTimeDomainData(buf); var mx=0; for(var i=0;i<buf.length;i++){ var d=Math.abs(buf[i]-128); if(d>mx) mx=d; } $("#recLv").style.width=Math.min(100,mx/1.28*1.6)+"%";
+        if(!PL.on) stopRec(); },80); };
+  }).catch(function(){ toast(TR("Нет доступа к микрофону: разрешите его в настройках сайта")); }); }
+function stopRec(cancel){ if(!REC) return; clearInterval(REC.cnt); $("#recCnt").hidden=true; if(cancel) REC.cancel=true; if(REC.rec.state!=="inactive") REC.rec.stop(); else { var R=REC; R.cancel=true; R.rec.onstop(); } }
 var dropN=0;
 addEventListener("dragenter",function(e){ if($("#ed").hidden) return; if(e.dataTransfer&&[].indexOf.call(e.dataTransfer.types||[],"Files")>=0){ dropN++; $("#drop").classList.add("on"); } });
 addEventListener("dragleave",function(){ if(--dropN<=0){ dropN=0; $("#drop").classList.remove("on"); } });
@@ -549,6 +618,72 @@ function exportBox(){ if(!P.clips.length){ toast(TR("Сначала добавь
     else if(ms.length){ var mp4=ms.some(function(m){ return m[0]==="mp4"; }); n.textContent=TR("Длина {0}. Видео собирается в реальном времени, это займёт столько же. Не переключайтесь на другую вкладку, иначе браузер притормозит запись.",tm(L.total))+(mp4?"":" "+TR("Этот браузер пишет только WebM: в Telegram и на компьютере он играет, а для iPhone лучше собрать в Safari.")); $("#exGo").disabled=false; }
     else n.textContent=TR("Этот браузер не умеет записывать видео. Откройте мастерскую в свежем Chrome, Edge, Firefox или Safari."); }); }
   check(); $("#exGo").onclick=function(){ if(fc) fastExport(fc); else doExport(ms[0]); }; }
+/* ═══════════ звук: скорость без смены тона, чистка шума, приглушение музыки под голосом ═══════════ */
+/* WSOLA: окна по 46 мс внахлёст наполовину; каждое следующее окно ищем рядом с нужным местом так,
+   чтобы оно лучше всего продолжало предыдущее. Высота голоса остаётся прежней, меняется только темп. */
+function stretchBuf(buf,rate){ if(!buf||Math.abs(rate-1)<.01) return buf; var sr=buf.sampleRate, nch=buf.numberOfChannels, n=buf.length, N=Math.round(sr*.046/2)*2, Hs=N/2, Ha=Hs*rate, D=Math.round(sr*.012),
+    outLen=Math.max(1,Math.floor(n/rate)), out=new AudioBuffer({ length:outLen, numberOfChannels:nch, sampleRate:sr }), win=new Float32Array(N), m=new Float32Array(n), ins=[], outs=[], i, ch;
+  for(i=0;i<N;i++) win[i]=.5-.5*Math.cos(2*Math.PI*i/N);
+  for(ch=0;ch<nch;ch++){ ins.push(buf.getChannelData(ch)); outs.push(out.getChannelData(ch)); var x=ins[ch]; for(i=0;i<n;i++) m[i]+=x[i]; }
+  var prev=0;
+  for(var k=0;k*Hs<outLen;k++){ var nom=Math.min(Math.max(0,n-N),Math.round(k*Ha)), best=nom;
+    if(k>0){ var tg=prev+Hs, bv=-Infinity, d, p, cc; for(d=-D;d<=D;d+=4){ p=nom+d; if(p<0||p+N>n) continue; cc=0; for(i=0;i<Hs&&tg+i<n;i+=4) cc+=m[p+i]*m[tg+i]; if(cc>bv){ bv=cc; best=p; } }
+      var b0=best; for(d=-3;d<=3;d++){ p=b0+d; if(d===0||p<0||p+N>n) continue; cc=0; for(i=0;i<Hs&&tg+i<n;i+=2) cc+=m[p+i]*m[tg+i]; if(cc>bv){ bv=cc; best=p; } } }
+    prev=best; var o=k*Hs;
+    for(ch=0;ch<nch;ch++){ var src=ins[ch], dst=outs[ch]; for(i=0;i<N;i++){ var q=o+i, r=best+i; if(q>=outLen) break; if(r<n) dst[q]+=src[r]*win[i]; } } }
+  return out; }
+/* WAV 16 бит: чистый звук и запись голоса храним так, по нему браузер точно умеет перематывать */
+function wavBlob(chs,sr){ var nch=chs.length, n=chs[0].length, buf=new ArrayBuffer(44+n*nch*2), dv=new DataView(buf), o=0;
+  function str(t){ for(var j=0;j<t.length;j++) dv.setUint8(o++,t.charCodeAt(j)); } function u32(v){ dv.setUint32(o,v,true); o+=4; } function u16(v){ dv.setUint16(o,v,true); o+=2; }
+  str("RIFF"); u32(36+n*nch*2); str("WAVE"); str("fmt "); u32(16); u16(1); u16(nch); u32(sr); u32(sr*nch*2); u16(nch*2); u16(16); str("data"); u32(n*nch*2);
+  for(var i=0;i<n;i++) for(var c=0;c<nch;c++){ var v=chs[c][i]; v=v<-1?-1:v>1?1:v; dv.setInt16(o,v<0?v*32768:v*32767,true); o+=2; }
+  return new Blob([buf],{ type:"audio/wav" }); }
+/* чистка шума: та же обработка, что в звуковой мастерской (../zvuk/dsp.js), в отдельном потоке */
+var DSPW=null, dspCb={}, dspN=0;
+function dspJob(L,R,sr,amt){ return new Promise(function(res,rej){
+  if(DSPW===null){ try{ DSPW=new Worker("../zvuk/dsp.js?v=2"); DSPW.onmessage=function(e){ var f=dspCb[e.data.id]; delete dspCb[e.data.id]; if(f) f[0](e.data); };
+      DSPW.onerror=function(){ DSPW=false; Object.keys(dspCb).forEach(function(k){ var f=dspCb[k]; delete dspCb[k]; f[1](new Error("dsp")); }); }; }catch(e){ DSPW=false; } }
+  if(!DSPW){ rej(new Error("dsp")); return; } var id=++dspN; dspCb[id]=[res,rej]; DSPW.postMessage({ id:id, A:[L,R], B:null, sr:sr, nr:amt, duck:0, m:null },[L.buffer,R.buffer]); }); }
+function decodeBlob(b){ var OC=window.OfflineAudioContext||window.webkitOfflineAudioContext; return b.arrayBuffer().then(function(ab){ var oc=new OC(1,1,48000);
+  return new Promise(function(res,rej){ var pr=oc.decodeAudioData(ab,res,rej); if(pr&&pr.then) pr.then(res,rej); }); }); }
+function chOf(buf,i){ return buf.getChannelData(Math.min(i,buf.numberOfChannels-1)); }
+/* чистый звук видео лежит отдельным WAV для куска исходника [a, b]; если клип потом растянули за эти границы, играет исходный звук */
+function nrOk(c){ var r=c&&c.nr; return !!(r&&r.key&&!r.off&&(c.in||0)>=r.a-.02&&(c.out||0)<=r.b+.02); }
+function nrStale(c){ var r=c&&c.nr; return !!(r&&r.key&&!r.off&&!nrOk(c)); }
+function forgetKey(key){ if(!key||!P) return; var j=JSON.stringify(P.clips)+JSON.stringify(P.tracks); if(j.indexOf(key)>=0) return; for(var i=0;i<U.length;i++) if(U[i].indexOf(key)>=0) return; for(i=0;i<Rd.length;i++) if(Rd[i].indexOf(key)>=0) return; bDel(key); }
+function busy(title){ modal('<h3>'+esc(title)+'</h3><div class="prog"><i id="pg" style="width:30%"></i></div><p class="note" id="pgT"></p>'); }
+function cleanClip(c,amt){ if(PL.on) stopPlay(); busy(TR("Убираю шум...")); var a=c.in||0, b=c.out||0;
+  mbLib().then(function(M){ return bGet(c.aid).then(function(bl){ return bl?trackPcm(M,bl,a,b):null; }); }).then(function(buf){ if(!buf) throw "noaudio"; var pg=$("#pg"); if(pg) pg.style.width="60%";
+    return dspJob(chOf(buf,0).slice(),chOf(buf,1).slice(),buf.sampleRate,amt).then(function(o){ var key=newId("n"); return bPut(key,wavBlob([o.L,o.R],buf.sampleRate)).then(function(){ return { o:o, key:key }; }); }); })
+  .then(function(r){ closeModal(); remember(); var old=c.nr&&c.nr.key; c.nr={ key:r.key, a:a, b:b, amt:amt }; forgetKey(old); changed(true);
+    toast(r.o.nr?TR("Шум в паузах тише на {0} дБ",Math.abs(Math.round(r.o.nr))):TR("Кусок слишком короткий: шум не убран")); })
+  .catch(function(e){ closeModal(); toast(e==="noaudio"?TR("В этом видео нет звука"):TR("Не получилось убрать шум в этом браузере")); }); }
+function cleanVoice(k,on){ if(PL.on) stopPlay();
+  if(!on){ if(k.aid0){ remember(); k.aid=k.aid0; delete k.nr; changed(true); } return; }
+  if(k.nrA){ remember(); k.aid0=k.aid0||k.aid; k.aid=k.nrA; k.nr=1; changed(true); return; }
+  busy(TR("Убираю шум...")); var src=k.aid0||k.aid;
+  bGet(src).then(function(bl){ if(!bl) throw "noaudio"; return decodeBlob(bl); }).then(function(buf){ return dspJob(chOf(buf,0).slice(),chOf(buf,1).slice(),buf.sampleRate,.6).then(function(o){ var aid=newId("a");
+      return bPut(aid,wavBlob([o.L],buf.sampleRate)).then(function(){ return aid; }); }); })
+  .then(function(aid){ closeModal(); remember(); k.aid0=src; k.aid=k.nrA=aid; k.nr=1; if(PK[src]){ PK[aid]=PK[src]; bPut(aid+":pk",PK[src]).catch(function(){}); } changed(true); toast(TR("Шум в голосе убран")); })
+  .catch(function(){ closeModal(); toast(TR("Не получилось убрать шум в этом браузере")); }); }
+/* приглушение: где на дорожках озвучки есть голос, музыка уходит вниз. Голос ищем по волне записи (пики через 0.2 с) */
+var DKH=.05, DK={ key:"", c:null };
+function duckCurveTL(){ var D=P.duck||{}; if(D.on===false) return null; var vs=P.tracks.filter(function(k){ return k.vo&&k.len&&(k.vol==null||k.vol>0); }); if(!vs.length) return null;
+  var key=JSON.stringify([vs.map(function(k){ return [k.aid,k.at,k.in,k.len,!!PK[k.aid]]; }),D.d||12]); if(DK.key===key) return DK.c;
+  var L=TL(), n=Math.ceil((Math.max(L.total,musEnd())+1)/DKH)+1, on=new Uint8Array(n), i;
+  vs.forEach(function(k){ var pk=PK[k.aid], a=k.in||0, b=a+k.len;
+    function mark(t0,t1){ for(var j=Math.max(0,Math.floor(t0/DKH));j<=Math.min(n-1,Math.ceil(t1/DKH));j++) on[j]=1; }
+    if(!pk||!pk.length||!k.dur){ mark(k.at,k.at+k.len); return; } var mx=0; pk.forEach(function(v){ if(v>mx) mx=v; }); var thr=Math.max(30,mx*.3), per=k.dur/pk.length;
+    for(var j=0;j<pk.length;j++){ var ts=j*per; if(ts+per<a||ts>b||pk[j]<thr) continue; mark(k.at+Math.max(a,ts)-a,k.at+Math.min(b,ts+per)-a); } });
+  var hold=Math.round(.4/DKH), look=Math.round(.12/DKH), last=-1e9, on2=new Uint8Array(n);
+  for(i=0;i<n;i++){ if(on[i]) last=i; if(i-last<=hold) on2[i]=1; } for(i=0;i<n-look;i++) if(on2[i+look]) on2[i]=1;
+  var low=Math.pow(10,-(D.d||12)/20), c=new Float32Array(n), g=1, aD=Math.exp(-DKH/.07), aU=Math.exp(-DKH/.45);
+  for(i=0;i<n;i++){ var t=on2[i]?low:1; g=t<g?aD*g+(1-aD)*t:aU*g+(1-aU)*t; c[i]=g; }
+  DK={ key:key, c:c }; return c; }
+function duckAt(t,vid){ if(!P) return 1; var D=P.duck||{}; if(vid&&!D.vid) return 1; var c=duckCurveTL(); if(!c) return 1; return c[clamp(Math.floor(t/DKH),0,c.length-1)]; }
+/* звук клипа в масштабе ленты: исходник или очищенный кусок, со скоростью */
+function clipPcm(M,c){ var a=srcT(c,0), b=c.out||0, pr=nrOk(c)?bGet(c.nr.key).then(function(bl){ return bl?trackPcm(M,bl,a-c.nr.a,b-c.nr.a):null; }):bGet(c.aid).then(function(bl){ return bl?trackPcm(M,bl,a,b):null; });
+  return pr.then(function(buf){ return buf&&(c.sp||1)!==1?stretchBuf(buf,c.sp):buf; }); }
 /* звук всего ролика одним буфером: видео (кроме выключенных) и песни с громкостью и плавными краями, как при игре */
 function trackPcm(M,blob,a,b){ var inp=new M.Input({ source:new M.BlobSource(blob), formats:M.ALL_FORMATS });
   return inp.getPrimaryAudioTrack().then(function(tr){ if(!tr) return null; var sink=new M.AudioBufferSink(tr), out=null, sr=0, it=sink.buffers(a,b);
@@ -556,13 +691,15 @@ function trackPcm(M,blob,a,b){ var inp=new M.Input({ source:new M.BlobSource(blo
       var off=Math.round((wb.timestamp-a)*sr); for(var ch=0;ch<2;ch++){ var src=ab.getChannelData(Math.min(ch,ab.numberOfChannels-1)), dst=out.getChannelData(ch), s0=Math.max(0,-off), n=Math.min(src.length,dst.length-off); if(n>s0) dst.set(src.subarray(s0,n),off+s0); }
       return step(); }); }
     return step(); }).catch(function(){ return null; }); }
-function mixAudio(M,L,prog,speech){ var SR=speech?16000:48000, OAC=new OfflineAudioContext(speech?1:2,Math.max(1,Math.ceil(L.total*SR)),SR), jobs=[], vv=P.vvol==null?1:P.vvol;
-  P.clips.forEach(function(c,i){ if(c.type!=="vid"||c.mute) return; var v=(c.vol==null?1:c.vol)*vv; if(v<=0) return; if(speech) v=1; jobs.push(function(){ return bGet(c.aid).then(function(bl){ return bl?trackPcm(M,bl,c.in||0,(c.in||0)+clen(c)):null; }).then(function(buf){ if(!buf) return;
-    var src=OAC.createBufferSource(), g=OAC.createGain(); src.buffer=buf; g.gain.value=v; src.connect(g); g.connect(OAC.destination); src.start(L.s[i]); }); }); });
-  if(!speech) P.tracks.forEach(function(k){ if(!k.len||k.at>=L.total) return; jobs.push(function(){ return bGet(k.aid).then(function(bl){ return bl?trackPcm(M,bl,k.in||0,(k.in||0)+k.len):null; }).then(function(buf){ if(!buf) return;
-    var src=OAC.createBufferSource(), g=OAC.createGain(), f=OAC.createGain(), v=k.vol==null?.8:k.vol, s=k.at, e=Math.min(s+k.len,L.total); src.buffer=buf; src.connect(g); g.connect(f); f.connect(OAC.destination);
+function mixAudio(M,L,prog,speech){ var SR=speech?16000:48000, OAC=new OfflineAudioContext(speech?1:2,Math.max(1,Math.ceil(L.total*SR)),SR), jobs=[], vv=P.vvol==null?1:P.vvol,
+    D=P.duck||{}, dc=speech?null:duckCurveTL(), mbus=OAC.createGain(), vbus=OAC.createGain(); mbus.connect(OAC.destination); vbus.connect(OAC.destination);
+  if(dc&&dc.length>1){ mbus.gain.setValueCurveAtTime(dc,0,dc.length*DKH); if(D.vid) vbus.gain.setValueCurveAtTime(dc,0,dc.length*DKH); }
+  P.clips.forEach(function(c,i){ if(c.type!=="vid"||c.mute) return; var v=(c.vol==null?1:c.vol)*vv; if(v<=0) return; if(speech) v=1; jobs.push(function(){ return clipPcm(M,c).then(function(buf){ if(!buf) return;
+    var src=OAC.createBufferSource(), g=OAC.createGain(); src.buffer=buf; g.gain.value=v; src.connect(g); g.connect(vbus); src.start(L.s[i]); }); }); });
+  P.tracks.forEach(function(k){ if(!k.len||k.at>=L.total||(speech&&!k.vo)) return; jobs.push(function(){ return bGet(k.aid).then(function(bl){ return bl?trackPcm(M,bl,k.in||0,(k.in||0)+k.len):null; }).then(function(buf){ if(!buf) return;
+    var src=OAC.createBufferSource(), g=OAC.createGain(), f=OAC.createGain(), v=speech?1:k.vol==null?(k.vo?1:.8):k.vol, s=k.at, e=Math.min(s+k.len,L.total); src.buffer=buf; src.connect(g); g.connect(f); f.connect(k.vo?OAC.destination:mbus);
     g.gain.setValueAtTime(k.fi>0?0:v,s); if(k.fi>0) g.gain.linearRampToValueAtTime(v,s+Math.min(k.fi,k.len)); if(k.fo>0){ g.gain.setValueAtTime(v,Math.max(s,s+k.len-k.fo)); g.gain.linearRampToValueAtTime(0,s+k.len); }
-    if(P.mfade&&L.total>2.5){ f.gain.setValueAtTime(1,Math.max(s,L.total-2)); f.gain.linearRampToValueAtTime(0,L.total); }
+    if(P.mfade!==false&&!k.vo&&!speech&&L.total>2.5){ f.gain.setValueAtTime(1,Math.max(s,L.total-2)); f.gain.linearRampToValueAtTime(0,L.total); }
     src.start(s); src.stop(e); }); }); });
   var n=0; return jobs.reduce(function(pr,j){ return pr.then(j).then(function(){ prog(++n/Math.max(1,jobs.length)); }); },Promise.resolve()).then(function(){ return OAC.startRendering(); }); }
 var EXP=null;
@@ -581,7 +718,7 @@ function fastExport(fc){ var ex=FMT[P.fmt].ex[P.q||720], L=TL(), fps=30, N=Math.
     out.addVideoTrack(vs,{ frameRate:fps }); out.addAudioTrack(as);
     /* у каждого видеоклипа свой декодер, который отдаёт кадры строго по порядку нужных моментов */
     var vids=[]; P.clips.forEach(function(c,i){ if(c.type!=="vid") return; var s=L.s[i], e=s+clen(c), n0=Math.ceil(s*fps-1e-6), n1=Math.min(N,Math.ceil(e*fps-1e-6)), ts=[];
-      for(var n=n0;n<n1;n++) ts.push(Math.max(0,(c.in||0)+(n/fps-s))); if(ts.length) vids.push({ c:c, n0:n0, n1:n1, ts:ts }); });
+      for(var n=n0;n<n1;n++) ts.push(Math.max(0,srcT(c,n/fps-s))); if(ts.length) vids.push({ c:c, n0:n0, n1:n1, ts:ts }); });
     return Promise.all(vids.map(function(v){ return bGet(v.c.aid).then(function(bl){ if(!bl) return; var inp=new M.Input({ source:new M.BlobSource(bl), formats:M.ALL_FORMATS });
       return inp.getPrimaryVideoTrack().then(function(tr){ if(!tr) return; return Promise.all([tr.getDisplayWidth(),tr.getDisplayHeight()]).then(function(d){ var mx=Math.max(ex[0],ex[1])*1.25, w=d[0], h=d[1], k=Math.min(1,mx/Math.max(w,h)), sink=new M.CanvasSink(tr,{ width:Math.round(w*k/2)*2, height:Math.round(h*k/2)*2, fit:"fill", poolSize:3 });
         its[v.c.id]={ it:sink.canvasesAtTimestamps(v.ts), n0:v.n0, n1:v.n1, last:null }; }); }); }); }))
@@ -660,7 +797,7 @@ function refreshPane(){ if(!ui.tab||!P) return; if(!wide.matches&&ui.sheet!=="ta
   if(wide.matches) box.appendChild(el('<div class="pt"><i></i><b>'+esc(TR(TTL[ui.tab]))+'</b></div>'));
   ({ vid:paneVid, txt:paneTxt, col:paneCol, mus:paneMus, more:paneMore })[ui.tab](box); box.scrollTop=sc; }
 /* цвет раздела: у каждой вкладки и у настроек клипа, стыка, песни свой оттенок кнопок */
-function secOf(s){ (wide.matches&&s!=="clip"&&s!=="jn"&&s!=="mus1"&&s!=="txt1"?pane:right).setAttribute("data-sec",s); }
+function secOf(s){ (wide.matches&&s!=="clip"&&s!=="jn"&&s!=="mus1"&&s!=="txt1"&&s!=="vo1"?pane:right).setAttribute("data-sec",s); }
 function trChoice(label,cur,fn){ return choice(label,Object.keys(TRS).map(function(k){ return [k,TR(TRS[k])]; }),cur,fn); }
 function trSelect(label,cur,fn,inherit){ return pick1(label,(inherit?[["",TR("как у всех: {0}",TR(TRS[P.tr]))]]:[]).concat(Object.keys(TRS).map(function(k){ return [k,TR(TRS[k])]; })),cur,fn); }
 function paneVid(box){
@@ -720,13 +857,20 @@ function paneCol(box){ var A=P.adj=P.adj||{};
   box.appendChild(el('<button class="btn w">'+esc(TR("Сбросить подстройку"))+'</button>',function(b){ b.onclick=function(){ remember(); P.adj={}; changed(); refreshPane(); }; }));
 }
 function paneMus(box){
-  var L=TL();
-  box.appendChild(sh("Песни",P.tracks.length?TR("Песни лежат на ленте под клипами: двигайте их мышкой, края обрезают начало и конец. Настройки песни открываются по нажатию на неё."):TR("Можно добавить несколько песен сразу, в том числе целые WAV до 150 МБ. Кусок песни удобно выбрать прямо на ленте, а бит сделать в битмейкере."),P.tracks.length?badge(String(P.tracks.length)):""));
-  P.tracks.slice().sort(function(a,b){ return a.at-b.at; }).forEach(function(k){ box.appendChild(el('<button class="mrow2'+(selM===k.id?" on":"")+'"><span class="ic">'+sv("mus")+'</span><b data-nt></b><small>'+tms(k.at)+' · '+tms(k.len||0)+'</small></button>',function(r){ $("b",r).textContent=k.name; r.onclick=function(){ selectM(k.id); refreshPane(); }; })); });
+  var L=TL(), mus=P.tracks.filter(function(k){ return !k.vo; }), vos=P.tracks.filter(function(k){ return k.vo; }), D=P.duck||{};
+  function row(k){ box.appendChild(el('<button class="mrow2'+(k.vo?" vo":"")+(selM===k.id?" on":"")+'"><span class="ic">'+sv(k.vo?"mic":"mus")+'</span><b data-nt></b><small>'+tms(k.at)+' · '+tms(k.len||0)+'</small></button>',function(r){ $("b",r).textContent=k.name; r.onclick=function(){ selectM(k.id); refreshPane(); }; })); }
+  box.appendChild(sh("Песни",mus.length?TR("Песни лежат на ленте под клипами: двигайте их мышкой, края обрезают начало и конец. Настройки песни открываются по нажатию на неё."):TR("Можно добавить несколько песен сразу, в том числе целые WAV до 150 МБ. Кусок песни удобно выбрать прямо на ленте, а бит сделать в битмейкере."),mus.length?badge(String(mus.length)):""));
+  mus.sort(function(a,b){ return a.at-b.at; }).forEach(row);
   box.appendChild(el('<button class="btn w go" data-tip="MP3, WAV">'+sv("add")+'<span>'+esc(TR("Добавить песни"))+'</span></button>',function(b){ b.onclick=pickMusic; }));
-  if(P.tracks.length){ if(musEnd()>L.total+.05&&L.total>0) box.appendChild(warn(TR("Музыка длиннее ролика"),TR("Музыка длиннее ролика: всё, что правее последнего клипа, в видео не попадёт.")));
+  if(mus.length){ if(musEnd()>L.total+.05&&L.total>0) box.appendChild(warn(TR("Музыка длиннее ролика"),TR("Музыка длиннее ролика: всё, что правее последнего клипа, в видео не попадёт.")));
     box.appendChild(toggle(TR("Плавно убрать музыку в конце"),P.mfade!==false,function(v){ remember(); P.mfade=v; save(); })); }
-  if(P.clips.some(function(c){ return c.type==="vid"; })){ box.appendChild(sh("Звук из видео")); box.appendChild(range(TR("Громкость звука из видео"),Math.round((P.vvol==null?1:P.vvol)*100),0,100,1,pct,function(v){ P.vvol=v/100; if(MASTER) MASTER.gain.value=P.vvol; })); }
+  box.appendChild(sh("Озвучка",TR("Голос пишется с курсора, ролик в это время играет тише. Лучше в наушниках: тогда в запись не попадёт звук из колонок. Кнопка «Голос» под плеером и клавиша R тоже начинают запись."),vos.length?badge(String(vos.length)):""));
+  vos.sort(function(a,b){ return a.at-b.at; }).forEach(row);
+  box.appendChild(el('<button class="btn w go vo">'+sv("mic")+'<span>'+esc(TR(REC?"Остановить запись":"Записать голос"))+'</span></button>',function(b){ b.onclick=function(){ if(REC) stopRec(); else recVoice(); }; }));
+  if(vos.length&&mus.length){ box.appendChild(toggle(TR("Музыку под голосом тише"),D.on!==false,function(v){ remember(); P.duck=P.duck||{}; P.duck.on=v; save(); refreshPane(); }));
+    if(D.on!==false) box.appendChild(choice("",[[6,TR("немного")],[12,TR("заметно")],[18,TR("сильно")]],D.d||12,function(v){ P.duck=P.duck||{}; P.duck.d=+v; save(); })); }
+  if(vos.length&&P.clips.some(function(c){ return c.type==="vid"&&!c.mute; })) box.appendChild(toggle(TR("И звук из видео под голосом тише"),!!D.vid,function(v){ remember(); P.duck=P.duck||{}; P.duck.vid=v; save(); }));
+  if(P.clips.some(function(c){ return c.type==="vid"; })){ box.appendChild(sh("Звук из видео",TR("Шум в звуке отдельного видео убирается в настройках клипа: раздел «Звук»."))); box.appendChild(range(TR("Громкость звука из видео"),Math.round((P.vvol==null?1:P.vvol)*100),0,100,1,pct,function(v){ P.vvol=v/100; if(MASTER) MASTER.gain.value=P.vvol; })); }
 }
 function paneMore(box){
   box.appendChild(sh("Ролик",TR("Ролик и исходные файлы хранятся в этом браузере.")));
@@ -738,16 +882,17 @@ function paneMore(box){
   if(wide.matches) box.appendChild(el('<button class="btn w">'+sv("kbd")+'<span>'+esc(TR("Горячие клавиши"))+'</span></button>',function(n){ n.onclick=keysModal; }));
 }
 /* настройки выбранной песни */
-function inspMus(k){ var L=TL();
+function inspMus(k){ var L=TL(); if(k.vo) secOf("vo1");
   $("#shTitle").textContent=k.name;
-  insp.appendChild(el('<div class="mrow2 st"><span class="ic">'+sv("mus")+'</span><b data-nt></b><button class="btn del" title="'+esc(TR("Убрать песню"))+'">'+sv("x")+'</button></div>',function(r){ $("b",r).textContent=k.name; $("button",r).onclick=function(){ remember(); P.tracks=P.tracks.filter(function(o){ return o!==k; }); selM=null; changed(true); }; }));
-  insp.appendChild(range(TR("Громкость"),Math.round((k.vol==null?.8:k.vol)*100),0,100,1,pct,function(v){ k.vol=v/100; }));
+  insp.appendChild(el('<div class="mrow2 st'+(k.vo?" vo":"")+'"><span class="ic">'+sv(k.vo?"mic":"mus")+'</span><b data-nt></b><button class="btn del" title="'+esc(TR(k.vo?"Убрать запись":"Убрать песню"))+'">'+sv("x")+'</button></div>',function(r){ $("b",r).textContent=k.name; $("button",r).onclick=function(){ remember(); P.tracks=P.tracks.filter(function(o){ return o!==k; }); selM=null; changed(true); }; }));
+  insp.appendChild(range(TR("Громкость"),Math.round((k.vol==null?(k.vo?1:.8):k.vol)*100),0,k.vo?150:100,1,pct,function(v){ k.vol=v/100; DK.key=""; }));
+  if(k.vo) insp.appendChild(toggle(TR("Убрать шум из голоса"),!!k.nr,function(v){ cleanVoice(k,v); }));
   insp.appendChild(range(TR("Место в ролике"),Math.round(k.at*10)/10,0,Math.max(1,Math.ceil(Math.max(L.total,k.at+1))),.1,tm,function(v){ k.at=v; timeline(); }));
-  insp.appendChild(range(TR("Начать песню с"),Math.round((k.in||0)*10)/10,0,Math.max(.1,Math.floor(((k.dur||1)-.5)*10)/10),.1,tm,function(v){ k.in=v; k.len=Math.min(k.len,Math.max(.5,k.dur-v)); timeline(); },function(){ refreshInsp(); }));
+  insp.appendChild(range(TR(k.vo?"Начать запись с":"Начать песню с"),Math.round((k.in||0)*10)/10,0,Math.max(.1,Math.floor(((k.dur||1)-.5)*10)/10),.1,tm,function(v){ k.in=v; k.len=Math.min(k.len,Math.max(.5,k.dur-v)); timeline(); },function(){ refreshInsp(); }));
   insp.appendChild(range(TR("Сколько играть"),Math.round((k.len||0)*10)/10,.5,Math.max(.6,Math.floor(((k.dur||1)-(k.in||0))*10)/10),.1,tm,function(v){ k.len=v; timeline(); }));
   insp.appendChild(el('<div class="row" style="margin-bottom:12px"><button class="btn">'+esc(TR("На курсор"))+'</button><button class="btn">'+esc(TR("До конца ролика"))+'</button></div>',function(r){ var b=$$("button",r);
     b[0].onclick=function(){ remember(); k.at=Math.round(cur*100)/100; changed(true); }; b[1].onclick=function(){ if(L.total-k.at<.5){ toast(TR("Песня стоит правее конца ролика")); return; } remember(); k.len=clamp(L.total-k.at,.5,Math.max(.5,k.dur-(k.in||0))); changed(true); }; }));
-  insp.appendChild(sh("Края песни",TR("Две песни можно свести внахлёст: поставьте вторую чуть раньше конца первой и дайте первой плавный конец, а второй плавное начало.")));
+  insp.appendChild(sh(k.vo?"Края записи":"Края песни",TR("Две песни можно свести внахлёст: поставьте вторую чуть раньше конца первой и дайте первой плавный конец, а второй плавное начало.")));
   insp.appendChild(range(TR("Плавное начало"),k.fi||0,0,6,.5,sec,function(v){ k.fi=v; }));
   insp.appendChild(range(TR("Плавный конец"),k.fo||0,0,6,.5,sec,function(v){ k.fo=v; }));
 
@@ -837,6 +982,15 @@ function subChunks(segs,max){ var out=[];
 function srtTime(s){ var ms=Math.round(s*1000), h=Math.floor(ms/3600000), m=Math.floor(ms/60000)%60, sc=Math.floor(ms/1000)%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(sc).padStart(2,"0")+","+String(ms%1000).padStart(3,"0"); }
 function srtDownload(){ var l=P.texts.filter(function(T){ return T.sub; }).sort(function(a,b){ return a.at-b.at; }), txt=l.map(function(T,i){ return (i+1)+"\n"+srtTime(T.at)+" --> "+srtTime(T.at+T.len)+"\n"+T.t+"\n"; }).join("\n");
   var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([txt],{ type:"application/x-subrip" })); a.download=(latin(P.title)||"rolik")+".srt"; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },3000); }
+/* поворот, отражение и обрезка кадра: файл не меняется, всё делается при рисовании */
+function rotCropUi(c){ var k=cropOf(c), has=c.rot||c.fh||c.fv||k.l||k.r||k.t||k.b;
+  insp.appendChild(sh("Поворот и обрезка",TR("Обрезка убирает края кадра, а дальше кадр, как обычно, заполняет ролик. Повернуть удобно видео, снятое боком.")));
+  insp.appendChild(el('<div class="row rotr"></div>',function(r){ [["rl","Повернуть влево",function(){ c.rot=((c.rot||0)+270)%360; }],["rr","Повернуть вправо",function(){ c.rot=((c.rot||0)+90)%360; }],
+      ["fh","Отразить слева направо",function(){ c.fh=c.fh?0:1; }],["fv","Отразить сверху вниз",function(){ c.fv=c.fv?0:1; }]].forEach(function(o){
+      r.appendChild(el('<button class="btn'+((o[0]==="fh"&&c.fh)||(o[0]==="fv"&&c.fv)?" on":"")+'" title="'+esc(TR(o[1]))+'">'+sv(o[0])+'</button>',function(b){ b.onclick=function(){ remember(); o[2](); if(!c.rot) delete c.rot; if(!c.fh) delete c.fh; if(!c.fv) delete c.fv; changed(true); }; })); }); }));
+  [["l","Обрезать слева"],["r","Обрезать справа"],["t","Обрезать сверху"],["b","Обрезать снизу"]].forEach(function(o){
+    insp.appendChild(range(TR(o[1]),Math.round((k[o[0]]||0)*100),0,45,1,pct,function(v){ c.crop=c.crop||{}; c.crop[o[0]]=v/100; if(!v) delete c.crop[o[0]]; if(!Object.keys(c.crop).length) delete c.crop; draw(cur); },function(){ save(); })); });
+  if(has) insp.appendChild(el('<button class="btn w">'+esc(TR("Вернуть кадр как был"))+'</button>',function(b){ b.onclick=function(){ remember(); delete c.rot; delete c.fh; delete c.fv; delete c.crop; changed(true); }; })); }
 /* движение кадра: готовые ходы и свои точки */
 function ltOf(c){ var i=P.clips.indexOf(c), L=TL(), s=L.s[i]; if(cur<s-.001||cur>s+clen(c)+.001){ cur=s; sync(cur,false); timeUi(); } return clamp(cur-s,0,clen(c)); }
 function motionUi(c){
@@ -876,11 +1030,20 @@ function refreshInsp(){
     insp.appendChild(range(TR("Начало"),Math.round((c.in||0)*10)/10,0,Math.max(.1,Math.floor(len*10)/10),.1,tm,function(v){ c.in=Math.min(v,(c.out||len)-.3); fixKeys(c); timeline(); seek(TL().s[selC]); }));
     insp.appendChild(range(TR("Конец"),Math.round((c.out||len)*10)/10,.3,Math.floor(len*10)/10,.1,tm,function(v){ c.out=Math.max(v,(c.in||0)+.3); fixKeys(c); timeline(); seek(TL().s[selC]+Math.max(0,clen(c)-1)); }));
     insp.appendChild(el('<div class="stat">'+badge(TR("Кусок: {0}",sec(clen(c))))+'</div>'));
+    insp.appendChild(sh("Скорость",TR("Скорость меняет длину куска на ленте. Голос при этом не становится выше или ниже.")));
+    insp.appendChild(el('<div class="chips spd"></div>',function(g){ [.25,.5,.75,1,1.5,2,3,4].forEach(function(v){ g.appendChild(el('<button class="'+((c.sp||1)===v?"on":"")+'">'+String(v).replace(".",window.FLANG==="en"?".":",")+'×</button>',function(b){ b.onclick=function(){ if((c.sp||1)===v) return; remember(); if(v===1) delete c.sp; else c.sp=v; fixKeys(c); changed(true); seek(TL().s[selC]); }; })); }); }));
+    insp.appendChild(sh("Звук",TR("Убрать шум: ветер, гул, шипение в паузах становятся тише, голос остаётся. Обработка идёт в этом браузере, исходный файл не меняется.")));
     insp.appendChild(toggle(TR("Звук этого видео"),!c.mute,function(v){ if(!!c.mute===!v) return; toggleMute(c); }));
-    if(!c.mute) insp.appendChild(range(TR("Громкость"),Math.round((c.vol==null?1:c.vol)*100),0,100,1,pct,function(v){ c.vol=v/100; })); }
+    if(!c.mute){ insp.appendChild(range(TR("Громкость"),Math.round((c.vol==null?1:c.vol)*100),0,100,1,pct,function(v){ c.vol=v/100; }));
+      if(c.nr&&c.nr.key){ insp.appendChild(toggle(TR("Без шума"),!c.nr.off,function(v){ remember(); if(v) delete c.nr.off; else c.nr.off=1; changed(true); }));
+        if(nrStale(c)) insp.appendChild(warn(TR("Кусок стал длиннее очищенного"),TR("Шум убирали для другого куска видео. Пока играет исходный звук: очистите заново.")));
+        if(!c.nr.off) insp.appendChild(choice(TR("Сила"),[["0.35",TR("слабо")],["0.6",TR("средне")],["0.9",TR("сильно")]],String(c.nr.amt),function(v){ cleanClip(c,+v); }));
+        if(nrStale(c)) insp.appendChild(el('<button class="btn w go">'+sv("nr")+'<span>'+esc(TR("Очистить заново"))+'</span></button>',function(b){ b.onclick=function(){ cleanClip(c,c.nr.amt||.6); }; })); }
+      else insp.appendChild(el('<button class="btn w">'+sv("nr")+'<span>'+esc(TR("Убрать шум"))+'</span></button>',function(b){ b.onclick=function(){ cleanClip(c,.6); }; })); } }
   insp.appendChild(sh("Разрезать",TR("Разрез проходит по курсору, это белая линия в ленте. Ножницы под плеером и клавиша S тоже режут. Файл не меняется: у куска просто сдвигаются начало и конец.")));
   insp.appendChild(el('<div class="row cutr"><button class="btn" data-a="s">'+sv("cut")+'<span>'+esc(TR("По курсору"))+'</span></button><button class="btn" data-a="l">'+esc(TR("Убрать до курсора"))+'</button><button class="btn" data-a="r">'+esc(TR("Убрать после"))+'</button></div>',function(r){
     $$("button",r).forEach(function(b){ b.onclick=function(){ var a=b.getAttribute("data-a"); if(a==="s") splitClip(); else trimAt(a); }; }); }));
+  if(c.type==="vid") insp.appendChild(el('<button class="btn w" title="'+esc(TR("Кадр под курсором встаёт фото на 2 секунды (F)"))+'">'+sv("frz")+'<span>'+esc(TR("Стоп-кадр на курсоре"))+'</span></button>',function(b){ b.onclick=freezeFrame; }));
 
   insp.appendChild(sh("Текст",TR("Надписи лежат на своей дорожке под клипами: у каждой своё начало и длина, их можно ставить внахлёст и переносить с клипа на клип.")));
   var Lc=TL(), cs=Lc.s[selC], ce=cs+clen(c);
@@ -890,6 +1053,7 @@ function refreshInsp(){
     var T={ id:newId("x"), t:TR("Новый текст"), at:Math.round((cs+d0)*100)/100, len:Math.round(Math.max(.5,clen(c)-d0-d1)*100)/100, style:"title", pos:"mid", color:"#ffffff", fresh:1 }; P.texts.push(T); save(); seek(T.at+Math.min(.6,T.len/2)); selectM(T.id); }; }));
   insp.appendChild(sh("Кадр"));
   motionUi(c);
+  rotCropUi(c);
   if(selC<P.clips.length-1) insp.appendChild(trSelect(TR("Переход к следующему"),c.tr||"none",function(v){ remember(); if(v==="none"){ delete c.tr; delete c.trd; } else c.tr=v; changed(); if(v!=="none") previewCut(selC); }));
   insp.appendChild(pick1(TR("Цвет этого клипа"),[["",TR("как у всего ролика")]].concat(Object.keys(LOOKS).map(function(id){ return [id,TR(LOOKS[id][0])]; })),c.look||"",function(v){ remember(); if(v) c.look=v; else delete c.look; changed(); }));
   insp.scrollTop=sc0;
@@ -912,6 +1076,9 @@ addEventListener("keydown",function(e){ if($("#ed").hidden||$("#modal").classLis
   else if((k==="delete"||k==="backspace")&&selJ!=null&&P.clips[selJ]){ e.preventDefault(); remember(); delete P.clips[selJ].tr; delete P.clips[selJ].trd; changed(true); }
   else if((k==="delete"||k==="backspace")&&!selM&&P.clips[selC]){ e.preventDefault(); delClip(selC); }
   else if(k==="s"&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); splitClip(); }
+  else if(k==="r"&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); if(REC) stopRec(); else recVoice(); }
+  else if(k==="f"&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); freezeFrame(); }
+  else if(k==="escape"&&REC){ e.preventDefault(); stopRec(true); toast(TR("Запись отменена")); }
   else if(k==="m"&&!e.ctrlKey&&!e.metaKey){ var mc=P.clips[clipAt(cur)]; if(mc&&mc.type==="vid") toggleMute(mc); } });
 $("#title").addEventListener("input",function(){ if(P){ P.title=this.value; save(); } });
 $("#thBtn").onclick=themeModal; $("#keysBtn").onclick=keysModal;

@@ -321,3 +321,30 @@ html[data-mth=light]{--c-txt:#c8326f}
 [data-tab=txt]{--c:var(--c-txt)}
 .mrow2.xr.on{border-color:var(--c-txt);background:color-mix(in srgb,var(--c-txt) 8%,var(--panel2))}
 .sub-last{min-height:2.6em;margin-top:6px;font-style:italic;color:var(--text)}
+
+/* ═══ v7: озвучка, стоп-кадр, скорость, поворот и обрезка ═══ */
+html{--c-vo:#5fe0a0}
+html[data-mth=light]{--c-vo:#139c5a}
+[data-sec=vo1]{--c:var(--c-vo)}
+.mb.vo{border-color:color-mix(in srgb,var(--c-vo) 65%,transparent);background-color:color-mix(in srgb,var(--c-vo) 16%,transparent);color:color-mix(in srgb,var(--c-vo) 55%,var(--text))}
+.mb.vo.on{border-color:#fff;box-shadow:0 0 0 1px #fff}
+html[data-mth=light] .mb.vo.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text)}
+.mrow2.vo .ic{color:var(--c-vo);background:color-mix(in srgb,var(--c-vo) 14%,var(--panel2))}
+.mz :is(.pane,.insp) .mrow2.vo.on{border-color:var(--c-vo);background:color-mix(in srgb,var(--c-vo) 8%,var(--panel2))}
+.mz :is(.pane,.insp) .btn.go.vo{background:var(--c-vo);border-color:var(--c-vo);color:var(--on-c)}
+.mz :is(.pane,.insp) .btn.go.vo svg{color:var(--on-c)}
+.vb.vo svg{color:var(--c-vo)}
+.vb.vo.on{background:var(--bad);border-color:var(--bad);color:#fff}.vb.vo.on svg{color:#fff}
+.recc{position:absolute;inset:0;z-index:6;display:grid;place-items:center;font:800 min(30cqh,140px)/1 "Unbounded",var(--ui);color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.6);background:rgba(0,0,0,.35);pointer-events:none}
+.recb{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px;padding:7px 8px 7px 14px;border-radius:999px;background:rgba(10,12,16,.82);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 0 0 1px rgba(255,255,255,.14);white-space:nowrap}
+.recb .dot{width:11px;height:11px;border-radius:50%;background:#ff4d5e;animation:recp 1s ease-in-out infinite}
+@keyframes recp{50%{opacity:.35}}
+.recb b{font-family:var(--mono);font-size:14px}
+.recb .lv{width:64px;height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+.recb .lv u{display:block;height:100%;width:0;background:#5fe0a0;transition:width .08s}
+.recb .btn{padding:7px 14px;background:#ff4d5e;border-color:#ff4d5e;color:#fff;font-size:13px}
+.recc[hidden],.recb[hidden]{display:none}
+.rotr{margin-bottom:12px}.rotr .btn{flex:1;padding:9px}
+.rotr .btn.on{background:color-mix(in srgb,var(--c) 22%,var(--panel2));border-color:var(--c)}
+.chips.spd{margin-bottom:12px}.chips.spd button{padding:7px 10px;font-family:var(--mono)}
+@media (max-width:440px){ .vtr{gap:6px} .vtr #tAll{display:none} .vtr .vb{min-width:32px;padding:0 7px} .vtr .vl,.vtr .vr{gap:4px} }

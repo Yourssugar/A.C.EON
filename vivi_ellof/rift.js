@@ -5,13 +5,17 @@
    Главная зовёт mount() сама после ключа, адрес при этом меняется на vivi_ellof/.
    vivi_ellof/index.html зовёт mount() при заходе напрямую (назад/вперёд), тогда звук ждёт первого клика.
 
-   Этап 1: глаз Архитектора в ткани ядра, живое движение, реакции на курсор.
-   Модули: js/eye.js (геометрия и материалы), js/gaze.js (движение, зрачок, моргание). */
+   Этап 2: глаз в ядре лаборатории, кресло Виви, застывший взрыв, луч взгляда, зрение из символов.
+   Сначала камера вплотную к глазу, через несколько секунд медленно отъезжает и открывает лабораторию.
+   Модули: js/eye.js (глаз), js/gaze.js (движение глаза), js/lab.js (лаборатория), js/ascii.js (символы). */
 import * as THREE from './vendor/three-webgpu.min.js';
 import { buildEye } from './js/eye.js';
 import { createGaze } from './js/gaze.js';
+import { buildLab } from './js/lab.js';
+import { makeAscii } from './js/ascii.js';
 
-const { positionLocal, time, sin, cos, vec2, vec3, float, instanceIndex, pass, screenUV, length, smoothstep } = THREE.TSL;
+const { positionLocal, time, sin, cos, vec2, vec3, float, instanceIndex, pass, screenUV, length, smoothstep,
+  mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs } = THREE.TSL;
 const BASE = new URL('./', import.meta.url);
 
 const TXT = {
@@ -113,16 +117,18 @@ export async function mount(opts = {}) {
   });
   let tex;
   try {
-    const [iris, irisH, sclera, tissue, tissueH, pano] = await Promise.all([
+    const [iris, irisH, sclera, tissue, tissueH, pano, panel, panelH] = await Promise.all([
       load(big ? 'iris_4k.webp' : 'iris_2k.webp', true),
       load('iris_h_2k.webp', false),
       load(big ? 'sclera_4k.webp' : 'sclera_2k.webp', true, true),
       load('tissue.webp', true, true),
       load('tissue_h.webp', false, true),
-      load('lab_pano_2k.webp', true)
+      load('lab_pano_2k.webp', true),
+      load('panel.webp', true, true),
+      load('panel_h.webp', false, true)
     ]);
     pano.mapping = THREE.EquirectangularReflectionMapping;
-    tex = { iris, irisH, sclera, tissue, tissueH, pano };
+    tex = { iris, irisH, sclera, tissue, tissueH, pano, panel, panelH };
   } catch (e) {
     console.warn('[vivi_ellof] textures', e);
   }
@@ -130,27 +136,37 @@ export async function mount(opts = {}) {
   /* ---------- сцена ---------- */
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
-  scene.fog = new THREE.FogExp2(0x010101, 0.09);
+  scene.fog = new THREE.FogExp2(0x020203, 0.03);
   if (tex) {
     scene.environment = tex.pano;
     scene.environmentIntensity = 0.42;
     scene.environmentRotation.y = -1.1;   /* огонь панорамы справа спереди */
+    scene.background = tex.pano;          /* лаборатория вокруг, тёмная и размытая */
+    scene.backgroundIntensity = 0.2;
+    scene.backgroundBlurriness = 0.1;
+    scene.backgroundRotation.y = -1.1;
   }
-  const cam = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.05, 120);
   cam.position.set(0, 0, 4.6);
 
-  /* свет: застывший огонь справа, холод мониторов слева сверху, слабый контур сверху */
-  const fire = new THREE.PointLight(0xff7a2e, 11, 14, 2);
-  fire.position.set(3.4, 0.4, 2.6);
+  /* свет: огонь даёт лаборатория, здесь холод мониторов слева сверху и слабый контур на глазу */
   const cold = new THREE.DirectionalLight(0x86a8ff, 0.7);
   cold.position.set(-3, 2.4, 3);
   const top = new THREE.SpotLight(0xd8e0ff, 14, 9, 0.5, 0.8, 2);
   top.position.set(0.2, 3.4, 3.2);
-  scene.add(fire, cold, top);
+  scene.add(cold, top);
 
-  let eye = null;
-  if (tex) { eye = buildEye(THREE, tex); scene.add(eye.root); }
+  let eye = null, lab = null;
+  if (tex) {
+    eye = buildEye(THREE, tex); scene.add(eye.root);
+    lab = buildLab(THREE, tex); scene.add(lab.root);
+  }
   const gaze = createGaze({ reduce });
+
+  /* взгляд: холодный свет из зрачка; видимый луч в пыли рисует проход символов (js/ascii.js) */
+  const beam = new THREE.SpotLight(0xcfe3ff, 260, 40, 0.11, 0.6, 2);
+  scene.add(beam, beam.target);
+  const gPos = new THREE.Vector3(), gDir = new THREE.Vector3(), gQ = new THREE.Quaternion();
 
   /* застывшая пыль между зрителем и глазом */
   const N = 1400;
@@ -170,11 +186,13 @@ export async function mount(opts = {}) {
   scene.add(dust);
 
   /* ---------- пост-обработка: свечение, лёгкая аберрация, зерно, виньетка ---------- */
-  let pipe = null;
+  let pipe = null, ascii = null;
   try {
     pipe = new THREE.RenderPipeline(renderer);
     const sp = pass(scene, cam);
-    const col = sp.getTextureNode('output');
+    sp.setMRT(mrt({ output, amask: float(0) }));
+    ascii = makeAscii(THREE, { col: sp.getTextureNode('output'), mask: sp.getTextureNode('amask'), depth: sp.getTextureNode('depth') });
+    const col = convertToTexture(ascii.node);
     const ca = THREE.chromaticAberration(col, float(0.35), vec2(0.5, 0.5), float(1.05));
     const bl = THREE.bloom(col, 0.32, 0.45, 0.8);
     const vig = smoothstep(float(0.95), float(0.28), length(screenUV.sub(0.5)).mul(1.25));
@@ -197,7 +215,7 @@ export async function mount(opts = {}) {
   const ray = new THREE.Vector3(), hit = new THREE.Vector3(), irisW = new THREE.Vector3(), irisE = new THREE.Vector3();
   function cursorTarget() {
     ray.set(ptr.nx, ptr.ny, 0.5).unproject(cam).sub(cam.position).normalize();
-    const zp = cam.position.z - 2.3;
+    const zp = Math.min(6, cam.position.z - 1.6);
     const t = (zp - cam.position.z) / ray.z;
     hit.copy(cam.position).addScaledVector(ray, t);
     return { yaw: Math.atan2(hit.x, hit.z), pitch: Math.atan2(hit.y, Math.hypot(hit.x, hit.z)) };
@@ -219,12 +237,18 @@ export async function mount(opts = {}) {
     cam.aspect = w / h;
     cam.fov = w / h < 1 ? 52 : 35;        /* телефон стоя: глаз должен влезть по ширине */
     cam.updateProjectionMatrix();
+    if (ascii) { const v = new THREE.Vector2(); renderer.getDrawingBufferSize(v); ascii.setSize(v.x, v.y); }
   }
   addEventListener('resize', resize);
   resize();
 
   /* ---------- цикл ---------- */
-  let lastT = performance.now(), camZ = 4.6, camX = 0, camY = 0;
+  /* отъезд: сначала глаз вплотную, потом лаборатория */
+  const CLOSE = { p: new THREE.Vector3(0, 0, 4.6), l: new THREE.Vector3(0, 0, 0) };
+  const FAR = { p: new THREE.Vector3(-0.15, -0.5, 10.4), l: new THREE.Vector3(-0.45, -0.55, 0) };
+  const t0 = performance.now();
+  const camP = new THREE.Vector3(), camL = new THREE.Vector3(), toEye = new THREE.Vector3();
+  let lastT = performance.now(), pull = 0, camX = 0, camY = 0;
   function tick() {
     const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     if (!document.hidden) {
@@ -236,12 +260,29 @@ export async function mount(opts = {}) {
       { idle, out: ptr.out, edgeX: ptr.nx / 2, edgeY: ptr.ny / 2, near: ptr.has && !ptr.out && idle < 3 && cursorNearIris() });
     if (eye) eye.set(st);
 
-    /* камеру очень медленно тянет к глазу, пока он смотрит пристально */
+    /* отъезд камеры, параллакс за курсором, медленное притяжение к глазу, пока он смотрит пристально */
+    const el = (now - t0) / 1000;
+    const dk = reduce ? 1 : Math.min(1, Math.max(0, (el - 6) / 15));
+    const de = dk * dk * (3 - 2 * dk);
+    camP.lerpVectors(CLOSE.p, FAR.p, de); camL.lerpVectors(CLOSE.l, FAR.l, de);
     const k = 1 - Math.exp(-dt * 0.6);
-    camZ += ((4.6 - st.focus * 0.35) - camZ) * k * 0.5;
-    if (!reduce) { camX += (-ptr.nx * 0.12 - camX) * k; camY += (-ptr.ny * 0.08 - camY) * k; }
-    cam.position.set(camX, camY, camZ);
-    cam.lookAt(0, 0, 0);
+    pull += (st.focus - pull) * k * 0.5;
+    if (!reduce) { camX += (-ptr.nx * (0.12 + 0.3 * de) - camX) * k; camY += (-ptr.ny * (0.08 + 0.15 * de) - camY) * k; }
+    toEye.copy(camL).sub(camP).normalize();
+    cam.position.copy(camP).addScaledVector(toEye, pull * (0.35 + 1.1 * de));
+    cam.position.x += camX; cam.position.y += camY;
+    cam.lookAt(camL);
+    cam.updateMatrixWorld();
+
+    if (eye) {
+      eye.eyeball.getWorldQuaternion(gQ);
+      gDir.set(0, 0, 1).applyQuaternion(gQ);
+      gPos.set(0, 0, 1.16); eye.eyeball.localToWorld(gPos);
+      beam.position.copy(gPos); beam.target.position.copy(gPos).addScaledVector(gDir, 10);
+      beam.intensity = 260 * (0.4 + 0.6 * st.focus) * (1 - st.blink);
+      if (ascii) { ascii.setCamera(cam); ascii.setGaze(gPos, gDir); ascii.uBeam.value = 1 - st.blink; ascii.uEdge.value = 0.25 + 0.75 * de; }
+    }
+    if (lab) lab.update(dt, el);
 
     if (pipe) pipe.render(); else renderer.render(scene, cam);
   }
@@ -262,7 +303,7 @@ export async function mount(opts = {}) {
   setTimeout(() => { line.textContent = L.obs; line.style.opacity = '0.9'; }, 7500);
   setTimeout(() => { line.style.opacity = '0'; }, 15000);
 
-  window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gaze, eye, cam, scene };
+  window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gaze, eye, cam, scene, lab, gDir, gPos, ptr };
   startSound(opts.audio || null);
 }
 

@@ -173,7 +173,7 @@ export function buildEye(THREE, tex) {
   }
 
   /* ---------- гнездо: ткань ядра вокруг глаза ---------- */
-  const wallGeo = new THREE.RingGeometry(1.25, 9, 320, 96);
+  const wallGeo = new THREE.RingGeometry(1.25, 3.0, 240, 48);
   const wp = wallGeo.attributes.position;
   for (let i = 0; i < wp.count; i++) {
     let x = wp.getX(i), y = wp.getY(i);

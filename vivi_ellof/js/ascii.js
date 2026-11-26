@@ -115,10 +115,13 @@ export function makeAscii(THREE, { col, mask, depth, atlasInfo }) {
   const pz = perspectiveDepthToViewZ(depth.sample(screenUV).r, uNear, uFar);
   const pdist = pz.negate().div(max(rv.z.negate(), 1e-3));
   const rad = tc.mul(0.11).add(0.06);
+  /* луч, направленный в камеру, не светит в лицо: заливал бы кадр бликом */
+  const facing = dot(uDir, normalize(uCamPos.sub(uEye)));
+  const away = float(1).sub(smoothstep(0.55, 0.93, facing));
   const haze = gap.div(rad).mul(gap.div(rad)).mul(-2.2).exp()
     .mul(smoothstep(0, 0.6, tc)).mul(smoothstep(9, 1.2, tc))
     .mul(step(0, sc)).mul(smoothstep(0, 0.3, pdist.sub(sc)))
-    .mul(uBeam).mul(uHaze).mul(0.12);
+    .mul(uBeam).mul(uHaze).mul(away).mul(0.12);
 
   const base = col.rgb;
   const node = vec4(mix(base, asciiOut, on).add(vec3(0.6, 0.76, 1.0).mul(haze)), 1);

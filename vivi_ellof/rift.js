@@ -80,6 +80,21 @@ export async function mount(opts = {}) {
   line.style.cssText = 'position:absolute;left:28px;top:24px;font-size:12px;letter-spacing:3px;color:#c23a44;'
     + 'opacity:0;transition:opacity 2.5s ease;pointer-events:none;white-space:nowrap;';
   root.appendChild(line);
+  /* свой курсор: тонкое кольцо и точка. Когда глаз тебя потерял, курсор почти гаснет.
+     state: 'idle' обычный, 'hover' над тем, что можно трогать, 'hold' пока держишь (для осколков) */
+  const cur = document.createElement('div');
+  cur.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:5;opacity:0;transition:opacity .4s ease;';
+  cur.innerHTML = '<div class="r" style="position:absolute;left:-11px;top:-11px;width:22px;height:22px;border:1px solid rgba(214,226,246,.75);'
+    + 'border-radius:50%;box-sizing:border-box;transition:transform .25s ease,border-color .25s ease;"></div>'
+    + '<div style="position:absolute;left:-1.5px;top:-1.5px;width:3px;height:3px;border-radius:50%;background:#e4ecfa;"></div>';
+  root.appendChild(cur);
+  const curRing = cur.querySelector('.r');
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  function cursorState(stt) {
+    curRing.style.transform = stt === 'hover' ? 'scale(1.6)' : stt === 'hold' ? 'scale(.55)' : 'scale(1)';
+    curRing.style.borderColor = stt === 'idle' ? 'rgba(214,226,246,.75)' : 'rgba(150,200,255,.95)';
+  }
+
   document.body.appendChild(root);
   document.documentElement.style.background = '#000';
 
@@ -212,6 +227,7 @@ export async function mount(opts = {}) {
   root.addEventListener('pointermove', (e) => {
     ptr.nx = e.clientX / innerWidth * 2 - 1; ptr.ny = -(e.clientY / innerHeight * 2 - 1);
     ptr.has = true; ptr.out = false; ptr.last = performance.now();
+    if (!coarse) cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)';
   });
   document.addEventListener('mouseout', (e) => { if (!e.relatedTarget) ptr.out = true; });
   document.addEventListener('mouseover', () => { ptr.out = false; });
@@ -266,6 +282,7 @@ export async function mount(opts = {}) {
     const st = gaze.update(dt, ptr.has ? cursorTarget() : null,
       { idle, out: ptr.out, edgeX: ptr.nx / 2, edgeY: ptr.ny / 2, near: ptr.has && !ptr.out && idle < 3 && cursorNearIris() });
     if (eye) eye.set(st);
+    if (!coarse) cur.style.opacity = !ptr.has || ptr.out ? '0' : st.mode === 'search' ? '0.25' : '0.9';
 
     /* вход из символов: вихрь, превращение в глаз, ожидание, осыпание клеток */
     const T = window.__viviHold != null ? window.__viviHold : (now - tMount) / 1000;
@@ -333,7 +350,8 @@ export async function mount(opts = {}) {
     setTimeout(() => { line.style.opacity = '0'; }, 12500);
   }, 200);
 
-  window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gaze, eye, cam, scene, lab, gDir, gPos, ptr };
+  window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gaze, cam, scene, gDir, gPos, ptr, cursorState,
+    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; } };
   startSound(opts.audio || null);
 }
 

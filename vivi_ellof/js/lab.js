@@ -4,7 +4,7 @@
    buildLab(THREE, tex) -> { root, vivi, shards, update(dt), FLOOR } */
 
 export const FLOOR = -3.4;
-export const CHAIR = { x: -1.2, z: 7.0 };
+export const CHAIR = { x: -1.2, z: 6.2 };
 
 export function buildLab(THREE, tex, Q = {}) {
   const T = THREE.TSL;
@@ -135,18 +135,18 @@ export function buildLab(THREE, tex, Q = {}) {
   const fn = mx_fractal_noise_float(positionWorld.mul(0.55).add(vec3(0, time.mul(0.004), 0)), Q.fireOct || 2, 2.1, 0.55);
   const dens = smoothstep(float(1), float(0.15), fd.add(fn.mul(0.45)));
   const hot = smoothstep(0.55, 1.0, dens.add(fn.mul(0.2)));
-  fireMat.colorNode = mix(mix(vec3(0.35, 0.04, 0.01), vec3(1.0, 0.42, 0.08), dens), vec3(1.0, 0.86, 0.6), hot).mul(1.6);
-  fireMat.opacityNode = dens.mul(0.42);
-  const fireC = new THREE.Vector3(7.2, -0.6, 3.6);
-  for (let i = 0; i < (Q.fireCount || 26); i++) {
+  fireMat.colorNode = mix(mix(vec3(0.35, 0.04, 0.01), vec3(1.0, 0.42, 0.08), dens), vec3(1.0, 0.86, 0.6), hot).mul(0.9);
+  fireMat.opacityNode = dens.mul(0.14);
+  const fireC = new THREE.Vector3(9.4, -0.9, -1.0);   /* в проломе задней стены справа */
+  for (let i = 0; i < Math.min(9, Q.fireCount || 9); i++) {
     const s = new THREE.Sprite(fireMat);
-    const a = Math.random() * Math.PI * 2, rr = Math.pow(Math.random(), 0.6) * 2.6;
-    s.position.set(fireC.x + Math.cos(a) * rr * 0.8, fireC.y + (Math.random() - 0.3) * 2.6, fireC.z + Math.sin(a) * rr * 1.2);
+    const a = Math.random() * Math.PI * 2, rr = Math.pow(Math.random(), 0.6) * 3.4;
+    s.position.set(fireC.x + Math.cos(a) * rr * 0.9, fireC.y + (Math.random() - 0.1) * 3.0, fireC.z - 2.5 - Math.random() * 4);
     const sz = 1.8 + Math.random() * 2.4; s.scale.set(sz, sz, 1);
     root.add(s);
   }
-  const fireLight = new THREE.PointLight(0xff7428, 70, 30, 1.7);
-  fireLight.position.set(fireC.x - 1.2, fireC.y + 0.4, fireC.z + 0.4);
+  const fireLight = new THREE.PointLight(0xff7428, 22, 30, 1.7);
+  fireLight.position.set(fireC.x - 1.2, fireC.y + 2.6, fireC.z + 2.4);
   root.add(fireLight);
 
   /* ---------- стекло в воздухе и на полу, искры ---------- */
@@ -159,11 +159,11 @@ export function buildLab(THREE, tex, Q = {}) {
     const nearFire = i < 190;
     if (nearFire) {
       const a = Math.random() * Math.PI * 2, rr = 1.2 + Math.random() * 4;
-      p.set(Math.max(3.6, fireC.x - 1.5 + Math.cos(a) * rr), fireC.y + (Math.random() - 0.4) * 4.5, Math.min(6.5, fireC.z + Math.sin(a) * rr * 0.7));
+      p.set(fireC.x + Math.cos(a) * rr * 0.9, fireC.y + (Math.random() - 0.4) * 4.5, fireC.z + 1 + Math.abs(Math.sin(a)) * rr * 1.4);
     } else if (i < 270) {
-      p.set((Math.random() - 0.3) * 12, F + 0.01, Math.random() * 7 - 0.5);
+      p.set((Math.random() - 0.2) * 18, F + 0.01, Math.random() * 12 - 0.5);
     } else {
-      p.set(2 + Math.random() * 4, F + 0.5 + Math.random() * 4, 1 + Math.random() * 5);
+      p.set(3 + Math.random() * 8, F + 0.5 + Math.random() * 5, 1 + Math.random() * 10);
     }
     const onFloor = i >= 190 && i < 270;
     e.set(onFloor ? -Math.PI / 2 : Math.random() * 6, Math.random() * 6, onFloor ? 0 : Math.random() * 6);
@@ -179,7 +179,7 @@ export function buildLab(THREE, tex, Q = {}) {
   const sparks = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.012, 0), sparkMat, NSP);
   for (let i = 0; i < NSP; i++) {
     const a = Math.random() * Math.PI * 2, rr = 0.6 + Math.pow(Math.random(), 0.7) * 6;
-    p.set(fireC.x - 0.5 + Math.cos(a) * rr, fireC.y + (Math.random() - 0.35) * 5, fireC.z + Math.sin(a) * rr * 0.9);
+    p.set(fireC.x + Math.cos(a) * rr, fireC.y + (Math.random() - 0.35) * 5, fireC.z + 0.5 + Math.abs(Math.sin(a)) * rr * 1.2);
     q.identity(); const s = 0.6 + Math.random() * 1.8; sc.set(s, s, s * 4);
     m4.compose(p, q, sc); sparks.setMatrixAt(i, m4);
   }
@@ -190,7 +190,7 @@ export function buildLab(THREE, tex, Q = {}) {
   const pulse = sin(time.mul(0.9).add(positionWorld.y.mul(3))).mul(0.25).add(0.75);
   shardMat.emissiveNode = vec3(0.55, 0.78, 1.0).mul(pulse).mul(1.4);
   shardMat.mrtNode = mrt({ amask: float(0.85) });
-  const SHARD_POS = [[-3.3, -0.4, 4.0], [-2.6, 1.6, 2.6], [2.9, 2.0, 3.2], [2.2, -1.5, 5.0], [-2.7, -2.4, 6.6], [3.2, 0.4, 6.0], [0.6, 2.1, 6.0]];
+  const SHARD_POS = [[-4.6, -0.2, 4.4], [-3.0, 2.4, 2.2], [3.8, 2.6, 3.0], [3.0, -1.6, 6.2], [-4.4, -2.2, 9.0], [6.4, 0.6, 8.0], [1.2, 2.8, 8.6]];
   const shards = SHARD_POS.map(([x, y, z], i) => {
     const g = new THREE.OctahedronGeometry(0.26, 0); g.scale(0.62, 1.7, 0.62);
     const m = new THREE.Mesh(g, shardMat);

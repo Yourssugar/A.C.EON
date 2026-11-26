@@ -159,7 +159,7 @@ export async function mount(opts = {}) {
   /* ---------- сцена: сначала пустая, глаз и лаборатория добавятся, когда загрузятся текстуры ---------- */
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
-  scene.fog = new THREE.FogExp2(0x020203, 0.03);
+  scene.fog = new THREE.FogExp2(0x050403, 0.014);
   const cam = new THREE.PerspectiveCamera(35, 1, 0.05, 120);
   cam.position.set(0, 0, 4.6);
 
@@ -202,16 +202,16 @@ export async function mount(opts = {}) {
       ]);
       pano.mapping = THREE.EquirectangularReflectionMapping;
       const tex = { iris, irisH, sclera, tissue, tissueH, pano, panel, panelH };
-      const t2n = ['flesh', 'flesh_h', 'torn', 'torn_h', 'grate', 'under', 'ceil', 'ceil_h', 'rack', 'rack_glow', 'tank',
+      const t2n = ['flesh', 'flesh_h', 'torn', 'torn_h', 'grate', 'under', 'ceil', 'ceil_h', 'rack', 'rack_glow', 'tank', 'blast',
         'screen_1', 'screen_2', 'screen_3', 'screen_4', 'screen_5', 'screen_6'];
-      const t2a = await Promise.all(t2n.map((n) => load('tex2/' + n + '.webp', !/_h$|_glow$/.test(n), !/^screen|^tank|^rack|^flesh/.test(n))));
+      const t2a = await Promise.all(t2n.map((n) => load('tex2/' + n + '.webp', !/_h$|_glow$/.test(n), !/^screen|^tank|^rack|^flesh|^blast/.test(n))));
       const g2 = (n) => t2a[t2n.indexOf(n)];
       const t2 = { flesh: g2('flesh'), fleshH: g2('flesh_h'), torn: g2('torn'), tornH: g2('torn_h'), grate: g2('grate'), under: g2('under'),
-        ceil: g2('ceil'), ceilH: g2('ceil_h'), rack: g2('rack'), rackGlow: g2('rack_glow'), tank: g2('tank'), panel, panelH,
+        ceil: g2('ceil'), ceilH: g2('ceil_h'), rack: g2('rack'), rackGlow: g2('rack_glow'), tank: g2('tank'), blast: g2('blast'), panel, panelH,
         screens: [1, 2, 3, 4, 5, 6].map((i) => g2('screen_' + i)) };
       /* панорама только для отражений; фон теперь сама комната */
       scene.environment = pano;
-      scene.environmentIntensity = 0.42;
+      scene.environmentIntensity = 0.6;
       scene.environmentRotation.y = -1.1;   /* огонь панорамы справа спереди */
       eye = buildEye(THREE, tex, Q); scene.add(eye.root);
       lab = buildLab(THREE, tex, Q); scene.add(lab.root);
@@ -321,12 +321,17 @@ export async function mount(opts = {}) {
   /* ---------- цикл ---------- */
   /* отъезд: сначала глаз вплотную, потом лаборатория */
   const CLOSE = { p: new THREE.Vector3(0, 0, 4.6), l: new THREE.Vector3(0, 0, 0) };
-  const FAR = { p: new THREE.Vector3(-0.4, -0.15, 11.6), l: new THREE.Vector3(-0.5, -0.5, 0) };
+  const FAR = { p: new THREE.Vector3(0.6, 0.9, 16.5), l: new THREE.Vector3(-0.4, -0.7, 0) };
   const tMount = performance.now();
   let revealAt = 0, rot = 0, introDone = false, lookX = 0, lookY = 0, capAt = 0;
   const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const camP = new THREE.Vector3(), camL = new THREE.Vector3(), toEye = new THREE.Vector3();
   let lastT = performance.now(), pull = 0, camX = 0, camY = 0;
+  /* осмотр: курсор у края экрана поворачивает голову, колесо наклоняет вперёд и назад */
+  let hlY = 0, hlP = 0, lean = 0, leanT = 0;
+  root.addEventListener('wheel', (e) => { leanT = Math.max(-6, Math.min(3, leanT - Math.sign(e.deltaY) * 0.8)); e.preventDefault(); }, { passive: false });
+  const dz = (n) => { const a = Math.max(0, Math.abs(n) - 0.35) / 0.65; return Math.sign(n) * a * a * (3 - 2 * a); };
+  const lookDir = new THREE.Vector3(), rightAx = new THREE.Vector3(), UPV = new THREE.Vector3(0, 1, 0);
   function tick() {
     const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     if (!document.hidden) {
@@ -400,9 +405,14 @@ export async function mount(opts = {}) {
     pull += ((qa ? uTen.value * 1.3 : st.focus) - pull) * k * 0.5;
     if (!reduce) { camX += (-ptr.nx * (0.12 + 0.3 * de) - camX) * k; camY += (-ptr.ny * (0.08 + 0.15 * de) - camY) * k; }
     toEye.copy(camL).sub(camP).normalize();
-    cam.position.copy(camP).addScaledVector(toEye, pull * (0.35 + 1.1 * de));
+    lean += (leanT * de - lean) * Math.min(1, dt * 2.5);
+    cam.position.copy(camP).addScaledVector(toEye, pull * (0.35 + 1.6 * de) + lean);
     cam.position.x += camX; cam.position.y += camY;
-    cam.lookAt(camL);
+    if (!reduce && ptr.has && !ptr.out) { hlY += (-dz(ptr.nx) * 0.62 * de - hlY) * k * 1.6; hlP += (dz(ptr.ny) * 0.22 * de - hlP) * k * 1.6; }
+    lookDir.copy(camL).sub(cam.position).normalize().applyAxisAngle(UPV, hlY);
+    rightAx.crossVectors(lookDir, UPV).normalize();
+    lookDir.applyAxisAngle(rightAx, hlP);
+    cam.lookAt(camL.copy(cam.position).add(lookDir));
     cam.updateMatrixWorld();
 
     if (eye) {
@@ -413,7 +423,7 @@ export async function mount(opts = {}) {
       beam.intensity = 260 * (0.4 + 0.6 * Math.max(st.focus, uTen.value)) * (1 - st.blink);
       if (ascii) {
         ascii.setCamera(cam); ascii.setGaze(gPos, gDir); ascii.uBeam.value = 1 - st.blink;
-        if (!(qa && qo.flash > 0)) ascii.uEdge.value = 0.25 + 0.75 * de + uTen.value * 0.4;
+        if (!(qa && qo.flash > 0)) ascii.uEdge.value = 0.25 + 0.35 * de + uTen.value * 0.5;
       }
     }
     if (lab) lab.update(dt, el);

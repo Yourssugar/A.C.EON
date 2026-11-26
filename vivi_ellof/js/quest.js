@@ -26,8 +26,8 @@ export function createQuest(THREE, ctx) {
   const POI = [];
   lab.shards.forEach((s) => POI.push(s.position));
   POI.push(new THREE.Vector3(CHAIR.x, FLOOR + 2.3, CHAIR.z));
-  POI.push(new THREE.Vector3(-4.3, FLOOR + 1.9, 3.2), new THREE.Vector3(-5.6, FLOOR + 1.9, 5.9));
-  POI.push(new THREE.Vector3(4.6, FLOOR + 1.8, 0.3), new THREE.Vector3(6.5, -0.5, 3.6));
+  POI.push(new THREE.Vector3(-6.6, FLOOR + 1.9, 3.0), new THREE.Vector3(-8.4, FLOOR + 1.9, 6.6), new THREE.Vector3(-11, FLOOR + 2, 0));
+  POI.push(new THREE.Vector3(3.7, FLOOR + 1.8, 0.3), new THREE.Vector3(9, 0, -1), new THREE.Vector3(3.6, FLOOR + 1.2, 9.5));
 
   const yp = (P) => ({ yaw: Math.atan2(P.x - E.x, P.z - E.z), pitch: Math.atan2(P.y - E.y, Math.hypot(P.x - E.x, P.z - E.z)) });
 
@@ -71,7 +71,7 @@ export function createQuest(THREE, ctx) {
 
   function nextPatrol() {
     const P = Math.random() < 0.8 ? POI[(Math.random() * POI.length) | 0]
-      : v.set(rnd(-7, 7), rnd(FLOOR + 0.3, 3.5), rnd(1, 11));
+      : v.set(rnd(-11, 11), rnd(FLOOR + 0.3, 5), rnd(1, 16));
     S.target = yp(P); S.mode = 'patrol'; S.modeT = rnd(1.4, 3.6);
   }
 

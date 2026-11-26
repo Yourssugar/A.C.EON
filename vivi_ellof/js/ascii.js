@@ -74,7 +74,7 @@ export function makeAscii(THREE, { col, mask, depth, atlasInfo }) {
 
   const aspect = uRes.x.div(uRes.y);
   const rr = length(cuv.sub(0.5).mul(vec2(aspect, 1))).div(length(vec2(aspect, 1).mul(0.5)));
-  const per = smoothstep(0.6, 1.0, rr).mul(uEdge);
+  const per = smoothstep(0.74, 1.05, rr).mul(uEdge);
 
   const raw = max(max(m, beam.mul(0.96)), per.mul(0.92));
   const seed = cell.x.add(cell.y.mul(311.7));

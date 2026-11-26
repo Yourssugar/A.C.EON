@@ -4,6 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A.C.EON STUDIO | [OFFICIAL]</title>
+  <script>
+  /* изнанка открыта в этой вкладке и это не перезагрузка: главная живёт там. Перезагрузка закрывает изнанку */
+  (function(){
+    try{
+      if(window.top!==window||!sessionStorage.getItem('aceon:rift'))return;
+      var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
+      if(n&&n.type==='reload'){ sessionStorage.removeItem('aceon:rift'); return; }
+      location.replace('vivi_ellof/');
+    }catch(e){}
+  })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -2575,10 +2586,74 @@
       o.connect(g); o.start(t0); o.stop(t0+2.4);
     }catch(e){}
   }
+  /* ключ изнанки. В коде только хэши. Когда на сервере появится проверка, RIFT_API = адрес эндпоинта,
+     он отвечает {ok:true}, хэши тогда можно убрать */
+  var RIFT_API='';
+  var RIFT_H=['5262f5f54f540bb0f763f901f0e4c821c7f7fb058f2ddfea8c006c86cfc715b5','94090bcdb73bb4c57cef58bf14e858481ee8ef6776976ba190a8da597a5e68af'];
+  function riftCheck(v){
+    var w=String(v||'').trim().toLowerCase();
+    if(!w||w.length>24||!window.Promise)return Promise.resolve(false);
+    if(RIFT_API){
+      return fetch(RIFT_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({w:w})})
+        .then(function(r){ return r.ok?r.json():{}; }).then(function(j){ return !!(j&&j.ok); })
+        .catch(function(){ return false; });
+    }
+    if(!window.crypto||!crypto.subtle||!window.TextEncoder)return Promise.resolve(false);
+    return crypto.subtle.digest('SHA-256',new TextEncoder().encode('aceon-rift:'+w)).then(function(buf){
+      var h=Array.prototype.map.call(new Uint8Array(buf),function(b){ return ('0'+b.toString(16)).slice(-2); }).join('');
+      return RIFT_H.indexOf(h)>=0;
+    }).catch(function(){ return false; });
+  }
+  /* вход: время останавливается, граф гаснет, музыка тянется как плёнка. Потом сцена изнанки
+     поднимается в этой же странице (трек не обрывается), адрес меняется на vivi_ellof/ */
+  var riftGoing=false;
+  function enterRift(){
+    if(riftGoing)return; riftGoing=true;
+    warping=true;
+    try{ sessionStorage.setItem('aceon:rift',JSON.stringify({t:Date.now()})); }catch(e){}
+    pwi.blur(); pwi.value='';
+    pwKey=''; pwstat.className='arg'; pwstat.textContent='';
+    VX.target=0.02*VX.base; fxOn('ice',8);
+    if(glOK&&GR.nodes.length)GR.nodes.forEach(function(n){ if(n.st===0||n.st===4){ n.st=1; n.ft=-Math.random()*1.4; } });
+    glitch(ttl,TORIG,22); tearBurst();
+    if(bgmFired&&!bgmEl.paused){
+      clearInterval(bgmFadeIv);
+      ['preservesPitch','mozPreservesPitch','webkitPreservesPitch'].forEach(function(k){ if(k in bgmEl)bgmEl[k]=false; });
+      var r0=performance.now();
+      var tiv=setInterval(function(){
+        var k=Math.min(1,(performance.now()-r0)/2600);
+        try{ bgmEl.playbackRate=Math.max(.45,1-.55*k*k); }catch(e){}
+        if(k>=1)clearInterval(tiv);
+      },40);
+    }
+    var veil=document.createElement('div');
+    veil.style.cssText='position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9998;transition:opacity 1.6s ease-in;';
+    document.body.appendChild(veil);
+    setTimeout(function(){ veil.style.opacity='1'; },1400);
+    var mod=null, ready=false, loaded=false, went=false;
+    var imp=null; try{ imp=new Function('u','return import(u)'); }catch(e){}
+    var go=function(){
+      if(!ready||!loaded||went)return; went=true;
+      if(!mod||!mod.mount){ location.href='vivi_ellof/'; return; }
+      portalOpen=true;
+      try{ var lc=gl&&gl.getExtension('WEBGL_lose_context'); if(lc)lc.loseContext(); }catch(e){}
+      Array.prototype.forEach.call(document.body.children,function(el){ if(el!==bgmEl&&el.tagName!=='SCRIPT')el.style.display='none'; });
+      try{ history.pushState({rift:1},'','vivi_ellof/'); }catch(e){}
+      mod.mount({audio:(bgmFired&&!bgmEl.paused)?bgmEl:null,lang:curLang()});
+    };
+    if(imp){
+      imp(new URL('vivi_ellof/rift.js',location.href).href)
+        .then(function(m){ mod=m; loaded=true; go(); })
+        .catch(function(){ mod=null; loaded=true; go(); });
+    } else loaded=true;
+    setTimeout(function(){ ready=true; go(); },3100);
+    setTimeout(function(){ loaded=true; go(); },12000);
+  }
   var denyIdx=0, denyN=0;
   function tryPass(){
     if(warping)return;
     var v=pwi.value.trim();
+    var riftP=riftCheck(v);
     pwb.disabled=true; pwb.textContent='.';
     pwKey=''; pwstat.className='live';
     var dots=0,vi=setInterval(function(){
@@ -2586,8 +2661,9 @@
     },110);
     VX.target=2.6*VX.base;
     setTimeout(function(){ if(!warping&&VX.target===2.6*VX.base)VX.target=VX.base; },900);
-    setTimeout(function(){
+    setTimeout(function(){ riftP.then(function(rift){
       clearInterval(vi);
+      if(rift){ pwb.textContent='OK'; pwb.disabled=false; enterRift(); return; }
       if(!v){ setStat('err','auth.null'); }
       else if(realityWord(v)){ /* реальность уже пострадала */ }
       else{
@@ -2602,7 +2678,7 @@
         if(Math.random()<.4)signalBroken();
       }
       pwb.textContent='OK'; pwb.disabled=false;
-    },600+Math.random()*400|0);
+    }); },600+Math.random()*400|0);
   }
   function denyText(){ return (TA('auth.deny')[denyIdx]||'').replace('{n}',String(denyN)); }
   pwb.onclick=tryPass;

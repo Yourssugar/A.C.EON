@@ -3,7 +3,7 @@
    buildEye(THREE, tex) -> { root, eyeball, set({yaw,pitch,pupil,blink}) }
    tex: { iris, irisH, sclera, tissue, tissueH } (THREE.Texture) */
 
-export function buildEye(THREE, tex) {
+export function buildEye(THREE, tex, Q = {}) {
   const T = THREE.TSL;
   const { uv, vec2, vec3, float, texture, uniform, length, atan, smoothstep, mix, max, abs, mod, PI, positionLocal,
     positionWorld, mx_noise_float, bumpMap, asin, clamp, normalize, fract, pow } = T;
@@ -85,10 +85,10 @@ export function buildEye(THREE, tex) {
   const CR = 0.62, CA = 1.0, CZ = IRIS_Z - CR * Math.cos(CA) + 0.002;
   const coGeo = new THREE.SphereGeometry(CR, 128, 48, 0, Math.PI * 2, 0, CA);
   coGeo.rotateX(Math.PI / 2);
-  const coMat = new THREE.MeshPhysicalNodeMaterial({
-    transmission: 1, thickness: 0.12, ior: 1.376, roughness: 0.015, metalness: 0,
-    clearcoat: 1, clearcoatRoughness: 0.0, transparent: true
-  });
+  /* преломление дорогое (лишний проход по сцене каждый кадр): только на сильной видеокарте */
+  const coMat = Q.transmission === false
+    ? new THREE.MeshPhysicalNodeMaterial({ roughness: 0.02, metalness: 0, clearcoat: 1, clearcoatRoughness: 0, transparent: true, opacity: 0.14, depthWrite: false })
+    : new THREE.MeshPhysicalNodeMaterial({ transmission: 1, thickness: 0.12, ior: 1.376, roughness: 0.015, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.0, transparent: true });
   const cornea = new THREE.Mesh(coGeo, coMat);
   cornea.position.z = CZ;
   cornea.renderOrder = 2;
@@ -180,13 +180,17 @@ export function buildEye(THREE, tex) {
     const rr = Math.hypot(x, y), a = Math.atan2(y, x);
     const fall = -0.5 * Math.pow(Math.max(0, rr - 1.35), 0.8);
     const lumpW = Math.sin(a * 3 + rr * 1.7) * 0.05 * rr + Math.sin(a * 7 - rr * 2.3) * 0.025 * rr;
+    /* край ткани рваный, не круг */
+    const edgeK = 1 + Math.max(0, rr - 1.8) * (0.22 * Math.sin(a * 3 + 1.3) + 0.14 * Math.sin(a * 7 + 0.4) + 0.08 * Math.sin(a * 13));
+    x *= edgeK; y *= edgeK; wp.setY(i, y);
     wp.setX(i, x * 1.12);
     wp.setZ(i, -0.06 + fall + lumpW);
   }
   wallGeo.computeVertexNormals();
   const wallUV = uv().mul(vec2(6, 6));
   const wallMat = new THREE.MeshPhysicalNodeMaterial({ roughness: 0.5, clearcoat: 0.7, clearcoatRoughness: 0.2 });
-  wallMat.colorNode = texture(tex.tissue, wallUV).rgb.mul(vec3(0.85, 0.68, 0.68));
+  wallMat.colorNode = texture(tex.tissue, wallUV).rgb.mul(vec3(0.85, 0.68, 0.68))
+    .mul(smoothstep(0.98, 0.55, uv().sub(0.5).length().mul(2)).mul(0.85).add(0.15));
   wallMat.normalNode = bumpMap(texture(tex.tissueH, wallUV).r, float(2.2));
   root.add(new THREE.Mesh(wallGeo, wallMat));
 

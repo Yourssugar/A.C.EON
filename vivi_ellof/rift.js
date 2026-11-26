@@ -12,6 +12,7 @@ import * as THREE from './vendor/three-webgpu.min.js';
 import { buildEye } from './js/eye.js';
 import { createGaze } from './js/gaze.js';
 import { buildLab } from './js/lab.js';
+import { buildRoom } from './js/room.js';
 import { makeAscii, atlasTexture } from './js/ascii.js';
 import { makeIntro } from './js/intro.js';
 
@@ -121,6 +122,17 @@ export async function mount(opts = {}) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
+  /* какая видеокарта на самом деле считает сцену. Программный рендер (видеокарта не дала себя
+     использовать, считает процессор) узнаём по имени и по флагу запасного адаптера */
+  const gpu = await gpuInfo(renderer, isGPU);
+  console.info('[vivi_ellof] GPU:', gpu.name || '?', gpu.soft ? '(программный рендер, считает процессор)' : '');
+  const Q = window.__viviQ || (gpu.soft
+    ? { tier: 0, prMax: 0.6, prMin: 0.4, transmission: false, fireOct: 1, fireCount: 12, bloom: false }
+    : isGPU
+      ? { tier: 2, prMax: Math.min(devicePixelRatio || 1, 2), prMin: 0.6, transmission: true, fireOct: 2, fireCount: 26, bloom: true }
+      : { tier: 1, prMax: Math.min(devicePixelRatio || 1, 1.5), prMin: 0.5, transmission: false, fireOct: 2, fireCount: 18, bloom: true });
+  let pr = Q.prMax;
+
   /* ---------- сцена: сначала пустая, глаз и лаборатория добавятся, когда загрузятся текстуры ---------- */
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
@@ -139,10 +151,15 @@ export async function mount(opts = {}) {
   const gaze = createGaze({ reduce });
 
   /* текстуры и сборка мира идут параллельно со входом из символов */
-  const big = isGPU && innerHeight * Math.min(devicePixelRatio || 1, 2) >= 1300;
-  const loader = new THREE.TextureLoader();
+  const big = Q.tier === 2 && innerHeight * Math.min(devicePixelRatio || 1, 2) >= 1300;
+  /* картинки распаковываются вне основного потока (ImageBitmap), страница не подвисает */
+  const useBitmap = typeof createImageBitmap === 'function';
+  const loader = useBitmap ? new THREE.ImageBitmapLoader() : new THREE.TextureLoader();
+  if (useBitmap) loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none' });
   let aniso = 8; try { aniso = Math.min(8, renderer.getMaxAnisotropy()); } catch (e) {}
-  const load = (f, srgb, rep) => loader.loadAsync(new URL('tex/' + f, BASE).href).then((t) => {
+  const load = (f, srgb, rep) => loader.loadAsync(new URL(f.indexOf('/') < 0 ? 'tex/' + f : f, BASE).href).then((img) => {
+    let t = img;
+    if (useBitmap) { t = new THREE.Texture(img); t.flipY = false; t.needsUpdate = true; }
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }
     t.anisotropy = aniso;
@@ -162,15 +179,20 @@ export async function mount(opts = {}) {
       ]);
       pano.mapping = THREE.EquirectangularReflectionMapping;
       const tex = { iris, irisH, sclera, tissue, tissueH, pano, panel, panelH };
+      const t2n = ['flesh', 'flesh_h', 'torn', 'torn_h', 'grate', 'under', 'ceil', 'ceil_h', 'rack', 'rack_glow', 'tank',
+        'screen_1', 'screen_2', 'screen_3', 'screen_4', 'screen_5', 'screen_6'];
+      const t2a = await Promise.all(t2n.map((n) => load('tex2/' + n + '.webp', !/_h$|_glow$/.test(n), !/^screen|^tank|^rack|^flesh/.test(n))));
+      const g2 = (n) => t2a[t2n.indexOf(n)];
+      const t2 = { flesh: g2('flesh'), fleshH: g2('flesh_h'), torn: g2('torn'), tornH: g2('torn_h'), grate: g2('grate'), under: g2('under'),
+        ceil: g2('ceil'), ceilH: g2('ceil_h'), rack: g2('rack'), rackGlow: g2('rack_glow'), tank: g2('tank'), panel, panelH,
+        screens: [1, 2, 3, 4, 5, 6].map((i) => g2('screen_' + i)) };
+      /* панорама только для отражений; фон теперь сама комната */
       scene.environment = pano;
       scene.environmentIntensity = 0.42;
       scene.environmentRotation.y = -1.1;   /* огонь панорамы справа спереди */
-      scene.background = pano;              /* лаборатория вокруг, тёмная и размытая */
-      scene.backgroundIntensity = 0.2;
-      scene.backgroundBlurriness = 0.1;
-      scene.backgroundRotation.y = -1.1;
-      eye = buildEye(THREE, tex); scene.add(eye.root);
-      lab = buildLab(THREE, tex); scene.add(lab.root);
+      eye = buildEye(THREE, tex, Q); scene.add(eye.root);
+      lab = buildLab(THREE, tex, Q); scene.add(lab.root);
+      scene.add(buildRoom(THREE, t2, Q).root);
       /* шейдеры собираются заранее, пока экран закрыт символами */
       try { await renderer.compileAsync(scene, cam); } catch (e) {}
       ready = true;
@@ -202,7 +224,7 @@ export async function mount(opts = {}) {
   scene.add(dust);
 
   /* ---------- пост-обработка: свечение, лёгкая аберрация, зерно, виньетка ---------- */
-  let pipe = null, ascii = null, intro = null;
+  let pipe = null, pipeIntro = null, ascii = null, intro = null, useFull = false;
   try {
     pipe = new THREE.RenderPipeline(renderer);
     const sp = pass(scene, cam);
@@ -214,9 +236,12 @@ export async function mount(opts = {}) {
     const merged = vec4(mix(ascii.node.rgb, intro.color, intro.on), 1);
     const col = convertToTexture(merged);
     const ca = THREE.chromaticAberration(col, float(0.35), vec2(0.5, 0.5), float(1.05));
-    const bl = THREE.bloom(col, 0.32, 0.45, 0.8);
     const vig = smoothstep(float(0.95), float(0.28), length(screenUV.sub(0.5)).mul(1.25));
-    pipe.outputNode = THREE.film(ca.add(bl).mul(vig), float(0.16));
+    pipe.outputNode = THREE.film((Q.bloom ? ca.add(THREE.bloom(col, 0.32, 0.45, 0.8)) : ca).mul(vig), float(0.16));
+    /* пока мир грузится, сцену не считаем вовсе: только вход из символов */
+    pipeIntro = new THREE.RenderPipeline(renderer);
+    const icol = convertToTexture(vec4(intro.color, 1));
+    pipeIntro.outputNode = THREE.film((Q.bloom ? icol.add(THREE.bloom(icol, 0.32, 0.45, 0.8)) : icol).mul(vig), float(0.16));
   } catch (e) {
     console.warn('[vivi_ellof] post', e);
     pipe = null;
@@ -253,7 +278,7 @@ export async function mount(opts = {}) {
 
   function resize() {
     const w = innerWidth, h = innerHeight;
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(pr);
     renderer.setSize(w, h, false);
     cam.aspect = w / h;
     cam.fov = w / h < 1 ? 52 : 35;        /* телефон стоя: глаз должен влезть по ширине */
@@ -266,7 +291,7 @@ export async function mount(opts = {}) {
   /* ---------- цикл ---------- */
   /* отъезд: сначала глаз вплотную, потом лаборатория */
   const CLOSE = { p: new THREE.Vector3(0, 0, 4.6), l: new THREE.Vector3(0, 0, 0) };
-  const FAR = { p: new THREE.Vector3(-0.15, -0.5, 10.4), l: new THREE.Vector3(-0.45, -0.55, 0) };
+  const FAR = { p: new THREE.Vector3(-0.4, -0.15, 11.6), l: new THREE.Vector3(-0.5, -0.5, 0) };
   const tMount = performance.now();
   let revealAt = 0, rot = 0, introDone = false, lookX = 0, lookY = 0;
   const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -326,8 +351,20 @@ export async function mount(opts = {}) {
     }
     if (lab) lab.update(dt, el);
 
-    if (pipe) pipe.render(); else renderer.render(scene, cam);
+    if (ready && !useFull) useFull = true;
+    if (pipe && (useFull || !pipeIntro)) pipe.render();
+    else if (pipeIntro) pipeIntro.render();
+    else renderer.render(scene, cam);
+
+    /* разрешение под видеокарту: не успевает кадр, рендер мельче; запас есть, крупнее */
+    frameMs += ((now - prevNow) - frameMs) * 0.05; prevNow = now;
+    if (useFull && now - prChecked > 1200) {
+      prChecked = now;
+      if (frameMs > 26 && pr > Q.prMin) { pr = Math.max(Q.prMin, pr * 0.85); prCool = now; resize(); }
+      else if (frameMs < 18.5 && pr < Q.prMax && now - prCool > 6000) { pr = Math.min(Q.prMax, pr * 1.08); prCool = now - 3000; resize(); }
+    }
   }
+  let frameMs = 16, prevNow = performance.now(), prChecked = 0, prCool = 0;
   renderer.setAnimationLoop(tick);
 
   document.addEventListener('visibilitychange', () => {
@@ -350,9 +387,28 @@ export async function mount(opts = {}) {
     setTimeout(() => { line.style.opacity = '0'; }, 12500);
   }, 200);
 
-  window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gaze, cam, scene, gDir, gPos, ptr, cursorState,
+  window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gpu: gpu.name, Q, get pr() { return pr; }, get ms() { return frameMs; }, gaze, cam, scene, gDir, gPos, ptr, cursorState,
     get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; } };
   startSound(opts.audio || null);
+}
+
+/* ---------- видеокарта: имя и признак программного рендера ---------- */
+async function gpuInfo(renderer, isGPU) {
+  try {
+    if (isGPU && navigator.gpu) {
+      const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+      const i = (a && a.info) || {};
+      const name = [i.vendor, i.architecture, i.description, i.device].filter(Boolean).join(' ');
+      return { name, soft: !!(i.isFallbackAdapter || (a && a.isFallbackAdapter)) || /swiftshader|llvmpipe|basic render/i.test(name) };
+    }
+    const gl = renderer.backend && renderer.backend.gl;
+    if (gl) {
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      const name = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+      return { name, soft: /swiftshader|llvmpipe|software|basic render/i.test(name) };
+    }
+  } catch (e) {}
+  return { name: '', soft: false };
 }
 
 /* ---------- звук: тот же трек, замедленный, глухой, в длинном отражении; под ним гул с биением ---------- */

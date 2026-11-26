@@ -1,36 +1,27 @@
-/* Лаборатория в последней доле секунды: пол, ядро вокруг глаза, кабели, кресло Виви,
+/* Лаборатория в последней доле секунды (содержимое; комната в room.js): ядро вокруг глаза, кабели, кресло Виви,
    Виви (только маска для символов), застывший взрыв справа, стекло и искры в воздухе, 7 осколков памяти.
    Глаз стоит в начале координат и смотрит вдоль +Z, кресло между ним и зрителем.
    buildLab(THREE, tex) -> { root, vivi, shards, update(dt), FLOOR } */
 
 export const FLOOR = -3.4;
-export const CHAIR = { x: -1.15, z: 6.1 };
+export const CHAIR = { x: -1.2, z: 7.0 };
 
-export function buildLab(THREE, tex) {
+export function buildLab(THREE, tex, Q = {}) {
   const T = THREE.TSL;
   const { uv, vec2, vec3, float, texture, mrt, positionWorld, mx_fractal_noise_float, smoothstep, length, mix,
     time, bumpMap, sin, uniform, normalView, abs } = T;
   const root = new THREE.Group();
 
-  /* ---------- пол: мокрый тёмный металл ---------- */
-  const floorUV = uv().mul(vec2(14, 14));
-  const floorMat = new THREE.MeshPhysicalNodeMaterial({ roughness: 0.2, metalness: 0.55, clearcoat: 1, clearcoatRoughness: 0.08 });
-  floorMat.colorNode = texture(tex.panel, floorUV).rgb.mul(0.32);
-  floorMat.normalNode = bumpMap(texture(tex.panelH, floorUV).r, float(1.2));
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), floorMat);
-  floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR;
-  root.add(floor);
-
   /* ---------- ядро: масса ткани вокруг глаза ---------- */
   const coreMat = new THREE.MeshPhysicalNodeMaterial({ roughness: 0.48, clearcoat: 0.7, clearcoatRoughness: 0.2 });
   const cUV = uv().mul(vec2(5, 3));
   /* к краям ядро уходит в темноту, контура нет */
-  const coreFade = smoothstep(float(4.2), float(1.3), length(positionWorld.xy.mul(vec2(0.85, 1))))
+  const coreFade = smoothstep(float(3.4), float(1.2), length(positionWorld.xy.mul(vec2(0.85, 1))))
     .mul(smoothstep(float(0.05), float(0.55), abs(normalView.z)));
   coreMat.colorNode = texture(tex.tissue, cUV).rgb.mul(vec3(0.75, 0.6, 0.6)).mul(coreFade.mul(0.9).add(0.1));
   coreMat.clearcoatNode = coreFade.mul(0.7);
   coreMat.normalNode = bumpMap(texture(tex.tissueH, cUV).r, float(2.4));
-  const coreGeo = new THREE.SphereGeometry(2.5, 128, 96);
+  const coreGeo = new THREE.SphereGeometry(1.95, 128, 96);
   const cp = coreGeo.attributes.position;
   for (let i = 0; i < cp.count; i++) {
     const x = cp.getX(i), y = cp.getY(i), z = cp.getZ(i);
@@ -39,17 +30,8 @@ export function buildLab(THREE, tex) {
   }
   coreGeo.computeVertexNormals();
   const core = new THREE.Mesh(coreGeo, coreMat);
-  core.position.set(0, 0, -1.3);
-  root.add(core);
-
-  /* стена лаборатории за ядром: тёмные панели, ядро из неё прорастает */
-  const wallUV = uv().mul(vec2(9, 6));
-  const wallMat = new THREE.MeshPhysicalNodeMaterial({ roughness: 0.4, metalness: 0.7 });
-  wallMat.colorNode = texture(tex.panel, wallUV).rgb.mul(0.22);
-  wallMat.normalNode = bumpMap(texture(tex.panelH, wallUV).r, float(1.5));
-  const wall = new THREE.Mesh(new THREE.PlaneGeometry(36, 18), wallMat);
-  wall.position.set(0, FLOOR + 9, -2.0);
-  root.add(wall);
+  core.position.set(0, 0, -1.05);
+  /* шар ядра больше не нужен: пролом заполняют ткань вокруг глаза, лепестки металла и плоть на стене (room.js) */
 
   /* ---------- кабели ---------- */
   const cableMat = new THREE.MeshPhysicalNodeMaterial({ roughness: 0.35, metalness: 0.3, clearcoat: 0.6, color: 0x121214 });
@@ -150,17 +132,17 @@ export function buildLab(THREE, tex) {
   /* ---------- застывший взрыв справа: объём из спрайтов, огонь почти не движется ---------- */
   const fireMat = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
   const fd = length(uv().sub(0.5)).mul(2);
-  const fn = mx_fractal_noise_float(positionWorld.mul(0.55).add(vec3(0, time.mul(0.004), 0)), 4, 2.1, 0.55);
+  const fn = mx_fractal_noise_float(positionWorld.mul(0.55).add(vec3(0, time.mul(0.004), 0)), Q.fireOct || 2, 2.1, 0.55);
   const dens = smoothstep(float(1), float(0.15), fd.add(fn.mul(0.45)));
   const hot = smoothstep(0.55, 1.0, dens.add(fn.mul(0.2)));
   fireMat.colorNode = mix(mix(vec3(0.35, 0.04, 0.01), vec3(1.0, 0.42, 0.08), dens), vec3(1.0, 0.86, 0.6), hot).mul(1.6);
   fireMat.opacityNode = dens.mul(0.42);
   const fireC = new THREE.Vector3(7.2, -0.6, 3.6);
-  for (let i = 0; i < 46; i++) {
+  for (let i = 0; i < (Q.fireCount || 26); i++) {
     const s = new THREE.Sprite(fireMat);
     const a = Math.random() * Math.PI * 2, rr = Math.pow(Math.random(), 0.6) * 2.6;
     s.position.set(fireC.x + Math.cos(a) * rr * 0.8, fireC.y + (Math.random() - 0.3) * 2.6, fireC.z + Math.sin(a) * rr * 1.2);
-    const sz = 1.6 + Math.random() * 2.6; s.scale.set(sz, sz, 1);
+    const sz = 1.8 + Math.random() * 2.4; s.scale.set(sz, sz, 1);
     root.add(s);
   }
   const fireLight = new THREE.PointLight(0xff7428, 70, 30, 1.7);

@@ -13,16 +13,19 @@ import { buildEye } from './js/eye.js';
 import { createGaze } from './js/gaze.js';
 import { buildLab } from './js/lab.js';
 import { buildRoom } from './js/room.js';
+import { createQuest } from './js/quest.js';
 import { makeAscii, atlasTexture } from './js/ascii.js';
 import { makeIntro } from './js/intro.js';
 
 const { positionLocal, time, sin, cos, vec2, vec3, float, instanceIndex, pass, screenUV, length, smoothstep,
-  mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs, vec4, mix } = THREE.TSL;
+  mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs, vec4, mix, uniform } = THREE.TSL;
 const BASE = new URL('./', import.meta.url);
 
 const TXT = {
-  ru: { obs: '> НАБЛЮДЕНИЕ НАЧАТО', left: 'ДО ВЗРЫВА', sec: 'с', wait: 'я жду' },
-  en: { obs: '> OBSERVATION STARTED', left: 'UNTIL DETONATION', sec: 's', wait: 'i am waiting' }
+  ru: { obs: '> НАБЛЮДЕНИЕ НАЧАТО', left: 'ДО ВЗРЫВА', sec: 'с', wait: 'я жду',
+    noticed: '> АНОМАЛИЯ ОБНАРУЖЕНА', open: '> ФРАГМЕНТ ОТКРЫТ', lost: '> ФРАГМЕНТ ПОТЕРЯН' },
+  en: { obs: '> OBSERVATION STARTED', left: 'UNTIL DETONATION', sec: 's', wait: 'i am waiting',
+    noticed: '> ANOMALY DETECTED', open: '> FRAGMENT OPENED', lost: '> FRAGMENT LOST' }
 };
 
 /* ---------- память изнанки: отдельно от памяти сайта (aceon:trace) ---------- */
@@ -87,18 +90,38 @@ export async function mount(opts = {}) {
   cur.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:5;opacity:0;transition:opacity .4s ease;';
   cur.innerHTML = '<div class="r" style="position:absolute;left:-11px;top:-11px;width:22px;height:22px;border:1px solid rgba(214,226,246,.75);'
     + 'border-radius:50%;box-sizing:border-box;transition:transform .25s ease,border-color .25s ease;"></div>'
-    + '<div style="position:absolute;left:-1.5px;top:-1.5px;width:3px;height:3px;border-radius:50%;background:#e4ecfa;"></div>';
+    + '<div style="position:absolute;left:-1.5px;top:-1.5px;width:3px;height:3px;border-radius:50%;background:#e4ecfa;"></div>'
+    + '<svg width="44" height="44" style="position:absolute;left:-22px;top:-22px;overflow:visible"><circle cx="22" cy="22" r="17" fill="none" '
+    + 'stroke="rgba(170,210,255,.95)" stroke-width="1.5" stroke-dasharray="106.8" stroke-dashoffset="106.8" transform="rotate(-90 22 22)"/></svg>';
   root.appendChild(cur);
   const curRing = cur.querySelector('.r');
+  const curArc = cur.querySelector('circle');
   const coarse = matchMedia('(pointer: coarse)').matches;
-  function cursorState(stt) {
+  function cursorState(stt, hold, seen) {
     curRing.style.transform = stt === 'hover' ? 'scale(1.6)' : stt === 'hold' ? 'scale(.55)' : 'scale(1)';
-    curRing.style.borderColor = stt === 'idle' ? 'rgba(214,226,246,.75)' : 'rgba(150,200,255,.95)';
+    curRing.style.borderColor = seen ? 'rgba(255,120,120,.85)' : stt === 'idle' ? 'rgba(214,226,246,.75)' : 'rgba(150,200,255,.95)';
+    curArc.setAttribute('stroke-dashoffset', String(106.8 * (1 - Math.min(1, hold || 0))));
+  }
+
+  const veil = document.createElement('div');
+  veil.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;transition:opacity .7s ease;pointer-events:none;z-index:6;';
+  root.appendChild(veil);
+  let ejected = false;
+  /* выброс: изнанка закрывается, обычная главная загружается заново (рождение вселенной) */
+  function eject() {
+    try { sessionStorage.removeItem('aceon:rift'); } catch (e) {}
+    mem.caught = (mem.caught || 0) + 1; memSave(mem);
+    location.replace(new URL('../', BASE).href);
   }
 
   document.body.appendChild(root);
   document.documentElement.style.background = '#000';
 
+  let sayT = 0;
+  const say = (txt) => {
+    line.textContent = txt; line.style.opacity = '0.95';
+    clearTimeout(sayT); sayT = setTimeout(() => { line.style.opacity = '0'; }, 3800);
+  };
   const mem = memLoad();
   const comma = lang !== 'en';
   hud.querySelector('#vv-l').textContent = L.left;
@@ -147,7 +170,7 @@ export async function mount(opts = {}) {
   top.position.set(0.2, 3.4, 3.2);
   scene.add(cold, top);
 
-  let eye = null, lab = null, ready = false;
+  let eye = null, lab = null, ready = false, quest = null, sound = null;
   const gaze = createGaze({ reduce });
 
   /* текстуры и сборка мира идут параллельно со входом из символов */
@@ -193,6 +216,7 @@ export async function mount(opts = {}) {
       eye = buildEye(THREE, tex, Q); scene.add(eye.root);
       lab = buildLab(THREE, tex, Q); scene.add(lab.root);
       scene.add(buildRoom(THREE, t2, Q).root);
+      quest = createQuest(THREE, { cam, eye, lab, mem, save: () => memSave(mem), step: () => { mem.lg += STEP_SEEN; showCount(); memSave(mem); } });
       /* шейдеры собираются заранее, пока экран закрыт символами */
       try { await renderer.compileAsync(scene, cam); } catch (e) {}
       ready = true;
@@ -225,6 +249,7 @@ export async function mount(opts = {}) {
 
   /* ---------- пост-обработка: свечение, лёгкая аберрация, зерно, виньетка ---------- */
   let pipe = null, pipeIntro = null, ascii = null, intro = null, useFull = false;
+  const uTen = uniform(0);   /* напряжение: картинку стягивает, края темнеют */
   try {
     pipe = new THREE.RenderPipeline(renderer);
     const sp = pass(scene, cam);
@@ -235,8 +260,8 @@ export async function mount(opts = {}) {
     /* вход поверх сцены: пока клетка принадлежит входу, в ней символы входа */
     const merged = vec4(mix(ascii.node.rgb, intro.color, intro.on), 1);
     const col = convertToTexture(merged);
-    const ca = THREE.chromaticAberration(col, float(0.35), vec2(0.5, 0.5), float(1.05));
-    const vig = smoothstep(float(0.95), float(0.28), length(screenUV.sub(0.5)).mul(1.25));
+    const ca = THREE.chromaticAberration(col, float(0.35).add(uTen.mul(1.5)), vec2(0.5, 0.5), float(1.05));
+    const vig = smoothstep(float(0.95).sub(uTen.mul(0.35)), float(0.28).sub(uTen.mul(0.2)), length(screenUV.sub(0.5)).mul(1.25));
     pipe.outputNode = THREE.film((Q.bloom ? ca.add(THREE.bloom(col, 0.32, 0.45, 0.8)) : ca).mul(vig), float(0.16));
     /* пока мир грузится, сцену не считаем вовсе: только вход из символов */
     pipeIntro = new THREE.RenderPipeline(renderer);
@@ -248,9 +273,14 @@ export async function mount(opts = {}) {
   }
 
   /* ---------- курсор ---------- */
-  const ptr = { nx: 0, ny: 0, has: false, last: performance.now(), out: false };
+  const ptr = { nx: 0, ny: 0, has: false, last: performance.now(), out: false, speed: 0, stillT: 0, mt: performance.now() };
   root.addEventListener('pointermove', (e) => {
-    ptr.nx = e.clientX / innerWidth * 2 - 1; ptr.ny = -(e.clientY / innerHeight * 2 - 1);
+    const nx = e.clientX / innerWidth * 2 - 1, ny = -(e.clientY / innerHeight * 2 - 1), tn = performance.now();
+    if (ptr.has) {
+      const d = Math.hypot(nx - ptr.nx, ny - ptr.ny) / 2, dts = Math.max(0.008, (tn - ptr.mt) / 1000);
+      ptr.speed = Math.max(ptr.speed, d / dts);
+    }
+    ptr.mt = tn; ptr.nx = nx; ptr.ny = ny;
     ptr.has = true; ptr.out = false; ptr.last = performance.now();
     if (!coarse) cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)';
   });
@@ -293,7 +323,7 @@ export async function mount(opts = {}) {
   const CLOSE = { p: new THREE.Vector3(0, 0, 4.6), l: new THREE.Vector3(0, 0, 0) };
   const FAR = { p: new THREE.Vector3(-0.4, -0.15, 11.6), l: new THREE.Vector3(-0.5, -0.5, 0) };
   const tMount = performance.now();
-  let revealAt = 0, rot = 0, introDone = false, lookX = 0, lookY = 0;
+  let revealAt = 0, rot = 0, introDone = false, lookX = 0, lookY = 0, capAt = 0;
   const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const camP = new THREE.Vector3(), camL = new THREE.Vector3(), toEye = new THREE.Vector3();
   let lastT = performance.now(), pull = 0, camX = 0, camY = 0;
@@ -304,10 +334,32 @@ export async function mount(opts = {}) {
       if (mem.acc >= 300) { mem.acc -= 300; mem.lg += STEP_TIME; showCount(); memSave(mem); }
     }
     const idle = (now - ptr.last) / 1000;
-    const st = gaze.update(dt, ptr.has ? cursorTarget() : null,
-      { idle, out: ptr.out, edgeX: ptr.nx / 2, edgeY: ptr.ny / 2, near: ptr.has && !ptr.out && idle < 3 && cursorNearIris() });
+    ptr.speed *= Math.exp(-dt * 7);
+    ptr.stillT = ptr.speed > 0.05 ? 0 : ptr.stillT + dt;
+
+    /* после отъезда камеры глаз перестаёт видеть курсор и начинает искать (js/quest.js) */
+    const qo = quest ? quest.update(dt, { nx: ptr.nx, ny: ptr.ny, has: ptr.has, out: ptr.out, speed: ptr.speed, stillT: ptr.stillT,
+      gaze: { yaw: gaze.state.yaw, pitch: gaze.state.pitch } }) : null;
+    const qa = !!(quest && quest.state.active);
+    const st = qa
+      ? gaze.update(dt, qo.target, { idle: 0, near: qo.mode === 'lock' && cursorNearIris() })
+      : gaze.update(dt, ptr.has ? cursorTarget() : null,
+        { idle, out: ptr.out, edgeX: ptr.nx / 2, edgeY: ptr.ny / 2, near: ptr.has && !ptr.out && idle < 3 && cursorNearIris() });
     if (eye) eye.set(st);
-    if (!coarse) cur.style.opacity = !ptr.has || ptr.out ? '0' : st.mode === 'search' ? '0.25' : '0.9';
+    if (!coarse) {
+      cur.style.opacity = !ptr.has || ptr.out || capAt ? '0' : (!qa && st.mode === 'search') ? '0.25' : '0.9';
+      cursorState(qa ? qo.cursor : 'idle', qa ? qo.hold : 0, qa && qo.inBeam);
+    }
+    const ten = qa ? qo.tension : 0;
+    if (ascii && qa && qo.flash > 0) ascii.uEdge.value = 1;
+    uTen.value += (ten - uTen.value) * Math.min(1, dt * 3);
+    if (sound) { sound.tension(uTen.value); sound.shard(qa ? qo.hold : 0); }
+    if (qa) qo.events.forEach((ev) => {
+      if (ev.type === 'open') say(L.open);
+      else if (ev.type === 'noticed') say(L.noticed);
+      else if (ev.type === 'lost') setTimeout(() => say(L.lost), 1600);
+      else if (ev.type === 'capture') capAt = now;
+    });
 
     /* вход из символов: вихрь, превращение в глаз, ожидание, осыпание клеток */
     const T = window.__viviHold != null ? window.__viviHold : (now - tMount) / 1000;
@@ -327,13 +379,25 @@ export async function mount(opts = {}) {
       if (dis >= 1.01) introDone = true;
     }
 
+    /* поимка: клетки заполняются глазом из символов, зрачок растёт и съедает всё, потом обычная главная.
+       Позже здесь будет падение через вихрь с отголосками личностей */
+    if (capAt && intro) {
+      const cp = (now - capAt) / 1000;
+      intro.set({ alive: 1, dissolve: Math.max(0, 1 - cp / 1.1), morph: 1, open: 1, fade: 1, rot,
+        look: { x: 0, y: 0 }, pupil: Math.min(1.4, 0.3 + Math.max(0, cp - 1.2) * 0.55) });
+      if (sound) sound.fade(cp);
+      if (cp > 3.4) veil.style.opacity = '1';
+      if (cp > 4.2 && !ejected) { ejected = true; eject(); }
+    }
+
     /* отъезд камеры (после раскрытия), параллакс за курсором, медленное притяжение к глазу */
     const el = revealAt ? (now - revealAt) / 1000 : 0;
     const dk = reduce ? 1 : Math.min(1, Math.max(0, (el - 6) / 15));
     const de = dk * dk * (3 - 2 * dk);
     camP.lerpVectors(CLOSE.p, FAR.p, de); camL.lerpVectors(CLOSE.l, FAR.l, de);
     const k = 1 - Math.exp(-dt * 0.6);
-    pull += (st.focus - pull) * k * 0.5;
+    if (quest && de >= 1 && !quest.state.active) quest.start();
+    pull += ((qa ? uTen.value * 1.3 : st.focus) - pull) * k * 0.5;
     if (!reduce) { camX += (-ptr.nx * (0.12 + 0.3 * de) - camX) * k; camY += (-ptr.ny * (0.08 + 0.15 * de) - camY) * k; }
     toEye.copy(camL).sub(camP).normalize();
     cam.position.copy(camP).addScaledVector(toEye, pull * (0.35 + 1.1 * de));
@@ -346,8 +410,11 @@ export async function mount(opts = {}) {
       gDir.set(0, 0, 1).applyQuaternion(gQ);
       gPos.set(0, 0, 1.16); eye.eyeball.localToWorld(gPos);
       beam.position.copy(gPos); beam.target.position.copy(gPos).addScaledVector(gDir, 10);
-      beam.intensity = 260 * (0.4 + 0.6 * st.focus) * (1 - st.blink);
-      if (ascii) { ascii.setCamera(cam); ascii.setGaze(gPos, gDir); ascii.uBeam.value = 1 - st.blink; ascii.uEdge.value = 0.25 + 0.75 * de; }
+      beam.intensity = 260 * (0.4 + 0.6 * Math.max(st.focus, uTen.value)) * (1 - st.blink);
+      if (ascii) {
+        ascii.setCamera(cam); ascii.setGaze(gPos, gDir); ascii.uBeam.value = 1 - st.blink;
+        if (!(qa && qo.flash > 0)) ascii.uEdge.value = 0.25 + 0.75 * de + uTen.value * 0.4;
+      }
     }
     if (lab) lab.update(dt, el);
 
@@ -387,16 +454,16 @@ export async function mount(opts = {}) {
     setTimeout(() => { line.style.opacity = '0'; }, 12500);
   }, 200);
 
+  sound = startSound(opts.audio || null);
   window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gpu: gpu.name, Q, get pr() { return pr; }, get ms() { return frameMs; }, gaze, cam, scene, gDir, gPos, ptr, cursorState,
-    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; } };
-  startSound(opts.audio || null);
+    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; }, get quest() { return quest; } };
 }
 
 /* ---------- видеокарта: имя и признак программного рендера ---------- */
 async function gpuInfo(renderer, isGPU) {
   try {
     if (isGPU && navigator.gpu) {
-      const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+      const a = await navigator.gpu.requestAdapter();
       const i = (a && a.info) || {};
       const name = [i.vendor, i.architecture, i.description, i.device].filter(Boolean).join(' ');
       return { name, soft: !!(i.isFallbackAdapter || (a && a.isFallbackAdapter)) || /swiftshader|llvmpipe|basic render/i.test(name) };
@@ -411,10 +478,14 @@ async function gpuInfo(renderer, isGPU) {
   return { name: '', soft: false };
 }
 
-/* ---------- звук: тот же трек, замедленный, глухой, в длинном отражении; под ним гул с биением ---------- */
+/* ---------- звук: тот же трек, замедленный, глухой, в длинном отражении; под ним гул с биением.
+   Возвращает пульт: tension(0..1) глушит трек, поднимает гул, добавляет сердцебиение;
+   shard(0..1) звучание осколка, пока его держат; fade(сек) затихание при поимке.
+   Резких звуков нет: всё нарастает плавно ---------- */
 function startSound(el) {
   const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return;
+  const ctl = { tension() {}, shard() {}, fade() {} };
+  if (!AC) return ctl;
 
   function build(audioEl) {
     const ctx = new AC();
@@ -435,13 +506,44 @@ function startSound(el) {
     const hlp = ctx.createBiquadFilter(); hlp.type = 'lowpass'; hlp.frequency.value = 120;
     hum.connect(hlp); hlp.connect(master);
     [46, 47.3].forEach((f) => { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(hum); o.start(); });
+
+    /* голос осколка: два тихих тона в отражении */
+    const sg = ctx.createGain(); sg.gain.value = 0; sg.connect(verb); sg.connect(master);
+    [196, 277.2].forEach((f, i) => { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.detune.value = i * 7; o.connect(sg); o.start(); });
+
     const t = ctx.currentTime;
     master.gain.setValueAtTime(0.0001, t);
     master.gain.exponentialRampToValueAtTime(0.9, t + 5);
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+    let nextBeat = 0, faded = false;
+    ctl.tension = (x) => {
+      const n = ctx.currentTime;
+      lp.frequency.setTargetAtTime(760 - 520 * x, n, 0.3);
+      hum.gain.setTargetAtTime(0.05 + 0.12 * x, n, 0.4);
+      /* сердцебиение: два удара, чаще с напряжением */
+      if (x > 0.4 && n >= nextBeat) {
+        const per = 1.25 - 0.55 * x;
+        [0, 0.24].forEach((d, i) => {
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'sine'; o.frequency.value = 52;
+          g.gain.setValueAtTime(0.0001, n + d);
+          g.gain.exponentialRampToValueAtTime(0.32 * x * (i ? 0.7 : 1), n + d + 0.03);
+          g.gain.exponentialRampToValueAtTime(0.0001, n + d + 0.26);
+          o.connect(g); g.connect(master); o.start(n + d); o.stop(n + d + 0.3);
+        });
+        nextBeat = n + per;
+      }
+    };
+    ctl.shard = (p) => { sg.gain.setTargetAtTime(p * 0.06, ctx.currentTime, 0.15); };
+    ctl.fade = (cp) => {
+      if (faded) return;
+      if (cp > 2.6) { faded = true; master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.4); }
+      else lp.frequency.setTargetAtTime(220, ctx.currentTime, 0.5);
+    };
   }
 
-  if (el) { build(el); return; }
+  if (el) { build(el); return ctl; }
   const once = () => {
     removeEventListener('pointerdown', once); removeEventListener('keydown', once);
     const tracks = ['audio/track1.mp3', 'audio/track2.mp3'];
@@ -451,6 +553,7 @@ function startSound(el) {
     a.play().catch(() => {});
   };
   addEventListener('pointerdown', once); addEventListener('keydown', once);
+  return ctl;
 }
 
 function impulse(ctx, sec, decay) {

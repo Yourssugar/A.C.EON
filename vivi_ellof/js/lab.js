@@ -96,10 +96,7 @@ export function buildLab(THREE, tex, Q = {}) {
   haloGlow.rotation.copy(halo.rotation); haloGlow.position.copy(halo.position); haloGlow.position.y -= 0.03;
   chair.add(halo, haloGlow);
   root.add(chair);
-  /* контровой свет огня на кресле и фигуре: силуэт читается на тёмном */
-  const rim = new THREE.PointLight(0xff8a40, 6, 7, 2);
-  rim.position.set(cx + 1.6, F + 2.6, cz - 1.3);
-  root.add(rim);
+  /* контровой свет на кресле теперь в buildLights (room.js) */
 
   /* ---------- Виви: фигура только для маски символов ----------
      Материал пишет в канал amask единицу. На экране вместо неё будут знаки.
@@ -145,9 +142,7 @@ export function buildLab(THREE, tex, Q = {}) {
     const sz = 1.8 + Math.random() * 2.4; s.scale.set(sz, sz, 1);
     root.add(s);
   }
-  const fireLight = new THREE.PointLight(0xff7428, 22, 30, 1.7);
-  fireLight.position.set(fireC.x - 1.2, fireC.y + 2.6, fireC.z + 2.4);
-  root.add(fireLight);
+  /* свет огня теперь в buildLights (room.js) */
 
   /* ---------- стекло в воздухе и на полу, искры ---------- */
   const glassMat = new THREE.MeshPhysicalNodeMaterial({ color: 0x1a2430, roughness: 0.03, metalness: 0.6, transparent: true, opacity: 0.22, clearcoat: 1, side: THREE.DoubleSide });
@@ -207,5 +202,5 @@ export function buildLab(THREE, tex, Q = {}) {
     });
   }
 
-  return { root, vivi, armR, chair, shards, fireLight, glass, update };
+  return { root, vivi, armR, chair, shards, glass, update };
 }

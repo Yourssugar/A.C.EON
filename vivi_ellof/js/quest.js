@@ -18,6 +18,7 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 export function createQuest(THREE, ctx) {
   const { cam, eye, lab, mem } = ctx;
   if (!Array.isArray(mem.open)) mem.open = [];
+  if (!mem.prog || typeof mem.prog !== 'object') mem.prog = {};   /* прогресс каждого осколка, не откатывается */
 
   const E = new THREE.Vector3(0, 0, 0.6);   /* откуда смотрит глаз (центр чуть впереди) */
   const v = new THREE.Vector3(), ray = new THREE.Vector3(), hit = new THREE.Vector3();
@@ -33,7 +34,7 @@ export function createQuest(THREE, ctx) {
 
   const S = {
     active: false, A: 0, mode: 'patrol', modeT: 0, target: { yaw: 0, pitch: 0 }, look: { yaw: 0, pitch: 0 },
-    noise: null, noticed: false, caught: 0, hold: { id: -1, p: 0 }, prog: {}, flash: 0, capture: false
+    noise: null, noticed: false, caught: 0, hold: { id: -1, p: 0 }, flash: 0, capture: false, saveT: 0
   };
 
   /* закрытые осколки тускнеют: отдельный материал без маски символов */
@@ -87,27 +88,28 @@ export function createQuest(THREE, ctx) {
     out.inBeam = inBeam;
     const moving = inp.speed > 0.05;
 
-    /* осколок: держать неподвижно. Прогресс каждого осколка не пропадает сразу, а медленно тает */
+    /* осколок: держать неподвижно. Прогресс копится и сохраняется, не откатывается */
     const sid = cw ? shardUnderCursor(inp.nx, inp.ny) : -1;
+    const P = mem.prog;
     let holding = false;
-    Object.keys(S.prog).forEach((k) => { if (+k !== sid || moving) S.prog[k] = Math.max(0, S.prog[k] - dt * 0.25); });
     if (sid >= 0) {
       out.cursor = 'hover';
       if (!moving && inp.stillT > 0.25) {
         holding = true;
-        S.prog[sid] = (S.prog[sid] || 0) + dt / 3.5;
+        P[sid] = Math.min(1, (P[sid] || 0) + dt / 3.5);
+        S.saveT += dt; if (S.saveT > 0.6) { S.saveT = 0; ctx.save(); }
         out.cursor = 'hold';
         /* осколок звучит: глаз медленно разворачивается на звук */
         if (S.mode !== 'lock') { S.noise = lab.shards[sid].position.clone(); S.mode = 'hear'; S.modeT = 1; }
       }
-      if ((S.prog[sid] || 0) >= 1) {
+      if ((P[sid] || 0) >= 1) {
         const id = lab.shards[sid].userData.id;
         mem.open.push(id); applyOpen(); ctx.save();
         out.events.push({ type: 'open', id });
-        S.prog[sid] = 0; holding = false;
+        holding = false;
       }
     }
-    S.hold = { id: sid, p: sid >= 0 ? (S.prog[sid] || 0) : 0 };
+    S.hold = { id: sid, p: sid >= 0 ? (P[sid] || 0) : 0 };
     out.hold = S.hold.p;
 
     /* внимание */
@@ -125,13 +127,14 @@ export function createQuest(THREE, ctx) {
 
     /* ступени */
     S.A = Math.max(0, Math.min(1.2, S.A));
-    if (S.A >= 0.35 && !(inp.stillT > 1.2) && cw) { S.mode = 'lock'; S.modeT = 1.5; }
+    if (S.A >= 0.35 && inBeam && !(inp.stillT > 1.2) && cw) { if (S.mode !== 'lock') S.mode = 'lock'; S.modeT = 1.2; }
     if (S.A >= 0.75 && !S.noticed) {
       S.noticed = true; S.caught++; S.flash = 0.9;
       out.events.push({ type: 'noticed' });
       ctx.step();
       if (mem.open.length) {
         const lost = mem.open.splice((Math.random() * mem.open.length) | 0, 1)[0];
+        mem.prog[lost] = 0.5;
         applyOpen(); ctx.save();
         out.events.push({ type: 'lost', id: lost });
       }
@@ -142,7 +145,8 @@ export function createQuest(THREE, ctx) {
     /* куда смотрит глаз */
     S.modeT -= dt;
     if (S.mode === 'lock') {
-      if (cyp) S.target = cyp;
+      /* в захвате взгляд догоняет курсор с запаздыванием: резким уходом можно вырваться из луча */
+      if (cyp) { const k = Math.min(1, dt * 1.7); S.target = { yaw: S.target.yaw + (cyp.yaw - S.target.yaw) * k, pitch: S.target.pitch + (cyp.pitch - S.target.pitch) * k }; }
       if (S.modeT <= 0 || S.A < 0.3) { S.mode = 'suspect'; S.noise = cw ? cw.clone() : null; S.modeT = rnd(1.5, 2.5); }
     } else if (S.mode === 'suspect' || S.mode === 'hear') {
       if (S.noise) {

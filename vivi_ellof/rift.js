@@ -12,7 +12,7 @@ import * as THREE from './vendor/three-webgpu.min.js';
 import { buildEye } from './js/eye.js';
 import { createGaze } from './js/gaze.js';
 import { buildLab } from './js/lab.js';
-import { buildRoom } from './js/room.js';
+import { buildRoom, buildLights } from './js/room.js';
 import { createQuest } from './js/quest.js';
 import { makeAscii, atlasTexture } from './js/ascii.js';
 import { makeIntro } from './js/intro.js';
@@ -92,15 +92,22 @@ export async function mount(opts = {}) {
     + 'border-radius:50%;box-sizing:border-box;transition:transform .25s ease,border-color .25s ease;"></div>'
     + '<div style="position:absolute;left:-1.5px;top:-1.5px;width:3px;height:3px;border-radius:50%;background:#e4ecfa;"></div>'
     + '<svg width="44" height="44" style="position:absolute;left:-22px;top:-22px;overflow:visible"><circle cx="22" cy="22" r="17" fill="none" '
-    + 'stroke="rgba(170,210,255,.95)" stroke-width="1.5" stroke-dasharray="106.8" stroke-dashoffset="106.8" transform="rotate(-90 22 22)"/></svg>';
+    + 'stroke="rgba(170,210,255,.95)" stroke-width="1.5" stroke-dasharray="106.8" stroke-dashoffset="106.8" transform="rotate(-90 22 22)"/></svg>'
+    + '<div class="pc" style="position:absolute;left:18px;top:12px;font-size:11px;letter-spacing:2px;color:rgba(190,215,255,.9);'
+    + 'white-space:nowrap;opacity:0;transition:opacity .25s ease;text-shadow:0 0 4px #000;"></div>';
   root.appendChild(cur);
   const curRing = cur.querySelector('.r');
   const curArc = cur.querySelector('circle');
+  const curPct = cur.querySelector('.pc');
   const coarse = matchMedia('(pointer: coarse)').matches;
   function cursorState(stt, hold, seen) {
     curRing.style.transform = stt === 'hover' ? 'scale(1.6)' : stt === 'hold' ? 'scale(.55)' : 'scale(1)';
     curRing.style.borderColor = seen ? 'rgba(255,120,120,.85)' : stt === 'idle' ? 'rgba(214,226,246,.75)' : 'rgba(150,200,255,.95)';
     curArc.setAttribute('stroke-dashoffset', String(106.8 * (1 - Math.min(1, hold || 0))));
+    /* над осколком видно, сколько уже извлечено; прогресс сохраняется */
+    const show = (stt === 'hover' || stt === 'hold') && hold > 0;
+    curPct.style.opacity = show ? '1' : '0';
+    if (show) curPct.textContent = Math.floor(Math.min(1, hold) * 100) + '%';
   }
 
   const veil = document.createElement('div');
@@ -169,8 +176,11 @@ export async function mount(opts = {}) {
   const top = new THREE.SpotLight(0xd8e0ff, 14, 9, 0.5, 0.8, 2);
   top.position.set(0.2, 3.4, 3.2);
   scene.add(cold, top);
+  /* весь свет лаборатории сразу: иначе при его появлении перекомпилируются все готовые материалы */
+  scene.add(buildLights(THREE));
 
-  let eye = null, lab = null, ready = false, quest = null, sound = null;
+  let eye = null, lab = null, quest = null, sound = null;
+  let eyeReady = false, eyeReadyT = 0, labReady = false, labReadyAt = 0;
   const gaze = createGaze({ reduce });
 
   /* текстуры и сборка мира идут параллельно со входом из символов */
@@ -188,38 +198,60 @@ export async function mount(opts = {}) {
     t.anisotropy = aniso;
     return t;
   });
+  /* загрузка по этапам, пока летим по трубе из чисел. Между тяжёлыми шагами отдаём кадр браузеру.
+     1) глаз: текстуры 2K, сборка, заранее собранные шейдеры; 2) лаборатория: так же, по частям;
+     3) на сильной видеокарте подмена радужки и белка на 4K. Предыдущее не меняется, пока не готово следующее */
+  const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+  const compile = async (obj) => { try { await renderer.compileAsync(obj, cam, scene); } catch (e) {} };
   (async () => {
     try {
-      const [iris, irisH, sclera, tissue, tissueH, pano, panel, panelH] = await Promise.all([
-        load(big ? 'iris_4k.webp' : 'iris_2k.webp', true),
-        load('iris_h_2k.webp', false),
-        load(big ? 'sclera_4k.webp' : 'sclera_2k.webp', true, true),
-        load('tissue.webp', true, true),
-        load('tissue_h.webp', false, true),
-        load('lab_pano_2k.webp', true),
-        load('panel.webp', true, true),
-        load('panel_h.webp', false, true)
+      const [iris, irisH, sclera, tissue, tissueH, pano] = await Promise.all([
+        load('iris_2k.webp', true), load('iris_h_2k.webp', false), load('sclera_2k.webp', true, true),
+        load('tissue.webp', true, true), load('tissue_h.webp', false, true), load('lab_pano_2k.webp', true)
       ]);
       pano.mapping = THREE.EquirectangularReflectionMapping;
-      const tex = { iris, irisH, sclera, tissue, tissueH, pano, panel, panelH };
+      /* панорама только для отражений; ставится до сборки шейдеров глаза */
+      scene.environment = pano;
+      scene.environmentIntensity = 0.6;
+      scene.environmentRotation.y = -1.1;
+      const tex = { iris, irisH, sclera, tissue, tissueH, pano };
+      await frame();
+      eye = buildEye(THREE, tex, Q);
+      await frame();
+      await compile(eye.root);
+      scene.add(eye.root);
+      eyeReady = true; eyeReadyT = performance.now();
+
       const t2n = ['flesh', 'flesh_h', 'torn', 'torn_h', 'grate', 'under', 'ceil', 'ceil_h', 'rack', 'rack_glow', 'tank', 'blast',
         'screen_1', 'screen_2', 'screen_3', 'screen_4', 'screen_5', 'screen_6'];
-      const t2a = await Promise.all(t2n.map((n) => load('tex2/' + n + '.webp', !/_h$|_glow$/.test(n), !/^screen|^tank|^rack|^flesh|^blast/.test(n))));
+      const [panel, panelH, ...t2a] = await Promise.all([load('panel.webp', true, true), load('panel_h.webp', false, true)]
+        .concat(t2n.map((n) => load('tex2/' + n + '.webp', !/_h$|_glow$/.test(n), !/^screen|^tank|^rack|^flesh|^blast/.test(n)))));
+      tex.panel = panel; tex.panelH = panelH;
       const g2 = (n) => t2a[t2n.indexOf(n)];
       const t2 = { flesh: g2('flesh'), fleshH: g2('flesh_h'), torn: g2('torn'), tornH: g2('torn_h'), grate: g2('grate'), under: g2('under'),
         ceil: g2('ceil'), ceilH: g2('ceil_h'), rack: g2('rack'), rackGlow: g2('rack_glow'), tank: g2('tank'), blast: g2('blast'), panel, panelH,
         screens: [1, 2, 3, 4, 5, 6].map((i) => g2('screen_' + i)) };
-      /* панорама только для отражений; фон теперь сама комната */
-      scene.environment = pano;
-      scene.environmentIntensity = 0.6;
-      scene.environmentRotation.y = -1.1;   /* огонь панорамы справа спереди */
-      eye = buildEye(THREE, tex, Q); scene.add(eye.root);
-      lab = buildLab(THREE, tex, Q); scene.add(lab.root);
-      scene.add(buildRoom(THREE, t2, Q).root);
+      await frame();
+      lab = buildLab(THREE, tex, Q);
+      await frame();
+      const room = buildRoom(THREE, t2, Q);
+      await frame();
+      await compile(lab.root);
+      await frame();
+      await compile(room.root);
+      scene.add(lab.root);
+      await frame();
+      scene.add(room.root);
       quest = createQuest(THREE, { cam, eye, lab, mem, save: () => memSave(mem), step: () => { mem.lg += STEP_SEEN; showCount(); memSave(mem); } });
-      /* шейдеры собираются заранее, пока экран закрыт символами */
-      try { await renderer.compileAsync(scene, cam); } catch (e) {}
-      ready = true;
+      labReady = true; labReadyAt = performance.now();
+
+      if (big) {
+        const [i4, s4] = await Promise.all([load('iris_4k.webp', true), load('sclera_4k.webp', true, true)]);
+        await frame();
+        iris.image = i4.image; iris.needsUpdate = true;
+        await frame();
+        sclera.image = s4.image; sclera.needsUpdate = true;
+      }
     } catch (e) {
       console.warn('[vivi_ellof] world', e);
     }
@@ -263,10 +295,8 @@ export async function mount(opts = {}) {
     const ca = THREE.chromaticAberration(col, float(0.35).add(uTen.mul(1.5)), vec2(0.5, 0.5), float(1.05));
     const vig = smoothstep(float(0.95).sub(uTen.mul(0.35)), float(0.28).sub(uTen.mul(0.2)), length(screenUV.sub(0.5)).mul(1.25));
     pipe.outputNode = THREE.film((Q.bloom ? ca.add(THREE.bloom(col, 0.32, 0.45, 0.8)) : ca).mul(vig), float(0.16));
-    /* пока мир грузится, сцену не считаем вовсе: только вход из символов */
-    pipeIntro = new THREE.RenderPipeline(renderer);
-    const icol = convertToTexture(vec4(intro.color, 1));
-    pipeIntro.outputNode = THREE.film((Q.bloom ? icol.add(THREE.bloom(icol, 0.32, 0.45, 0.8)) : icol).mul(vig), float(0.16));
+    /* один конвейер с самого начала: собирается в первую секунду, пока экран чёрный,
+       и больше не перестраивается (раньше переключение на него давало подвисание) */
   } catch (e) {
     console.warn('[vivi_ellof] post', e);
     pipe = null;
@@ -323,7 +353,7 @@ export async function mount(opts = {}) {
   const CLOSE = { p: new THREE.Vector3(0, 0, 4.6), l: new THREE.Vector3(0, 0, 0) };
   const FAR = { p: new THREE.Vector3(0.6, 0.9, 16.5), l: new THREE.Vector3(-0.4, -0.7, 0) };
   const tMount = performance.now();
-  let revealAt = 0, rot = 0, introDone = false, lookX = 0, lookY = 0, capAt = 0;
+  let revealAt = 0, rot = 0, fly = 0, twist = 0, introDone = false, lookX = 0, lookY = 0, capAt = 0;
   const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const camP = new THREE.Vector3(), camL = new THREE.Vector3(), toEye = new THREE.Vector3();
   let lastT = performance.now(), pull = 0, camX = 0, camY = 0;
@@ -369,15 +399,18 @@ export async function mount(opts = {}) {
     /* вход из символов: вихрь, превращение в глаз, ожидание, осыпание клеток */
     const T = window.__viviHold != null ? window.__viviHold : (now - tMount) / 1000;
     if (intro && !introDone) {
-      const morph = reduce ? 1 : sm(3.0, 6.0, T);
-      rot += dt * (1.1 - 0.95 * morph);
+      /* труба из чисел летит, пока не готов глаз; потом сворачивается в глаз из символов */
+      const mStart = reduce ? 0 : Math.max(3, eyeReady ? (eyeReadyT - tMount) / 1000 : 1e9);
+      const morph = reduce ? 1 : sm(mStart, mStart + 3, T);
+      fly += dt * (3.2 * (1 - morph) + 0.15);
+      twist += dt * (0.5 + 1.2 * (1 - morph));
       lookX += (0.4 * Math.sin(st.yaw) - lookX) * Math.min(1, dt * 10);
       lookY += (0.4 * Math.sin(st.pitch) - lookY) * Math.min(1, dt * 10);
-      if (ready && !revealAt && window.__viviHold == null && T >= (reduce ? 0.5 : 7)) revealAt = now;
+      if (eyeReady && !revealAt && window.__viviHold == null && T >= (reduce ? 0.5 : mStart + 4)) revealAt = now;
       const dis = revealAt ? (now - revealAt) / (reduce ? 400 : 2400) : 0;
       intro.set({
-        fade: reduce ? 1 : sm(0, 1.2, T), rot, morph,
-        open: (reduce ? 1 : sm(5.3, 6.6, T)) * (1 - st.blink),
+        fade: reduce ? 1 : sm(0, 1.2, T), fly, twist, tube: 1 - sm(mStart + 0.3, mStart + 2.6, T), morph,
+        open: (reduce ? 1 : sm(mStart + 2.2, mStart + 3.5, T)) * (1 - st.blink),
         look: { x: lookX * morph, y: lookY * morph }, pupil: st.pupil,
         dissolve: Math.min(1.01, dis), alive: dis >= 1.01 ? 0 : 1
       });
@@ -388,7 +421,7 @@ export async function mount(opts = {}) {
        Позже здесь будет падение через вихрь с отголосками личностей */
     if (capAt && intro) {
       const cp = (now - capAt) / 1000;
-      intro.set({ alive: 1, dissolve: Math.max(0, 1 - cp / 1.1), morph: 1, open: 1, fade: 1, rot,
+      intro.set({ alive: 1, dissolve: Math.max(0, 1 - cp / 1.1), morph: 1, open: 1, fade: 1, tube: 0,
         look: { x: 0, y: 0 }, pupil: Math.min(1.4, 0.3 + Math.max(0, cp - 1.2) * 0.55) });
       if (sound) sound.fade(cp);
       if (cp > 3.4) veil.style.opacity = '1';
@@ -397,7 +430,9 @@ export async function mount(opts = {}) {
 
     /* отъезд камеры (после раскрытия), параллакс за курсором, медленное притяжение к глазу */
     const el = revealAt ? (now - revealAt) / 1000 : 0;
-    const dk = reduce ? 1 : Math.min(1, Math.max(0, (el - 6) / 15));
+    /* отъезд начинается не раньше 6 с после раскрытия и только когда лаборатория собрана */
+    const dStart = labReady ? Math.max(6, (labReadyAt - revealAt) / 1000 + 0.5) : 1e9;
+    const dk = !labReady ? 0 : reduce ? 1 : Math.min(1, Math.max(0, (el - dStart) / 15));
     const de = dk * dk * (3 - 2 * dk);
     camP.lerpVectors(CLOSE.p, FAR.p, de); camL.lerpVectors(CLOSE.l, FAR.l, de);
     const k = 1 - Math.exp(-dt * 0.6);
@@ -428,14 +463,11 @@ export async function mount(opts = {}) {
     }
     if (lab) lab.update(dt, el);
 
-    if (ready && !useFull) useFull = true;
-    if (pipe && (useFull || !pipeIntro)) pipe.render();
-    else if (pipeIntro) pipeIntro.render();
-    else renderer.render(scene, cam);
+    if (pipe) pipe.render(); else renderer.render(scene, cam);
 
     /* разрешение под видеокарту: не успевает кадр, рендер мельче; запас есть, крупнее */
     frameMs += ((now - prevNow) - frameMs) * 0.05; prevNow = now;
-    if (useFull && now - prChecked > 1200) {
+    if (revealAt && now - prChecked > 1200) {
       prChecked = now;
       if (frameMs > 26 && pr > Q.prMin) { pr = Math.max(Q.prMin, pr * 0.85); prCool = now; resize(); }
       else if (frameMs < 18.5 && pr < Q.prMax && now - prCool > 6000) { pr = Math.min(Q.prMax, pr * 1.08); prCool = now - 3000; resize(); }
@@ -466,7 +498,7 @@ export async function mount(opts = {}) {
 
   sound = startSound(opts.audio || null);
   window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gpu: gpu.name, Q, get pr() { return pr; }, get ms() { return frameMs; }, gaze, cam, scene, gDir, gPos, ptr, cursorState,
-    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; }, get quest() { return quest; } };
+    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; }, get labReady() { return labReady; }, get quest() { return quest; } };
 }
 
 /* ---------- видеокарта: имя и признак программного рендера ---------- */

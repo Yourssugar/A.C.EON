@@ -10,15 +10,16 @@
 
 const DENSE = [' ', '.', '`', ':', '-', '~', '=', '+', '*', 'x', 'v', '%', '#', '&', '8', '@'];
 const EDGE = ['|', '/', '-', '\\'];
+const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];   /* для трубы из чисел на входе */
 
 export function atlasTexture(THREE) {
-  const N = DENSE.length + EDGE.length, S = 64;
+  const N = DENSE.length + EDGE.length + DIGITS.length, S = 64;
   const c = document.createElement('canvas'); c.width = N * S; c.height = S;
   const g = c.getContext('2d');
   g.fillStyle = '#000'; g.fillRect(0, 0, c.width, c.height);
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.font = '600 50px "JetBrains Mono", "Consolas", monospace';
-  DENSE.concat(EDGE).forEach((ch, i) => g.fillText(ch, i * S + S / 2, S / 2 + 2));
+  DENSE.concat(EDGE, DIGITS).forEach((ch, i) => g.fillText(ch, i * S + S / 2, S / 2 + 2));
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.NoColorSpace;
   t.generateMipmaps = false;

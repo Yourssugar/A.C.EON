@@ -75,10 +75,6 @@ export function buildRoom(THREE, t, Q) {
   const blast = new THREE.Mesh(bg, blastM);
   blast.position.set((HOLE.x0 + HOLE.x1) / 2 + 1.5, F + bh / 2 - 1.4, BACK - 9.5);
   root.add(blast);
-  /* свет взрыва заливает комнату через пролом */
-  const blastL = new THREE.PointLight(0xff7a30, 210, 60, 1.3);
-  blastL.position.set((HOLE.x0 + HOLE.x1) / 2, F + 4.2, BACK - 4.5);
-  root.add(blastL);
   /* боковые стены той части тоже есть, чтобы за проломом не было пустоты по краям */
   plane(11, H, sideM, [HOLE.x0 - 0.3, F + H / 2, BACK - 5.5], [0, Math.PI / 2, 0]);
   plane(11, H, sideM, [HOLE.x1 + 3, F + H / 2, BACK - 5.5], [0, -Math.PI / 2, 0]);
@@ -94,10 +90,6 @@ export function buildRoom(THREE, t, Q) {
     lm.colorNode = vec3(0.6, 0.76, 0.95).mul(i === 3 ? 0.3 : 1.4);
     const l = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.05, FRONT - BACK - 4), lm);
     l.position.set(x, CEIL - 0.06, MIDZ); root.add(l);
-  });
-  [[-9, 4], [-9, 14], [-3, 9], [3, 17]].forEach(([x, z]) => {
-    const l = new THREE.PointLight(0x9cc4ff, 16, 16, 1.6);
-    l.position.set(x, CEIL - 0.8, z); root.add(l);
   });
 
   /* трубы вдоль стен */
@@ -181,8 +173,6 @@ export function buildRoom(THREE, t, Q) {
   desk(-8.4, 6.6, 0.8, [2, 3]);
   desk(-5.0, 0.3, 0.3, [1]);
   monitor(root, 5, [CHAIR.x - 1.2, F + 1.55, CHAIR.z - 0.6], 0.7, 0.7);
-  const coldL = new THREE.PointLight(0x5ea6ff, 14, 12, 1.8);
-  coldL.position.set(-7.2, F + 2.4, 4.8); root.add(coldL);
 
   /* ---------- колбы ---------- */
   const glassM = new THREE.MeshPhysicalNodeMaterial({ color: 0x9fb7c8, roughness: 0.04, metalness: 0.1, transparent: true, opacity: 0.16, clearcoat: 1 });
@@ -218,8 +208,26 @@ export function buildRoom(THREE, t, Q) {
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.018, 8, 96), ringM);
   ring.rotation.x = Math.PI / 2; ring.position.set(CHAIR.x, F + 0.17, CHAIR.z); root.add(ring);
 
-  /* слабый общий свет: комната видна, но остаётся тёмной */
-  root.add(new THREE.HemisphereLight(0x5a6f92, 0x1c0c06, 0.9));
-
   return { root };
+}
+
+/* Весь свет лаборатории отдельно. Он добавляется в сцену в самом начале: если свет появится позже,
+   браузер перекомпилирует шейдеры всех уже готовых материалов, и сцена подвиснет */
+export function buildLights(THREE) {
+  const g = new THREE.Group();
+  const F = FLOOR, { CEIL, BACK, HOLE } = ROOM;
+  const add = (l, x, y, z) => { l.position.set(x, y, z); g.add(l); return l; };
+  /* взрыв за проломом заливает комнату */
+  add(new THREE.PointLight(0xff7a30, 210, 60, 1.3), (HOLE.x0 + HOLE.x1) / 2, F + 4.2, BACK - 4.5);
+  /* огонь в самом проломе */
+  add(new THREE.PointLight(0xff7428, 22, 30, 1.7), 8.2, -0.9 + 2.6, -1.0 + 2.4);
+  /* лампы под потолком */
+  [[-9, 4], [-9, 14], [-3, 9], [3, 17]].forEach(([x, z]) => add(new THREE.PointLight(0x9cc4ff, 16, 16, 1.6), x, CEIL - 0.8, z));
+  /* мониторы слева */
+  add(new THREE.PointLight(0x5ea6ff, 14, 12, 1.8), -7.2, F + 2.4, 4.8);
+  /* контровой свет на кресле */
+  add(new THREE.PointLight(0xff8a40, 6, 7, 2), CHAIR.x + 1.6, F + 2.6, CHAIR.z - 1.3);
+  /* слабый общий свет: комната видна, но остаётся тёмной */
+  g.add(new THREE.HemisphereLight(0x5a6f92, 0x1c0c06, 0.9));
+  return g;
 }

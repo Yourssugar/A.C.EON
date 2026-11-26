@@ -5,17 +5,18 @@
    Главная зовёт mount() сама после ключа, адрес при этом меняется на vivi_ellof/.
    vivi_ellof/index.html зовёт mount() при заходе напрямую (назад/вперёд), тогда звук ждёт первого клика.
 
-   Этап 2: глаз в ядре лаборатории, кресло Виви, застывший взрыв, луч взгляда, зрение из символов.
-   Сначала камера вплотную к глазу, через несколько секунд медленно отъезжает и открывает лабораторию.
+   Этап 2: вход из символов (js/intro.js), пока грузится мир; глаз в ядре лаборатории, кресло Виви,
+   застывший взрыв, луч взгляда, зрение из символов. После раскрытия камера вплотную к глазу, потом отъезжает.
    Модули: js/eye.js (глаз), js/gaze.js (движение глаза), js/lab.js (лаборатория), js/ascii.js (символы). */
 import * as THREE from './vendor/three-webgpu.min.js';
 import { buildEye } from './js/eye.js';
 import { createGaze } from './js/gaze.js';
 import { buildLab } from './js/lab.js';
-import { makeAscii } from './js/ascii.js';
+import { makeAscii, atlasTexture } from './js/ascii.js';
+import { makeIntro } from './js/intro.js';
 
 const { positionLocal, time, sin, cos, vec2, vec3, float, instanceIndex, pass, screenUV, length, smoothstep,
-  mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs } = THREE.TSL;
+  mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs, vec4, mix } = THREE.TSL;
 const BASE = new URL('./', import.meta.url);
 
 const TXT = {
@@ -66,7 +67,7 @@ export async function mount(opts = {}) {
   root.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;overflow:hidden;cursor:none;'
     + 'font-family:"JetBrains Mono",monospace;color:#b9c0cf;user-select:none;touch-action:none;';
   const cv = document.createElement('canvas');
-  cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 5s ease;';
+  cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .6s ease;';
   root.appendChild(cv);
 
   const hud = document.createElement('div');
@@ -105,47 +106,10 @@ export async function mount(opts = {}) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
-  /* ---------- текстуры ---------- */
-  const big = isGPU && innerHeight * Math.min(devicePixelRatio || 1, 2) >= 1300;
-  const loader = new THREE.TextureLoader();
-  let aniso = 8; try { aniso = Math.min(8, renderer.getMaxAnisotropy()); } catch (e) {}
-  const load = (f, srgb, rep) => loader.loadAsync(new URL('tex/' + f, BASE).href).then((t) => {
-    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-    if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }
-    t.anisotropy = aniso;
-    return t;
-  });
-  let tex;
-  try {
-    const [iris, irisH, sclera, tissue, tissueH, pano, panel, panelH] = await Promise.all([
-      load(big ? 'iris_4k.webp' : 'iris_2k.webp', true),
-      load('iris_h_2k.webp', false),
-      load(big ? 'sclera_4k.webp' : 'sclera_2k.webp', true, true),
-      load('tissue.webp', true, true),
-      load('tissue_h.webp', false, true),
-      load('lab_pano_2k.webp', true),
-      load('panel.webp', true, true),
-      load('panel_h.webp', false, true)
-    ]);
-    pano.mapping = THREE.EquirectangularReflectionMapping;
-    tex = { iris, irisH, sclera, tissue, tissueH, pano, panel, panelH };
-  } catch (e) {
-    console.warn('[vivi_ellof] textures', e);
-  }
-
-  /* ---------- сцена ---------- */
+  /* ---------- сцена: сначала пустая, глаз и лаборатория добавятся, когда загрузятся текстуры ---------- */
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
   scene.fog = new THREE.FogExp2(0x020203, 0.03);
-  if (tex) {
-    scene.environment = tex.pano;
-    scene.environmentIntensity = 0.42;
-    scene.environmentRotation.y = -1.1;   /* огонь панорамы справа спереди */
-    scene.background = tex.pano;          /* лаборатория вокруг, тёмная и размытая */
-    scene.backgroundIntensity = 0.2;
-    scene.backgroundBlurriness = 0.1;
-    scene.backgroundRotation.y = -1.1;
-  }
   const cam = new THREE.PerspectiveCamera(35, 1, 0.05, 120);
   cam.position.set(0, 0, 4.6);
 
@@ -156,12 +120,49 @@ export async function mount(opts = {}) {
   top.position.set(0.2, 3.4, 3.2);
   scene.add(cold, top);
 
-  let eye = null, lab = null;
-  if (tex) {
-    eye = buildEye(THREE, tex); scene.add(eye.root);
-    lab = buildLab(THREE, tex); scene.add(lab.root);
-  }
+  let eye = null, lab = null, ready = false;
   const gaze = createGaze({ reduce });
+
+  /* текстуры и сборка мира идут параллельно со входом из символов */
+  const big = isGPU && innerHeight * Math.min(devicePixelRatio || 1, 2) >= 1300;
+  const loader = new THREE.TextureLoader();
+  let aniso = 8; try { aniso = Math.min(8, renderer.getMaxAnisotropy()); } catch (e) {}
+  const load = (f, srgb, rep) => loader.loadAsync(new URL('tex/' + f, BASE).href).then((t) => {
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }
+    t.anisotropy = aniso;
+    return t;
+  });
+  (async () => {
+    try {
+      const [iris, irisH, sclera, tissue, tissueH, pano, panel, panelH] = await Promise.all([
+        load(big ? 'iris_4k.webp' : 'iris_2k.webp', true),
+        load('iris_h_2k.webp', false),
+        load(big ? 'sclera_4k.webp' : 'sclera_2k.webp', true, true),
+        load('tissue.webp', true, true),
+        load('tissue_h.webp', false, true),
+        load('lab_pano_2k.webp', true),
+        load('panel.webp', true, true),
+        load('panel_h.webp', false, true)
+      ]);
+      pano.mapping = THREE.EquirectangularReflectionMapping;
+      const tex = { iris, irisH, sclera, tissue, tissueH, pano, panel, panelH };
+      scene.environment = pano;
+      scene.environmentIntensity = 0.42;
+      scene.environmentRotation.y = -1.1;   /* огонь панорамы справа спереди */
+      scene.background = pano;              /* лаборатория вокруг, тёмная и размытая */
+      scene.backgroundIntensity = 0.2;
+      scene.backgroundBlurriness = 0.1;
+      scene.backgroundRotation.y = -1.1;
+      eye = buildEye(THREE, tex); scene.add(eye.root);
+      lab = buildLab(THREE, tex); scene.add(lab.root);
+      /* шейдеры собираются заранее, пока экран закрыт символами */
+      try { await renderer.compileAsync(scene, cam); } catch (e) {}
+      ready = true;
+    } catch (e) {
+      console.warn('[vivi_ellof] world', e);
+    }
+  })();
 
   /* взгляд: холодный свет из зрачка; видимый луч в пыли рисует проход символов (js/ascii.js) */
   const beam = new THREE.SpotLight(0xcfe3ff, 260, 40, 0.11, 0.6, 2);
@@ -186,13 +187,17 @@ export async function mount(opts = {}) {
   scene.add(dust);
 
   /* ---------- пост-обработка: свечение, лёгкая аберрация, зерно, виньетка ---------- */
-  let pipe = null, ascii = null;
+  let pipe = null, ascii = null, intro = null;
   try {
     pipe = new THREE.RenderPipeline(renderer);
     const sp = pass(scene, cam);
     sp.setMRT(mrt({ output, amask: float(0) }));
-    ascii = makeAscii(THREE, { col: sp.getTextureNode('output'), mask: sp.getTextureNode('amask'), depth: sp.getTextureNode('depth') });
-    const col = convertToTexture(ascii.node);
+    const atlasInfo = atlasTexture(THREE);
+    ascii = makeAscii(THREE, { col: sp.getTextureNode('output'), mask: sp.getTextureNode('amask'), depth: sp.getTextureNode('depth'), atlasInfo });
+    intro = makeIntro(THREE, atlasInfo, ascii.uRes, ascii.uCell);
+    /* вход поверх сцены: пока клетка принадлежит входу, в ней символы входа */
+    const merged = vec4(mix(ascii.node.rgb, intro.color, intro.on), 1);
+    const col = convertToTexture(merged);
     const ca = THREE.chromaticAberration(col, float(0.35), vec2(0.5, 0.5), float(1.05));
     const bl = THREE.bloom(col, 0.32, 0.45, 0.8);
     const vig = smoothstep(float(0.95), float(0.28), length(screenUV.sub(0.5)).mul(1.25));
@@ -246,7 +251,9 @@ export async function mount(opts = {}) {
   /* отъезд: сначала глаз вплотную, потом лаборатория */
   const CLOSE = { p: new THREE.Vector3(0, 0, 4.6), l: new THREE.Vector3(0, 0, 0) };
   const FAR = { p: new THREE.Vector3(-0.15, -0.5, 10.4), l: new THREE.Vector3(-0.45, -0.55, 0) };
-  const t0 = performance.now();
+  const tMount = performance.now();
+  let revealAt = 0, rot = 0, introDone = false, lookX = 0, lookY = 0;
+  const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const camP = new THREE.Vector3(), camL = new THREE.Vector3(), toEye = new THREE.Vector3();
   let lastT = performance.now(), pull = 0, camX = 0, camY = 0;
   function tick() {
@@ -260,8 +267,26 @@ export async function mount(opts = {}) {
       { idle, out: ptr.out, edgeX: ptr.nx / 2, edgeY: ptr.ny / 2, near: ptr.has && !ptr.out && idle < 3 && cursorNearIris() });
     if (eye) eye.set(st);
 
-    /* отъезд камеры, параллакс за курсором, медленное притяжение к глазу, пока он смотрит пристально */
-    const el = (now - t0) / 1000;
+    /* вход из символов: вихрь, превращение в глаз, ожидание, осыпание клеток */
+    const T = window.__viviHold != null ? window.__viviHold : (now - tMount) / 1000;
+    if (intro && !introDone) {
+      const morph = reduce ? 1 : sm(3.0, 6.0, T);
+      rot += dt * (1.1 - 0.95 * morph);
+      lookX += (0.4 * Math.sin(st.yaw) - lookX) * Math.min(1, dt * 10);
+      lookY += (0.4 * Math.sin(st.pitch) - lookY) * Math.min(1, dt * 10);
+      if (ready && !revealAt && window.__viviHold == null && T >= (reduce ? 0.5 : 7)) revealAt = now;
+      const dis = revealAt ? (now - revealAt) / (reduce ? 400 : 2400) : 0;
+      intro.set({
+        fade: reduce ? 1 : sm(0, 1.2, T), rot, morph,
+        open: (reduce ? 1 : sm(5.3, 6.6, T)) * (1 - st.blink),
+        look: { x: lookX * morph, y: lookY * morph }, pupil: st.pupil,
+        dissolve: Math.min(1.01, dis), alive: dis >= 1.01 ? 0 : 1
+      });
+      if (dis >= 1.01) introDone = true;
+    }
+
+    /* отъезд камеры (после раскрытия), параллакс за курсором, медленное притяжение к глазу */
+    const el = revealAt ? (now - revealAt) / 1000 : 0;
     const dk = reduce ? 1 : Math.min(1, Math.max(0, (el - 6) / 15));
     const de = dk * dk * (3 - 2 * dk);
     camP.lerpVectors(CLOSE.p, FAR.p, de); camL.lerpVectors(CLOSE.l, FAR.l, de);
@@ -299,9 +324,14 @@ export async function mount(opts = {}) {
   addEventListener('popstate', () => {});
 
   requestAnimationFrame(() => { cv.style.opacity = '1'; });
-  setTimeout(() => { hud.style.opacity = '0.7'; }, 3500);
-  setTimeout(() => { line.textContent = L.obs; line.style.opacity = '0.9'; }, 7500);
-  setTimeout(() => { line.style.opacity = '0'; }, 15000);
+  /* подписи после раскрытия */
+  const hudIv = setInterval(() => {
+    if (!revealAt) return;
+    clearInterval(hudIv);
+    setTimeout(() => { hud.style.opacity = '0.7'; }, 2500);
+    setTimeout(() => { line.textContent = L.obs; line.style.opacity = '0.9'; }, 5000);
+    setTimeout(() => { line.style.opacity = '0'; }, 12500);
+  }, 200);
 
   window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gaze, eye, cam, scene, lab, gDir, gPos, ptr };
   startSound(opts.audio || null);

@@ -11,7 +11,7 @@
 const DENSE = [' ', '.', '`', ':', '-', '~', '=', '+', '*', 'x', 'v', '%', '#', '&', '8', '@'];
 const EDGE = ['|', '/', '-', '\\'];
 
-function atlasTexture(THREE) {
+export function atlasTexture(THREE) {
   const N = DENSE.length + EDGE.length, S = 64;
   const c = document.createElement('canvas'); c.width = N * S; c.height = S;
   const g = c.getContext('2d');
@@ -26,12 +26,12 @@ function atlasTexture(THREE) {
   return { tex: t, N };
 }
 
-export function makeAscii(THREE, { col, mask, depth }) {
+export function makeAscii(THREE, { col, mask, depth, atlasInfo }) {
   const T = THREE.TSL;
   const { vec2, vec3, vec4, float, floor, fract, texture, uniform, screenUV, hash, dot, length, smoothstep, mix,
     max, min, step, atan, PI, select, time, perspectiveDepthToViewZ, normalize, clamp } = T;
 
-  const { tex: atlas, N } = atlasTexture(THREE);
+  const { tex: atlas, N } = atlasInfo || atlasTexture(THREE);
   const ND = DENSE.length;
 
   const uRes = uniform(new THREE.Vector2(1920, 1080));
@@ -124,7 +124,7 @@ export function makeAscii(THREE, { col, mask, depth }) {
   const node = vec4(mix(base, asciiOut, on).add(vec3(0.6, 0.76, 1.0).mul(haze)), 1);
 
   return {
-    node, uBeam, uEdge, uHaze,
+    node, uBeam, uEdge, uHaze, uRes, uCell,
     setSize(w, h) { uRes.value.set(w, h); uCell.value = Math.max(10, Math.round(h / 70)); },
     setCamera(cam) {
       uCamMat.value.copy(cam.matrixWorld);

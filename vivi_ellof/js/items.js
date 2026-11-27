@@ -9,10 +9,12 @@
    Люди: рисунки Кодекса (people/*.webp), плоские вырезки, повёрнутые к дальней точке камеры.
    Символьная версия той же картинки: вместо пикселей знаки. Расшифрованный предмет виден нормально,
    но пока на нём луч Архитектора, он снова из символов (look).
-   Подписи и тексты: заглушки. Кот и вещи пока из примитивов, рисунки впереди.
-   Ещё здесь мелочь, застывшая в воздухе: обрывки бумаги, винты, капли, крошка, без расшифровки.
+   Кот и вещи тоже рисунки Кодекса (items/*.webp), такие же вырезки. Без картинки собирается фигура из примитивов.
+   Подписи и тексты: заглушки.
+   Фон без расшифровки: табурет, огнетушитель, папки, планшет, разбитая колба (DECOR).
+   Мелочь в воздухе: кусочки с листа items/debris.webp (20 штук), разбросаны по комнате.
 
-   buildItems(THREE, FLOOR, people) -> { root, list, showBoth(), apply(open), flicker(i, p), look(i, on) }
+   buildItems(THREE, FLOOR, people, itex) -> { root, list, showBoth(), apply(open), flicker(i, p), look(i, on) }
    list[i]: { id, kind, act ('desc' | 'memory'), mem ('true' | 'trap' | 'arch' | null), pos, label{ru,en}, text{ru,en}, rpx } */
 
 export const ITEMS = [
@@ -59,14 +61,14 @@ export const ITEMS = [
     text: { ru: 'Протокол эксперимента. Страницы разлетелись не по порядку.', en: 'Experiment protocol. The pages scattered out of order.' } }
 ];
 
-export function buildItems(THREE, FLOOR, people) {
-  people = people || {};
+export function buildItems(THREE, FLOOR, people, itex) {
+  people = people || {}; itex = itex || {};
   const T = THREE.TSL;
-  const { vec3, float, mrt, sin, time, positionWorld, texture } = T;
+  const { vec2, vec3, vec4, float, mrt, sin, time, positionWorld, texture, uv, instancedBufferAttribute } = T;
 
   /* символьный материал один на всех: холодное мерцание, маска 0.9 */
   const symMat = new THREE.MeshStandardNodeMaterial({ color: 0x0, roughness: 0.4 });
-  symMat.emissiveNode = vec3(0.5, 0.75, 1.0).mul(sin(time.mul(1.3).add(positionWorld.y.mul(4))).mul(0.2).add(0.8)).mul(0.9);
+  symMat.emissiveNode = vec3(0.5, 0.75, 1.0).mul(sin(time.mul(1.3).add(positionWorld.y.mul(4))).mul(0.2).add(0.8)).mul(0.45);
   symMat.mrtNode = mrt({ amask: float(0.9) });
 
   const M = (c, o) => new THREE.MeshStandardNodeMaterial(Object.assign({ color: c, roughness: 0.6, metalness: 0.05 }, o || {}));
@@ -191,30 +193,38 @@ export function buildItems(THREE, FLOOR, people) {
 
   /* человек с рисунка: вырезка 1 x 2 м, ноги на полу */
   const CAM = { x: 0.6, z: 16.5 };
-  function cutout(g, tx, it) {
+  function cutout(g, tx, it, w, h, centered) {
     const map = texture(tx);
     const rm = new THREE.MeshBasicNodeMaterial({ alphaTest: 0.45, side: THREE.DoubleSide });
     rm.colorNode = map.rgb.mul(0.92);
     rm.opacityNode = map.a;
     const sm = new THREE.MeshBasicNodeMaterial({ alphaTest: 0.45, side: THREE.DoubleSide });
     const lum = map.r.mul(0.3).add(map.g.mul(0.59)).add(map.b.mul(0.11));
-    sm.colorNode = vec3(0.5, 0.75, 1.0).mul(lum.mul(1.4).add(0.25)).mul(sin(time.mul(1.3).add(positionWorld.y.mul(4))).mul(0.15).add(0.85));
+    sm.colorNode = vec3(0.5, 0.75, 1.0).mul(lum.mul(0.9).add(0.12)).mul(sin(time.mul(1.3).add(positionWorld.y.mul(4))).mul(0.15).add(0.85));
     sm.opacityNode = map.a;
     sm.mrtNode = mrt({ amask: float(0.9) });
-    const geo = new THREE.PlaneGeometry(1, 2);
-    geo.translate(0, 1, 0);
+    const geo = new THREE.PlaneGeometry(w || 1, h || 2);
+    if (!centered) geo.translate(0, (h || 2) / 2, 0);
     const real = new THREE.Mesh(geo, rm), sym = new THREE.Mesh(geo, sm);
     g.add(real, sym);
     g.userData.real.push(real); g.userData.sym.push(sym);
-    g.position.set(it.pos[0], FLOOR + it.pos[1], it.pos[2]);
-    g.rotation.y = Math.atan2(CAM.x - it.pos[0], CAM.z - it.pos[2]);
+    if (centered) g.position.set(...it.pos);
+    else g.position.set(it.pos[0], FLOOR + it.pos[1], it.pos[2]);
+    g.rotation.set(0, Math.atan2(CAM.x - g.position.x, CAM.z - g.position.z), 0);
+    if (centered && it.rot) g.rotateZ(it.rot[2] * 0.35);   /* лёгкий наклон: вещь кувыркается в воздухе */
   }
+  /* картинки вещей и их размер в метрах (немного крупнее жизни, чтобы читались с дальней точки) */
+  const IMG = { cat: 'cat_leap', phone: 'phone', book: 'journal', photo: 'photo', clock: 'clock', badge: 'badge',
+    headphones: 'headphones', mug: 'mug', papers: 'papers' };
+  const SIZE = { cat: [1.3, 0.65], phone: [0.42, 0.42], book: [0.62, 0.62], photo: [0.52, 0.52], clock: [0.6, 0.6],
+    badge: [0.52, 0.52], headphones: [0.5, 0.5], mug: [0.46, 0.46], papers: [1.7, 0.85] };
   const PPL = { reach: people.reach, shield: people.shield, fall: people.fall };
 
   ITEMS.forEach((it) => {
     const g = new THREE.Group();
     g.userData = { real: [], sym: [] };
     if (it.kind === 'worker' && PPL[it.pose]) cutout(g, PPL[it.pose], it);
+    else if (IMG[it.kind] && itex[IMG[it.kind]]) cutout(g, itex[IMG[it.kind]], it, SIZE[it.kind][0], SIZE[it.kind][1], true);
     else if (it.kind === 'worker') {
       worker(g, it.pose);
       g.position.set(it.pos[0], FLOOR + it.pos[1], it.pos[2]);
@@ -224,8 +234,8 @@ export function buildItems(THREE, FLOOR, people) {
       build[it.kind](g);
       g.position.set(...it.pos);
       if (it.rot) g.rotation.set(...it.rot);
+      g.scale.setScalar(SC[it.kind] || 1);
     }
-    g.scale.setScalar(SC[it.kind] || 1);
     root.add(g);
     /* точка, по которой ищется предмет под курсором: у человека грудь */
     const at = new THREE.Vector3().copy(g.position);
@@ -233,21 +243,68 @@ export function buildItems(THREE, FLOOR, people) {
     list.push(Object.assign({}, it, { group: g, at, rpx: RPX[it.kind] || 0.04 }));
   });
 
+  /* фон без расшифровки: настоящие всегда (символами их делает только луч в js/ascii.js) */
+  const DECOR = [
+    { img: 'stool', pos: [-1.9, FLOOR + 0.42, 8.3], w: 0.9, roll: 0.25 },
+    { img: 'extinguisher', pos: [-9.3, FLOOR + 0.5, 5.2], w: 1.0, roll: 0 },
+    { img: 'folders', pos: [-5.6, 0.1, 6.4], w: 0.62, roll: 0.5 },
+    { img: 'clipboard', pos: [2.1, 2.7, 6.1], w: 0.5, roll: -0.6 },
+    { img: 'broken_flask', pos: [5.6, 0.7, 5.6], w: 0.55, roll: 0.3 }
+  ];
+  DECOR.forEach((d) => {
+    const tx = itex[d.img]; if (!tx) return;
+    const map = texture(tx);
+    const m = new THREE.MeshBasicNodeMaterial({ alphaTest: 0.45, side: THREE.DoubleSide });
+    m.colorNode = map.rgb.mul(0.85); m.opacityNode = map.a;
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.w), m);
+    pl.position.set(...d.pos);
+    pl.rotation.set(0, Math.atan2(CAM.x - d.pos[0], CAM.z - d.pos[2]), 0);
+    pl.rotateZ(d.roll);
+    root.add(pl);
+  });
+
   /* мелочь в воздухе: застыла вместе со всем */
-  {
-    const rnd = (a, b) => a + Math.random() * (b - a);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  if (itex.debris) {
+    /* кусочки с листа: у каждого экземпляра свой прямоугольник на листе (u, v, ширина, высота) */
+    const RECTS = [[0.0234, 0.7578, 0.1494, 0.1416], [0.2446, 0.7603, 0.1025, 0.123], [0.4243, 0.7529, 0.1406, 0.1392], [0.6636, 0.7681, 0.0747, 0.0977],
+      [0.8286, 0.7529, 0.1372, 0.1411], [0.0464, 0.5591, 0.0991, 0.1016], [0.2109, 0.5586, 0.1641, 0.1113], [0.4404, 0.5552, 0.1138, 0.1147],
+      [0.6343, 0.5464, 0.1382, 0.1289], [0.8442, 0.5581, 0.1187, 0.1089], [0.0552, 0.3618, 0.0811, 0.0815], [0.2412, 0.3252, 0.1152, 0.1362],
+      [0.4443, 0.3462, 0.1074, 0.1074], [0.6367, 0.3223, 0.123, 0.1387], [0.8521, 0.3496, 0.0898, 0.0854], [0.0225, 0.1211, 0.1333, 0.1309],
+      [0.2451, 0.1274, 0.1133, 0.1162], [0.4492, 0.1416, 0.0869, 0.0889], [0.6323, 0.1245, 0.126, 0.1152], [0.8257, 0.1006, 0.1528, 0.1431]];
+    const n = 220;
+    const geo = new THREE.PlaneGeometry(1, 1);
+    const rect = new THREE.InstancedBufferAttribute(new Float32Array(n * 4), 4);
+    const im = new THREE.InstancedMesh(geo, null, n);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < n; i++) {
+      const r = RECTS[(Math.random() * RECTS.length) | 0];
+      rect.setXYZW(i, r[0], r[1], r[2], r[3]);
+      const x = Math.random() < 0.55 ? rnd(1, 9) : rnd(-9, 6);
+      dummy.position.set(x, rnd(FLOOR + 0.4, 4.6), rnd(1.2, 10.5));
+      dummy.rotation.set(0, Math.atan2(CAM.x - x, CAM.z - dummy.position.z), rnd(0, 6.3));
+      const sz = rnd(0.04, 0.12) * (Math.random() < 0.08 ? 1.8 : 1);
+      dummy.scale.set(sz * r[2] / 0.12, sz * r[3] / 0.12, 1);
+      dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix);
+    }
+    const R4 = instancedBufferAttribute(rect);
+    const map = texture(itex.debris, vec2(R4.x, R4.y).add(uv().mul(vec2(R4.z, R4.w))));
+    const dm = new THREE.MeshBasicNodeMaterial({ alphaTest: 0.4, side: THREE.DoubleSide });
+    dm.colorNode = map.rgb.mul(0.85); dm.opacityNode = map.a;
+    im.material = dm;
+    im.frustumCulled = false;
+    root.add(im);
+  } else {
     const dummy = new THREE.Object3D();
     const kinds = [
-      { geo: new THREE.PlaneGeometry(0.07, 0.05), mat: M(0xd9d3c6, { roughness: 1, side: THREE.DoubleSide }), n: 70 },     /* обрывки бумаги */
-      { geo: new THREE.CylinderGeometry(0.008, 0.008, 0.05, 6), mat: mat.metal, n: 40 },                                    /* винты */
-      { geo: new THREE.DodecahedronGeometry(0.03, 0), mat: M(0x5d5a56, { roughness: 1 }), n: 60 },                          /* крошка бетона */
-      { geo: new THREE.SphereGeometry(0.014, 8, 6), mat: M(0x9fb6c4, { roughness: 0.05, metalness: 0.2 }), n: 50 },         /* капли воды */
-      { geo: new THREE.BoxGeometry(0.02, 0.004, 0.08), mat: M(0x2b2e33, { roughness: 0.6 }), n: 24 }                        /* щепки пластика */
+      { geo: new THREE.PlaneGeometry(0.07, 0.05), mat: M(0xd9d3c6, { roughness: 1, side: THREE.DoubleSide }), n: 70 },
+      { geo: new THREE.CylinderGeometry(0.008, 0.008, 0.05, 6), mat: mat.metal, n: 40 },
+      { geo: new THREE.DodecahedronGeometry(0.03, 0), mat: M(0x5d5a56, { roughness: 1 }), n: 60 },
+      { geo: new THREE.SphereGeometry(0.014, 8, 6), mat: M(0x9fb6c4, { roughness: 0.05, metalness: 0.2 }), n: 50 }
     ];
     kinds.forEach((k) => {
       const im = new THREE.InstancedMesh(k.geo, k.mat, k.n);
       for (let i = 0; i < k.n; i++) {
-        /* гуще ближе к пролому справа: всё летит от взрыва */
         const x = Math.random() < 0.55 ? rnd(1, 9) : rnd(-9, 6);
         dummy.position.set(x, rnd(FLOOR + 0.4, 4.6), rnd(1.2, 12));
         dummy.rotation.set(rnd(0, 6.3), rnd(0, 6.3), rnd(0, 6.3));

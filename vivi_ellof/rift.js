@@ -8,16 +8,17 @@
    Этап 2: вход из символов (js/intro.js), пока грузится мир; глаз в ядре лаборатории, кресло Виви,
    застывший взрыв, луч взгляда, зрение из символов. После раскрытия камера вплотную к глазу, потом отъезжает.
    Модули: js/eye.js (глаз), js/gaze.js (движение глаза), js/lab.js (лаборатория), js/ascii.js (символы). */
+/* у модулей версия в адресе: после обновления на GitHub Pages браузер не смешает старые и новые файлы */
 import * as THREE from './vendor/three-webgpu.min.js';
-import { buildEye } from './js/eye.js';
-import { createGaze } from './js/gaze.js';
-import { buildLab, FLOOR } from './js/lab.js';
-import { buildItems } from './js/items.js';
-import { buildRoom, buildLights } from './js/room.js';
-import { createQuest } from './js/quest.js';
-import { makeAscii, atlasTexture } from './js/ascii.js';
-import { makeIntro } from './js/intro.js';
-import { makeTerminal } from './js/terminal.js';
+import { buildEye } from './js/eye.js?v=20261127c';
+import { createGaze } from './js/gaze.js?v=20261127c';
+import { buildLab, FLOOR } from './js/lab.js?v=20261127c';
+import { buildItems } from './js/items.js?v=20261127c';
+import { buildRoom, buildLights } from './js/room.js?v=20261127c';
+import { createQuest } from './js/quest.js?v=20261127c';
+import { makeAscii, atlasTexture } from './js/ascii.js?v=20261127c';
+import { makeIntro } from './js/intro.js?v=20261127c';
+import { makeTerminal } from './js/terminal.js?v=20261127c';
 
 const { positionLocal, time, sin, cos, vec2, vec3, float, instanceIndex, pass, screenUV, length, smoothstep,
   mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs, vec4, mix, uniform } = THREE.TSL;
@@ -311,10 +312,16 @@ export async function mount(opts = {}) {
         'screen_1', 'screen_2', 'screen_3', 'screen_4', 'screen_5', 'screen_6'];
       const PN = ['worker_reach', 'worker_shield', 'worker_fall', 'vivi_back'];
       const pplP = Promise.all(PN.map((n) => load('people/' + n + '.webp', true, false).catch(() => null)));
+      /* кот, вещи, фон и мелочь: рисунки Кодекса */
+      const IN = ['cat_leap', 'phone', 'journal', 'photo', 'clock', 'badge', 'headphones', 'mug', 'papers',
+        'stool', 'extinguisher', 'folders', 'clipboard', 'broken_flask', 'debris'];
+      const itP = Promise.all(IN.map((n) => load('items/' + n + '.webp', true, false).catch(() => null)));
       const [panel, panelH, ...t2a] = await Promise.all([load('panel.webp', true, true), load('panel_h.webp', false, true)]
         .concat(t2n.map((n) => load('tex2/' + n + '.webp', !/_h$|_glow$/.test(n), !/^screen|^tank|^rack|^flesh|^blast/.test(n)))));
       /* люди и Виви: рисунки Кодекса */
       const ppl = await pplP;
+      const itA = await itP;
+      const itex = {}; IN.forEach((n, i) => { if (itA[i]) itex[n] = itA[i]; });
       tex.vivi = ppl[3];
       tex.panel = panel; tex.panelH = panelH;
       const g2 = (n) => t2a[t2n.indexOf(n)];
@@ -333,14 +340,14 @@ export async function mount(opts = {}) {
       await frame();
       scene.add(room.root);
       /* предметы и люди: обе версии (настоящая и символьная) компилируются сразу */
-      items = buildItems(THREE, FLOOR, { reach: ppl[0], shield: ppl[1], fall: ppl[2] });
+      items = buildItems(THREE, FLOOR, { reach: ppl[0], shield: ppl[1], fall: ppl[2] }, itex);
       items.showBoth();
       await frame();
       await compile(items.root);
       scene.add(items.root);
       quest = createQuest(THREE, { cam, items, mem, save: () => memSave(mem) });
       /* все текстуры в видеокарту заранее, иначе они уйдут туда при первом показе и дадут рывок */
-      for (const tx of Object.values(tex).concat(t2a, [panel, panelH], ppl)) {
+      for (const tx of Object.values(tex).concat(t2a, [panel, panelH], ppl, itA)) {
         try { if (tx && tx.isTexture) renderer.initTexture(tx); } catch (e) {}
         await frame();
       }
@@ -373,6 +380,15 @@ export async function mount(opts = {}) {
   }
   scene.add(dust);
 
+  /* знаки Архитектора и стенки тоннеля нужны конвейеру с самого начала: грузятся первыми, пока печатает терминал */
+  let glyphsT = null, wallT = null, wallRT = null;
+  try {
+    [glyphsT, wallT, wallRT] = await Promise.all([load('tunnel/glyphs_architect.webp', false), load('tunnel/tunnel_wall.webp', false, true),
+      load('tunnel/tunnel_wall_red.webp', false, true)]);
+    [wallT, wallRT].forEach((t) => { t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; t.anisotropy = 1; });
+    [glyphsT, wallT, wallRT].forEach((t) => { try { renderer.initTexture(t); } catch (e) {} });
+  } catch (e) { console.warn('[vivi_ellof] tunnel textures', e); glyphsT = wallT = wallRT = null; }
+
   /* ---------- пост-обработка: свечение, лёгкая аберрация, зерно, виньетка ---------- */
   let pipe = null, pipeIntro = null, ascii = null, intro = null, useFull = false;
   const uTen = uniform(0);   /* напряжение: картинку стягивает, края темнеют */
@@ -381,8 +397,8 @@ export async function mount(opts = {}) {
     const sp = pass(scene, cam);
     sp.setMRT(mrt({ output, amask: float(0) }));
     const atlasInfo = atlasTexture(THREE);
-    ascii = makeAscii(THREE, { col: sp.getTextureNode('output'), mask: sp.getTextureNode('amask'), depth: sp.getTextureNode('depth'), atlasInfo });
-    intro = makeIntro(THREE, atlasInfo, ascii.uRes, ascii.uCell);
+    ascii = makeAscii(THREE, { col: sp.getTextureNode('output'), mask: sp.getTextureNode('amask'), depth: sp.getTextureNode('depth'), atlasInfo, glyphs: glyphsT });
+    intro = makeIntro(THREE, atlasInfo, ascii.uRes, ascii.uCell, { wall: wallT, wallR: wallRT, glyphs: glyphsT });
     /* вход поверх сцены: пока клетка принадлежит входу, в ней символы входа */
     const merged = vec4(mix(ascii.node.rgb, intro.color, intro.on), 1);
     const col = convertToTexture(merged);
@@ -450,8 +466,10 @@ export async function mount(opts = {}) {
   const FAR = { p: new THREE.Vector3(0.6, 0.9, 16.5), l: new THREE.Vector3(-0.4, -0.7, 0) };
   const tMount = performance.now();
   let revealAt = 0, fly = 0, twist = 0, introDone = false, capAt = 0, gateAt = 0, restartable = false, restarted = false;
-  let phase = 'term', phT = performance.now();
-  const goPhase = (p, now) => { phase = p; phT = now; };
+  /* время внутри фазы копится из dt (не больше 0,05 с за кадр): если браузер подвиснет,
+     анимация входа встанет на паузу, а не перескочит вперёд */
+  let phase = 'term', phT = performance.now(), phAcc = 0, beamK = 0;
+  const goPhase = (p, now, t0) => { phase = p; phT = now; phAcc = t0 || 0; };
   const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const camP = new THREE.Vector3(), camL = new THREE.Vector3(), toEye = new THREE.Vector3();
   let lastT = performance.now(), pull = 0, camX = 0, camY = 0;
@@ -472,7 +490,7 @@ export async function mount(opts = {}) {
     speech.style.opacity = '0'; speech.dataset.c = ''; speech.dataset.k = '';
     hud.style.opacity = '0';
     if (quest) quest.reset();
-    goPhase('grow', now - 3000);
+    goPhase('grow', now, 3);
     setTimeout(() => { veil.style.opacity = '0'; }, 250);
   }
   function startPlay(now, keepSpeech) {
@@ -483,6 +501,7 @@ export async function mount(opts = {}) {
   }
   function tick() {
     const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+    phAcc += dt;
     if (!document.hidden) {
       mem.acc += dt;
       if (mem.acc >= 300) { mem.acc -= 300; mem.lg += STEP_TIME; showCount(); memSave(mem); }
@@ -500,7 +519,7 @@ export async function mount(opts = {}) {
     const camYP = { yaw: Math.atan2(cam.position.x, cam.position.z), pitch: Math.atan2(cam.position.y, Math.hypot(cam.position.x, cam.position.z)) };
     let pre = camYP;
     if (phase === 'roll' || gateAt) {
-      const pr2 = (performance.now() - (gateAt || phT)) / 1000, th = Math.min(1, pr2 / 3.0) * Math.PI * 2 * 1.25, amp = 1 - sm(2.4, 3.0, pr2);
+      const pr2 = gateAt ? (performance.now() - gateAt) / 1000 : phAcc, th = Math.min(1, pr2 / 3.0) * Math.PI * 2 * 1.25, amp = 1 - sm(2.4, 3.0, pr2);
       pre = { yaw: camYP.yaw + Math.sin(th) * 0.5 * amp, pitch: camYP.pitch + Math.cos(th) * 0.32 * amp };
     }
     const st = qa && (capAt || gateAt)
@@ -544,8 +563,8 @@ export async function mount(opts = {}) {
        play: игра (js/quest.js) */
     /* отладка: window.__viviPT держит время внутри фазы, __viviPhase задаёт фазу */
     if (window.__viviPhase && window.__viviPhase !== phase) goPhase(window.__viviPhase, now);
-    if (window.__viviPT !== undefined) phT = now - window.__viviPT * 1000;
-    const pt = (now - phT) / 1000;
+    if (window.__viviPT !== undefined) phAcc = window.__viviPT;
+    const pt = phAcc;
     if (phase === 'term') {
       if (labReady && warmDone && now - tTerm >= term.total + 500) {
         term.hide(); shade.style.opacity = '0'; goPhase('tube', now);
@@ -568,7 +587,7 @@ export async function mount(opts = {}) {
       if (txt && speech.textContent !== txt) speech.textContent = txt;
       speech.style.color = col; speech.style.opacity = String(op);
     }
-    if (phase === 'play' && speech.dataset.k === '1' && now - phT > 3200) { speech.style.opacity = '0'; speech.dataset.k = ''; }
+    if (phase === 'play' && speech.dataset.k === '1' && phAcc > 3.2) { speech.style.opacity = '0'; speech.dataset.k = ''; }
     if (intro && !introDone) {
       const tw = phase === 'tube' ? sm(0.4, 2.0, pt) : 1;
       fly += dt * (phase === 'grow' ? 3.2 * (1 - sm(0, 1.6, pt)) + 0.2 : 3.4);
@@ -621,7 +640,7 @@ export async function mount(opts = {}) {
     /* отъезд камеры (после раскрытия), параллакс за курсором, медленное притяжение к глазу */
     const el = revealAt ? (now - revealAt) / 1000 : 0;
     /* отъезд в фазе pull; дальше камера остаётся в дальней точке */
-    const dk = phase === 'pull' ? Math.min(1, Math.max(0, ((now - phT) / 1000 - 0.4) / (restarted ? 4 : 7))) : (phase === 'roll' || phase === 'speech' || phase === 'play') ? 1 : 0;
+    const dk = phase === 'pull' ? Math.min(1, Math.max(0, (phAcc - 0.4) / (restarted ? 4 : 7))) : (phase === 'roll' || phase === 'speech' || phase === 'play') ? 1 : 0;
     const de = reduce && dk > 0 ? 1 : dk * dk * (3 - 2 * dk);
     camP.lerpVectors(CLOSE.p, FAR.p, de); camL.lerpVectors(CLOSE.l, FAR.l, de);
     const k = 1 - Math.exp(-dt * 0.6);
@@ -647,7 +666,10 @@ export async function mount(opts = {}) {
       beam.position.copy(gPos); beam.target.position.copy(gPos).addScaledVector(gDir, 10);
       beam.intensity = 260 * (0.4 + 0.6 * Math.max(st.focus, uTen.value)) * (1 - st.blink);
       if (ascii) {
-        ascii.setCamera(cam); ascii.setGaze(gPos, gDir); ascii.uBeam.value = 1 - st.blink;
+        ascii.setCamera(cam); ascii.setGaze(gPos, gDir);
+        /* символы в луче только в игре: при раскрытии и отъезде глаз смотрит прямо в камеру, и луч закрывал бы его знаками */
+        beamK += ((phase === 'play' ? 1 : 0) - beamK) * Math.min(1, dt * 1.2);
+        ascii.uBeam.value = (1 - st.blink) * beamK;
         if (!(qa && qo.flash > 0) && !gateAt) ascii.uEdge.value = 0.25 + 0.35 * de + uTen.value * 0.5;
       }
     }

@@ -5,6 +5,8 @@
      края кадра: мир вдали не дорисован.
    Клетки включаются целиком; на границах масок клетки разбросаны случайно, мир «осыпается».
    Яркость клетки выбирает знак по плотности, на резких краях ставятся / \ | - .
+   Если есть лист знаков Архитектора (tunnel/glyphs_architect.webp, 16 x 16, строка = плотность),
+   плотные знаки берутся из него, у каждой клетки свой столбец.
 
    makeAscii(THREE, { col, mask, depth }) -> { node, setSize(w,h), setCamera(cam), setGaze(pos, dir) } */
 
@@ -27,7 +29,7 @@ export function atlasTexture(THREE) {
   return { tex: t, N };
 }
 
-export function makeAscii(THREE, { col, mask, depth, atlasInfo }) {
+export function makeAscii(THREE, { col, mask, depth, atlasInfo, glyphs }) {
   const T = THREE.TSL;
   const { vec2, vec3, vec4, float, floor, fract, texture, uniform, screenUV, hash, dot, length, smoothstep, mix,
     max, min, step, atan, PI, select, time, perspectiveDepthToViewZ, normalize, clamp } = T;
@@ -94,7 +96,14 @@ export function makeAscii(THREE, { col, mask, depth, atlasInfo }) {
   idx = select(gm.greaterThan(0.09).and(lv.greaterThan(0.05)), bin.add(ND), idx);
 
   const auv = vec2(idx.add(local.x).div(N), float(1).sub(local.y));
-  const glyph = texture(atlas, auv).r;
+  let glyph = texture(atlas, auv).r;
+  if (glyphs) {
+    const gcol = floor(hash(seed.add(floor(time.mul(0.5).add(hash(seed.add(5.1)).mul(9))).mul(3.7))).mul(16));
+    const lx = local.x.mul(0.88).add(0.06), ly = local.y.mul(0.88).add(0.06);
+    const row = min(floor(idx.mul(0.75)), 12);
+    const ag = texture(glyphs, vec2(gcol.add(lx).div(16), float(1).sub(row.add(ly).div(16)))).r.mul(0.85);
+    glyph = select(idx.lessThan(ND), select(idx.lessThan(1), float(0), ag), glyph);
+  }
 
   /* цвет: Виви бледно-холодная, луч холодный и бесцветный, края как есть */
   const cold = vec3(lum).mul(vec3(0.72, 0.88, 1.1));

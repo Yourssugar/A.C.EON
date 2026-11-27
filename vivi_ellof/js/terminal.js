@@ -4,7 +4,9 @@
    поэтому текст не замирает, пока под ним грузится и компилируется сцена.
    Каждая строка открывается шторкой, которая сдвигается на один символ за шаг (steps).
 
-   makeTerminal(lang) -> { el, total (мс до конца печати), hide() } */
+   Повторный вход (opts.fast): всё печатается вдвое быстрее.
+
+   makeTerminal(lang, opts) -> { el, total (мс до конца печати), hide() } */
 
 const MSG = {
   ru: 'Виви Эллоф.....наблюдатель обнаружен, вход подтверждён......ПОИСК ПОИСК ПОИСК.....',
@@ -15,7 +17,8 @@ function toBinary(text) {
   return Array.from(new TextEncoder().encode(text)).map((b) => b.toString(2).padStart(8, '0')).join(' ');
 }
 
-export function makeTerminal(lang) {
+export function makeTerminal(lang, opts) {
+  const F = opts && opts.fast ? 0.5 : 1;
   const el = document.createElement('div');
   el.style.cssText = 'position:absolute;left:8vw;top:22vh;right:8vw;z-index:4;pointer-events:none;'
     + 'font-family:"JetBrains Mono",Consolas,monospace;color:#cfd7e6;transition:opacity .9s ease;';
@@ -25,7 +28,7 @@ export function makeTerminal(lang) {
     + '@keyframes vvIn{from{opacity:0}to{opacity:1}}';
   el.appendChild(css);
 
-  let t = 500;
+  let t = 400 * F;
   function line(text, opts) {
     const o = opts || {};
     const n = Array.from(text).length;
@@ -34,24 +37,24 @@ export function makeTerminal(lang) {
       + 'font-size:' + (o.size || 16) + 'px;line-height:1.55;color:' + (o.color || '#cfd7e6') + ';letter-spacing:' + (o.ls || 0) + 'px;';
     d.textContent = text;
     const cover = document.createElement('div');
-    const dur = Math.max(1, n * (o.ms || 90));
+    const dur = Math.max(1, n * (o.ms || 90) * F);
     cover.style.cssText = 'position:absolute;inset:0;background:#000;will-change:transform;'
       + 'animation:vvOpen ' + dur + 'ms steps(' + n + ',end) ' + t + 'ms forwards;';
     d.appendChild(cover);
     el.appendChild(d);
-    t += dur + (o.gap || 0);
+    t += dur + (o.gap || 0) * F;
     return d;
   }
 
-  ['/V', '/Vi', '/Viv', '/Vivi'].forEach((s) => line(s, { ms: 110, gap: 260, size: 18, ls: 1 }));
+  ['/V', '/Vi', '/Viv', '/Vivi'].forEach((s) => line(s, { ms: 80, gap: 170, size: 18, ls: 1 }));
   /* точки чуть позже, красным */
-  line('.   .   .', { ms: 170, gap: 450, size: 18, color: '#c23a44' });
+  line('.   .   .', { ms: 110, gap: 300, size: 18, color: '#c23a44' });
 
   /* двоичный поток: делим на строки по 8 байт, чтобы каждая строка открывалась своей шторкой */
   const bits = toBinary(MSG[lang] || MSG.en).split(' ');
   const per = Math.max(4, Math.min(8, Math.floor((innerWidth * 0.84) / (9 * 7.4))));
   for (let i = 0; i < bits.length; i += per) {
-    line(bits.slice(i, i + per).join(' '), { ms: 5, size: 12, color: '#6fd3d6', ls: 0.5 });
+    line(bits.slice(i, i + per).join(' '), { ms: 1.1, size: 12, color: '#6fd3d6', ls: 0.5 });
   }
   /* мигающий курсор в конце */
   const caret = document.createElement('span');

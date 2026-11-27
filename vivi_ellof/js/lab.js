@@ -98,32 +98,42 @@ export function buildLab(THREE, tex, Q = {}) {
   root.add(chair);
   /* контровой свет на кресле теперь в buildLights (room.js) */
 
-  /* ---------- Виви: фигура только для маски символов ----------
-     Материал пишет в канал amask единицу. На экране вместо неё будут знаки.
-     Видна со спины: голова, волосы на спинке, плечи над спинкой, руки на подлокотниках */
-  const viviMat = new THREE.MeshStandardNodeMaterial({ color: 0x9aa4b4, roughness: 0.7 });
-  viviMat.mrtNode = mrt({ amask: float(1) });
+  /* ---------- Виви: всегда из символов ----------
+     Рисунок Кодекса (people/vivi_back.webp): девушка в белом капюшоне спиной к нам. Плоская вырезка,
+     повёрнута к дальней точке камеры, стоит за спинкой кресла. Материал пишет в amask единицу,
+     на экране вместо неё знаки. Без рисунка собирается прежняя фигура из примитивов */
   const vivi = new THREE.Group();
   vivi.position.copy(chair.position);
-  const add = (geo, pos, rot, scale) => {
-    const m = new THREE.Mesh(geo, viviMat);
-    m.position.set(...pos); if (rot) m.rotation.set(...rot); if (scale) m.scale.set(...scale);
-    vivi.add(m); return m;
-  };
-  add(new THREE.SphereGeometry(0.19, 32, 24), [0, 2.3, -0.02], null, [0.92, 1.08, 1]);              /* голова */
-  add(new THREE.SphereGeometry(0.21, 32, 24), [0, 2.24, 0.06], null, [1.05, 1.15, 0.9]);              /* волосы на затылке */
-  add(new THREE.CapsuleGeometry(0.17, 0.55, 8, 16), [0, 1.72, 0.17], [0.16, 0, 0], [1.25, 1, 0.75]);  /* волосы по спине */
-  add(new THREE.CylinderGeometry(0.07, 0.08, 0.16, 16), [0, 2.08, 0.0]);                               /* шея */
-  add(new THREE.CapsuleGeometry(0.15, 0.48, 8, 16), [0, 1.92, 0.05], [0, 0, Math.PI / 2], [1, 1, 0.8]); /* плечи */
-  add(new THREE.CapsuleGeometry(0.2, 0.5, 8, 16), [0, 1.5, 0.08], null, [1.05, 1, 0.75]);              /* спина */
-  const armR = [
-    add(new THREE.CapsuleGeometry(0.06, 0.38, 6, 12), [0.42, 1.64, 0.02], [0.35, 0, 0.18]),
-    add(new THREE.CapsuleGeometry(0.052, 0.42, 6, 12), [0.55, 1.36, -0.22], [Math.PI / 2 - 0.15, 0, 0]),
-    add(new THREE.SphereGeometry(0.06, 16, 12), [0.57, 1.33, -0.5], null, [0.8, 0.5, 1.4])
-  ];
-  add(new THREE.CapsuleGeometry(0.06, 0.38, 6, 12), [-0.42, 1.64, 0.02], [0.35, 0, -0.18]);
-  add(new THREE.CapsuleGeometry(0.052, 0.42, 6, 12), [-0.55, 1.36, -0.22], [Math.PI / 2 - 0.15, 0, 0]);
-  add(new THREE.SphereGeometry(0.06, 16, 12), [-0.57, 1.33, -0.5], null, [0.8, 0.5, 1.4]);
+  const armR = [];
+  if (tex.vivi) {
+    const map = texture(tex.vivi);
+    const vm = new THREE.MeshBasicNodeMaterial({ alphaTest: 0.4, side: THREE.DoubleSide });
+    vm.colorNode = map.rgb.mul(1.1);
+    vm.opacityNode = map.a;
+    vm.mrtNode = mrt({ amask: float(1) });
+    const H = 1.9, Wd = 0.95;
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(Wd, H), vm);
+    pl.position.set(0, 0.83 + H / 2, 0.05);
+    pl.rotation.y = Math.atan2(0.6 - cx, 16.5 - cz);
+    vivi.add(pl);
+  } else {
+    const viviMat = new THREE.MeshStandardNodeMaterial({ color: 0x9aa4b4, roughness: 0.7 });
+    viviMat.mrtNode = mrt({ amask: float(1) });
+    const add = (geo, pos, rot, scale) => {
+      const m = new THREE.Mesh(geo, viviMat);
+      m.position.set(...pos); if (rot) m.rotation.set(...rot); if (scale) m.scale.set(...scale);
+      vivi.add(m); return m;
+    };
+    add(new THREE.SphereGeometry(0.19, 32, 24), [0, 2.3, -0.02], null, [0.92, 1.08, 1]);
+    add(new THREE.SphereGeometry(0.21, 32, 24), [0, 2.24, 0.06], null, [1.05, 1.15, 0.9]);
+    add(new THREE.CylinderGeometry(0.07, 0.08, 0.16, 16), [0, 2.08, 0.0]);
+    add(new THREE.CapsuleGeometry(0.15, 0.48, 8, 16), [0, 1.92, 0.05], [0, 0, Math.PI / 2], [1, 1, 0.8]);
+    add(new THREE.CapsuleGeometry(0.2, 0.5, 8, 16), [0, 1.5, 0.08], null, [1.05, 1, 0.75]);
+    [-1, 1].forEach((k) => {
+      add(new THREE.CapsuleGeometry(0.06, 0.38, 6, 12), [0.42 * k, 1.64, 0.02], [0.35, 0, 0.18 * k]);
+      add(new THREE.CapsuleGeometry(0.052, 0.42, 6, 12), [0.55 * k, 1.36, -0.22], [Math.PI / 2 - 0.15, 0, 0]);
+    });
+  }
   root.add(vivi);
 
   /* ---------- застывший взрыв справа: объём из спрайтов, огонь почти не движется ---------- */

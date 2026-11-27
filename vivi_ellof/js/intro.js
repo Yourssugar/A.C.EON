@@ -2,7 +2,7 @@
    Полёт по закрученной трубе из нулей и единиц (двоичный поток терминала, лежит на стенках в перспективе).
    Потом труба гаснет, из её дальнего конца вырастает глаз из символов (uEyeScale от малого к 1),
    открывает веки и смотрит прямо на зрителя.
-   Раскрытие: клетки гаснут вразнобой, под ними настоящий глаз на том же месте.
+   Раскрытие: клетки вразнобой вспыхивают и гаснут, под ними настоящий глаз на том же месте.
    Размеры глаза подогнаны под 3D-глаз при камере вплотную (z = 4.6, fov 35).
 
    makeIntro(THREE, atlasInfo, uRes, uCell) -> { color, on, set({...}) } */
@@ -95,16 +95,21 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
   const glyph = texture(atlas, vec2(idx.add(local.x).div(N), float(1).sub(local.y))).r;
   const eyeOut = col.mul(glyph).mul(1.7).mul(max(L, lid).mul(0.6).add(0.55)).mul(max(uMorph, lid));
 
-  const base = eyeOut.add(tube);
+  /* раскрытие: клетка перед тем, как погаснуть, вспыхивает */
+  const hc = hash(seed.add(91.7));
+  const spark = smoothstep(0.09, 0.0, hc.sub(uDissolve)).mul(step(0.001, uDissolve)).mul(step(uDissolve, hc));
+  const base = eyeOut.mul(spark.mul(2.4).add(1)).add(tube);
   const lum = base.x.mul(0.3).add(base.y.mul(0.59)).add(base.z.mul(0.11)).mul(1.5);
   const color = mix(base, vec3(0.45, 0.95, 0.92).mul(lum), uTint).mul(uFade);
 
   /* клетка ещё принадлежит входу или уже показывает сцену */
-  const on = step(uDissolve, hash(seed.add(91.7))).mul(uAlive);
+  const on = step(uDissolve, hc).mul(uAlive);
 
+  const last = {};
   return {
-    color, on,
+    color, on, last,
     set(o) {
+      Object.assign(last, o);
       if (o.fade !== undefined) uFade.value = o.fade;
       if (o.scale !== undefined) uEyeScale.value = Math.max(0.02, o.scale);
       if (o.fly !== undefined) uFly.value = o.fly;

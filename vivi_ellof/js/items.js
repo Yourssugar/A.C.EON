@@ -6,10 +6,13 @@
    У каждой детали две сетки на одной геометрии: настоящая и символьная. Обе компилируются заранее,
    при расшифровке меняется только видимость, поэтому без подвисаний.
 
-   Фигуры людей и Виви пока собраны из примитивов, потом их заменят модели/текстуры от Codex.
-   Подписи и тексты: заглушки.
+   Люди: рисунки Кодекса (people/*.webp), плоские вырезки, повёрнутые к дальней точке камеры.
+   Символьная версия той же картинки: вместо пикселей знаки. Расшифрованный предмет виден нормально,
+   но пока на нём луч Архитектора, он снова из символов (look).
+   Подписи и тексты: заглушки. Кот и вещи пока из примитивов, рисунки впереди.
+   Ещё здесь мелочь, застывшая в воздухе: обрывки бумаги, винты, капли, крошка, без расшифровки.
 
-   buildItems(THREE, FLOOR) -> { root, list, showBoth(), apply(open), flicker(i, p), update(dt, t) }
+   buildItems(THREE, FLOOR, people) -> { root, list, showBoth(), apply(open), flicker(i, p), look(i, on) }
    list[i]: { id, kind, act ('desc' | 'memory'), mem ('true' | 'trap' | 'arch' | null), pos, label{ru,en}, text{ru,en}, rpx } */
 
 export const ITEMS = [
@@ -56,9 +59,10 @@ export const ITEMS = [
     text: { ru: 'Протокол эксперимента. Страницы разлетелись не по порядку.', en: 'Experiment protocol. The pages scattered out of order.' } }
 ];
 
-export function buildItems(THREE, FLOOR) {
+export function buildItems(THREE, FLOOR, people) {
+  people = people || {};
   const T = THREE.TSL;
-  const { vec3, float, mrt, sin, time, positionWorld } = T;
+  const { vec3, float, mrt, sin, time, positionWorld, texture } = T;
 
   /* символьный материал один на всех: холодное мерцание, маска 0.9 */
   const symMat = new THREE.MeshStandardNodeMaterial({ color: 0x0, roughness: 0.4 });
@@ -185,10 +189,33 @@ export function buildItems(THREE, FLOOR) {
   const SC = { phone: 1.8, book: 1.6, photo: 1.6, cat: 1.4, clock: 1.6, badge: 1.8, headphones: 1.7, mug: 1.8, papers: 1, worker: 1 };
   const RPX = { worker: 0.09, papers: 0.07, cat: 0.05 };
 
+  /* человек с рисунка: вырезка 1 x 2 м, ноги на полу */
+  const CAM = { x: 0.6, z: 16.5 };
+  function cutout(g, tx, it) {
+    const map = texture(tx);
+    const rm = new THREE.MeshBasicNodeMaterial({ alphaTest: 0.45, side: THREE.DoubleSide });
+    rm.colorNode = map.rgb.mul(0.92);
+    rm.opacityNode = map.a;
+    const sm = new THREE.MeshBasicNodeMaterial({ alphaTest: 0.45, side: THREE.DoubleSide });
+    const lum = map.r.mul(0.3).add(map.g.mul(0.59)).add(map.b.mul(0.11));
+    sm.colorNode = vec3(0.5, 0.75, 1.0).mul(lum.mul(1.4).add(0.25)).mul(sin(time.mul(1.3).add(positionWorld.y.mul(4))).mul(0.15).add(0.85));
+    sm.opacityNode = map.a;
+    sm.mrtNode = mrt({ amask: float(0.9) });
+    const geo = new THREE.PlaneGeometry(1, 2);
+    geo.translate(0, 1, 0);
+    const real = new THREE.Mesh(geo, rm), sym = new THREE.Mesh(geo, sm);
+    g.add(real, sym);
+    g.userData.real.push(real); g.userData.sym.push(sym);
+    g.position.set(it.pos[0], FLOOR + it.pos[1], it.pos[2]);
+    g.rotation.y = Math.atan2(CAM.x - it.pos[0], CAM.z - it.pos[2]);
+  }
+  const PPL = { reach: people.reach, shield: people.shield, fall: people.fall };
+
   ITEMS.forEach((it) => {
     const g = new THREE.Group();
     g.userData = { real: [], sym: [] };
-    if (it.kind === 'worker') {
+    if (it.kind === 'worker' && PPL[it.pose]) cutout(g, PPL[it.pose], it);
+    else if (it.kind === 'worker') {
       worker(g, it.pose);
       g.position.set(it.pos[0], FLOOR + it.pos[1], it.pos[2]);
       g.rotation.y = it.ry || 0;
@@ -206,15 +233,50 @@ export function buildItems(THREE, FLOOR) {
     list.push(Object.assign({}, it, { group: g, at, rpx: RPX[it.kind] || 0.04 }));
   });
 
+  /* мелочь в воздухе: застыла вместе со всем */
+  {
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const dummy = new THREE.Object3D();
+    const kinds = [
+      { geo: new THREE.PlaneGeometry(0.07, 0.05), mat: M(0xd9d3c6, { roughness: 1, side: THREE.DoubleSide }), n: 70 },     /* обрывки бумаги */
+      { geo: new THREE.CylinderGeometry(0.008, 0.008, 0.05, 6), mat: mat.metal, n: 40 },                                    /* винты */
+      { geo: new THREE.DodecahedronGeometry(0.03, 0), mat: M(0x5d5a56, { roughness: 1 }), n: 60 },                          /* крошка бетона */
+      { geo: new THREE.SphereGeometry(0.014, 8, 6), mat: M(0x9fb6c4, { roughness: 0.05, metalness: 0.2 }), n: 50 },         /* капли воды */
+      { geo: new THREE.BoxGeometry(0.02, 0.004, 0.08), mat: M(0x2b2e33, { roughness: 0.6 }), n: 24 }                        /* щепки пластика */
+    ];
+    kinds.forEach((k) => {
+      const im = new THREE.InstancedMesh(k.geo, k.mat, k.n);
+      for (let i = 0; i < k.n; i++) {
+        /* гуще ближе к пролому справа: всё летит от взрыва */
+        const x = Math.random() < 0.55 ? rnd(1, 9) : rnd(-9, 6);
+        dummy.position.set(x, rnd(FLOOR + 0.4, 4.6), rnd(1.2, 12));
+        dummy.rotation.set(rnd(0, 6.3), rnd(0, 6.3), rnd(0, 6.3));
+        dummy.scale.setScalar(rnd(0.6, 1.8));
+        dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix);
+      }
+      im.frustumCulled = false;
+      root.add(im);
+    });
+  }
+
   function setVis(it, realOn) {
+    it.realOn = realOn;
     it.group.userData.real.forEach((m) => { m.visible = realOn; });
     it.group.userData.sym.forEach((m) => { m.visible = !realOn; });
   }
+  let openNow = [];
   return {
     root, list,
+    /* луч Архитектора на расшифрованном: на это время снова символы */
+    look(i, on) {
+      const it = list[i];
+      if (!it || openNow.indexOf(it.id) < 0) return;
+      if (on === !it.realOn) return;
+      setVis(it, !on);
+    },
     /* для компиляции: обе версии видимы */
     showBoth() { list.forEach((it) => { it.group.userData.real.forEach((m) => { m.visible = true; }); it.group.userData.sym.forEach((m) => { m.visible = true; }); }); },
-    apply(open) { list.forEach((it) => setVis(it, open.indexOf(it.id) >= 0)); },
+    apply(open) { openNow = open.slice(); list.forEach((it) => setVis(it, open.indexOf(it.id) >= 0 && !it.inLook)); },
     /* пока держишь курсор: деталь за деталью проступает настоящая, вразнобой мигая */
     flicker(i, p) {
       const it = list[i]; if (!it) return;

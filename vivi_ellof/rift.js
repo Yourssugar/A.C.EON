@@ -28,12 +28,12 @@ const TXT = {
     noticed: '> АНОМАЛИЯ ОБНАРУЖЕНА', open: '> РАСШИФРОВАНО: ',
     caught: 'НАБЛЮДАТЕЛЬ ОБНАРУЖЕН.', tries: 'осталось наблюдений: ', none: 'наблюдений больше нет.',
     memory: 'ВОСПОМИНАНИЕ', memClosed: 'этот фрагмент пока не открывается.', thing: 'ПРЕДМЕТ', person: 'ЧЕЛОВЕК',
-    speech: ['НАБЛЮДАТЕЛЬ.', 'её имя введено.', 'вход подтверждён.', 'ты не она.', 'ПОИСК. ПОИСК. ПОИСК.'] },
+    speech: ['ТЫ не ОНА', 'ПОИСК.'] },
   en: { obs: '> OBSERVATION STARTED', left: 'UNTIL DETONATION', sec: 's', wait: 'i am waiting',
     noticed: '> ANOMALY DETECTED', open: '> DECODED: ',
     caught: 'OBSERVER DETECTED.', tries: 'observations left: ', none: 'no observations left.',
     memory: 'MEMORY', memClosed: 'this fragment does not open yet.', thing: 'OBJECT', person: 'PERSON',
-    speech: ['OBSERVER.', 'her name was entered.', 'entry confirmed.', 'you are not her.', 'SEARCH. SEARCH. SEARCH.'] }
+    speech: ['YOU are not HER', 'SEARCH.'] }
 };
 
 /* ---------- память изнанки: отдельно от памяти сайта (aceon:trace) ---------- */
@@ -185,7 +185,9 @@ export async function mount(opts = {}) {
   if (typeof mem.tries !== 'number') mem.tries = TRIES;
 
   /* терминал сразу, до тяжёлой загрузки: его анимации идут отдельно от основного потока и не замирают */
-  const term = makeTerminal(lang);
+  /* повторный вход (уже бывал внутри): терминал печатает быстрее */
+  mem.visits = (mem.visits || 0) + 1; memSave(mem);
+  const term = makeTerminal(lang, { fast: mem.visits > 1 });
   root.appendChild(term.el);
   const tTerm = performance.now();
   /* звук тоже сразу: трек продолжается без паузы, искажения нарастают плавно */
@@ -307,8 +309,13 @@ export async function mount(opts = {}) {
 
       const t2n = ['flesh', 'flesh_h', 'torn', 'torn_h', 'grate', 'under', 'ceil', 'ceil_h', 'rack', 'rack_glow', 'tank', 'blast',
         'screen_1', 'screen_2', 'screen_3', 'screen_4', 'screen_5', 'screen_6'];
+      const PN = ['worker_reach', 'worker_shield', 'worker_fall', 'vivi_back'];
+      const pplP = Promise.all(PN.map((n) => load('people/' + n + '.webp', true, false).catch(() => null)));
       const [panel, panelH, ...t2a] = await Promise.all([load('panel.webp', true, true), load('panel_h.webp', false, true)]
         .concat(t2n.map((n) => load('tex2/' + n + '.webp', !/_h$|_glow$/.test(n), !/^screen|^tank|^rack|^flesh|^blast/.test(n)))));
+      /* люди и Виви: рисунки Кодекса */
+      const ppl = await pplP;
+      tex.vivi = ppl[3];
       tex.panel = panel; tex.panelH = panelH;
       const g2 = (n) => t2a[t2n.indexOf(n)];
       const t2 = { flesh: g2('flesh'), fleshH: g2('flesh_h'), torn: g2('torn'), tornH: g2('torn_h'), grate: g2('grate'), under: g2('under'),
@@ -326,14 +333,14 @@ export async function mount(opts = {}) {
       await frame();
       scene.add(room.root);
       /* предметы и люди: обе версии (настоящая и символьная) компилируются сразу */
-      items = buildItems(THREE, FLOOR);
+      items = buildItems(THREE, FLOOR, { reach: ppl[0], shield: ppl[1], fall: ppl[2] });
       items.showBoth();
       await frame();
       await compile(items.root);
       scene.add(items.root);
       quest = createQuest(THREE, { cam, items, mem, save: () => memSave(mem) });
       /* все текстуры в видеокарту заранее, иначе они уйдут туда при первом показе и дадут рывок */
-      for (const tx of Object.values(tex).concat(t2a, [panel, panelH])) {
+      for (const tx of Object.values(tex).concat(t2a, [panel, panelH], ppl)) {
         try { if (tx && tx.isTexture) renderer.initTexture(tx); } catch (e) {}
         await frame();
       }
@@ -462,14 +469,15 @@ export async function mount(opts = {}) {
      с большого глаза из символов (фаза grow ближе к концу), дальше раскрытие, отъезд, взгляд по кругу и сразу игра */
   function restart(now) {
     capAt = 0; restarted = true; introDone = false;
-    speech.style.opacity = '0'; speech.dataset.c = ''; speech.dataset.i = '';
+    speech.style.opacity = '0'; speech.dataset.c = ''; speech.dataset.k = '';
     hud.style.opacity = '0';
     if (quest) quest.reset();
     goPhase('grow', now - 3000);
     setTimeout(() => { veil.style.opacity = '0'; }, 250);
   }
-  function startPlay(now) {
-    speech.style.opacity = '0'; goPhase('play', now);
+  function startPlay(now, keepSpeech) {
+    if (keepSpeech) speech.dataset.k = '1'; else speech.style.opacity = '0';
+    goPhase('play', now); prChecked = now;
     if (quest) quest.start();
     hud.style.opacity = '0.7';
   }
@@ -534,6 +542,9 @@ export async function mount(opts = {}) {
        roll: глаз обводит взглядом по кругу и застывает в центре
        speech: обращение к зрителю, фразы по одной
        play: игра (js/quest.js) */
+    /* отладка: window.__viviPT держит время внутри фазы, __viviPhase задаёт фазу */
+    if (window.__viviPhase && window.__viviPhase !== phase) goPhase(window.__viviPhase, now);
+    if (window.__viviPT !== undefined) phT = now - window.__viviPT * 1000;
     const pt = (now - phT) / 1000;
     if (phase === 'term') {
       if (labReady && warmDone && now - tTerm >= term.total + 500) {
@@ -541,25 +552,29 @@ export async function mount(opts = {}) {
       }
     } else if (phase === 'tube' && pt >= (reduce ? 0.2 : 3.4)) goPhase('grow', now);
     else if (phase === 'grow' && pt >= (reduce ? 0.3 : 5.2)) { revealAt = now; goPhase('reveal', now); }
-    else if (phase === 'reveal' && pt >= (reduce ? 0.4 : 2.2)) goPhase('pull', now);
-    else if (phase === 'pull' && pt >= (reduce ? 0.2 : 7.6)) goPhase('roll', now);
-    else if (phase === 'roll' && pt >= (reduce ? 0.1 : 3.4)) { if (restarted) startPlay(now); else goPhase('speech', now); }
-    else if (phase === 'speech' && pt >= L.speech.length * 2.4 + 1.6) startPlay(now);
+    else if (phase === 'reveal' && pt >= (reduce ? 0.4 : 3.6)) goPhase('pull', now);
+    else if (phase === 'pull' && pt >= (reduce ? 0.2 : restarted ? 4.6 : 7.6)) goPhase('roll', now);
+    else if (phase === 'roll' && pt >= (reduce ? 0.1 : restarted ? 2.6 : 3.4)) { if (restarted) startPlay(now); else goPhase('speech', now); }
+    /* обращение: «ТЫ не ОНА» красным, потом слово ПОИСК повторяется трижды, и на третьем глаз начинает искать */
     if (phase === 'speech') {
-      const i = Math.floor((pt - 0.6) / 2.4), inLine = (pt - 0.6) - i * 2.4;
-      if (i >= 0 && i < L.speech.length) {
-        if (speech.dataset.i !== String(i)) { speech.dataset.i = String(i); speech.textContent = L.speech[i];
-          speech.style.color = i === L.speech.length - 1 ? '#d4434e' : '#dfe6f3'; }
-        speech.style.opacity = inLine < 1.9 ? '1' : '0';
+      const W = L.speech;
+      let txt = '', col = '#dfe6f3', op = 0;
+      if (pt >= 0.5 && pt < 3.0) { txt = W[0]; col = '#d4434e'; op = pt < 2.5 ? 1 : 0; }
+      else if (pt >= 3.3) {
+        const k = Math.min(3, 1 + Math.floor((pt - 3.3) / 0.75));
+        txt = Array(k).fill(W[1]).join(' '); op = pt < 6.6 ? 1 : 0;
+        if (k >= 3 && !(quest && quest.state.active)) startPlay(now, true);
       }
+      if (txt && speech.textContent !== txt) speech.textContent = txt;
+      speech.style.color = col; speech.style.opacity = String(op);
     }
-
+    if (phase === 'play' && speech.dataset.k === '1' && now - phT > 3200) { speech.style.opacity = '0'; speech.dataset.k = ''; }
     if (intro && !introDone) {
       const tw = phase === 'tube' ? sm(0.4, 2.0, pt) : 1;
       fly += dt * (phase === 'grow' ? 3.2 * (1 - sm(0, 1.6, pt)) + 0.2 : 3.4);
       twist += dt * 1.6 * tw;
       const g = phase === 'grow' ? pt : phase === 'tube' || phase === 'term' ? -1 : 99;
-      const dis = phase === 'reveal' ? pt / (reduce ? 0.4 : 2.0) : phase === 'pull' || phase === 'roll' || phase === 'speech' || phase === 'play' ? 2 : 0;
+      const dis = phase === 'reveal' ? (reduce ? pt / 0.4 : Math.pow(sm(0, 3.2, pt), 1.35) * 1.02) : phase === 'pull' || phase === 'roll' || phase === 'speech' || phase === 'play' ? 2 : 0;
       intro.set({
         fade: phase === 'term' ? 0 : phase === 'tube' ? sm(0, 0.9, pt) : 1,
         fly, twist: twist,
@@ -606,11 +621,12 @@ export async function mount(opts = {}) {
     /* отъезд камеры (после раскрытия), параллакс за курсором, медленное притяжение к глазу */
     const el = revealAt ? (now - revealAt) / 1000 : 0;
     /* отъезд в фазе pull; дальше камера остаётся в дальней точке */
-    const dk = phase === 'pull' ? Math.min(1, Math.max(0, ((now - phT) / 1000 - 0.4) / 7)) : (phase === 'roll' || phase === 'speech' || phase === 'play') ? 1 : 0;
+    const dk = phase === 'pull' ? Math.min(1, Math.max(0, ((now - phT) / 1000 - 0.4) / (restarted ? 4 : 7))) : (phase === 'roll' || phase === 'speech' || phase === 'play') ? 1 : 0;
     const de = reduce && dk > 0 ? 1 : dk * dk * (3 - 2 * dk);
     camP.lerpVectors(CLOSE.p, FAR.p, de); camL.lerpVectors(CLOSE.l, FAR.l, de);
     const k = 1 - Math.exp(-dt * 0.6);
-    pull += ((qa ? uTen.value * 1.3 : st.focus) - pull) * k * 0.5;
+    /* до игры без подъезда к глазу: настоящий глаз при раскрытии совпадает с глазом из символов */
+    pull += ((qa ? uTen.value * 1.3 : phase === 'play' ? st.focus : 0) - pull) * k * 0.5;
     if (!reduce) { camX += (-ptr.nx * (0.12 + 0.3 * de) - camX) * k; camY += (-ptr.ny * (0.08 + 0.15 * de) - camY) * k; }
     toEye.copy(camL).sub(camP).normalize();
     lean += (leanT * (phase === 'play' ? 1 : 0) - lean) * Math.min(1, dt * 2.5);
@@ -642,7 +658,7 @@ export async function mount(opts = {}) {
       /* по очереди из ближней и дальней точки: из каждой видны свои объекты и свои мип-уровни текстур */
       const W = warm % 2 ? CLOSE : FAR; cam.position.copy(W.p); cam.lookAt(W.l || camL.set(0, 0, 0)); cam.updateMatrixWorld();
       if (ascii) ascii.setCamera(cam);
-      if (intro) intro.set({ fade: 1, tube: warm % 2, morph: 1 - warm % 2, scale: 1, open: 1, dissolve: warm < 3 ? 0.5 : 0, alive: 1 });
+      if (intro) intro.set({ fade: 1, tube: warm % 2, morph: 1 - warm % 2, scale: 1, open: 1, dissolve: warm === 2 ? 0.5 : 0, alive: 1 });   /* последний кадр прогрева: чистая труба, без глаза */
       warm--;
     }
     /* под терминалом рисуем только кадры прогрева, остальное время видеокарта занята загрузкой */
@@ -653,7 +669,7 @@ export async function mount(opts = {}) {
 
     /* разрешение под видеокарту: не успевает кадр, рендер мельче; запас есть, крупнее */
     frameMs += ((now - prevNow) - frameMs) * 0.05; prevNow = now;
-    if (phase !== 'term' && now - prChecked > 1200) {
+    if (phase === 'play' && now - prChecked > 1200) {
       prChecked = now;
       if (frameMs > 26 && pr > Q.prMin) { pr = Math.max(Q.prMin, pr * 0.85); prCool = now; resize(); }
       else if (frameMs < 18.5 && pr < Q.prMax && now - prCool > 6000) { pr = Math.min(Q.prMax, pr * 1.08); prCool = now - 3000; resize(); }
@@ -674,7 +690,7 @@ export async function mount(opts = {}) {
 
 
   window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gpu: gpu.name, Q, get pr() { return pr; }, get ms() { return frameMs; }, gaze, cam, scene, gDir, gPos, ptr, cursorState,
-    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; }, get labReady() { return labReady; }, get phase() { return phase; }, get quest() { return quest; }, get items() { return items; }, eyeDist };
+    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; }, get labReady() { return labReady; }, get phase() { return phase; }, get quest() { return quest; }, get items() { return items; }, get intro() { return intro; }, eyeDist };
 }
 
 /* ---------- видеокарта: имя и признак программного рендера ---------- */

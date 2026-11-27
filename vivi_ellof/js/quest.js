@@ -7,6 +7,8 @@
      вне луча внимание спадает.
    Ступени: 0,35 глаз фиксируется на тебе; 0,75 обнаружен: сразу поимка и выброс (rift.js тратит попытку).
 
+   Расшифрованное видно нормально, пока на нём нет луча; под лучом оно снова из символов.
+
    Расшифровка: навести курсор на символьный предмет и замереть ~3,5 с. Пока держишь, слышен модем,
    глаз медленно поворачивается на звук. Прогресс копится и сохраняется. Расшифрованный предмет
    остаётся настоящим, наведение показывает подпись, клик открывает описание или воспоминание.
@@ -87,6 +89,14 @@ export function createQuest(THREE, ctx) {
     out.inBeam = inBeam;
     const sp = inp.speed;
     const moving = sp > 0.04;
+
+    /* расшифрованное под лучом снова видно символами */
+    items.list.forEach((it, i) => {
+      if (!isOpen(it) || i === S.hold.i) return;
+      const t = yp(it.at), d = Math.hypot(t.yaw - gz.yaw, t.pitch - gz.pitch);
+      if (d < 0.2) { if (!it.inLook) { it.inLook = true; items.look(i, true); } }
+      else if (d > 0.25 && it.inLook) { it.inLook = false; items.look(i, false); }
+    });
 
     /* предмет под курсором */
     const ii = cw && !inp.paused ? itemUnderCursor(inp.nx, inp.ny) : -1;
@@ -173,6 +183,7 @@ export function createQuest(THREE, ctx) {
   function reset() {
     Object.assign(S, { active: false, A: 0, mode: 'patrol', modeT: 0, noise: null, hold: { i: -1, p: 0 }, flash: 0,
       capture: false, gate: false, gateHold: 0, target: { yaw: 0, pitch: 0 } });
+    items.list.forEach((it) => { it.inLook = false; });
     items.apply(mem.open);
   }
 

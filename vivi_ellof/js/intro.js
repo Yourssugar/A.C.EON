@@ -1,7 +1,7 @@
 /* Вход в изнанку, пока грузится сцена: всё считается в шейдере, текстур сцены не нужно.
-   Сначала полёт по закрученной трубе из чисел (цифры лежат на стенках трубы в перспективе, часть меняется).
-   Когда глаз готов, труба сворачивается: её дальний конец становится зрачком, стенки гаснут,
-   из клеток экрана собирается глаз из символов, смотрит на курсор, моргает.
+   Полёт по закрученной трубе из нулей и единиц (двоичный поток терминала, лежит на стенках в перспективе).
+   Потом труба гаснет, из её дальнего конца вырастает глаз из символов (uEyeScale от малого к 1),
+   открывает веки и смотрит прямо на зрителя.
    Раскрытие: клетки гаснут вразнобой, под ними настоящий глаз на том же месте.
    Размеры глаза подогнаны под 3D-глаз при камере вплотную (z = 4.6, fov 35).
 
@@ -15,6 +15,7 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
   const ND = 16, EDGE_S = 17, EDGE_H = 18, EDGE_B = 19, DIG0 = 20;
 
   const uFade = uniform(0);      /* проявление из черноты */
+  const uEyeScale = uniform(1);  /* размер глаза из символов: растёт из конца трубы */
   const uFly = uniform(0);       /* сколько пролетели по трубе */
   const uTwist = uniform(0);     /* закрутка трубы */
   const uTube = uniform(1);      /* 1 труба видна, 0 свернулась */
@@ -24,6 +25,7 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
   const uPupil = uniform(0.32);
   const uDissolve = uniform(0);  /* доля погасших клеток при раскрытии */
   const uAlive = uniform(1);
+  const uTint = uniform(0);      /* 0 свои цвета, 1 холодный цвет перехода через зрачок */
 
   const aspect = uRes.x.div(uRes.y);
   /* ---------- труба из чисел: считается по каждому пикселю, в перспективе ---------- */
@@ -37,7 +39,7 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
   const cu = mod(floor(u), NU), cv = floor(v);
   const tseed = cu.mul(17.13).add(cv.mul(91.7));
   const lit = step(0.42, hash(tseed.add(3.3)));
-  const dig = floor(hash(tseed.add(floor(time.mul(1.5).add(hash(tseed).mul(6))).mul(13.1))).mul(10));
+  const dig = step(0.5, hash(tseed.add(floor(time.mul(1.5).add(hash(tseed).mul(6))).mul(13.1))));   /* 0 или 1 */
   const tg = texture(atlas, vec2(dig.add(DIG0).add(float(1).sub(fract(u))).div(N), float(1).sub(fract(v)))).r;
   const tfade = smoothstep(0.012, 0.09, r).mul(exp(depth.mul(-0.12))).mul(smoothstep(1.6, 0.35, r));
   const tint = hash(tseed.add(7.7));
@@ -52,9 +54,9 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
   const cuv = cell.add(0.5).mul(uCell).div(uRes);
   const local = fract(px.div(uCell));
   const p0 = cuv.sub(0.5).mul(vec2(aspect, 1));
-  const p = vec2(p0.x, p0.y.negate());
+  const p = vec2(p0.x, p0.y.negate()).div(uEyeScale);
   const seed = cell.x.add(cell.y.mul(311.7));
-  const cellH = uCell.div(uRes.y);
+  const cellH = uCell.div(uRes.y).div(uEyeScale);
 
   const IR = 0.218, W = 0.36, HU = 0.148, HL = 0.182;
   const q = p.sub(uLook);
@@ -93,7 +95,9 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
   const glyph = texture(atlas, vec2(idx.add(local.x).div(N), float(1).sub(local.y))).r;
   const eyeOut = col.mul(glyph).mul(1.7).mul(max(L, lid).mul(0.6).add(0.55)).mul(max(uMorph, lid));
 
-  const color = eyeOut.add(tube).mul(uFade);
+  const base = eyeOut.add(tube);
+  const lum = base.x.mul(0.3).add(base.y.mul(0.59)).add(base.z.mul(0.11)).mul(1.5);
+  const color = mix(base, vec3(0.45, 0.95, 0.92).mul(lum), uTint).mul(uFade);
 
   /* клетка ещё принадлежит входу или уже показывает сцену */
   const on = step(uDissolve, hash(seed.add(91.7))).mul(uAlive);
@@ -102,6 +106,7 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
     color, on,
     set(o) {
       if (o.fade !== undefined) uFade.value = o.fade;
+      if (o.scale !== undefined) uEyeScale.value = Math.max(0.02, o.scale);
       if (o.fly !== undefined) uFly.value = o.fly;
       if (o.twist !== undefined) uTwist.value = o.twist;
       if (o.tube !== undefined) uTube.value = o.tube;
@@ -111,6 +116,7 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell) {
       if (o.pupil !== undefined) uPupil.value = o.pupil;
       if (o.dissolve !== undefined) uDissolve.value = o.dissolve;
       if (o.alive !== undefined) uAlive.value = o.alive;
+      if (o.tint !== undefined) uTint.value = o.tint;
     }
   };
 }

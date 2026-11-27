@@ -1,5 +1,5 @@
 /* Лаборатория в последней доле секунды (содержимое; комната в room.js): ядро вокруг глаза, кабели, кресло Виви,
-   Виви (только маска для символов), застывший взрыв справа, стекло и искры в воздухе, 7 осколков памяти.
+   Виви (только маска для символов), застывший взрыв справа, стекло и искры в воздухе. Предметы и люди в js/items.js.
    Глаз стоит в начале координат и смотрит вдоль +Z, кресло между ним и зрителем.
    buildLab(THREE, tex) -> { root, vivi, shards, update(dt), FLOOR } */
 
@@ -180,27 +180,9 @@ export function buildLab(THREE, tex, Q = {}) {
   }
   root.add(sparks);
 
-  /* ---------- 7 осколков памяти: висят в воздухе, внутри мерцают знаки ---------- */
-  const shardMat = new THREE.MeshStandardNodeMaterial({ color: 0x0, roughness: 0.2, metalness: 0 });
-  const pulse = sin(time.mul(0.9).add(positionWorld.y.mul(3))).mul(0.25).add(0.75);
-  shardMat.emissiveNode = vec3(0.55, 0.78, 1.0).mul(pulse).mul(1.4);
-  shardMat.mrtNode = mrt({ amask: float(0.85) });
-  const SHARD_POS = [[-4.6, -0.2, 4.4], [-3.0, 2.4, 2.2], [3.8, 2.6, 3.0], [3.0, -1.6, 6.2], [-4.4, -2.2, 9.0], [6.4, 0.6, 8.0], [1.2, 2.8, 8.6]];
-  const shards = SHARD_POS.map(([x, y, z], i) => {
-    const g = new THREE.OctahedronGeometry(0.26, 0); g.scale(0.62, 1.7, 0.62);
-    const m = new THREE.Mesh(g, shardMat);
-    m.position.set(x, y, z); m.rotation.set(Math.random(), Math.random() * 6, Math.random() * 0.4);
-    m.userData = { id: i, base: m.position.clone(), ph: Math.random() * 6 };
-    root.add(m);
-    return m;
-  });
-
-  function update(dt, t) {
-    shards.forEach((s) => {
-      s.rotation.y += dt * 0.05;
-      s.position.y = s.userData.base.y + Math.sin(t * 0.25 + s.userData.ph) * 0.03;
-    });
-  }
+  /* осколки памяти заменены предметами и людьми (js/items.js) */
+  const shards = [];
+  function update() {}
 
   return { root, vivi, armR, chair, shards, glass, update };
 }

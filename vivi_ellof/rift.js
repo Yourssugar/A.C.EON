@@ -10,15 +10,15 @@
    Модули: js/eye.js (глаз), js/gaze.js (движение глаза), js/lab.js (лаборатория), js/ascii.js (символы). */
 /* у модулей версия в адресе: после обновления на GitHub Pages браузер не смешает старые и новые файлы */
 import * as THREE from './vendor/three-webgpu.min.js';
-import { buildEye } from './js/eye.js?v=20261127c';
-import { createGaze } from './js/gaze.js?v=20261127c';
-import { buildLab, FLOOR } from './js/lab.js?v=20261127c';
-import { buildItems } from './js/items.js?v=20261127c';
-import { buildRoom, buildLights } from './js/room.js?v=20261127c';
-import { createQuest } from './js/quest.js?v=20261127c';
-import { makeAscii, atlasTexture } from './js/ascii.js?v=20261127c';
-import { makeIntro } from './js/intro.js?v=20261127c';
-import { makeTerminal } from './js/terminal.js?v=20261127c';
+import { buildEye } from './js/eye.js?v=20261128a';
+import { createGaze } from './js/gaze.js?v=20261128a';
+import { buildLab, FLOOR } from './js/lab.js?v=20261128a';
+import { buildItems } from './js/items.js?v=20261128a';
+import { buildRoom, buildLights } from './js/room.js?v=20261128a';
+import { createQuest } from './js/quest.js?v=20261128a';
+import { makeAscii, atlasTexture } from './js/ascii.js?v=20261128a';
+import { makeIntro } from './js/intro.js?v=20261128a';
+import { makeTerminal } from './js/terminal.js?v=20261128a';
 
 const { positionLocal, time, sin, cos, vec2, vec3, float, instanceIndex, pass, screenUV, length, smoothstep,
   mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs, vec4, mix, uniform } = THREE.TSL;
@@ -571,7 +571,7 @@ export async function mount(opts = {}) {
       }
     } else if (phase === 'tube' && pt >= (reduce ? 0.2 : 3.4)) goPhase('grow', now);
     else if (phase === 'grow' && pt >= (reduce ? 0.3 : 5.2)) { revealAt = now; goPhase('reveal', now); }
-    else if (phase === 'reveal' && pt >= (reduce ? 0.4 : 3.6)) goPhase('pull', now);
+    else if (phase === 'reveal' && pt >= (reduce ? 0.4 : 5.0)) goPhase('pull', now);
     else if (phase === 'pull' && pt >= (reduce ? 0.2 : restarted ? 4.6 : 7.6)) goPhase('roll', now);
     else if (phase === 'roll' && pt >= (reduce ? 0.1 : restarted ? 2.6 : 3.4)) { if (restarted) startPlay(now); else goPhase('speech', now); }
     /* обращение: «ТЫ не ОНА» красным, потом слово ПОИСК повторяется трижды, и на третьем глаз начинает искать */
@@ -593,7 +593,7 @@ export async function mount(opts = {}) {
       fly += dt * (phase === 'grow' ? 3.2 * (1 - sm(0, 1.6, pt)) + 0.2 : 3.4);
       twist += dt * 1.6 * tw;
       const g = phase === 'grow' ? pt : phase === 'tube' || phase === 'term' ? -1 : 99;
-      const dis = phase === 'reveal' ? (reduce ? pt / 0.4 : Math.pow(sm(0, 3.2, pt), 1.35) * 1.02) : phase === 'pull' || phase === 'roll' || phase === 'speech' || phase === 'play' ? 2 : 0;
+      const dis = phase === 'reveal' ? (reduce ? pt / 0.4 : Math.pow(sm(0, 1.8, pt), 1.2) * 1.02) : phase === 'pull' || phase === 'roll' || phase === 'speech' || phase === 'play' ? 2 : 0;
       intro.set({
         fade: phase === 'term' ? 0 : phase === 'tube' ? sm(0, 0.9, pt) : 1,
         fly, twist: twist,
@@ -602,7 +602,10 @@ export async function mount(opts = {}) {
         open: sm(1.6, 2.6, g) * (1 - st.blink), look: { x: 0, y: 0 }, pupil: st.pupil,
         dissolve: Math.min(1.01, dis), alive: dis >= 1.01 ? 0 : 1
       });
-      if (dis >= 1.01) introDone = true;
+      /* раскрытие в два шага: глаз из символов осыпается в знаки, которыми нарисован настоящий глаз,
+         затем знаки волной от центра становятся настоящими пикселями */
+      if (ascii) ascii.uAll.value = reduce ? 0 : phase === 'reveal' ? 1 - sm(1.2, 4.6, pt) : (phase === 'grow' || phase === 'tube' || phase === 'term') ? 1 : 0;
+      if (dis >= 1.01 && phase !== 'reveal') introDone = true;
     }
 
     /* поимка: клетки заполняются глазом из символов, зрачок растёт и съедает всё, потом обычная главная.

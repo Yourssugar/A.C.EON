@@ -153,7 +153,8 @@ export function makeIntro(THREE, atlasInfo, uRes, uCell, tx) {
   const color = mix(base, vec3(0.45, 0.95, 0.92).mul(lum), uTint).mul(uFade);
 
   /* клетка ещё принадлежит входу или уже показывает сцену */
-  const on = step(uDissolve, hc).mul(uAlive);
+  /* клетка гаснет не скачком, а за короткое окно: переход мягче */
+  const on = clamp(hc.sub(uDissolve.mul(1.1)).add(0.1).div(0.1), 0, 1).mul(uAlive);
 
   const last = {};
   return {

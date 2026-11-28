@@ -280,8 +280,11 @@ export function buildItems(THREE, FLOOR, people, itex) {
     for (let i = 0; i < n; i++) {
       const r = RECTS[(Math.random() * RECTS.length) | 0];
       rect.setXYZW(i, r[0], r[1], r[2], r[3]);
-      const x = Math.random() < 0.55 ? rnd(1, 9) : rnd(-9, 6);
-      dummy.position.set(x, rnd(FLOOR + 0.4, 4.6), rnd(1.2, 10.5));
+      let x, y, z;
+      /* не перед глазом: оттуда смотрит камера в начале */
+      do { x = Math.random() < 0.55 ? rnd(1, 9) : rnd(-9, 6); y = rnd(FLOOR + 0.4, 4.6); z = rnd(1.2, 10.5); }
+      while (Math.abs(x) < 2.6 && Math.abs(y) < 1.8 && z < 6.5);
+      dummy.position.set(x, y, z);
       dummy.rotation.set(0, Math.atan2(CAM.x - x, CAM.z - dummy.position.z), rnd(0, 6.3));
       const sz = rnd(0.04, 0.12) * (Math.random() < 0.08 ? 1.8 : 1);
       dummy.scale.set(sz * r[2] / 0.12, sz * r[3] / 0.12, 1);

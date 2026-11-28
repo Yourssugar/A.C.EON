@@ -48,6 +48,7 @@ export function makeAscii(THREE, { col, mask, depth, atlasInfo, glyphs }) {
   const uBeam = uniform(1);          /* 0..1, можно гасить луч целиком */
   const uHaze = uniform(1);          /* яркость видимого луча в воздухе */
   const uEdge = uniform(1);          /* сила осыпания краёв */
+  const uAll = uniform(0);           /* весь кадр знаками: при раскрытии глаза гаснет волной от центра */
 
   const px = screenUV.mul(uRes);
   const cell = floor(px.div(uCell));
@@ -81,7 +82,9 @@ export function makeAscii(THREE, { col, mask, depth, atlasInfo, glyphs }) {
 
   const raw = max(max(m, beam.mul(0.96)), per.mul(0.92));
   const seed = cell.x.add(cell.y.mul(311.7));
-  const on = step(hash(seed.add(17.3)), raw);
+  /* порог: в центре выше, поэтому при угасании uAll центр (глаз) становится настоящим первым */
+  const allOn = step(mix(hash(seed.add(23.1)), float(1).sub(rr), 0.5), uAll);
+  const on = max(step(hash(seed.add(17.3)), raw), allOn);
 
   /* выбор знака: плотность по яркости, на краях направление, немного мерцания */
   const gain = mix(float(2.2), float(3.2), isVivi);
@@ -110,7 +113,7 @@ export function makeAscii(THREE, { col, mask, depth, atlasInfo, glyphs }) {
   const viviC = mix(cCol.mul(2.0), vec3(0.6, 0.74, 0.92).mul(lum.mul(3).add(0.22)), 0.65);
   let aCol = mix(cCol.mul(1.9), cold.mul(1.9), beam.mul(0.7));
   aCol = mix(aCol, viviC, isVivi);
-  const asciiOut = aCol.mul(glyph);
+  const asciiOut = aCol.mul(glyph).mul(allOn.mul(uAll).mul(1.4).add(1));
 
   /* видимый луч в пыли: где луч камеры проходит близко к оси взгляда (и не за стеной) */
   const pndc = vec2(screenUV.x.mul(2).sub(1), float(1).sub(screenUV.y.mul(2)));
@@ -137,7 +140,7 @@ export function makeAscii(THREE, { col, mask, depth, atlasInfo, glyphs }) {
   const node = vec4(mix(base, asciiOut, on).add(vec3(0.6, 0.76, 1.0).mul(haze)), 1);
 
   return {
-    node, uBeam, uEdge, uHaze, uRes, uCell,
+    node, uBeam, uEdge, uHaze, uAll, uRes, uCell,
     setSize(w, h) { uRes.value.set(w, h); uCell.value = Math.max(10, Math.round(h / 70)); },
     setCamera(cam) {
       uCamMat.value.copy(cam.matrixWorld);

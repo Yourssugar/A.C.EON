@@ -6,7 +6,7 @@
    слева стойки и пульты с застывшими экранами, колбы, тележка, платформа под креслом.
    buildRoom(THREE, t, Q) -> { root, ROOM } */
 
-import { FLOOR, CHAIR } from './lab.js?v=20261127c';
+import { FLOOR, CHAIR } from './lab.js?v=20261128a';
 
 export const ROOM = { LEFT: -14, RIGHT: 13, BACK: -1.15, FRONT: 24, CEIL: 6.2, HOLE: { x0: 5.4, x1: 12.6, top: 7.2 } };
 

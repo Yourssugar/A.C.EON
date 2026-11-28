@@ -198,6 +198,42 @@ export async function mount(opts) {
     scene.add(new THREE.LineSegments(g, m));
   });
 
+  /* ---------- фон от Кодекса: панорама 360, гигантские скопления, слой пыли ----------
+     Панорама сначала малая (2K), потом в фоне подменяется на 4K (на ПК на 8K). */
+  const lb = new THREE.ImageBitmapLoader(); lb.setOptions({ imageOrientation: 'flipY' });
+  const loadT = (f) => new Promise((res, rej) => lb.load(new URL(f, import.meta.url).href, (bm) => {
+    const t = new THREE.Texture(bm); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; res(t);
+  }, undefined, rej));
+  const sky = (t) => { t.mapping = THREE.EquirectangularReflectionMapping; const old = scene.background; scene.background = t; if (old && old.dispose) old.dispose(); };
+  loadT('bg/sky_2k.webp').then((t) => {
+    sky(t);
+    return loadT(small ? 'bg/sky_4k.webp' : 'bg/sky_8k.webp');
+  }).then(sky).catch((e) => console.warn('[graph] sky', e));
+  scene.backgroundIntensity = 1.0;
+  const farG = new THREE.Group(); scene.add(farG);
+  ['amber', 'rose', 'teal', 'violet', 'white', 'red', 'violet', 'amber', 'teal'].forEach((n, i) => {
+    loadT('bg/cluster_' + n + '.webp').then((t) => {
+      const m = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+      const tx = T.texture(t, uv());
+      m.colorNode = tx.rgb.mul(1.1); m.opacityNode = tx.a.mul(0.8);
+      const sp = new THREE.Sprite(m);
+      const d = new THREE.Vector3(gauss(), gauss() * 0.6, gauss()).normalize();
+      sp.position.copy(d.multiplyScalar(300 + R() * 260));
+      sp.scale.setScalar(220 + R() * 240);
+      sp.material.rotation = R() * 6.28;
+      farG.add(sp);
+    }).catch(() => {});
+  });
+  /* пыль: сфера изнутри, текстура повторена, медленно вращается, поверх неё ближний граф дрейфует иначе */
+  loadT('bg/dust.webp').then((t) => {
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    const m = new THREE.MeshBasicNodeMaterial({ side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const tx = T.texture(t, uv().mul(vec2(6, 3)));
+    m.colorNode = tx.rgb; m.opacityNode = tx.a.mul(0.45);
+    const dust = new THREE.Mesh(new THREE.SphereGeometry(150, 48, 24), m);
+    dust.userData.spin = true; farG.add(dust);
+  }).catch(() => {});
+
   /* ---------- даль: граф продолжается бесконечно ----------
      За доступным куском памяти видны ещё слои: пыль из десятков тысяч точек в 1 пиксель,
      тонкие нити между ними и несколько гигантских скоплений очень далеко. Всё медленно
@@ -394,7 +430,7 @@ export async function mount(opts) {
     /* прицел: смещение курсора от центра задаёт скорость поворота, с мёртвой зоной и плавным разгоном */
     const dz = (v) => Math.sign(v) * Math.pow(Math.max(0, Math.abs(v) - 0.14) / 0.86, 1.5);
     let ty = 0, tp = 0;
-    if (has && !drag && !focus) { ty = -dz(mx / innerWidth * 2 - 1) * 0.75; tp = -dz(my / innerHeight * 2 - 1) * 0.5; }
+    if (has && !drag && !focus) { ty = dz(mx / innerWidth * 2 - 1) * 0.75; tp = -dz(my / innerHeight * 2 - 1) * 0.5; }
     else if (!drag && !focus) ty = -0.015;   /* без курсора медленно поворачивается сам */
     vyaw += (ty - vyaw) * Math.min(1, dt * 1.8);
     vpitch += (tp - vpitch) * Math.min(1, dt * 1.8);
@@ -431,6 +467,8 @@ export async function mount(opts) {
       label.style.opacity = '1';
     } else label.style.opacity = '0';
 
+    farG.rotation.y += dt * 0.004;
+    if (scene.backgroundRotation) scene.backgroundRotation.y += dt * 0.0015;
     pipe.render();
   });
 

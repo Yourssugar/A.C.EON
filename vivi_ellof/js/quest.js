@@ -20,7 +20,7 @@
    ctx: { cam, items, mem, save() }
    inp: { nx, ny, has, out, speed, stillT, gaze: {yaw, pitch}, eyeD (расстояние до зрачка в радиусах радужки), paused } */
 
-import { CHAIR, FLOOR } from './lab.js?v=20261128a';
+import { CHAIR, FLOOR } from './lab.js?v=20261128c';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 

@@ -19,7 +19,7 @@
 
 export const ITEMS = [
   /* люди: застыли кто как успел */
-  { id: 'w1', kind: 'worker', act: 'desc', pose: 'reach', pos: [-6.4, 0, 3.4], ry: 0.9,
+  { id: 'w1', kind: 'worker', act: 'desc', pose: 'reach', pos: [-5.8, 0, 4.3], ry: 0.9,
     label: { ru: 'сотрудник Л-07', en: 'staff L-07' },
     text: { ru: 'Тянулся к пульту аварийной остановки. Не успел на полсекунды.', en: 'Reaching for the emergency stop. Half a second too late.' } },
   { id: 'w2', kind: 'worker', act: 'desc', pose: 'shield', pos: [4.6, 0, 4.8], ry: -2.2,

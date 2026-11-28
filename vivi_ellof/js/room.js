@@ -6,7 +6,7 @@
    слева стойки и пульты с застывшими экранами, колбы, тележка, платформа под креслом.
    buildRoom(THREE, t, Q) -> { root, ROOM } */
 
-import { FLOOR, CHAIR } from './lab.js?v=20261128a';
+import { FLOOR, CHAIR } from './lab.js?v=20261128c';
 
 export const ROOM = { LEFT: -14, RIGHT: 13, BACK: -1.15, FRONT: 24, CEIL: 6.2, HOLE: { x0: 5.4, x1: 12.6, top: 7.2 } };
 
@@ -215,14 +215,18 @@ export function buildRoom(THREE, t, Q) {
    браузер перекомпилирует шейдеры всех уже готовых материалов, и сцена подвиснет */
 export function buildLights(THREE) {
   const g = new THREE.Group();
-  const F = FLOOR, { CEIL, BACK, HOLE } = ROOM;
+  const F = FLOOR, { CEIL, BACK, HOLE, LEFT, RIGHT } = ROOM;
   const add = (l, x, y, z) => { l.position.set(x, y, z); g.add(l); return l; };
   /* взрыв за проломом заливает комнату */
   add(new THREE.PointLight(0xff7a30, 210, 60, 1.3), (HOLE.x0 + HOLE.x1) / 2, F + 4.2, BACK - 4.5);
   /* огонь в самом проломе */
   add(new THREE.PointLight(0xff7428, 22, 30, 1.7), 8.2, -0.9 + 2.6, -1.0 + 2.4);
   /* лампы под потолком */
-  [[-9, 4], [-9, 14], [-3, 9], [3, 17]].forEach(([x, z]) => add(new THREE.PointLight(0x9cc4ff, 16, 16, 1.6), x, CEIL - 0.8, z));
+  [[-9, 4], [-9, 14], [-3, 9], [3, 17]].forEach(([x, z]) => { add(new THREE.PointLight(0x9cc4ff, 16, 16, 1.6), x, CEIL - 0.8, z).userData.ceil = 16; });
+  /* аварийные красные лампы на стенах: медленный пульс, его задаёт rift.js (userData.alarm) */
+  [[LEFT + 0.7, 3.2], [LEFT + 0.7, 8.0], [RIGHT - 0.7, 5.6], [RIGHT - 0.7, 12.6]].forEach(([x, z]) => {
+    add(new THREE.PointLight(0xff1a24, 0, 9, 1.8), x, F + 4.8, z).userData.alarm = true;
+  });
   /* мониторы слева */
   add(new THREE.PointLight(0x5ea6ff, 14, 12, 1.8), -7.2, F + 2.4, 4.8);
   /* контровой свет на кресле */

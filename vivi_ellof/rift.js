@@ -10,15 +10,19 @@
    Модули: js/eye.js (глаз), js/gaze.js (движение глаза), js/lab.js (лаборатория), js/ascii.js (символы). */
 /* у модулей версия в адресе: после обновления на GitHub Pages браузер не смешает старые и новые файлы */
 import * as THREE from './vendor/three-webgpu.min.js';
-import { buildEye } from './js/eye.js?v=20261128a';
-import { createGaze } from './js/gaze.js?v=20261128a';
-import { buildLab, FLOOR } from './js/lab.js?v=20261128a';
-import { buildItems } from './js/items.js?v=20261128a';
-import { buildRoom, buildLights } from './js/room.js?v=20261128a';
-import { createQuest } from './js/quest.js?v=20261128a';
-import { makeAscii, atlasTexture } from './js/ascii.js?v=20261128a';
-import { makeIntro } from './js/intro.js?v=20261128a';
-import { makeTerminal } from './js/terminal.js?v=20261128a';
+import { buildEye } from './js/eye.js?v=20261128c';
+import { createGaze } from './js/gaze.js?v=20261128c';
+import { buildLab, FLOOR } from './js/lab.js?v=20261128c';
+import { buildItems } from './js/items.js?v=20261128c';
+import { buildRoom, buildLights, ROOM } from './js/room.js?v=20261128c';
+import { buildDecor } from './js/decor.js?v=20261128c';
+import { createVoice } from './js/voice.js?v=20261128c';
+import { createStream } from './js/stream.js?v=20261128c';
+import { buildProps, PROP_NAMES } from './js/props.js?v=20261128c';
+import { createQuest } from './js/quest.js?v=20261128c';
+import { makeAscii, atlasTexture } from './js/ascii.js?v=20261128c';
+import { makeIntro } from './js/intro.js?v=20261128c';
+import { makeTerminal } from './js/terminal.js?v=20261128c';
 
 const { positionLocal, time, sin, cos, vec2, vec3, float, instanceIndex, pass, screenUV, length, smoothstep,
   mrt, output, convertToTexture, mx_noise_float, positionWorld, normalView, abs, vec4, mix, uniform } = THREE.TSL;
@@ -193,6 +197,10 @@ export async function mount(opts = {}) {
   const tTerm = performance.now();
   /* звук тоже сразу: трек продолжается без паузы, искажения нарастают плавно */
   let sound = startSound(opts.audio || null);
+  /* голос Архитектора: фразы из vivi_ellof/voice/ (список в voice.json), пока файлов нет, молчит */
+  const voice = createVoice(BASE, '20261128c');
+  voice.attach(sound);
+  const vs = { mode: '', patrolT: 30, pupil: false, modem: false };
 
   let sayT = 0;
   const say = (txt) => {
@@ -263,9 +271,14 @@ export async function mount(opts = {}) {
   top.position.set(0.2, 3.4, 3.2);
   scene.add(cold, top);
   /* весь свет лаборатории сразу: иначе при его появлении перекомпилируются все готовые материалы */
-  scene.add(buildLights(THREE));
+  const lightsG = buildLights(THREE);
+  scene.add(lightsG);
+  /* лампы под потолком мигают, аварийные пульсируют (свет добавлен сразу, меняется только яркость) */
+  const ceilL = [], alarmL = [];
+  lightsG.children.forEach((l) => { if (l.userData.ceil) ceilL.push({ l, base: l.userData.ceil, burst: 0, next: 2 + Math.random() * 8 }); if (l.userData.alarm) alarmL.push(l); });
+  let alarmM = null;
 
-  let eye = null, lab = null, quest = null, items = null;
+  let eye = null, lab = null, quest = null, items = null, stream = null;
   let eyeReady = false, eyeReadyT = 0, labReady = false, labReadyAt = 0, warm = -1, warmDone = false;
   const gaze = createGaze({ reduce });
 
@@ -339,6 +352,19 @@ export async function mount(opts = {}) {
       scene.add(lab.root);
       await frame();
       scene.add(room.root);
+      /* стены: доска, таблички, дверь, шкафы, аварийные лампы */
+      const decor = buildDecor(THREE, ROOM, FLOOR);
+      alarmM = decor.alarmM;
+      await frame();
+      await compile(decor.root);
+      scene.add(decor.root);
+      /* рисунки Кодекса на стенах, полу и столах: сначала малые копии, полные по взгляду (js/stream.js) */
+      stream = createStream(THREE, { cam, load: (p) => load(p, true, false), budget: Q.mobile ? 10 : Q.tier >= 2 ? 32 : 20 });
+      await stream.preload(PROP_NAMES);
+      const props = buildProps(THREE, ROOM, FLOOR, stream);
+      await frame();
+      await compile(props.root);
+      scene.add(props.root);
       /* предметы и люди: обе версии (настоящая и символьная) компилируются сразу */
       items = buildItems(THREE, FLOOR, { reach: ppl[0], shield: ppl[1], fall: ppl[2] }, itex);
       items.showBoth();
@@ -347,7 +373,7 @@ export async function mount(opts = {}) {
       scene.add(items.root);
       quest = createQuest(THREE, { cam, items, mem, save: () => memSave(mem) });
       /* все текстуры в видеокарту заранее, иначе они уйдут туда при первом показе и дадут рывок */
-      for (const tx of Object.values(tex).concat(t2a, [panel, panelH], ppl, itA)) {
+      for (const tx of Object.values(tex).concat(t2a, [panel, panelH], ppl, itA, stream ? stream.los() : [])) {
         try { if (tx && tx.isTexture) renderer.initTexture(tx); } catch (e) {}
         await frame();
       }
@@ -490,6 +516,8 @@ export async function mount(opts = {}) {
     speech.style.opacity = '0'; speech.dataset.c = ''; speech.dataset.k = '';
     hud.style.opacity = '0';
     if (quest) quest.reset();
+    vs.mode = ''; vs.pupil = false;
+    setTimeout(() => voice.say(mem.tries === 1 ? 'last' : 'restart'), 1200);
     goPhase('grow', now, 3);
     setTimeout(() => { veil.style.opacity = '0'; }, 250);
   }
@@ -540,16 +568,51 @@ export async function mount(opts = {}) {
     if (ascii && qa && qo.flash > 0) ascii.uEdge.value = 1;
     uTen.value += (ten - uTen.value) * Math.min(1, dt * 3);
     if (sound) { sound.tension(uTen.value); sound.modem(qa && qo.modem ? 1 : 0); }
+
+    /* свет: лампы под потолком иногда сбоят пачкой коротких провалов, одна умирает чаще;
+       аварийные медленно пульсируют красным, сильнее, когда Архитектор близко к тебе */
+    ceilL.forEach((c, i) => {
+      c.next -= dt;
+      if (c.next <= 0 && c.burst <= 0) { c.burst = 0.3 + Math.random() * 0.7; c.next = (i === 2 ? 2 : 6) + Math.random() * (i === 2 ? 4 : 14); }
+      if (c.burst > 0) { c.burst -= dt; c.l.intensity = c.base * (Math.random() < 0.45 ? 0.08 : 0.4 + Math.random() * 0.6); }
+      else c.l.intensity = c.base * (i === 2 ? 0.55 : 1);
+    });
+    {
+      const k = Math.pow(0.5 + 0.5 * Math.sin(now / 1000 * 2.4), 3) * (0.55 + uTen.value * 0.9);
+      alarmL.forEach((l) => { l.intensity = 9 * k; });
+      if (alarmM) alarmM.emissiveIntensity = 0.25 + 2.4 * k;
+    }
+
+    /* загрузка по взгляду: только в игре, чтобы подгрузки не мешали входу */
+    if (stream && phase === 'play') stream.update(dt);
+
+    /* голос: по событиям квеста */
+    if (qa && !capAt && !gateAt) {
+      if (qo.mode !== vs.mode) {
+        if (qo.mode === 'lock') voice.say('lock');
+        else if (qo.mode === 'suspect' && vs.mode !== 'lock') voice.say('suspect', 0.6);
+        else if (vs.mode === 'lock' && qo.mode !== 'lock') voice.say('lost', 0.7);
+        vs.mode = qo.mode;
+      }
+      if (qo.modem && !vs.modem) voice.say('hear', 0.6);
+      vs.modem = qo.modem;
+      const pd = eyeDist();
+      if (pd < 1.0 && !vs.pupil) { vs.pupil = true; voice.say('pupil'); } else if (pd > 1.6) vs.pupil = false;
+      vs.patrolT -= dt;
+      if (vs.patrolT <= 0) { vs.patrolT = 25 + Math.random() * 30; if (qo.mode === 'patrol') voice.say('patrol'); }
+      if (ptr.stillT > 40 && ptr.stillT - dt <= 40) voice.say('idle');
+    }
     if (qa) qo.events.forEach((ev) => {
-      if (ev.type === 'open') say(L.open + (items.list[ev.i].label[lang] || items.list[ev.i].label.en));
+      if (ev.type === 'open') { say(L.open + (items.list[ev.i].label[lang] || items.list[ev.i].label.en)); voice.say('decoded', 0.7); }
       else if (ev.type === 'capture' && !capAt) {
         capAt = now;
         restartable = mem.tries > 1;
         mem.tries = Math.max(0, mem.tries - 1); mem.caught = (mem.caught || 0) + 1;
         mem.lg += STEP_SEEN; showCount(); showTries(); memSave(mem);
         closePanel();
+        voice.say(restartable ? 'capture' : 'eject');
       }
-      else if (ev.type === 'gate' && !gateAt) { gateAt = now; closePanel(); }
+      else if (ev.type === 'gate' && !gateAt) { gateAt = now; closePanel(); voice.say('gate'); }
     });
 
     /* ---------- фазы входа ----------
@@ -582,7 +645,7 @@ export async function mount(opts = {}) {
       else if (pt >= 3.3) {
         const k = Math.min(3, 1 + Math.floor((pt - 3.3) / 0.75));
         txt = Array(k).fill(W[1]).join(' '); op = pt < 6.6 ? 1 : 0;
-        if (k >= 3 && !(quest && quest.state.active)) startPlay(now, true);
+        if (k >= 3 && !(quest && quest.state.active)) { startPlay(now, true); voice.say(mem.visits > 1 ? 'return' : 'enter'); }
       }
       if (txt && speech.textContent !== txt) speech.textContent = txt;
       speech.style.color = col; speech.style.opacity = String(op);
@@ -667,7 +730,7 @@ export async function mount(opts = {}) {
       gDir.set(0, 0, 1).applyQuaternion(gQ);
       gPos.set(0, 0, 1.16); eye.eyeball.localToWorld(gPos);
       beam.position.copy(gPos); beam.target.position.copy(gPos).addScaledVector(gDir, 10);
-      beam.intensity = 260 * (0.4 + 0.6 * Math.max(st.focus, uTen.value)) * (1 - st.blink);
+      beam.intensity = 170 * (0.4 + 0.6 * Math.max(st.focus, uTen.value)) * (1 - st.blink);
       if (ascii) {
         ascii.setCamera(cam); ascii.setGaze(gPos, gDir);
         /* символы в луче только в игре: при раскрытии и отъезде глаз смотрит прямо в камеру, и луч закрывал бы его знаками */
@@ -715,7 +778,7 @@ export async function mount(opts = {}) {
 
 
   window.__vivi = { backend: isGPU ? 'WebGPU' : 'WebGL2', gpu: gpu.name, Q, get pr() { return pr; }, get ms() { return frameMs; }, gaze, cam, scene, gDir, gPos, ptr, cursorState,
-    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; }, get labReady() { return labReady; }, get phase() { return phase; }, get quest() { return quest; }, get items() { return items; }, get intro() { return intro; }, eyeDist };
+    get eye() { return eye; }, get lab() { return lab; }, get revealed() { return !!revealAt; }, get labReady() { return labReady; }, get phase() { return phase; }, get quest() { return quest; }, get items() { return items; }, get stream() { return stream; }, get intro() { return intro; }, eyeDist };
 }
 
 /* ---------- видеокарта: имя и признак программного рендера ---------- */
@@ -743,7 +806,7 @@ async function gpuInfo(renderer, isGPU) {
    Резких звуков нет: всё нарастает плавно ---------- */
 function startSound(el) {
   const AC = window.AudioContext || window.webkitAudioContext;
-  const ctl = { tension() {}, modem() {}, fade() {} };
+  const ctl = { tension() {}, modem() {}, fade() {}, duck() {}, ctx: null, voiceIn: null };
   if (!AC) return ctl;
 
   function build(audioEl) {
@@ -767,6 +830,13 @@ function startSound(el) {
       audioEl.volume = 1;
       try { ctx.createMediaElementSource(audioEl).connect(lp); } catch (e) { console.warn('[vivi_ellof] media source', e); }
     }
+    /* голос Архитектора: мимо фильтра музыки, немного отражения; музыку на время фразы приглушаем */
+    const vIn = ctx.createGain(); vIn.gain.value = 1.15;
+    const vlp = ctx.createBiquadFilter(); vlp.type = 'lowpass'; vlp.frequency.value = 7000;
+    const vSend = ctx.createGain(); vSend.gain.value = 0.35;
+    vIn.connect(vlp); vlp.connect(ctx.destination); vlp.connect(vSend); vSend.connect(verb);
+    ctl.ctx = ctx; ctl.voiceIn = vIn;
+    ctl.duck = (on) => { if (!faded) master.gain.setTargetAtTime(on ? 0.4 : 0.9, ctx.currentTime, on ? 0.15 : 0.6); };
     const hum = ctx.createGain(); hum.gain.value = 0.05;
     const hlp = ctx.createBiquadFilter(); hlp.type = 'lowpass'; hlp.frequency.value = 120;
     hum.connect(hlp); hlp.connect(master);

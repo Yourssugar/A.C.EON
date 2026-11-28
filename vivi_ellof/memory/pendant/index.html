@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>A.C.EON STUDIO | [OFFICIAL]</title>
+<script>
+/* заглушка воспоминания «Кулон» (сцена впереди, план: claude/vivi-graph-plan.md) */
+(function(){
+  var ok=false;
+  try{
+    var f=sessionStorage.getItem('aceon:rift');
+    var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
+    if(f&&!(n&&n.type==='reload'))ok=true;
+    else sessionStorage.removeItem('aceon:rift');
+  }catch(e){}
+  if(!ok)location.replace('../../../');
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;height:100%;overflow:hidden;font-family:"JetBrains Mono",Consolas,monospace}
+body{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 60%,#3a2a1c 0%,#140d08 55%,#050302 100%);color:#f0d6b4;animation:in 2s ease}
+@keyframes in{from{filter:blur(18px);opacity:0}to{filter:blur(0);opacity:1}}
+.t{text-align:center;letter-spacing:.35em}
+.t b{display:block;font-weight:400;font-size:clamp(18px,2.4vw,30px);margin-bottom:16px;filter:blur(.4px)}
+.t span{display:block;font-size:12px;color:#b89a7a;margin-top:8px}
+.back{position:fixed;left:28px;bottom:24px;font-size:11px;letter-spacing:3px;color:#8a735c;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="t"><b id="h"></b><span id="s"></span></div>
+<div class="back" id="bk"></div>
+<script>
+(function(){
+  var lang='en'; try{lang=sessionStorage.getItem('aceon:vivi-lang')||'en';}catch(e){}
+  var T=lang==='ru'?['КУЛОН','воспоминание собирается','[ esc ] назад в память']:['PENDANT','the memory is still forming','[ esc ] back to memory'];
+  document.getElementById('h').textContent=T[0]; document.getElementById('s').textContent=T[1];
+  var bk=document.getElementById('bk'); bk.textContent=T[2];
+  function back(){location.replace('../../graph/');}
+  bk.onclick=back; addEventListener('keydown',function(e){if(e.key==='Escape')back();});
+})();
+</script>
+</body>
+</html>

@@ -46,7 +46,7 @@ html,body{margin:0;height:100%;background:#020306;overflow:hidden;font-family:"J
 <script type="module">
 let lang = 'en';
 try { lang = sessionStorage.getItem('aceon:vivi-lang') || 'en'; } catch (e) {}
-import('./graph.js?v=20261128e').then((m) => m.mount({ lang })).catch((e) => {
+import('./graph.js?v=20261128f').then((m) => m.mount({ lang })).catch((e) => {
   console.warn('[graph]', e);
   const f = document.getElementById('fail');
   f.textContent = lang === 'ru' ? 'ГРАФ ПАМЯТИ НЕДОСТУПЕН' : 'MEMORY GRAPH UNAVAILABLE';

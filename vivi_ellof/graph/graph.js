@@ -15,9 +15,9 @@ const { vec2, vec3, vec4, float, uniform, sin, fract, abs, smoothstep, length, m
   positionLocal, positionWorld, cameraPosition, attribute, instancedBufferAttribute, max } = T;
 
 const TXT = {
-  ru: { hint: 'тяни, чтобы оглядеться · esc: назад', enter: 'войти', closed: 'доступ закрыт', damaged: 'фрагмент повреждён',
+  ru: { hint: 'веди курсор к краю, чтобы повернуться / esc: назад', enter: 'войти', closed: 'доступ закрыт', damaged: 'фрагмент повреждён',
     mem: 'ВОСПОМИНАНИЕ', back: 'назад' },
-  en: { hint: 'drag to look around · esc: back', enter: 'enter', closed: 'access denied', damaged: 'fragment damaged',
+  en: { hint: 'move the cursor to the edge to turn / esc: back', enter: 'enter', closed: 'access denied', damaged: 'fragment damaged',
     mem: 'MEMORY', back: 'back' }
 };
 
@@ -26,7 +26,7 @@ const KEYS = [
   { id: 'pendant', open: true, sector: 0, label: { ru: 'Кулон', en: 'Pendant' },
     text: { ru: 'Детство. Возле дома, в траве. Кулон и записка, написанная взрослым почерком.', en: 'Childhood. Near the house, in the grass. A pendant and a note in grown-up handwriting.' } },
   { id: 'cat', sector: 0, label: { ru: 'Кот', en: 'Cat' }, text: { ru: '', en: '' } },
-  { id: 'stranger', sector: 0, label: { ru: 'Чужие вещи', en: 'Someone else’s things' }, text: { ru: '', en: '' } },
+  { id: 'stranger', sector: 0, label: { ru: 'Чужие вещи', en: "Someone else's things" }, text: { ru: '', en: '' } },
   { id: 'modify', sector: 0, label: { ru: 'Модификация', en: 'Modification' }, text: { ru: '', en: '' } },
   { id: 'debate', sector: 1, label: { ru: 'Спор', en: 'The argument' }, text: { ru: '', en: '' } },
   { id: 'launch', sector: 2, label: { ru: 'Запуск', en: 'Launch' }, text: { ru: '', en: '' } },
@@ -60,16 +60,16 @@ export async function mount(opts) {
   renderer.setClearColor(0x020306, 1);
 
   const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 400);
+  const cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 3000);
 
   /* ---------- данные графа ---------- */
   const R = rng(20261128);
-  const N = small ? 3000 : 6000;
+  const N = small ? 4000 : 9000;
   const sc = SECTORS.map((s, i) => {
     /* центры секторов на сфере вокруг камеры */
     const phi = Math.acos(1 - 2 * (i + 0.5) / SECTORS.length), th = Math.PI * (1 + Math.sqrt(5)) * i;
     const d = new THREE.Vector3(Math.sin(phi) * Math.cos(th), Math.cos(phi) * 0.7, Math.sin(phi) * Math.sin(th)).normalize();
-    return Object.assign({ dir: d, c: d.clone().multiplyScalar(34) }, s);
+    return Object.assign({ dir: d, c: d.clone().multiplyScalar(62) }, s);
   });
   const wsum = sc.reduce((a, s) => a + s.w, 0);
   const gauss = () => { let u = 0; for (let i = 0; i < 4; i++) u += R(); return (u - 2) / 0.58; };
@@ -81,10 +81,10 @@ export async function mount(opts) {
     do {
       if (sc[k].name === 'protocol') {
         /* протокол: тонкая оболочка по всему графу */
-        const v = new THREE.Vector3(gauss(), gauss(), gauss()).normalize().multiplyScalar(14 + R() * 60);
+        const v = new THREE.Vector3(gauss(), gauss(), gauss()).normalize().multiplyScalar(20 + R() * 110);
         x = v.x; y = v.y; z = v.z;
       } else {
-        const s = 11 + R() * 8;
+        const s = 18 + R() * 14;
         x = sc[k].c.x + gauss() * s; y = sc[k].c.y + gauss() * s * 0.8; z = sc[k].c.z + gauss() * s;
       }
     } while (x * x + y * y + z * z < 36);
@@ -96,7 +96,7 @@ export async function mount(opts) {
   for (let i = 0; i < (small ? 24 : 42); i++) { const h = (R() * N) | 0; HUBS.push(h); SZ[h] = 0.5 + R() * 0.45; }
 
   /* связи: соседи по сетке + центры + дальние между секторами */
-  const cell = 7, grid = new Map();
+  const cell = 10, grid = new Map();
   const key = (x, y, z) => ((Math.floor(x / cell) + 64) * 131 + (Math.floor(y / cell) + 64)) * 131 + (Math.floor(z / cell) + 64);
   for (let i = 0; i < N; i++) { const k = key(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]); (grid.get(k) || grid.set(k, []).get(k)).push(i); }
   const near = (i, rad, max) => {
@@ -110,10 +110,10 @@ export async function mount(opts) {
     return out.slice(0, max).map((p) => p[1]);
   };
   const E = [];
-  for (let i = 0; i < N; i++) near(i, 6, 2 + (R() < 0.3 ? 1 : 0)).forEach((j) => { if (j > i || R() < 0.3) E.push(i, j); });
-  HUBS.forEach((h) => near(h, 20, 30 + ((R() * 50) | 0)).forEach((j) => E.push(h, j)));
+  for (let i = 0; i < N; i++) near(i, 9, 2 + (R() < 0.3 ? 1 : 0)).forEach((j) => { if (j > i || R() < 0.3) E.push(i, j); });
+  HUBS.forEach((h) => near(h, 32, 30 + ((R() * 50) | 0)).forEach((j) => E.push(h, j)));
   /* редкие дальние связи между секторами, только по дальней оболочке: вблизи камеры они резали бы кадр */
-  const far = (i) => P[i * 3] ** 2 + P[i * 3 + 1] ** 2 + P[i * 3 + 2] ** 2 > 40 * 40;
+  const far = (i) => P[i * 3] ** 2 + P[i * 3 + 1] ** 2 + P[i * 3 + 2] ** 2 > 70 * 70;
   for (let i = 0, n = 0; i < 4000 && n < (small ? 50 : 90); i++) { const a = (R() * N) | 0, b = (R() * N) | 0; if (far(a) && far(b)) { E.push(a, b); n++; } }
   const NE = E.length / 2;
 
@@ -123,10 +123,10 @@ export async function mount(opts) {
     sin(time.mul(0.11).add(p.z.mul(0.06)).add(p.x.mul(0.04))),
     sin(time.mul(0.09).add(p.x.mul(0.05)).add(p.y.mul(0.07)))
   ).mul(0.7);
-  const dfade = (wp) => smoothstep(95, 18, length(wp.sub(cameraPosition)));
+  const dfade = (wp) => smoothstep(190, 25, length(wp.sub(cameraPosition)));
 
   /* куски: 8 направлений x 2 слоя по расстоянию */
-  const chunkOf = (x, y, z) => ((x > 0) | ((y > 0) << 1) | ((z > 0) << 2)) + (x * x + y * y + z * z > 34 * 34 ? 8 : 0);
+  const chunkOf = (x, y, z) => ((x > 0) | ((y > 0) << 1) | ((z > 0) << 2)) + (x * x + y * y + z * z > 60 * 60 ? 8 : 0);
 
   /* ---------- точки ---------- */
   const dot = new THREE.CanvasTexture((() => {
@@ -198,6 +198,63 @@ export async function mount(opts) {
     scene.add(new THREE.LineSegments(g, m));
   });
 
+  /* ---------- даль: граф продолжается бесконечно ----------
+     За доступным куском памяти видны ещё слои: пыль из десятков тысяч точек в 1 пиксель,
+     тонкие нити между ними и несколько гигантских скоплений очень далеко. Всё медленно
+     смещается вместе с дрейфом, но в разы слабее, чем ближний граф (параллакс). */
+  {
+    const NF = small ? 14000 : 36000;
+    const fp = new Float32Array(NF * 3), fc = new Float32Array(NF * 3);
+    /* гигантские скопления: центр, радиус, цвет сектора */
+    const giants = Array.from({ length: 9 }, () => {
+      const d = new THREE.Vector3(gauss(), gauss() * 0.7, gauss()).normalize();
+      return { c: d.multiplyScalar(500 + R() * 900), r: 60 + R() * 160, col: sc[(R() * 5) | 0].col };
+    });
+    for (let i = 0; i < NF; i++) {
+      let x, y, z, c;
+      if (R() < 0.45) {
+        const g = giants[(R() * giants.length) | 0];
+        const k = Math.pow(R(), 1.8) * g.r;
+        const v = new THREE.Vector3(gauss(), gauss(), gauss()).normalize().multiplyScalar(k);
+        x = g.c.x + v.x; y = g.c.y + v.y; z = g.c.z + v.z; c = g.col;
+      } else {
+        const v = new THREE.Vector3(gauss(), gauss() * 0.8, gauss()).normalize().multiplyScalar(170 + Math.pow(R(), 0.7) * 1300);
+        x = v.x; y = v.y; z = v.z; c = sc[(R() * sc.length) | 0].col;
+      }
+      fp.set([x, y, z], i * 3);
+      const b = 0.25 + R() * 0.75;
+      fc.set([c[0] * b, c[1] * b, c[2] * b], i * 3);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(fp, 3));
+    g.setAttribute('fcol', new THREE.BufferAttribute(fc, 3));
+    const pm = new THREE.PointsNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: false });
+    pm.positionNode = positionLocal.add(drift(positionLocal).mul(3));
+    pm.colorNode = attribute('fcol', 'vec3').mul(sin(time.mul(0.7).add(positionLocal.x.mul(0.3))).mul(0.3).add(0.9));
+    pm.opacityNode = float(0.85);
+    const pts = new THREE.Points(g, pm); pts.frustumCulled = false; scene.add(pts);
+
+    /* дальние нити: каждая точка к соседней по порядку внутри своего скопления */
+    const NL = small ? 5000 : 12000;
+    const lp = new Float32Array(NL * 6), lc = new Float32Array(NL * 6);
+    for (let i = 0; i < NL; i++) {
+      const a = (R() * NF) | 0;
+      let best = -1, bd = 1e12;
+      for (let t = 0; t < 24; t++) { const b = (R() * NF) | 0; const dx = fp[b * 3] - fp[a * 3], dy = fp[b * 3 + 1] - fp[a * 3 + 1], dz = fp[b * 3 + 2] - fp[a * 3 + 2], d = dx * dx + dy * dy + dz * dz; if (b !== a && d < bd) { bd = d; best = b; } }
+      if (bd > 140 * 140) best = a;
+      lp.set([fp[a * 3], fp[a * 3 + 1], fp[a * 3 + 2], fp[best * 3], fp[best * 3 + 1], fp[best * 3 + 2]], i * 6);
+      lc.set([fc[a * 3], fc[a * 3 + 1], fc[a * 3 + 2], fc[best * 3], fc[best * 3 + 1], fc[best * 3 + 2]], i * 6);
+    }
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
+    lg.setAttribute('fcol', new THREE.BufferAttribute(lc, 3));
+    const lm = new THREE.LineBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    lm.positionNode = positionLocal.add(drift(positionLocal).mul(3));
+    lm.colorNode = attribute('fcol', 'vec3');
+    lm.opacityNode = float(0.22);
+    const fl = new THREE.LineSegments(lg, lm); fl.frustumCulled = false; scene.add(fl);
+  }
+
   /* ---------- ключевые точки ---------- */
   const keyTex = (k) => {
     const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
@@ -217,7 +274,7 @@ export async function mount(opts) {
     const s = sc[k.sector];
     /* в своём секторе, но ближе к камере, чтобы было видно */
     const d = s.dir.clone().add(new THREE.Vector3(R() - 0.5, R() - 0.5, R() - 0.5).multiplyScalar(0.9)).normalize();
-    const p = d.multiplyScalar(k.open ? 13 : 16 + R() * 8);
+    const p = d.multiplyScalar(k.open ? 15 : 18 + R() * 12);
     const m = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     const uHov = uniform(0);
     m.colorNode = T.texture(keyTex(k), uv()).rgb.mul(uHov.mul(0.35).add(0.9));
@@ -226,7 +283,7 @@ export async function mount(opts) {
     const sp = new THREE.Sprite(m); sp.position.copy(p); scene.add(sp);
     /* куда разнесено воспоминание: 6 далёких узлов, к каждому путь через 2 промежуточных */
     const targets = [];
-    while (targets.length < 6) { const j = (R() * N) | 0; const dx = P[j * 3] - p.x, dy = P[j * 3 + 1] - p.y, dz = P[j * 3 + 2] - p.z; if (dx * dx + dy * dy + dz * dz > 30 * 30) targets.push(j); }
+    while (targets.length < 6) { const j = (R() * N) | 0; const dx = P[j * 3] - p.x, dy = P[j * 3 + 1] - p.y, dz = P[j * 3 + 2] - p.z; if (dx * dx + dy * dy + dz * dz > 55 * 55) targets.push(j); }
     const segs = [], sts = [];
     const nearest = (v) => { let best = 0, bd = 1e9; for (let t = 0; t < 400; t++) { const j = (R() * N) | 0; const dx = P[j * 3] - v.x, dy = P[j * 3 + 1] - v.y, dz = P[j * 3 + 2] - v.z, dd = dx * dx + dy * dy + dz * dz; if (dd < bd) { bd = dd; best = j; } } return new THREE.Vector3(P[best * 3], P[best * 3 + 1], P[best * 3 + 2]); };
     targets.forEach((j) => {
@@ -269,21 +326,26 @@ export async function mount(opts) {
   const hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = L.hint; ui.appendChild(hint);
   setTimeout(() => { hint.style.opacity = '0'; }, 7000);
 
-  /* ---------- камера: оглядываться перетаскиванием, без нажатия медленный поворот ---------- */
-  let yaw = 0.6, pitch = 0.05, vyaw = 0, vpitch = 0, drag = false, lx = 0, ly = 0, mx = 0, my = 0, has = false, idle = 0;
-  let zoom = 0, focus = null, focusK = 0;
+  /* ---------- камера: как прицел в игре ----------
+     Взгляд сам плавно поворачивается в сторону курсора: чем дальше курсор от центра, тем быстрее,
+     у центра мёртвая зона. Скорость набирается и гасится с задержкой. На сенсорных экранах
+     и для тех, кто привык, можно тянуть. Колесо: немного вперёд и назад. */
+  let yaw = 0.6, pitch = 0.05, vyaw = 0, vpitch = 0, drag = false, lx = 0, ly = 0, mx = innerWidth / 2, my = innerHeight / 2, has = false, idle = 0;
+  let zoom = 0, focus = null, focusK = 0, touch = false;
   const camPos = new THREE.Vector3(), look = new THREE.Vector3(), tmp = new THREE.Vector3();
-  cv.addEventListener('pointerdown', (e) => { drag = true; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId); downAt = performance.now(); downX = e.clientX; downY = e.clientY; });
   let downAt = 0, downX = 0, downY = 0;
+  cv.addEventListener('pointerdown', (e) => { drag = true; touch = e.pointerType === 'touch'; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId); downAt = performance.now(); downX = e.clientX; downY = e.clientY; });
   addEventListener('pointerup', (e) => {
     drag = false;
     if (performance.now() - downAt < 300 && Math.hypot(e.clientX - downX, e.clientY - downY) < 6) click();
   });
   addEventListener('pointermove', (e) => {
-    has = true; mx = e.clientX; my = e.clientY; idle = 0;
-    if (drag) { vyaw -= (e.clientX - lx) * 0.0032; vpitch -= (e.clientY - ly) * 0.0028; lx = e.clientX; ly = e.clientY; }
+    has = e.pointerType !== 'touch'; mx = e.clientX; my = e.clientY; idle = 0;
+    if (drag) { yaw -= (e.clientX - lx) * 0.003; pitch -= (e.clientY - ly) * 0.0026; lx = e.clientX; ly = e.clientY; }
   });
-  addEventListener('wheel', (e) => { zoom = Math.max(-4, Math.min(9, zoom - e.deltaY * 0.01)); }, { passive: true });
+  document.addEventListener('pointerleave', () => { has = false; });
+  addEventListener('blur', () => { has = false; });
+  addEventListener('wheel', (e) => { zoom = Math.max(-6, Math.min(16, zoom - e.deltaY * 0.015)); }, { passive: true });
   addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (focus) unfocus(); else location.replace('../'); } });
   addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); });
 
@@ -329,12 +391,16 @@ export async function mount(opts) {
   renderer.setAnimationLoop(() => {
     const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
     idle += dt;
-    /* инерция обзора; без касания медленный поворот, курсор чуть тянет взгляд */
-    yaw += vyaw; pitch += vpitch; vyaw *= 0.9; vpitch *= 0.9;
-    if (!drag) yaw += dt * 0.012 * Math.min(1, idle / 3);
-    pitch = Math.max(-1.35, Math.min(1.35, pitch));
-    const fx = has && !drag ? (mx / innerWidth - 0.5) * 0.25 : 0, fy = has && !drag ? (my / innerHeight - 0.5) * 0.18 : 0;
-    const Y = yaw - fx, Pp = pitch - fy;
+    /* прицел: смещение курсора от центра задаёт скорость поворота, с мёртвой зоной и плавным разгоном */
+    const dz = (v) => Math.sign(v) * Math.pow(Math.max(0, Math.abs(v) - 0.14) / 0.86, 1.5);
+    let ty = 0, tp = 0;
+    if (has && !drag && !focus) { ty = -dz(mx / innerWidth * 2 - 1) * 0.75; tp = -dz(my / innerHeight * 2 - 1) * 0.5; }
+    else if (!drag && !focus) ty = -0.015;   /* без курсора медленно поворачивается сам */
+    vyaw += (ty - vyaw) * Math.min(1, dt * 1.8);
+    vpitch += (tp - vpitch) * Math.min(1, dt * 1.8);
+    yaw += vyaw * dt; pitch += vpitch * dt;
+    pitch = Math.max(-1.3, Math.min(1.3, pitch));
+    const Y = yaw, Pp = pitch;
     look.set(Math.sin(Y) * Math.cos(Pp), Math.sin(Pp), -Math.cos(Y) * Math.cos(Pp));
     /* к выбранному воспоминанию камера подлетает */
     focusK += ((focus ? 1 : 0) - focusK) * Math.min(1, dt * 1.6);
@@ -370,5 +436,6 @@ export async function mount(opts) {
 
   window.__graph = { N, NE, keys: keyObjs.length,
     keyScreen: (i) => { tmp.copy(keyObjs[i].pos).project(cam); return [(tmp.x + 1) / 2 * innerWidth, (1 - tmp.y) / 2 * innerHeight, tmp.z]; },
-    face: (i) => { const d = keyObjs[i].pos.clone().normalize(); yaw = Math.atan2(d.x, -d.z); pitch = Math.asin(d.y); vyaw = vpitch = 0; } };
+    face: (i) => { const d = keyObjs[i].pos.clone().normalize(); yaw = Math.atan2(d.x, -d.z); pitch = Math.asin(d.y); vyaw = vpitch = 0; },
+    stop: () => { has = false; } };
 }
